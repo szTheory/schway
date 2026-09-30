@@ -65,11 +65,45 @@ verify_corpus() {
 		return 0
 	else
 		verify_status=$?
+		if [ "$corpus" = phase4 ] || [ "$corpus" = phase5 ]; then
+			if refusal_family=$(python3 - "$corpus" "$result_path" "$verify_status" <<'PY'
+import json, sys
+
+corpus, result_path, verify_status = sys.argv[1:]
+try:
+    result = json.load(open(result_path, encoding="utf-8"))
+except (OSError, json.JSONDecodeError):
+    raise SystemExit(1)
+if verify_status != "3" or result.get("status") != "operational_failure":
+    raise SystemExit(1)
+diagnostics = result.get("diagnostics", [])
+if len(diagnostics) != 1 or diagnostics[0].get("code") != "verify.m004_refusal":
+    raise SystemExit(1)
+family = diagnostics[0].get("message", "")
+if corpus == "phase4":
+    refused_lane = any(lane.get("id") == "lane:release-omitted" and lane.get("status") == "refused" for lane in result.get("lanes", []))
+    if family != "foreign" or not refused_lane:
+        raise SystemExit(1)
+elif family not in {"foreign", "by-pointer"}:
+    raise SystemExit(1)
+print(family)
+PY
+			); then
+				case "$corpus" in
+					phase4) phase4_m004_refusal=1 ;;
+					phase5) phase5_m004_refusal=1 ;;
+				esac
+				printf 'phase6 prior corpus %s: current M004 refusal accepted (%s); frozen-evidence checks run in Go suite\n' "$corpus" "$refusal_family"
+				return 0
+			fi
+		fi
 		report_verify_failure "$corpus" "$result_path" "$verify_status"
 		return "$verify_status"
 	fi
 }
 
+phase4_m004_refusal=0
+phase5_m004_refusal=0
 verify_corpus phase1 "$verify_tmp/schway" --json verify testdata/phase1
 verify_corpus phase2 "$verify_tmp/schway" --json verify testdata/phase2
 verify_corpus phase3 "$verify_tmp/schway" --json verify testdata/phase3
@@ -108,6 +142,11 @@ for control in \
 do
 	grep -q "$control" "$verify_tmp/phase3.json" || { echo "phase6 verify: required Phase 3 control missing: $control" >&2; exit 1; }
 done
+
+# Phase16's refusal-first cut prevents these historical fixtures from running
+# live; accept the named refusal above and rely on the digest-bound evidence
+# checks already completed by the Go suite instead of claiming dynamic passes.
+if [ "$phase4_m004_refusal" -eq 0 ]; then
 for control in \
 	control:kind.exhaustive_dispatch \
 	control:foreign.call_target_not_foreign \
@@ -125,6 +164,9 @@ for control in \
 do
 	grep -q "$control" "$verify_tmp/phase4.json" || { echo "phase6 verify: required Phase 4 control missing: $control" >&2; exit 1; }
 done
+fi
+
+if [ "$phase5_m004_refusal" -eq 0 ]; then
 for control in \
 	control:foreign.no_unproven_attributes \
 	control:alias.false_no_alias \
@@ -144,6 +186,7 @@ for control in \
 do
 	grep -q "$control" "$verify_tmp/phase5.json" || { echo "phase6 verify: required Phase 5 control missing: $control" >&2; exit 1; }
 done
+fi
 
 # Phase 6's own required-control set (plan 06-15). Every identifier listed
 # here must also appear, verbatim, in
@@ -215,7 +258,11 @@ observe phase6_verify_gate verify testdata/phase6
 cat "$verify_tmp/phase1.json"
 cat "$verify_tmp/phase2.json"
 cat "$verify_tmp/phase3.json"
-cat "$verify_tmp/phase4.json"
-cat "$verify_tmp/phase5.json"
+if [ "$phase4_m004_refusal" -eq 0 ]; then
+	cat "$verify_tmp/phase4.json"
+fi
+if [ "$phase5_m004_refusal" -eq 0 ]; then
+	cat "$verify_tmp/phase5.json"
+fi
 cat "$verify_tmp/phase6.json"
 cat "$verify_tmp/phase6_verify_gate.stats.json"

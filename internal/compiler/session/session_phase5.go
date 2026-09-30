@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/szTheory/schway/internal/compiler/cgen"
@@ -23,6 +24,25 @@ import (
 // select evidence: cgen.EmitNative is the sole emission authority.
 func Phase16ControlNativeC(program core.Program, fixture string) (string, error) {
 	return cgen.EmitNative(program)
+}
+
+// Phase16M004RefusalFamily classifies only the two current M004 native
+// emission refusal identities. Historical Phase 4/5 gates use this at the
+// boundary where their formerly executable foreign fixtures are now
+// refusal-first and backed by digest-bound frozen evidence.
+func Phase16M004RefusalFamily(err error) string {
+	if err == nil {
+		return ""
+	}
+	message := err.Error()
+	switch {
+	case strings.Contains(message, "multi-function foreign-call bodies are not supported by native emission this phase"):
+		return "foreign"
+	case strings.Contains(message, "by-pointer bodies are not supported by whole-program native emission this phase"):
+		return "by-pointer"
+	default:
+		return ""
+	}
 }
 
 // Phase5RequiredControls is the complete Phase 5 required-control list as

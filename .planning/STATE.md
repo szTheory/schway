@@ -4,12 +4,12 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
-status: Public Schway migration active; hosted run 36687496041 exposed a script-contract regression in the new diagnostics on both hosts.
-stopped_at: Continue quick task 260928-tzu by preserving the explicit Phase 1–6 verifier command text required by TestPhase6VerifierScriptContract, then run static checks, privacy gates, and the next hosted CI cycle. Do not replay completed Phase 23 plans or UAT.
-last_updated: "2026-09-30T08:12:39Z"
+status: Public Schway migration active; hosted run 36688618461 passed full checks but exposed an M004 refusal-boundary mismatch in both Phase 6 aggregates.
+stopped_at: Continue quick task 260928-tzu by recording expected Phase16 M004 refusals in Phase 4/5 verification and skipping only the superseded live-control checks; run static and privacy checks, then use hosted CI. Do not replay completed Phase 23 plans or UAT.
+last_updated: "2026-09-30T09:20:04Z"
 last_activity: 2026-09-30
-last_activity_desc: Corrected the script-contract regression identified by hosted run 36687496041; the updated source still needs a privacy scan and hosted verification.
-state_head: f92b2f0c44bb93b726315b190fd851635d9ada5d
+last_activity_desc: Diagnosed hosted Phase 6 aggregate failures as Phase16 refusal-only fixtures; current patch recognizes only the explicit refusal result and leaves frozen-evidence checks to the already-passing hosted Go suites.
+state_head: 2140f700f40e6257f9204a1c47947e6e9f906ca2
 progress:
   total_phases: 4
   completed_phases: 1
@@ -23,14 +23,15 @@ Current publication identity (2026-09-28): Schway uses the Go module `github.com
 <!-- schway-current:end -->
 
 Public repository follow-up (2026-09-30): `szTheory/schway` `main` is at
-`093b9f99`. Hosted run `36687496041` exposed one regression from the diagnostic
-change: `TestPhase6VerifierScriptContract` requires the literal command text
-`json verify testdata/phaseN`, which the generalized wrapper had hidden. The
-test failed in both regular check jobs and both aggregate jobs; Phase 23 gates
-passed. The current unpushed correction keeps all six commands explicit and
-passes `sh -n`, `git diff --check`, and a source-text check. Project suites
-remain hosted-CI-only. Run full reachable-history and worktree privacy scans
-before the next additive push.
+`2140f700`. Hosted run `36688618461` passed full Ubuntu/macOS checks, including
+both race suites, but both Phase 6 aggregates failed because Phase16 makes the
+Phase 4 release fixture refusal-only. The earlier generalized-wrapper
+regression is fixed: all six verifier commands remain explicit. The current
+unpushed patch reports the exact current M004 refusal as an operational
+boundary, skips only the superseded Phase 4/5 live-control greps for that
+corpus, and keeps frozen-artifact verification in the Go suites. Shell syntax
+and diff checks pass; project suites remain hosted-CI-only. Run full
+reachable-history and worktree privacy scans before the next additive push.
 
 
 # Project State
@@ -46,7 +47,7 @@ hiding runtime costs.
 
 **Durable context (survives context clears — read before re-deriving):**
 
-- **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The public repository was empty before the first source push. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest pre-push audit at `093b9f99` reports zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Phase 23 plans and UAT are complete, but the hosted verification gate remains open until the evidence aggregate passes. Private audit artifacts are in the original checkout under this quick task's `audit/` directory.
+- **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The public repository was empty before the first source push. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest pre-push audit at `2140f700` reports zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Phase 23 plans and UAT are complete, but the hosted verification gate remains open until the evidence aggregate passes. Private audit artifacts are in the original checkout under this quick task's `audit/` directory.
 - `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 22. The separate app
   route retains and runs a native U64 identity app once with ordinary streams;
   evidence capture is not verification. General IO and all Schway foreign/by-pointer
@@ -100,7 +101,7 @@ hiding runtime costs.
 Phase: 23 (Live Local Allocation and Discharge) — EXECUTING
 Plan: 7 of 7
 Status: Phase 23 has all seven plans and UAT complete; its hosted verification receipt remains open while the public-repository quick task repairs the Phase 6 aggregate script.
-Last activity: 2026-09-30 — Corrected explicit-verifier command text after hosted run 36687496041 found the script-contract regression.
+Last activity: 2026-09-30 — Diagnosed Phase16 refusal-only corpus inputs after hosted run 36688618461; aggregate now distinguishes refusal from a live-control pass.
 
 Progress: [███░░░░░░░] 25%
 

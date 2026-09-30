@@ -2590,6 +2590,10 @@ func verifyForeignCorpus(ctx context.Context, corpus string, runner native.Runne
 		addLane("lane:release-omitted", "fail", nil, releaseChecked.Work+len(omissionRunner.Optimizations()), len(releaseSource), laneStarted)
 		return fail(protocol.StatusInvalid, "verify.control_missing", "control:resource.release_omitted")
 	}
+	if Phase16M004RefusalFamily(omissionErr) == "foreign" {
+		addLane("lane:release-omitted", "refused", nil, releaseChecked.Work+releaseValidated.Checks, len(releaseSource), laneStarted)
+		return fail(protocol.StatusOperational, "verify.m004_refusal", "foreign")
+	}
 	var releaseToolError *native.ToolError
 	omissionDetected := errors.As(omissionErr, &releaseToolError) && releaseToolError.Code == "native.invalid_execution"
 	if !omissionDetected {

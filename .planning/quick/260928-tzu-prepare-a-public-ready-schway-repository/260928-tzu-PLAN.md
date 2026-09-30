@@ -732,3 +732,20 @@ check jobs and both evidence aggregate jobs; Phase 23 gates passed. Keep each
 Phase 1–6 invocation explicit and pass the command as arguments to the failure
 reporting helper. The correction passes shell syntax, diff, and source-text
 checks. Do not run local project suites; hosted CI remains the acceptance lane.
+
+## Dated Phase16 refusal-boundary amendment (2026-09-30, run 36688618461)
+
+The full Ubuntu/macOS checks passed, including both race suites, while both
+Phase 6 evidence aggregates returned exit 3. The redacted diagnostic identified
+the Phase 4 `release-omitted` lane: Phase16 intentionally refuses current native
+emission for the multi-function foreign-call body in
+`acquire_three_success.schway`. Phase16 records that refusal boundary and binds
+the supported historical output through frozen evidence; the Phase 4/5 Go
+tests cover that receipt and the named refusal. Preserve the refusal as an
+operational result, do not claim the live mutation controls passed, and let the
+aggregate skip only the superseded Phase 4/5 dynamic-control grep when the
+structured refusal is exactly recognized. The current patch has not yet been
+run on hosted CI. The worktree gitleaks scan passes with only three known
+synthetic `generic-api-key` test-value matches, all classified. The reachable
+history scan at base `2140f700` also passes; repeat it after committing so the
+new tree and commit message are included. Project suites remain hosted-CI-only.

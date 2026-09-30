@@ -370,6 +370,9 @@ func runVerify(corpus string, jsonMode bool) int {
 	if isPhase5Corpus(corpus) {
 		result, err := session.VerifyPhase5ControlsAndWork(context.Background())
 		if err != nil {
+			if family := session.Phase16M004RefusalFamily(err); family != "" {
+				return emit(problemResult("verify", protocol.StatusOperational, "verify.m004_refusal", family), jsonMode, false)
+			}
 			return emit(problemResult("verify", protocol.StatusOperational, "tool.phase5_gate_failed", "unable to run the phase 5 control-and-work gate"), jsonMode, false)
 		}
 		return emit(result, jsonMode, false)
