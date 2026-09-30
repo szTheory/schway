@@ -722,3 +722,13 @@ build command or an earlier Phase 1–5 corpus stopped the script. Extend
 failure-only diagnostics to name each prerequisite command and to report the
 redacted lane/diagnostic summary for every Phase 1–6 corpus. Keep the acceptance
 gate open and use hosted CI for the next project-suite run.
+
+## Dated script-contract correction amendment (2026-09-30, run 36687496041)
+
+The diagnostic wrapper generalized each verifier invocation, hiding the
+literal `json verify testdata/phaseN` text required by
+`TestPhase6VerifierScriptContract`. That one test failed in both regular
+check jobs and both evidence aggregate jobs; Phase 23 gates passed. Keep each
+Phase 1–6 invocation explicit and pass the command as arguments to the failure
+reporting helper. The correction passes shell syntax, diff, and source-text
+checks. Do not run local project suites; hosted CI remains the acceptance lane.

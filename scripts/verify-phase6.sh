@@ -61,7 +61,7 @@ verify_corpus() {
 	corpus=$1
 	shift
 	result_path="$verify_tmp/$corpus.json"
-	if "$@" --json verify "testdata/$corpus" >"$result_path"; then
+	if "$@" >"$result_path"; then
 		return 0
 	else
 		verify_status=$?
@@ -70,10 +70,10 @@ verify_corpus() {
 	fi
 }
 
-verify_corpus phase1 "$verify_tmp/schway"
-verify_corpus phase2 "$verify_tmp/schway"
-verify_corpus phase3 "$verify_tmp/schway"
-verify_corpus phase4 "$verify_tmp/schway"
+verify_corpus phase1 "$verify_tmp/schway" --json verify testdata/phase1
+verify_corpus phase2 "$verify_tmp/schway" --json verify testdata/phase2
+verify_corpus phase3 "$verify_tmp/schway" --json verify testdata/phase3
+verify_corpus phase4 "$verify_tmp/schway" --json verify testdata/phase4
 
 # The sanitizer lane's own ASAN_OPTIONS/UBSAN_OPTIONS are pinned explicitly
 # on this invocation (D-05-13), byte-identical to
@@ -83,8 +83,8 @@ verify_corpus phase4 "$verify_tmp/schway"
 verify_corpus phase5 env \
 	ASAN_OPTIONS='halt_on_error=1:abort_on_error=1:symbolize=0:detect_leaks=0:detect_odr_violation=0:alloc_dealloc_mismatch=1' \
 	UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=0' \
-	"$verify_tmp/schway"
-verify_corpus phase6 "$verify_tmp/schway"
+	"$verify_tmp/schway" --json verify testdata/phase5
+verify_corpus phase6 "$verify_tmp/schway" --json verify testdata/phase6
 
 # Non-regression for Phase 1 through Phase 5 is proven by running THEIR OWN
 # corpora with THIS phase's freshly built binary, never by invoking an
