@@ -688,3 +688,14 @@ receipt lane to `macos-latest`, with `TMPDIR=/tmp` so `testing.T.TempDir`
 outputs do not record a per-user macOS temporary path. Keep the ordinary
 Ubuntu/macOS CI matrix unchanged and produce a new macOS receipt before
 replacing the checked-in one.
+
+## Dated Darwin receipt amendment (2026-09-30, run 36677759368)
+
+The opt-in `macos-latest` receipt completed at source revision `fe271a0f` with
+`TMPDIR=/tmp`. It records 34 exported pairs, 34 exact pair completions, one
+matching batch witness, matching manifest digests, zero test-fail/build-fail
+events, and a pass (not skip) for
+`TestCompositionOnlyLTODivergence`. The hosted privacy scan and independent
+private scan found zero personal home/contact/secret candidates, zero phone
+candidates, and zero gitleaks findings. Replace the interim Ubuntu record with
+this Mac artifact so the Darwin-only validation row remains supported.
