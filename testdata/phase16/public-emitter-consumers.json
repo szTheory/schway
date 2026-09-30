@@ -309,7 +309,7 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/session/session_phase5.go:EmitNative:25",
+      "call": "internal/compiler/session/session_phase5.go:EmitNative:26",
       "classification": "admitted-dynamic-schema2"
     },
     {

@@ -761,3 +761,14 @@ location by four lines; update the single registry row, rerun static/privacy
 checks, then start another hosted run. The Phase 6 aggregates also failed at
 their prerequisite test step, so run 36696297255 does not yet establish the
 refusal-aware aggregate result. Do not run project suites locally.
+
+## Dated follow-up inventory amendment (2026-09-30, run 36697168016)
+
+The refreshed Phase 4 source-call row passed, but both hosts again failed
+`TestPhase16PublicEmitterConsumerInventory`. Its only unique failure was the
+existing `Phase16ControlNativeC` call in `session_phase5.go`: the added
+`strings` import moves it from line 25 to line 26, while the registry still
+records line 25. Update that registry row and rerun static/privacy checks. The
+aggregate jobs stop at the same prerequisite Go test failure, so this run still
+does not verify the refusal-aware aggregate result. Do not run project suites
+locally.
