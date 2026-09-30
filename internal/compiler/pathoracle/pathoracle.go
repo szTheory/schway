@@ -232,6 +232,7 @@ func validateTransferredOwner(program core.Program) error {
 	if caller == nil || caller.ReturnType != "U64" {
 		return fail("owner_transfer_call", helper.ID)
 	}
+	bi, ri, ti := -1, -1, -1
 	for i := range caller.Linear.Operations {
 		op := &caller.Linear.Operations[i]
 		switch {
@@ -242,32 +243,23 @@ func validateTransferredOwner(program core.Program) error {
 				return fail("owner_transfer_borrow", op.ID)
 			}
 			borrow = op
+			bi = i
 		case op.Kind == core.OpRelease:
 			if release != nil {
 				return fail("owner_transfer_release", op.ID)
 			}
 			release = op
+			ri = i
 		case op.Kind == core.OpReturn:
 			if ret != nil {
 				return fail("owner_transfer_return", op.ID)
 			}
 			ret = op
+			ti = i
 		}
 	}
 	if borrow == nil || release == nil || ret == nil || borrow.SourceID != call.TargetID || release.SourceID != call.TargetID || release.ReleasesOperationID != a.op.ID || release.Foreign == nil || borrow.Foreign == nil || release.Foreign.Mode != "consume" || release.Foreign.Symbol != a.op.Foreign.Release || release.Foreign.ABIType != "schway_file_byte_release_fn" || release.Foreign.ParameterType != "FileByteOwner" || release.Foreign.ResultType != "Unit" || release.Foreign.Fails != "" || release.Foreign.Allocator != a.op.Foreign.Allocator || release.Allocator != a.op.Foreign.Allocator || borrow.Foreign.Symbol != "schway_file_byte_use" || borrow.Foreign.ABIType != "schway_file_byte_use_fn" || borrow.Foreign.ParameterType != "FileByteOwner" || borrow.Foreign.ResultType != "U64" || borrow.Foreign.Fails != "UseError" || ret.SourceID != borrow.TargetID {
 		return fail("owner_transfer_discharge", caller.ID)
-	}
-	bi, ri, ti := -1, -1, -1
-	for i, op := range caller.Linear.Operations {
-		if op == borrow {
-			bi = i
-		}
-		if op == release {
-			ri = i
-		}
-		if op == ret {
-			ti = i
-		}
 	}
 	if !(bi >= 0 && bi < ri && ri < ti) {
 		return fail("owner_transfer_order", caller.ID)
