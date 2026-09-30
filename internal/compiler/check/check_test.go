@@ -2320,17 +2320,30 @@ func TestPhase24SourceTransfer(t *testing.T) {
 	if !ok {
 		t.Fatal("main function missing")
 	}
-	var transferCalls, releases int
-	for _, operation := range main.Linear.Operations {
-		if operation.Kind == core.OpCall && operation.CalleeID == helper.ID {
-			transferCalls++
-		}
-		if operation.Kind == core.OpRelease {
-			releases++
+	var transferIndex, borrowIndex, releaseIndex, returnIndex = -1, -1, -1, -1
+	var releaseOperation core.LinearOperation
+	for index, operation := range main.Linear.Operations {
+		switch operation.Kind {
+		case core.OpCall:
+			if operation.CalleeID == helper.ID {
+				transferIndex = index
+			}
+		case core.OpForeignCall:
+			if operation.Foreign != nil && operation.Foreign.Mode == "borrow" {
+				borrowIndex = index
+			}
+		case core.OpRelease:
+			releaseIndex = index
+			releaseOperation = operation
+		case core.OpReturn:
+			returnIndex = index
 		}
 	}
-	if transferCalls != 1 || releases != 0 {
-		t.Fatalf("caller must receive the helper owner without synthesizing a release: calls=%d releases=%d", transferCalls, releases)
+	if transferIndex != 0 || borrowIndex != 1 || releaseIndex != 2 || returnIndex != 3 {
+		t.Fatalf("caller operations must transfer, borrow, release, then return: transfer=%d borrow=%d release=%d return=%d", transferIndex, borrowIndex, releaseIndex, returnIndex)
+	}
+	if releaseOperation.ReleasesOperationID != acquisitionID || releaseOperation.Foreign == nil || releaseOperation.Foreign.Mode != "consume" || releaseOperation.Foreign.Symbol != "schway_file_byte_release" || releaseOperation.Foreign.Allocator != "libc_malloc" {
+		t.Fatalf("caller release does not pair with the helper acquisition contract: %+v", releaseOperation)
 	}
 }
 

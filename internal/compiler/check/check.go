@@ -3833,8 +3833,10 @@ func checkLocalFileByteTransferCaller(functionID string, function ast.FuncDecl, 
 		return refuse("check.local_owner_contract_invalid", "owner transfer requires a PathToken helper returning FileByteOwner and a U64 entry result", body.Bindings[0].RHS.Span)
 	}
 	use, found := symbols["schway_file_byte_use"]
-	if !found || !foreignSignature(use, "FileByteOwner", "U64") || !localForeignPolicy(use, "borrow", "schway_file_byte_use_fn", "UseError") {
-		return refuse("check.local_owner_contract_invalid", "owner use requires the declared bounded borrowed file-byte contract", body.Bindings[1].RHS.Span)
+	release, releaseFound := symbols["schway_file_byte_release"]
+	if !found || !foreignSignature(use, "FileByteOwner", "U64") || !localForeignPolicy(use, "borrow", "schway_file_byte_use_fn", "UseError") ||
+		!releaseFound || !foreignSignature(release, "FileByteOwner", "Unit") || !localForeignPolicy(release, "consume", "schway_file_byte_release_fn", "") || release.Allocator != "libc_malloc" {
+		return refuse("check.local_owner_contract_invalid", "owner use and discharge require the declared bounded file-byte borrow and consuming contracts", body.Bindings[1].RHS.Span)
 	}
 	pathType, ownerType, valueType := core.TypeRef{Constructor: "PathToken"}, core.TypeRef{Constructor: "FileByteOwner"}, core.TypeRef{Constructor: "U64"}
 	pathAbilities, _ := ability.Derive(pathType)
@@ -3843,7 +3845,13 @@ func checkLocalFileByteTransferCaller(functionID string, function ast.FuncDecl, 
 	id := func(kind string, n int) string { return fmt.Sprintf("%s:%s:%d", functionID, kind, n) }
 	types := []core.TypeFact{{ID: id("type", 0), Shape: pathType, Abilities: pathAbilities.Granted, NegativeWitnesses: pathAbilities.NegativeWitnesses}, {ID: id("type", 1), Shape: ownerType, Abilities: ownerAbilities.Granted, NegativeWitnesses: ownerAbilities.NegativeWitnesses}, {ID: id("type", 2), Shape: valueType, Abilities: valueAbilities.Granted, NegativeWitnesses: valueAbilities.NegativeWitnesses}}
 	places := []core.Place{{ID: id("place", 0), Name: function.Parameter.Name, TypeID: id("type", 0)}, {ID: id("place", 1), Name: body.Bindings[0].Name, TypeID: id("type", 1)}, {ID: id("place", 2), Name: body.Bindings[1].Name, TypeID: id("type", 2)}}
-	ops := []core.LinearOperation{{ID: id("op", 0), PointID: id("point:linear", 0), Kind: core.OpCall, SourceID: places[0].ID, TargetID: places[1].ID, TypeID: types[1].ID, CalleeID: callee.ID}, {ID: id("op", 1), PointID: id("point:linear", 1), Kind: core.OpForeignCall, SourceID: places[1].ID, TargetID: places[2].ID, TypeID: types[2].ID, Foreign: localForeignContract(use)}, {ID: id("op", 2), PointID: id("point:linear", 2), Kind: core.OpReturn, SourceID: places[2].ID, TypeID: types[2].ID}}
+	acquisitionID := callee.ID + ":op:0"
+	ops := []core.LinearOperation{
+		{ID: id("op", 0), PointID: id("point:linear", 0), Kind: core.OpCall, SourceID: places[0].ID, TargetID: places[1].ID, TypeID: types[1].ID, CalleeID: callee.ID},
+		{ID: id("op", 1), PointID: id("point:linear", 1), Kind: core.OpForeignCall, SourceID: places[1].ID, TargetID: places[2].ID, TypeID: types[2].ID, Foreign: localForeignContract(use)},
+		{ID: id("op", 2), PointID: id("point:linear", 2), Kind: core.OpRelease, SourceID: places[1].ID, TypeID: types[1].ID, ReleasesOperationID: acquisitionID, Allocator: release.Allocator, Foreign: localForeignContract(release)},
+		{ID: id("op", 3), PointID: id("point:linear", 3), Kind: core.OpReturn, SourceID: places[2].ID, TypeID: types[2].ID},
+	}
 	return core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "PathToken"}, ReturnType: "U64", Linear: &core.LinearBody{ID: functionID + ":linear", Types: types, Places: places, Operations: ops, Blocks: []core.Block{}, Edges: []core.Edge{}}, Span: function.Span}, nil, 9
 }
 
