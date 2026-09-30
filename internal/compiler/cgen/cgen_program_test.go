@@ -1845,6 +1845,13 @@ func TestPhase24EmitterTransferRefusesUnsupportedCoreBeforeSerialization(t *test
 
 func TestPhase24PositiveTransfer(t *testing.T) {
 	program := phase24TransferProgramForEmitter(t)
+	mainID := ""
+	for _, function := range program.Functions {
+		if function.Name == "main" {
+			mainID = function.ID
+			break
+		}
+	}
 	for _, test := range []struct {
 		name  string
 		value string
@@ -1876,7 +1883,7 @@ func TestPhase24PositiveTransfer(t *testing.T) {
 			}
 			releases := 0
 			for _, event := range result.Execution.Events {
-				if event.Kind == "resource.released" && event.FunctionID == "main" {
+				if event.Kind == "resource.released" && event.FunctionID == mainID {
 					releases++
 				}
 			}

@@ -82,7 +82,7 @@ Corpus: **146 `.schway` programs, 4,809 lines total** (~33 lines average,
 193-line maximum). These counts match the current machine-checked tree; the
 corpus predominantly contains focused semantic fixtures, not applications.
 
-A non-test AST census finds **19 `len(Functions) != 1` guards across 6 files in 1 package** (50 including tests):
+A non-test AST census finds **19 `len(Functions) != 1` guards across 6 files in 1 packages** (50 including tests):
 
 | Package | Guards | Notable sites |
 |---|---|---|

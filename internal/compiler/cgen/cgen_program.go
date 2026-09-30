@@ -210,6 +210,8 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 				event.ID, event.Kind, event.CalleeFunctionID = operation.ID+":event:called", "function.called", operation.CalleeID
 			case core.OpReturn:
 				event.ID, event.Kind, event.TargetPlace = operation.ID+":event:returned", "function.returned", ""
+			case core.OpFail:
+				event.ID, event.Kind, event.TargetPlace = operation.ID+":event:failed", "function.failed", ""
 			case core.OpDestructurePayload:
 				event.ID, event.Kind, event.TargetPlace = operation.ID+":event", "value.payload_destructured", operation.PayloadTargetID
 			case core.OpConstructPayload:
