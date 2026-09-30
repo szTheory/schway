@@ -1557,7 +1557,11 @@ func mutatePhase23Entry(program *core.Program, mutate func(*core.Function)) {
 		}
 		function := program.Functions[index]
 		linear := *function.Linear
+		linear.Types = append([]core.TypeFact(nil), function.Linear.Types...)
+		linear.Places = append([]core.Place(nil), function.Linear.Places...)
 		linear.Operations = append([]core.LinearOperation(nil), function.Linear.Operations...)
+		linear.Blocks = append([]core.Block(nil), function.Linear.Blocks...)
+		linear.Edges = append([]core.Edge(nil), function.Linear.Edges...)
 		function.Linear = &linear
 		mutate(&function)
 		program.Functions[index] = function
@@ -1710,5 +1714,221 @@ func TestPhase23OperationContractRefusalBeforeCSerialization(t *testing.T) {
 			mutatePhase23Contract(&candidate, tc.operationIndex, tc.mutate)
 			requirePhase23EmitterRefusalBeforeSerialization(t, candidate, tc.name)
 		})
+	}
+}
+
+func TestPhase24EmitterTransfer(t *testing.T) {
+	program := phase24TransferProgramForEmitter(t)
+	generated, err := cgen.EmitApplication(program)
+	if err != nil {
+		t.Fatalf("EmitApplication: %v", err)
+	}
+	if !cgen.InvocationSerializationReachedForTest() {
+		t.Fatal("valid transfer program was refused before serialization")
+	}
+	helperStart := strings.Index(generated, "static schway_file_byte_owner SCHWAY_ACQUIRE(")
+	callerStart := strings.Index(generated, "static uint64_t SCHWAY_MAIN(")
+	if helperStart < 0 || callerStart <= helperStart {
+		t.Fatalf("generated C lacks the helper owner return followed by its caller:\n%s", generated)
+	}
+	caller := generated[callerStart:]
+	callAt := strings.Index(caller, "SCHWAY_ACQUIRE(")
+	useAt := strings.Index(caller, "schway_file_byte_use(")
+	releaseAt := strings.Index(caller, "schway_file_byte_release(")
+	returnAt := strings.Index(caller, "return schway_value")
+	if callAt < 0 || useAt <= callAt || releaseAt <= useAt || returnAt <= releaseAt {
+		t.Fatalf("generated caller must acquire, borrow, release, and return in order: call=%d use=%d release=%d return=%d", callAt, useAt, releaseAt, returnAt)
+	}
+	callerEnd := strings.Index(caller, "}\n\nint main(")
+	if callerEnd < 0 {
+		t.Fatalf("generated caller is not followed by the application entry point:\n%s", caller)
+	}
+	callerBody := caller[:callerEnd]
+	if strings.Count(callerBody, "schway_file_byte_release(") != 1 || !strings.Contains(callerBody[releaseAt:], "paired release:") {
+		t.Fatalf("generated caller does not contain exactly one operation-paired release:\n%s", callerBody)
+	}
+	if !strings.Contains(generated[helperStart:callerStart], "return schway_value_owner") || !strings.Contains(generated, "strlen(argv[1]) > 4096u") {
+		t.Fatal("helper owner return or caller-selected bounded path transport is missing")
+	}
+}
+
+func TestPhase24EmitterTransferRefusesUnsupportedCoreBeforeSerialization(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		mutate func(*core.Program)
+	}{
+		{
+			name: "helper acquire ABI",
+			mutate: func(program *core.Program) {
+				mutatePhase24Function(program, "acquire", func(function *core.Function) {
+					contract := *function.Linear.Operations[0].Foreign
+					contract.ABIType = "untrusted_abi"
+					function.Linear.Operations[0].Foreign = &contract
+				})
+			},
+		},
+		{
+			name: "helper foreign summary layout",
+			mutate: func(program *core.Program) {
+				mutatePhase24Function(program, "acquire", func(function *core.Function) {
+					contract := *function.ForeignContract
+					layout := *contract.Layout
+					layout.Size = 2
+					contract.Layout = &layout
+					function.ForeignContract = &contract
+				})
+			},
+		},
+		{
+			name: "caller use ABI",
+			mutate: func(program *core.Program) {
+				mutatePhase24Function(program, "main", func(function *core.Function) {
+					contract := *function.Linear.Operations[1].Foreign
+					contract.ABIType = "untrusted_use_abi"
+					function.Linear.Operations[1].Foreign = &contract
+				})
+			},
+		},
+		{
+			name: "helper error edge order",
+			mutate: func(program *core.Program) {
+				mutatePhase24Function(program, "acquire", func(function *core.Function) {
+					function.Linear.Blocks[0].Successors[0], function.Linear.Blocks[0].Successors[1] = function.Linear.Blocks[0].Successors[1], function.Linear.Blocks[0].Successors[0]
+				})
+			},
+		},
+		{
+			name: "caller release acquisition identity",
+			mutate: func(program *core.Program) {
+				mutatePhase24Function(program, "main", func(function *core.Function) {
+					function.Linear.Operations[2].ReleasesOperationID = "invented:acquire"
+				})
+			},
+		},
+		{
+			name: "caller release symbol",
+			mutate: func(program *core.Program) {
+				mutatePhase24Function(program, "main", func(function *core.Function) {
+					contract := *function.Linear.Operations[2].Foreign
+					contract.Symbol = "invented_release"
+					function.Linear.Operations[2].Foreign = &contract
+				})
+			},
+		},
+		{
+			name: "unsupported extra foreign operation",
+			mutate: func(program *core.Program) {
+				mutatePhase24Function(program, "main", func(function *core.Function) {
+					operations := function.Linear.Operations
+					extra := append([]core.LinearOperation(nil), operations[:3]...)
+					extra = append(extra, operations[1], operations[3])
+					function.Linear.Operations = extra
+				})
+			},
+		},
+		{
+			name: "owning entry result",
+			mutate: func(program *core.Program) {
+				mutatePhase24Function(program, "main", func(function *core.Function) {
+					function.ReturnType = "FileByteOwner"
+				})
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			program := phase24TransferProgramForEmitter(t)
+			test.mutate(&program)
+			requirePhase24EmitterRefusalBeforeSerialization(t, program, test.name)
+		})
+	}
+}
+
+func TestPhase24PositiveTransfer(t *testing.T) {
+	program := phase24TransferProgramForEmitter(t)
+	for _, test := range []struct {
+		name  string
+		value string
+	}{
+		{name: "0x41", value: "65"},
+		{name: "0x42", value: "66"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outcomes := make(map[string]interp.ForeignOutcome)
+			for _, function := range program.Functions {
+				for _, operation := range function.Linear.Operations {
+					if operation.Foreign == nil {
+						continue
+					}
+					if operation.Foreign.Mode == "acquire" {
+						outcomes[operation.ID] = interp.ForeignOutcome{Kind: "success", Type: "FileByteOwner", Value: test.value}
+					}
+					if operation.Foreign.Mode == "borrow" {
+						outcomes[operation.ID] = interp.ForeignOutcome{Kind: "success", Type: "U64", Value: test.value}
+					}
+				}
+			}
+			result, err := interp.RunWithForeignOutcomes(program, "main", "opaque-caller-path", outcomes)
+			if err != nil {
+				t.Fatalf("model execution: %v", err)
+			}
+			if result.Execution.Outcome.Kind != "returned" || result.Execution.Outcome.Value != test.value || len(result.Execution.LiveResources) != 0 {
+				t.Fatalf("model outcome=%+v live=%v; want returned %s and no live owners", result.Execution.Outcome, result.Execution.LiveResources, test.value)
+			}
+			releases := 0
+			for _, event := range result.Execution.Events {
+				if event.Kind == "resource.released" && event.FunctionID == "main" {
+					releases++
+				}
+			}
+			if releases != 1 || result.ActualHostIO || result.PhysicalCleanup || result.EvidenceScope != interp.EvidenceScopeModelOnly {
+				t.Fatalf("model evidence overstates execution or misses the caller release: result=%+v releases=%d", result, releases)
+			}
+		})
+	}
+}
+
+func phase24TransferProgramForEmitter(t *testing.T) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase24", "transfer.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("transfer fixture checker diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("transfer fixture core validation problems: %+v", validated.Problems)
+	}
+	return validated.Program()
+}
+
+func mutatePhase24Function(program *core.Program, name string, mutate func(*core.Function)) {
+	program.Functions = append([]core.Function(nil), program.Functions...)
+	for index := range program.Functions {
+		if program.Functions[index].Name != name || program.Functions[index].Linear == nil {
+			continue
+		}
+		function := program.Functions[index]
+		linear := *function.Linear
+		linear.Types = append([]core.TypeFact(nil), function.Linear.Types...)
+		linear.Places = append([]core.Place(nil), function.Linear.Places...)
+		linear.Operations = append([]core.LinearOperation(nil), function.Linear.Operations...)
+		linear.Blocks = append([]core.Block(nil), function.Linear.Blocks...)
+		linear.Edges = append([]core.Edge(nil), function.Linear.Edges...)
+		function.Linear = &linear
+		mutate(&function)
+		program.Functions[index] = function
+		return
+	}
+	panic("Phase 24 transfer fixture function not found")
+}
+
+func requirePhase24EmitterRefusalBeforeSerialization(t *testing.T, program core.Program, name string) {
+	t.Helper()
+	generated, err := cgen.EmitProgramForTest(program)
+	if err == nil || generated != "" || cgen.InvocationSerializationReachedForTest() {
+		t.Fatalf("%s candidate was not refused before C serialization: bytes=%d err=%v reached=%v", name, len(generated), err, cgen.InvocationSerializationReachedForTest())
 	}
 }

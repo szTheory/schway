@@ -136,7 +136,7 @@ func drainStackForAbruptExit(stack []frame) ([]Event, []string) {
 	leakIndex := 0
 	for _, frameIndex := range frameDrainOrder(len(stack)) {
 		f := &stack[frameIndex]
-		places := liveResourcePlaces(f.operations, f.live, f.liveOrder)
+		places := frameLiveResourcePlaces(f)
 		for _, place := range places {
 			events = append(events, Event{
 				Schema: f.eventSchema(), ID: fmt.Sprintf("%s:event:leaked:%d", f.function.ID, leakIndex), Kind: "resource.leaked", FunctionID: f.function.ID,
@@ -184,8 +184,8 @@ type ModelResult struct {
 	PhysicalCleanup bool      `json:"physical_cleanup"`
 }
 
-// RunWithForeignOutcomes executes the checked single-entry local-owner model
-// using deterministic outcomes keyed by each core operation ID. The opaque
+// RunWithForeignOutcomes executes the checked local-owner model using
+// deterministic outcomes keyed by each core operation ID. The opaque
 // input is treated only as a modeled PathToken; this function never opens it.
 func RunWithForeignOutcomes(program core.Program, functionName, input string, outcomes map[string]ForeignOutcome) (ModelResult, error) {
 	validated := corevalidate.Validate(program)
@@ -193,8 +193,8 @@ func RunWithForeignOutcomes(program core.Program, functionName, input string, ou
 		return ModelResult{}, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
 	}
 	program = validated.Program()
-	if len(program.Functions) != 1 {
-		return ModelResult{}, fmt.Errorf("model-only foreign outcomes require one checked entry function")
+	if len(program.Functions) == 0 {
+		return ModelResult{}, fmt.Errorf("model-only foreign outcomes require a checked entry function")
 	}
 	function, ok := findFunction(program, functionName)
 	if !ok {
@@ -285,6 +285,12 @@ func modeledForeignResult(program core.Program, frame *frame, operation core.Lin
 }
 
 func modeledOwnerForBorrow(frame *frame, sourcePlace string) (core.LinearOperation, bool) {
+	ownerValue := frame.values[sourcePlace]
+	if ownerValue.ownerActivationID != "" {
+		if transferred, ok := frame.transferredOwners[ownerValue.ownerActivationID]; ok && transferred.active && transferred.acquisition.ID == ownerValue.ownerOperationID && transferred.placeID == sourcePlace {
+			return transferred.acquisition, true
+		}
+	}
 	for _, operation := range frame.operations {
 		if operation.Kind == core.OpForeignCall && operation.TargetID == sourcePlace && operation.Foreign != nil && operation.Foreign.Mode == "acquire" && frame.live[operation.ID] {
 			return operation, true
@@ -313,15 +319,69 @@ func canonicalModeledU64(text string) bool {
 	return err == nil && strconv.FormatUint(parsed, 10) == text
 }
 
-func validateModeledRelease(frame *frame, operation core.LinearOperation) error {
+func validateModeledRelease(frame *frame, operation core.LinearOperation, source value) error {
 	acquire, ok := frame.operations[operation.ReleasesOperationID]
+	if !ok && source.ownerActivationID != "" {
+		if transferred, exists := frame.transferredOwners[source.ownerActivationID]; exists && transferred.active && transferred.acquisition.ID == operation.ReleasesOperationID && transferred.placeID == operation.SourceID {
+			acquire, ok = transferred.acquisition, true
+		}
+	}
 	if !ok || acquire.Kind != core.OpForeignCall || acquire.Foreign == nil || acquire.Foreign.Mode != "acquire" {
 		return fmt.Errorf("release %q does not name a checked modeled acquisition", operation.ID)
+	}
+	if source.ownerOperationID != "" && source.ownerOperationID != acquire.ID {
+		return fmt.Errorf("release %q names a different acquisition than its owner value", operation.ID)
 	}
 	if operation.Foreign == nil || operation.Foreign.Mode != "consume" || operation.Foreign.Symbol != acquire.Foreign.Release || operation.Foreign.ParameterType != acquire.Foreign.ResultType || operation.Foreign.Allocator != acquire.Foreign.Allocator {
 		return fmt.Errorf("release %q does not match its acquisition's checked consume contract", operation.ID)
 	}
 	return nil
+}
+
+func transferReturnedOwner(from, to *frame, returned value, targetPlace string) error {
+	if returned.ownerActivationID == "" || returned.ownerOperationID == "" {
+		return nil
+	}
+	var record transferredOwner
+	if acquisition, ok := from.operations[returned.ownerOperationID]; ok && from.live[returned.ownerOperationID] && acquisition.Kind == core.OpForeignCall && acquisition.Foreign != nil && acquisition.Foreign.Mode == "acquire" {
+		from.live[returned.ownerOperationID] = false
+		record = transferredOwner{acquisition: acquisition, placeID: targetPlace, active: true}
+	} else if existing, ok := from.transferredOwners[returned.ownerActivationID]; ok && existing.active && existing.acquisition.ID == returned.ownerOperationID {
+		existing.active = false
+		from.transferredOwners[returned.ownerActivationID] = existing
+		record = transferredOwner{acquisition: existing.acquisition, placeID: targetPlace, active: true}
+	} else {
+		return fmt.Errorf("owning return from %q has no live acquisition for %q", from.function.Name, returned.ownerOperationID)
+	}
+	if to.transferredOwners == nil {
+		to.transferredOwners = map[string]transferredOwner{}
+	}
+	if _, duplicate := to.transferredOwners[returned.ownerActivationID]; duplicate {
+		return fmt.Errorf("owning return duplicated live acquisition %q", returned.ownerActivationID)
+	}
+	to.transferredOwners[returned.ownerActivationID] = record
+	to.transferredOwnerOrder = append(to.transferredOwnerOrder, returned.ownerActivationID)
+	return nil
+}
+
+func frameLiveResourceList(f *frame) []string {
+	result := liveResourceList(f.live, f.liveOrder)
+	for _, id := range f.transferredOwnerOrder {
+		if owner, ok := f.transferredOwners[id]; ok && owner.active {
+			result = append(result, id)
+		}
+	}
+	return result
+}
+
+func frameLiveResourcePlaces(f *frame) []string {
+	result := liveResourcePlaces(f.operations, f.live, f.liveOrder)
+	for _, id := range f.transferredOwnerOrder {
+		if owner, ok := f.transferredOwners[id]; ok && owner.active {
+			result = append(result, owner.placeID)
+		}
+	}
+	return result
 }
 
 func Run(program core.Program, functionName, input string) (Execution, error) {
@@ -556,6 +616,13 @@ type frame struct {
 	returnTarget string
 	hasCaller    bool
 
+	// transferredOwners carries an acquisition-derived owner obligation after
+	// an owning return crosses a call frame. Its key includes the acquisition
+	// operation and that frame's call activation, so repeated calls to one
+	// helper cannot collapse distinct resources into one map entry.
+	transferredOwners     map[string]transferredOwner
+	transferredOwnerOrder []string
+
 	// operations, blocks, and edges index this frame's OWN function body
 	// by ID, built once when the frame is pushed. blocks/edges are nil
 	// for a flat (non-block) body.
@@ -609,10 +676,31 @@ type frame struct {
 // named parallel-map anti-pattern) -- this single struct is the one
 // widened representation every frame.values entry uses.
 type value struct {
-	tag     string
-	payload string
-	u64     uint64
-	isU64   bool
+	tag               string
+	payload           string
+	u64               uint64
+	isU64             bool
+	ownerOperationID  string
+	ownerActivationID string
+}
+
+// transferredOwner keeps the acquisition contract and the owner's current
+// receiving place together after OpReturn transfers it across a frame.
+type transferredOwner struct {
+	acquisition core.LinearOperation
+	placeID     string
+	active      bool
+}
+
+func ownerActivationID(f *frame, operationID string) string {
+	activation := f.invocation
+	if activation == "" {
+		activation = f.entryID
+		for _, segment := range f.segments {
+			activation += "/" + segment.OpCallID + ":" + strconv.Itoa(segment.Ordinal)
+		}
+	}
+	return operationID + "@" + activation
 }
 
 // disableEmptyTagSerializationSeamForTest is Phase 12 plan 04 Task 2's own
@@ -684,7 +772,8 @@ func newFlatFrame(function core.Function, values map[string]value) frame {
 	}
 	return frame{
 		function: function, values: values, live: map[string]bool{}, operations: ops, ids: ids,
-		placeTypes: placeTypeIndex(function), types: typeFactIndex(function),
+		transferredOwners: map[string]transferredOwner{},
+		placeTypes:        placeTypeIndex(function), types: typeFactIndex(function),
 	}
 }
 
@@ -716,7 +805,8 @@ func newBlockFrame(function core.Function, values map[string]value, startBlockID
 		function: function, values: values, live: map[string]bool{},
 		operations: ops, blocks: blocks, edges: edges, currentBlockID: startBlockID,
 		tracked: tracked, nonlocalExitPolicy: nonlocalExitPolicy,
-		placeTypes: placeTypeIndex(function), types: typeFactIndex(function),
+		transferredOwners: map[string]transferredOwner{},
+		placeTypes:        placeTypeIndex(function), types: typeFactIndex(function),
 	}
 }
 
@@ -1045,7 +1135,12 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 		}
 		var sourceValue value
 		modeledFailureContinuation := top.modeledFailure != nil && (operation.Kind == core.OpForeignCall || operation.Kind == core.OpRelease || operation.Kind == core.OpReturn)
-		if operation.Kind != core.OpConst && !modeledFailureContinuation {
+		if operation.Kind == core.OpRelease && top.modeledFailure != nil {
+			// A failed borrowed use still leaves its transferred owner available
+			// for the unconditional cleanup operation. A failed acquisition has
+			// no initialized value at this place and remains a no-op release.
+			sourceValue = top.values[operation.SourceID]
+		} else if operation.Kind != core.OpConst && !modeledFailureContinuation {
 			var initialized bool
 			sourceValue, initialized = top.values[operation.SourceID]
 			if !initialized {
@@ -1120,14 +1215,20 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			})
 			top.idx++
 		case core.OpRelease:
+			transferred, hasTransferred := top.transferredOwners[sourceValue.ownerActivationID]
+			transferredLive := hasTransferred && transferred.active && transferred.acquisition.ID == operation.ReleasesOperationID && transferred.placeID == operation.SourceID
 			if top.modeledOutcomes != nil {
-				if !top.live[operation.ReleasesOperationID] {
+				if !top.live[operation.ReleasesOperationID] && !transferredLive {
 					top.idx++
 					continue
 				}
-				if err := validateModeledRelease(top, operation); err != nil {
+				if err := validateModeledRelease(top, operation, sourceValue); err != nil {
 					return Execution{}, err
 				}
+			}
+			if transferredLive {
+				transferred.active = false
+				top.transferredOwners[sourceValue.ownerActivationID] = transferred
 			}
 			top.live[operation.ReleasesOperationID] = false
 			events = append(events, ownedEvent(top, operation, "resource.released"))
@@ -1156,6 +1257,10 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 					event.Kind = "foreign.failed"
 					event.TypeID = outcome.Type
 				} else {
+					if operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+						modeledValue.ownerOperationID = operation.ID
+						modeledValue.ownerActivationID = ownerActivationID(top, operation.ID)
+					}
 					top.values[operation.TargetID] = modeledValue
 					if operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
 						top.live[operation.ID] = true
@@ -1181,6 +1286,10 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 					SourcePlace: top.function.Parameter.ID, TypeID: top.placeTypes[top.function.Parameter.ID], Output: nonlocalExitDefectReason,
 				})
 				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResources}, nil
+			}
+			if operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+				sourceValue.ownerOperationID = operation.ID
+				sourceValue.ownerActivationID = ownerActivationID(top, operation.ID)
 			}
 			top.values[operation.TargetID] = sourceValue
 			top.values[operation.ErrTargetID] = value{tag: "", payload: "err"}
@@ -1239,6 +1348,9 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 					Events: append(events, event), LiveResources: liveResources,
 				}, nil
 			}
+			if top.modeledOutcomes != nil {
+				result.frame.modeledOutcomes = top.modeledOutcomes
+			}
 			if top.eventSchema() == execution.Schema2 {
 				events = append(events, calledEvent(top, operation, result.calleeID))
 			}
@@ -1254,12 +1366,20 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			}
 			events = append(events, event)
 			if operation.Kind == core.OpReturn && top.hasCaller {
-				returnTarget, returnValue := top.returnTarget, outcome.Value
+				returnTarget := top.returnTarget
+				returnValue := top.values[operation.SourceID]
+				if top.modeledFailure != nil {
+					returnValue = value{payload: outcome.Value}
+				}
+				callerIndex := len(stack) - 2
+				if err := transferReturnedOwner(top, &stack[callerIndex], returnValue, returnTarget); err != nil {
+					return Execution{}, err
+				}
 				stack = stack[:len(stack)-1]
-				stack[len(stack)-1].values[returnTarget] = value{tag: "", payload: returnValue}
+				stack[len(stack)-1].values[returnTarget] = returnValue
 				continue
 			}
-			liveResources := liveResourceList(top.live, top.liveOrder)
+			liveResources := frameLiveResourceList(top)
 			return Execution{Schema: top.eventSchema(), Outcome: outcome, Events: events, LiveResources: liveResources}, nil
 		default:
 			return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
