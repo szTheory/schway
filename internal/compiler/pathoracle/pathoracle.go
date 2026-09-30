@@ -57,6 +57,9 @@ import (
 // local-owner path. Acquisition seeds obligations; a borrow must observe the
 // live owner and exactly one matching consuming release must discharge it.
 func ValidateLocalOwnerPaths(program core.Program) error {
+	if err := validateTransferredOwner(program); err != nil {
+		return err
+	}
 	for _, function := range program.Functions {
 		if function.Linear == nil {
 			continue
@@ -65,7 +68,7 @@ func ValidateLocalOwnerPaths(program core.Program) error {
 		for _, operation := range function.Linear.Operations {
 			local = local || operation.Foreign != nil
 		}
-		if !local {
+		if !local || function.ReturnType == "FileByteOwner" || pathHasCall(function) {
 			continue
 		}
 		if function.Parameter.Type != "PathToken" || function.ReturnType != "U64" || len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 {
@@ -143,6 +146,131 @@ func ValidateLocalOwnerPaths(program core.Program) error {
 				return fmt.Errorf("pathoracle.local_owner_terminal: function %q returns before owner discharge", function.ID)
 			}
 		}
+	}
+	return nil
+}
+
+func pathHasCall(function core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	for _, op := range function.Linear.Operations {
+		if op.Kind == core.OpCall {
+			return true
+		}
+	}
+	return false
+}
+
+// validateTransferredOwner independently starts at a callee acquisition and
+// carries that obligation through the returned place into the caller.
+func validateTransferredOwner(program core.Program) error {
+	type acquisition struct {
+		f  *core.Function
+		op core.LinearOperation
+	}
+	var a acquisition
+	var helper *core.Function
+	fail := func(code, id string) error {
+		return fmt.Errorf("pathoracle.%s: invalid transferred owner at %q", code, id)
+	}
+	for i := range program.Functions {
+		f := &program.Functions[i]
+		if f.Linear == nil {
+			continue
+		}
+		for _, op := range f.Linear.Operations {
+			if op.Foreign != nil && op.Foreign.Mode == "acquire" {
+				if helper != nil {
+					return fail("owner_transfer_acquire", op.ID)
+				}
+				helper = f
+				a = acquisition{f, op}
+			}
+		}
+	}
+	if helper == nil {
+		return nil
+	}
+	if helper.ReturnType != "FileByteOwner" || helper.Parameter.Type != "PathToken" || a.op.Kind != core.OpForeignCall || a.op.Foreign == nil || a.op.Foreign.Symbol != "schway_file_byte_acquire" || a.op.Foreign.ABIType != "schway_file_byte_acquire_fn" || a.op.Foreign.ParameterType != "PathToken" || a.op.Foreign.ResultType != "FileByteOwner" || a.op.Foreign.Fails != "AcquireError" || a.op.Foreign.Allocator != "libc_malloc" || a.op.Foreign.Release != "schway_file_byte_release" || a.op.ErrTargetID == "" || a.op.OkEdgeID == "" || a.op.ErrEdgeID == "" {
+		return fail("owner_transfer_helper", helper.ID)
+	}
+	var retHelper *core.LinearOperation
+	for i := range helper.Linear.Operations {
+		op := &helper.Linear.Operations[i]
+		if op.Kind == core.OpReturn {
+			if retHelper != nil {
+				return fail("owner_transfer_return", op.ID)
+			}
+			retHelper = op
+		}
+		if op.Kind == core.OpRelease {
+			return fail("owner_transfer_early_release", op.ID)
+		}
+	}
+	if retHelper == nil || retHelper.SourceID != a.op.TargetID || a.op.ErrTargetID == "" {
+		return fail("owner_transfer_return", helper.ID)
+	}
+	var caller *core.Function
+	var call, borrow, release, ret *core.LinearOperation
+	for i := range program.Functions {
+		f := &program.Functions[i]
+		if f.Linear == nil {
+			continue
+		}
+		for j := range f.Linear.Operations {
+			op := &f.Linear.Operations[j]
+			if op.Kind == core.OpCall && op.CalleeID == helper.ID {
+				if caller != nil {
+					return fail("owner_transfer_call", op.ID)
+				}
+				caller = f
+				call = op
+			}
+		}
+	}
+	if caller == nil || caller.ReturnType != "U64" {
+		return fail("owner_transfer_call", helper.ID)
+	}
+	for i := range caller.Linear.Operations {
+		op := &caller.Linear.Operations[i]
+		switch {
+		case op.Kind == core.OpCopy && op.SourceID == call.TargetID:
+			return fail("owner_transfer_copy", op.ID)
+		case op.Foreign != nil && op.Foreign.Mode == "borrow":
+			if borrow != nil {
+				return fail("owner_transfer_borrow", op.ID)
+			}
+			borrow = op
+		case op.Kind == core.OpRelease:
+			if release != nil {
+				return fail("owner_transfer_release", op.ID)
+			}
+			release = op
+		case op.Kind == core.OpReturn:
+			if ret != nil {
+				return fail("owner_transfer_return", op.ID)
+			}
+			ret = op
+		}
+	}
+	if borrow == nil || release == nil || ret == nil || borrow.SourceID != call.TargetID || release.SourceID != call.TargetID || release.ReleasesOperationID != a.op.ID || release.Foreign == nil || borrow.Foreign == nil || release.Foreign.Mode != "consume" || release.Foreign.Symbol != a.op.Foreign.Release || release.Foreign.ABIType != "schway_file_byte_release_fn" || release.Foreign.ParameterType != "FileByteOwner" || release.Foreign.ResultType != "Unit" || release.Foreign.Fails != "" || release.Foreign.Allocator != a.op.Foreign.Allocator || release.Allocator != a.op.Foreign.Allocator || borrow.Foreign.Symbol != "schway_file_byte_use" || borrow.Foreign.ABIType != "schway_file_byte_use_fn" || borrow.Foreign.ParameterType != "FileByteOwner" || borrow.Foreign.ResultType != "U64" || borrow.Foreign.Fails != "UseError" || ret.SourceID != borrow.TargetID {
+		return fail("owner_transfer_discharge", caller.ID)
+	}
+	bi, ri, ti := -1, -1, -1
+	for i, op := range caller.Linear.Operations {
+		if op == borrow {
+			bi = i
+		}
+		if op == release {
+			ri = i
+		}
+		if op == ret {
+			ti = i
+		}
+	}
+	if !(bi >= 0 && bi < ri && ri < ti) {
+		return fail("owner_transfer_order", caller.ID)
 	}
 	return nil
 }
