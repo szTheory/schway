@@ -585,3 +585,12 @@ brief artifact upload, audit it again privately, and only then refresh the
 checked-in manifest/record.
 Do not infer a successful receipt from the pair digest or rewrite old results.
 Keep project tests on GitHub-hosted runners.
+
+## Dated receipt-job amendment (2026-09-29, run 36659581859)
+
+The opt-in Ubuntu receipt job failed in its producer wrapper before any
+artifact upload. The pair exporter uses lowercase JSON keys (`package` and
+`pattern`); the workflow initially expected Go's untagged field names. No
+receipt artifact was created or uploaded. Correct the consumer keys, let the
+normal push CI finish, then dispatch the receipt job separately so the
+workflow's same-branch concurrency cancellation cannot interrupt CI.

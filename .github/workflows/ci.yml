@@ -141,7 +141,7 @@ jobs:
           pairs = json.loads(pair_bytes)
           arguments = []
           for pair in pairs:
-              arguments.extend((pair["Package"], pair["Pattern"]))
+              arguments.extend((pair["package"], pair["pattern"]))
           started = time.monotonic()
           subprocess.run(
               ["bash", "scripts/evidence-run-record.sh", str(record_path), *arguments],
