@@ -902,7 +902,12 @@ type LinearOperation struct {
 	// corevalidate sites: an OpCall with an empty CalleeID; any non-OpCall
 	// operation with a non-empty CalleeID; and a CalleeID naming no
 	// declared function (its own typed identity, distinct from the cycle
-	// code -- D-07-45).
+	// code -- D-07-45). On the bounded Phase 24 FileByteOwner path,
+	// SourceID and TargetID name the moved owner place across the call;
+	// TargetID's own TypeFact must agree with the callee's declared owning
+	// return type. The callee's acquisition operation retains the exact
+	// foreign ABI and destructor pairing; this call does not release or
+	// reacquire the resource.
 	CalleeID string `json:"callee_id,omitempty"`
 	// PayloadType is Phase 12's additive omitempty fact (D-12-07): populated
 	// only on an OpConstructPayload or OpDestructurePayload operation, it

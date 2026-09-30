@@ -287,7 +287,7 @@ func Program(program ast.Program) Result {
 			var work int
 			var callSpans map[string]diagnostic.Span
 			if hasTryCall(function.Body.Linear) {
-				checked, diagnostics, work = checkFallibleLinear(functionID, function, foreignSymbols, functionNames, types)
+				checked, diagnostics, work = checkFallibleLinear(functionID, function, foreignSymbols, functionNames, types, calleeContracts)
 			} else {
 				checked, diagnostics, work, callSpans = checkLinear(program.Module, functionID, function, calleeContracts, foreignSymbols)
 			}
@@ -3653,11 +3653,14 @@ func hasTryCall(body *ast.LinearBody) bool {
 // try/discard foreign-call bindings whose result is the function's own
 // parameter -- every acquired resource is released before return, so the
 // parameter (never moved by a foreign call) is always what comes back.
-func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType) (core.Function, []diagnostic.Diagnostic, int) {
+func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType, calleeContracts map[string]calleeContract) (core.Function, []diagnostic.Diagnostic, int) {
 	parameterType := coreType(function.Parameter.Type)
 	returnType := coreType(function.ReturnType)
 	if parameterType.Constructor == "PathToken" {
-		return checkLocalFileByteEntry(functionID, function, foreignSymbols)
+		if function.ReturnType.Constructor == "FileByteOwner" {
+			return checkLocalFileByteAcquireHelper(functionID, function, foreignSymbols, functionNames, dataTypes)
+		}
+		return checkLocalFileByteEntry(functionID, function, foreignSymbols, calleeContracts)
 	}
 	derived, err := ability.Derive(parameterType)
 	if err != nil {
@@ -3700,8 +3703,11 @@ func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbol
 // operation facts are lowered from the symbol declaration that each source
 // call actually names; the release is materialized from the acquire's own
 // destructor policy.
-func checkLocalFileByteEntry(functionID string, function ast.FuncDecl, symbols map[string]foreignSymbolInfo) (core.Function, []diagnostic.Diagnostic, int) {
+func checkLocalFileByteEntry(functionID string, function ast.FuncDecl, symbols map[string]foreignSymbolInfo, callees map[string]calleeContract) (core.Function, []diagnostic.Diagnostic, int) {
 	body := function.Body.Linear
+	if transfer, ok := callees[bodyTransferCallee(body)]; ok && function.Name == "main" && function.ReturnType.Constructor == "U64" {
+		return checkLocalFileByteTransferCaller(functionID, function, symbols, transfer)
+	}
 	refusal := func(code, message string) (core.Function, []diagnostic.Diagnostic, int) {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(code, body.Span, message)}, 1
 	}
@@ -3768,6 +3774,79 @@ func checkLocalFileByteEntry(functionID string, function ast.FuncDecl, symbols m
 // FileByteOwner is conservatively treated as owning even when its remaining
 // contract facts are malformed; an invalid declaration must not make discard
 // an escape hatch around owner admission.
+
+func checkLocalFileByteAcquireHelper(functionID string, function ast.FuncDecl, symbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType) (core.Function, []diagnostic.Diagnostic, int) {
+	body := function.Body.Linear
+	refuse := func() (core.Function, []diagnostic.Diagnostic, int) {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("check.local_owner_shape_unsupported", body.Span, "PathToken owner helpers may only acquire and return FileByteOwner")}, 1
+	}
+	if body == nil || len(body.Bindings) != 1 || body.Result != body.Bindings[0].Name || body.Bindings[0].RHS.Kind != "try_call" ||
+		body.Bindings[0].RHS.Callee != "schway_file_byte_acquire" || len(body.Bindings[0].RHS.Arguments) != 1 || body.Bindings[0].RHS.Arguments[0] != function.Parameter.Name {
+		return refuse()
+	}
+	acquire, ok := symbols["schway_file_byte_acquire"]
+	release, hasRelease := symbols["schway_file_byte_release"]
+	if !ok || !hasRelease || function.ReturnType.Constructor != "FileByteOwner" || !foreignSignature(acquire, "PathToken", "FileByteOwner") ||
+		!localForeignPolicy(acquire, "acquire", "schway_file_byte_acquire_fn", "AcquireError") || acquire.Allocator != "libc_malloc" || acquire.Release != release.Name ||
+		!foreignSignature(release, "FileByteOwner", "Unit") || !localForeignPolicy(release, "consume", "schway_file_byte_release_fn", "") || release.Allocator != acquire.Allocator {
+		return refuse()
+	}
+	symbol, errShape, errDerived, problem := resolveForeignStep(body.Bindings[0], function.Parameter.Name, symbols, functionNames, dataTypes)
+	if problem != nil {
+		return core.Function{}, []diagnostic.Diagnostic{*problem}, 1
+	}
+	pathType, ownerType := core.TypeRef{Constructor: "PathToken"}, core.TypeRef{Constructor: "FileByteOwner"}
+	pathAbilities, _ := ability.Derive(pathType)
+	ownerAbilities, _ := deriveCheckerReturnAbilities(ownerType)
+	pathTypeID, ownerTypeID, errTypeID := functionID+":type:0", functionID+":type:1", functionID+":type:2"
+	pathID, ownerID, errID := functionID+":place:0", functionID+":place:1", functionID+":place:2"
+	callID := functionID + ":op:0"
+	okEdgeID, errEdgeID := functionID+":edge:entry:ok", functionID+":edge:entry:err"
+	entryBlock, okBlock, errBlock := functionID+":block:entry", functionID+":block:ok", functionID+":block:err"
+	linear := &core.LinearBody{
+		ID:         functionID + ":linear",
+		Types:      []core.TypeFact{{ID: pathTypeID, Shape: pathType, Abilities: pathAbilities.Granted, NegativeWitnesses: pathAbilities.NegativeWitnesses}, {ID: ownerTypeID, Shape: ownerType, Abilities: ownerAbilities.Granted, NegativeWitnesses: ownerAbilities.NegativeWitnesses}, {ID: errTypeID, Shape: errShape, Abilities: errDerived.Granted, NegativeWitnesses: errDerived.NegativeWitnesses}},
+		Places:     []core.Place{{ID: pathID, Name: function.Parameter.Name, TypeID: pathTypeID}, {ID: ownerID, Name: body.Bindings[0].Name, TypeID: ownerTypeID}, {ID: errID, Name: "_err", TypeID: errTypeID}},
+		Operations: []core.LinearOperation{{ID: callID, PointID: functionID + ":point:linear:0", Kind: core.OpForeignCall, SourceID: pathID, TargetID: ownerID, TypeID: ownerTypeID, OkEdgeID: okEdgeID, ErrEdgeID: errEdgeID, ErrTargetID: errID, Allocator: acquire.Allocator, Foreign: localForeignContract(symbol)}, {ID: functionID + ":op:1", PointID: functionID + ":point:linear:1", Kind: core.OpReturn, SourceID: ownerID, TypeID: ownerTypeID}, {ID: functionID + ":op:2", PointID: functionID + ":point:linear:2", Kind: core.OpFail, SourceID: errID, TypeID: errTypeID}},
+		Blocks:     []core.Block{{ID: entryBlock, PointID: functionID + ":point:entry", OperationIDs: []string{callID}, Successors: []string{okBlock, errBlock}}, {ID: okBlock, PointID: functionID + ":point:ok", OperationIDs: []string{functionID + ":op:1"}}, {ID: errBlock, PointID: functionID + ":point:err", OperationIDs: []string{functionID + ":op:2"}}},
+		Edges:      []core.Edge{{ID: okEdgeID, FromBlockID: entryBlock, ToBlockID: okBlock, Pattern: "ok"}, {ID: errEdgeID, FromBlockID: entryBlock, ToBlockID: errBlock, Pattern: "err"}},
+	}
+	return core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: pathID, Name: function.Parameter.Name, Type: "PathToken"}, ReturnType: "FileByteOwner", Linear: linear, ForeignContract: buildForeignContract(symbol), Span: function.Span}, nil, 8
+}
+
+func bodyTransferCallee(body *ast.LinearBody) string {
+	if body == nil || len(body.Bindings) == 0 || body.Bindings[0].RHS.Kind != "call" {
+		return ""
+	}
+	return body.Bindings[0].RHS.Callee
+}
+
+func checkLocalFileByteTransferCaller(functionID string, function ast.FuncDecl, symbols map[string]foreignSymbolInfo, callee calleeContract) (core.Function, []diagnostic.Diagnostic, int) {
+	body := function.Body.Linear
+	refuse := func(code, message string, span diagnostic.Span) (core.Function, []diagnostic.Diagnostic, int) {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(code, span, message)}, 1
+	}
+	if body == nil || len(body.Bindings) != 2 || body.Result != body.Bindings[1].Name || body.Bindings[0].RHS.Kind != "call" || len(body.Bindings[0].RHS.Arguments) != 1 || body.Bindings[0].RHS.Arguments[0] != function.Parameter.Name || body.Bindings[1].RHS.Kind != "try_call" || body.Bindings[1].RHS.Callee != "schway_file_byte_use" || len(body.Bindings[1].RHS.Arguments) != 1 || body.Bindings[1].RHS.Arguments[0] != body.Bindings[0].Name {
+		return refuse("check.local_owner_shape_unsupported", "PathToken caller may only receive one owner helper, borrow it once, and return U64", body.Span)
+	}
+	if callee.ParameterType != "PathToken" || callee.ReturnType != "FileByteOwner" || function.ReturnType.Constructor != "U64" {
+		return refuse("check.local_owner_contract_invalid", "owner transfer requires a PathToken helper returning FileByteOwner and a U64 entry result", body.Bindings[0].RHS.Span)
+	}
+	use, found := symbols["schway_file_byte_use"]
+	if !found || !foreignSignature(use, "FileByteOwner", "U64") || !localForeignPolicy(use, "borrow", "schway_file_byte_use_fn", "UseError") {
+		return refuse("check.local_owner_contract_invalid", "owner use requires the declared bounded borrowed file-byte contract", body.Bindings[1].RHS.Span)
+	}
+	pathType, ownerType, valueType := core.TypeRef{Constructor: "PathToken"}, core.TypeRef{Constructor: "FileByteOwner"}, core.TypeRef{Constructor: "U64"}
+	pathAbilities, _ := ability.Derive(pathType)
+	ownerAbilities, _ := deriveCheckerReturnAbilities(ownerType)
+	valueAbilities, _ := deriveCheckerReturnAbilities(valueType)
+	id := func(kind string, n int) string { return fmt.Sprintf("%s:%s:%d", functionID, kind, n) }
+	types := []core.TypeFact{{ID: id("type", 0), Shape: pathType, Abilities: pathAbilities.Granted, NegativeWitnesses: pathAbilities.NegativeWitnesses}, {ID: id("type", 1), Shape: ownerType, Abilities: ownerAbilities.Granted, NegativeWitnesses: ownerAbilities.NegativeWitnesses}, {ID: id("type", 2), Shape: valueType, Abilities: valueAbilities.Granted, NegativeWitnesses: valueAbilities.NegativeWitnesses}}
+	places := []core.Place{{ID: id("place", 0), Name: function.Parameter.Name, TypeID: id("type", 0)}, {ID: id("place", 1), Name: body.Bindings[0].Name, TypeID: id("type", 1)}, {ID: id("place", 2), Name: body.Bindings[1].Name, TypeID: id("type", 2)}}
+	ops := []core.LinearOperation{{ID: id("op", 0), PointID: id("point:linear", 0), Kind: core.OpCall, SourceID: places[0].ID, TargetID: places[1].ID, TypeID: types[1].ID, CalleeID: callee.ID}, {ID: id("op", 1), PointID: id("point:linear", 1), Kind: core.OpForeignCall, SourceID: places[1].ID, TargetID: places[2].ID, TypeID: types[2].ID, Foreign: localForeignContract(use)}, {ID: id("op", 2), PointID: id("point:linear", 2), Kind: core.OpReturn, SourceID: places[2].ID, TypeID: types[2].ID}}
+	return core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "PathToken"}, ReturnType: "U64", Linear: &core.LinearBody{ID: functionID + ":linear", Types: types, Places: places, Operations: ops, Blocks: []core.Block{}, Edges: []core.Edge{}}, Span: function.Span}, nil, 9
+}
+
 func discardedFileByteOwnerAcquisition(body *ast.LinearBody, symbols map[string]foreignSymbolInfo) *diagnostic.Diagnostic {
 	if body == nil {
 		return nil

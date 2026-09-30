@@ -1,0 +1,50 @@
+module phase24.transfer
+
+export {
+  fn main
+}
+
+foreign C {
+  fn schway_file_byte_acquire(path: PathToken) -> FileByteOwner {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    mode: "acquire"
+    abi: schway_file_byte_acquire_fn
+    allocator: "libc_malloc"
+    release: "schway_file_byte_release"
+    fails: AcquireError
+  }
+
+  fn schway_file_byte_use(owner: FileByteOwner) -> U64 {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    mode: "borrow"
+    abi: schway_file_byte_use_fn
+    fails: UseError
+  }
+
+  fn schway_file_byte_release(owner: FileByteOwner) -> Unit {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    mode: "consume"
+    abi: schway_file_byte_release_fn
+    allocator: "libc_malloc"
+  }
+}
+
+data AcquireError =
+  | AcquireFailed
+
+data UseError =
+  | UnsupportedByte
+
+fn acquire(path: PathToken) -> FileByteOwner {
+  let owner = try schway_file_byte_acquire(path)
+  owner
+}
+
+fn main(path: PathToken) -> U64 {
+  let owner = acquire(path)
+  let value = try schway_file_byte_use(owner)
+  value
+}
