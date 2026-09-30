@@ -430,6 +430,123 @@ func RecomputeOrigin(function core.Function, calleeContracts map[string]calleeOr
 	return orderedPaths, combinedAccess, true
 }
 
+func hasOwnerCall(function core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	for _, op := range function.Linear.Operations {
+		if op.Kind == core.OpCall {
+			return true
+		}
+	}
+	return false
+}
+
+// transferredOwnerProblem derives the helper-owned acquisition and follows its return
+// through the receiving call, borrowed use, and final paired discharge.
+func transferredOwnerProblem(program core.Program) *Problem {
+	fail := func(id string) *Problem {
+		return &Problem{Code: "core.local_owner_transfer", Detail: fmt.Sprintf("invalid transferred owner at %s", id)}
+	}
+	type foundOp struct {
+		f  *core.Function
+		op core.LinearOperation
+	}
+	var acq foundOp
+	var helper *core.Function
+	for i := range program.Functions {
+		f := &program.Functions[i]
+		if f.Linear == nil {
+			continue
+		}
+		for _, op := range f.Linear.Operations {
+			if op.Foreign != nil && op.Foreign.Mode == "acquire" {
+				if helper != nil {
+					return fail(op.ID)
+				}
+				helper = f
+				acq = foundOp{f, op}
+			}
+		}
+	}
+	if helper == nil || helper.ReturnType != "FileByteOwner" {
+		return nil
+	}
+	if helper.Parameter.Type != "PathToken" || acq.op.Foreign == nil || acq.op.Kind != core.OpForeignCall || acq.op.Foreign.Symbol != "schway_file_byte_acquire" || acq.op.Foreign.ABIType != "schway_file_byte_acquire_fn" || acq.op.Foreign.ParameterType != "PathToken" || acq.op.Foreign.ResultType != "FileByteOwner" || acq.op.Foreign.Fails != "AcquireError" || acq.op.Foreign.Allocator != "libc_malloc" || acq.op.Foreign.Release != "schway_file_byte_release" || acq.op.ErrTargetID == "" || acq.op.OkEdgeID == "" || acq.op.ErrEdgeID == "" {
+		return fail(helper.ID)
+	}
+	var returned *core.LinearOperation
+	for i := range helper.Linear.Operations {
+		op := &helper.Linear.Operations[i]
+		if op.Kind == core.OpReturn {
+			if returned != nil {
+				return fail(op.ID)
+			}
+			returned = op
+		}
+		if op.Kind == core.OpRelease {
+			return fail(op.ID)
+		}
+	}
+	if returned == nil || returned.SourceID != acq.op.TargetID || acq.op.ErrTargetID == "" {
+		return fail(helper.ID)
+	}
+	var caller *core.Function
+	var call, borrow, release, ret *core.LinearOperation
+	for i := range program.Functions {
+		f := &program.Functions[i]
+		if f.Linear == nil {
+			continue
+		}
+		for j := range f.Linear.Operations {
+			op := &f.Linear.Operations[j]
+			if op.Kind == core.OpCall && op.CalleeID == helper.ID {
+				if caller != nil {
+					return fail(op.ID)
+				}
+				caller = f
+				call = op
+			}
+		}
+	}
+	if caller == nil || caller.ReturnType != "U64" {
+		return fail(helper.ID)
+	}
+	bi, ri, ti := -1, -1, -1
+	for i := range caller.Linear.Operations {
+		op := &caller.Linear.Operations[i]
+		switch {
+		case op.Kind == core.OpCopy && op.SourceID == call.TargetID:
+			return fail(op.ID)
+		case op.Foreign != nil && op.Foreign.Mode == "borrow":
+			if borrow != nil {
+				return fail(op.ID)
+			}
+			borrow = op
+			bi = i
+		case op.Kind == core.OpRelease:
+			if release != nil {
+				return fail(op.ID)
+			}
+			release = op
+			ri = i
+		case op.Kind == core.OpReturn:
+			if ret != nil {
+				return fail(op.ID)
+			}
+			ret = op
+			ti = i
+		}
+	}
+	if borrow == nil || release == nil || ret == nil || borrow.SourceID != call.TargetID || release.SourceID != call.TargetID || release.ReleasesOperationID != acq.op.ID || release.Foreign == nil || borrow.Foreign == nil || release.Foreign.Mode != "consume" || release.Foreign.Symbol != acq.op.Foreign.Release || release.Foreign.ABIType != "schway_file_byte_release_fn" || release.Foreign.ParameterType != "FileByteOwner" || release.Foreign.ResultType != "Unit" || release.Foreign.Fails != "" || release.Foreign.Allocator != acq.op.Foreign.Allocator || release.Allocator != acq.op.Foreign.Allocator || borrow.Foreign.Symbol != "schway_file_byte_use" || borrow.Foreign.ABIType != "schway_file_byte_use_fn" || borrow.Foreign.ParameterType != "FileByteOwner" || borrow.Foreign.ResultType != "U64" || borrow.Foreign.Fails != "UseError" || ret.SourceID != borrow.TargetID {
+		return fail(caller.ID)
+	}
+	if !(bi >= 0 && bi < ri && ri < ti) {
+		return fail(caller.ID)
+	}
+	return nil
+}
+
 // ValidatePublished recomputes every function's origin from its body and
 // compares it against the declaration, following Spike 003's
 // producer-verification gates. It returns the first problem only, matching
@@ -520,8 +637,10 @@ func checkForeignOriginOmitted(function core.Function) *Problem {
 // list: the word "export" does not appear on this path, because publication
 // safety and export membership are different rules (D-07-31).
 func PublishProblemsFor(function core.Function, calleeContracts map[string]calleeOriginFact) []Problem {
-	if problem := localOwnerOriginProblem(function); problem != nil {
-		return []Problem{*problem}
+	if function.ReturnType != "FileByteOwner" && !hasOwnerCall(function) {
+		if problem := localOwnerOriginProblem(function); problem != nil {
+			return []Problem{*problem}
+		}
 	}
 	if problem := checkForeignOriginOmitted(function); problem != nil {
 		return []Problem{*problem}
@@ -681,6 +800,9 @@ func originIdentifier(value string) bool {
 // whole-program first-problem contract exactly, byte-for-byte, by returning
 // the first non-empty PublishProblemsFor result it encounters.
 func ValidatePublished(program core.Program) []Problem {
+	if problem := transferredOwnerProblem(program); problem != nil {
+		return []Problem{*problem}
+	}
 	calleeContracts := BuildCalleeOriginFacts(program)
 	for _, function := range program.Functions {
 		if problems := PublishProblemsFor(function, calleeContracts); len(problems) > 0 {

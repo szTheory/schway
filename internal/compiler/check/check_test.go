@@ -2270,6 +2270,108 @@ func readPhase23Fixture(t *testing.T, name string) []byte {
 	return source
 }
 
+func TestPhase24SourceTransfer(t *testing.T) {
+	source, err := os.ReadFile("../../../examples/phase24/transfer.schway")
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("helper-acquired owner transfer was refused: %+v", result.Diagnostics)
+	}
+	functions := make(map[string]core.Function, len(result.Program.Functions))
+	for _, function := range result.Program.Functions {
+		functions[function.Name] = function
+	}
+	helper, ok := functions["acquire"]
+	if !ok || helper.ReturnType != "FileByteOwner" {
+		t.Fatalf("owner-acquiring helper missing owning return: %+v", helper)
+	}
+	types := make(map[string]string, len(helper.Linear.Types))
+	for _, fact := range helper.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	places := make(map[string]core.Place, len(helper.Linear.Places))
+	for _, place := range helper.Linear.Places {
+		places[place.ID] = place
+	}
+	var acquisitionID string
+	for _, operation := range helper.Linear.Operations {
+		if operation.Kind == core.OpForeignCall && operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+			acquisitionID = operation.ID
+			if operation.Foreign.Symbol != "schway_file_byte_acquire" || operation.Foreign.ABIType != "schway_file_byte_acquire_fn" || operation.Foreign.Allocator != "libc_malloc" || operation.Foreign.Release != "schway_file_byte_release" {
+				t.Fatalf("acquisition operation lost its exact foreign pairing: %+v", operation.Foreign)
+			}
+		}
+	}
+	var returnedOwner bool
+	for _, operation := range helper.Linear.Operations {
+		if operation.Kind == core.OpReturn && places[operation.SourceID].TypeID != "" && types[places[operation.SourceID].TypeID] == "FileByteOwner" {
+			returnedOwner = true
+		}
+		if operation.Kind == core.OpRelease {
+			t.Fatalf("helper return must transfer the owner without releasing it: %+v", operation)
+		}
+	}
+	if !returnedOwner || acquisitionID == "" {
+		t.Fatal("helper must return the live owner produced by its acquisition")
+	}
+	main, ok := functions["main"]
+	if !ok {
+		t.Fatal("main function missing")
+	}
+	var transferIndex, borrowIndex, releaseIndex, returnIndex = -1, -1, -1, -1
+	var releaseOperation core.LinearOperation
+	for index, operation := range main.Linear.Operations {
+		switch operation.Kind {
+		case core.OpCall:
+			if operation.CalleeID == helper.ID {
+				transferIndex = index
+			}
+		case core.OpForeignCall:
+			if operation.Foreign != nil && operation.Foreign.Mode == "borrow" {
+				borrowIndex = index
+			}
+		case core.OpRelease:
+			releaseIndex = index
+			releaseOperation = operation
+		case core.OpReturn:
+			returnIndex = index
+		}
+	}
+	if transferIndex != 0 || borrowIndex != 1 || releaseIndex != 2 || returnIndex != 3 {
+		t.Fatalf("caller operations must transfer, borrow, release, then return: transfer=%d borrow=%d release=%d return=%d", transferIndex, borrowIndex, releaseIndex, returnIndex)
+	}
+	if releaseOperation.ReleasesOperationID != acquisitionID || releaseOperation.Foreign == nil || releaseOperation.Foreign.Mode != "consume" || releaseOperation.Foreign.Symbol != "schway_file_byte_release" || releaseOperation.Foreign.Allocator != "libc_malloc" {
+		t.Fatalf("caller release does not pair with the helper acquisition contract: %+v", releaseOperation)
+	}
+}
+
+func TestPhase24SourceRefusal(t *testing.T) {
+	canonical, err := os.ReadFile("../../../examples/phase24/transfer.schway")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct{ name, source string }{
+		{"owner copied", strings.Replace(string(canonical), "  let value = try schway_file_byte_use(owner)", "  let duplicate = owner\n  let value = try schway_file_byte_use(owner)", 1)},
+		{"moved owner reused", strings.Replace(string(canonical), "  let value = try schway_file_byte_use(owner)", "  let moved = take owner\n  let value = try schway_file_byte_use(owner)", 1)},
+		{"owning entry result", strings.Replace(string(canonical), "fn main(path: PathToken) -> U64 {", "fn main(path: PathToken) -> FileByteOwner {", 1)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := Program(mustParseProgram(t, []byte(tc.source)))
+			if len(result.Diagnostics) == 0 {
+				t.Fatalf("invalid owner source was admitted:\n%s", tc.source)
+			}
+			for _, problem := range result.Diagnostics {
+				if problem.Primary.Start < 0 || problem.Primary.End <= problem.Primary.Start || problem.Primary.End > len(tc.source) {
+					t.Fatalf("owner refusal lacks source attribution: %+v", problem)
+				}
+			}
+		})
+	}
+}
+
 func TestPhase23DiscardRequiresOwnerBinding(t *testing.T) {
 	source := readPhase23Fixture(t, "discard_owner.schway")
 	result := Program(mustParseProgram(t, source))

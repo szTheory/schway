@@ -949,3 +949,56 @@ func TestPhase22BuildPreservesBackupWhenRollbackRenameFails(t *testing.T) {
 		t.Fatalf("prior public receipt=%q err=%v; want prior receipt bytes", receiptData, readErr)
 	}
 }
+
+func TestPhase24PositiveTransferNativeApplication(t *testing.T) {
+	sourcePath := testsupport.ProjectPath("examples", "phase24", "transfer.schway")
+	source, err := os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("transfer fixture parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("transfer fixture checker diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("transfer fixture core validation problems: %+v", validated.Problems)
+	}
+	cSource, err := cgen.EmitApplication(validated.Program())
+	if err != nil {
+		t.Fatalf("emit transferred-owner application: %v", err)
+	}
+	manifest := testsupport.ProjectPath("examples", "phase23", "file_byte.bindings.json")
+	artifact := filepath.Join(t.TempDir(), "phase24-transfer")
+	buildCtx, cancelBuild := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancelBuild()
+	if _, err := BuildApplication(buildCtx, source, cSource, artifact, manifest); err != nil {
+		t.Fatalf("build transferred-owner application: %v", err)
+	}
+	for _, test := range []struct {
+		name     string
+		byteVal  byte
+		wantText string
+	}{
+		{name: "0x41", byteVal: 0x41, wantText: "65\n"},
+		{name: "0x42", byteVal: 0x42, wantText: "66\n"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			input := filepath.Join(t.TempDir(), "caller-selected.bin")
+			if err := os.WriteFile(input, []byte{test.byteVal}, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			var stdout, stderr bytes.Buffer
+			runCtx, cancelRun := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancelRun()
+			outcome, err := DefaultRunner().RunApplication(runCtx, artifact, input, &stdout, &stderr)
+			if err != nil || outcome.Kind != RunExited || outcome.ExitCode != 0 || stdout.String() != test.wantText || stderr.Len() != 0 {
+				t.Fatalf("application outcome=%+v err=%v stdout=%q stderr=%q; want %q", outcome, err, stdout.String(), stderr.String(), test.wantText)
+			}
+		})
+	}
+}

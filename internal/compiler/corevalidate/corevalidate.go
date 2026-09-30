@@ -433,6 +433,10 @@ func (v *validator) run() {
 		}
 	}
 
+	if !v.validateTransferredOwner() {
+		return
+	}
+
 	// D-07-38/D-07-12 (07-08): chain the peer's own ClosureDigest
 	// re-derivation ONLY after every function's peer signature has been
 	// recorded (v.match()'s direct call for /0-only functions, plus every
@@ -1363,7 +1367,7 @@ func (v *validator) validateLocalForeignOperation(function *core.Function, opera
 	switch contract.Mode {
 	case "acquire":
 		target, targetOK := places[operation.TargetID]
-		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.Symbol != "schway_file_byte_acquire" || contract.ABIType != "schway_file_byte_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails != "AcquireError" || contract.Allocator != "libc_malloc" || contract.Release != "schway_file_byte_release" || operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.Symbol != "schway_file_byte_acquire" || contract.ABIType != "schway_file_byte_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails != "AcquireError" || contract.Allocator != "libc_malloc" || contract.Release != "schway_file_byte_release" || operation.Allocator != contract.Allocator {
 			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
 		}
 	case "borrow":
@@ -1391,6 +1395,118 @@ func (v *validator) validateLocalForeignOperation(function *core.Function, opera
 		return v.check(false, "core.call_target_not_foreign", operation.ID)
 	}
 	return true
+}
+
+// validateTransferredOwner derives a Phase 24 obligation from the helper's acquire operation,
+// follows its OpReturn into the caller's OpCall, and requires one post-borrow release
+// that names that exact acquisition. It never seeds state from release operations.
+func (v *validator) validateTransferredOwner() bool {
+	type located struct {
+		function *core.Function
+		op       core.LinearOperation
+	}
+	var acquire located
+	var helper *core.Function
+	for i := range v.program.Functions {
+		f := &v.program.Functions[i]
+		if f.Linear == nil {
+			continue
+		}
+		for _, op := range f.Linear.Operations {
+			if op.Foreign != nil && op.Foreign.Mode == "acquire" {
+				if acquire.function != nil {
+					return v.check(false, "core.owner_transfer_acquire", op.ID)
+				}
+				acquire = located{f, op}
+				helper = f
+			}
+		}
+	}
+	if helper == nil || helper.ReturnType != "FileByteOwner" {
+		return true
+	}
+	if helper.Linear == nil || acquire.op.Kind != core.OpForeignCall || acquire.op.Foreign == nil || acquire.op.Foreign.Allocator == "" || acquire.op.Foreign.Release == "" {
+		return v.check(false, "core.owner_transfer_helper", helper.ID)
+	}
+	var helperReturn *core.LinearOperation
+	for i := range helper.Linear.Operations {
+		op := &helper.Linear.Operations[i]
+		if op.Kind == core.OpReturn {
+			if helperReturn != nil {
+				return v.check(false, "core.owner_transfer_return", op.ID)
+			}
+			helperReturn = op
+		} else if op.Kind != core.OpForeignCall && op.Kind != core.OpFail {
+			return v.check(false, "core.owner_transfer_helper_op", op.ID)
+		}
+	}
+	if helperReturn == nil || helperReturn.SourceID != acquire.op.TargetID || acquire.op.ErrTargetID == "" || acquire.op.OkEdgeID == "" || acquire.op.ErrEdgeID == "" {
+		return v.check(false, "core.owner_transfer_return", helper.ID)
+	}
+	var caller *core.Function
+	var call, borrow, release, ret *core.LinearOperation
+	for i := range v.program.Functions {
+		f := &v.program.Functions[i]
+		if f.Linear == nil {
+			continue
+		}
+		for j := range f.Linear.Operations {
+			op := &f.Linear.Operations[j]
+			if op.Kind == core.OpCall && op.CalleeID == helper.ID {
+				if caller != nil {
+					return v.check(false, "core.owner_transfer_call", op.ID)
+				}
+				caller = f
+				call = op
+			}
+		}
+	}
+	if caller == nil || caller.ReturnType != "U64" || call.TargetID == "" || call.TypeID == "" {
+		return v.check(false, "core.owner_transfer_call", helper.ID)
+	}
+	for i := range caller.Linear.Operations {
+		op := &caller.Linear.Operations[i]
+		switch {
+		case op.Kind == core.OpCopy && op.SourceID == call.TargetID:
+			return v.check(false, "core.owner_transfer_copy", op.ID)
+		case op.Foreign != nil && op.Foreign.Mode == "borrow":
+			if borrow != nil {
+				return v.check(false, "core.owner_transfer_borrow", op.ID)
+			}
+			borrow = op
+		case op.Kind == core.OpRelease:
+			if release != nil {
+				return v.check(false, "core.owner_transfer_release", op.ID)
+			}
+			release = op
+		case op.Kind == core.OpReturn:
+			if ret != nil {
+				return v.check(false, "core.owner_transfer_return", op.ID)
+			}
+			ret = op
+		}
+	}
+	if borrow == nil || release == nil || ret == nil || borrow.SourceID != call.TargetID || release.SourceID != call.TargetID || release.ReleasesOperationID != acquire.op.ID || release.Foreign == nil || borrow.Foreign == nil || release.Foreign.Mode != "consume" || release.Foreign.Symbol != acquire.op.Foreign.Release || release.Allocator != acquire.op.Foreign.Allocator || release.Foreign.Allocator != acquire.op.Foreign.Allocator || ret.SourceID != borrow.TargetID {
+		return v.check(false, "core.owner_transfer_discharge", caller.ID)
+	}
+	if !(indexOperation(caller.Linear.Operations, borrow.ID) < indexOperation(caller.Linear.Operations, release.ID) && indexOperation(caller.Linear.Operations, release.ID) < indexOperation(caller.Linear.Operations, ret.ID)) {
+		return v.check(false, "core.owner_transfer_order", caller.ID)
+	}
+	for _, op := range helper.Linear.Operations {
+		if op.Kind == core.OpRelease {
+			return v.check(false, "core.owner_transfer_early_release", op.ID)
+		}
+	}
+	return true
+}
+
+func indexOperation(operations []core.LinearOperation, id string) int {
+	for i, op := range operations {
+		if op.ID == id {
+			return i
+		}
+	}
+	return -1
 }
 
 // localOwnerLifecycleValid seeds obligations from every acquire operation,
@@ -2180,8 +2296,12 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 	if !v.check(returned, "core.final_claim_mismatch", function.ID) {
 		return false
 	}
+	hasCall := false
 	for _, operation := range operations {
-		if operation.Foreign != nil {
+		hasCall = hasCall || operation.Kind == core.OpCall
+	}
+	for _, operation := range operations {
+		if operation.Foreign != nil && function.ReturnType != "FileByteOwner" && !hasCall {
 			return v.check(localOwnerLifecycleValid(function), "core.local_owner_lifecycle", function.ID)
 		}
 	}

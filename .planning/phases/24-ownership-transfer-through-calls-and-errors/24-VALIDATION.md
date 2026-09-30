@@ -1,7 +1,7 @@
 ---
 phase: "24"
 slug: "ownership-transfer-through-calls-and-errors"
-status: draft
+status: active
 nyquist_compliant: false
 wave_0_complete: false
 created: "2026-09-30"
@@ -20,7 +20,7 @@ created: "2026-09-30"
 | **Framework** | Go standard-library `testing`; native cases compile with installed Clang. |
 | **Config file** | `go.mod`; no external test framework is required. |
 | **Quick run command** | `sh scripts/verify-phase24.sh` on the designated hosted CI lane after that phase runner is added. No project tests may run in this checkout. |
-| **Full suite command** | Existing GitHub Actions evidence aggregate, full `go test ./...`, and `go test -race ./...` on Linux and macOS. Run only through the approved hosted CI workflow. |
+| **Full suite command** | Existing GitHub Actions evidence aggregate, full `go test ./...`, and `go test -race -timeout=20m ./...` on Linux and macOS. Run only through the approved hosted CI workflow. The explicit race timeout accommodates the session package's hosted macOS race runtime while retaining a finite limit. |
 | **Estimated runtime** | Not measured for Phase 24. Capture elapsed time in the first hosted receipt; preserve the existing lane and avoid a duplicate full-suite job. |
 
 ## Sampling Rate
@@ -33,16 +33,25 @@ created: "2026-09-30"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| T-24-01 | 24-01 | 1 | RES-05 / OWN-10 | T-24-01, T-24-03 | Helper acquisition and owning return preserve obligation; copy, stale use and owning entry result refuse with source spans. | Checker source refusal | `go test -count=1 -run '^TestPhase24(SourceTransfer\|SourceRefusal)$' ./internal/compiler/check` | ❌ planned | ⬜ pending |
-| T-24-02 | 24-01 | 1 | RES-05 / OWN-10 | T-24-01 | Three independent peers rederive acquisition and reject missing, duplicate and wrong release despite checker events. | Independent peer mutations | `go test -count=1 -run '^TestPhase24TransferPeer' ./internal/compiler/session` | ❌ planned | ⬜ pending |
-| T-24-03 | 24-01 | 1 | RES-05 / OWN-10 | T-24-01, T-24-03 | Ordinary app on caller-selected 0x41/0x42 yields independently fixed 65/66, use after return, exact paired release and emitter refusal. | C emitter / native app | `go test -count=1 -run '^TestPhase24(EmitterTransfer\|PositiveTransfer)' ./internal/compiler/cgen ./internal/compiler/native` | ❌ planned | ⬜ pending |
-| T-24-04 | 24-02 | 2 | RES-06 / OWN-11 / OWN-12 | T-24-02, T-24-05 | Same helper site succeeds three times before real 0x43 typed failure; failed acquisition creates no owner and source cleanup records C,B,A. | Checker source/error path | `go test -count=1 -run '^TestPhase24(ErrorSource\|RepeatedHelperSource)' ./internal/compiler/check` | ❌ planned | ⬜ pending |
-| T-24-05 | 24-02 | 2 | RES-06 / OWN-11 / OWN-12 | T-24-01, T-24-02, T-24-05 | Independent peers reject activation collision, all-release deletion, wrong pair/order, phantom failed owner and caller/callee scope confusion. | Independent peer mutations | `go test -count=1 -run '^TestPhase24(ActivationPeer\|CleanupPeer)' ./internal/compiler/session` | ❌ planned | ⬜ pending |
-| T-24-06 | 24-02 | 2 | RES-06 / OWN-12 | T-24-03, T-24-05 | Interpreter and sole C serializer execute typed error and generated reverse cleanup via ordinary app; unsupported shapes refuse before serialization. | Interpreter/C emitter/native app | `go test -count=1 -run '^TestPhase24(EmitterError\|NativeError)' ./internal/compiler/cgen ./internal/compiler/native` | ❌ planned | ⬜ pending |
-| T-24-07 | 24-03 | 3 | EVD-09 / OWN-11 / RES-06 | T-24-01, T-24-02, T-24-03, T-24-05 | Independent observer proves actual allocation, post-transfer use, C,B,A physical destruction and zero outstanding; five reached controls fail despite plausible events. | Native physical observer | `go test -count=1 -run '^TestPhase24(Observer\|PhysicalDestructorControl)' ./internal/compiler/native ./internal/compiler/cgen` | ❌ planned | ⬜ pending |
-| T-24-08 | 24-03 | 3 | EVD-09 and EVD-11 extension | T-24-02, T-24-04, T-24-06 | Deterministic model-only outcomes retain false physical/IO claims; one focused aggregate carries every Phase 24 group and host identity on Linux/macOS. | Session replay / hosted aggregate | `sh scripts/verify-phase24.sh` | ❌ planned | ⬜ pending |
+| T-24-01 | 24-01 | 1 | RES-05 / OWN-10 | T-24-01, T-24-03 | Helper acquisition and owning return preserve obligation; copy, stale use and owning entry result refuse with source spans. | Checker source refusal | `go test -count=1 -run '^TestPhase24SourceTransfer$|^TestPhase24SourceRefusal$' ./internal/compiler/check` | ✅ present | ✅ pass |
+| T-24-02 | 24-01 | 1 | RES-05 / OWN-10 | T-24-01 | Three independent peers rederive acquisition and reject missing, duplicate and wrong release despite checker events. | Independent peer mutations | `go test -count=1 -run '^TestPhase24TransferPeer' ./internal/compiler/session` | ✅ present | ✅ pass |
+| T-24-03 | 24-01 | 1 | RES-05 / OWN-10 | T-24-01, T-24-03 | Ordinary app on caller-selected 0x41/0x42 yields independently fixed 65/66, use after return, exact paired release and emitter refusal. | C emitter / native app | `go test -count=1 -run '^TestPhase24EmitterTransfer$|^TestPhase24PositiveTransfer$|^TestPhase24PositiveTransferNativeApplication$' ./internal/compiler/cgen ./internal/compiler/native` | ✅ present | ✅ pass |
+| T-24-04 | 24-02 | 2 | RES-06 / OWN-11 / OWN-12 | T-24-02, T-24-05 | Same helper site succeeds three times before real 0x43 typed failure; failed acquisition creates no owner and source cleanup records C,B,A. | Checker source/error path | Pending activation in Plan 24-02 | ❌ planned | ⬜ pending |
+| T-24-05 | 24-02 | 2 | RES-06 / OWN-11 / OWN-12 | T-24-01, T-24-02, T-24-05 | Independent peers reject activation collision, all-release deletion, wrong pair/order, phantom failed owner and caller/callee scope confusion. | Independent peer mutations | Pending activation in Plan 24-02 | ❌ planned | ⬜ pending |
+| T-24-06 | 24-02 | 2 | RES-06 / OWN-12 | T-24-03, T-24-05 | Interpreter and sole C serializer execute typed error and generated reverse cleanup via ordinary app; unsupported shapes refuse before serialization. | Interpreter/C emitter/native app | Pending activation in Plan 24-02 | ❌ planned | ⬜ pending |
+| T-24-07 | 24-03 | 3 | EVD-09 / OWN-11 / RES-06 | T-24-01, T-24-02, T-24-03, T-24-05 | Independent observer proves actual allocation, post-transfer use, C,B,A physical destruction and zero outstanding; five reached controls fail despite plausible events. | Native physical observer | Pending activation in Plan 24-03 | ❌ planned | ⬜ pending |
+| T-24-08 | 24-03 | 3 | EVD-09 and EVD-11 extension | T-24-02, T-24-04, T-24-06 | Deterministic model-only outcomes retain false physical/IO claims; one focused aggregate carries every Phase 24 group and host identity on Linux/macOS. | Session replay / hosted aggregate | Pending activation in Plan 24-03 | ❌ planned | ⬜ pending |
 
-*All commands above are planned for the existing hosted CI lanes only; none has been run in this checkout. `sh scripts/verify-phase24.sh` is a planned focused runner and does not yet exist. Task T-24-08 must include every listed focused group.*
+*Plan 24-01 selectors were included in the full `go test ./...` suites on both hosted platforms; the full/race suites and regression aggregate passed in run [36780855499](https://github.com/szTheory/schway/actions/runs/36780855499). The focused selectors were not dispatched as separate commands. No project tests run in this checkout. Later plan selectors activate when their implementations and tests land; `scripts/verify-phase24.sh` remains a Plan 24-03 deliverable.*
+
+## Plan 24-01 Hosted Receipt
+
+| Host | Full checks (vet, build, tests, race) | Existing evidence aggregate |
+|------|---------------------------------------|-----------------------------|
+| Ubuntu | pass, 5m 03s | pass, 8m 46s |
+| macOS | pass, 13m 42s | pass, 9m 43s |
+
+The passing retry used HEAD `3b6a2da4` and completed on 2026-09-30. Run `36777742560` previously hit Go's default 10-minute package timeout while the macOS session package was running under race instrumentation; the active test had only just started, and the log contained no race-detector report. The existing CI race command now sets `-timeout=20m`. The retry passed `go vet`, `go build`, full tests and race tests on both hosts, `scripts/verify-phase23.sh`, `scripts/verify-phase6.sh`, and the existing Phase 15 evidence seams. All test execution remained on hosted CI.
 
 ## Wave 0 Requirements
 
