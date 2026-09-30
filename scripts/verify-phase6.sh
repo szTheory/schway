@@ -254,12 +254,12 @@ for control in \
 	control:defect.borrow_injection \
 	control:defect.cleanup_injection \
 	control:defect.stale_evidence_injection
-do
+	do
 	case "$control" in
-		control:qlt02.*)
+		*qlt02.*)
 			if [ "$phase6_machine_unratified" -eq 1 ]; then continue; fi
 			;;
-		control:defect.cleanup_injection)
+		*cleanup_injection)
 			if [ "$phase6_m004_refusal" -eq 1 ]; then continue; fi
 			;;
 	esac

@@ -790,3 +790,12 @@ accept only that combined state. It skips only those five unavailable live
 control greps, preserves all remaining Phase 6 checks, and continues collecting
 20 warm timing observations from the nonzero verifier result. Hosted CI remains
 the acceptance lane; do not run local project suites.
+
+## Dated required-control parser correction (2026-09-30, run 36704285082)
+
+The hosted Go suite failed `TestPhase6RequiredControlsMatchScript` on both
+hosts. The test intentionally parses lines beginning with `control:` in the
+script's required-control block, and the new `case` globs used that prefix for
+runtime filtering. The aggregate logic was not reached. Change those two glob
+patterns to begin with `*`, leaving the explicit required-control list and
+runtime matching unchanged. Do not run project suites locally.

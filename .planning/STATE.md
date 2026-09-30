@@ -4,12 +4,12 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
-status: Public Schway migration active; hosted run 36698133810 passed both full check suites but exposed two expected Phase6 boundaries in both evidence aggregates.
-stopped_at: Continue quick task 260928-tzu by making the Phase6 aggregate explicitly recognize only the combined unratified-machine and Phase16 cleanup-refusal state, preserving all other controls and observations. Do not replay completed Phase 23 plans or UAT.
-last_updated: "2026-09-30T10:39:35Z"
+status: Public Schway migration active; hosted run 36704285082 found a script-control parser contract issue in the new Phase6 skip patterns on both hosts.
+stopped_at: Continue quick task 260928-tzu by keeping runtime skip globs outside the script's required-control identifier block, then run static/privacy checks and hosted CI. Do not replay completed Phase 23 plans or UAT.
+last_updated: "2026-09-30T10:50:42Z"
 last_activity: 2026-09-30
-last_activity_desc: Hosted run 36698133810 passed both full Go check suites but Phase6 aggregates stopped on the unratified QLT-02 machine and Phase16 cleanup refusal; the active quick task now encodes that exact state explicitly.
-state_head: 5d1ecc5633d7dee297c508f12d319380f6c2521a
+last_activity_desc: Hosted run 36704285082 failed all jobs because TestPhase6RequiredControlsMatchScript parses case-pattern lines beginning with control: as undeclared control IDs; patterns now avoid that prefix.
+state_head: 856790af00349eeb2b34885773ed98f77bbd4ae5
 progress:
   total_phases: 4
   completed_phases: 1
@@ -23,7 +23,7 @@ Current publication identity (2026-09-28): Schway uses the Go module `github.com
 <!-- schway-current:end -->
 
 Public repository follow-up (2026-09-30): `szTheory/schway` `main` is at
-`5d1ecc56`. Hosted run `36688618461` passed full Ubuntu/macOS checks, including
+`856790af`. Hosted run `36688618461` passed full Ubuntu/macOS checks, including
 both race suites, but both Phase 6 aggregates failed because Phase16 makes the
 Phase 4 release fixture refusal-only. Commit `ff3b3052` records that exact
 refusal operationally and skips only the superseded Phase 4/5 live-control
@@ -41,7 +41,11 @@ fixture hits the explicit Phase16 foreign-call refusal. The aggregate change
 keeps D-06-18 observations unratified and names the M004 refusal; it does not
 ratify the runner or claim either live control passed. The Go suite remains the
 receipt for QLT-02 mutation checks and digest-bound historical emission
-evidence. Do not run project suites locally.
+evidence. Hosted run `36704285082` then failed the same
+`TestPhase6RequiredControlsMatchScript` on both hosts because its parser treats
+case patterns beginning with `control:` as identifiers. The runtime branch is
+unchanged; its shell globs now begin with `*` so only the actual declared
+control list is parsed. Do not run project suites locally.
 
 
 # Project State
@@ -57,7 +61,7 @@ hiding runtime costs.
 
 **Durable context (survives context clears — read before re-deriving):**
 
-- **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The public repository was empty before the first source push. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `5d1ecc56` reports zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Phase 23 plans and UAT are complete, but the hosted verification gate remains open until the evidence aggregate passes. Private audit artifacts are in the original checkout under this quick task's `audit/` directory.
+- **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The public repository was empty before the first source push. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `856790af` reports zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Phase 23 plans and UAT are complete, but the hosted verification gate remains open until the evidence aggregate passes. Private audit artifacts are in the original checkout under this quick task's `audit/` directory.
 - `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 22. The separate app
   route retains and runs a native U64 identity app once with ordinary streams;
   evidence capture is not verification. General IO and all Schway foreign/by-pointer
@@ -111,7 +115,7 @@ hiding runtime costs.
 Phase: 23 (Live Local Allocation and Discharge) — EXECUTING
 Plan: 7 of 7
 Status: Phase 23 has all seven plans and UAT complete; its hosted verification receipt remains open while the public-repository quick task repairs the Phase 6 aggregate script.
-Last activity: 2026-09-30 — Hosted run 36698133810 passed both Go check suites; the aggregate now records explicit QLT-02 unratified and Phase16 refusal boundaries.
+Last activity: 2026-09-30 — Hosted run 36704285082 exposed a required-control source parser mismatch; shell patterns now avoid looking like declared control IDs.
 
 Progress: [███░░░░░░░] 25%
 
