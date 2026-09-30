@@ -1,6 +1,6 @@
 ---
 quick_task: 260928-tzu
-status: executing
+status: complete
 depends_on: []
 files_modified:
   - go.mod
@@ -799,3 +799,18 @@ script's required-control block, and the new `case` globs used that prefix for
 runtime filtering. The aggregate logic was not reached. Change those two glob
 patterns to begin with `*`, leaving the explicit required-control list and
 runtime matching unchanged. Do not run project suites locally.
+
+## Dated hosted acceptance receipt (2026-09-30, run 36705094434)
+
+The next hosted run passed on both supported hosts. Ubuntu and macOS full check
+suites passed, including vet, build, tests, and race checks. Both current
+evidence aggregates also passed, including the Phase 23 and Phase 6 gates.
+The opt-in validation-corpus receipt job was skipped as expected for a push
+event. The full-ref privacy audit at source revision `15b3a518` passed with
+1,573 public commits, three milestone tags, 5,037 reachable blobs, and 1,619
+tracked files. It found zero personal home paths, contact candidates, or
+unclassified phone/secret candidates; the eight gitleaks matches were
+classified synthetic test values. The follow-up verification record and its
+commit metadata are included in the final pre-push scan. This closes the public
+repository task; Phase 23's older GSD verification report still needs its
+verifier-only refresh before advancing the milestone.

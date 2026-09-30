@@ -23,4 +23,13 @@ Prepared on 2026-09-28 for the initial source publication to `szTheory/schway`.
 - The phone-shaped matcher produced 80 false positives: POSIX/version references (18), test execution timestamps (50), standards/documentation references (9), timing-fixture values (2), and a saved shell diagnostic line number (1). None was classified as a contact number.
 - Gitleaks reported 8 `generic-api-key` matches in secret-classification tests. All are synthetic test values; there are zero confirmed or unclassified secret findings.
 
-The final redacted scan is rerun against the verification document and every public ref immediately before pushing. The hosted Ubuntu receipt is pending the initial push; no project tests were run locally.
+The following dated receipt supersedes the pending-publication notes above.
+
+## Final publication and hosted CI receipt (2026-09-30)
+
+- Public `main` at source revision `15b3a518b7525d35d303669ddee31901fc812d20` passed hosted CI run [36705094434](https://github.com/szTheory/schway/actions/runs/36705094434). Both Ubuntu and macOS full check suites passed, including vet, build, all Go tests, and race checks. Both current evidence aggregates passed. The opt-in validation-corpus receipt job was skipped as expected for a push event.
+- The Schway migration gate remains satisfied: module and CLI names, `.schway` extension, protocol and ABI namespaces, and 145 tracked Schway source files match the selected public identity.
+- The latest full-ref audit before this documentation closeout passed at `15b3a518`: 1,573 reachable commits, three milestone tags, 5,037 reachable blobs, and 1,619 tracked files. The ordered original commit sequence and parent topology remain verified; stash and Codex checkpoint refs are absent.
+- That audit found zero personal home paths, message/contact candidates, or unclassified phone/secret candidates. All 90 phone-shaped candidates were classified; all eight gitleaks findings were classified synthetic `generic-api-key` test values. No confirmed personal-data or secret finding remained.
+- The final pre-push scan also includes this verification record and its commit metadata. The private audit reports remain beside the plan in the original checkout and are not published.
+- No project suites were run locally; hosted CI supplied the acceptance evidence.

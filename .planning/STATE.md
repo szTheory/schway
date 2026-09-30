@@ -4,12 +4,12 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 23
 current_phase_name: Live Local Allocation and Discharge
-status: Public Schway migration active; hosted run 36704285082 found a script-control parser contract issue in the new Phase6 skip patterns on both hosts.
-stopped_at: Continue quick task 260928-tzu by keeping runtime skip globs outside the script's required-control identifier block, then run static/privacy checks and hosted CI. Do not replay completed Phase 23 plans or UAT.
-last_updated: "2026-09-30T10:50:42Z"
+status: Public Schway migration complete; Phase 23 hosted gates pass; refresh the stale Phase 23 verification report next.
+stopped_at: Quick task 260928-tzu is complete after hosted run 36705094434 passed both host check suites and evidence aggregates. Resume $gsd-execute-phase 23 at the verifier-only gate; do not replay completed plans or UAT.
+last_updated: "2026-09-30T11:12:08Z"
 last_activity: 2026-09-30
-last_activity_desc: Hosted run 36704285082 failed all jobs because TestPhase6RequiredControlsMatchScript parses case-pattern lines beginning with control: as undeclared control IDs; patterns now avoid that prefix.
-state_head: 856790af00349eeb2b34885773ed98f77bbd4ae5
+last_activity_desc: Hosted run 36705094434 passed Ubuntu/macOS checks and both evidence aggregates; the public repository task is complete and Phase 23's stale verifier report is the next gate.
+state_head: 15b3a518b7525d35d303669ddee31901fc812d20
 progress:
   total_phases: 4
   completed_phases: 1
@@ -61,7 +61,7 @@ hiding runtime costs.
 
 **Durable context (survives context clears — read before re-deriving):**
 
-- **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The public repository was empty before the first source push. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `856790af` reports zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Phase 23 plans and UAT are complete, but the hosted verification gate remains open until the evidence aggregate passes. Private audit artifacts are in the original checkout under this quick task's `audit/` directory.
+  - **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `15b3a518` reports 1,573 reachable commits and zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Hosted run 36705094434 passed both host check suites and evidence aggregates. Phase 23 plans and UAT are complete; its older verification report must be refreshed before advancing. Private audit artifacts are in the original checkout under this quick task's `audit/` directory.
 - `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 22. The separate app
   route retains and runs a native U64 identity app once with ordinary streams;
   evidence capture is not verification. General IO and all Schway foreign/by-pointer
@@ -114,8 +114,8 @@ hiding runtime costs.
 
 Phase: 23 (Live Local Allocation and Discharge) — EXECUTING
 Plan: 7 of 7
-Status: Phase 23 has all seven plans and UAT complete; its hosted verification receipt remains open while the public-repository quick task repairs the Phase 6 aggregate script.
-Last activity: 2026-09-30 — Hosted run 36704285082 exposed a required-control source parser mismatch; shell patterns now avoid looking like declared control IDs.
+Status: Phase 23 has all seven plans and UAT complete; the hosted evidence gate now passes, while its verifier report still records the earlier missing receipt.
+Last activity: 2026-09-30 — Hosted run 36705094434 passed both full check suites and both evidence aggregates; the next action is the verifier-only refresh.
 
 Progress: [███░░░░░░░] 25%
 
