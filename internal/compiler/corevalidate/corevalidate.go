@@ -3803,22 +3803,55 @@ func peerCallable(function *core.Function) bool {
 	return disablePeerOriginContainmentForTest || peerOriginContained(function)
 }
 
+type releaseWitness struct {
+	acquisitionID string
+	ownerPlaceID  string
+	checkSource   bool
+}
+
+// returnedResourceAcquisition finds a direct foreign acquisition whose
+// returned owner crosses a declared function boundary. The caller's OpCall
+// becomes the dynamic owner event; the callee acquisition operation remains
+// the stable release reference.
+func returnedResourceAcquisition(function *core.Function) (core.LinearOperation, bool) {
+	if function == nil || function.Linear == nil {
+		return core.LinearOperation{}, false
+	}
+	var acquisition core.LinearOperation
+	acquisitionCount, returnCount := 0, 0
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpForeignCall && operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+			acquisition = operation
+			acquisitionCount++
+		}
+		if operation.Kind == core.OpReturn {
+			returnCount++
+			if operation.SourceID != acquisition.TargetID || operation.TypeID != acquisition.TypeID {
+				return core.LinearOperation{}, false
+			}
+		}
+	}
+	return acquisition, acquisitionCount == 1 && returnCount == 1 && acquisition.TargetID != ""
+}
+
 // checkReleaseOrder independently rederives the reverse-order release
 // sequence D-04-07 requires. For every block ending in OpFail or OpReturn, it
 // walks BACKWARD over the declared block/edge graph starting from that
 // block's own incoming edge, collecting every completed (not-yet-discharged)
-// OpForeignCall acquisition it passes -- a discovery order that is already
-// reverse-of-completion order, because the walk moves from the fail/return
+// successful acquisition it passes -- a direct foreign acquire or an owning
+// OpCall whose callee returns that acquisition. Discovery order is already
+// reverse-of-completion order because the walk moves from the fail/return
 // point back toward the entry. A failure block's own triggering acquisition
 // is excluded (its incoming edge has Pattern "err", so includeThis starts
 // false); a success block's immediate predecessor IS included (its incoming
 // edge has Pattern "ok", so it completed). This is materially different from
 // check.go's forward accumulation (D-12/D-12a): it never reads check's own
 // accumulated list or any field check uses to communicate it, only the
-// block/edge graph and the operations check.go already emitted. Only a call
-// whose ok and err edges target DIFFERENT blocks is tracked -- a `discard`'s
-// converging ok/err edges mark its resource as untracked for release this
-// plan, a documented narrowing shared with check.go's own accumulation.
+// block/edge graph, the operations check.go emitted, and the callee's own
+// acquisition-and-return operations. Only a call whose ok and err edges
+// target DIFFERENT blocks is tracked -- a `discard`'s converging ok/err edges
+// mark its resource as untracked for release this plan, a documented
+// narrowing shared with check.go's own accumulation.
 func (v *validator) checkReleaseOrder(function *core.Function, operationsByID map[string]core.LinearOperation) bool {
 	linear := function.Linear
 	edgesByTo := make(map[string][]core.Edge, len(linear.Edges))
@@ -3842,12 +3875,29 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 			tracked[operation.ReleasesOperationID] = true
 		}
 	}
-	callInBlock := make(map[string]core.LinearOperation, len(linear.Blocks))
+	functionByID := make(map[string]*core.Function, len(v.program.Functions))
+	for index := range v.program.Functions {
+		functionByID[v.program.Functions[index].ID] = &v.program.Functions[index]
+	}
+	callInBlock := make(map[string][]releaseWitness, len(linear.Blocks))
 	for _, block := range linear.Blocks {
-		for _, opID := range block.OperationIDs {
-			operation := operationsByID[opID]
-			if operation.Kind == core.OpForeignCall && tracked[operation.ID] {
-				callInBlock[block.ID] = operation
+		// A block can contain more than one successful acquisition. Record
+		// them in reverse operation order because cleanup discharges the most
+		// recently completed owner first.
+		for index := len(block.OperationIDs) - 1; index >= 0; index-- {
+			operation, ok := operationsByID[block.OperationIDs[index]]
+			if !ok {
+				continue
+			}
+			switch {
+			case operation.Kind == core.OpForeignCall && tracked[operation.ID]:
+				callInBlock[block.ID] = append(callInBlock[block.ID], releaseWitness{acquisitionID: operation.ID})
+			case operation.Kind == core.OpCall && operation.TargetID != "":
+				callee := functionByID[operation.CalleeID]
+				acquisition, returnsOwner := returnedResourceAcquisition(callee)
+				if returnsOwner && tracked[acquisition.ID] {
+					callInBlock[block.ID] = append(callInBlock[block.ID], releaseWitness{acquisitionID: acquisition.ID, ownerPlaceID: operation.TargetID, checkSource: true})
+				}
 			}
 		}
 	}
@@ -3864,9 +3914,9 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 	// a truncated expected would still be compared against actual and could
 	// ACCEPT a corrupted program, which is worse than the hang this guard
 	// replaces. The boolean return propagates the refusal to every call site.
-	var rederive func(startEdge core.Edge, visited map[string]bool) ([]core.LinearOperation, bool)
-	rederive = func(startEdge core.Edge, visited map[string]bool) ([]core.LinearOperation, bool) {
-		var expected []core.LinearOperation
+	var rederive func(startEdge core.Edge, visited map[string]bool) ([]releaseWitness, bool)
+	rederive = func(startEdge core.Edge, visited map[string]bool) ([]releaseWitness, bool) {
+		var expected []releaseWitness
 		includeThis := startEdge.Pattern == "ok"
 		currentBlockID := startEdge.FromBlockID
 		for {
@@ -3877,9 +3927,7 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 			visited[currentBlockID] = true
 			v.checks++ // one inspection per block visited while walking backward
 			if includeThis {
-				if op, ok := callInBlock[currentBlockID]; ok {
-					expected = append(expected, op)
-				}
+				expected = append(expected, callInBlock[currentBlockID]...)
 			}
 			candidates := okEdgeInto[currentBlockID]
 			if len(candidates) == 0 {
@@ -3904,7 +3952,7 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 			// shared map would make a legitimate diamond that reconverges on
 			// a shared ancestor look like a cycle, while starting each branch
 			// from empty would let a two-block cycle recurse forever.
-			var agreed []core.LinearOperation
+			var agreed []releaseWitness
 			for index, candidate := range candidates {
 				branchVisited := make(map[string]bool, len(visited)+1)
 				for blockID, seen := range visited {
@@ -3968,7 +4016,8 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 				return false
 			}
 			for index, want := range expected {
-				if !v.check(actual[index].ReleasesOperationID == want.ID, "core.release_order_mismatch", actual[index].ID) {
+				sourceMatches := !want.checkSource || actual[index].SourceID == want.ownerPlaceID
+				if !v.check(actual[index].ReleasesOperationID == want.acquisitionID && sourceMatches, "core.release_order_mismatch", actual[index].ID) {
 					return false
 				}
 			}
@@ -3983,12 +4032,12 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 // the per-terminal-block loop above already applies to its own comparison,
 // extended one hop earlier. It performs no counted work of its own; all
 // counted work for checkReleaseOrder stays inside checkReleaseOrder.
-func sameReleaseHistory(left, right []core.LinearOperation) bool {
+func sameReleaseHistory(left, right []releaseWitness) bool {
 	if len(left) != len(right) {
 		return false
 	}
 	for index := range left {
-		if left[index].ID != right[index].ID {
+		if left[index] != right[index] {
 			return false
 		}
 	}
