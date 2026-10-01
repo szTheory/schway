@@ -67,3 +67,36 @@ func TestPhase25PointerFamilyCore(t *testing.T) {
 		t.Fatalf("conflict mutation produced %+v, want core.borrow_conflict", result.Problems)
 	}
 }
+
+func TestPhase25U64CopyOriginCore(t *testing.T) {
+	program := phase25PointerProgram(t, "phase25", "exclusive_copy_accept.schway")
+	function := &program.Functions[0]
+	result := corevalidate.Validate(program)
+	if !result.Valid {
+		t.Fatalf("core peer rejected copied exclusive U64: %+v", result.Problems)
+	}
+	if signature := result.PeerSignatures()[function.ID]; !signature.Callable {
+		t.Fatalf("copied U64 still carries a borrow origin in peer signature: %+v", signature)
+	}
+
+	conflicting := phase25PointerProgram(t, "phase25", "exclusive_copy_accept.schway")
+	function = &conflicting.Functions[0]
+	linear := function.Linear
+	if len(linear.Operations) != 3 || linear.Operations[0].Kind != core.OpBorrowExclusive || linear.Operations[1].Kind != core.OpCopy || linear.Operations[2].Kind != core.OpReturn {
+		t.Fatalf("exclusive-copy fixture has unexpected operations: %+v", linear.Operations)
+	}
+	linear.Places = append(linear.Places, core.Place{ID: function.ID + ":place:2", Name: "overlap", TypeID: linear.Operations[0].TypeID})
+	linear.Operations[2].SourceID = function.ID + ":place:3"
+	linear.Operations = []core.LinearOperation{
+		linear.Operations[0],
+		{ID: function.ID + ":op:1", PointID: function.ID + ":point:linear:1", Kind: core.OpBorrowShared, SourceID: function.Parameter.ID, TargetID: function.ID + ":place:2", TypeID: linear.Operations[0].TypeID, LoanID: "phase25:test:overlap"},
+		{ID: function.ID + ":op:2", PointID: function.ID + ":point:linear:2", Kind: core.OpCopy, SourceID: linear.Operations[0].TargetID, TargetID: function.ID + ":place:3", TypeID: linear.Operations[0].TypeID},
+		{ID: function.ID + ":op:3", PointID: function.ID + ":point:linear:3", Kind: core.OpCopy, SourceID: function.ID + ":place:2", TargetID: function.ID + ":place:4", TypeID: linear.Operations[0].TypeID},
+		{ID: function.ID + ":op:4", PointID: function.ID + ":point:linear:4", Kind: core.OpReturn, SourceID: function.ID + ":place:3", TypeID: linear.Operations[0].TypeID},
+	}
+	linear.Places = append(linear.Places, core.Place{ID: function.ID + ":place:3", Name: "copied", TypeID: linear.Operations[0].TypeID}, core.Place{ID: function.ID + ":place:4", Name: "overlap_copy", TypeID: linear.Operations[0].TypeID})
+	result = corevalidate.Validate(conflicting)
+	if result.Valid || len(result.Problems) == 0 || result.Problems[0].Code != "core.borrow_conflict" {
+		t.Fatalf("core peer did not keep the exclusive loan live through its U64 copy: %+v", result.Problems)
+	}
+}

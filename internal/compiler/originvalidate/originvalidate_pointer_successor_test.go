@@ -87,3 +87,40 @@ func TestPhase25PointerOrigin(t *testing.T) {
 		t.Fatalf("origin peer accepted a live incompatible access: %+v", problems)
 	}
 }
+
+func TestPhase25U64CopyOrigin(t *testing.T) {
+	program := phase25OriginProgram(t, "exclusive_copy_accept.schway")
+	function := program.Functions[0]
+	origins := originvalidate.RecomputeOriginPerReturn(function, originvalidate.BuildCalleeOriginFacts(program))
+	if len(origins) != 1 || origins[0].Derived {
+		t.Fatalf("origin peer retained borrow provenance through a U64 copy: %+v", origins)
+	}
+	if problems := originvalidate.ValidatePublished(program); len(problems) != 0 {
+		t.Fatalf("origin peer refused an ordinary copied U64 result: %+v", problems)
+	}
+
+	conflicting := phase25OriginProgram(t, "exclusive_copy_accept.schway")
+	function = conflicting.Functions[0]
+	linear := function.Linear
+	if len(linear.Operations) != 3 || linear.Operations[0].Kind != core.OpBorrowExclusive || linear.Operations[1].Kind != core.OpCopy || linear.Operations[2].Kind != core.OpReturn {
+		t.Fatalf("exclusive-copy fixture has unexpected operations: %+v", linear.Operations)
+	}
+	borrowedID := linear.Operations[0].TargetID
+	borrowType := linear.Operations[0].TypeID
+	linear.Places = append(linear.Places,
+		core.Place{ID: function.ID + ":place:2", Name: "overlap", TypeID: borrowType},
+		core.Place{ID: function.ID + ":place:3", Name: "copied", TypeID: borrowType},
+		core.Place{ID: function.ID + ":place:4", Name: "overlap_copy", TypeID: borrowType},
+	)
+	linear.Operations = []core.LinearOperation{
+		linear.Operations[0],
+		{ID: function.ID + ":op:1", PointID: function.ID + ":point:linear:1", Kind: core.OpBorrowShared, SourceID: function.Parameter.ID, TargetID: function.ID + ":place:2", TypeID: borrowType, LoanID: "phase25:test:overlap"},
+		{ID: function.ID + ":op:2", PointID: function.ID + ":point:linear:2", Kind: core.OpCopy, SourceID: borrowedID, TargetID: function.ID + ":place:3", TypeID: borrowType},
+		{ID: function.ID + ":op:3", PointID: function.ID + ":point:linear:3", Kind: core.OpCopy, SourceID: function.ID + ":place:2", TargetID: function.ID + ":place:4", TypeID: borrowType},
+		{ID: function.ID + ":op:4", PointID: function.ID + ":point:linear:4", Kind: core.OpReturn, SourceID: function.ID + ":place:3", TypeID: borrowType},
+	}
+	problems := originvalidate.ValidatePublished(conflicting)
+	if len(problems) == 0 || problems[0].Code != "core.borrow_conflict" {
+		t.Fatalf("origin peer did not keep the exclusive loan live through its U64 copy: %+v", problems)
+	}
+}
