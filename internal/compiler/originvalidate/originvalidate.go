@@ -445,6 +445,9 @@ func hasOwnerCall(function core.Function) bool {
 // transferredOwnerProblem derives the helper-owned acquisition and follows its return
 // through the receiving call, borrowed use, and final paired discharge.
 func transferredOwnerProblem(program core.Program) *Problem {
+	if originPhase24ErrorProgram(program) {
+		return originRepeatedOwnerProblem(program)
+	}
 	fail := func(id string) *Problem {
 		return &Problem{Code: "core.local_owner_transfer", Detail: fmt.Sprintf("invalid transferred owner at %s", id)}
 	}
@@ -545,6 +548,262 @@ func transferredOwnerProblem(program core.Program) *Problem {
 		return fail(caller.ID)
 	}
 	return nil
+}
+
+func originPhase24ErrorProgram(program core.Program) bool {
+	if program.Module != "phase24.error" {
+		return false
+	}
+	seen := map[string]bool{}
+	for _, function := range program.Functions {
+		seen[function.Name] = true
+	}
+	return seen["acquire"] && seen["probe"] && seen["main"]
+}
+
+func originRepeatedOwnerProblem(program core.Program) *Problem {
+	fail := func(id string) *Problem {
+		return &Problem{Code: "core.local_owner_transfer", Detail: fmt.Sprintf("invalid repeated owner flow at %s", id)}
+	}
+	functions := map[string]*core.Function{}
+	for index := range program.Functions {
+		functions[program.Functions[index].Name] = &program.Functions[index]
+	}
+	helper, probe, caller := functions["acquire"], functions["probe"], functions["main"]
+	if helper == nil || probe == nil || caller == nil || helper.Linear == nil || probe.Linear == nil || caller.Linear == nil {
+		return fail("phase24 functions")
+	}
+	var acquisition *core.LinearOperation
+	for index := range helper.Linear.Operations {
+		op := &helper.Linear.Operations[index]
+		if op.Foreign != nil && op.Foreign.Mode == "acquire" {
+			if acquisition != nil {
+				return fail(op.ID)
+			}
+			acquisition = op
+		}
+	}
+	if acquisition == nil || acquisition.Kind != core.OpForeignCall || acquisition.Foreign == nil || acquisition.Foreign.Release != "schway_file_byte_release" {
+		return fail(helper.ID)
+	}
+	returned := false
+	for _, op := range helper.Linear.Operations {
+		if op.Kind == core.OpReturn && op.SourceID == acquisition.TargetID {
+			returned = true
+		}
+		if op.Kind == core.OpRelease {
+			return fail(op.ID)
+		}
+	}
+	if !returned {
+		return fail(helper.ID)
+	}
+	mainAcquires, mainProbes, probeAcquires := originCalls(caller, helper.ID), originCalls(caller, probe.ID), originCalls(probe, helper.ID)
+	if len(mainAcquires) != 2 || len(mainProbes) != 1 || len(probeAcquires) != 1 {
+		return fail(helper.ID)
+	}
+	allCalls := append(append(append([]core.LinearOperation{}, mainAcquires...), mainProbes...), probeAcquires...)
+	seenCallIDs := map[string]bool{}
+	for _, call := range allCalls {
+		if seenCallIDs[call.ID] || !originFallibleCall(program, caller, probe, call) {
+			return fail(call.ID)
+		}
+		seenCallIDs[call.ID] = true
+	}
+	if !originProbeReleases(probe, probeAcquires[0], acquisition.ID) {
+		return fail(probe.ID)
+	}
+	if !originMainReleases(caller, mainAcquires[0], mainAcquires[1], mainProbes[0], acquisition.ID) {
+		return fail(caller.ID)
+	}
+	return nil
+}
+
+func originCalls(function *core.Function, callee string) []core.LinearOperation {
+	var result []core.LinearOperation
+	for _, op := range function.Linear.Operations {
+		if op.Kind == core.OpCall && op.CalleeID == callee {
+			result = append(result, op)
+		}
+	}
+	return result
+}
+
+func originFallibleCall(program core.Program, caller, probe *core.Function, call core.LinearOperation) bool {
+	for _, function := range []*core.Function{caller, probe} {
+		for _, operation := range function.Linear.Operations {
+			if operation.ID != call.ID {
+				continue
+			}
+			var block string
+			for _, candidate := range function.Linear.Blocks {
+				for _, id := range candidate.OperationIDs {
+					if id == call.ID {
+						block = candidate.ID
+					}
+				}
+			}
+			var okEdge, errEdge *core.Edge
+			for index := range function.Linear.Edges {
+				edge := &function.Linear.Edges[index]
+				if edge.ID == call.OkEdgeID {
+					okEdge = edge
+				}
+				if edge.ID == call.ErrEdgeID {
+					errEdge = edge
+				}
+			}
+			if call.ErrTargetID == "" || block == "" || okEdge == nil || errEdge == nil || okEdge.FromBlockID != block || errEdge.FromBlockID != block || okEdge.Pattern != "ok" || errEdge.Pattern != "err" || okEdge.ToBlockID == errEdge.ToBlockID || !originBlockHasSuccessor(function, block, okEdge.ToBlockID) || !originBlockHasSuccessor(function, block, errEdge.ToBlockID) {
+				return false
+			}
+			return originPlaceType(function, call.ErrTargetID) == "ResourceError" && originFailureEnvelopeFits(program, call.CalleeID)
+		}
+	}
+	return false
+}
+
+func originBlockHasSuccessor(function *core.Function, blockID, successorID string) bool {
+	for _, block := range function.Linear.Blocks {
+		if block.ID != blockID {
+			continue
+		}
+		for _, successor := range block.Successors {
+			if successor == successorID {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func originFailureEnvelopeFits(program core.Program, calleeID string) bool {
+	var callee *core.Function
+	for index := range program.Functions {
+		if program.Functions[index].ID == calleeID {
+			callee = &program.Functions[index]
+			break
+		}
+	}
+	if callee == nil || callee.Linear == nil {
+		return false
+	}
+	byType := map[string]string{}
+	for _, fact := range callee.Linear.Types {
+		byType[fact.ID] = fact.Shape.Constructor
+	}
+	failing := map[string]bool{}
+	for _, operation := range callee.Linear.Operations {
+		if operation.Kind == core.OpFail {
+			failing[byType[operation.TypeID]] = true
+		}
+		if operation.Foreign != nil && operation.Foreign.Fails != "" {
+			failing[operation.Foreign.Fails] = true
+		}
+	}
+	if len(failing) == 0 {
+		return false
+	}
+	envelope := map[string]bool{}
+	for _, dataType := range program.DataTypes {
+		if dataType.Name == "ResourceError" && len(dataType.AlternativeDetails) == 0 {
+			for _, alt := range dataType.Alternatives {
+				envelope[alt] = true
+			}
+		}
+	}
+	if len(envelope) == 0 {
+		return false
+	}
+	for failure := range failing {
+		found := false
+		for _, dataType := range program.DataTypes {
+			if dataType.Name != failure || len(dataType.AlternativeDetails) != 0 {
+				continue
+			}
+			found = true
+			for _, alt := range dataType.Alternatives {
+				if !envelope[alt] {
+					return false
+				}
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+func originPlaceType(function *core.Function, placeID string) string {
+	types := map[string]string{}
+	for _, fact := range function.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	for _, place := range function.Linear.Places {
+		if place.ID == placeID {
+			return types[place.TypeID]
+		}
+	}
+	return ""
+}
+
+func originProbeReleases(probe *core.Function, acquireCall core.LinearOperation, acquisitionID string) bool {
+	var use *core.LinearOperation
+	for index := range probe.Linear.Operations {
+		op := &probe.Linear.Operations[index]
+		if op.Foreign != nil && op.Foreign.Mode == "borrow" {
+			if use != nil {
+				return false
+			}
+			use = op
+		}
+	}
+	if use == nil || use.SourceID != acquireCall.TargetID || use.Foreign.Fails != "UseError" || originPlaceType(probe, use.ErrTargetID) != "UseError" {
+		return false
+	}
+	return originCleanupBlock(probe, originEdgeTarget(probe, use.OkEdgeID), []string{acquireCall.TargetID}, use.TargetID, core.OpReturn, acquisitionID) &&
+		originCleanupBlock(probe, originEdgeTarget(probe, use.ErrEdgeID), []string{acquireCall.TargetID}, use.ErrTargetID, core.OpFail, acquisitionID) &&
+		originCleanupBlock(probe, originEdgeTarget(probe, acquireCall.ErrEdgeID), nil, acquireCall.ErrTargetID, core.OpFail, acquisitionID)
+}
+
+func originMainReleases(main *core.Function, callA, callB, callProbe core.LinearOperation, acquisitionID string) bool {
+	return originCleanupBlock(main, originEdgeTarget(main, callA.ErrEdgeID), nil, callA.ErrTargetID, core.OpFail, acquisitionID) &&
+		originCleanupBlock(main, originEdgeTarget(main, callB.ErrEdgeID), []string{callA.TargetID}, callB.ErrTargetID, core.OpFail, acquisitionID) &&
+		originCleanupBlock(main, originEdgeTarget(main, callProbe.ErrEdgeID), []string{callB.TargetID, callA.TargetID}, callProbe.ErrTargetID, core.OpFail, acquisitionID) &&
+		originCleanupBlock(main, originEdgeTarget(main, callProbe.OkEdgeID), []string{callB.TargetID, callA.TargetID}, callProbe.TargetID, core.OpReturn, acquisitionID)
+}
+
+func originEdgeTarget(function *core.Function, edgeID string) string {
+	for _, edge := range function.Linear.Edges {
+		if edge.ID == edgeID {
+			return edge.ToBlockID
+		}
+	}
+	return ""
+}
+
+func originCleanupBlock(function *core.Function, blockID string, owners []string, terminalSource string, terminal core.OperationKind, acquisitionID string) bool {
+	for _, block := range function.Linear.Blocks {
+		if block.ID != blockID {
+			continue
+		}
+		if len(block.OperationIDs) != len(owners)+1 {
+			return false
+		}
+		operations := map[string]core.LinearOperation{}
+		for _, op := range function.Linear.Operations {
+			operations[op.ID] = op
+		}
+		for index, owner := range owners {
+			release := operations[block.OperationIDs[index]]
+			if release.Kind != core.OpRelease || release.SourceID != owner || release.ReleasesOperationID != acquisitionID || release.Foreign == nil || release.Foreign.Mode != "consume" {
+				return false
+			}
+		}
+		last := operations[block.OperationIDs[len(block.OperationIDs)-1]]
+		return last.Kind == terminal && (terminalSource == "" || last.SourceID == terminalSource)
+	}
+	return false
 }
 
 // ValidatePublished recomputes every function's origin from its body and
