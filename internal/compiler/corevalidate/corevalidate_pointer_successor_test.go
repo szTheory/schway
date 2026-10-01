@@ -22,6 +22,13 @@ func phase25PointerProgram(t *testing.T, dir, fixture string) core.Program {
 }
 
 func TestPhase25PointerFamilyCore(t *testing.T) {
+	for _, fixture := range []string{"shared_shared_accept.schway", "sequential_shared_then_exclusive_accept.schway"} {
+		program := phase25PointerProgram(t, "phase3", fixture)
+		if result := corevalidate.Validate(program); !result.Valid {
+			t.Errorf("independent core peer rejected %s: %+v", fixture, result.Problems)
+		}
+	}
+
 	shared := phase25PointerProgram(t, "phase25", "shared_copy_accept.schway")
 	if result := corevalidate.Validate(shared); !result.Valid {
 		t.Fatalf("independent core peer rejected shared read/copy: %+v", result.Problems)
