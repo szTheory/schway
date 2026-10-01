@@ -421,6 +421,43 @@ func checkedSharedPointerABIFact(function core.Function) (pointerABIFact, bool) 
 	return pointerABIFact{}, false
 }
 
+// checkedExclusivePointerABIFact admits only the Phase 25 exclusive
+// read/copy helper. The source loan is exclusive while live, but the emitted
+// pointer grants no mutation or optimizer promise; its scalar copy is the
+// only admitted body operation.
+func checkedExclusivePointerABIFact(function core.Function) (pointerABIFact, bool) {
+	if function.Parameter.Type != "U64" || function.ReturnType != "U64" || function.Linear == nil ||
+		!selectsByPointerLowering(function, function.Linear) || len(function.Linear.Operations) != 3 {
+		return pointerABIFact{}, false
+	}
+	borrow, copyValue, ret := function.Linear.Operations[0], function.Linear.Operations[1], function.Linear.Operations[2]
+	if borrow.Kind != core.OpBorrowExclusive || borrow.SourceID != function.Parameter.ID || borrow.TargetID == "" || borrow.LoanID == "" ||
+		copyValue.Kind != core.OpCopy || copyValue.SourceID != borrow.TargetID || copyValue.TargetID == "" ||
+		ret.Kind != core.OpReturn || ret.SourceID != copyValue.TargetID || ret.TypeID != copyValue.TypeID {
+		return pointerABIFact{}, false
+	}
+	parameterType, borrowType, copyType := "", "", ""
+	for _, place := range function.Linear.Places {
+		switch place.ID {
+		case function.Parameter.ID:
+			parameterType = place.TypeID
+		case borrow.TargetID:
+			borrowType = place.TypeID
+		case copyValue.TargetID:
+			copyType = place.TypeID
+		}
+	}
+	if parameterType == "" || parameterType != borrowType || parameterType != copyType || parameterType != borrow.TypeID || parameterType != copyValue.TypeID {
+		return pointerABIFact{}, false
+	}
+	for _, fact := range function.Linear.Types {
+		if fact.ID == parameterType && fact.Shape.Constructor == "U64" {
+			return pointerABIFact{PointerParameter: true, ParameterCType: "uint64_t *", ValueCType: "uint64_t", Access: "exclusive", FunctionID: function.ID, ParameterID: function.Parameter.ID}, true
+		}
+	}
+	return pointerABIFact{}, false
+}
+
 // emittedAttributeForByPointerParameter returns D-05-01's restrict
 // attribute metadata for a shape classified by selectsByPointerLowering.
 // This manifest description does not admit the corresponding program body.
@@ -1122,6 +1159,9 @@ func singleManifestFunction(program core.Program) (core.Function, error) {
 	}
 	for _, function := range program.Functions {
 		if function.Linear != nil && selectsByPointerLowering(function, function.Linear) {
+			if _, ok := checkedExclusivePointerABIFact(function); ok {
+				return function, nil
+			}
 			return function, nil
 		}
 		if _, ok := checkedSharedPointerABIFact(function); ok {
@@ -1151,6 +1191,10 @@ func EmitForeignManifest(program core.Program) (string, error) {
 		document.Layout = contract.Layout
 	} else {
 		if fact, ok := checkedSharedPointerABIFact(function); ok {
+			document.EmittedPointerParameters = append(document.EmittedPointerParameters, EmittedPointerParameter{
+				CoreNode: fact.FunctionID, Parameter: fact.ParameterID, CType: fact.ParameterCType, Access: fact.Access,
+			})
+		} else if fact, ok := checkedExclusivePointerABIFact(function); ok {
 			document.EmittedPointerParameters = append(document.EmittedPointerParameters, EmittedPointerParameter{
 				CoreNode: fact.FunctionID, Parameter: fact.ParameterID, CType: fact.ParameterCType, Access: fact.Access,
 			})

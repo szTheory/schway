@@ -652,9 +652,12 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		// cardinality. A legacy pointer-specialized body must not become
 		// admissible merely because an otherwise ordinary caller is present.
 		if function.Match == nil && selectsByPointerLowering(function, function.Linear) {
-			return "", fmt.Errorf("function %q: by-pointer bodies are not supported by whole-program native emission this phase", function.ID)
-		}
-		if function.Match == nil && selectsByPointerLoweringSharedOnly(function, function.Linear) {
+			fact, ok := checkedExclusivePointerABIFact(function)
+			if !ok {
+				return "", fmt.Errorf("function %q: by-pointer bodies are not supported by whole-program native emission this phase", function.ID)
+			}
+			pointerABIFacts[function.ID] = fact
+		} else if function.Match == nil && selectsByPointerLoweringSharedOnly(function, function.Linear) {
 			fact, ok := checkedSharedPointerABIFact(function)
 			if !ok {
 				return "", fmt.Errorf("function %q: by-pointer bodies are not supported by whole-program native emission this phase", function.ID)
@@ -2214,7 +2217,7 @@ func emitProgramFunction(out *strings.Builder, function core.Function, parameter
 			sourceValue := locals[source.ID]
 			if pointerABI.PointerParameter {
 				valueTypeName = pointerABI.ValueCType
-				if operation.Kind == core.OpBorrowShared && operation.SourceID == function.Parameter.ID {
+				if (operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive) && operation.SourceID == function.Parameter.ID {
 					sourceValue = "*" + sourceValue
 				}
 			}
