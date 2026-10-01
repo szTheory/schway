@@ -5,10 +5,10 @@ milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 25
 current_phase_name: Separate Pointer Successors and Integrated Utility
 status: planning
-stopped_at: Phase 24 complete, ready to plan Phase 25
-last_updated: "2026-10-01T12:05:05.842Z"
+stopped_at: Phase 24 complete; context-clear handoff saved; next command is $gsd-discuss-phase 25
+last_updated: "2026-10-01T17:07:58Z"
 last_activity: 2026-10-01
-last_activity_desc: Phase 24 complete, transitioned to Phase 25
+last_activity_desc: Prepared durable checkout and explicit Phase 25 discussion handoff
 state_head: ee1190031484dfb7e468db0b597d954802c06b8b
 progress:
   total_phases: 4
@@ -22,7 +22,7 @@ progress:
 Current publication identity (2026-09-28): Schway uses the Go module `github.com/szTheory/schway`, the `schway` and `schway-repair` commands, `.schway` source files, `schway.*` and `schway:*` protocol identifiers, and `schway_` and `SCHWAY_` native ABI symbols. Preserve older spellings only where they document historical implementation evidence.
 <!-- schway-current:end -->
 
-Public repository follow-up (2026-09-30): `szTheory/schway` `main` is at
+Historical public repository follow-up (2026-09-30; superseded by the acceptance receipts below): `szTheory/schway` `main` is at
 `856790af`. Hosted run `36688618461` passed full Ubuntu/macOS checks, including
 both race suites, but both Phase 6 aggregates failed because Phase16 makes the
 Phase 4 release fixture refusal-only. Commit `ff3b3052` records that exact
@@ -115,8 +115,8 @@ hiding runtime costs.
 
 Phase: 25 — Separate Pointer Successors and Integrated Utility
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-01 — Phase 24 complete, transitioned to Phase 25
+Status: Ready for Phase 25 discussion
+Last activity: 2026-10-01 — Durable checkout and Phase 25 context-clear handoff verified; Phase 24 remains complete
 
 Progress: [████████░░] 75%
 
@@ -693,7 +693,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 Last session: 2026-10-01
 Stopped at: Phase 24 complete; Phases 22–24 verification reports pass; ready to discuss Phase 25
-Resume file: None
+Resume file: `.planning/phases/25-separate-pointer-successors-and-integrated-utility/continue.md`
 Next command: `$gsd-discuss-phase 25`
 Routing resolution — 2026-10-01 (post-closeout): canonical `init.progress` now
 reports Phases 22, 23, and 24 complete with verification `passed`; Phase 22's
