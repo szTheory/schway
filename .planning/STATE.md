@@ -3,19 +3,19 @@ gsd_state_version: "1.0"
 milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 25
-current_phase_name: Separate Pointer Successors and Integrated Utility
+current_phase_name: separate-pointer-successors-and-integrated-utility
 status: planning
 stopped_at: Phase 25 context gathered
-last_updated: "2026-10-01T18:20:45.925Z"
+last_updated: "2026-10-01T19:46:34.010Z"
 last_activity: 2026-10-01
 last_activity_desc: Archived the original checkout and restored the current source to the canonical schway directory
-state_head: f4c271499afbeef7b3faff19185df3ed6b792dff
+state_head: 840da624ea0e01cb196af21ee4960dfb7e257b26
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 13
+  total_plans: 18
   completed_plans: 13
-  percent: 75
+  percent: 72
 ---
 
 <!-- schway-current:start -->
@@ -121,12 +121,12 @@ next command: `$gsd-discuss-phase 25`.
 
 ## Current Position
 
-Phase: 25 — Separate Pointer Successors and Integrated Utility
+Phase: 25 (separate-pointer-successors-and-integrated-utility) — READY TO EXECUTE
 Plan: Not started
 Status: Ready for Phase 25 discussion
 Last activity: 2026-10-01 — Canonical checkout location restored and archive preservation verified; Phase 24 remains complete
 
-Progress: [████████░░] 75%
+Progress: [███████░░░] 72%
 
 ## M003 Closeout (archived)
 

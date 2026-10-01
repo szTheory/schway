@@ -188,7 +188,28 @@ a narrow form. Defect/process termination stays outside cleanup guarantees.
 4. Each foreign/shared/exclusive family has reproducible macOS and Linux native receipts naming source/build inputs, compiler, target, flags, expected answers, and applicable optimizer/sanitizer lanes. Missing host/lane evidence leaves the corresponding claim incomplete.
 5. From a clean checkout, a developer follows documented public commands to build/run the utility on the two supplied files and a specified failure, gets independent expected results, and locates explicit C bindings and lifetime evidence. Moved-from use, discarded ownership, pointer escape, and unsupported cleanup/exit examples produce stable structured diagnostics with source attribution and actionable boundary explanations.
 
-**Plans**: TBD
+**Plans**: 0/5 plans complete
+
+Plans:
+**Wave 1**
+
+- [ ] 25-01-PLAN.md — Admit the shared read/copy pointer ABI
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 25-02-PLAN.md — Independently validate borrow families and live paths
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 25-03-PLAN.md — Admit exclusive helper and integrated caller composition
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 25-04-PLAN.md — Complete exclusive lowering, model behavior, and diagnostics
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 25-05-PLAN.md — Publish the utility and dual-host evidence
 
 **Runnable witness**: Separate shared and exclusive helper sources each read/copy
 the known input byte with an exact expected answer. The final utility composes
