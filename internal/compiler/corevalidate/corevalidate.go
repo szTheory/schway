@@ -1505,11 +1505,34 @@ func (v *validator) validateTransferredOwner() bool {
 			ret = op
 		}
 	}
-	if borrow == nil || release == nil || ret == nil || borrow.SourceID != call.TargetID || release.SourceID != call.TargetID || release.ReleasesOperationID != acquire.op.ID || release.Foreign == nil || borrow.Foreign == nil || release.Foreign.Mode != "consume" || release.Foreign.Symbol != acquire.op.Foreign.Release || release.Allocator != acquire.op.Foreign.Allocator || release.Foreign.Allocator != acquire.op.Foreign.Allocator || ret.SourceID != borrow.TargetID {
+	if borrow == nil || release == nil || ret == nil || borrow.SourceID != call.TargetID || release.SourceID != call.TargetID || release.ReleasesOperationID != acquire.op.ID || release.Foreign == nil || borrow.Foreign == nil || release.Foreign.Mode != "consume" || release.Foreign.Symbol != acquire.op.Foreign.Release || release.Allocator != acquire.op.Foreign.Allocator || release.Foreign.Allocator != acquire.op.Foreign.Allocator {
 		return v.check(false, "core.owner_transfer_discharge", caller.ID)
 	}
 	if !(indexOperation(caller.Linear.Operations, borrow.ID) < indexOperation(caller.Linear.Operations, release.ID) && indexOperation(caller.Linear.Operations, release.ID) < indexOperation(caller.Linear.Operations, ret.ID)) {
 		return v.check(false, "core.owner_transfer_order", caller.ID)
+	}
+	// The integrated utility may return the scalar through exactly two
+	// independently checked copy helpers. Keep this proof deliberately
+	// syntactic and local: arbitrary call results, extra calls, and reordered
+	// chains do not inherit the direct borrowed-result admission above.
+	if ret.SourceID != borrow.TargetID {
+		var helperCalls []core.LinearOperation
+		for _, op := range caller.Linear.Operations {
+			if op.Kind == core.OpCall && op.ID != call.ID {
+				helperCalls = append(helperCalls, op)
+			}
+		}
+		if len(helperCalls) != 2 || !(indexOperation(caller.Linear.Operations, borrow.ID) < indexOperation(caller.Linear.Operations, helperCalls[0].ID) && indexOperation(caller.Linear.Operations, helperCalls[0].ID) < indexOperation(caller.Linear.Operations, helperCalls[1].ID) && indexOperation(caller.Linear.Operations, helperCalls[1].ID) < indexOperation(caller.Linear.Operations, release.ID) && indexOperation(caller.Linear.Operations, release.ID) < indexOperation(caller.Linear.Operations, ret.ID)) {
+			return v.check(false, "core.owner_transfer_order", caller.ID)
+		}
+		calleeByID := make(map[string]*core.Function, len(v.program.Functions))
+		for i := range v.program.Functions {
+			calleeByID[v.program.Functions[i].ID] = &v.program.Functions[i]
+		}
+		shared, exclusive := calleeByID[helperCalls[0].CalleeID], calleeByID[helperCalls[1].CalleeID]
+		if !isU64CopyHelper(shared, core.OpBorrowShared) || !isU64CopyHelper(exclusive, core.OpBorrowExclusive) || helperCalls[0].SourceID != borrow.TargetID || helperCalls[1].SourceID != helperCalls[0].TargetID || ret.SourceID != helperCalls[1].TargetID {
+			return v.check(false, "core.owner_transfer_discharge", caller.ID)
+		}
 	}
 	for _, op := range helper.Linear.Operations {
 		if op.Kind == core.OpRelease {
@@ -1517,6 +1540,16 @@ func (v *validator) validateTransferredOwner() bool {
 		}
 	}
 	return true
+}
+
+func isU64CopyHelper(function *core.Function, borrowKind core.OperationKind) bool {
+	if function == nil || function.Linear == nil || function.ReturnType != "U64" || function.Parameter.Type != "U64" || len(function.Linear.Operations) != 3 {
+		return false
+	}
+	borrow, copy, ret := function.Linear.Operations[0], function.Linear.Operations[1], function.Linear.Operations[2]
+	return borrow.Kind == borrowKind && borrow.SourceID == function.Parameter.ID && borrow.TargetID != "" &&
+		copy.Kind == core.OpCopy && copy.SourceID == borrow.TargetID && copy.TargetID != "" &&
+		ret.Kind == core.OpReturn && ret.SourceID == copy.TargetID
 }
 
 func phase24ErrorFunctionsPresent(program core.Program) bool {
@@ -3783,6 +3816,14 @@ func peerCalleeFrameDrained(function *core.Function) bool {
 
 	for _, acquisition := range linear.Operations {
 		if acquisition.Kind != core.OpForeignCall {
+			continue
+		}
+		// A checked borrowed result is an ordinary scalar observation, and
+		// a consuming foreign operation discharges an argument rather than
+		// acquiring a frame-owned resource. Only explicit contracts authorize
+		// these exemptions: legacy core with a nil Foreign contract and
+		// unknown modes remain conservatively tracked as acquisitions.
+		if acquisition.Foreign != nil && (acquisition.Foreign.Mode == "borrow" || acquisition.Foreign.Mode == "consume") {
 			continue
 		}
 		if okEdge, okKnown := edgesByID[acquisition.OkEdgeID]; okKnown {

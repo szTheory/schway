@@ -66,6 +66,56 @@ func TestPhase25IndependentPeer(t *testing.T) {
 	}
 }
 
+func TestPhase25UnsupportedPointerShape(t *testing.T) {
+	for _, test := range []struct{ name, fixture, code string }{
+		{"exclusive mutation conflicts with active loan", "exclusive_conflict_reject.schway", "ownership.borrow_conflict"},
+		{"exclusive result escape stays unsupported", "exclusive_escape_reject.schway", "core.origin_omitted"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.fixture == "exclusive_escape_reject.schway" {
+				result, err := session.CheckCommandFile(testsupport.ProjectPath("testdata", "phase25", test.fixture))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if result.Status != "invalid" || len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != test.code {
+					t.Fatalf("source control %q produced %+v, want %s", test.fixture, result.Diagnostics, test.code)
+				}
+				return
+			}
+			checked, err := session.CheckFile(testsupport.ProjectPath("testdata", "phase25", test.fixture))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(checked.Diagnostics) != 1 || checked.Diagnostics[0].Code != test.code {
+				t.Fatalf("source control %q produced %+v, want %s", test.fixture, checked.Diagnostics, test.code)
+			}
+			if checked.Diagnostics[0].Primary.Start == checked.Diagnostics[0].Primary.End {
+				t.Fatalf("source control %q lost its offending source span: %+v", test.fixture, checked.Diagnostics[0])
+			}
+		})
+	}
+}
+
+func TestPhase25OwnershipDiagnosticBoundary(t *testing.T) {
+	for _, test := range []struct{ name, phase, fixture, code string }{
+		{"moved-from use", "phase2", "use_after_move.schway", "ownership.use_after_move"},
+		{"discarded acquired owner", "phase23", "discard_owner.schway", "check.local_owner_discarded"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			checked, err := session.CheckFile(testsupport.ProjectPath("testdata", test.phase, test.fixture))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(checked.Diagnostics) != 1 || checked.Diagnostics[0].Code != test.code {
+				t.Fatalf("source control %q produced %+v, want %s", test.fixture, checked.Diagnostics, test.code)
+			}
+			if checked.Diagnostics[0].Primary.Start == checked.Diagnostics[0].Primary.End {
+				t.Fatalf("source control %q lost source attribution: %+v", test.fixture, checked.Diagnostics[0])
+			}
+		})
+	}
+}
+
 func mustPhase25Fixture(t *testing.T, name string) []byte {
 	t.Helper()
 	data, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase25", name))
