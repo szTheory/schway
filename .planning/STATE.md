@@ -5,10 +5,10 @@ milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 25
 current_phase_name: Separate Pointer Successors and Integrated Utility
 status: planning
-stopped_at: Phase 24 complete; context-clear handoff saved; next command is $gsd-discuss-phase 25
-last_updated: "2026-10-01T17:07:58Z"
+stopped_at: Current checkout restored to canonical schway directory; Phase 24 complete; next command is $gsd-discuss-phase 25
+last_updated: "2026-10-01T17:22:41Z"
 last_activity: 2026-10-01
-last_activity_desc: Prepared durable checkout and explicit Phase 25 discussion handoff
+last_activity_desc: Archived the original checkout and restored the current source to the canonical schway directory
 state_head: ee1190031484dfb7e468db0b597d954802c06b8b
 progress:
   total_phases: 4
@@ -57,6 +57,14 @@ See: .planning/PROJECT.md (updated 2026-09-28)
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
 **Current focus:** Phase 25 — Separate Pointer Successors and Integrated Utility
+
+**Checkout location (2026-10-01):** This is the current, canonical `schway`
+checkout, renamed from `schway-public`. Its branch remains
+`worktree-agent-p24-01-retry`. The original pre-publication checkout, including
+its uncommitted planning material and private audit records, is preserved in
+the sibling `schway-archive` directory. Keep those private files outside this
+Git tree. The directory move does not change source, phase completion, or the
+next command: `$gsd-discuss-phase 25`.
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -116,7 +124,7 @@ hiding runtime costs.
 Phase: 25 — Separate Pointer Successors and Integrated Utility
 Plan: Not started
 Status: Ready for Phase 25 discussion
-Last activity: 2026-10-01 — Durable checkout and Phase 25 context-clear handoff verified; Phase 24 remains complete
+Last activity: 2026-10-01 — Canonical checkout location restored and archive preservation verified; Phase 24 remains complete
 
 Progress: [████████░░] 75%
 
@@ -678,6 +686,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 260927-j11 | Allow dotted GSD gate IDs and resume Phase 22 wave dispatch | 2026-09-27 | 961069f | — | [260927-j11-allow-dotted-gsd-gate-ids-in-the-secure-](./quick/260927-j11-allow-dotted-gsd-gate-ids-in-the-secure-/) |
 | 260928-rta | Record Schway as the chosen public language name in active identity and planning docs; preserve archived history and record the deferred distribution-identifier migration boundary | 2026-09-28 | 0382c16 | passed | [260928-rta-record-schway-as-the-chosen-public-langu](./quick/260928-rta-record-schway-as-the-chosen-public-langu/) |
 | 260928-sof | Record the empty public GitHub repository github.com/szTheory/schway and the no-PII, no-source-push boundary | 2026-09-28 | — | passed | [260928-sof-record-the-empty-public-github-repositor](./quick/260928-sof-record-the-empty-public-github-repositor/) |
+| 261001-ikw | Archive the original checkout and restore the current source to the canonical schway folder | 2026-10-01 | — | passed | [261001-ikw-archive-the-original-checkout-and-restor](./quick/261001-ikw-archive-the-original-checkout-and-restor/) |
 
 ## Deferred Items
 
@@ -692,7 +701,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-10-01
-Stopped at: Phase 24 complete; Phases 22–24 verification reports pass; ready to discuss Phase 25
+Stopped at: Current source is back in the canonical schway folder; Phases 22–24 verification reports pass; ready to discuss Phase 25
 Resume file: `.planning/phases/25-separate-pointer-successors-and-integrated-utility/continue.md`
 Next command: `$gsd-discuss-phase 25`
 Routing resolution — 2026-10-01 (post-closeout): canonical `init.progress` now

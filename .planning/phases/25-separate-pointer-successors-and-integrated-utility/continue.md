@@ -15,6 +15,11 @@ Run **`$gsd-discuss-phase 25`** in this checkout, on
 `worktree-agent-p24-01-retry`. Phase 25 has no CONTEXT or plans yet. Capture its
 remaining product decisions before planning; do not skip directly to execution.
 
+This is the canonical `schway` project folder, renamed from `schway-public`.
+The original private checkout is preserved in sibling `schway-archive`.
+Open the canonical folder for new sessions; its current branch and all Phase
+24 decisions/evidence remain intact. Private audit files stay in the archive.
+
 ## Scope and evidence to carry forward
 
 Phase 25 is **Separate Pointer Successors and Integrated Utility**: one bounded
