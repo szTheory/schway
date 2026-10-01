@@ -40,7 +40,15 @@ func phase25ExclusiveProgram(t *testing.T) []byte {
 
 func phase25SharedProgramWithCaller(t *testing.T) core.Program {
 	t.Helper()
-	checked := session.Check(phase25SharedProgram(t))
+	return phase25SharedProgramWithCallerSource(t, phase25SharedProgram(t))
+}
+
+func phase25SharedProgramWithCallerSource(t *testing.T, source []byte) core.Program {
+	t.Helper()
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("shared-copy fixture failed to check: %+v", checked.Diagnostics)
+	}
 	program := checked.Program
 	program.Functions = append([]core.Function(nil), checked.Program.Functions...)
 	helper := program.Functions[0]
@@ -62,6 +70,21 @@ func phase25SharedProgramWithCaller(t *testing.T) core.Program {
 		},
 	})
 	return program
+}
+
+func TestPhase25SharedPointerCopyABI(t *testing.T) {
+	source := strings.Replace(string(phase25SharedProgram(t)), "  borrowed\n", "  let copied = borrowed\n  copied\n", 1)
+	if source == string(phase25SharedProgram(t)) {
+		t.Fatal("shared fixture return was not replaced with an explicit U64 copy")
+	}
+	program := phase25SharedProgramWithCallerSource(t, []byte(source))
+	generation, err := cgen.EmitProgramNativeForTest(program)
+	if err != nil {
+		t.Fatalf("shared borrow-copy-return helper was refused: %v", err)
+	}
+	if !strings.Contains(generation, "const uint64_t *") || !strings.Contains(generation, "SCHWAY_SHARED_COPY(&") || !strings.Contains(generation, " = *") {
+		t.Fatalf("shared U64 copy was not emitted through its const pointer ABI:\n%s", generation)
+	}
 }
 
 func phase25ExclusiveProgramWithCaller(t *testing.T) core.Program {
