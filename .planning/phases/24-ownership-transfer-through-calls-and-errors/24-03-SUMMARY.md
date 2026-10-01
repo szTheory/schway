@@ -16,9 +16,9 @@ affects: [phase-24-verification, phase-25, ownership-evidence, native-emission]
 
 # Actuals (#2632)
 actuals:
-  tokens: 9209
+  tokens: 9800
   tasks: 2
-  commits: 2
+  commits: 3
 
 # Tech tracking
 tech-stack:
@@ -54,7 +54,7 @@ coverage:
     requirement: EVD-09
     verification:
       - kind: integration
-        ref: "CI 36852275511: TestPhase24ObserverPublicLifecycleAndTypedError on Ubuntu and macOS"
+        ref: "CI 36856048690: TestPhase24ObserverPublicLifecycleAndTypedError on Ubuntu and macOS"
         status: pass
     human_judgment: false
   - id: D2
@@ -62,22 +62,22 @@ coverage:
     requirement: EVD-09
     verification:
       - kind: integration
-        ref: "CI 36852275511: TestPhase24ObserverReachedPhysicalDestructorControls on Ubuntu and macOS"
+        ref: "CI 36856048690: TestPhase24ObserverReachedPhysicalDestructorControls on Ubuntu and macOS"
         status: pass
     human_judgment: false
   - id: D3
     description: Deterministic replay retains model-only claims, and the focused Phase 24 aggregate passes with host-bound receipts on both required hosts.
     verification:
       - kind: integration
-        ref: "CI 36852275511: scripts/verify-phase24.sh passed on Linux/x86_64 (28s) and Darwin/arm64 (20s) at c0d6a17ad51a952aaa11921dcc0f05ab8bc60bf2"
+        ref: "CI 36856048690: scripts/verify-phase24.sh passed on Linux/x86_64 (25s) and Darwin/arm64 (22s) at ed94ef7972b25deb85ab90fafbf3403dc31629f5"
         status: pass
       - kind: integration
-        ref: "CI 36852275511: go vet, go build, go test, and go test -race passed on Ubuntu and macOS"
+        ref: "CI 36856048690: go vet, go build, go test, and go test -race passed on Ubuntu and macOS"
         status: pass
     human_judgment: false
 
 # Metrics
-duration: 600min
+duration: 634min
 completed: 2026-10-01
 status: complete
 ---
@@ -88,9 +88,9 @@ status: complete
 
 ## Performance
 
-- **Duration:** 10 hours wall time, including the hosted CI wait
+- **Duration:** 10 hours 34 minutes wall time, including hosted CI and review correction
 - **Started:** 2026-09-30T21:12:12-04:00
-- **Completed:** 2026-10-01T07:12:27-04:00
+- **Completed:** 2026-10-01T07:46:39-04:00
 - **Tasks:** 2
 - **Files modified:** 7
 
@@ -102,10 +102,10 @@ status: complete
 
 ## Hosted Verification
 
-Hosted workflow [CI run 36852275511](https://github.com/szTheory/schway/actions/runs/36852275511) completed successfully at source revision `c0d6a17ad51a952aaa11921dcc0f05ab8bc60bf2` on branch `worktree-agent-p24-01-retry`.
+The final hosted workflow [CI run 36856048690](https://github.com/szTheory/schway/actions/runs/36856048690) completed successfully at source revision `ed94ef7972b25deb85ab90fafbf3403dc31629f5` on branch `worktree-agent-p24-01-retry`. The clean-tree host receipts bind both focused runs to that same revision.
 
-- Ubuntu: full `go vet ./...`, `go build ./...`, `go test ./...`, and race suite passed. `scripts/verify-phase24.sh` passed in 28 seconds on Linux/x86_64 (`linux/amd64`, target `x86_64-pc-linux-gnu`); the host receipt recorded a clean tree and the source revision.
-- macOS: the same full and race suites passed. `scripts/verify-phase24.sh` passed in 20 seconds on Darwin/arm64 (`darwin/arm64`, target `arm64-apple-darwin25.6.0`); the host receipt recorded a clean tree and the source revision.
+- Ubuntu: full `go vet ./...`, `go build ./...`, `go test ./...`, and race suite passed in 5m44s. `scripts/verify-phase24.sh` passed in 25 seconds on Linux/x86_64 (`linux/amd64`, target `x86_64-pc-linux-gnu`); the host receipt recorded a clean tree and the source revision. The full evidence aggregate passed in 8m23s.
+- macOS: the same full and race suites passed in 11m30s. `scripts/verify-phase24.sh` passed in 22 seconds on Darwin/arm64 (`darwin/arm64`, target `arm64-apple-darwin25.6.0`); the host receipt recorded a clean tree and the source revision. The full evidence aggregate passed in 13m37s.
 - Both current evidence aggregates also passed the existing Phase 23, Phase 6, and Phase 15 evidence steps. The optional validation-corpus receipt was skipped for this manual dispatch and is not claimed.
 - No local project tests or scripts were run; this plan requires hosted-only automated validation. `gofmt` and `git diff --check` were used during implementation.
 
@@ -113,6 +113,7 @@ Hosted workflow [CI run 36852275511](https://github.com/szTheory/schway/actions/
 
 1. **Observe physical transfer, cleanup and five reached mutations** — `3828e9c6` (`test(24-03): observe physical transfer cleanup`)
 2. **Bind model-only replay and public contract to the existing two-host CI lane** — `c0d6a17a` (`feat(24-03): bind replay and hosted evidence contract`)
+3. **Strengthen model release owner identity and invocation assertions** — `ed94ef79` (`test(24-03): assert model cleanup owner identities`). The code review caught that checking only function IDs could miss swapped caller-owner releases; the assertions now also require owner-place order and bind each release to its dynamic frame. The follow-up review is clean.
 
 ## Decisions Made
 
@@ -136,7 +137,7 @@ None.
 
 ## Next Phase Readiness
 
-Plan 24-03's hosted evidence is complete. Phase-level review, regression, and goal-verification gates remain before Phase 24 is marked complete. After those gates, Phase 25 is the next capability: separate bounded shared/exclusive read-copy pointer witnesses and the integrated utility.
+Plan 24-03's hosted evidence is complete. Phase-level review and the cross-phase regression gate passed; goal verification remains before Phase 24 is marked complete. After those gates, Phase 25 is the next capability: separate bounded shared/exclusive read-copy pointer witnesses and the integrated utility.
 
 ---
 *Phase: 24-ownership-transfer-through-calls-and-errors*
