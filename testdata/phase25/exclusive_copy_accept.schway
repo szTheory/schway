@@ -6,5 +6,6 @@ export {
 
 fn exclusive_copy(value: U64) -> U64 {
   let borrowed = borrow mut value
-  borrowed
+  let copied = borrowed
+  copied
 }

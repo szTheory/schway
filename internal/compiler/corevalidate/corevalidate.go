@@ -3339,6 +3339,13 @@ func peerDeriveOriginFacts(function *core.Function) peerOriginFact {
 				}
 			}
 		case core.OpMove, core.OpCopy:
+			if operation.Kind == core.OpCopy && peerIsCopiedU64(function, operation) {
+				// A copy of the admitted scalar representation reads an
+				// independent U64 value. The loan still has this OpCopy as a
+				// use (so access/liveness derivation reaches it), but the copied
+				// target no longer carries the parameter's borrow origin.
+				continue
+			}
 			if paramTrace[operation.SourceID] {
 				paramTrace[operation.TargetID] = true
 			}
@@ -3356,6 +3363,24 @@ func peerDeriveOriginFacts(function *core.Function) peerOriginFact {
 		}
 	}
 	return peerOriginFact{}
+}
+
+// peerIsCopiedU64 is corevalidate's narrow value-copy boundary for Phase 25.
+// U64 is a sealed scalar with Copy ability; copying a value read through a
+// borrow ends the origin chain, while the preceding OpCopy remains an access
+// to the borrowed place for loan-conflict and liveness checks. Do not infer
+// this behavior from a caller's desired family or from a serialized pointer
+// ABI claim.
+func peerIsCopiedU64(function *core.Function, operation core.LinearOperation) bool {
+	if function == nil || function.Linear == nil || operation.Kind != core.OpCopy || operation.TypeID == "" {
+		return false
+	}
+	for _, fact := range function.Linear.Types {
+		if fact.ID == operation.TypeID {
+			return fact.Shape.Constructor == "U64" && len(fact.Shape.Arguments) == 0 && abilityGranted(fact.Abilities, core.AbilityCopy)
+		}
+	}
+	return false
 }
 
 // disablePeerOriginContainmentForTest is Task 1's D-09-19 fault-injection

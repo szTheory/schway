@@ -294,6 +294,13 @@ func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOpe
 			// A constant introduces a fresh owned value. It has no parameter
 			// origin and is the terminal root for this backward walk.
 			return ReturnOrigin{OperationID: returnOp.ID}
+		case core.OpCopy:
+			if originCopyIsU64(function, operation) {
+				// The copy operation still reads the borrowed place, but its
+				// target is an independent scalar value and therefore has no
+				// borrowed return origin.
+				return ReturnOrigin{OperationID: returnOp.ID}
+			}
 		case core.OpBorrowExclusive:
 			if derivedAccess == "" {
 				derivedAccess = "exclusive"
@@ -380,6 +387,22 @@ func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOpe
 		return ReturnOrigin{OperationID: returnOp.ID}
 	}
 	return ReturnOrigin{OperationID: returnOp.ID, Paths: []string{function.Parameter.Name}, Access: derivedAccess, Derived: true}
+}
+
+// originCopyIsU64 is originvalidate's independent recognition of the only
+// scalar value-copy boundary admitted by Phase 25. The core validator
+// separately re-derives Copy ability; this walk uses the closed U64 shape
+// rather than importing or accepting the producer's origin conclusion.
+func originCopyIsU64(function core.Function, operation core.LinearOperation) bool {
+	if operation.Kind != core.OpCopy || operation.TypeID == "" || function.Linear == nil {
+		return false
+	}
+	for _, fact := range function.Linear.Types {
+		if fact.ID == operation.TypeID {
+			return fact.Shape.Constructor == "U64" && len(fact.Shape.Arguments) == 0
+		}
+	}
+	return false
 }
 
 // RecomputeOrigin derives the origin path(s) and access mode a function's

@@ -107,8 +107,8 @@ func TestPhase25U64CopyOrigin(t *testing.T) {
 	}
 	borrowedID := linear.Operations[0].TargetID
 	borrowType := linear.Operations[0].TypeID
+	linear.Places[2].Name = "overlap"
 	linear.Places = append(linear.Places,
-		core.Place{ID: function.ID + ":place:2", Name: "overlap", TypeID: borrowType},
 		core.Place{ID: function.ID + ":place:3", Name: "copied", TypeID: borrowType},
 		core.Place{ID: function.ID + ":place:4", Name: "overlap_copy", TypeID: borrowType},
 	)

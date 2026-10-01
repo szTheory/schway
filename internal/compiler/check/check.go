@@ -3921,7 +3921,7 @@ func phase24ReleaseOp(functionID string, ordinal int, ownerPlace, ownerType, acq
 func checkLocalFileByteEntry(functionID string, function ast.FuncDecl, symbols map[string]foreignSymbolInfo, callees map[string]calleeContract) (core.Function, []diagnostic.Diagnostic, int) {
 	body := function.Body.Linear
 	if transfer, ok := callees[bodyTransferCallee(body)]; ok && function.Name == "main" && function.ReturnType.Constructor == "U64" {
-		return checkLocalFileByteTransferCaller(functionID, function, symbols, transfer)
+		return checkLocalFileByteTransferCaller(functionID, function, symbols, callees, transfer)
 	}
 	refusal := func(code, message string) (core.Function, []diagnostic.Diagnostic, int) {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(code, body.Span, message)}, 1
@@ -4036,15 +4036,23 @@ func bodyTransferCallee(body *ast.LinearBody) string {
 	return body.Bindings[0].RHS.Callee
 }
 
-func checkLocalFileByteTransferCaller(functionID string, function ast.FuncDecl, symbols map[string]foreignSymbolInfo, callee calleeContract) (core.Function, []diagnostic.Diagnostic, int) {
+func checkLocalFileByteTransferCaller(functionID string, function ast.FuncDecl, symbols map[string]foreignSymbolInfo, callees map[string]calleeContract, callee calleeContract) (core.Function, []diagnostic.Diagnostic, int) {
 	body := function.Body.Linear
 	refuse := func(code, message string, span diagnostic.Span) (core.Function, []diagnostic.Diagnostic, int) {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(code, span, message)}, 1
 	}
-	if body == nil || len(body.Bindings) != 2 || body.Result != body.Bindings[1].Name || body.Bindings[0].RHS.Kind != "call" || len(body.Bindings[0].RHS.Arguments) != 1 || body.Bindings[0].RHS.Arguments[0] != function.Parameter.Name || body.Bindings[1].RHS.Kind != "try_call" || body.Bindings[1].RHS.Callee != "schway_file_byte_use" || len(body.Bindings[1].RHS.Arguments) != 1 || body.Bindings[1].RHS.Arguments[0] != body.Bindings[0].Name {
-		return refuse("check.local_owner_shape_unsupported", "PathToken caller may only receive one owner helper, borrow it once, and return U64", body.Span)
+	if body == nil || len(body.Bindings) != 4 || body.Result != body.Bindings[3].Name ||
+		body.Bindings[0].RHS.Kind != "call" || len(body.Bindings[0].RHS.Arguments) != 1 || body.Bindings[0].RHS.Arguments[0] != function.Parameter.Name ||
+		body.Bindings[1].RHS.Kind != "try_call" || body.Bindings[1].RHS.Callee != "schway_file_byte_use" || len(body.Bindings[1].RHS.Arguments) != 1 || body.Bindings[1].RHS.Arguments[0] != body.Bindings[0].Name ||
+		body.Bindings[2].RHS.Kind != "call" || body.Bindings[2].RHS.Callee != "shared_copy" || len(body.Bindings[2].RHS.Arguments) != 1 || body.Bindings[2].RHS.Arguments[0] != body.Bindings[1].Name ||
+		body.Bindings[3].RHS.Kind != "call" || body.Bindings[3].RHS.Callee != "exclusive_copy" || len(body.Bindings[3].RHS.Arguments) != 1 || body.Bindings[3].RHS.Arguments[0] != body.Bindings[2].Name {
+		return refuse("check.local_owner_shape_unsupported", "PathToken caller may only acquire one owner, use it fallibly, copy through shared then exclusive helpers, and return U64", body.Span)
 	}
-	if callee.ParameterType != "PathToken" || callee.ReturnType != "FileByteOwner" || function.ReturnType.Constructor != "U64" {
+	shared, hasShared := callees["shared_copy"]
+	exclusive, hasExclusive := callees["exclusive_copy"]
+	if callee.ParameterType != "PathToken" || callee.ReturnType != "FileByteOwner" || function.ReturnType.Constructor != "U64" ||
+		!hasShared || shared.ParameterType != "U64" || shared.ReturnType != "U64" ||
+		!hasExclusive || exclusive.ParameterType != "U64" || exclusive.ReturnType != "U64" {
 		return refuse("check.local_owner_contract_invalid", "owner transfer requires a PathToken helper returning FileByteOwner and a U64 entry result", body.Bindings[0].RHS.Span)
 	}
 	use, found := symbols["schway_file_byte_use"]
@@ -4059,13 +4067,21 @@ func checkLocalFileByteTransferCaller(functionID string, function ast.FuncDecl, 
 	valueAbilities, _ := deriveCheckerReturnAbilities(valueType)
 	id := func(kind string, n int) string { return fmt.Sprintf("%s:%s:%d", functionID, kind, n) }
 	types := []core.TypeFact{{ID: id("type", 0), Shape: pathType, Abilities: pathAbilities.Granted, NegativeWitnesses: pathAbilities.NegativeWitnesses}, {ID: id("type", 1), Shape: ownerType, Abilities: ownerAbilities.Granted, NegativeWitnesses: ownerAbilities.NegativeWitnesses}, {ID: id("type", 2), Shape: valueType, Abilities: valueAbilities.Granted, NegativeWitnesses: valueAbilities.NegativeWitnesses}}
-	places := []core.Place{{ID: id("place", 0), Name: function.Parameter.Name, TypeID: id("type", 0)}, {ID: id("place", 1), Name: body.Bindings[0].Name, TypeID: id("type", 1)}, {ID: id("place", 2), Name: body.Bindings[1].Name, TypeID: id("type", 2)}}
+	places := []core.Place{
+		{ID: id("place", 0), Name: function.Parameter.Name, TypeID: id("type", 0)},
+		{ID: id("place", 1), Name: body.Bindings[0].Name, TypeID: id("type", 1)},
+		{ID: id("place", 2), Name: body.Bindings[1].Name, TypeID: id("type", 2)},
+		{ID: id("place", 3), Name: body.Bindings[2].Name, TypeID: id("type", 2)},
+		{ID: id("place", 4), Name: body.Bindings[3].Name, TypeID: id("type", 2)},
+	}
 	acquisitionID := callee.ID + ":op:0"
 	ops := []core.LinearOperation{
 		{ID: id("op", 0), PointID: id("point:linear", 0), Kind: core.OpCall, SourceID: places[0].ID, TargetID: places[1].ID, TypeID: types[1].ID, CalleeID: callee.ID},
 		{ID: id("op", 1), PointID: id("point:linear", 1), Kind: core.OpForeignCall, SourceID: places[1].ID, TargetID: places[2].ID, TypeID: types[2].ID, Foreign: localForeignContract(use)},
-		{ID: id("op", 2), PointID: id("point:linear", 2), Kind: core.OpRelease, SourceID: places[1].ID, TypeID: types[1].ID, ReleasesOperationID: acquisitionID, Allocator: release.Allocator, Foreign: localForeignContract(release)},
-		{ID: id("op", 3), PointID: id("point:linear", 3), Kind: core.OpReturn, SourceID: places[2].ID, TypeID: types[2].ID},
+		{ID: id("op", 2), PointID: id("point:linear", 2), Kind: core.OpCall, SourceID: places[2].ID, TargetID: places[3].ID, TypeID: types[2].ID, CalleeID: shared.ID},
+		{ID: id("op", 3), PointID: id("point:linear", 3), Kind: core.OpCall, SourceID: places[3].ID, TargetID: places[4].ID, TypeID: types[2].ID, CalleeID: exclusive.ID},
+		{ID: id("op", 4), PointID: id("point:linear", 4), Kind: core.OpRelease, SourceID: places[1].ID, TypeID: types[1].ID, ReleasesOperationID: acquisitionID, Allocator: release.Allocator, Foreign: localForeignContract(release)},
+		{ID: id("op", 5), PointID: id("point:linear", 5), Kind: core.OpReturn, SourceID: places[4].ID, TypeID: types[2].ID},
 	}
 	return core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "PathToken"}, ReturnType: "U64", Linear: &core.LinearBody{ID: functionID + ":linear", Types: types, Places: places, Operations: ops, Blocks: []core.Block{}, Edges: []core.Edge{}}, Span: function.Span}, nil, 9
 }

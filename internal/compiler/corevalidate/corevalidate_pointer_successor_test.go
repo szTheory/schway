@@ -85,7 +85,7 @@ func TestPhase25U64CopyOriginCore(t *testing.T) {
 	if len(linear.Operations) != 3 || linear.Operations[0].Kind != core.OpBorrowExclusive || linear.Operations[1].Kind != core.OpCopy || linear.Operations[2].Kind != core.OpReturn {
 		t.Fatalf("exclusive-copy fixture has unexpected operations: %+v", linear.Operations)
 	}
-	linear.Places = append(linear.Places, core.Place{ID: function.ID + ":place:2", Name: "overlap", TypeID: linear.Operations[0].TypeID})
+	linear.Places[2].Name = "overlap"
 	linear.Operations[2].SourceID = function.ID + ":place:3"
 	linear.Operations = []core.LinearOperation{
 		linear.Operations[0],
