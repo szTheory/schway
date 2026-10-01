@@ -37,7 +37,7 @@ IDs continue existing categories, including reserved historical future IDs.
 
 ### Ownership across Schway calls
 
-- [ ] **OWN-10**: A live resource can move through an admitted Schway call and return, remain usable by its new owner, and be released there exactly once; copying or using the moved-from owner is rejected, and an owning process-entry result is refused without an external receiver.
+- [x] **OWN-10**: A live resource can move through an admitted Schway call and return, remain usable by its new owner, and be released there exactly once; copying or using the moved-from owner is rejected, and an owning process-entry result is refused without an external receiver.
 - [ ] **OWN-11**: Acquisitions from the same static site in distinct callee activations have distinct semantic identities, preserved across transfers and independently checked without treating raw host addresses as portable identities.
 - [ ] **OWN-12**: Typed error propagation across Schway calls discharges remaining caller/callee obligations according to the declared cleanup order, including multiple successful acquisitions followed by a real later failure; an actual entry-to-error path exercises the cleanup.
 
@@ -155,7 +155,7 @@ No new requirement maps to completed historical Phase 21. All remain Pending.
 | RES-07 | Phase 23 | Complete |
 | RES-08 | Phase 23 | Complete |
 | RES-09 | Phase 23 | Complete |
-| OWN-10 | Phase 24 | Pending |
+| OWN-10 | Phase 24 | Complete |
 | OWN-11 | Phase 24 | Pending |
 | OWN-12 | Phase 24 | Pending |
 | NAT-11 | Phase 25 | Pending |

@@ -149,14 +149,14 @@ form covers all affected consumers; owning aggregates remain refused.
 4. Copying ownership, using a moved-from owner, or returning an owning process-entry result without an external receiver is rejected before execution with source-attributed diagnostics.
 5. An observer independent of compiler release events proves allocation, use after acquisition/return, and destruction before exit. Reached omitted, premature, duplicate, and wrong-resource destruction controls all fail even with plausible reported events.
 
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 **Wave 1**
 
 - [x] 24-01-PLAN.md — Transfer a live owner through a helper and return
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 24-02-PLAN.md — Preserve repeated activation identity and typed-error cleanup
+- [x] 24-02-PLAN.md — Preserve repeated activation identity and typed-error cleanup
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -244,7 +244,7 @@ planned.
 |---|---|---|---|
 | 22. Native Application Build and Single Execution | 3/3 | Complete    | 2026-09-27 |
 | 23. Live Local Allocation and Discharge | 7/7 | Complete    | 2026-09-30 |
-| 24. Ownership Transfer Through Calls and Errors | 1/3 | In Progress|  |
+| 24. Ownership Transfer Through Calls and Errors | 2/3 | In Progress|  |
 | 25. Separate Pointer Successors and Integrated Utility | 0/TBD | Not started | - |
 
 ## Next Action

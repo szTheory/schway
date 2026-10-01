@@ -5,16 +5,16 @@ milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 24
 current_phase_name: Ownership Transfer Through Calls and Errors
 status: executing
-stopped_at: Completed 24-01-PLAN.md
-last_updated: "2026-09-30T22:19:25.396Z"
+stopped_at: Plan 24-02 complete; Plan 24-03 is the only runnable plan, with prior stale verifier refresh deferred until shared Phase 24 inputs settle
+last_updated: "2026-10-01T01:12:12.102Z"
 last_activity: 2026-09-30
 last_activity_desc: Plan 24-01 complete; Plan 24-02 ready to execute
-state_head: 8acf36306f3496e9fb3c0ab3a3b5287e8996716e
+state_head: 1e7eb088b73591151241adda36f9f0d00d87b345
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
   percent: 50
 ---
 
@@ -113,7 +113,7 @@ hiding runtime costs.
 ## Current Position
 
 Phase: 24 (Ownership Transfer Through Calls and Errors) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-30 — Phase 24 execution started
 
@@ -409,6 +409,7 @@ subset alone.
 | Phase 23 P23-06 | 3h | 2 tasks | 9 files |
 | Phase 23 P23-07 | 2h 1m | 2 tasks | 12 files |
 | Phase 24 P01 | 200min | 3 tasks | 17 files |
+| Phase 24 P02 | 41min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -487,9 +488,14 @@ the required Ubuntu receipt (and passed the macOS checks and evidence
 aggregate). The refreshed verifier passes 5/5 and Phase 23 is complete. The
 earlier “in progress” and missing-receipt statements above preserve the
 decision history; they no longer describe current status.
+
 - [Phase 24]: Admit owner transfer only for the bounded file-byte helper/caller shape. — This retains the owner-free process-entry boundary and refuses unsupported owning aggregates, pointer families and nonlocal exits.
 - [Phase 24]: Derive transfer obligations independently from acquisition operations, not from release events. — Each semantic peer must prove caller discharge from the originating acquire so fabricated, missing or mismatched release events cannot establish their own validity.
 - [Phase 24]: Keep model release evidence separate from physical cleanup and host-I/O claims. — The interpreter proves deterministic semantic behavior; Plan 24-03 supplies the independent native observer for physical claims.
+- [Phase 24]: Resource identity combines the static acquisition operation with the dynamic helper-call activation — Repeated calls to one helper must retain distinct obligations through owning returns.
+- [Phase 24]: Phase 24 typed-error admission remains limited to the bounded PathToken helper and use shape — Fail closed on unsupported control transfers before native serialization.
+- [Phase 24]: Core release-order validation derives owner returns from callee acquisition facts and caller result places — Independent cleanup proof must follow successful owning-call edges without trusting producer cleanup lists.
+- [Phase 24]: Model and generated release events do not constitute physical cleanup proof — Plan 24-03 supplies the independent native observer.
 
 ### Pending Todos
 
@@ -674,10 +680,17 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-09-30T22:19:25.354Z
-Stopped at: Completed 24-01-PLAN.md
+Last session: 2026-10-01T01:12:12.047Z
+Stopped at: Plan 24-02 complete; Plan 24-03 is the only runnable plan, with prior stale verifier refresh deferred until shared Phase 24 inputs settle
 Resume file: None
 Next command: `$gsd-execute-phase 24`
+Routing reconciliation — 2026-10-01: `init.progress` still reports Phase 22 as
+the earliest phase because Phase 22 and 23 verification reports are stale at
+this source revision. `init.execute-phase 22` and `23` confirm all 3 and 7 plans
+are summarized; Phase 22's completed UAT remains present. `init.execute-phase
+24` reports only Plan 24-03 runnable. Plan 24-03 changes shared compiler and CI
+inputs again, so finish it before refreshing the stale verifier reports through
+their execute-phase gates. Do not replay completed plans or UAT.
 Routing note — 2026-09-29 (historical; superseded 2026-09-30): `init.progress` reported Phase 22 verification stale and Phase 23 `gaps_found`; `init.execute-phase 23` reported all 7 plans complete and none incomplete. The then-current Phase 23 report identified the missing hosted Ubuntu receipt.
 Routing note — 2026-09-30 (pre-closeout; superseded below): Phase 22 verification passed 5/5 and Phase 22 is complete. Phase 23's seven plans were complete. Hosted run 36707529870 passed Ubuntu/macOS check suites and both evidence aggregates at public source SHA `f991298b29779838a2b1a5c3cd5ac90aafcb84fc`; its optional validation-corpus receipt was skipped by configuration. At that point the 2026-09-28 Phase 23 report still needed a verifier-only refresh; do not repeat its plans or UAT.
 Routing resolution — 2026-09-30 (current): Phase 23's refreshed verification passes 5/5 and binds hosted run 36707529870; Phase 23 is complete. No local project suites or human UAT were rerun/required. Phase 24 is next, but its directory has no CONTEXT.md or PLAN.md, so discuss its scope before planning. Exact next command: `$gsd-discuss-phase 24`.
