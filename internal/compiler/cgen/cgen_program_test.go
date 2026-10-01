@@ -1882,6 +1882,22 @@ func TestPhase24EmitterErrorPreservesTypedFailureAndCleanupOrder(t *testing.T) {
 	}
 }
 
+func TestPhase24EmitterDoesNotClaimPhysicalCleanup(t *testing.T) {
+	program := phase24ErrorProgramForEmitter(t)
+	application, err := cgen.EmitApplication(program)
+	if err != nil {
+		t.Fatalf("emit typed-error application: %v", err)
+	}
+	for _, forbidden := range []string{"resource.released", "allocation.freed", "physical_cleanup"} {
+		if strings.Contains(application, forbidden) {
+			t.Errorf("generated application claims physical cleanup with %q", forbidden)
+		}
+	}
+	if strings.Count(application, "schway_file_byte_release(") < 4 {
+		t.Fatalf("generated typed-error application lost its transfer/error cleanup paths: %s", application)
+	}
+}
+
 func TestPhase24EmitterErrorRefusesReversedCleanupBeforeSerialization(t *testing.T) {
 	program := phase24ErrorProgramForEmitter(t)
 	main := &program.Functions[0]
