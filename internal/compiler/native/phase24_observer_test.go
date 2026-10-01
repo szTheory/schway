@@ -405,20 +405,49 @@ func phase24AssertModelResult(t *testing.T, fixture *phase24ObserverFixture, inp
 		if result.Execution.Outcome.Kind != "typed_failure" || result.Execution.Outcome.Value != "UnsupportedByte" {
 			t.Fatalf("model typed outcome=%+v; want UseError.UnsupportedByte", result.Execution.Outcome)
 		}
-		var acquisitions, releases []string
+		placeNames := make(map[string]map[string]string, len(fixture.program.Functions))
+		for _, function := range fixture.program.Functions {
+			if function.Linear == nil {
+				continue
+			}
+			names := make(map[string]string, len(function.Linear.Places))
+			for _, place := range function.Linear.Places {
+				names[place.ID] = place.Name
+			}
+			placeNames[function.ID] = names
+		}
+		var acquisitions []string
+		var releases []interp.Event
+		failedInvocations := make(map[string]string)
 		for _, event := range result.Execution.Events {
 			if event.ID == fixture.acquireID+":event" {
 				acquisitions = append(acquisitions, event.Invocation)
 			}
+			if event.Kind == "function.failed" {
+				failedInvocations[event.FunctionID] = event.Invocation
+			}
 			if event.Kind == "resource.released" {
-				releases = append(releases, event.FunctionID)
+				releases = append(releases, event)
 			}
 		}
 		if len(acquisitions) != 3 || acquisitions[0] == "" || acquisitions[0] == acquisitions[1] || acquisitions[1] == acquisitions[2] || acquisitions[0] == acquisitions[2] {
 			t.Fatalf("model repeated acquisition activations=%v; want three distinct activations", acquisitions)
 		}
-		if len(releases) != 3 || releases[0] != fixture.probeFn || releases[1] != fixture.mainFn || releases[2] != fixture.mainFn {
-			t.Fatalf("model cleanup event functions=%v; want helper C then caller B,A", releases)
+		wantFunctions := []string{fixture.probeFn, fixture.mainFn, fixture.mainFn}
+		wantPlaces := []string{"owner", "owner_b", "owner_a"}
+		if len(releases) != len(wantFunctions) {
+			t.Fatalf("model cleanup events=%+v; want helper C then caller B,A", releases)
+		}
+		for index, event := range releases {
+			if event.FunctionID != wantFunctions[index] || placeNames[event.FunctionID][event.SourcePlace] != wantPlaces[index] {
+				t.Fatalf("model cleanup event %d=%+v (place %q); want %s.%s", index, event, placeNames[event.FunctionID][event.SourcePlace], wantFunctions[index], wantPlaces[index])
+			}
+			if wantInvocation, ok := failedInvocations[event.FunctionID]; !ok || event.Invocation == "" || event.Invocation != wantInvocation {
+				t.Fatalf("model cleanup event %d invocation=%q, function failure invocation=%q (present=%t); want the expected %s activation", index, event.Invocation, wantInvocation, ok, wantFunctions[index])
+			}
+		}
+		if releases[0].Invocation == releases[1].Invocation || releases[1].Invocation != releases[2].Invocation {
+			t.Fatalf("model cleanup invocation sequence=%q,%q,%q; want helper frame C then one caller frame for B,A", releases[0].Invocation, releases[1].Invocation, releases[2].Invocation)
 		}
 		return
 	}
