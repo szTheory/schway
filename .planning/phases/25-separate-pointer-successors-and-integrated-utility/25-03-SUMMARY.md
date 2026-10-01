@@ -40,7 +40,7 @@ key-decisions:
 patterns-established:
   - "Each independent validator derives the U64 copy boundary from its own core facts."
   - "Conflict, escape, and sequential-ended-loan witnesses have separate source outcomes."
-requirements-completed: [NAT-12, NAT-13, DX-15]
+requirements-completed: []
 coverage:
   - id: D1
     description: "Exclusive U64 copy helper composes after transfer and typed fallible use, with both helper results feeding the final return."
