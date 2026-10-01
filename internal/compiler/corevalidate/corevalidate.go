@@ -2964,11 +2964,12 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			continue
 		}
 		lastOpID := block.OperationIDs[len(block.OperationIDs)-1]
-		if operationsByID[lastOpID].Kind == core.OpForeignCall {
-			// A block whose last operation is OpForeignCall forks into its
-			// two successor edges instead of terminating itself (D-04-04);
-			// only a block whose last operation is an actual terminator
-			// (OpReturn/OpFail) must appear in returnedBlocks.
+		lastOperation := operationsByID[lastOpID]
+		if lastOperation.Kind == core.OpForeignCall || (lastOperation.Kind == core.OpCall && lastOperation.OkEdgeID != "" && lastOperation.ErrEdgeID != "") {
+			// A fallible foreign call or function call forks into its declared
+			// successor edges instead of terminating the function (D-04-04 and
+			// Phase 24 typed calls). Only a block whose last operation is an
+			// actual terminator (OpReturn/OpFail) must appear in returnedBlocks.
 			continue
 		}
 		if !v.check(returnedBlocks[block.ID], "core.final_claim_mismatch", block.ID) {
