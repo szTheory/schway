@@ -3820,7 +3820,7 @@ func checkPhase24Probe(functionID string, function ast.FuncDecl, body *ast.Linea
 		{ID: id("op", 5), PointID: id("point:linear", 5), Kind: core.OpFail, SourceID: places[3].ID, TypeID: typeIDs["ResourceError"]},
 		{ID: id("op", 6), PointID: id("point:linear", 6), Kind: core.OpFail, SourceID: places[4].ID, TypeID: typeIDs["UseError"]},
 	}
-	return core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "PathToken"}, ReturnType: "U64", Linear: &core.LinearBody{ID: id("linear", 0), Types: types, Places: places, Operations: operations, Blocks: blocks, Edges: edges}, Span: function.Span}, nil
+	return core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "PathToken"}, ReturnType: "U64", Linear: &core.LinearBody{ID: functionID + ":linear", Types: types, Places: places, Operations: operations, Blocks: blocks, Edges: edges}, Span: function.Span}, nil
 }
 
 func checkPhase24Caller(functionID string, function ast.FuncDecl, body *ast.LinearBody, acquireContract, probeContract calleeContract, resourceError core.DataType, release foreignSymbolInfo, dataTypes map[string]core.DataType) (core.Function, error) {
@@ -3876,7 +3876,7 @@ func checkPhase24Caller(functionID string, function ast.FuncDecl, body *ast.Line
 		{ID: id("op", 10), PointID: id("point:linear", 10), Kind: core.OpFail, SourceID: places[6].ID, TypeID: typeIDs["ResourceError"]},
 		{ID: id("op", 11), PointID: id("point:linear", 11), Kind: core.OpReturn, SourceID: places[3].ID, TypeID: typeIDs["U64"]},
 	}
-	return core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "PathToken"}, ReturnType: "U64", Linear: &core.LinearBody{ID: id("linear", 0), Types: types, Places: places, Operations: operations, Blocks: blocks, Edges: edges}, Span: function.Span}, nil
+	return core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "PathToken"}, ReturnType: "U64", Linear: &core.LinearBody{ID: functionID + ":linear", Types: types, Places: places, Operations: operations, Blocks: blocks, Edges: edges}, Span: function.Span}, nil
 }
 
 func phase24Types(functionID string, shapes []core.TypeRef, dataTypes map[string]core.DataType) ([]core.TypeFact, map[string]string, error) {
