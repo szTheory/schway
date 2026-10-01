@@ -27,7 +27,7 @@ func TestPhase25SharedSource(t *testing.T) {
 		t.Fatalf("checked function count=%d, want 1", len(result.Program.Functions))
 	}
 	function := result.Program.Functions[0]
-	if function.Name != "copy" || function.Parameter.Type != "U64" || function.ReturnType != "U64" {
+	if function.Name != "shared_copy" || function.Parameter.Type != "U64" || function.ReturnType != "U64" {
 		t.Fatalf("unexpected helper contract: %+v", function)
 	}
 	if function.Linear == nil || len(function.Linear.Operations) != 2 {
