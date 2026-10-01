@@ -1064,8 +1064,78 @@ func ValidatePublished(program core.Program) []Problem {
 	}
 	calleeContracts := BuildCalleeOriginFacts(program)
 	for _, function := range program.Functions {
+		if problem := pointerBorrowConflictProblem(function); problem != nil {
+			return []Problem{*problem}
+		}
 		if problems := PublishProblemsFor(function, calleeContracts); len(problems) > 0 {
 			return problems
+		}
+	}
+	return nil
+}
+
+// pointerBorrowConflictProblem independently replays the bounded straight-
+// line pointer-helper loan shape. It derives each loan's owner, access
+// family, and last use from this function's own operations; it does not
+// consume check/corevalidate classifications or materialized endpoints.
+func pointerBorrowConflictProblem(function core.Function) *Problem {
+	if function.Linear == nil || len(function.Linear.Blocks) != 0 {
+		return nil
+	}
+	operations := function.Linear.Operations
+	placeLoans := map[string][]string{function.Parameter.ID: nil}
+	loanOwner := map[string]string{}
+	loanAccess := map[string]string{}
+	loanBirth := map[string]int{}
+	lastUse := map[string]int{}
+	for index, operation := range operations {
+		carried := placeLoans[operation.SourceID]
+		for _, loanID := range carried {
+			lastUse[loanID] = index
+		}
+		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
+			owner := operation.SourceID
+			if len(carried) > 0 {
+				owner = loanOwner[carried[0]]
+			}
+			loanOwner[operation.LoanID] = owner
+			loanBirth[operation.LoanID] = index
+			if operation.Kind == core.OpBorrowShared {
+				loanAccess[operation.LoanID] = "shared"
+			} else {
+				loanAccess[operation.LoanID] = "exclusive"
+			}
+			lastUse[operation.LoanID] = index
+			carried = append(append([]string(nil), carried...), operation.LoanID)
+		}
+		if operation.TargetID != "" {
+			placeLoans[operation.TargetID] = append([]string(nil), carried...)
+		}
+	}
+	for index, operation := range operations {
+		if operation.Kind != core.OpBorrowShared && operation.Kind != core.OpBorrowExclusive {
+			continue
+		}
+		owner := operation.SourceID
+		carriedBySource := make(map[string]bool)
+		for _, loanID := range placeLoans[operation.SourceID] {
+			owner = loanOwner[loanID]
+			carriedBySource[loanID] = true
+		}
+		newExclusive := operation.Kind == core.OpBorrowExclusive
+		for loanID, activeOwner := range loanOwner {
+			if activeOwner != owner || loanBirth[loanID] >= index || lastUse[loanID] < index {
+				continue
+			}
+			// A borrow through an existing loan is a reborrow, so that
+			// loan itself is not a competing sibling. A shared parent
+			// cannot authorize an exclusive child, however.
+			if carriedBySource[loanID] && (!newExclusive || loanAccess[loanID] == "exclusive") {
+				continue
+			}
+			if newExclusive || loanAccess[loanID] == "exclusive" {
+				return &Problem{Code: "core.borrow_conflict", Detail: operation.ID}
+			}
 		}
 	}
 	return nil
