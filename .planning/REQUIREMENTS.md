@@ -158,9 +158,9 @@ No new requirement maps to completed historical Phase 21. All remain Pending.
 | OWN-10 | Phase 24 | Complete |
 | OWN-11 | Phase 24 | Complete |
 | OWN-12 | Phase 24 | Complete |
-| NAT-11 | Phase 25 | Pending |
+| NAT-11 | Phase 25 | Gaps Found |
 | NAT-12 | Phase 25 | Pending |
-| NAT-13 | Phase 25 | Pending |
+| NAT-13 | Phase 25 | Gaps Found |
 | EVD-09 | Phase 24 | Complete |
 | EVD-10 | Phase 25 | Pending |
 | EVD-11 | Phase 22 | Complete |

@@ -4,18 +4,19 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 25
 current_phase_name: separate-pointer-successors-and-integrated-utility
-status: planning
-stopped_at: Phase 25 context gathered
-last_updated: "2026-10-01T19:46:34.010Z"
+current_plan: 2
+status: executing
+stopped_at: Completed 25-01-PLAN.md
+last_updated: "2026-10-01T20:03:45.423Z"
 last_activity: 2026-10-01
 last_activity_desc: Archived the original checkout and restored the current source to the canonical schway directory
-state_head: 840da624ea0e01cb196af21ee4960dfb7e257b26
+state_head: 65bfadc2e90efd3d42be047951239c6b6252797c
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 18
-  completed_plans: 13
-  percent: 72
+  completed_plans: 14
+  percent: 75
 ---
 
 <!-- schway-current:start -->
@@ -122,11 +123,13 @@ next command: `$gsd-discuss-phase 25`.
 ## Current Position
 
 Phase: 25 (separate-pointer-successors-and-integrated-utility) — READY TO EXECUTE
-Plan: Not started
-Status: Ready for Phase 25 discussion
+Current Plan: 2
+Total Plans in Phase: 5
+Plan: 2 of 5
+Status: Ready to execute
 Last activity: 2026-10-01 — Canonical checkout location restored and archive preservation verified; Phase 24 remains complete
 
-Progress: [███████░░░] 72%
+Progress: [████████░░] 75%
 
 ## M003 Closeout (archived)
 
@@ -420,6 +423,7 @@ subset alone.
 | Phase 23 P23-07 | 2h 1m | 2 tasks | 12 files |
 | Phase 24 P01 | 200min | 3 tasks | 17 files |
 | Phase 24 P02 | 41min | 3 tasks | 15 files |
+| Phase 25 P01 | 12m | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -506,6 +510,9 @@ decision history; they no longer describe current status.
 - [Phase 24]: Phase 24 typed-error admission remains limited to the bounded PathToken helper and use shape — Fail closed on unsupported control transfers before native serialization.
 - [Phase 24]: Core release-order validation derives owner returns from callee acquisition facts and caller result places — Independent cleanup proof must follow successful owning-call edges without trusting producer cleanup lists.
 - [Phase 24]: Model and generated release events do not constitute physical cleanup proof — Plan 24-03 supplies the independent native observer.
+- [Phase 25]: The existing checker already records shared family identity as OpBorrowShared with a loan ID, so Plan 25-01 adds a source witness without widening generic checker rules.
+- [Phase 25]: Only the exact U64 shared-borrow-to-return shape receives the const uint64_t pointer ABI; unsupported chains remain refused.
+- [Phase 25]: The C parameter, call-site address, scalar copy, and manifest entry derive from one checked ABI fact, with no unsupported optimizer or ownership promise.
 
 ### Pending Todos
 
@@ -700,9 +707,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-01T18:20:45.742Z
-Stopped at: Phase 25 context gathered
-Resume file: .planning/phases/25-separate-pointer-successors-and-integrated-utility/25-CONTEXT.md
+Last session: 2026-10-01T20:03:45.395Z
+Stopped at: Completed 25-01-PLAN.md
+Resume file: .planning/phases/25-separate-pointer-successors-and-integrated-utility/continue.md
 Next command: `$gsd-discuss-phase 25`
 Routing resolution — 2026-10-01 (post-closeout): canonical `init.progress` now
 reports Phases 22, 23, and 24 complete with verification `passed`; Phase 22's

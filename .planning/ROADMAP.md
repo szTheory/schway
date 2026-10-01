@@ -188,12 +188,12 @@ a narrow form. Defect/process termination stays outside cleanup guarantees.
 4. Each foreign/shared/exclusive family has reproducible macOS and Linux native receipts naming source/build inputs, compiler, target, flags, expected answers, and applicable optimizer/sanitizer lanes. Missing host/lane evidence leaves the corresponding claim incomplete.
 5. From a clean checkout, a developer follows documented public commands to build/run the utility on the two supplied files and a specified failure, gets independent expected results, and locates explicit C bindings and lifetime evidence. Moved-from use, discarded ownership, pointer escape, and unsupported cleanup/exit examples produce stable structured diagnostics with source attribution and actionable boundary explanations.
 
-**Plans**: 0/5 plans complete
+**Plans**: 1/5 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 25-01-PLAN.md — Admit the shared read/copy pointer ABI
+- [x] 25-01-PLAN.md — Admit the shared read/copy pointer ABI
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -266,7 +266,7 @@ planned.
 | 22. Native Application Build and Single Execution | 3/3 | Complete    | 2026-09-27 |
 | 23. Live Local Allocation and Discharge | 7/7 | Complete    | 2026-09-30 |
 | 24. Ownership Transfer Through Calls and Errors | 3/3 | Complete    | 2026-10-01 |
-| 25. Separate Pointer Successors and Integrated Utility | 0/TBD | Not started | - |
+| 25. Separate Pointer Successors and Integrated Utility | 1/5 | In Progress|  |
 
 ## Next Action
 
