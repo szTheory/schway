@@ -188,7 +188,7 @@ a narrow form. Defect/process termination stays outside cleanup guarantees.
 4. Each foreign/shared/exclusive family has reproducible macOS and Linux native receipts naming source/build inputs, compiler, target, flags, expected answers, and applicable optimizer/sanitizer lanes. Missing host/lane evidence leaves the corresponding claim incomplete.
 5. From a clean checkout, a developer follows documented public commands to build/run the utility on the two supplied files and a specified failure, gets independent expected results, and locates explicit C bindings and lifetime evidence. Moved-from use, discarded ownership, pointer escape, and unsupported cleanup/exit examples produce stable structured diagnostics with source attribution and actionable boundary explanations.
 
-**Plans**: 4/5 plans executed
+**Plans**: 4/6 plans executed
 
 Plans:
 **Wave 1**
@@ -209,7 +209,11 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 25-05-PLAN.md — Publish the utility and dual-host evidence
+- [ ] 25-05-PLAN.md — Complete production lowering and independent owner-result peer proofs
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 25-06-PLAN.md — Publish utility instructions, dual-host evidence, and living-document closeout
 
 **Runnable witness**: Separate shared and exclusive helper sources each read/copy
 the known input byte with an exact expected answer. The final utility composes
@@ -266,9 +270,9 @@ planned.
 | 22. Native Application Build and Single Execution | 3/3 | Complete    | 2026-09-27 |
 | 23. Live Local Allocation and Discharge | 7/7 | Complete    | 2026-09-30 |
 | 24. Ownership Transfer Through Calls and Errors | 3/3 | Complete    | 2026-10-01 |
-| 25. Separate Pointer Successors and Integrated Utility | 4/5 | In Progress|  |
+| 25. Separate Pointer Successors and Integrated Utility | 4/6 | In Progress|  |
 
 ## Next Action
 
-Run `$gsd-execute-phase 24` to implement the checked ownership-transfer,
-repeated-activation error cleanup, and independent physical-evidence plans.
+Run `$gsd-execute-phase 25` to finish the integrated pointer-successor utility,
+independent peer proofs, and native evidence closeout.
