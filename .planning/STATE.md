@@ -4,18 +4,18 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 25
 current_phase_name: separate-pointer-successors-and-integrated-utility
-current_plan: 4
+current_plan: 5
 status: executing
-stopped_at: Completed 25-03-PLAN.md
-last_updated: "2026-10-01T20:43:43.478Z"
+stopped_at: Completed 25-04-PLAN.md
+last_updated: "2026-10-01T21:23:34.836Z"
 last_activity: 2026-10-01
 last_activity_desc: Archived the original checkout and restored the current source to the canonical schway directory
-state_head: 35b10de7ff29e144b6fbfd1f2ef5511921e1ac2f
+state_head: 5ccab2ddc009faa0efb4304ebed5c08595d9a4be
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 18
-  completed_plans: 15
+  completed_plans: 17
   percent: 75
 ---
 
@@ -123,9 +123,9 @@ next command: `$gsd-discuss-phase 25`.
 ## Current Position
 
 Phase: 25 (separate-pointer-successors-and-integrated-utility) — READY TO EXECUTE
-Current Plan: 4
+Current Plan: 5
 Total Plans in Phase: 5
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-10-01 — Canonical checkout location restored and archive preservation verified; Phase 24 remains complete
 
@@ -426,6 +426,7 @@ subset alone.
 | Phase 25 P01 | 12m | 2 tasks | 6 files |
 | Phase 25 P2 | 13min | 2 tasks | 5 files |
 | Phase 25 P3 | 45m | 2 tasks | 10 files |
+| Phase 25 P4 | 52min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -517,6 +518,9 @@ decision history; they no longer describe current status.
 - [Phase 25]: The C parameter, call-site address, scalar copy, and manifest entry derive from one checked ABI fact, with no unsupported optimizer or ownership promise.
 - [Phase 25]: Origin validation independently derives linear borrow conflicts from loan owners, family, and last uses.
 - [Phase 25]: Path replay rejects unknown source places before deriving loan endpoints.
+- [Phase 25]: Explicit Foreign borrow/consume modes do not seed frame-owned acquisition tracking; missing or unknown contracts remain conservative.
+- [Phase 25]: Owner transfer admits only the exact checked shared-copy then exclusive-copy U64 result chain after matching owner release, preserving the direct Phase 24 path.
+- [Phase 25]: Pointer-body forms not expressible in current source remain tested at production serializer admission; source controls cover expressible ownership boundaries.
 
 ### Pending Todos
 
@@ -711,8 +715,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-01T20:43:43.450Z
-Stopped at: Completed 25-03-PLAN.md
+Last session: 2026-10-01T21:23:34.808Z
+Stopped at: Completed 25-04-PLAN.md
 Resume file: None
 Next command: `$gsd-discuss-phase 25`
 Routing resolution — 2026-10-01 (post-closeout): canonical `init.progress` now
