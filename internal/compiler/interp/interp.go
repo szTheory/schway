@@ -200,7 +200,8 @@ func RunWithForeignOutcomes(program core.Program, functionName, input string, ou
 	if !ok {
 		return ModelResult{}, fmt.Errorf("function %q is absent from checked core", functionName)
 	}
-	if !function.HasClosedBody() || function.Linear == nil || function.Match != nil || len(function.Linear.Blocks) != 0 || function.Parameter.Type != "PathToken" || function.ReturnType != "U64" {
+	phase24ErrorEntry := function.Name == "main" && function.Parameter.Type == "PathToken" && function.ReturnType == "U64" && phase24ErrorProgram(program)
+	if !function.HasClosedBody() || function.Linear == nil || function.Match != nil || (len(function.Linear.Blocks) != 0 && !phase24ErrorEntry) || function.Parameter.Type != "PathToken" || function.ReturnType != "U64" {
 		return ModelResult{}, fmt.Errorf("model-only foreign outcomes require the checked PathToken-to-U64 local-owner entry")
 	}
 	initial, err := inputValue(program, function, input)
@@ -208,13 +209,33 @@ func RunWithForeignOutcomes(program core.Program, functionName, input string, ou
 		return ModelResult{}, err
 	}
 	base := newFlatFrame(function, map[string]value{function.Parameter.ID: initial})
+	if phase24ErrorEntry {
+		base = newBlockFrame(function, map[string]value{function.Parameter.ID: initial}, function.ID+":block:entry")
+	}
 	base.modeledOutcomes = make(map[string]ForeignOutcome, len(outcomes))
+	base.modeledReusableOutcomes = map[string]bool{}
+	base.modeledReusableUsed = map[string]bool{}
 	for operationID, outcome := range outcomes {
 		base.modeledOutcomes[operationID] = outcome
+	}
+	for _, candidate := range program.Functions {
+		if candidate.Linear == nil {
+			continue
+		}
+		for _, operation := range candidate.Linear.Operations {
+			if operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+				base.modeledReusableOutcomes[operation.ID] = true
+			}
+		}
 	}
 	result, err := runProgramFrameStack(program, base)
 	if err != nil {
 		return ModelResult{}, err
+	}
+	for operationID := range base.modeledReusableOutcomes {
+		if base.modeledReusableUsed[operationID] {
+			delete(base.modeledOutcomes, operationID)
+		}
 	}
 	if len(base.modeledOutcomes) != 0 {
 		return ModelResult{}, fmt.Errorf("modeled foreign outcomes were not consumed for operations %v", sortedOutcomeIDs(base.modeledOutcomes))
@@ -228,6 +249,17 @@ func RunWithForeignOutcomes(program core.Program, functionName, input string, ou
 	}, nil
 }
 
+func phase24ErrorProgram(program core.Program) bool {
+	if program.Module != "phase24.error" {
+		return false
+	}
+	names := map[string]bool{}
+	for _, function := range program.Functions {
+		names[function.Name] = true
+	}
+	return names["acquire"] && names["probe"] && names["main"]
+}
+
 func sortedOutcomeIDs(outcomes map[string]ForeignOutcome) []string {
 	ids := make([]string, 0, len(outcomes))
 	for id := range outcomes {
@@ -235,6 +267,24 @@ func sortedOutcomeIDs(outcomes map[string]ForeignOutcome) []string {
 	}
 	sort.Strings(ids)
 	return ids
+}
+
+func modeledOutcomeFor(f *frame, operation core.LinearOperation) (ForeignOutcome, bool) {
+	activationKey := ownerActivationID(f, operation.ID)
+	if outcome, ok := f.modeledOutcomes[activationKey]; ok {
+		delete(f.modeledOutcomes, activationKey)
+		return outcome, true
+	}
+	outcome, ok := f.modeledOutcomes[operation.ID]
+	if !ok {
+		return ForeignOutcome{}, false
+	}
+	if operation.Foreign != nil && operation.Foreign.Mode == "acquire" && f.modeledReusableOutcomes[operation.ID] {
+		f.modeledReusableUsed[operation.ID] = true
+	} else {
+		delete(f.modeledOutcomes, operation.ID)
+	}
+	return outcome, true
 }
 
 func modeledForeignResult(program core.Program, frame *frame, operation core.LinearOperation, source value, outcome ForeignOutcome) (value, bool, error) {
@@ -277,6 +327,14 @@ func modeledForeignResult(program core.Program, frame *frame, operation core.Lin
 		}
 		if contract.Mode != "acquire" && contract.Mode != "borrow" {
 			return value{}, false, fmt.Errorf("foreign operation %q has unsupported modeled failure mode %q", operation.ID, contract.Mode)
+		}
+		if contract.Mode == "borrow" {
+			if _, ok := modeledOwnerForBorrow(frame, operation.SourceID); !ok {
+				return value{}, false, fmt.Errorf("foreign borrow %q has no live modeled owner for its failure path", operation.ID)
+			}
+			if source.payload == "65" || source.payload == "66" {
+				return value{}, false, fmt.Errorf("foreign borrow %q cannot report UnsupportedByte for modeled byte %q", operation.ID, source.payload)
+			}
 		}
 		return value{}, false, nil
 	default:
@@ -614,6 +672,9 @@ type frame struct {
 	// callee's returned value binds into when this frame pops on a
 	// core.OpReturn. Only meaningful when hasCaller is true.
 	returnTarget string
+	returnOkEdge string
+	errorTarget  string
+	errorEdge    string
 	hasCaller    bool
 
 	// transferredOwners carries an acquisition-derived owner obligation after
@@ -646,11 +707,13 @@ type frame struct {
 	// fallible-call resource bookkeeping (D-04-07), carried per-frame so a
 	// callee's own resource accounting never leaks into its caller's.
 	// Zero-valued and unused by a flat or single-block-arm frame.
-	tracked            map[string]bool
-	nonlocalExitPolicy bool
-	nonlocalExitCalls  int
-	modeledOutcomes    map[string]ForeignOutcome
-	modeledFailure     *ForeignOutcome
+	tracked                 map[string]bool
+	nonlocalExitPolicy      bool
+	nonlocalExitCalls       int
+	modeledOutcomes         map[string]ForeignOutcome
+	modeledFailure          *ForeignOutcome
+	modeledReusableOutcomes map[string]bool
+	modeledReusableUsed     map[string]bool
 
 	// placeTypes and types index this frame's OWN function's declared
 	// places and type facts by ID -- present on every frame shape (not
@@ -886,6 +949,9 @@ func (f *frame) configureChild(child *frame, operation core.LinearOperation) {
 	child.entryID = f.entryID
 	child.segments = append(append([]execution.InvocationSegment{}, f.segments...), execution.InvocationSegment{OpCallID: operation.ID, Ordinal: 0})
 	child.invocation = f.childInvocation(operation)
+	child.returnOkEdge = operation.OkEdgeID
+	child.errorTarget = operation.ErrTargetID
+	child.errorEdge = operation.ErrEdgeID
 }
 
 // pushResult is partitionFrameForCall's outcome: either a genuine callee
@@ -1040,12 +1106,14 @@ func currentOperationIDs(f *frame) []string {
 func terminalOutcome(f *frame, operation core.LinearOperation, value string) (Outcome, Event) {
 	switch operation.Kind {
 	case core.OpFail:
+		failureType := operation.TypeID
 		if f.modeledFailure != nil {
 			value = f.modeledFailure.Value
+			failureType = f.modeledFailure.Type
 		}
 		return Outcome{Kind: "typed_failure", Value: value}, Event{
 			Schema: f.eventSchema(), ID: operation.ID + ":event:failed", Kind: "function.failed",
-			FunctionID: f.function.ID, Invocation: f.invocation, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
+			FunctionID: f.function.ID, Invocation: f.invocation, SourcePlace: operation.SourceID, TypeID: failureType,
 		}
 	case core.OpDefect:
 		return Outcome{Kind: execution.OutcomeDefect, Value: ""}, Event{
@@ -1242,11 +1310,10 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 					top.idx++
 					continue
 				}
-				outcome, supplied := top.modeledOutcomes[operation.ID]
+				outcome, supplied := modeledOutcomeFor(top, operation)
 				if !supplied {
 					return Execution{}, fmt.Errorf("modeled outcome for foreign operation %q is missing", operation.ID)
 				}
-				delete(top.modeledOutcomes, operation.ID)
 				modeledValue, succeeded, err := modeledForeignResult(program, top, operation, sourceValue, outcome)
 				if err != nil {
 					return Execution{}, err
@@ -1257,6 +1324,9 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				}
 				if !succeeded {
 					top.modeledFailure = &outcome
+					if operation.ErrTargetID != "" {
+						top.values[operation.ErrTargetID] = value{tag: outcome.Type, payload: outcome.Value}
+					}
 					event.Kind = "foreign.failed"
 					event.TypeID = outcome.Type
 				} else {
@@ -1366,6 +1436,8 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			}
 			if top.modeledOutcomes != nil {
 				result.frame.modeledOutcomes = top.modeledOutcomes
+				result.frame.modeledReusableOutcomes = top.modeledReusableOutcomes
+				result.frame.modeledReusableUsed = top.modeledReusableUsed
 			}
 			if top.eventSchema() == execution.Schema2 {
 				events = append(events, calledEvent(top, operation, result.calleeID))
@@ -1381,8 +1453,27 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				}
 			}
 			events = append(events, event)
+			if operation.Kind == core.OpFail && top.hasCaller && top.errorTarget != "" && top.errorEdge != "" {
+				failure := ForeignOutcome{Kind: "failure", Type: operation.TypeID, Value: sourceValue.terminalString()}
+				if top.modeledFailure != nil {
+					failure = *top.modeledFailure
+				}
+				callerIndex := len(stack) - 2
+				caller := &stack[callerIndex]
+				edge, exists := caller.edges[top.errorEdge]
+				if !exists {
+					return Execution{}, fmt.Errorf("call failure %q references unknown caller error edge %q", operation.ID, top.errorEdge)
+				}
+				caller.values[top.errorTarget] = value{tag: failure.Type, payload: failure.Value}
+				caller.modeledFailure = &failure
+				caller.currentBlockID = edge.ToBlockID
+				caller.idx = 0
+				stack = stack[:len(stack)-1]
+				continue
+			}
 			if operation.Kind == core.OpReturn && top.hasCaller {
 				returnTarget := top.returnTarget
+				returnOkEdge := top.returnOkEdge
 				returnValue := top.values[operation.SourceID]
 				if top.modeledFailure != nil {
 					returnValue = value{payload: outcome.Value}
@@ -1392,7 +1483,16 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 					return Execution{}, err
 				}
 				stack = stack[:len(stack)-1]
-				stack[len(stack)-1].values[returnTarget] = returnValue
+				caller := &stack[len(stack)-1]
+				caller.values[returnTarget] = returnValue
+				if returnOkEdge != "" {
+					edge, exists := caller.edges[returnOkEdge]
+					if !exists {
+						return Execution{}, fmt.Errorf("call return %q references unknown caller ok edge %q", operation.ID, returnOkEdge)
+					}
+					caller.currentBlockID = edge.ToBlockID
+					caller.idx = 0
+				}
 				continue
 			}
 			liveResources := frameLiveResourceList(top)

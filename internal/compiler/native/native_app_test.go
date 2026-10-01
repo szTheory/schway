@@ -1002,3 +1002,58 @@ func TestPhase24PositiveTransferNativeApplication(t *testing.T) {
 		})
 	}
 }
+
+func TestPhase24NativeErrorApplication(t *testing.T) {
+	sourcePath := testsupport.ProjectPath("examples", "phase24", "error.schway")
+	source, err := os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("error fixture parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("error fixture checker diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("error fixture core validation problems: %+v", validated.Problems)
+	}
+	cSource, err := cgen.EmitApplication(validated.Program())
+	if err != nil {
+		t.Fatalf("emit repeated typed-error application: %v", err)
+	}
+	manifest := testsupport.ProjectPath("examples", "phase23", "file_byte.bindings.json")
+	artifact := filepath.Join(t.TempDir(), "phase24-error")
+	buildCtx, cancelBuild := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancelBuild()
+	if _, err := BuildApplication(buildCtx, source, cSource, artifact, manifest); err != nil {
+		t.Fatalf("build typed-error application: %v", err)
+	}
+	for _, test := range []struct {
+		name       string
+		byteVal    byte
+		wantExit   int
+		wantStdout string
+		wantStderr string
+	}{
+		{name: "normal path still works", byteVal: 0x41, wantExit: 0, wantStdout: "65\n"},
+		{name: "0x43 returns declared typed error after cleanup", byteVal: 0x43, wantExit: 65, wantStderr: "UseError.UnsupportedByte\n"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			input := filepath.Join(t.TempDir(), "caller-selected.bin")
+			if err := os.WriteFile(input, []byte{test.byteVal}, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			var stdout, stderr bytes.Buffer
+			runCtx, cancelRun := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancelRun()
+			outcome, err := DefaultRunner().RunApplication(runCtx, artifact, input, &stdout, &stderr)
+			if err != nil || outcome.Kind != RunExited || outcome.ExitCode != test.wantExit || stdout.String() != test.wantStdout || stderr.String() != test.wantStderr {
+				t.Fatalf("native outcome=%+v err=%v stdout=%q stderr=%q; want exit=%d stdout=%q stderr=%q", outcome, err, stdout.String(), stderr.String(), test.wantExit, test.wantStdout, test.wantStderr)
+			}
+		})
+	}
+}

@@ -19,6 +19,7 @@ import (
 	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
@@ -1841,6 +1842,133 @@ func TestPhase24EmitterTransferRefusesUnsupportedCoreBeforeSerialization(t *test
 			requirePhase24EmitterRefusalBeforeSerialization(t, program, test.name)
 		})
 	}
+}
+
+func TestPhase24EmitterErrorPreservesTypedFailureAndCleanupOrder(t *testing.T) {
+	program := phase24ErrorProgramForEmitter(t)
+	generated, err := cgen.EmitApplication(program)
+	if err != nil {
+		t.Fatalf("EmitApplication error witness: %v", err)
+	}
+	if !cgen.InvocationSerializationReachedForTest() {
+		t.Fatal("valid error witness refused before serialization")
+	}
+	probeStart := strings.Index(generated, "static int schway_phase24_probe(")
+	mainStart := strings.Index(generated, "int main(int argc, char **argv)")
+	if probeStart < 0 || mainStart <= probeStart {
+		t.Fatalf("generated C lacks the checked probe/caller boundary:\n%s", generated)
+	}
+	probe := generated[probeStart:mainStart]
+	useError := strings.Index(probe, "if (use.status != SCHWAY_FILE_BYTE_USE_OK)")
+	probeRelease := strings.Index(probe, "schway_file_byte_release(schway_owner_c)")
+	useErrorReturn := strings.Index(probe, "return 2;")
+	if useError < 0 || probeRelease <= useError || useErrorReturn <= probeRelease || !strings.Contains(probe, "UseError.UnsupportedByte") {
+		t.Fatalf("probe error path must release C before returning the declared typed error:\n%s", probe)
+	}
+	caller := generated[mainStart:]
+	probeCall := strings.Index(caller, "schway_phase24_probe(argv[1]")
+	probeErrorPath := ""
+	if probeCall >= 0 {
+		probeErrorPath = caller[probeCall:]
+	}
+	errorCleanup := strings.Index(probeErrorPath, "schway_file_byte_release(schway_owner_b);")
+	errorCleanupA := strings.Index(probeErrorPath, "schway_file_byte_release(schway_owner_a);")
+	errorReturn := strings.Index(probeErrorPath, "return 65;")
+	if probeCall < 0 || errorCleanup < 0 || errorCleanupA <= errorCleanup || errorReturn <= errorCleanupA {
+		t.Fatalf("caller error path must release B then A before returning:\n%s", caller)
+	}
+	if strings.Count(generated, "schway_file_byte_acquire(path)") != 1 || strings.Count(generated, "schway_phase24_acquire(argv[1]") != 2 {
+		t.Fatalf("generated C must keep one acquisition implementation and two direct caller sites:\n%s", generated)
+	}
+}
+
+func TestPhase24EmitterErrorRefusesReversedCleanupBeforeSerialization(t *testing.T) {
+	program := phase24ErrorProgramForEmitter(t)
+	main := &program.Functions[0]
+	for index := range program.Functions {
+		if program.Functions[index].Name == "main" {
+			main = &program.Functions[index]
+		}
+	}
+	var probeCall core.LinearOperation
+	for _, operation := range main.Linear.Operations {
+		if operation.Kind == core.OpCall && operation.CalleeID == phase24FunctionID(program, "probe") {
+			probeCall = operation
+		}
+	}
+	block := phase24TargetBlock(main, probeCall.ErrEdgeID)
+	block.OperationIDs[0], block.OperationIDs[1] = block.OperationIDs[1], block.OperationIDs[0]
+	requirePhase24EmitterRefusalBeforeSerialization(t, program, "reversed repeated-owner error cleanup")
+}
+
+func TestPhase24EmitterErrorRefusesReplacedFailureBeforeSerialization(t *testing.T) {
+	program := phase24ErrorProgramForEmitter(t)
+	main := &program.Functions[0]
+	for index := range program.Functions {
+		if program.Functions[index].Name == "main" {
+			main = &program.Functions[index]
+		}
+	}
+	probeCall := phase24Calls(*main, phase24FunctionID(program, "probe"))[0]
+	acquireCall := phase24Calls(*main, phase24FunctionID(program, "acquire"))[0]
+	block := phase24TargetBlock(main, probeCall.ErrEdgeID)
+	terminalID := block.OperationIDs[len(block.OperationIDs)-1]
+	terminalIndex := -1
+	for index, operation := range main.Linear.Operations {
+		if operation.ID == terminalID {
+			terminalIndex = index
+			break
+		}
+	}
+	if terminalIndex < 0 {
+		t.Fatalf("probe error terminal %q is missing", terminalID)
+	}
+	main.Linear.Operations[terminalIndex].SourceID = acquireCall.ErrTargetID
+	requirePhase24EmitterRefusalBeforeSerialization(t, program, "replaced propagated typed error")
+}
+
+func phase24ErrorProgramForEmitter(t *testing.T) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase24", "error.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("parse error fixture: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("check error fixture: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("validate error fixture: %+v", validated.Problems)
+	}
+	return validated.Program()
+}
+
+func phase24FunctionID(program core.Program, name string) string {
+	for _, function := range program.Functions {
+		if function.Name == name {
+			return function.ID
+		}
+	}
+	return ""
+}
+
+func phase24TargetBlock(function *core.Function, edgeID string) *core.Block {
+	for _, edge := range function.Linear.Edges {
+		if edge.ID != edgeID {
+			continue
+		}
+		for index := range function.Linear.Blocks {
+			if function.Linear.Blocks[index].ID == edge.ToBlockID {
+				return &function.Linear.Blocks[index]
+			}
+		}
+	}
+	panic("Phase 24 error edge target missing: " + edgeID)
 }
 
 func TestPhase24PositiveTransfer(t *testing.T) {

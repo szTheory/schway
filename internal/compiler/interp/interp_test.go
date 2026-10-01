@@ -198,6 +198,128 @@ func TestPhase23ModelAcquireFailureCreatesNoOwner(t *testing.T) {
 	}
 }
 
+func TestPhase24RepeatedHelperTypedErrorDrainsEachActivation(t *testing.T) {
+	path := filepath.Join(interpProjectRoot(), "examples", "phase24", "error.schway")
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("parse error fixture: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("check error fixture: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("validate error fixture: %+v", validated.Problems)
+	}
+	program := validated.Program()
+	var acquireID, useID string
+	for _, function := range program.Functions {
+		for _, operation := range function.Linear.Operations {
+			if operation.Foreign == nil {
+				continue
+			}
+			if operation.Foreign.Mode == "acquire" {
+				acquireID = operation.ID
+			}
+			if function.Name == "probe" && operation.Foreign.Mode == "borrow" {
+				useID = operation.ID
+			}
+		}
+	}
+	if acquireID == "" || useID == "" {
+		t.Fatal("error fixture acquire/use operation missing")
+	}
+	result, err := RunWithForeignOutcomes(program, "main", "opaque-path-token", map[string]ForeignOutcome{
+		acquireID: {Kind: "success", Type: "FileByteOwner", Value: "67"},
+		useID:     {Kind: "failure", Type: "UseError", Value: "UnsupportedByte"},
+	})
+	if err != nil {
+		t.Fatalf("model repeated typed error: %v", err)
+	}
+	if result.Execution.Outcome.Kind != execution.OutcomeTypedFailure || result.Execution.Outcome.Value != "UnsupportedByte" {
+		t.Fatalf("model outcome=%+v; want exact UseError.UnsupportedByte failure", result.Execution.Outcome)
+	}
+	var acquisitions, releases []Event
+	for _, event := range result.Execution.Events {
+		if event.ID == acquireID+":event" {
+			acquisitions = append(acquisitions, event)
+		}
+		if event.Kind == "resource.released" {
+			releases = append(releases, event)
+		}
+	}
+	if len(acquisitions) != 3 {
+		t.Fatalf("dynamic acquisition events=%d; want three", len(acquisitions))
+	}
+	seenActivations := map[string]bool{}
+	for _, event := range acquisitions {
+		if event.Invocation == "" || seenActivations[event.Invocation] {
+			t.Fatalf("repeated acquisition activation is empty or colliding: %+v", acquisitions)
+		}
+		seenActivations[event.Invocation] = true
+	}
+	if len(releases) != 3 || releases[0].FunctionID != functionIDByName(program, "probe") || releases[1].FunctionID != functionIDByName(program, "main") || releases[2].FunctionID != functionIDByName(program, "main") {
+		t.Fatalf("release function order=%v; want callee C then caller B,A", eventFunctions(releases))
+	}
+	var typedFailure Event
+	for _, event := range result.Execution.Events {
+		if event.Kind == "function.failed" {
+			typedFailure = event
+		}
+	}
+	if typedFailure.TypeID != "UseError" || len(result.Execution.LiveResources) != 0 {
+		t.Fatalf("failure event=%+v live=%v; want original UseError and zero live owners", typedFailure, result.Execution.LiveResources)
+	}
+	if result.ActualHostIO || result.PhysicalCleanup || result.EvidenceScope != EvidenceScopeModelOnly {
+		t.Fatalf("model execution overstated evidence: %+v", result)
+	}
+
+	failedAcquire, err := RunWithForeignOutcomes(program, "main", "opaque-path-token", map[string]ForeignOutcome{
+		acquireID: {Kind: "failure", Type: "AcquireError", Value: "AcquireFailed"},
+	})
+	if err != nil {
+		t.Fatalf("model failed helper acquisition: %v", err)
+	}
+	if failedAcquire.Execution.Outcome.Kind != execution.OutcomeTypedFailure || failedAcquire.Execution.Outcome.Value != "AcquireFailed" || len(failedAcquire.Execution.LiveResources) != 0 {
+		t.Fatalf("failed helper acquisition outcome=%+v live=%v; want typed failure and no owner", failedAcquire.Execution.Outcome, failedAcquire.Execution.LiveResources)
+	}
+	for _, event := range failedAcquire.Execution.Events {
+		if event.Kind == "resource.released" {
+			t.Fatalf("failed helper acquisition released a nonexistent owner: %+v", event)
+		}
+	}
+
+	_, err = RunWithForeignOutcomes(program, "main", "opaque-path-token", map[string]ForeignOutcome{
+		acquireID: {Kind: "success", Type: "FileByteOwner", Value: "65"},
+		useID:     {Kind: "failure", Type: "UseError", Value: "UnsupportedByte"},
+	})
+	if err == nil || !strings.Contains(err.Error(), "cannot report UnsupportedByte") {
+		t.Fatalf("model accepted UnsupportedByte for supported byte 0x41: %v", err)
+	}
+}
+
+func functionIDByName(program core.Program, name string) string {
+	for _, function := range program.Functions {
+		if function.Name == name {
+			return function.ID
+		}
+	}
+	return ""
+}
+
+func eventFunctions(events []Event) []string {
+	functions := make([]string, len(events))
+	for index, event := range events {
+		functions[index] = event.FunctionID
+	}
+	return functions
+}
+
 func TestPhase23ModelUseFailureKeepsOwnerLiveUntilRelease(t *testing.T) {
 	program := checkedPhase23FileByteProgram(t)
 	result, err := runPhase23Model(program, "model-only-path-token", phase23UseFailureOutcomes(t, program))
