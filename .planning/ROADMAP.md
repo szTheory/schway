@@ -44,7 +44,7 @@ runnable source/input/output witness; no implementation plans exist yet.
 
 - [x] **Phase 22: Native Application Build and Single Execution** — A retained scalar application accepts caller input and runs once with ordinary streams. (3/3 implementation plans complete; objective README contract passed; subjective readability not claimed) (completed 2026-09-27)
 - [x] **Phase 23: Live Local Allocation and Discharge** — A bounded file-byte application uses and releases a real Schway-owned allocation. (completed 2026-09-30)
-- [ ] **Phase 24: Ownership Transfer Through Calls and Errors** — Live resources survive ownership transfer and discharge across frames and typed errors.
+- [x] **Phase 24: Ownership Transfer Through Calls and Errors** — Live resources survive ownership transfer and discharge across frames and typed errors. (completed 2026-10-01)
 - [ ] **Phase 25: Separate Pointer Successors and Integrated Utility** — Shared/exclusive pointer helpers have distinct native proof and the complete utility is reproducible.
 
 ## Phase Details
@@ -149,7 +149,7 @@ form covers all affected consumers; owning aggregates remain refused.
 4. Copying ownership, using a moved-from owner, or returning an owning process-entry result without an external receiver is rejected before execution with source-attributed diagnostics.
 5. An observer independent of compiler release events proves allocation, use after acquisition/return, and destruction before exit. Reached omitted, premature, duplicate, and wrong-resource destruction controls all fail even with plausible reported events.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans complete
 **Wave 1**
 
 - [x] 24-01-PLAN.md — Transfer a live owner through a helper and return
@@ -160,7 +160,7 @@ form covers all affected consumers; owning aggregates remain refused.
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 24-03-PLAN.md — Prove physical cleanup and bind dual-host evidence
+- [x] 24-03-PLAN.md — Prove physical cleanup and bind dual-host evidence
 
 **Runnable witness**: Extend the file-byte utility so a helper acquires the
 allocation, transfers it through a call/return, and the receiving owner reports
@@ -244,7 +244,7 @@ planned.
 |---|---|---|---|
 | 22. Native Application Build and Single Execution | 3/3 | Complete    | 2026-09-27 |
 | 23. Live Local Allocation and Discharge | 7/7 | Complete    | 2026-09-30 |
-| 24. Ownership Transfer Through Calls and Errors | 2/3 | In Progress|  |
+| 24. Ownership Transfer Through Calls and Errors | 3/3 | Complete    | 2026-10-01 |
 | 25. Separate Pointer Successors and Integrated Utility | 0/TBD | Not started | - |
 
 ## Next Action

@@ -1,6 +1,6 @@
 ---
 phase: 23-live-local-allocation-and-discharge
-verified: 2026-09-30T18:54:15Z
+verified: 2026-10-01T12:28:24Z
 status: passed
 score: 5/5 roadmap success criteria verified
 covered_files:
@@ -30,6 +30,7 @@ covered_files:
   - examples/phase23/adapter.c
   - examples/phase23/adapter.h
   - examples/phase23/file_byte.bindings.json
+  - examples/phase23/file_byte.expected.json
   - examples/phase23/file_byte.schway
   - internal/compiler/ability/ability.go
   - internal/compiler/cgen/cgen.go
@@ -46,8 +47,9 @@ covered_files:
   - internal/compiler/pathoracle/pathoracle.go
   - internal/compiler/session/session.go
   - internal/compiler/session/session_app_verify.go
+  - scripts/verify-phase23.sh
   - testdata/phase23/discard_owner.schway
-covered_digest: "v1:sha256:1e74781b5776af7aee6c85cc861821b8111e7ebaa87d0483c8eeb1ca0e055a39"
+covered_digest: "v1:sha256:0675c6277581e232550158b03d2e284406203be69c454526718953579f152722"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -62,7 +64,7 @@ re_verification:
 # Phase 23: Live Local Allocation and Discharge — Verification Report
 
 **Phase Goal:** A developer can read a caller-selected file byte through a real allocation returned live to Schway and observe its generated local cleanup.
-**Verified:** 2026-09-30T18:54:15Z
+**Verified:** 2026-10-01T12:28:24Z
 **Status:** passed
 **Re-verification:** Yes — freshness refresh against the hosted-tested source revision; no tests or hosted workflows were rerun.
 
@@ -124,19 +126,18 @@ All seven plan files and summaries were reviewed against their implementation pa
 
 ### Behavioral Spot-Checks
 
-No local project suite was run, per `.planning/STATE.md`. Current behavioral evidence is the exact-source hosted CI receipt below; test names and execution are corroborated by the successful hosted focused-gate step.
+No local project suite or project script was run during this report refresh. Behavioral evidence is the hosted CI receipt below at source revision `ed94ef7972b25deb85ab90fafbf3403dc31629f5`. Per the supplied execution record, implementation sources are unchanged since that run; the local checkout is at `ee1190031484dfb7e468db0b597d954802c06b8b` and its current uncommitted changes are planning metadata only. The hosted receipt is historical evidence, not a run performed during this refresh.
 
 | Behavior | Command/evidence | Result | Status |
 |---|---|---|---|
-| Phase 23 focused evidence aggregate | Hosted workflow run `36707529870`, `current evidence aggregate (ubuntu-latest)`, step `scripts/verify-phase23.sh` | Step conclusion `success` | ✓ PASS |
-| Phase 23 focused evidence aggregate | Same run, `current evidence aggregate (macos-latest)`, step `scripts/verify-phase23.sh` | Step conclusion `success` | ✓ PASS |
-| General Ubuntu checks and current evidence aggregate | Same run, jobs `checks (ubuntu-latest)` and `current evidence aggregate (ubuntu-latest)` | Both conclusions `success` | ✓ PASS |
+| Full CI checks | Hosted workflow run [36856048690](https://github.com/szTheory/schway/actions/runs/36856048690), `checks` jobs on Ubuntu and macOS | Vet, build, full tests, and race suites passed on both hosts at `ed94ef7972b25deb85ab90fafbf3403dc31629f5` | ✓ PASS (historical hosted receipt) |
+| Phase 23 focused evidence aggregate | Same hosted run, `current evidence aggregate` on Ubuntu and macOS, step `scripts/verify-phase23.sh` | Step passed on both hosts at `ed94ef7972b25deb85ab90fafbf3403dc31629f5` | ✓ PASS (historical hosted receipt) |
 
 ### Probe Execution
 
 | Probe | Command | Result | Status |
 |---|---|---|---|
-| `scripts/verify-phase23.sh` | Hosted workflow step on Ubuntu and macOS | Both step conclusions `success` in run `36707529870`, source SHA `f991298b29779838a2b1a5c3cd5ac90aafcb84fc` | PASS |
+| `scripts/verify-phase23.sh` | Hosted workflow step on Ubuntu and macOS | Both step conclusions `success` in run `36856048690`, source SHA `ed94ef7972b25deb85ab90fafbf3403dc31629f5` | PASS (historical hosted receipt) |
 
 The optional validation-corpus receipt job was skipped by workflow configuration. It is outside Phase 23's hosted Ubuntu focused-evidence criterion and is not treated as a missing Phase 23 receipt.
 
@@ -172,7 +173,7 @@ None. The phase defines observable behavior through the public command, native o
 
 ### Gaps Summary
 
-The prior report's only gap is closed. Read-only inspection of GitHub Actions run [36707529870](https://github.com/szTheory/schway/actions/runs/36707529870) confirms successful completion at source SHA `f991298b29779838a2b1a5c3cd5ac90aafcb84fc`. The Ubuntu `checks` and `current evidence aggregate` jobs passed, including the Phase 23 script step; the macOS `checks` and evidence aggregate also passed. The current checkout is `a33b4979bd1b8d5dccc66a7a828de6271a572306`. Since the hosted-tested SHA, changed paths are planning artifacts only; of this report's existing `covered_files`, only `.planning/ROADMAP.md` changed, while all covered implementation and CI evidence paths remain unchanged. The covered digest was regenerated with `gsd_run query verification.fingerprint` over the exact existing list. This freshness refresh did not execute tests, probes, or hosted workflows. The validation-corpus receipt was skipped by workflow configuration and is not required by the Phase 23 hosted Ubuntu criterion.
+The prior report's only gap (a passing hosted Phase 23 evidence aggregate) is closed. Hosted run [36856048690](https://github.com/szTheory/schway/actions/runs/36856048690) passed the full vet/build/test/race checks and the Phase 23 focused script on Ubuntu and macOS at source SHA `ed94ef7972b25deb85ab90fafbf3403dc31629f5`. This is a historical hosted receipt; no tests, probes, or hosted workflows were rerun for this refresh. The current checkout is `ee1190031484dfb7e468db0b597d954802c06b8b`; per the supplied run record, implementation sources are unchanged since the tested revision, while current uncommitted changes are planning metadata only. The tested source commit object is unavailable in this checkout, so no local commit-to-commit comparison was possible. The covered digest was regenerated with `gsd_run query verification.fingerprint` over the exact existing `covered_files` list. No Phase 23 UAT was created or replayed. The optional validation-corpus receipt remains outside this phase's hosted Ubuntu/macOS focused-evidence criterion.
 
 Evidence classes are kept distinct: source inspection establishes wiring and implementation shape; the 2026-09-30 hosted run is the current behavioral/CI receipt; earlier local macOS/Linux-container and full-suite receipts remain historical and were not rerun. The Phase 23 goal and its five roadmap success criteria are achieved.
 
@@ -182,5 +183,5 @@ The decision-coverage query reports all 6 trackable CONTEXT.md decisions honored
 
 ---
 
-_Verified: 2026-09-30T18:54:15Z_
+_Verified: 2026-10-01T12:28:24Z_
 _Verifier: the agent (gsd-verifier)_

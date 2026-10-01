@@ -16,7 +16,7 @@
     {
       "number": "24",
       "name": "Ownership Transfer Through Calls and Errors",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "25",
@@ -26,8 +26,8 @@
   ],
   "next": {
     "command": "/gsd:progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 24 of 4 · 50% · executing"
+    "label": "Advance to the next step (plan phase 25)",
+    "reason": "Phase 25 of 4 — needs a plan"
   },
-  "updated_at": "2026-10-01T01:08:09.451Z"
+  "updated_at": "2026-10-01T12:05:05.866Z"
 }

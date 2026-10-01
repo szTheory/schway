@@ -1,6 +1,6 @@
 ---
 phase: 22-native-application-build-and-single-execution
-verified: 2026-09-30T15:10:24Z
+verified: 2026-10-01T12:28:46Z
 status: passed
 score: 5/5 roadmap truths verified
 covered_files:
@@ -29,12 +29,13 @@ covered_files:
   - internal/compiler/execution/execution.go
   - internal/compiler/native/bindings.go
   - internal/compiler/native/bindings_test.go
+  - internal/compiler/native/native.go
   - internal/compiler/native/native_app.go
   - internal/compiler/native/native_app_test.go
   - internal/compiler/session/session.go
   - internal/compiler/session/session_app_verify.go
   - internal/compiler/session/session_app_verify_test.go
-covered_digest: "v1:sha256:f3f29f345cbc433d1d8426f7988af0815a27e32bf25f2116c862ae86b72060d3"
+covered_digest: "v1:sha256:11c58529dd1b3a1d002667d567de9d47b1ea1253946b4e29d2138220ce19b6d1"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -46,13 +47,13 @@ decision_coverage:
 # Phase 22: Native Application Build and Single Execution — Verification Report
 
 **Phase Goal:** A developer can retain and execute a native application once on bounded real input, with application streams separate from compiler evidence.
-**Verified:** 2026-09-30T15:10:24Z
+**Verified:** 2026-10-01T12:28:46Z
 **Status:** passed
 **Re-verification:** No. The existing report had no `gaps:` section, so this is an initial-mode refresh.
 
-This refresh verifies the five current ROADMAP success criteria and cross-checks every plan must-have and prohibition. SUMMARY files were read for scope discovery only; they are not evidence for the verdict. No local tests were run. Current behavior-dependent evidence comes from hosted CI run `36707529870` at head `f991298b29779838a2b1a5c3cd5ac90aafcb84fc`, which passed the Linux and macOS checks and current evidence aggregate jobs. The only commit after that CI head changes `22-REVIEW.md`; the covered implementation and test files are unchanged. The optional validation-corpus receipt was skipped and is not claimed. CI workflow steps include `go vet ./...`, `go build ./...`, `go test ./...`, and `go test -race ./...` on both hosts.
+This refresh verifies the five ROADMAP success criteria against current Phase 22 source and tests, cross-checks all three plans' must-haves and prohibitions, and confirms the init result: 3/3 plans have summaries and zero incomplete plans. SUMMARY files were read for scope discovery only; they are not evidence for the verdict. No local project tests or scripts were run. Current behavior-dependent evidence is hosted CI run `36856048690` at source revision `ed94ef7972b25deb85ab90fafbf3403dc31629f5`: the Ubuntu and macOS jobs passed the full vet, build, test, and race suites. The current checkout's source and test files match that revision; changes since then are planning documents and metadata only. The optional validation-corpus receipt was not run and is not claimed.
 
-The completed objective README contract UAT in `22-UAT.md` is preserved and not repeated. Its objective contract test is covered by the hosted full test runs; it does not claim subjective readability.
+The completed objective README contract UAT in `22-UAT.md` is preserved and was not rerun: it records 1/1 passed on macOS on 2026-09-27. This is historical objective-UAT evidence, distinct from hosted CI run `36856048690` at `ed94ef7972b25deb85ab90fafbf3403dc31629f5`. The UAT's automated contract does not claim subjective readability.
 
 ## Goal Achievement
 
@@ -117,12 +118,12 @@ The previous report's planned `internal/compiler/session/session_app.go` path is
 
 | Behavior | Command/evidence | Result | Status |
 |---|---|---|---|
-| Build, app behavior, evidence, verifier controls and race-sensitive code on Ubuntu | Hosted GitHub Actions run `36707529870`, `checks (ubuntu-latest)` and `current evidence aggregate (ubuntu-latest)` at `f991298b29779838a2b1a5c3cd5ac90aafcb84fc` | Both jobs passed. Workflow runs `go vet ./...`, `go test ./...`, and `go test -race ./...` in the checks job. | ✓ PASS |
-| Same suite and evidence aggregate on macOS | Same run, `checks (macos-latest)` and `current evidence aggregate (macos-latest)` | Both jobs passed. Workflow runs vet, full Go tests, and race tests in the checks job. | ✓ PASS |
-| Current source correspondence | `git diff --name-status f991298b29779838a2b1a5c3cd5ac90aafcb84fc..HEAD` | Only `.planning/phases/22-native-application-build-and-single-execution/22-REVIEW.md` differs; no implementation/test files changed after CI head. | ✓ PASS |
+| Full suite on Ubuntu | Hosted GitHub Actions run `36856048690` at source revision `ed94ef7972b25deb85ab90fafbf3403dc31629f5` | Ubuntu full vet, build, test, and race suites passed. | ✓ PASS |
+| Full suite on macOS | Same hosted run and source revision | macOS full vet, build, test, and race suites passed. | ✓ PASS |
+| Current source correspondence | `git diff --name-status ed94ef7972b25deb85ab90fafbf3403dc31629f5..HEAD` | No Phase 22 implementation or test files differ from the CI source revision; subsequent changes are planning documents and metadata. | ✓ PASS |
 | Optional validation-corpus receipt | Same hosted run | Skipped; no validation-corpus result is claimed. | ℹ️ SKIPPED |
 
-No local tests or probes were executed in this refresh, per instruction. This refresh distinguishes the hosted receipt above from historical local test receipts recorded in the SUMMARY/UAT artifacts.
+No local tests or probes were executed in this refresh. The objective UAT receipt above is retained as a separate historical macOS result; the hosted full-suite receipt is the current cross-host behavior evidence.
 
 ### Probe Execution
 
@@ -165,5 +166,5 @@ No goal, roadmap success criterion, plan must-have, requirement, artifact, key l
 
 ---
 
-_Verified: 2026-09-30T15:10:24Z_  
+_Verified: 2026-10-01T12:28:46Z_
 _Verifier: the agent (gsd-verifier)_

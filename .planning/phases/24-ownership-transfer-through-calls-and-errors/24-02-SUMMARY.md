@@ -117,7 +117,7 @@ status: complete
 - `examples/phase24/error.schway` — repeated helper acquisition and propagated typed-error witness.
 - `internal/compiler/check/check.go`, `check_test.go` — bounded source admission, successful-completion cleanup ledger, and source tests.
 - `internal/compiler/core/core.go` — typed call/error edge facts.
-- `internal/compiler/corevalidate/corevalidate.go`, `originvalidate/originvalidate.go`, `pathoracle/pathoracle.go` — independent activation, transfer, edge, and cleanup validation.
+- `internal/compiler/corevalidate/corevalidate.go`, `internal/compiler/originvalidate/originvalidate.go`, `internal/compiler/pathoracle/pathoracle.go` — independent activation, transfer, edge, and cleanup validation.
 - `internal/compiler/session/session_phase24_error_test.go` — peer agreement and ownership/error mutation matrix.
 - `internal/compiler/interp/interp.go`, `interp_test.go` — dynamic activation tracking and original typed-error propagation.
 - `internal/compiler/cgen/cgen_program.go`, `cgen_program_test.go` — fail-closed Phase 24 validation and bounded typed-error C lowering.
