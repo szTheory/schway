@@ -500,6 +500,15 @@ type emitCallLookup struct {
 	indexByFunctionID map[string]int
 	functionNames     []string
 	returnTypeNames   []string
+	pointerABIFacts   map[string]pointerABIFact
+}
+
+func (l *emitCallLookup) takesPointer(calleeID string) bool {
+	if l == nil {
+		return false
+	}
+	fact, ok := l.pointerABIFacts[calleeID]
+	return ok && fact.PointerParameter
 }
 
 func (l *emitCallLookup) resolve(calleeID string) (functionName, returnTypeName string, ok bool) {
@@ -527,7 +536,10 @@ func emitCall(out *strings.Builder, calleeTypeName, targetLocal, calleeName, arg
 	fmt.Fprintf(out, "  (void)%s;\n", targetLocal)
 }
 
-func emitProgramCall(out *strings.Builder, calleeTypeName, targetLocal, calleeName, argumentLocal, childIndex string, operation core.LinearOperation) {
+func emitProgramCall(out *strings.Builder, calleeTypeName, targetLocal, calleeName, argumentLocal, childIndex string, pointerArgument bool, operation core.LinearOperation) {
+	if pointerArgument {
+		argumentLocal = "&" + argumentLocal
+	}
 	fmt.Fprintf(out, "  %s %s = %s(%s, %s); /* call: %s */\n", calleeTypeName, targetLocal, calleeName, argumentLocal, childIndex, operation.ID)
 	fmt.Fprintf(out, "  (void)%s;\n", targetLocal)
 }
@@ -624,6 +636,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		byID[function.ID] = function
 	}
 	functions := make([]core.Function, 0, len(order))
+	pointerABIFacts := make(map[string]pointerABIFact)
 	for _, id := range order {
 		function, ok := byID[id]
 		if !ok {
@@ -638,8 +651,15 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		// Plan 16-05's human-selected cut-m004 applies to every program
 		// cardinality. A legacy pointer-specialized body must not become
 		// admissible merely because an otherwise ordinary caller is present.
-		if function.Match == nil && (selectsByPointerLowering(function, function.Linear) || selectsByPointerLoweringSharedOnly(function, function.Linear)) {
+		if function.Match == nil && selectsByPointerLowering(function, function.Linear) {
 			return "", fmt.Errorf("function %q: by-pointer bodies are not supported by whole-program native emission this phase", function.ID)
+		}
+		if function.Match == nil && selectsByPointerLoweringSharedOnly(function, function.Linear) {
+			fact, ok := checkedSharedPointerABIFact(function)
+			if !ok {
+				return "", fmt.Errorf("function %q: by-pointer bodies are not supported by whole-program native emission this phase", function.ID)
+			}
+			pointerABIFacts[function.ID] = fact
 		}
 		if function.ForeignContract != nil && !(transferFileByteProgram && function.ID == transferHelper.ID) {
 			return "", fmt.Errorf("function %q: multi-function foreign contracts are not supported by native emission this phase", function.ID)
@@ -737,6 +757,9 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 				return "", fmt.Errorf("function %q: %w", function.ID, err)
 			}
 			parameterTypeNames[index] = typeName
+			if fact, ok := pointerABIFacts[function.ID]; ok {
+				parameterTypeNames[index] = fact.ParameterCType
+			}
 			switch function.ReturnType {
 			case "Buffer":
 				returnTypeNames[index] = "SCHWAY_BUFFER"
@@ -767,7 +790,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	for index, function := range functions {
 		indexByFunctionID[function.ID] = index
 	}
-	lookup := &emitCallLookup{indexByFunctionID: indexByFunctionID, functionNames: functionNames, returnTypeNames: returnTypeNames}
+	lookup := &emitCallLookup{indexByFunctionID: indexByFunctionID, functionNames: functionNames, returnTypeNames: returnTypeNames, pointerABIFacts: pointerABIFacts}
 
 	needsBuffer := false
 	needsByte := false
@@ -866,7 +889,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		} else if isLocalFileByteFunction(function) {
 			err = emitProgramLocalFileByteFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames)
 		} else {
-			err = emitProgramFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames)
+			err = emitProgramFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames, pointerABIFacts[function.ID])
 		}
 		if err != nil {
 			return "", err
@@ -956,7 +979,11 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 			out.WriteString("  uint64_t schway_entry_input;\n")
 			out.WriteString("  if (!schway_parse_u64_decimal(argv[1], &schway_entry_input)) return 65;\n")
 		}
-		fmt.Fprintf(&out, "  %s schway_entry_output = %s(schway_entry_input, 0u);\n", entryOutputType, functionNames[entryIndex])
+		entryArgument := "schway_entry_input"
+		if fact, ok := pointerABIFacts[entry.ID]; ok && fact.PointerParameter {
+			entryArgument = "&" + entryArgument
+		}
+		fmt.Fprintf(&out, "  %s schway_entry_output = %s(%s, 0u);\n", entryOutputType, functionNames[entryIndex], entryArgument)
 		out.WriteString("  if (!schway_write_u64_plain(schway_entry_output) || !schway_write_literal(\"\\n\")) return 74;\n")
 		out.WriteString("  const char *schway_evidence_path = getenv(\"SCHWAY_APP_EVIDENCE_PATH\");\n")
 		out.WriteString("  if (schway_evidence_path != NULL && schway_evidence_path[0] != '\\0') {\n")
@@ -996,7 +1023,11 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		fmt.Fprintf(&out, "  if (strcmp(argv[1], %s) != 0) return 65;\n", strconv.Quote(input))
 		fmt.Fprintf(&out, "  %s schway_entry_input = %s;\n", entryTypeName, initializer)
 	}
-	fmt.Fprintf(&out, "  %s schway_entry_output = %s(schway_entry_input, 0u);\n", entryOutputType, functionNames[entryIndex])
+	entryArgument := "schway_entry_input"
+	if fact, ok := pointerABIFacts[entry.ID]; ok && fact.PointerParameter {
+		entryArgument = "&" + entryArgument
+	}
+	fmt.Fprintf(&out, "  %s schway_entry_output = %s(%s, 0u);\n", entryOutputType, functionNames[entryIndex], entryArgument)
 	if entryReturnIsBranch {
 		fmt.Fprintf(&out, "  const char *schway_entry_name = %s(schway_entry_output);\n", entryReturnBranch.nameFunction)
 		out.WriteString("  if (schway_entry_name == NULL) return 70;\n")
@@ -1966,7 +1997,7 @@ func emitProgramBranchOperation(out *strings.Builder, function core.Function, op
 			return fmt.Errorf("operation %q has no invocation child table", operation.ID)
 		}
 		fmt.Fprintf(out, "      if (!schway_record_event(%s, %s, %s, %s, %s, %s, schway_invocations[invocation_index], %s)) abort();\n", strconv.Quote("function.called"), strconv.Quote(operation.ID+":event:called"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID), strconv.Quote(operation.CalleeID))
-		emitProgramCall(out, calleeTypeName, locals[operation.TargetID], calleeName, locals[operation.SourceID], childTable+"[invocation_index]", operation)
+		emitProgramCall(out, calleeTypeName, locals[operation.TargetID], calleeName, locals[operation.SourceID], childTable+"[invocation_index]", lookup.takesPointer(operation.CalleeID), operation)
 		declared[operation.TargetID] = true
 	case core.OpDestructurePayload:
 		target, exists := places[operation.PayloadTargetID]
@@ -2110,7 +2141,7 @@ func emitProgramDefectTerminal(out *strings.Builder, function core.Function, ope
 // OpCall, never written to stdout directly; the entry function's own
 // return value is written to stdout exactly once, by `main`, after it
 // returns).
-func emitProgramFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, globalNames []string, lookup *emitCallLookup, childTableNames map[string]string) error {
+func emitProgramFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, globalNames []string, lookup *emitCallLookup, childTableNames map[string]string, pointerABI pointerABIFact) error {
 	places := make(map[string]core.Place, len(function.Linear.Places))
 	for _, place := range function.Linear.Places {
 		places[place.ID] = place
@@ -2179,7 +2210,15 @@ func emitProgramFunction(out *strings.Builder, function core.Function, parameter
 			} else if operation.Kind == core.OpBorrowExclusive {
 				label = "exclusive borrow representation"
 			}
-			fmt.Fprintf(out, "  %s %s = %s; /* %s: %s */%s\n", parameterTypeName, locals[target.ID], locals[source.ID], label, operation.ID, marker)
+			valueTypeName := parameterTypeName
+			sourceValue := locals[source.ID]
+			if pointerABI.PointerParameter {
+				valueTypeName = pointerABI.ValueCType
+				if operation.Kind == core.OpBorrowShared && operation.SourceID == function.Parameter.ID {
+					sourceValue = "*" + sourceValue
+				}
+			}
+			fmt.Fprintf(out, "  %s %s = %s; /* %s: %s */%s\n", valueTypeName, locals[target.ID], sourceValue, label, operation.ID, marker)
 			fmt.Fprintf(out, "  (void)%s;\n", locals[target.ID])
 			eventKind := "value.copied"
 			if operation.Kind == core.OpMove {
@@ -2209,7 +2248,7 @@ func emitProgramFunction(out *strings.Builder, function core.Function, parameter
 			fmt.Fprintf(out, "  if (!schway_record_event(%s, %s, %s, %s, %s, %s, schway_invocations[invocation_index], %s)) abort();\n",
 				strconv.Quote("function.called"), strconv.Quote(operation.ID+":event:called"), strconv.Quote(function.ID),
 				strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID), strconv.Quote(operation.CalleeID))
-			emitProgramCall(out, calleeTypeName, locals[target.ID], calleeName, locals[source.ID], childTable+"[invocation_index]", operation)
+			emitProgramCall(out, calleeTypeName, locals[target.ID], calleeName, locals[source.ID], childTable+"[invocation_index]", lookup.takesPointer(operation.CalleeID), operation)
 			declared[operation.TargetID] = true
 		case core.OpReturn:
 			// Unlike emitLinear's single-function OpReturn arm, this never

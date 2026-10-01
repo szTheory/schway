@@ -378,6 +378,49 @@ func selectsByPointerLoweringSharedOnly(function core.Function, linear *core.Lin
 	return terminatorIndex == len(operations)-1
 }
 
+// pointerABIFact is the single checked shape consumed by the production
+// declaration, call-site, body, and manifest writers. A pointer representation
+// carries no alias, capture, alignment, or ownership promise by itself.
+type pointerABIFact struct {
+	PointerParameter bool
+	ParameterCType   string
+	ValueCType       string
+	Access           string
+	FunctionID       string
+	ParameterID      string
+}
+
+func checkedSharedPointerABIFact(function core.Function) (pointerABIFact, bool) {
+	if function.Parameter.Type != "U64" || function.ReturnType != "U64" || function.Linear == nil ||
+		!selectsByPointerLoweringSharedOnly(function, function.Linear) || len(function.Linear.Operations) != 2 {
+		return pointerABIFact{}, false
+	}
+	borrow, ret := function.Linear.Operations[0], function.Linear.Operations[1]
+	if borrow.Kind != core.OpBorrowShared || borrow.SourceID != function.Parameter.ID || borrow.TargetID == "" || borrow.LoanID == "" ||
+		ret.Kind != core.OpReturn || ret.SourceID != borrow.TargetID || ret.TypeID != borrow.TypeID {
+		return pointerABIFact{}, false
+	}
+	parameterType := ""
+	borrowType := ""
+	for _, place := range function.Linear.Places {
+		if place.ID == function.Parameter.ID {
+			parameterType = place.TypeID
+		}
+		if place.ID == borrow.TargetID {
+			borrowType = place.TypeID
+		}
+	}
+	if parameterType == "" || parameterType != borrowType || parameterType != borrow.TypeID {
+		return pointerABIFact{}, false
+	}
+	for _, fact := range function.Linear.Types {
+		if fact.ID == parameterType && fact.Shape.Constructor == "U64" {
+			return pointerABIFact{PointerParameter: true, ParameterCType: "const uint64_t *", ValueCType: "uint64_t", Access: "shared", FunctionID: function.ID, ParameterID: function.Parameter.ID}, true
+		}
+	}
+	return pointerABIFact{}, false
+}
+
 // emittedAttributeForByPointerParameter returns D-05-01's restrict
 // attribute metadata for a shape classified by selectsByPointerLowering.
 // This manifest description does not admit the corresponding program body.
@@ -970,19 +1013,20 @@ const ForeignManifestSchema = "lang.foreign/0"
 // exercises, so a quarantine reader never mistakes a declared fact for a
 // proven one (D-04-12/D-10).
 type foreignManifestDocument struct {
-	Schema               string             `json:"schema"`
-	Symbol               string             `json:"symbol"`
-	Allocator            string             `json:"allocator"`
-	Unwind               string             `json:"unwind"`
-	NonlocalExit         string             `json:"nonlocal_exit"`
-	Fails                string             `json:"fails"`
-	InitializedState     string             `json:"initialized_state"`
-	Capture              string             `json:"capture"`
-	Retention            string             `json:"retention"`
-	Aliasing             string             `json:"aliasing"`
-	Layout               *core.RecordLayout `json:"layout"`
-	EmittedAttributes    []EmittedAttribute `json:"emitted_attributes"`
-	UncheckedObligations []string           `json:"unchecked_obligations"`
+	Schema                   string                    `json:"schema"`
+	Symbol                   string                    `json:"symbol"`
+	Allocator                string                    `json:"allocator"`
+	Unwind                   string                    `json:"unwind"`
+	NonlocalExit             string                    `json:"nonlocal_exit"`
+	Fails                    string                    `json:"fails"`
+	InitializedState         string                    `json:"initialized_state"`
+	Capture                  string                    `json:"capture"`
+	Retention                string                    `json:"retention"`
+	Aliasing                 string                    `json:"aliasing"`
+	Layout                   *core.RecordLayout        `json:"layout"`
+	EmittedAttributes        []EmittedAttribute        `json:"emitted_attributes"`
+	EmittedPointerParameters []EmittedPointerParameter `json:"emitted_pointer_parameters,omitempty"`
+	UncheckedObligations     []string                  `json:"unchecked_obligations"`
 }
 
 // EmittedAttribute is one lang.foreign/0 sidecar emitted_attributes entry
@@ -998,6 +1042,13 @@ type EmittedAttribute struct {
 	CoreNode    string `json:"core_node"`
 	Parameter   string `json:"parameter"`
 	JustifiedBy string `json:"justified_by"`
+}
+
+type EmittedPointerParameter struct {
+	CoreNode  string `json:"core_node"`
+	Parameter string `json:"parameter"`
+	CType     string `json:"c_type"`
+	Access    string `json:"access"`
 }
 
 // uncheckedForeignObligations names every obligation this phase declares but
@@ -1073,6 +1124,9 @@ func singleManifestFunction(program core.Program) (core.Function, error) {
 		if function.Linear != nil && selectsByPointerLowering(function, function.Linear) {
 			return function, nil
 		}
+		if _, ok := checkedSharedPointerABIFact(function); ok {
+			return function, nil
+		}
 	}
 	return core.Function{}, fmt.Errorf("program declares no foreign contract")
 }
@@ -1096,7 +1150,13 @@ func EmitForeignManifest(program core.Program) (string, error) {
 		document.InitializedState, document.Capture, document.Retention, document.Aliasing = contract.InitializedState, contract.Capture, contract.Retention, contract.Aliasing
 		document.Layout = contract.Layout
 	} else {
-		document.EmittedAttributes = append(document.EmittedAttributes, emittedAttributeForByPointerParameter(function))
+		if fact, ok := checkedSharedPointerABIFact(function); ok {
+			document.EmittedPointerParameters = append(document.EmittedPointerParameters, EmittedPointerParameter{
+				CoreNode: fact.FunctionID, Parameter: fact.ParameterID, CType: fact.ParameterCType, Access: fact.Access,
+			})
+		} else {
+			document.EmittedAttributes = append(document.EmittedAttributes, emittedAttributeForByPointerParameter(function))
+		}
 	}
 	encoded, err := json.Marshal(document)
 	if err != nil {
