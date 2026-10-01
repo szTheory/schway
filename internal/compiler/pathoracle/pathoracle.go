@@ -676,14 +676,21 @@ type blockIndex struct {
 	byID       map[string]core.Block
 	operations map[string][]core.LinearOperation // blockID -> its operations, resolved from OperationIDs
 	edgeID     map[[2]string]string
+	places     map[string]bool
 }
 
 func indexBlocks(function core.Function) blockIndex {
 	idx := blockIndex{
-		byID: map[string]core.Block{}, operations: map[string][]core.LinearOperation{}, edgeID: map[[2]string]string{},
+		byID: map[string]core.Block{}, operations: map[string][]core.LinearOperation{}, edgeID: map[[2]string]string{}, places: map[string]bool{},
 	}
 	if function.Linear == nil {
 		return idx
+	}
+	for _, place := range function.Linear.Places {
+		idx.places[place.ID] = true
+	}
+	if function.Parameter.ID != "" {
+		idx.places[function.Parameter.ID] = true
 	}
 	byOperationID := make(map[string]core.LinearOperation, len(function.Linear.Operations))
 	for _, operation := range function.Linear.Operations {
@@ -789,6 +796,9 @@ func linearizePath(functionID string, idx blockIndex, blockIDs []string) (map[st
 		operations := idx.operations[blockID]
 		for opIndex, operation := range operations {
 			work++
+			if operation.Kind != core.OpConst && operation.SourceID != "" && !idx.places[operation.SourceID] {
+				return nil, work, &unknownPlaceError{functionID: functionID, placeID: operation.SourceID, operationID: operation.ID}
+			}
 			if isTerminatorKind(operation.Kind) {
 				sawTerminator = true
 			}
@@ -837,6 +847,18 @@ func linearizePath(functionID string, idx blockIndex, blockIDs []string) (map[st
 	}
 	return states, work, nil
 }
+
+// unknownPlaceError is returned when a path operation's source is not one of
+// the function's independently indexed places. Without this boundary check,
+// a forged terminal source silently inherited no loans and could make a
+// retained loan appear to have ended earlier than its actual use.
+type unknownPlaceError struct{ functionID, placeID, operationID string }
+
+func (e *unknownPlaceError) Error() string {
+	return fmt.Sprintf("pathoracle.unknown_place: function %q operation %q references unknown source place %q", e.functionID, e.operationID, e.placeID)
+}
+
+func (e *unknownPlaceError) Code() string { return "pathoracle.unknown_place" }
 
 // pathResult is one enumerated path together with its replayed loan states
 // and, derived from those, which blocks along the path each loan is still
