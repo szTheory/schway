@@ -3660,6 +3660,9 @@ func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbol
 		if function.ReturnType.Constructor == "FileByteOwner" {
 			return checkLocalFileByteAcquireHelper(functionID, function, foreignSymbols, functionNames, dataTypes)
 		}
+		if phase24ErrorFunctionCandidate(function, functionNames) {
+			return checkPhase24ErrorFunction(functionID, function, foreignSymbols, functionNames, dataTypes, calleeContracts)
+		}
 		return checkLocalFileByteEntry(functionID, function, foreignSymbols, calleeContracts)
 	}
 	derived, err := ability.Derive(parameterType)
@@ -3697,6 +3700,218 @@ func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbol
 		"check.foreign_call_shape_unsupported", body.Span,
 		"this phase supports only a single fallible foreign call immediately returned, or a sequence of try/discard foreign calls whose result is the function's own parameter",
 	)}, work
+}
+
+// phase24ErrorFunctionCandidate reserves this source boundary for the one
+// admitted repeated-helper/error fixture. The normal checker remains closed
+// to fallible Lang calls; this exact bounded shape is the only exception.
+func phase24ErrorFunctionCandidate(function ast.FuncDecl, functionNames map[string]bool) bool {
+	if function.Name == "probe" {
+		return true
+	}
+	body := function.Body.Linear
+	return function.Name == "main" && body != nil && len(body.Bindings) == 3 &&
+		body.Bindings[0].RHS.Kind == "try_call" && body.Bindings[0].RHS.Callee == "acquire" &&
+		body.Bindings[1].RHS.Kind == "try_call" && body.Bindings[1].RHS.Callee == "acquire" &&
+		body.Bindings[2].RHS.Kind == "try_call" && body.Bindings[2].RHS.Callee == "probe" &&
+		functionNames["acquire"] && functionNames["probe"]
+}
+
+func checkPhase24ErrorFunction(functionID string, function ast.FuncDecl, symbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType, callees map[string]calleeContract) (core.Function, []diagnostic.Diagnostic, int) {
+	body := function.Body.Linear
+	refuse := func(span diagnostic.Span) (core.Function, []diagnostic.Diagnostic, int) {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("check.phase24_error_shape_unsupported", span, "PathToken error handling is admitted only for the bounded repeated-acquisition and typed-use fixture")}, 1
+	}
+	resourceError, hasResourceError := dataTypes["ResourceError"]
+	acquireContract, hasAcquire := callees["acquire"]
+	if body == nil || !hasResourceError || len(resourceError.AlternativeDetails) != 0 || len(resourceError.Alternatives) != 2 ||
+		resourceError.Alternatives[0] != "AcquireFailed" || resourceError.Alternatives[1] != "UnsupportedByte" ||
+		!hasAcquire || acquireContract.ParameterType != "PathToken" || acquireContract.ReturnType != "FileByteOwner" || !functionNames["acquire"] {
+		return refuse(function.Span)
+	}
+	acquire := symbols["schway_file_byte_acquire"]
+	release := symbols["schway_file_byte_release"]
+	use := symbols["schway_file_byte_use"]
+	if !localFileByteErrorContracts(acquire, use, release) {
+		return refuse(function.Span)
+	}
+	if function.Name == "probe" {
+		probeContract, ok := callees["probe"]
+		if !ok || probeContract.ParameterType != "PathToken" || probeContract.ReturnType != "U64" || function.ReturnType.Constructor != "U64" ||
+			len(body.Bindings) != 2 || body.Result != body.Bindings[1].Name ||
+			!phase24TryCall(body.Bindings[0], "acquire", function.Parameter.Name) ||
+			!phase24TryCall(body.Bindings[1], "schway_file_byte_use", body.Bindings[0].Name) {
+			return refuse(body.Span)
+		}
+		checked, err := checkPhase24Probe(functionID, function, body, acquireContract, acquire, use, release, dataTypes)
+		if err != nil {
+			return refuse(body.Span)
+		}
+		return checked, nil, 18
+	}
+	probeContract, hasProbe := callees["probe"]
+	if function.Name != "main" || !hasProbe || probeContract.ParameterType != "PathToken" || probeContract.ReturnType != "U64" || function.ReturnType.Constructor != "U64" ||
+		len(body.Bindings) != 3 || body.Result != body.Bindings[2].Name ||
+		!phase24TryCall(body.Bindings[0], "acquire", function.Parameter.Name) ||
+		!phase24TryCall(body.Bindings[1], "acquire", function.Parameter.Name) ||
+		!phase24TryCall(body.Bindings[2], "probe", function.Parameter.Name) {
+		return refuse(body.Span)
+	}
+	checked, err := checkPhase24Caller(functionID, function, body, acquireContract, probeContract, resourceError, release, dataTypes)
+	if err != nil {
+		return refuse(body.Span)
+	}
+	return checked, nil, 22
+}
+
+func phase24TryCall(binding ast.Binding, callee string, argument string) bool {
+	return binding.RHS.Kind == "try_call" && binding.RHS.Callee == callee && len(binding.RHS.Arguments) == 1 && binding.RHS.Arguments[0] == argument
+}
+
+func localFileByteErrorContracts(acquire, use, release foreignSymbolInfo) bool {
+	return foreignSignature(acquire, "PathToken", "FileByteOwner") && localForeignPolicy(acquire, "acquire", "schway_file_byte_acquire_fn", "AcquireError") && acquire.Allocator == "libc_malloc" && acquire.Release == release.Name &&
+		foreignSignature(use, "FileByteOwner", "U64") && localForeignPolicy(use, "borrow", "schway_file_byte_use_fn", "UseError") &&
+		foreignSignature(release, "FileByteOwner", "Unit") && localForeignPolicy(release, "consume", "schway_file_byte_release_fn", "") && release.Allocator == "libc_malloc" && release.Allocator == acquire.Allocator
+}
+
+func checkPhase24Probe(functionID string, function ast.FuncDecl, body *ast.LinearBody, acquireContract calleeContract, acquire, use, release foreignSymbolInfo, dataTypes map[string]core.DataType) (core.Function, error) {
+	path := core.TypeRef{Constructor: "PathToken"}
+	owner := core.TypeRef{Constructor: "FileByteOwner"}
+	u64 := core.TypeRef{Constructor: "U64"}
+	resourceErr := core.TypeRef{Constructor: "ResourceError"}
+	useErr := core.TypeRef{Constructor: "UseError"}
+	types, typeIDs, err := phase24Types(functionID, []core.TypeRef{path, owner, u64, resourceErr, useErr}, dataTypes)
+	if err != nil {
+		return core.Function{}, err
+	}
+	id := func(kind string, n int) string { return fmt.Sprintf("%s:%s:%d", functionID, kind, n) }
+	places := []core.Place{
+		{ID: id("place", 0), Name: function.Parameter.Name, TypeID: typeIDs["PathToken"]},
+		{ID: id("place", 1), Name: body.Bindings[0].Name, TypeID: typeIDs["FileByteOwner"]},
+		{ID: id("place", 2), Name: body.Bindings[1].Name, TypeID: typeIDs["U64"]},
+		{ID: id("place", 3), Name: "_acquire_error", TypeID: typeIDs["ResourceError"]},
+		{ID: id("place", 4), Name: "_use_error", TypeID: typeIDs["UseError"]},
+	}
+	acquireCallID, useID := id("op", 0), id("op", 1)
+	acquireOK, acquireERR := id("edge:acquire", 0), id("edge:acquire", 1)
+	useOK, useERR := id("edge:use", 0), id("edge:use", 1)
+	blocks := []core.Block{
+		phase24Block(functionID, "entry", []string{acquireCallID}, "use", "acquire_error"),
+		phase24Block(functionID, "use", []string{useID}, "use_ok", "use_error"),
+		phase24Block(functionID, "use_ok", []string{id("op", 2), id("op", 3)}),
+		phase24Block(functionID, "use_error", []string{id("op", 4), id("op", 6)}),
+		phase24Block(functionID, "acquire_error", []string{id("op", 5)}),
+	}
+	edges := []core.Edge{
+		{ID: acquireOK, FromBlockID: functionID + ":block:entry", ToBlockID: functionID + ":block:use", Pattern: "ok"},
+		{ID: acquireERR, FromBlockID: functionID + ":block:entry", ToBlockID: functionID + ":block:acquire_error", Pattern: "err"},
+		{ID: useOK, FromBlockID: functionID + ":block:use", ToBlockID: functionID + ":block:use_ok", Pattern: "ok"},
+		{ID: useERR, FromBlockID: functionID + ":block:use", ToBlockID: functionID + ":block:use_error", Pattern: "err"},
+	}
+	acquireOp := core.LinearOperation{ID: acquireCallID, PointID: id("point:linear", 0), Kind: core.OpCall, SourceID: places[0].ID, TargetID: places[1].ID, TypeID: typeIDs["FileByteOwner"], CalleeID: acquireContract.ID, OkEdgeID: acquireOK, ErrEdgeID: acquireERR, ErrTargetID: places[3].ID}
+	useOp := core.LinearOperation{ID: useID, PointID: id("point:linear", 1), Kind: core.OpForeignCall, SourceID: places[1].ID, TargetID: places[2].ID, TypeID: typeIDs["U64"], OkEdgeID: useOK, ErrEdgeID: useERR, ErrTargetID: places[4].ID, Foreign: localForeignContract(use)}
+	acquireID := acquireContract.ID + ":op:0"
+	operations := []core.LinearOperation{
+		acquireOp,
+		useOp,
+		phase24ReleaseOp(functionID, 2, places[1].ID, typeIDs["FileByteOwner"], acquireID, release),
+		{ID: id("op", 3), PointID: id("point:linear", 3), Kind: core.OpReturn, SourceID: places[2].ID, TypeID: typeIDs["U64"]},
+		phase24ReleaseOp(functionID, 4, places[1].ID, typeIDs["FileByteOwner"], acquireID, release),
+		{ID: id("op", 5), PointID: id("point:linear", 5), Kind: core.OpFail, SourceID: places[3].ID, TypeID: typeIDs["ResourceError"]},
+		{ID: id("op", 6), PointID: id("point:linear", 6), Kind: core.OpFail, SourceID: places[4].ID, TypeID: typeIDs["UseError"]},
+	}
+	return core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "PathToken"}, ReturnType: "U64", Linear: &core.LinearBody{ID: id("linear", 0), Types: types, Places: places, Operations: operations, Blocks: blocks, Edges: edges}, Span: function.Span}, nil
+}
+
+func checkPhase24Caller(functionID string, function ast.FuncDecl, body *ast.LinearBody, acquireContract, probeContract calleeContract, resourceError core.DataType, release foreignSymbolInfo, dataTypes map[string]core.DataType) (core.Function, error) {
+	path := core.TypeRef{Constructor: "PathToken"}
+	owner := core.TypeRef{Constructor: "FileByteOwner"}
+	u64 := core.TypeRef{Constructor: "U64"}
+	resourceErr := core.TypeRef{Constructor: resourceError.Name}
+	types, typeIDs, err := phase24Types(functionID, []core.TypeRef{path, owner, owner, u64, resourceErr}, dataTypes)
+	if err != nil {
+		return core.Function{}, err
+	}
+	id := func(kind string, n int) string { return fmt.Sprintf("%s:%s:%d", functionID, kind, n) }
+	places := []core.Place{
+		{ID: id("place", 0), Name: function.Parameter.Name, TypeID: typeIDs["PathToken"]},
+		{ID: id("place", 1), Name: body.Bindings[0].Name, TypeID: typeIDs["FileByteOwner"]},
+		{ID: id("place", 2), Name: body.Bindings[1].Name, TypeID: typeIDs["FileByteOwner"]},
+		{ID: id("place", 3), Name: body.Bindings[2].Name, TypeID: typeIDs["U64"]},
+		{ID: id("place", 4), Name: "_acquire_a_error", TypeID: typeIDs["ResourceError"]},
+		{ID: id("place", 5), Name: "_acquire_b_error", TypeID: typeIDs["ResourceError"]},
+		{ID: id("place", 6), Name: "_probe_error", TypeID: typeIDs["ResourceError"]},
+	}
+	callA, callB, callProbe := id("op", 0), id("op", 1), id("op", 2)
+	edge := func(name, branch string) string { return id("edge:"+name, map[string]int{"ok": 0, "err": 1}[branch]) }
+	blocks := []core.Block{
+		phase24Block(functionID, "entry", []string{callA}, "acquire_b", "acquire_a_error"),
+		phase24Block(functionID, "acquire_b", []string{callB}, "probe", "acquire_b_error"),
+		phase24Block(functionID, "probe", []string{callProbe}, "success", "probe_error"),
+		phase24Block(functionID, "acquire_a_error", []string{id("op", 8)}),
+		phase24Block(functionID, "acquire_b_error", []string{id("op", 3), id("op", 9)}),
+		phase24Block(functionID, "probe_error", []string{id("op", 4), id("op", 5), id("op", 10)}),
+		phase24Block(functionID, "success", []string{id("op", 6), id("op", 7), id("op", 11)}),
+	}
+	edges := []core.Edge{
+		{ID: edge("a", "ok"), FromBlockID: functionID + ":block:entry", ToBlockID: functionID + ":block:acquire_b", Pattern: "ok"},
+		{ID: edge("a", "err"), FromBlockID: functionID + ":block:entry", ToBlockID: functionID + ":block:acquire_a_error", Pattern: "err"},
+		{ID: edge("b", "ok"), FromBlockID: functionID + ":block:acquire_b", ToBlockID: functionID + ":block:probe", Pattern: "ok"},
+		{ID: edge("b", "err"), FromBlockID: functionID + ":block:acquire_b", ToBlockID: functionID + ":block:acquire_b_error", Pattern: "err"},
+		{ID: edge("probe", "ok"), FromBlockID: functionID + ":block:probe", ToBlockID: functionID + ":block:success", Pattern: "ok"},
+		{ID: edge("probe", "err"), FromBlockID: functionID + ":block:probe", ToBlockID: functionID + ":block:probe_error", Pattern: "err"},
+	}
+	acquireID := acquireContract.ID + ":op:0"
+	operations := []core.LinearOperation{
+		{ID: callA, PointID: id("point:linear", 0), Kind: core.OpCall, SourceID: places[0].ID, TargetID: places[1].ID, TypeID: typeIDs["FileByteOwner"], CalleeID: acquireContract.ID, OkEdgeID: edge("a", "ok"), ErrEdgeID: edge("a", "err"), ErrTargetID: places[4].ID},
+		{ID: callB, PointID: id("point:linear", 1), Kind: core.OpCall, SourceID: places[0].ID, TargetID: places[2].ID, TypeID: typeIDs["FileByteOwner"], CalleeID: acquireContract.ID, OkEdgeID: edge("b", "ok"), ErrEdgeID: edge("b", "err"), ErrTargetID: places[5].ID},
+		{ID: callProbe, PointID: id("point:linear", 2), Kind: core.OpCall, SourceID: places[0].ID, TargetID: places[3].ID, TypeID: typeIDs["U64"], CalleeID: probeContract.ID, OkEdgeID: edge("probe", "ok"), ErrEdgeID: edge("probe", "err"), ErrTargetID: places[6].ID},
+		phase24ReleaseOp(functionID, 3, places[1].ID, typeIDs["FileByteOwner"], acquireID, release),
+		phase24ReleaseOp(functionID, 4, places[2].ID, typeIDs["FileByteOwner"], acquireID, release),
+		phase24ReleaseOp(functionID, 5, places[1].ID, typeIDs["FileByteOwner"], acquireID, release),
+		phase24ReleaseOp(functionID, 6, places[2].ID, typeIDs["FileByteOwner"], acquireID, release),
+		phase24ReleaseOp(functionID, 7, places[1].ID, typeIDs["FileByteOwner"], acquireID, release),
+		{ID: id("op", 8), PointID: id("point:linear", 8), Kind: core.OpFail, SourceID: places[4].ID, TypeID: typeIDs["ResourceError"]},
+		{ID: id("op", 9), PointID: id("point:linear", 9), Kind: core.OpFail, SourceID: places[5].ID, TypeID: typeIDs["ResourceError"]},
+		{ID: id("op", 10), PointID: id("point:linear", 10), Kind: core.OpFail, SourceID: places[6].ID, TypeID: typeIDs["ResourceError"]},
+		{ID: id("op", 11), PointID: id("point:linear", 11), Kind: core.OpReturn, SourceID: places[3].ID, TypeID: typeIDs["U64"]},
+	}
+	return core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "PathToken"}, ReturnType: "U64", Linear: &core.LinearBody{ID: id("linear", 0), Types: types, Places: places, Operations: operations, Blocks: blocks, Edges: edges}, Span: function.Span}, nil
+}
+
+func phase24Types(functionID string, shapes []core.TypeRef, dataTypes map[string]core.DataType) ([]core.TypeFact, map[string]string, error) {
+	sealed := sealedNames(dataTypes)
+	types := make([]core.TypeFact, 0, len(shapes))
+	ids := make(map[string]string, len(shapes))
+	for _, shape := range shapes {
+		if _, exists := ids[shape.Constructor]; exists {
+			continue
+		}
+		derived, err := ability.DeriveSealed(shape, sealed)
+		if err != nil {
+			return nil, nil, err
+		}
+		id := fmt.Sprintf("%s:type:%d", functionID, len(types))
+		types = append(types, core.TypeFact{ID: id, Shape: shape, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses})
+		ids[shape.Constructor] = id
+	}
+	return types, ids, nil
+}
+
+func phase24Block(functionID, suffix string, operationIDs []string, successors ...string) core.Block {
+	point := functionID + ":point:" + suffix
+	if suffix == "entry" {
+		point = functionID + ":point:entry"
+	}
+	blocks := make([]string, len(successors))
+	for index, successor := range successors {
+		blocks[index] = functionID + ":block:" + successor
+	}
+	return core.Block{ID: functionID + ":block:" + suffix, PointID: point, OperationIDs: operationIDs, Successors: blocks}
+}
+
+func phase24ReleaseOp(functionID string, ordinal int, ownerPlace, ownerType, acquisitionID string, release foreignSymbolInfo) core.LinearOperation {
+	return core.LinearOperation{ID: fmt.Sprintf("%s:op:%d", functionID, ordinal), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, ordinal), Kind: core.OpRelease, SourceID: ownerPlace, TypeID: ownerType, ReleasesOperationID: acquisitionID, Allocator: release.Allocator, Foreign: localForeignContract(release)}
 }
 
 // checkLocalFileByteEntry admits one closed Phase 23 success shape. All

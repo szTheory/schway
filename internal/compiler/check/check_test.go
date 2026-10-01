@@ -2347,6 +2347,114 @@ func TestPhase24SourceTransfer(t *testing.T) {
 	}
 }
 
+func TestPhase24ErrorSource(t *testing.T) {
+	source, err := os.ReadFile("../../../examples/phase24/error.schway")
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("repeated helper typed-error source was refused: %+v", result.Diagnostics)
+	}
+	functions := make(map[string]core.Function, len(result.Program.Functions))
+	for _, function := range result.Program.Functions {
+		functions[function.Name] = function
+	}
+	helper, probe, main := functions["acquire"], functions["probe"], functions["main"]
+	if helper.ID == "" || probe.ID == "" || main.ID == "" {
+		t.Fatalf("error fixture functions missing: acquire=%q probe=%q main=%q", helper.ID, probe.ID, main.ID)
+	}
+	var acquisitionID string
+	for _, operation := range helper.Linear.Operations {
+		if operation.Kind == core.OpForeignCall && operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+			acquisitionID = operation.ID
+		}
+	}
+	if acquisitionID == "" {
+		t.Fatal("helper acquisition operation missing")
+	}
+	if got := countPhase24Calls(main.Linear.Operations, helper.ID); got != 2 {
+		t.Fatalf("main helper calls = %d, want two retained acquisitions", got)
+	}
+	if got := countPhase24Calls(probe.Linear.Operations, helper.ID); got != 1 {
+		t.Fatalf("probe helper calls = %d, want one later acquisition", got)
+	}
+	var use core.LinearOperation
+	for _, operation := range probe.Linear.Operations {
+		if operation.Kind == core.OpForeignCall && operation.Foreign != nil && operation.Foreign.Mode == "borrow" {
+			use = operation
+		}
+	}
+	if use.ID == "" || use.Foreign.Fails != "UseError" || use.ErrTargetID == "" || use.OkEdgeID == "" || use.ErrEdgeID == "" {
+		t.Fatalf("probe does not retain the declared fallible borrowed-use edges: %+v", use)
+	}
+	for _, function := range []core.Function{probe, main} {
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind != core.OpRelease {
+				continue
+			}
+			if operation.ReleasesOperationID != acquisitionID || operation.Foreign == nil || operation.Foreign.Mode != "consume" {
+				t.Fatalf("%s release is not paired with the helper's acquisition: %+v", function.Name, operation)
+			}
+		}
+	}
+}
+
+func TestPhase24RepeatedHelperSource(t *testing.T) {
+	source, err := os.ReadFile("../../../examples/phase24/error.schway")
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("repeated helper source was refused: %+v", result.Diagnostics)
+	}
+	var acquisitionIDs []string
+	var calls []core.LinearOperation
+	for _, function := range result.Program.Functions {
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpForeignCall && operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+				acquisitionIDs = append(acquisitionIDs, operation.ID)
+			}
+			if operation.Kind == core.OpCall && operation.CalleeID == functionIDForTest(result.Program, "acquire") {
+				calls = append(calls, operation)
+				if operation.ErrTargetID == "" || operation.OkEdgeID == "" || operation.ErrEdgeID == "" {
+					t.Fatalf("fallible helper call lacks typed error control edges: %+v", operation)
+				}
+			}
+		}
+	}
+	if len(acquisitionIDs) != 1 || len(calls) != 3 {
+		t.Fatalf("static acquisitions=%v helper calls=%d; want one acquire site across three activations", acquisitionIDs, len(calls))
+	}
+	seenTargets := make(map[string]bool, len(calls))
+	for _, call := range calls {
+		if seenTargets[call.TargetID] {
+			t.Fatalf("helper call sites collide on owner target %q", call.TargetID)
+		}
+		seenTargets[call.TargetID] = true
+	}
+}
+
+func countPhase24Calls(operations []core.LinearOperation, calleeID string) int {
+	count := 0
+	for _, operation := range operations {
+		if operation.Kind == core.OpCall && operation.CalleeID == calleeID {
+			count++
+		}
+	}
+	return count
+}
+
+func functionIDForTest(program core.Program, name string) string {
+	for _, function := range program.Functions {
+		if function.Name == name {
+			return function.ID
+		}
+	}
+	return ""
+}
+
 func TestPhase24SourceRefusal(t *testing.T) {
 	canonical, err := os.ReadFile("../../../examples/phase24/transfer.schway")
 	if err != nil {

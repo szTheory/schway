@@ -861,12 +861,11 @@ type LinearOperation struct {
 	// this fact belongs to one operation and is omitted by every older core
 	// operation.
 	Foreign *ForeignOperationContract `json:"foreign,omitempty"`
-	// OkEdgeID, ErrEdgeID, and ErrTargetID are Phase 4 additive omitempty
-	// facts populated only on an OpForeignCall operation (D-04-04): the ok
-	// edge continues at TargetID (an ordinary place, exactly like OpCopy's
-	// target), while the err edge's own synthesized failure-ADT place is
-	// ErrTargetID. Every pre-Phase-4 operation, and every operation kind
-	// other than OpForeignCall, leaves all three empty.
+	// OkEdgeID, ErrEdgeID, and ErrTargetID are additive omitempty control-flow
+	// facts. OpForeignCall uses them for its foreign result edges (D-04-04);
+	// the bounded Phase 24 fallible-call path also uses them on OpCall, where
+	// ErrTargetID receives the callee's declared failure envelope. Every
+	// operation kind other than OpForeignCall/OpCall leaves all three empty.
 	OkEdgeID    string `json:"ok_edge_id,omitempty"`
 	ErrEdgeID   string `json:"err_edge_id,omitempty"`
 	ErrTargetID string `json:"err_target_id,omitempty"`
