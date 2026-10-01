@@ -1,45 +1,31 @@
 ---
 phase: 24-ownership-transfer-through-calls-and-errors
-reviewed: 2026-10-01T11:22:25Z
+reviewed: 2026-10-01T11:35:19Z
 depth: standard
-files_reviewed: 7
+files_reviewed: 1
 files_reviewed_list:
   - internal/compiler/native/phase24_observer_test.go
-  - internal/compiler/native/testdata/phase24_observer.c
-  - internal/compiler/cgen/cgen_program_test.go
-  - internal/compiler/session/session_phase24_model_test.go
-  - examples/phase24/README.md
-  - scripts/verify-phase24.sh
-  - .github/workflows/ci.yml
 findings:
   critical: 0
-  warning: 1
+  warning: 0
   info: 0
-  total: 1
-status: issues_found
+  total: 0
+status: clean
 ---
 
 # Phase 24: Code Review Report
 
-**Reviewed:** 2026-10-01T11:22:25Z  
+**Reviewed:** 2026-10-01T11:35:19Z  
 **Depth:** standard  
-**Files Reviewed:** 7  
-**Status:** issues_found
+**Files Reviewed:** 1  
+**Status:** clean
 
 ## Summary
 
-Reviewed the Phase 24 observer, model and emitter tests, example contract, focused verifier, and CI wiring. The model cleanup assertion does not check which owner each release event discharged, so it can accept an incorrect release ordering while claiming to verify the expected C/B/A cleanup sequence.
-
-## Warnings
-
-### WR-01: Model cleanup check does not verify owner identity or order
-
-**File:** `internal/compiler/native/phase24_observer_test.go:413-421`  
-**Issue:** The typed-error replay collects only `FunctionID` for `resource.released` and compares `probe, main, main`. Swapping the releases of caller owners A and B would still produce the same function sequence, so this assertion cannot establish the stated helper-C, caller-B, caller-A order or catch a model regression that discharges the wrong owner. `execution.Event` also carries `SourcePlace` and `Invocation`, which allow the test to check the relevant owner place and activation.  
-**Fix:** Assert the release events' `SourcePlace` sequence against the owner places established by the checked fixture, and verify the expected invocation IDs as well as their functions.
+Re-reviewed the Phase 24 model cleanup assertion after the WR-01 fix. It now checks release place order (`owner`, `owner_b`, `owner_a`) and binds each release to the failing function's invocation, also confirming the helper and caller frame relationship. No remaining correctness or test-reliability issue was found in this delta.
 
 ---
 
-_Reviewed: 2026-10-01T11:22:25Z_  
+_Reviewed: 2026-10-01T11:35:19Z_  
 _Reviewer: the agent (gsd-code-reviewer)_  
 _Depth: standard_
