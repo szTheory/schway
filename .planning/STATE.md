@@ -5,11 +5,11 @@ milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 25
 current_phase_name: Separate Pointer Successors and Integrated Utility
 status: planning
-stopped_at: Current checkout restored to canonical schway directory; Phase 24 complete; next command is $gsd-discuss-phase 25
-last_updated: "2026-10-01T17:22:41Z"
+stopped_at: Phase 25 context gathered
+last_updated: "2026-10-01T18:20:45.925Z"
 last_activity: 2026-10-01
 last_activity_desc: Archived the original checkout and restored the current source to the canonical schway directory
-state_head: ee1190031484dfb7e468db0b597d954802c06b8b
+state_head: f4c271499afbeef7b3faff19185df3ed6b792dff
 progress:
   total_phases: 4
   completed_phases: 3
@@ -700,9 +700,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-01
-Stopped at: Current source is back in the canonical schway folder; Phases 22–24 verification reports pass; ready to discuss Phase 25
-Resume file: `.planning/phases/25-separate-pointer-successors-and-integrated-utility/continue.md`
+Last session: 2026-10-01T18:20:45.742Z
+Stopped at: Phase 25 context gathered
+Resume file: .planning/phases/25-separate-pointer-successors-and-integrated-utility/25-CONTEXT.md
 Next command: `$gsd-discuss-phase 25`
 Routing resolution — 2026-10-01 (post-closeout): canonical `init.progress` now
 reports Phases 22, 23, and 24 complete with verification `passed`; Phase 22's
