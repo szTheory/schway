@@ -1,0 +1,10 @@
+module phase25.exclusive_escape_reject
+
+export {
+  fn relay
+}
+
+fn relay(value: Buffer) -> Buffer {
+  let exclusive = borrow mut value
+  exclusive
+}
