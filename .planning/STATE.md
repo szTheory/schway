@@ -4,18 +4,18 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 25
 current_phase_name: separate-pointer-successors-and-integrated-utility
-current_plan: 2
+current_plan: 3
 status: executing
-stopped_at: Completed 25-01-PLAN.md
-last_updated: "2026-10-01T20:03:45.423Z"
+stopped_at: Completed 25-02-PLAN.md
+last_updated: "2026-10-01T20:18:34.461Z"
 last_activity: 2026-10-01
 last_activity_desc: Archived the original checkout and restored the current source to the canonical schway directory
-state_head: 65bfadc2e90efd3d42be047951239c6b6252797c
+state_head: 6c89a17c2dd5656b7b14b16ea0fbca9ea28b1f79
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 18
-  completed_plans: 14
+  completed_plans: 15
   percent: 75
 ---
 
@@ -123,9 +123,9 @@ next command: `$gsd-discuss-phase 25`.
 ## Current Position
 
 Phase: 25 (separate-pointer-successors-and-integrated-utility) — READY TO EXECUTE
-Current Plan: 2
+Current Plan: 3
 Total Plans in Phase: 5
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-10-01 — Canonical checkout location restored and archive preservation verified; Phase 24 remains complete
 
@@ -424,6 +424,7 @@ subset alone.
 | Phase 24 P01 | 200min | 3 tasks | 17 files |
 | Phase 24 P02 | 41min | 3 tasks | 15 files |
 | Phase 25 P01 | 12m | 2 tasks | 6 files |
+| Phase 25 P2 | 13min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -513,6 +514,8 @@ decision history; they no longer describe current status.
 - [Phase 25]: The existing checker already records shared family identity as OpBorrowShared with a loan ID, so Plan 25-01 adds a source witness without widening generic checker rules.
 - [Phase 25]: Only the exact U64 shared-borrow-to-return shape receives the const uint64_t pointer ABI; unsupported chains remain refused.
 - [Phase 25]: The C parameter, call-site address, scalar copy, and manifest entry derive from one checked ABI fact, with no unsupported optimizer or ownership promise.
+- [Phase 25]: Origin validation independently derives linear borrow conflicts from loan owners, family, and last uses.
+- [Phase 25]: Path replay rejects unknown source places before deriving loan endpoints.
 
 ### Pending Todos
 
@@ -707,9 +710,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-01T20:03:45.395Z
-Stopped at: Completed 25-01-PLAN.md
-Resume file: .planning/phases/25-separate-pointer-successors-and-integrated-utility/continue.md
+Last session: 2026-10-01T20:18:34.432Z
+Stopped at: Completed 25-02-PLAN.md
+Resume file: None
 Next command: `$gsd-discuss-phase 25`
 Routing resolution — 2026-10-01 (post-closeout): canonical `init.progress` now
 reports Phases 22, 23, and 24 complete with verification `passed`; Phase 22's
