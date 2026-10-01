@@ -93,6 +93,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libc++-dev libc++abi-dev
+      - name: scripts/verify-phase24.sh
+        run: sh scripts/verify-phase24.sh
       - name: scripts/verify-phase23.sh
         run: sh scripts/verify-phase23.sh
       - name: scripts/verify-phase6.sh
