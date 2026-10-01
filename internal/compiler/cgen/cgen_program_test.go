@@ -1909,8 +1909,8 @@ func TestPhase24EmitterErrorRefusesReplacedFailureBeforeSerialization(t *testing
 			main = &program.Functions[index]
 		}
 	}
-	probeCall := phase24Calls(*main, phase24FunctionID(program, "probe"))[0]
-	acquireCall := phase24Calls(*main, phase24FunctionID(program, "acquire"))[0]
+	probeCall := phase24CallsForTest(*main, phase24FunctionID(program, "probe"))[0]
+	acquireCall := phase24CallsForTest(*main, phase24FunctionID(program, "acquire"))[0]
 	block := phase24TargetBlock(main, probeCall.ErrEdgeID)
 	terminalID := block.OperationIDs[len(block.OperationIDs)-1]
 	terminalIndex := -1
@@ -1925,6 +1925,16 @@ func TestPhase24EmitterErrorRefusesReplacedFailureBeforeSerialization(t *testing
 	}
 	main.Linear.Operations[terminalIndex].SourceID = acquireCall.ErrTargetID
 	requirePhase24EmitterRefusalBeforeSerialization(t, program, "replaced propagated typed error")
+}
+
+func phase24CallsForTest(function core.Function, callee string) []core.LinearOperation {
+	var calls []core.LinearOperation
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpCall && operation.CalleeID == callee {
+			calls = append(calls, operation)
+		}
+	}
+	return calls
 }
 
 func phase24ErrorProgramForEmitter(t *testing.T) core.Program {
