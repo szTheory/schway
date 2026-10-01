@@ -29,8 +29,8 @@ IDs continue existing categories, including reserved historical future IDs.
 ### Live local resource ownership
 
 - [x] **RES-04**: A source-constructible opaque noncopyable resource can receive a real bounded malloc-backed buffer from an explicitly linked C adapter, remain live after the adapter returns, and supply a byte determined by a caller-selected file through Schway-directed use.
-- [ ] **RES-05**: Generated release invokes the resource's declared infallible consuming destructor exactly once; a borrow preserves the owner's obligation, and transfer preserves the live resource under its new owner without calling the destructor.
-- [ ] **RES-06**: On admitted normal and typed-error exits, every successfully acquired locally owned resource that is not transferred is released in reverse successful-acquisition completion order, including an actual operation/output failure after acquisition.
+- [x] **RES-05**: Generated release invokes the resource's declared infallible consuming destructor exactly once; a borrow preserves the owner's obligation, and transfer preserves the live resource under its new owner without calling the destructor.
+- [x] **RES-06**: On admitted normal and typed-error exits, every successfully acquired locally owned resource that is not transferred is released in reverse successful-acquisition completion order, including an actual operation/output failure after acquisition.
 - [x] **RES-07**: A failed foreign acquisition creates no Schway-owned resource; the bounded adapter contract specifies maximum size, empty input, initialization/length, failure representation, and cleanup of its own partial acquisition before exposing a result.
 - [x] **RES-08**: Discarding an owning acquisition cannot erase its obligation: the admitted form either performs immediate consuming cleanup or is rejected before C serialization.
 - [x] **RES-09**: Independent validation derives obligations from successful acquisitions and follows each admitted path; missing, duplicate, wrong-resource, or fabricated cleanup is rejected without relying on the presence of an existing release operation to discover the obligation.
@@ -38,8 +38,8 @@ IDs continue existing categories, including reserved historical future IDs.
 ### Ownership across Schway calls
 
 - [x] **OWN-10**: A live resource can move through an admitted Schway call and return, remain usable by its new owner, and be released there exactly once; copying or using the moved-from owner is rejected, and an owning process-entry result is refused without an external receiver.
-- [ ] **OWN-11**: Acquisitions from the same static site in distinct callee activations have distinct semantic identities, preserved across transfers and independently checked without treating raw host addresses as portable identities.
-- [ ] **OWN-12**: Typed error propagation across Schway calls discharges remaining caller/callee obligations according to the declared cleanup order, including multiple successful acquisitions followed by a real later failure; an actual entry-to-error path exercises the cleanup.
+- [x] **OWN-11**: Acquisitions from the same static site in distinct callee activations have distinct semantic identities, preserved across transfers and independently checked without treating raw host addresses as portable identities.
+- [x] **OWN-12**: Typed error propagation across Schway calls discharges remaining caller/callee obligations according to the declared cleanup order, including multiple successful acquisitions followed by a real later failure; an actual entry-to-error path exercises the cleanup.
 
 ### Bounded pointer successors
 
@@ -49,7 +49,7 @@ IDs continue existing categories, including reserved historical future IDs.
 
 ### Decisive native evidence
 
-- [ ] **EVD-09**: An observer independent of compiler release events establishes actual allocation, post-acquisition use, and destruction before process exit; reached controls for omitted, premature, duplicate, and wrong-resource destruction fail even when reported events remain plausible.
+- [x] **EVD-09**: An observer independent of compiler release events establishes actual allocation, post-acquisition use, and destruction before process exit; reached controls for omitted, premature, duplicate, and wrong-resource destruction fail even when reported events remain plausible.
 - [ ] **EVD-10**: Every admitted foreign/shared/exclusive family has its own reproducible macOS and Linux native receipt identifying source/build inputs, compiler, target, flags, expected result, and applicable optimizer/sanitizer lanes; missing host or lane evidence keeps that claim incomplete.
 - [x] **EVD-11**: Explicit differential verification uses isolated or replayable inputs and declared foreign outcomes, compares against independent expected answers, and never claims that modeled foreign success proves actual host IO or that process reclamation proves cleanup.
 
@@ -150,18 +150,18 @@ No new requirement maps to completed historical Phase 21. All remain Pending.
 | FFI-02 | Phase 22 | Complete |
 | FFI-03 | Phase 23 | Complete |
 | RES-04 | Phase 23 | Complete |
-| RES-05 | Phase 24 | Pending |
-| RES-06 | Phase 24 | Pending |
+| RES-05 | Phase 24 | Complete |
+| RES-06 | Phase 24 | Complete |
 | RES-07 | Phase 23 | Complete |
 | RES-08 | Phase 23 | Complete |
 | RES-09 | Phase 23 | Complete |
 | OWN-10 | Phase 24 | Complete |
-| OWN-11 | Phase 24 | Pending |
-| OWN-12 | Phase 24 | Pending |
+| OWN-11 | Phase 24 | Complete |
+| OWN-12 | Phase 24 | Complete |
 | NAT-11 | Phase 25 | Pending |
 | NAT-12 | Phase 25 | Pending |
 | NAT-13 | Phase 25 | Pending |
-| EVD-09 | Phase 24 | Pending |
+| EVD-09 | Phase 24 | Complete |
 | EVD-10 | Phase 25 | Pending |
 | EVD-11 | Phase 22 | Complete |
 | DX-14 | Phase 25 | Pending |
