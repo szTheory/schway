@@ -21,13 +21,13 @@
     {
       "number": "25",
       "name": "Separate Pointer Successors and Integrated Utility",
-      "status": "pending"
+      "status": "in_progress"
     }
   ],
   "next": {
     "command": "/gsd:progress --next",
-    "label": "Advance to the next step (plan phase 25)",
-    "reason": "Phase 25 of 4 — needs a plan"
+    "label": "Advance to the next step",
+    "reason": "Phase 25 of 4 · 75% · executing"
   },
-  "updated_at": "2026-10-01T19:46:34.024Z"
+  "updated_at": "2026-10-01T20:03:45.142Z"
 }
