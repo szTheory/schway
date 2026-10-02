@@ -96,7 +96,13 @@ Hosted `checks` and `current evidence aggregate` jobs passed on both hosts. Linu
 
 ## Deviations from Plan
 
-None — plan executed as written.
+**1. [Acceptance-detail correction] Updated the stale Wave 0 hosted-evidence status.**
+- **Found during:** post-execution acceptance audit.
+- **Issue:** The Wave 0 paragraph still said hosted dual-host receipts remained open after the current matrix had passed.
+- **Fix:** Replaced that current-status sentence with the completed run `36971855722` result and 18/18 host/family/lane count.
+- **Files modified:** `.planning/phases/25-separate-pointer-successors-and-integrated-utility/25-VALIDATION.md`.
+- **Verification:** Focused Phase 25 evidence test and `git diff --check` passed.
+- **Committed in:** `35956d2`.
 
 ## Issues Encountered
 
@@ -111,6 +117,7 @@ All four planned documents are ready for the fresh Phase 25 goal-backward verifi
 - All four modified artifacts exist and include current run `36971855722` evidence where applicable.
 - Task commits `2daa40c` and `ba1477e` exist.
 - Hosted provenance, matrix rows, security verdict, refusal frontier, and all three ranked recommendations are recorded.
+- The Wave 0 validation status now also records the completed hosted matrix and closed EVD-10.
 
 ---
 *Phase: 25-separate-pointer-successors-and-integrated-utility*
