@@ -7,9 +7,9 @@ current_phase_name: separate-pointer-successors-and-integrated-utility
 current_plan: 6
 status: executing
 stopped_at: Completed 25-06-PLAN.md; local validation passed; hosted EVD-10 matrix pending
-last_updated: "2026-10-02T03:08:16Z"
-last_activity: 2026-10-01
-last_activity_desc: Completed Phase 25 Plan06 and passed local full, race, vet, build, and macOS evidence checks; hosted family-by-lane receipts remain open
+last_updated: "2026-10-02T06:00:16Z"
+last_activity: 2026-10-02
+last_activity_desc: Closed Phase 25 quick security repair, regression hardening, and fresh full-suite validation; hosted EVD-10 family-by-lane receipts remain open
 state_head: a4d8373
 progress:
   total_phases: 4
@@ -706,6 +706,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 260928-rta | Record Schway as the chosen public language name in active identity and planning docs; preserve archived history and record the deferred distribution-identifier migration boundary | 2026-09-28 | 0382c16 | passed | [260928-rta-record-schway-as-the-chosen-public-langu](./quick/260928-rta-record-schway-as-the-chosen-public-langu/) |
 | 260928-sof | Record the empty public GitHub repository github.com/szTheory/schway and the no-PII, no-source-push boundary | 2026-09-28 | — | passed | [260928-sof-record-the-empty-public-github-repositor](./quick/260928-sof-record-the-empty-public-github-repositor/) |
 | 261001-ikw | Archive the original checkout and restore the current source to the canonical schway folder | 2026-10-01 | — | passed | [261001-ikw-archive-the-original-checkout-and-restor](./quick/261001-ikw-archive-the-original-checkout-and-restor/) |
+| 261001-wmx | Close Phase 25 security audit findings and repair integration regressions | 2026-10-02 | 95ce75b | passed | [261001-wmx-close-phase-25-security-audit-findings-a](./quick/261001-wmx-close-phase-25-security-audit-findings-a/) |
 
 ## Deferred Items
 
