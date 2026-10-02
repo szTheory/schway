@@ -56,20 +56,20 @@ See: .planning/PROJECT.md (updated 2026-09-28)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 25 — Separate Pointer Successors and Integrated Utility
+**Current focus:** M004 closeout — Phase 25 just finished; refresh stale Phase 22–24 verification through the live GSD resolver
 
 **Checkout location (2026-10-01):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. Its branch remains
 `worktree-agent-p24-01-retry`. The original pre-publication checkout, including
 its uncommitted planning material and private audit records, is preserved in
 the sibling `schway-archive` directory. Keep those private files outside this
-Git tree. The directory move does not change source or phase completion. Once
-PR #1 is integrated, the next GSD command is `$gsd-new-milestone`; do not reopen
-Phase 25.
+Git tree. The directory move does not change source or phase completion. PR #1
+is integrated. The next GSD command is `$gsd-execute-phase 22` to refresh the
+earliest stale verifier report; do not reopen Phase 25.
 
 **Durable context (survives context clears — read before re-deriving):**
 
-  - **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `15b3a518` reports 1,573 reachable commits and zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Hosted run 36705094434 passed both host check suites and evidence aggregates. Hosted run 36707529870 passed Ubuntu/macOS checks and evidence aggregates; Phase 23's verifier passes 5/5. Phase 24's verifier passes 5/5 at source `ed94ef79`; hosted run 36856048690 passed full/race suites and evidence aggregates on Ubuntu and macOS. No local suite or UAT was rerun for Phase 24 closeout. Phase 25's seven plans are complete; run 36971855722 closes all 18 family/host/lane receipts, and the goal-backward verifier passes 6/6 truths and 5/5 roadmap criteria. Final-head CI and PR #1 integration remain before the next milestone. Private audit artifacts remain in the original checkout under this quick task's `audit/` directory.
+  - **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `15b3a518` reports 1,573 reachable commits and zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Hosted run 36705094434 passed both host check suites and evidence aggregates. Hosted run 36707529870 passed Ubuntu/macOS checks and evidence aggregates; Phase 23's verifier passes 5/5. Phase 24's verifier passes 5/5 at source `ed94ef79`; hosted run 36856048690 passed full/race suites and evidence aggregates on Ubuntu and macOS. No local suite or UAT was rerun for Phase 24 closeout. Phase 25's seven plans are complete; run 36971855722 closes all 18 family/host/lane receipts, and the goal-backward verifier passes 6/6 truths and 5/5 roadmap criteria. PR #1 is merged with successful final-head CI; current live routing selects Phase 22 for a verifier refresh. Private audit artifacts remain in the original checkout under this quick task's `audit/` directory.
 - `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 24. The separate app
   route retains and runs a native U64 identity app once with ordinary streams;
   evidence capture is not verification. Bounded file-byte transfer and
@@ -122,7 +122,7 @@ Phase 25.
 
 ## Current Position
 
-Phase: 25
+Phase: 25 (just finished)
 Current Plan: Not started
 Total Plans in Phase: 7
 Plan: 7 of 7
@@ -565,7 +565,7 @@ remain the next M004 capabilities. Phase 22 provides no Linux host result;
 later M004 evidence must keep that lane open. Local app receipts remain
 `dependency_closure: incomplete` and `cacheable: false`.
 
-**Phase 22–24 verification refresh — 2026-10-01 (current):** Phase 22's
+**Phase 22–24 verification refresh — 2026-10-01 (historical; superseded by the current handoff below):** Phase 22's
 objective README contract UAT is `complete` with 1/1 passed and must be
 preserved. Phase 22 and 23 verification fingerprints, and Phase 24's
 fingerprint after final ROADMAP/summary reconciliation, currently report
@@ -731,9 +731,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 Last session: 2026-10-02T07:22:52.868Z
 Stopped at: Phase 25 complete — all phases complete
 Resume file: None
-Next action: push the completed branch, wait for current-head CI, and squash
-auto-merge PR #1 when green as authorized; after integration use
-`$gsd-new-milestone`. Do not replay completed Phase 25 plans or UAT.
+Next action: `$gsd-execute-phase 22` to refresh the earliest stale verifier
+report. Phase 25 is the phase just finished; do not replay its plans or UAT.
 Routing resolution — 2026-10-02 (current): Phase 25 plans 25-01 through 25-07
 are complete and summarized. Goal-backward verification passes 6/6 must-have
 truths and 5/5 roadmap criteria; `phase complete --phase 25` updated ROADMAP
@@ -744,6 +743,25 @@ aggregate jobs on Linux/x86_64 and macOS/arm64. All 18 foreign/shared/exclusive
 README cold-read and focused link checks are recorded separately from CI. The
 older 2026-10-01 routing note below is historical and superseded by this
 receipt; its local-only limitations were accurate at that earlier time.
+PR #1 (`https://github.com/szTheory/schway/pull/1`) is merged by squash commit
+`a816279d5a5075b2a12592a9973864f5676d3aec`. Final PR head
+`692f791051ba671c49c68fdd2073229feb51b090` was tested by hosted run
+`37005701631` (`https://github.com/szTheory/schway/actions/runs/37005701631`),
+whose overall conclusion and `checks` plus `current evidence aggregate` jobs
+are successful on Ubuntu and macOS. Keep the final PR head, CI receipt, and
+squash commit as distinct identifiers. `state.json` marks Phases 22–25
+complete and advertises `/gsd:new-milestone`; the live `init.progress` resolver
+currently selects Phase 22 because `verification.status` reports stale for
+Phases 22–25. `init.execute-phase` confirms 0 incomplete plans for 22 (3/3),
+23 (7/7), and 24 (3/3). Phase 22's objective README contract UAT remains
+complete 1/1; Phase 23 and Phase 24 reports say no human verification is
+required. Preserve Phase 22 UAT. After each refresh, re-query `init.progress`;
+refresh the earliest stale phase through `$gsd-execute-phase`, continuing
+through 23, 24, and 25 only if each remains stale when it becomes next. The
+ROADMAP prose edit changed a file listed in Phase 25's `covered_files`, so its
+report also needs a verifier-only freshness refresh. This does not reopen Phase
+25 implementation or UAT. Use `$gsd-new-milestone` only after the live resolver
+permits it. Do not route to `$gsd-verify-work` or replay any plans.
 Routing resolution — 2026-10-01 (historical; superseded by 2026-10-02 closeout): Phase 25 plans 25-01 through 25-06
 are complete and summarized. The local full and race suites, vet, build,
 groundedness/census checks, README/evidence contracts, and macOS/arm64 baseline,

@@ -5,7 +5,7 @@
 - ✅ **M001 — Source-to-Native Semantic Spine** — Phases 1–6 (shipped 2026-09-07) — [archive](milestones/M001-ROADMAP.md)
 - ✅ **M002 — Interprocedural Semantic Spine** — Phases 07–13 (shipped 2026-09-14) — [archive](milestones/M002-ROADMAP.md)
 - ✅ **M003 — Computation and Honest Instruments** — Phases 14–20 (shipped 2026-09-26; audit: tech debt) — [archive](milestones/M003-ROADMAP.md)
-- 🚧 **M004 — Native Emission Ownership and Resource Discharge** — completed Phase 21 prework; new phases 22–25 (ready for planning)
+- ✅ **M004 — Native Emission Ownership and Resource Discharge** — Phases 22–25 implementation and hosted closeout complete; live GSD verifier refreshes for Phases 22–24 remain before the next milestone
 
 ## M004 Goal
 
@@ -17,10 +17,12 @@ Shared and exclusive read-copy pointers have separate bounded admissions.
 Scope: [REQUIREMENTS](REQUIREMENTS.md). Adopted decisions and inspected boundaries:
 [research synthesis](research/M004/SUMMARY.md). Future order:
 [PRODUCT-ROADMAP](PRODUCT-ROADMAP.md); observed capability:
-[LANGUAGE-MATURITY](LANGUAGE-MATURITY.md). Phase 22's implementation
-requirements are complete; one README clarity UAT remains. The remaining
-M004 requirements are tracked as pending in
-REQUIREMENTS.md.
+[LANGUAGE-MATURITY](LANGUAGE-MATURITY.md). Phases 22–25 are complete, and the
+M004 requirements are closed. Phase 22's objective README contract UAT is
+complete (1/1); subjective readability is not claimed. The live GSD resolver
+currently selects Phase 22 because `verification.status` reports stale for
+Phases 22–24. Refresh those verifier reports through their execute-phase gates
+before starting the next milestone.
 
 ## Completed Historical Prework
 
@@ -189,7 +191,7 @@ a narrow form. Defect/process termination stays outside cleanup guarantees.
 4. Each foreign/shared/exclusive family has reproducible macOS and Linux native receipts naming source/build inputs, compiler, target, flags, expected answers, and applicable optimizer/sanitizer lanes. Missing host/lane evidence leaves the corresponding claim incomplete.
 5. From a clean checkout, a developer follows documented public commands to build/run the utility on the two supplied files and a specified failure, gets independent expected results, and locates explicit C bindings and lifetime evidence. Moved-from use, discarded ownership, pointer escape, and unsupported cleanup/exit examples produce stable structured diagnostics with source attribution and actionable boundary explanations.
 
-**Plans**: 6/6 implementation plans executed; 1 evidence-record reconciliation plan pending
+**Plans**: 7/7 plans executed and summarized
 
 Plans:
 **Wave 1**
@@ -232,8 +234,8 @@ validation, security, product-roadmap, and language-maturity records to hosted
 run 36971855722. The goal-backward verifier passes 6/6 must-have truths and
 5/5 roadmap criteria; the seven plans and all 24 requirements are complete.
 The independent cold-read and automated README evidence-link checks are
-recorded in `25-VERIFICATION.md`. Final-head hosted CI and the authorized PR
-merge remain the shipping step; the hosted matrix above remains tied to its
+recorded in `25-VERIFICATION.md`. PR #1 has merged, and final-head hosted CI
+passed as recorded in STATE.md. The hosted matrix above remains tied to its
 recorded revision.
 
 **Runnable witness**: Separate shared and exclusive helper sources each read/copy
@@ -295,6 +297,17 @@ planned.
 
 ## Next Action
 
-After the completed branch is pushed, wait for current-head CI and squash
-auto-merge PR #1 when green as authorized. After that integration, start the
-next milestone with `$gsd-new-milestone`; do not replay Phase 25 plans or UAT.
+Phase 25 is the phase just finished. PR #1 is merged; the final PR head and
+squash commit are recorded in STATE.md. `state.json` marks Phases 22–25
+complete and advertises `/gsd:new-milestone`, while the live `init.progress`
+resolver currently selects Phase 22 because `verification.status` reports
+stale for Phases 22–25. The ROADMAP handoff edit also makes Phase 25's
+verification report stale because ROADMAP.md is among its covered files; this
+needs a verifier-only refresh, not implementation-plan or UAT replay. The exact
+next command is `$gsd-execute-phase 22`. After each phase refresh, re-query
+`init.progress` and refresh whichever stale phase is earliest, continuing
+through Phases 23, 24, and 25 as needed. Use `$gsd-new-milestone` only when the
+live resolver permits that transition.
+Phase 22 UAT is complete (1/1), and Phases 23 and 24 require no human UAT.
+Preserve completed UAT and do not replay implementation plans or reopen
+Phase 25 implementation.
