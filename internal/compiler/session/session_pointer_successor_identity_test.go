@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/originvalidate"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 func TestPhase25EscapeDiagnosticFunctionIdentity(t *testing.T) {
@@ -32,5 +33,28 @@ func TestPhase25EscapeDiagnosticFunctionIdentity(t *testing.T) {
 	}
 	if first.Schema != "lang.diagnostic/0" || first.Code != "core.origin_omitted" {
 		t.Fatalf("source projection changed the diagnostic wire contract: %+v", first)
+	}
+}
+
+func TestPhase25CheckCommandPeerObservation(t *testing.T) {
+	previous := checkCommandPeerObservedForTest
+	var observed []string
+	checkCommandPeerObservedForTest = func(name string) { observed = append(observed, name) }
+	t.Cleanup(func() { checkCommandPeerObservedForTest = previous })
+	result, err := CheckCommandFile(testsupport.ProjectPath("testdata", "phase3", "sequential_shared_then_exclusive_accept.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != "pass" {
+		t.Fatalf("accepted source did not reach all command peers: %+v", result)
+	}
+	want := []string{"corevalidate", "originvalidate", "pathoracle"}
+	if len(observed) != len(want) {
+		t.Fatalf("command consulted peers %v, want %v", observed, want)
+	}
+	for i := range want {
+		if observed[i] != want[i] {
+			t.Fatalf("command peer order is %v, want %v", observed, want)
+		}
 	}
 }

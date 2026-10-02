@@ -1024,6 +1024,17 @@ func borrowExpressionSpan(tokens []syntax.Token, start, end int, targetName, sou
 // session symbol reaches it on a production path.
 var checkCommandPeerSeam = false
 
+// checkCommandPeerObservedForTest records which independent command peers
+// CheckCommandFile actually consults. Production leaves it nil; same-package
+// tests use it to pin the admission order without merging peer predicates.
+var checkCommandPeerObservedForTest func(string)
+
+func observeCheckCommandPeer(name string) {
+	if checkCommandPeerObservedForTest != nil {
+		checkCommandPeerObservedForTest(name)
+	}
+}
+
 // interfacePeerRefusalSeam is 07-10 Task 2's unexported fault-injection
 // seam for control:interface.peer_refusal_is_invalid: when true, both
 // InterfaceExportCommandFile and InterfaceCoreCommandFile restore the
@@ -1058,6 +1069,7 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 		return completeCommand(result, started, checked.Work), nil
 	}
 	if !checkCommandPeerSeam {
+		observeCheckCommandPeer("corevalidate")
 		validated := corevalidate.Validate(checked.Program)
 		if !validated.Valid {
 			result.Status = protocol.StatusInvalid
@@ -1066,6 +1078,7 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 		}
 		checked.Program = validated.Program()
 	}
+	observeCheckCommandPeer("originvalidate")
 	if problems := originvalidate.ValidatePublished(checked.Program); len(problems) > 0 {
 		// D-04-27/WR-01: originvalidate.ValidatePublished no longer runs only
 		// on the `interface export` path -- the foreign declaration surface
@@ -1074,11 +1087,14 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 		// origin too, not merely trust what the checker declared.
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = []diagnostic.Diagnostic{originPeerRefusalDiagnostic(problems[0], checked.Program, checked.Tree)}
-	} else if err := pathoracle.ValidateLocalOwnerPaths(checked.Program); err != nil {
-		result.Status = protocol.StatusInvalid
-		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error("core.pathoracle_refused", diagnostic.Span{}, err.Error())}
 	} else {
-		result.ModuleID = checked.Program.ModuleID
+		observeCheckCommandPeer("pathoracle")
+		if err := pathoracle.ValidateLocalOwnerPaths(checked.Program); err != nil {
+			result.Status = protocol.StatusInvalid
+			result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error("core.pathoracle_refused", diagnostic.Span{}, err.Error())}
+		} else {
+			result.ModuleID = checked.Program.ModuleID
+		}
 	}
 	return completeCommand(result, started, checked.Work), nil
 }
