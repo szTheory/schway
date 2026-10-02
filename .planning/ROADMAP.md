@@ -46,7 +46,7 @@ in its phase directory.
 - [x] **Phase 22: Native Application Build and Single Execution** — A retained scalar application accepts caller input and runs once with ordinary streams. (3/3 implementation plans complete; objective README contract passed; subjective readability not claimed) (completed 2026-09-27)
 - [x] **Phase 23: Live Local Allocation and Discharge** — A bounded file-byte application uses and releases a real Schway-owned allocation. (completed 2026-09-30)
 - [x] **Phase 24: Ownership Transfer Through Calls and Errors** — Live resources survive ownership transfer and discharge across frames and typed errors. (completed 2026-10-01)
-- [ ] **Phase 25: Separate Pointer Successors and Integrated Utility** — Shared/exclusive pointer helpers have distinct native proof and the complete utility is reproducible.
+- [x] **Phase 25: Separate Pointer Successors and Integrated Utility** — Shared/exclusive pointer helpers have distinct native proof and the complete utility is reproducible. (completed 2026-10-02)
 
 ## Phase Details
 
@@ -220,11 +220,21 @@ Plans:
 
 - [x] 25-07-PLAN.md — Reconcile Phase 25 validation, security, product-roadmap, and maturity records with the successful hosted dual-host receipt
 
-**Phase status:** implementation plans are complete. Hosted run 36971855722
-passed the macOS/arm64 and Linux/x86_64 foreign/shared/exclusive matrix across
-baseline, optimized, and ASan+UBSan lanes at one PR merge revision. The four
-tracked evidence and living-language records still describe EVD-10 as pending;
-Plan 25-07 will reconcile them before goal-backward re-verification.
+**Phase status at Plan 25-07 kickoff (historical):** implementation plans were
+complete. Hosted run 36971855722 had passed the macOS/arm64 and Linux/x86_64
+foreign/shared/exclusive matrix across baseline, optimized, and ASan+UBSan
+lanes at one PR merge revision. At that point, the four tracked evidence and
+living-language records still described EVD-10 as pending; Plan 25-07 was
+assigned to reconcile them before goal-backward re-verification.
+
+**Phase 25 closeout amendment — 2026-10-02:** Plan 25-07 reconciled the current
+validation, security, product-roadmap, and language-maturity records to hosted
+run 36971855722. The goal-backward verifier passes 6/6 must-have truths and
+5/5 roadmap criteria; the seven plans and all 24 requirements are complete.
+The independent cold-read and automated README evidence-link checks are
+recorded in `25-VERIFICATION.md`. Final-head hosted CI and the authorized PR
+merge remain the shipping step; the hosted matrix above remains tied to its
+recorded revision.
 
 **Runnable witness**: Separate shared and exclusive helper sources each read/copy
 the known input byte with an exact expected answer. The final utility composes
@@ -281,9 +291,10 @@ planned.
 | 22. Native Application Build and Single Execution | 3/3 | Complete    | 2026-09-27 |
 | 23. Live Local Allocation and Discharge | 7/7 | Complete    | 2026-09-30 |
 | 24. Ownership Transfer Through Calls and Errors | 3/3 | Complete    | 2026-10-01 |
-| 25. Separate Pointer Successors and Integrated Utility | 7/7 | In Progress|  |
+| 25. Separate Pointer Successors and Integrated Utility | 7/7 | Complete    | 2026-10-02 |
 
 ## Next Action
 
-Run `$gsd-execute-phase 25` to finish the integrated pointer-successor utility,
-independent peer proofs, and native evidence closeout.
+After the completed branch is pushed, wait for current-head CI and squash
+auto-merge PR #1 when green as authorized. After that integration, start the
+next milestone with `$gsd-new-milestone`; do not replay Phase 25 plans or UAT.

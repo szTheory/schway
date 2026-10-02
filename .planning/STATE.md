@@ -3,20 +3,19 @@ gsd_state_version: "1.0"
 milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 25
-current_phase_name: separate-pointer-successors-and-integrated-utility
-current_plan: 6
-status: executing
-stopped_at: Completed 25-07-PLAN.md; hosted dual-host evidence bound; ready for goal-backward verification
-last_updated: "2026-10-02T11:19:18.092Z"
+current_plan: Not started
+status: completed
+stopped_at: Phase 25 complete — all phases complete
+last_updated: "2026-10-02T12:10:00.799Z"
 last_activity: 2026-10-02
-last_activity_desc: Closed Phase 25 quick security repair, regression hardening, and fresh full-suite validation; hosted EVD-10 family-by-lane receipts remain open
-state_head: 76f1b2e597f9a70c70cb612917f1f2acd5189adc
+last_activity_desc: Phase 25 complete
+state_head: f2707971125ab474a6e26dcced7d41f7519f8961
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 20
   completed_plans: 20
-  percent: 75
+  percent: 100
 ---
 
 <!-- schway-current:start -->
@@ -64,12 +63,13 @@ checkout, renamed from `schway-public`. Its branch remains
 `worktree-agent-p24-01-retry`. The original pre-publication checkout, including
 its uncommitted planning material and private audit records, is preserved in
 the sibling `schway-archive` directory. Keep those private files outside this
-Git tree. The directory move does not change source, phase completion, or the
-next command: `$gsd-discuss-phase 25`.
+Git tree. The directory move does not change source or phase completion. Once
+PR #1 is integrated, the next GSD command is `$gsd-new-milestone`; do not reopen
+Phase 25.
 
 **Durable context (survives context clears — read before re-deriving):**
 
-  - **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `15b3a518` reports 1,573 reachable commits and zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Hosted run 36705094434 passed both host check suites and evidence aggregates. Hosted run 36707529870 passed Ubuntu/macOS checks and evidence aggregates; Phase 23's verifier passes 5/5. Phase 24's verifier passes 5/5 at source `ed94ef79`; hosted run 36856048690 passed full/race suites and evidence aggregates on Ubuntu and macOS. No local suite or UAT was rerun for Phase 24 closeout. Phase 25's six implementation plans and local checks are complete; hosted family-by-lane receipts remain open. Private audit artifacts remain in the original checkout under this quick task's `audit/` directory.
+  - **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `15b3a518` reports 1,573 reachable commits and zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Hosted run 36705094434 passed both host check suites and evidence aggregates. Hosted run 36707529870 passed Ubuntu/macOS checks and evidence aggregates; Phase 23's verifier passes 5/5. Phase 24's verifier passes 5/5 at source `ed94ef79`; hosted run 36856048690 passed full/race suites and evidence aggregates on Ubuntu and macOS. No local suite or UAT was rerun for Phase 24 closeout. Phase 25's seven plans are complete; run 36971855722 closes all 18 family/host/lane receipts, and the goal-backward verifier passes 6/6 truths and 5/5 roadmap criteria. Final-head CI and PR #1 integration remain before the next milestone. Private audit artifacts remain in the original checkout under this quick task's `audit/` directory.
 - `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 24. The separate app
   route retains and runs a native U64 identity app once with ordinary streams;
   evidence capture is not verification. Bounded file-byte transfer and
@@ -122,14 +122,14 @@ next command: `$gsd-discuss-phase 25`.
 
 ## Current Position
 
-Phase: 25 (separate-pointer-successors-and-integrated-utility) — IMPLEMENTATION AND HOSTED EVIDENCE COMPLETE; VERIFICATION PENDING
-Current Plan: 7
+Phase: 25
+Current Plan: Not started
 Total Plans in Phase: 7
 Plan: 7 of 7
-Status: All plans complete; hosted EVD-10 matrix is bound; run goal-backward verifier before phase transition
-Last activity: 2026-10-02 — Completed quick task 261002-awt: linked Phase 24 physical-cleanup observer and hosted validation receipt
+Status: All phases complete
+Last activity: 2026-10-02 — Phase 25 complete
 
-Progress: [████████░░] 75%
+Progress: [██████████] 100%
 
 ## M003 Closeout (archived)
 
@@ -226,7 +226,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 200
+- Total plans completed: 207
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -239,6 +239,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 22 | 3 | - | - |
 | 23 | 7 | - | - |
 | 24 | 3 | - | - |
+| 25 | 7 | - | - |
 
 The archived aggregate preserves the cumulative project total. The detailed
 rows above are the M004 subset; do not recompute the project total from that
@@ -728,19 +729,22 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-10-02T07:22:52.868Z
-Stopped at: Completed 25-07-PLAN.md; hosted dual-host evidence bound; ready for goal-backward verification
+Stopped at: Phase 25 complete — all phases complete
 Resume file: None
-Next action: use `$gsd-execute-phase 25` for verification-only goal-backward
-closeout; do not replay completed plans or local/native UAT.
+Next action: push the completed branch, wait for current-head CI, and squash
+auto-merge PR #1 when green as authorized; after integration use
+`$gsd-new-milestone`. Do not replay completed Phase 25 plans or UAT.
 Routing resolution — 2026-10-02 (current): Phase 25 plans 25-01 through 25-07
-are complete and summarized. Hosted run 36971855722 passed the checks and
-current evidence aggregate jobs on Linux/x86_64 and macOS/arm64. All 18
-foreign/shared/exclusive × host × lane rows passed at merge revision
-`a90c27c5b432ef6fc59fbafaa68b50a1374ae138`; EVD-10 is closed. Phase 25 is
-ready for goal-backward verification, after which GSD can transition the phase.
-The older 2026-10-01 routing note below is historical and superseded by this
+are complete and summarized. Goal-backward verification passes 6/6 must-have
+truths and 5/5 roadmap criteria; `phase complete --phase 25` updated ROADMAP
+and STATE. Hosted run 36971855722 passed the checks and current evidence
+aggregate jobs on Linux/x86_64 and macOS/arm64. All 18 foreign/shared/exclusive
+× host × lane rows passed at merge revision
+`a90c27c5b432ef6fc59fbafaa68b50a1374ae138`; EVD-10 is closed. The independent
+README cold-read and focused link checks are recorded separately from CI. The
+older 2026-10-01 routing note below is historical and superseded by this
 receipt; its local-only limitations were accurate at that earlier time.
-Routing resolution — 2026-10-01 (current): Phase 25 plans 25-01 through 25-06
+Routing resolution — 2026-10-01 (historical; superseded by 2026-10-02 closeout): Phase 25 plans 25-01 through 25-06
 are complete and summarized. The local full and race suites, vet, build,
 groundedness/census checks, README/evidence contracts, and macOS/arm64 baseline,
 optimized, and ASan+UBSan family receipts pass. The evidence script marks Linux

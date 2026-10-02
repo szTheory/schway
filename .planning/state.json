@@ -21,13 +21,13 @@
     {
       "number": "25",
       "name": "Separate Pointer Successors and Integrated Utility",
-      "status": "in_progress"
+      "status": "complete"
     }
   ],
   "next": {
-    "command": "/gsd:progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 25 local plans complete; hosted EVD-10 family-by-lane receipts remain open"
+    "command": "/gsd:new-milestone",
+    "label": "Start a new milestone",
+    "reason": "All phases complete — start a new milestone"
   },
-  "updated_at": "2026-10-02T03:08:16Z"
+  "updated_at": "2026-10-02T12:10:00.815Z"
 }
