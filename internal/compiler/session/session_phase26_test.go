@@ -64,10 +64,10 @@ func TestPhase26Frontend(t *testing.T) {
 	for _, malformed := range []string{
 		"var = 1",
 		"i = + 1",
-		"if 1 { var x = 0 } else { var y = 1 }",
+		"if n { var x = 0 }",
 		"while { var x = 0 }",
 	} {
-		result := syntax.Parse([]byte("module malformed\nfn main(n: U64) -> U64 {\n  " + malformed + "\n  n\n}\n"))
+		result := syntax.Parse([]byte("module malformed\nexport { fn main }\nfn main(n: U64) -> U64 {\n  " + malformed + "\n  n\n}\n"))
 		if len(result.Diagnostics) == 0 || result.Diagnostics[0].Primary.End <= result.Diagnostics[0].Primary.Start {
 			t.Errorf("malformed statement %q did not recover with a stable source span: %+v", malformed, result.Diagnostics)
 		}

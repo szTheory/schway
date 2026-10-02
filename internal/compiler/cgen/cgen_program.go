@@ -2443,7 +2443,6 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 		return fmt.Errorf("function %q: scalar parameter place is absent", function.ID)
 	}
 	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n  (void)invocation_index;\n", returnTypeName, functionName, parameterTypeName, locals[parameter.ID])
-	fmt.Fprintf(out, "  if (0) goto %s;\n", label(function.EntryPointID))
 	for _, place := range function.Linear.Places {
 		if place.ID == parameter.ID {
 			continue
@@ -2458,6 +2457,7 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 	label := func(id string) string {
 		return "schway_block_" + strconv.Itoa(blockOrdinal(function.Linear.Blocks, id))
 	}
+	fmt.Fprintf(out, "  if (0) goto %s;\n", label(function.EntryPointID))
 	operations := make(map[string]core.LinearOperation, len(function.Linear.Operations))
 	for _, op := range function.Linear.Operations {
 		operations[op.ID] = op
