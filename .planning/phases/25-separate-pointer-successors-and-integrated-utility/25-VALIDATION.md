@@ -1,7 +1,7 @@
 ---
 phase: "25"
 slug: separate-pointer-successors-and-integrated-utility
-status: incomplete
+status: complete
 nyquist_compliant: true
 wave_0_complete: true
 created: "2026-10-01"
@@ -9,7 +9,7 @@ created: "2026-10-01"
 
 # Phase 25 — Validation Strategy
 
-> Execution validation is complete on the local macOS host. Hosted macOS/Linux family-by-lane receipts remain required before EVD-10 can close.
+> Local and hosted execution validation is complete. Run 36971855722 closes EVD-10 with native Linux/x86_64 and macOS/arm64 receipts at merge revision `a90c27c5b432ef6fc59fbafaa68b50a1374ae138`.
 
 ## Test Infrastructure
 
@@ -42,7 +42,56 @@ created: "2026-10-01"
 | T-25-07 | 04 | 4 | NAT-12, NAT-13 | T-25-10 | Exclusive C/manifest agree; local wrong-result is reached; unsupported shapes fail before serialization | emitter/native negative controls | `go test -count=1 -run '^TestPhase25Exclusive(PointerABI|PointerManifest|WrongResult|Refusal|PointerRefusal)$' ./internal/compiler/cgen ./internal/compiler/native` | Created in task | ✅ local pass |
 | T-25-08 | 04 | 4 | NAT-12, NAT-13, DX-15 | T-25-11, T-25-12 | Model answer and error ordering are stable; exact owner-result flow and resource discharge are independently checked; source-expressible ownership boundaries and serializer-only pointer mutations have controls | model, source refusal, peer, serializer, and diagnostic controls | `go test -count=1 -run '^(TestPeerCalleeFrameDrained|TestPhase25(OwnerTransfer|InterpreterComposition|ErrorBeforeHelpers|StructuredDiagnostic|UnsupportedPointerShape|OwnershipDiagnosticBoundary))' ./internal/compiler/corevalidate ./internal/compiler/interp ./internal/compiler/diagnostic ./internal/compiler/session && go test -count=1 -run '^TestPhase25Exclusive(PointerABI|PointerManifest|WrongResult|Refusal)' ./internal/compiler/cgen ./internal/compiler/native` | Created in task | ✅ local pass |
 | T-25-09 | 05 | 5 | NAT-11, NAT-12, NAT-13 | T-25-13 | Exact shared U64-copy ABI and Phase 25 caller emit natively; path and origin peers independently accept only the same exact chain; utility returns 65/66 and typed 0x43 failure with native reached wrong-result controls | cgen/application/independent peer/native integration | `go test -count=1 -run '^TestPhase25SharedPointerCopyABI' ./internal/compiler/cgen && go test -count=1 -run '^TestPhase25UtilityOwnerTransfer' ./internal/compiler/pathoracle ./internal/compiler/originvalidate && go test -count=1 -run '^TestPhase25(Utility|NativeFamilyWrongResult)' ./internal/compiler/native` | Created in task | ✅ local pass |
-| T-25-10 | 06 | 6 | EVD-10, DX-14, NAT-11, NAT-12, NAT-13 | T-25-14, T-25-15 | Every family × host × applicable lane is indexed and fail-closed; README reproduces utility results; existing family fixtures use bounded subprocesses; living claims separate source, local/hosted checks, and history | evidence script, README, bounded native controls, and living-document contract | `go test -count=1 -run '^(TestSourceNeverSpawnsUnboundedProcesses|TestPhase25(EvidenceScript|EvidenceIndex|LivingRoadmap))$' ./internal/compiler/native && sh scripts/verify-phase25.sh` | Created in task | ✅ local pass; Linux/hosted matrix pending |
+| T-25-10 | 06 | 6 | EVD-10, DX-14, NAT-11, NAT-12, NAT-13 | T-25-14, T-25-15 | Every family × host × applicable lane is indexed and fail-closed; README reproduces utility results; existing family fixtures use bounded subprocesses; living claims separate source, local/hosted checks, and history | evidence script, README, bounded native controls, and living-document contract | `go test -count=1 -run '^(TestSourceNeverSpawnsUnboundedProcesses|TestPhase25(EvidenceScript|EvidenceIndex|LivingRoadmap))$' ./internal/compiler/native && sh scripts/verify-phase25.sh` | Created in task | ✅ local pass; ✅ hosted run 36971855722, 18/18 rows |
+
+## Hosted evidence closeout — 2026-10-02
+
+**Newly executed hosted evidence:** GitHub Actions run `36971855722` tested
+branch head `421b5b94eb867e940a207dfd64d7971dc8198172` at PR merge revision
+`a90c27c5b432ef6fc59fbafaa68b50a1374ae138`. On both native hosts, the `checks`
+job passed vet, build, the full Go suite, and race tests; the `current evidence
+aggregate` job passed, including `scripts/verify-phase25.sh`. The Linux job ran
+Go `linux/amd64` on `x86_64-pc-linux-gnu` with Ubuntu Clang 18.1.3. The macOS
+job ran Go `darwin/arm64` on `arm64-apple-darwin25.6.0` with Apple Clang 21.
+
+Each matrix row below is a native execution at that same merge revision. All
+18 rows passed; every row expected and returned 65 and 66, with the inherited
+typed `0x43` use error observed before either helper call.
+
+| Host / target | Family | Lane | Result |
+|---|---|---|---|
+| Linux/x86_64, Ubuntu Clang 18.1.3 | foreign | baseline `-O0` | pass; 65/66; typed 0x43 before helpers |
+| Linux/x86_64, Ubuntu Clang 18.1.3 | foreign | optimized `-O2` | pass; 65/66; typed 0x43 before helpers |
+| Linux/x86_64, Ubuntu Clang 18.1.3 | foreign | ASan+UBSan | pass; 65/66; typed 0x43 before helpers |
+| Linux/x86_64, Ubuntu Clang 18.1.3 | shared | baseline `-O0` | pass; 65/66; typed 0x43 before helpers |
+| Linux/x86_64, Ubuntu Clang 18.1.3 | shared | optimized `-O2` | pass; 65/66; typed 0x43 before helpers |
+| Linux/x86_64, Ubuntu Clang 18.1.3 | shared | ASan+UBSan | pass; 65/66; typed 0x43 before helpers |
+| Linux/x86_64, Ubuntu Clang 18.1.3 | exclusive | baseline `-O0` | pass; 65/66; typed 0x43 before helpers |
+| Linux/x86_64, Ubuntu Clang 18.1.3 | exclusive | optimized `-O2` | pass; 65/66; typed 0x43 before helpers |
+| Linux/x86_64, Ubuntu Clang 18.1.3 | exclusive | ASan+UBSan | pass; 65/66; typed 0x43 before helpers |
+| macOS/arm64, Apple Clang 21 | foreign | baseline `-O0` | pass; 65/66; typed 0x43 before helpers |
+| macOS/arm64, Apple Clang 21 | foreign | optimized `-O2` | pass; 65/66; typed 0x43 before helpers |
+| macOS/arm64, Apple Clang 21 | foreign | ASan+UBSan | pass; 65/66; typed 0x43 before helpers |
+| macOS/arm64, Apple Clang 21 | shared | baseline `-O0` | pass; 65/66; typed 0x43 before helpers |
+| macOS/arm64, Apple Clang 21 | shared | optimized `-O2` | pass; 65/66; typed 0x43 before helpers |
+| macOS/arm64, Apple Clang 21 | shared | ASan+UBSan | pass; 65/66; typed 0x43 before helpers |
+| macOS/arm64, Apple Clang 21 | exclusive | baseline `-O0` | pass; 65/66; typed 0x43 before helpers |
+| macOS/arm64, Apple Clang 21 | exclusive | optimized `-O2` | pass; 65/66; typed 0x43 before helpers |
+| macOS/arm64, Apple Clang 21 | exclusive | ASan+UBSan | pass; 65/66; typed 0x43 before helpers |
+
+Cold feedback distributions were Linux 9.350/9.540/9.980s and macOS
+12.470/12.670/12.930s; warm distributions were Linux 0.390/0.490/0.550s and
+macOS 0.820/1.400/2.130s (min/median/max). The script's absent-other-host rows
+in either individual job are local to that invocation; the paired native job
+passed those rows on its own host. No row is inferred from replay or
+cross-compilation. EVD-10 is closed by the two successful native aggregate
+jobs together.
+
+**Source inspection, local checks, and history:** source inspection and the
+security follow-up below describe code facts, not hosted execution. Local
+macOS receipts and earlier Phase 25 records remain scoped to their own source
+revisions. The 2026-10-02 security follow-up below predates this hosted matrix
+and remains a record of its specific local peer/diagnostic checks.
 
 ## Security audit follow-up — 2026-10-02
 
@@ -76,7 +125,8 @@ both negative source witnesses. Escape diagnostics select exact nonempty
 primary and borrow-origin cause spans, retain `lang.diagnostic/0` and
 `core.origin_omitted`, and carry no repair. Existing Phase 25 native receipts
 remain historical at their recorded revisions. No hosted Phase 25 matrix was
-run by this follow-up; EVD-10 remains open.
+run by this follow-up; that statement describes only that follow-up. The later
+hosted evidence closeout above closes EVD-10.
 
 ## Wave 0 Requirements
 
@@ -93,7 +143,7 @@ All behavioral criteria are intended to have automated checks. macOS and Linux r
 - [x] Wave 0 covers all missing references.
 - [x] No watch-mode flags are used.
 - [x] Focused feedback latency is below 60 seconds where practical and cold/warm distributions are recorded.
-- [ ] Every required host/family/lane result is present with no silent skips.
+- [x] Every required host/family/lane result is present with no silent skips (18/18 in hosted run 36971855722).
 - [x] nyquist_compliant: true set in frontmatter after execution validation.
 
-**Approval:** local validation complete; hosted dual-host evidence remains pending.
+**Approval:** local and hosted validation complete; EVD-10 is closed by run 36971855722.

@@ -47,9 +47,26 @@ created: "2026-10-02"
 | T-25-14 | Tampering / Repudiation | Host/family/lane receipts | high | mitigate | Verification rejects skipped tests and marks absent family/host/lane rows incomplete; existing CI runs the matrix script. | closed |
 | T-25-15 | Repudiation / Information Disclosure | Living capability claims | medium | mitigate | Roadmap and maturity records distinguish inspection, executed checks, hosted results, and historical receipts. | closed |
 
-The T-25-14 fail-incomplete control is implemented. Required hosted EVD-10
-macOS/Linux family-by-lane receipts remain pending, so this security record
-does not close Phase 25's evidence acceptance criterion.
+The T-25-14 fail-incomplete control is implemented. Hosted run `36971855722`
+at branch head `421b5b94eb867e940a207dfd64d7971dc8198172` and PR merge
+revision `a90c27c5b432ef6fc59fbafaa68b50a1374ae138` passed the required native
+Linux/x86_64 and macOS/arm64 evidence aggregates. All three families (foreign,
+shared, exclusive) passed baseline `-O0`, optimized `-O2`, and ASan+UBSan on
+both hosts: 18/18 distinct rows, each returning expected/actual 65 and 66 and
+preserving the typed `0x43` failure before helper calls. Linux used Go
+`linux/amd64`, target `x86_64-pc-linux-gnu`, and Ubuntu Clang 18.1.3; macOS used
+Go `darwin/arm64`, target `arm64-apple-darwin25.6.0`, and Apple Clang 21. The
+`checks` and `current evidence aggregate` jobs passed on both hosts; checks
+included vet, build, full Go tests, and race tests. This hosted receipt closes
+EVD-10. Individual evidence-script logs mark the other host incomplete because
+each invocation runs on one native host; the paired successful aggregate job
+supplies that host's independently executed rows.
+
+The audit trail and verdict remain unchanged: SECURED, ASVS L1, all 15
+mitigations closed, `threats_open: 0`. The 2026-10-02 security audit records
+the peer and diagnostic assessment; the later hosted run adds evidence for
+T-25-14 without changing that assessment's scope or claiming that source
+inspection alone proves native behavior.
 
 ---
 
@@ -74,4 +91,4 @@ No accepted risks.
 - [x] `threats_open: 0` confirmed
 - [x] `status: verified` set in frontmatter
 
-**Approval:** verified 2026-10-02
+**Approval:** SECURED / ASVS L1; EVD-10 host evidence bound by run 36971855722.
