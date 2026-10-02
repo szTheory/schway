@@ -208,7 +208,7 @@ func assertPhase25Peers(t *testing.T, program core.Program, mutation string, wan
 		if mutation == "overlap" && len(coreResult.Problems) == 0 || mutation == "escape" && coreValid || len(originProblems) == 0 || pathErr == nil {
 			t.Fatalf("each peer must report its own refusal for %q", mutation)
 		}
-		if mutation == "overlap" && (coreCode != "core.operation_order" && coreCode != "core.borrow_conflict" || originProblems[0].Code != "core.borrow_conflict" || !strings.HasPrefix(pathErr.Error(), "pathoracle.pointer_borrow_conflict:")) {
+		if mutation == "overlap" && (coreCode != "core.borrow_conflict" || originProblems[0].Code != "core.borrow_conflict" || !strings.HasPrefix(pathErr.Error(), "pathoracle.pointer_borrow_conflict:")) {
 			t.Fatalf("overlap mutation did not produce distinct peer refusals: core=%+v origin=%+v path=%v", coreResult.Problems, originProblems, pathErr)
 		}
 		if mutation == "escape" && (coreCode != "core.peer_callable_false" || originProblems[0].Code != "core.origin_omitted" || !strings.HasPrefix(pathErr.Error(), "pathoracle.pointer_escape:")) {
