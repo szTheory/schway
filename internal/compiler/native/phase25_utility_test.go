@@ -192,8 +192,13 @@ func TestPhase25EvidenceIndex(t *testing.T) {
 	}
 	const observerLink = "[native observer](../../internal/compiler/native/phase24_observer_test.go)"
 	const validationLink = "[hosted receipt for run 36856048690](../../.planning/phases/24-ownership-transfer-through-calls-and-errors/24-VALIDATION.md)"
+	sectionParts := strings.SplitN(readme, "## Phase 24 transfer and cleanup evidence\n\n", 2)
+	if len(sectionParts) != 2 {
+		t.Fatal("Phase 24 transfer and cleanup evidence section is missing")
+	}
+	paragraph := strings.SplitN(sectionParts[1], "\n\n", 2)[0]
 	for _, want := range []string{observerLink, validationLink} {
-		if !strings.Contains(readme, want) {
+		if !strings.Contains(paragraph, want) {
 			t.Errorf("Phase 24 transfer and cleanup evidence omits required link %q", want)
 		}
 	}
