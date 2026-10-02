@@ -378,6 +378,19 @@ func selectsByPointerLoweringSharedOnly(function core.Function, linear *core.Lin
 	return terminatorIndex == len(operations)-1
 }
 
+// beginsPointerLoweringCandidate identifies the narrow U64 helper family
+// before the structural selectors decide whether its body is admissible. A
+// malformed first borrow must not escape the pointer refusal path merely
+// because a broken chain makes the selectors return false.
+func beginsPointerLoweringCandidate(function core.Function, linear *core.LinearBody) bool {
+	if function.PublicOrigin != nil || function.Parameter.Type != "U64" || function.ReturnType != "U64" || linear == nil || len(linear.Operations) == 0 {
+		return false
+	}
+	first := linear.Operations[0]
+	return (first.Kind == core.OpBorrowShared || first.Kind == core.OpBorrowExclusive) &&
+		first.SourceID == function.Parameter.ID && first.TargetID != ""
+}
+
 // pointerABIFact is the single checked shape consumed by the production
 // declaration, call-site, body, and manifest writers. A pointer representation
 // carries no alias, capture, alignment, or ownership promise by itself.

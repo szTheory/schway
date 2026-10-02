@@ -663,6 +663,8 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 				return "", fmt.Errorf("function %q: by-pointer bodies are not supported by whole-program native emission this phase", function.ID)
 			}
 			pointerABIFacts[function.ID] = fact
+		} else if beginsPointerLoweringCandidate(function, function.Linear) {
+			return "", fmt.Errorf("function %q: unsupported pointer-lowering candidate shape", function.ID)
 		}
 		if function.ForeignContract != nil && !(transferFileByteProgram && function.ID == transferHelper.ID) {
 			return "", fmt.Errorf("function %q: multi-function foreign contracts are not supported by native emission this phase", function.ID)
