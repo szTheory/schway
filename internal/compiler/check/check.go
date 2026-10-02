@@ -262,6 +262,16 @@ func Program(program ast.Program) Result {
 			continue
 		}
 		if function.Body.Linear != nil {
+			if len(function.Body.Linear.Statements) > 0 {
+				checked, diagnostics, work := checkScalarFunction(functionID, function)
+				result.Work += work
+				result.Diagnostics = append(result.Diagnostics, diagnostics...)
+				if len(diagnostics) == 0 {
+					result.Program.Schema = core.Schema1
+					result.Program.Functions = append(result.Program.Functions, checked)
+				}
+				continue
+			}
 			if function.Body.Linear.TerminalMatch != nil {
 				branch := function
 				branch.Body = ast.Body{MatchExpr: *function.Body.Linear.TerminalMatch}

@@ -149,7 +149,11 @@ func (a MatchArm) HasClosedVariant() bool { return (a.Value != "") != (a.Body !=
 
 type LinearBody struct {
 	Bindings []Binding
-	Result   string
+	// Statements is the Phase 26 structured scalar body. It is kept separate
+	// from legacy linear bindings so statement/control-flow syntax never gets
+	// flattened into ownership moves.
+	Statements []Statement
+	Result     string
 	// TerminalMatch is Phase 18's sole extension to a linear function body:
 	// after its ordered prefix, the body may end in the existing match form.
 	// It is nil for ordinary straight-line and match-arm bodies.
@@ -160,6 +164,23 @@ type LinearBody struct {
 	// populated for any given body.
 	DefectReason string
 	Span         diagnostic.Span
+}
+
+type Statement struct {
+	Kind  string // var, assign, if, while, defect
+	Name  string
+	Expr  *Expr
+	Then  []Statement
+	Else  []Statement
+	Span  diagnostic.Span
+	Value string
+}
+
+type Expr struct {
+	Kind        string // name, number, add, less
+	Name, Value string
+	Left, Right *Expr
+	Span        diagnostic.Span
 }
 
 type Binding struct {

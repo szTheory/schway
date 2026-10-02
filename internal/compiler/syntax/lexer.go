@@ -14,6 +14,10 @@ var keywords = map[string]Kind{
 	"data":    TokenData,
 	"fn":      TokenFn,
 	"match":   TokenMatch,
+	"var":     TokenVar,
+	"if":      TokenIf,
+	"else":    TokenElse,
+	"while":   TokenWhile,
 	"foreign": TokenForeign,
 	"try":     TokenTry,
 	"discard": TokenDiscard,
@@ -230,6 +234,8 @@ func punctuation(source []byte) (Kind, int) {
 		return TokenPipe, 1
 	case '=':
 		return TokenEqual, 1
+	case '+':
+		return TokenPlus, 1
 	default:
 		return TokenUnknown, 0
 	}

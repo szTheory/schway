@@ -5,15 +5,15 @@ export {
 }
 
 fn main(n: U64) -> U64 {
+  var i = 0
+  var total = 0
   if n < 1001 {
-    var i = 0
-    var total = 0
     while i < n {
       i = i + 1
       total = total + i
     }
-    total
   } else {
     defect "input exceeds 1000"
   }
+  total
 }

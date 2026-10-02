@@ -119,6 +119,23 @@ func (f *formatter) token(token Token, next Kind) {
 		}
 		f.write("let ")
 		f.linearBinding = true
+	case TokenVar:
+		if f.lineOpen {
+			f.newline()
+		}
+		f.write("var ")
+	case TokenIf, TokenWhile:
+		if f.lineOpen {
+			f.newline()
+		}
+		f.write(token.Text + " ")
+		f.header = token.Text
+	case TokenElse:
+		if f.lineOpen {
+			f.newline()
+		}
+		f.write("else ")
+		f.header = "else"
 	case TokenDiscard:
 		if f.lineOpen {
 			f.newline()
@@ -278,6 +295,10 @@ func (f *formatter) token(token Token, next Kind) {
 			f.indent++
 			f.contexts = append(f.contexts, "data")
 		}
+	case TokenPlus:
+		f.trimSpace()
+		f.out.WriteString(" + ")
+		f.lineOpen = true
 	case TokenPipe:
 		f.ensureLine()
 		f.write("| ")
@@ -297,7 +318,11 @@ func (f *formatter) token(token Token, next Kind) {
 		f.header = "arm"
 	case TokenLAngle:
 		f.trimSpace()
-		f.out.WriteByte('<')
+		if f.header == "if" || f.header == "while" {
+			f.out.WriteString(" < ")
+		} else {
+			f.out.WriteByte('<')
+		}
 		f.lineOpen = true
 	case TokenRAngle:
 		f.trimSpace()

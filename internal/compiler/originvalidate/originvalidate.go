@@ -218,7 +218,7 @@ func RecomputeOriginPerReturn(function core.Function, calleeContracts map[string
 		// walkReturnOrigin below is unchanged: it is already terminator-
 		// agnostic, walking backward from whichever operation this loop
 		// collects.
-		if isTerminatorKind(operation.Kind) {
+		if isTerminatorKind(operation.Kind) && operation.Kind != core.OpBranch {
 			returnIndexes = append(returnIndexes, index)
 			continue
 		}

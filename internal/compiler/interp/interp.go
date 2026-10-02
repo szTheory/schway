@@ -743,6 +743,8 @@ type value struct {
 	payload           string
 	u64               uint64
 	isU64             bool
+	boolean           bool
+	isBool            bool
 	ownerOperationID  string
 	ownerActivationID string
 }
@@ -1234,6 +1236,40 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			}
 			top.values[operation.TargetID] = value{u64: parsed, isU64: true}
 			top.idx++
+		case core.OpAddChecked:
+			right, initialized := top.values[operation.RightID]
+			if !initialized || !sourceValue.isU64 || !right.isU64 {
+				return Execution{}, fmt.Errorf("operation %q has invalid checked-add operands", operation.ID)
+			}
+			if ^uint64(0)-sourceValue.u64 < right.u64 {
+				return Execution{Outcome: Outcome{Kind: execution.OutcomeDefect}, Events: events, LiveResources: liveResourceList(top.live, top.liveOrder)}, nil
+			}
+			top.values[operation.TargetID] = value{u64: sourceValue.u64 + right.u64, isU64: true}
+			top.idx++
+		case core.OpLessU64:
+			right, initialized := top.values[operation.RightID]
+			if !initialized || !sourceValue.isU64 || !right.isU64 {
+				return Execution{}, fmt.Errorf("operation %q has invalid less-than operands", operation.ID)
+			}
+			top.values[operation.TargetID] = value{boolean: sourceValue.u64 < right.u64, isBool: true}
+			top.idx++
+		case core.OpScalarStore:
+			top.values[operation.StoreTargetID] = sourceValue
+			top.idx++
+		case core.OpBranch:
+			if !sourceValue.isBool {
+				return Execution{}, fmt.Errorf("operation %q branch condition is not Bool", operation.ID)
+			}
+			edgeID := operation.FalseEdgeID
+			if sourceValue.boolean {
+				edgeID = operation.TrueEdgeID
+			}
+			edge, known := top.edges[edgeID]
+			if !known {
+				return Execution{}, fmt.Errorf("operation %q references unknown branch edge", operation.ID)
+			}
+			top.currentBlockID, top.idx = edge.ToBlockID, 0
+			continue
 		case core.OpCopy:
 			top.values[operation.TargetID] = sourceValue
 			events = append(events, ownedEvent(top, operation, "value.copied"))

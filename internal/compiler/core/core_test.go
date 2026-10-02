@@ -797,7 +797,7 @@ func splitPath(path string) []string {
 // listed twice, so a constant added without registering it is caught
 // (D-04-22).
 func TestAllOperationKindsRegistered(t *testing.T) {
-	const declaredCount = 13 // OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConst, OpConstructPayload, OpDestructurePayload
+	const declaredCount = 17 // legacy operation kinds plus Phase 26 checked add, less-than, scalar store, and branch
 	all := core.AllOperationKinds()
 	if len(all) != declaredCount {
 		t.Fatalf("AllOperationKinds() has %d entries, want %d", len(all), declaredCount)
@@ -808,6 +808,25 @@ func TestAllOperationKindsRegistered(t *testing.T) {
 			t.Fatalf("duplicate operation kind %q in registry", kind)
 		}
 		seen[kind] = true
+	}
+}
+
+func TestPhase26CoreInventory(t *testing.T) {
+	all := make(map[core.OperationKind]bool)
+	for _, kind := range core.AllOperationKinds() {
+		all[kind] = true
+	}
+	for _, kind := range []core.OperationKind{core.OpAddChecked, core.OpLessU64, core.OpScalarStore, core.OpBranch} {
+		if !all[kind] {
+			t.Errorf("Phase 26 operation %q is absent from AllOperationKinds", kind)
+		}
+	}
+	terminators := make(map[core.OperationKind]bool)
+	for _, kind := range core.TerminatorKinds() {
+		terminators[kind] = true
+	}
+	if !terminators[core.OpBranch] {
+		t.Fatal("checked branch is not registered as a block terminator")
 	}
 }
 

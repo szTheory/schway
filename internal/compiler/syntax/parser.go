@@ -318,6 +318,9 @@ func (p *parser) funcDecl() ast.FuncDecl {
 	if p.peek().Kind == TokenMatch {
 		match := p.matchExpr()
 		body.MatchExpr = match
+	} else if p.atAny(TokenVar, TokenIf, TokenWhile) {
+		linear := p.scalarLinearBody()
+		body.Linear = &linear
 	} else {
 		linear := p.linearBody(true)
 		body.Linear = &linear
@@ -331,6 +334,110 @@ func (p *parser) funcDecl() ast.FuncDecl {
 		Body:         body,
 		Span:         spanFrom(start, end),
 	}
+}
+
+func (p *parser) scalarLinearBody() ast.LinearBody {
+	body := ast.LinearBody{Span: p.peek().Span}
+	body.Statements = p.scalarStatements(false)
+	if p.peek().Kind == TokenIdentifier {
+		result := p.advance()
+		body.Result = result.Text
+		body.Span.End = result.Span.End
+	} else {
+		p.problem("syntax.expected_linear_result", p.peek(), "expected a scalar result")
+	}
+	return body
+}
+
+func (p *parser) scalarStatements(inBlock bool) []ast.Statement {
+	statements := []ast.Statement{}
+	for p.peek().Kind != TokenEOF && p.peek().Kind != TokenRBrace {
+		start := p.peek()
+		if !inBlock && start.Kind == TokenIdentifier && p.peekNonTrivia(1).Kind != TokenEqual {
+			return statements
+		}
+		switch start.Kind {
+		case TokenVar:
+			p.advance()
+			name := p.identifier("syntax.expected_binding_name")
+			p.expect(TokenEqual, "syntax.expected_equal")
+			expr := p.scalarExpr()
+			statements = append(statements, ast.Statement{Kind: "var", Name: name.Text, Expr: expr, Span: diagnostic.Span{Start: start.Span.Start, End: expr.Span.End}})
+		case TokenIdentifier:
+			name := p.advance()
+			p.expect(TokenEqual, "syntax.expected_equal")
+			expr := p.scalarExpr()
+			statements = append(statements, ast.Statement{Kind: "assign", Name: name.Text, Expr: expr, Span: diagnostic.Span{Start: name.Span.Start, End: expr.Span.End}})
+		case TokenIf, TokenWhile:
+			p.advance()
+			expr := p.scalarExpr()
+			p.expect(TokenLBrace, "syntax.expected_lbrace")
+			thenBody := p.scalarStatements(true)
+			end := p.expect(TokenRBrace, "syntax.expected_rbrace")
+			statement := ast.Statement{Kind: map[Kind]string{TokenIf: "if", TokenWhile: "while"}[start.Kind], Expr: expr, Then: thenBody, Span: diagnostic.Span{Start: start.Span.Start, End: end.Span.End}}
+			if start.Kind == TokenIf {
+				if p.accept(TokenElse) {
+					p.expect(TokenLBrace, "syntax.expected_lbrace")
+					statement.Else = p.scalarStatements(true)
+					elseEnd := p.expect(TokenRBrace, "syntax.expected_rbrace")
+					statement.Span.End = elseEnd.Span.End
+				} else {
+					p.problem("syntax.expected_else", p.peek(), "if requires an else block")
+				}
+			}
+			statements = append(statements, statement)
+		case TokenDefect:
+			p.advance()
+			reason := p.expect(TokenString, "syntax.expected_defect_reason")
+			value := reason.Text
+			if len(value) >= 2 {
+				value = value[1 : len(value)-1]
+			}
+			statements = append(statements, ast.Statement{Kind: "defect", Value: value, Span: diagnostic.Span{Start: start.Span.Start, End: reason.Span.End}})
+		default:
+			if inBlock {
+				return statements
+			}
+			return statements
+		}
+	}
+	return statements
+}
+
+func (p *parser) scalarExpr() *ast.Expr {
+	leftToken := p.advance()
+	left := &ast.Expr{Span: leftToken.Span}
+	switch leftToken.Kind {
+	case TokenNumber:
+		left.Kind, left.Value = "number", leftToken.Text
+	default:
+		if leftToken.Kind != TokenIdentifier {
+			p.problem("syntax.expected_scalar_operand", leftToken, "expected a scalar operand")
+		}
+		left.Kind, left.Name = "name", leftToken.Text
+	}
+	operator := p.peek()
+	if operator.Kind != TokenPlus && operator.Kind != TokenLAngle {
+		return left
+	}
+	p.advance()
+	right := p.scalarExprAtom()
+	kind := "add"
+	if operator.Kind == TokenLAngle {
+		kind = "less"
+	}
+	return &ast.Expr{Kind: kind, Left: left, Right: right, Span: diagnostic.Span{Start: left.Span.Start, End: right.Span.End}}
+}
+
+func (p *parser) scalarExprAtom() *ast.Expr {
+	token := p.advance()
+	if token.Kind == TokenNumber {
+		return &ast.Expr{Kind: "number", Value: token.Text, Span: token.Span}
+	}
+	if token.Kind != TokenIdentifier {
+		p.problem("syntax.expected_scalar_operand", token, "expected a scalar operand")
+	}
+	return &ast.Expr{Kind: "name", Name: token.Text, Span: token.Span}
 }
 
 // borrowOrigin parses the optional Phase 3 return-type annotation preceding

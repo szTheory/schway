@@ -1203,7 +1203,7 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 		// 12, D-12-10): it names its own produced place via PayloadTargetID,
 		// never the ordinary TargetID, which it leaves empty -- checked
 		// separately immediately below.
-		if operation.Kind != core.OpReturn && operation.Kind != core.OpFail && operation.Kind != core.OpRelease && operation.Kind != core.OpDefect && operation.Kind != core.OpDestructurePayload {
+		if operation.Kind != core.OpReturn && operation.Kind != core.OpFail && operation.Kind != core.OpRelease && operation.Kind != core.OpDefect && operation.Kind != core.OpDestructurePayload && operation.Kind != core.OpScalarStore && operation.Kind != core.OpBranch {
 			if _, ok := places[operation.TargetID]; !v.check(ok, "core.unknown_place", operation.TargetID) {
 				return nil, nil, false
 			}
@@ -1213,6 +1213,26 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 				return nil, nil, false
 			}
 			if _, ok := places[operation.PayloadTargetID]; !v.check(ok, "core.unknown_place", operation.PayloadTargetID) {
+				return nil, nil, false
+			}
+		}
+		switch operation.Kind {
+		case core.OpAddChecked, core.OpLessU64:
+			right, known := places[operation.RightID]
+			want := "U64"
+			if operation.Kind == core.OpLessU64 {
+				want = "Bool"
+			}
+			if !v.check(known && types[places[operation.SourceID].TypeID].Shape.Constructor == "U64" && types[right.TypeID].Shape.Constructor == "U64" && types[operation.TypeID].Shape.Constructor == want && operation.StoreTargetID == "" && operation.TrueEdgeID == "" && operation.FalseEdgeID == "", "core.scalar_operation_invalid", operation.ID) {
+				return nil, nil, false
+			}
+		case core.OpScalarStore:
+			target, known := places[operation.StoreTargetID]
+			if !v.check(known && target.Mutable && target.ID != function.Parameter.ID && target.TypeID == places[operation.SourceID].TypeID && operation.TargetID == "" && operation.RightID == "" && operation.TrueEdgeID == "" && operation.FalseEdgeID == "", "core.scalar_store_invalid", operation.ID) {
+				return nil, nil, false
+			}
+		case core.OpBranch:
+			if !v.check(types[operation.TypeID].Shape.Constructor == "Bool" && operation.TargetID == "" && operation.RightID == "" && operation.StoreTargetID == "" && operation.TrueEdgeID != "" && operation.FalseEdgeID != "", "core.scalar_branch_invalid", operation.ID) {
 				return nil, nil, false
 			}
 		}
@@ -1343,6 +1363,11 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 			value, err := strconv.ParseUint(operation.ConstU64, 10, 64)
 			shape := types[operation.TypeID].Shape
 			if !v.check(err == nil && strconv.FormatUint(value, 10) == operation.ConstU64 && operation.TargetID != "" && operation.TypeID != "" && shape.Constructor == "U64" && len(shape.Arguments) == 0 && operation.CalleeID == "" && operation.PayloadType == "" && operation.PayloadTargetID == "" && operation.ErrTargetID == "" && operation.OkEdgeID == "" && operation.ErrEdgeID == "" && operation.ReleasesOperationID == "" && operation.Allocator == "" && operation.Reason == "", "core.constant_invalid", operation.ID) {
+				return nil, nil, false
+			}
+		}
+		if operation.Kind != core.OpAddChecked && operation.Kind != core.OpLessU64 && operation.RightID != "" || operation.Kind != core.OpScalarStore && operation.StoreTargetID != "" || operation.Kind != core.OpBranch && (operation.TrueEdgeID != "" || operation.FalseEdgeID != "") {
+			if !v.check(false, "core.scalar_field_kind_exclusive", operation.ID) {
 				return nil, nil, false
 			}
 		}
@@ -1971,6 +1996,31 @@ func (v *validator) blocksAndEdges(function *core.Function, operationIDs map[str
 			return false
 		}
 	}
+	blockForOperation := make(map[string]string, len(operationIDs))
+	for _, block := range linear.Blocks {
+		for _, opID := range block.OperationIDs {
+			blockForOperation[opID] = block.ID
+		}
+	}
+	for _, operation := range linear.Operations {
+		if operation.Kind != core.OpBranch {
+			continue
+		}
+		var trueEdge, falseEdge *core.Edge
+		for index := range linear.Edges {
+			edge := &linear.Edges[index]
+			if edge.ID == operation.TrueEdgeID {
+				trueEdge = edge
+			}
+			if edge.ID == operation.FalseEdgeID {
+				falseEdge = edge
+			}
+		}
+		valid := trueEdge != nil && falseEdge != nil && trueEdge.FromBlockID == blockForOperation[operation.ID] && falseEdge.FromBlockID == blockForOperation[operation.ID] && trueEdge.Pattern == "true" && falseEdge.Pattern == "false"
+		if !v.check(valid, "core.scalar_branch_edges_invalid", operation.ID) {
+			return false
+		}
+	}
 	for _, block := range linear.Blocks {
 		for _, successor := range block.Successors {
 			if _, ok := blockIDs[successor]; !v.check(ok, "core.unknown_block", successor) {
@@ -2490,7 +2540,7 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 		v.checks++ // dispatch one independently authorized transition
 		switch operation.Kind {
 		case core.OpConst:
-			if !v.targetMatches(function, index, operation, places, produced) {
+			if !scalarTargetMatches(function, index, operation, places, produced) {
 				return false
 			}
 			initialized[operation.TargetID] = true
@@ -2504,6 +2554,29 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			}
 			initialized[operation.TargetID] = true
 			produced[operation.TargetID] = true
+		case core.OpAddChecked, core.OpLessU64:
+			right, known := places[operation.RightID]
+			want := "U64"
+			if operation.Kind == core.OpLessU64 {
+				want = "Bool"
+			}
+			if !v.check(known && initialized[operation.RightID] && types[right.TypeID].Shape.Constructor == "U64" && types[operation.TypeID].Shape.Constructor == want, "core.scalar_operation_invalid", operation.ID) {
+				return false
+			}
+			if !scalarTargetMatches(function, index, operation, places, produced) {
+				return false
+			}
+			initialized[operation.TargetID], produced[operation.TargetID] = true, true
+		case core.OpScalarStore:
+			target, known := places[operation.StoreTargetID]
+			if !v.check(known && target.Mutable && initialized[operation.SourceID] && target.TypeID == source.TypeID && operation.StoreTargetID != function.Parameter.ID, "core.scalar_store_invalid", operation.ID) {
+				return false
+			}
+			initialized[operation.StoreTargetID] = true
+		case core.OpBranch:
+			if !v.check(types[source.TypeID].Shape.Constructor == "Bool", "core.scalar_branch_invalid", operation.ID) {
+				return false
+			}
 		case core.OpBorrowShared:
 			if !v.check(hasAbility(types[operation.TypeID], core.AbilityShare), "core.ability.share_denied", operation.TypeID) {
 				return false
@@ -2998,7 +3071,7 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 		}
 		lastOpID := block.OperationIDs[len(block.OperationIDs)-1]
 		lastOperation := operationsByID[lastOpID]
-		if lastOperation.Kind == core.OpForeignCall || (lastOperation.Kind == core.OpCall && lastOperation.OkEdgeID != "" && lastOperation.ErrEdgeID != "") {
+		if lastOperation.Kind == core.OpBranch || lastOperation.Kind == core.OpForeignCall || (lastOperation.Kind == core.OpCall && lastOperation.OkEdgeID != "" && lastOperation.ErrEdgeID != "") {
 			// A fallible foreign call or function call forks into its declared
 			// successor edges instead of terminating the function (D-04-04 and
 			// Phase 24 typed calls). Only a block whose last operation is an
@@ -4119,6 +4192,11 @@ func (v *validator) targetMatches(function *core.Function, operationIndex int, o
 		"core.invalid_target",
 		operation.TargetID,
 	)
+}
+
+func scalarTargetMatches(function *core.Function, operationIndex int, operation core.LinearOperation, places map[string]core.Place, produced map[string]bool) bool {
+	target := places[operation.TargetID]
+	return target.ID != "" && operation.TargetID != operation.SourceID && !target.Mutable && !produced[operation.TargetID] && target.TypeID == operation.TypeID
 }
 
 func (v *validator) derive(shape core.TypeRef, depth int) ([]core.Ability, []core.AbilityWitness, bool) {

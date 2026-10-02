@@ -645,7 +645,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		if function.Match == nil && function.Linear == nil {
 			return "", fmt.Errorf("function %q: has no linear body", function.ID)
 		}
-		if function.Match == nil && len(function.Linear.Blocks) > 0 && !(transferFileByteProgram && function.ID == transferHelper.ID) {
+		if function.Match == nil && len(function.Linear.Blocks) > 0 && !(transferFileByteProgram && function.ID == transferHelper.ID) && !hasScalarOperations(function) {
 			return "", fmt.Errorf("function %q: multi-function foreign-call bodies are not supported by native emission this phase", function.ID)
 		}
 		// Plan 16-05's human-selected cut-m004 applies to every program
@@ -893,6 +893,8 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 			err = emitProgramTransferredOwnerCaller(&out, function, transferHelper, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames)
 		} else if isLocalFileByteFunction(function) {
 			err = emitProgramLocalFileByteFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames)
+		} else if hasScalarOperations(function) {
+			err = emitProgramScalarFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index])
 		} else {
 			err = emitProgramFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames, pointerABIFacts[function.ID])
 		}
@@ -2277,6 +2279,9 @@ func emitProgramDefectTerminal(out *strings.Builder, function core.Function, ope
 // return value is written to stdout exactly once, by `main`, after it
 // returns).
 func emitProgramFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, globalNames []string, lookup *emitCallLookup, childTableNames map[string]string, pointerABI pointerABIFact) error {
+	if hasScalarOperations(function) {
+		return emitProgramScalarFunction(out, function, parameterTypeName, returnTypeName, functionName)
+	}
 	places := make(map[string]core.Place, len(function.Linear.Places))
 	for _, place := range function.Linear.Places {
 		places[place.ID] = place
@@ -2409,4 +2414,108 @@ func emitProgramFunction(out *strings.Builder, function core.Function, parameter
 	}
 	out.WriteString("}\n\n")
 	return nil
+}
+
+func hasScalarOperations(function core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
+			return true
+		}
+	}
+	return false
+}
+
+func emitProgramScalarFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string) error {
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	locals := make(map[string]string, len(function.Linear.Places))
+	for index, place := range function.Linear.Places {
+		places[place.ID] = place
+		locals[place.ID] = fmt.Sprintf("schway_scalar_%d", index)
+	}
+	parameter, ok := places[function.Parameter.ID]
+	if !ok {
+		return fmt.Errorf("function %q: scalar parameter place is absent", function.ID)
+	}
+	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n  (void)invocation_index;\n", returnTypeName, functionName, parameterTypeName, locals[parameter.ID])
+	for _, place := range function.Linear.Places {
+		if place.ID == parameter.ID {
+			continue
+		}
+		typeName := placesTypeName(function.Linear, place.TypeID)
+		ctype := "uint64_t"
+		if typeName == "Bool" {
+			ctype = "int"
+		}
+		fmt.Fprintf(out, "  %s %s = 0;\n  (void)%s;\n", ctype, locals[place.ID], locals[place.ID])
+	}
+	label := func(id string) string {
+		return "schway_block_" + strconv.Itoa(blockOrdinal(function.Linear.Blocks, id))
+	}
+	operations := make(map[string]core.LinearOperation, len(function.Linear.Operations))
+	for _, op := range function.Linear.Operations {
+		operations[op.ID] = op
+	}
+	for _, block := range function.Linear.Blocks {
+		fmt.Fprintf(out, "%s:\n", label(block.ID))
+		terminated := false
+		for _, id := range block.OperationIDs {
+			op := operations[id]
+			switch op.Kind {
+			case core.OpConst:
+				fmt.Fprintf(out, "  %s = UINT64_C(%s);\n", locals[op.TargetID], op.ConstU64)
+			case core.OpAddChecked:
+				fmt.Fprintf(out, "  if (UINT64_MAX - %s < %s) { fputs(\"checked U64 addition overflow\\n\", stderr); exit(70); }\n  %s = %s + %s;\n", locals[op.SourceID], locals[op.RightID], locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
+			case core.OpLessU64:
+				fmt.Fprintf(out, "  %s = (%s < %s);\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
+			case core.OpScalarStore:
+				fmt.Fprintf(out, "  %s = %s;\n", locals[op.StoreTargetID], locals[op.SourceID])
+			case core.OpBranch:
+				var yes, no core.Edge
+				for _, edge := range function.Linear.Edges {
+					if edge.ID == op.TrueEdgeID {
+						yes = edge
+					}
+					if edge.ID == op.FalseEdgeID {
+						no = edge
+					}
+				}
+				fmt.Fprintf(out, "  if (%s) goto %s; else goto %s;\n", locals[op.SourceID], label(yes.ToBlockID), label(no.ToBlockID))
+				terminated = true
+			case core.OpReturn:
+				fmt.Fprintf(out, "  if (!schway_record_event(\"function.returned\", %s, %s, %s, NULL, %s, schway_invocations[invocation_index], NULL)) abort();\n  return %s;\n", strconv.Quote(op.ID+":event:returned"), strconv.Quote(function.ID), strconv.Quote(op.SourceID), strconv.Quote(op.TypeID), locals[op.SourceID])
+				terminated = true
+			case core.OpDefect:
+				fmt.Fprintf(out, "  fputs(%s, stderr);\n  exit(65);\n", strconv.Quote("schway app: "+op.Reason+"\n"))
+				terminated = true
+			default:
+				return fmt.Errorf("operation %q has unsupported scalar kind %q", op.ID, op.Kind)
+			}
+		}
+		if !terminated && len(block.Successors) == 1 {
+			fmt.Fprintf(out, "  goto %s;\n", label(block.Successors[0]))
+		}
+	}
+	out.WriteString("}\n\n")
+	return nil
+}
+
+func placesTypeName(linear *core.LinearBody, typeID string) string {
+	for _, fact := range linear.Types {
+		if fact.ID == typeID {
+			return fact.Shape.Constructor
+		}
+	}
+	return ""
+}
+
+func blockOrdinal(blocks []core.Block, id string) int {
+	for index, block := range blocks {
+		if block.ID == id {
+			return index
+		}
+	}
+	return -1
 }

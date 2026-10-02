@@ -635,9 +635,10 @@ type TypeFact struct {
 }
 
 type Place struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	TypeID string `json:"type_id"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	TypeID  string `json:"type_id"`
+	Mutable bool   `json:"mutable,omitempty"`
 }
 
 type OperationKind string
@@ -697,6 +698,10 @@ const (
 	// populated field on OpMove, for the same anti-vacuity reason as
 	// OpConstructPayload.
 	OpDestructurePayload OperationKind = "destructure_payload"
+	OpAddChecked         OperationKind = "add_checked"
+	OpLessU64            OperationKind = "less_u64"
+	OpScalarStore        OperationKind = "scalar_store"
+	OpBranch             OperationKind = "branch"
 )
 
 // CallCalleeUnresolved is Phase 07's typed identity for an OpCall whose
@@ -838,14 +843,14 @@ const CalleeFrameNotDrained = "core.callee_frame_not_drained"
 // slice is exactly the defect this registry exists to catch --
 // TestAllOperationKindsRegistered fails the moment the two counts diverge.
 func AllOperationKinds() []OperationKind {
-	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConst, OpConstructPayload, OpDestructurePayload}
+	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConst, OpConstructPayload, OpDestructurePayload, OpAddChecked, OpLessU64, OpScalarStore, OpBranch}
 }
 
 // TerminatorKinds returns exactly the operation kinds that end a block --
 // always a subset of AllOperationKinds(). Phase 4 adds OpFail and OpDefect;
 // every pre-Phase-4 core artifact only ever ends a block with OpReturn.
 func TerminatorKinds() []OperationKind {
-	return []OperationKind{OpReturn, OpFail, OpDefect}
+	return []OperationKind{OpReturn, OpFail, OpDefect, OpBranch}
 }
 
 type LinearOperation struct {
@@ -926,7 +931,11 @@ type LinearOperation struct {
 	// ConstU64 is Phase 19's kind-exclusive canonical U64 value, represented
 	// as base-10 digits (including "0"). It is populated only on OpConst;
 	// all other operation kinds leave it empty so legacy core JSON is stable.
-	ConstU64 string `json:"const_u64,omitempty"`
+	ConstU64      string `json:"const_u64,omitempty"`
+	RightID       string `json:"right_id,omitempty"`
+	StoreTargetID string `json:"store_target_id,omitempty"`
+	TrueEdgeID    string `json:"true_edge_id,omitempty"`
+	FalseEdgeID   string `json:"false_edge_id,omitempty"`
 }
 
 type LinearBody struct {
