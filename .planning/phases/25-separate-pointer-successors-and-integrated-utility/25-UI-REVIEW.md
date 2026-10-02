@@ -1,7 +1,9 @@
 # Phase 25 — UI Review
 
-**Audited:** 2026-10-02  
-**Baseline:** Not applicable — Phase 25 is a compiler and native-evidence phase; it has no UI-SPEC.md or graphical interface deliverable.  
+**Audited:** 2026-10-02
+
+**Baseline:** Not applicable — Phase 25 is a compiler and native-evidence phase; it has no UI-SPEC.md or graphical interface deliverable.
+
 **Screenshots:** Not captured — no Phase 25 frontend artifacts exist. Ports 3000 and 5173 did not respond; port 8080 redirected to `/dashboard/`, with no frontend files in this repository tying it to Phase 25.
 
 ## Applicability
