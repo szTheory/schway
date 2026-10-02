@@ -7,10 +7,10 @@ current_phase_name: separate-pointer-successors-and-integrated-utility
 current_plan: 6
 status: executing
 stopped_at: Completed 25-07-PLAN.md; hosted dual-host evidence bound; ready for goal-backward verification
-last_updated: "2026-10-02T10:58:43.993Z"
+last_updated: "2026-10-02T11:19:18.092Z"
 last_activity: 2026-10-02
 last_activity_desc: Closed Phase 25 quick security repair, regression hardening, and fresh full-suite validation; hosted EVD-10 family-by-lane receipts remain open
-state_head: abe912417c902ccdbcef79f3a7a951dfd13fccb1
+state_head: 76f1b2e597f9a70c70cb612917f1f2acd5189adc
 progress:
   total_phases: 4
   completed_phases: 3
@@ -127,7 +127,7 @@ Current Plan: 7
 Total Plans in Phase: 7
 Plan: 7 of 7
 Status: All plans complete; hosted EVD-10 matrix is bound; run goal-backward verifier before phase transition
-Last activity: 2026-10-02 — Completed quick task 261002-8ry: pinned the measured Phase 25 groundedness records and assigned P25 ownership
+Last activity: 2026-10-02 — Completed quick task 261002-4wy: reconciled Phase 25 grades and regenerated the validation corpus receipt
 
 Progress: [████████░░] 75%
 
@@ -711,6 +711,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 261001-ikw | Archive the original checkout and restore the current source to the canonical schway folder | 2026-10-01 | — | passed | [261001-ikw-archive-the-original-checkout-and-restor](./quick/261001-ikw-archive-the-original-checkout-and-restor/) |
 | 261001-wmx | Close Phase 25 security audit findings and repair integration regressions | 2026-10-02 | 95ce75b | passed | [261001-wmx-close-phase-25-security-audit-findings-a](./quick/261001-wmx-close-phase-25-security-audit-findings-a/) |
 | 261002-8ry | Pin the two measured Phase 25 groundedness R2b validation commands and assign their existing P25 owners; preserve classifier behavior and verify the frontier and ownership gates. | 2026-10-02 | abe9124 | Verified | ./quick/261002-8ry-pin-the-two-measured-phase-25-groundne/ |
+| 261002-4wy | Regenerate the validation corpus run record and manifest from the current consumer-derived pair list after Phase 25 validation became eligible; preserve the fail-closed test gate and verify the isolated test plus full Go suite. | 2026-10-02 | 76f1b2e | Verified | ./quick/261002-4wy-regenerate-the-validation-corpus-run-rec/ |
 
 ## Deferred Items
 
