@@ -38,6 +38,41 @@ applicable lane.
 remain scoped to their recorded source revisions and do not prove Phase 25
 pointer behavior.
 
+### Phase 25 security-audit amendment — 2026-10-02
+
+**Source inspection:** at code revision `b19446f`, the command gate consults
+`corevalidate`, then `originvalidate`, then `pathoracle`. The path oracle now
+independently derives straight-line loan ancestry, last uses, access-family
+conflicts, and terminal borrowed-result escapes from checked operations and
+place/type facts, ignoring empty or forged `LoanEndpoints`. Its existing CFG
+endpoint routine remains unchanged in scope. Origin problems identify the
+function and return operation structurally; command diagnostics project those
+facts to the actual result and borrow source tokens. The wire schema remains
+`lang.diagnostic/0`, and the escape refusal has no repair suggestion.
+
+**Newly executed checks:** the exact task commands passed locally with the Go
+cache redirected to `/private/tmp/schway-gocache`. Named controls include
+`TestPhase25PointerPathLiveOverlap`,
+`TestPhase25PointerPathBorrowedResultEscape`,
+`TestPhase25IndependentPeerMutations`,
+`TestPhase25CheckCommandPeerGate`, `TestPhase25CheckCommandPeerObservation`,
+`TestPhase25EscapeDiagnosticSourceAttribution`,
+`TestPhase25EscapeDiagnosticFunctionIdentity`, and
+`TestPhase25FamilyConflict`. They cover endpoint-claim mutations, separate
+core/origin/path peer verdicts, command refusal, both escape access families,
+exact primary/cause bytes, stable diagnostic identity, and no unsafe repairs.
+Corevalidate's escape verdict is its non-callable signature fact;
+originvalidate and pathoracle each return their own direct refusal. These are
+Go unit controls, not native host evidence.
+
+**Historical receipts:** the macOS/arm64 Phase 25 native lanes remain at
+revision `f00cdf8`, and the earlier Phase 23/24 hosted runs remain scoped to
+their own source revisions. This follow-up ran no native evidence script or
+hosted workflow. Linux rows remain incomplete; hosted macOS/Linux family-by-
+lane receipts are still required, so EVD-10 stays open. The three ranked next
+capabilities and their user witnesses, blockers, slices, checker changes,
+evidence/debt, owners, and reprioritization observations are unchanged.
+
 The next ranked capabilities are Phase 26 scalar computation (`sum_to_n`, then
 FizzBuzz), one bounded checksum consumer with only the byte operations and
 module imports it needs, and a bounded JSON configuration consumer only after a
@@ -85,7 +120,7 @@ thresholds below reflect the later Phase 23 closeout.
 | Separate application evidence | Capture is a distinct report with disabled/incomplete/complete/capacity states and never claims verification; explicit `app verify` replays isolated inputs against independent expected answers | `native_app.go`, `main.go`; `TestPhase22EvidenceDisabledCompleteAndStreamIsolation`, `TestPhase22AppVerifyIndependentIdentityCases`, `TestPhase22AppVerifyModelOnlyOutcomes` |
 | Live local foreign allocation | A public file-byte path admits only exact acquire/use/release contracts; Schway holds the acquired byte until local release, and an independent physical observer plus negative controls prove malloc → use → matching free → exit | `examples/phase23/file_byte.schway`, `examples/phase23/adapter.c`, `internal/compiler/cgen/cgen_program.go`, `internal/compiler/native/phase23_observer_test.go`, `scripts/verify-phase23.sh`; the focused script passed in hosted Ubuntu/macOS evidence aggregates at `f991298b`; local macOS/Linux-container receipts at `c50430d` are historical |
 | Bounded transfer and typed-error cleanup | The Phase 23 file-byte owner can move through the Phase 24 helper/return path; repeated calls retain distinct identities and the `0x43` typed-error path releases C,B,A exactly once | `examples/phase24/transfer.schway`, `examples/phase24/error.schway`, `internal/compiler/session/session_phase24_model_test.go`, `internal/compiler/native/phase24_observer_test.go`, `scripts/verify-phase24.sh`; hosted CI 36856048690 passes at `ed94ef79` on Linux/x86_64 and Darwin/arm64 |
-| Bounded shared/exclusive pointer successors | The integrated utility calls separate shared and exclusive U64 read-copy helpers; only plain pointer shapes are emitted, with no `restrict`, `noalias`, capture, alignment, or ownership promise | `examples/phase24/transfer.schway`, `internal/compiler/cgen/cgen_program.go`, path/origin peer checks, and `internal/compiler/native/phase25_utility_test.go`; focused local receipts are run on this checkout, while hosted macOS/Linux receipts remain required |
+| Bounded shared/exclusive pointer successors | The integrated utility calls separate shared and exclusive U64 read-copy helpers; independent straight-line validation rejects incompatible overlap and borrowed-result escape, and command escape diagnostics name the result and borrow origin; only plain pointer shapes are emitted | `examples/phase24/transfer.schway`, `internal/compiler/cgen/cgen_program.go`, `TestPhase25PointerPathLiveOverlap`, `TestPhase25PointerPathBorrowedResultEscape`, `TestPhase25IndependentPeerMutations`, and session source-attribution tests; local Go controls pass, while hosted macOS/Linux native receipts remain required |
 | Calls between Schway functions | Multi-function programs run; call-graph cycles remain refused | Phase 11 archive; `testdata/phase07/call_basic.schway`; `session.RunInterpreter` / native path |
 | Returns independent of parameter type | Admitted through the production pipeline | Phase 17 archive and `session_phase17_test.go` |
 | Computed `Result` matches and payload returns | Admitted; this is not unrestricted statement control flow | `session_phase18_payload_test.go`, Phase 18 archive |
@@ -104,7 +139,7 @@ The available compiler is not a general application runtime yet.
 |---|---|---|
 | General caller input and IO | The app route currently accepts one bounded U64 token; it does not provide general file, byte-string, or network IO | `cmd/schway/main.go:runApplicationRun`, Phase 22 CLI tests |
 | Legacy differential run route | `schway run --engine=native` remains a conformance harness with synthesized inputs and O0/O3 comparison; effectful application code must use `schway app run` | `session.go:runNative`, `cmd/schway/main.go` |
-| Schway foreign operations and pointer parameters | Phases 23–24 admit only the exact file-byte acquire/use/release and bounded transfer/error shapes. Phase 25 admits shared/exclusive U64 read-copy helpers only in its exact utility chain; other foreign-call shapes and broader pointer bodies remain structurally refused | `internal/compiler/cgen/cgen_program.go`, `TestPhase23OperationContract`, `TestPhase25ExclusivePointerRefusal`, and Phase 25 family/core/origin/path controls; hosted family receipts remain pending |
+| Schway foreign operations and pointer parameters | Phases 23–24 admit only the exact file-byte acquire/use/release and bounded transfer/error shapes. Phase 25 admits shared/exclusive U64 read-copy helpers only in its exact utility chain; other foreign-call shapes and broader pointer bodies remain structurally refused | `internal/compiler/cgen/cgen_program.go`, `TestPhase23OperationContract`, `TestPhase25ExclusivePointerRefusal`, `TestPhase25PointerPathLiveOverlap`, `TestPhase25PointerPathBorrowedResultEscape`, `TestPhase25EscapeDiagnosticSourceAttribution`, and peer mutation controls; hosted family receipts remain pending |
 | Host build closure | Known source/header/compiler/target inputs are identity-bound, but the SDK/linker/runtime closure is incomplete; app artifacts are not cacheable | `native/bindings.go`, `examples/phase22/BINDINGS.md`, Phase 22 build receipts |
 | Schway-owned physical cleanup | A bounded owner stays live through helper use and is released exactly once on normal and typed-error paths; general cleanup shapes, fallible destructors, and nonlocal exits remain unadmitted. The C adapter owns file descriptors and frees partial buffers on acquisition failures | `examples/phase24/error.schway`, `examples/phase24/README.md`, `internal/compiler/native/phase24_observer_test.go`, `scripts/verify-phase24.sh`; hosted CI 36856048690 |
 | Arithmetic/comparison and scalar iteration | Cannot add, compute remainder, loop, or write FizzBuzz | syntax/core operation inventory; `pathoracle` rejects CFG cycles |

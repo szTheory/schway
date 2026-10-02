@@ -104,7 +104,7 @@ engine agreement alone cannot prove correctness.
 | Real application IO | Entry inputs, ordinary IO/exit versus evidence; side effects | Phase 22's automated tests establish bounded U64 input, one native launch, ordinary streams, separate evidence capture, and explicit independent replay; `TestPhase22READMEContract` pins public forms and limits; general file IO remains unimplemented | Phase 22 closed; extend only for a concrete consumer |
 | Live owned allocation | Acquisition-based obligation conservation; per-operation ABI/destructor; noncopyability | Omitted physical destructor with unchanged events must fail; discard must not erase obligation | M004 acquisition/discharge phase |
 | Transfer/calls/errors | Owner and resource identity across frames; reverse completion order; failed acquisition | Phase 24's ordinary success and typed-error apps, distinct activations, acquisition-derived peers, and physical observer passed on both hosted hosts; general cleanup shapes remain refused | Phase 24 complete; extend only for a selected broader cleanup consumer |
-| Shared/exclusive pointer access | Borrow endpoints, escape/capture refusal, actual C ABI and emitted attributes | Source and focused local native witnesses cover both families; hosted macOS/Linux receipts remain required. No unsupported alias/alignment/capture promises | Phase 25 evidence aggregate; keep NAT-11/12/13 and EVD-10 open until hosted receipts are bound |
+| Shared/exclusive pointer access | Borrow endpoints, independent straight-line overlap/escape refusal, source-attributed escape diagnostics, actual C ABI and emitted attributes | `TestPhase25PointerPathLiveOverlap`, `TestPhase25PointerPathBorrowedResultEscape`, `TestPhase25IndependentPeerMutations`, and command/diagnostic attribution checks pass locally; hosted macOS/Linux receipts remain required. No unsupported alias/alignment/capture promises | Phase 25 evidence aggregate; keep NAT-11/12/13 and EVD-10 open until hosted receipts are bound |
 | Arithmetic and Bool | Typed operators; overflow/divide/remainder rules and C definedness | Boundary expected values, wrong-result controls, interpreter/native agreement; no reliance on C undefined behavior | Following practical-computation milestone |
 | Scalar CFG back edges | Fixed-point state/loans, dynamic occurrence identity, finite oracle exploration | Loop spike before planning; separate application semantics from evidence-budget exhaustion; reject unproved resource/loan carries | Following practical-computation milestone |
 | Byte views/indexing/aggregates | Bounds, initialization, subobject layout/ownership and error paths | Empty/one/max/truncated cases; out-of-bounds controls; only admitted moves/copies | Byte-library capability |
@@ -231,6 +231,23 @@ not hosted receipts. Hosted macOS and Linux Phase 25 family-by-lane receipts
 remain pending, so no hosted pass is claimed and EVD-10 remains open.
 Historical receipts are the Phase 24 run 36856048690 and earlier Phase 23
 runs, scoped to their archived source revisions and behaviors.
+
+**2026-10-02 Phase 25 security-audit follow-up.** Source inspection at
+`b19446f` confirms that the command gate invokes core, origin, and path
+validation in precedence order. The independent path oracle derives
+straight-line borrow ancestry, last use, conflict families, and terminal
+escape without reading endpoint claims; the origin peer supplies structured
+function/return identity for source projection. Newly executed local tests
+`TestPhase25PointerPathLiveOverlap`,
+`TestPhase25PointerPathBorrowedResultEscape`,
+`TestPhase25IndependentPeerMutations`,
+`TestPhase25CheckCommandPeerGate`, `TestPhase25CheckCommandPeerObservation`,
+`TestPhase25EscapeDiagnosticSourceAttribution`, and
+`TestPhase25EscapeDiagnosticFunctionIdentity` pass, along with the retained
+conflict/schema/boundary controls. Historical Phase 25 native results remain
+scoped to source revision `f00cdf8`; this follow-up ran no native or hosted
+matrix. EVD-10 and phase acceptance remain open pending hosted family-by-lane
+receipts.
 
 **2026-09-30 Phase 23 closeout amendment.** Phase 22's verifier passes 5/5
 roadmap truths and its completed objective README UAT is preserved. Phase 23's

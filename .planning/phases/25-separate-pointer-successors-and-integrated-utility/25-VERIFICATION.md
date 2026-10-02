@@ -127,5 +127,31 @@ One acceptance gap remains: the current source revision must run through the exi
 
 ---
 
+### Security audit follow-up — 2026-10-02
+
+Source inspection at revision `b19446f` confirms the final `schway check`
+admission path invokes the independent straight-line path oracle after the
+existing core and origin decisions. Its loan replay ignores declared
+`LoanEndpoints`, preserves `RecomputeEndpoints`' CFG-only endpoint contract,
+and refuses incompatible overlapping loans and borrowed terminal results.
+The oracle's escape and overlap controls each challenge empty and forged
+endpoint claims. `corevalidate`, `originvalidate`, and `pathoracle` were
+called separately over both mutations and the compatible-reader,
+ended-shared-then-exclusive, and copied-U64 positive witnesses. For the
+escape, corevalidate's signature peer marks the function non-callable,
+originvalidate returns `core.origin_omitted`, and pathoracle independently
+refuses the terminal borrowed place.
+
+The actual command-path checks passed for accepted and rejected sources.
+`TestPhase25EscapeDiagnosticSourceAttribution` and
+`TestPhase25EscapeDiagnosticFunctionIdentity` passed for exclusive and shared
+escapes, including exact source bytes, nonempty primary and cause spans,
+stable diagnostic identity under changed peer prose, the existing schema,
+and an empty repair list. `TestPhase25FamilyConflict` retains the distinct
+`ownership.borrow_conflict` code and offending-borrow span. These are fresh
+local Go checks; no native build or hosted host/lane receipt was run by this
+follow-up. EVD-10 therefore remains `OPEN`, Phase 25 remains `gaps_found`,
+and the original 4/5 score is unchanged.
+
 _Verified: 2026-10-02T03:08:16Z_
-_Verifier: local goal-backward review_
+_Verifier: local goal-backward review; 2026-10-02 security-audit follow-up_
