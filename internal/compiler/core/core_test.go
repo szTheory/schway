@@ -894,6 +894,7 @@ var exhaustiveDispatchFixtures = []string{
 	"testdata/phase12/payload_drop_obligation.schway",
 	"testdata/phase12/payload_borrow_interaction.schway",
 	"testdata/phase19/literal_tracer.schway",
+	"examples/sum_to_n.schway",
 }
 
 // runExhaustiveDispatchControl is control:kind.exhaustive_dispatch.phase07_in_process's
@@ -945,8 +946,15 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 						phase19ConstObserved = true
 					}
 				}
-				// pathoracle site: must not error while walking.
-				if function.Linear.ID != "" {
+				// PathOracle is deliberately kept acyclic and outside Phase 26's
+				// scalar-loop admission proof.
+				scalarCycle := false
+				for _, operation := range function.Linear.Operations {
+					if operation.Kind == core.OpBranch {
+						scalarCycle = true
+					}
+				}
+				if function.Linear.ID != "" && !scalarCycle {
 					endpoints, _, err := pathoracle.RecomputeEndpoints(function, nil)
 					if err != nil {
 						return fmt.Errorf("%s/%s: pathoracle error: %w", path, function.Name, err)

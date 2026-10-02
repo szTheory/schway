@@ -21,7 +21,7 @@ func Format(tree Tree) []byte {
 		if index+1 < len(tokens) {
 			next = tokens[index+1].Kind
 		}
-		if token.Kind == TokenIdentifier && next == TokenEqual && index > 0 && f.lineOpen && (f.context() == "function" || f.context() == "arm") {
+		if token.Kind == TokenIdentifier && next == TokenEqual && index > 0 && f.lineOpen && f.insideFunctionBody() {
 			previous := tokens[index-1]
 			if previous.Span.End <= token.Span.Start && bytes.Contains(tree.Source[previous.Span.End:token.Span.Start], []byte("\n")) {
 				f.newline()
@@ -30,6 +30,15 @@ func Format(tree Tree) []byte {
 		f.token(token, next)
 	}
 	return append(bytes.TrimRight([]byte(f.out.String()), " \t\r\n"), '\n')
+}
+
+func (f *formatter) insideFunctionBody() bool {
+	for _, context := range f.contexts {
+		if context == "function" || context == "arm" {
+			return true
+		}
+	}
+	return false
 }
 
 type formatter struct {
@@ -184,13 +193,13 @@ func (f *formatter) token(token Token, next Kind) {
 			f.newline()
 		} else if f.previous == TokenPipe || f.previous == TokenFatArrow {
 			f.newline()
-		} else if (f.context() == "function" || f.context() == "arm") && f.linearBinding && f.previous == TokenEqual && next == TokenLParen {
+		} else if f.insideFunctionBody() && f.linearBinding && f.previous == TokenEqual && next == TokenLParen {
 			// D-07-01/D-07-40: this identifier is a bare call's callee, not
 			// a plain binding source -- its own argument list still follows
 			// on this line, so (unlike the branch below) this must NOT end
 			// the line here. See callBinding's doc comment.
 			f.callBinding = true
-		} else if (f.context() == "function" || f.context() == "arm") && f.linearBinding && (f.previous == TokenEqual || f.previous == TokenTake || f.previous == TokenBorrow || f.previous == TokenMut) {
+		} else if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || f.previous == TokenTake || f.previous == TokenBorrow || f.previous == TokenMut) {
 			f.newline()
 			f.linearBinding = false
 		} else if f.context() == "foreign_fn" && f.previous == TokenColon {
@@ -205,10 +214,10 @@ func (f *formatter) token(token Token, next Kind) {
 		f.lineOpen = true
 		if f.context() == "foreign_fn" && f.previous == TokenColon {
 			f.newline()
-		} else if f.discardRationale && (f.context() == "function" || f.context() == "arm") {
+		} else if f.discardRationale && f.insideFunctionBody() {
 			f.discardRationale = false
 			f.newline()
-		} else if f.pendingDefectReason && (f.context() == "function" || f.context() == "arm") {
+		} else if f.pendingDefectReason && f.insideFunctionBody() {
 			f.pendingDefectReason = false
 			f.newline()
 		}
@@ -216,7 +225,7 @@ func (f *formatter) token(token Token, next Kind) {
 		f.ensureLine()
 		f.out.WriteString(token.Text)
 		f.lineOpen = true
-		if (f.context() == "function" || f.context() == "arm") && f.linearBinding && f.previous == TokenEqual {
+		if f.insideFunctionBody() && f.linearBinding && f.previous == TokenEqual {
 			f.newline()
 			f.linearBinding = false
 		}
@@ -277,12 +286,12 @@ func (f *formatter) token(token Token, next Kind) {
 		f.lineOpen = true
 		if f.tryCall {
 			f.tryCall = false
-			if f.context() == "function" || f.context() == "arm" {
+			if f.insideFunctionBody() {
 				f.newline()
 			}
 		} else if f.callBinding {
 			f.callBinding = false
-			if f.context() == "function" || f.context() == "arm" {
+			if f.insideFunctionBody() {
 				f.newline()
 			}
 		}
@@ -292,7 +301,7 @@ func (f *formatter) token(token Token, next Kind) {
 		f.lineOpen = true
 	case TokenEqual:
 		f.trimSpace()
-		if f.context() == "function" || f.context() == "arm" {
+		if f.insideFunctionBody() {
 			f.out.WriteString(" = ")
 			f.lineOpen = true
 		} else {

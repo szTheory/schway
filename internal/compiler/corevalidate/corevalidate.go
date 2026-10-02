@@ -2858,11 +2858,39 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 		v.checks++ // dispatch one independently authorized transition
 		switch operation.Kind {
 		case core.OpConst:
-			if !v.targetMatches(function, index, operation, places, produced) {
+			validTarget := v.targetMatches(function, index, operation, places, produced)
+			if hasScalarCFG(function) {
+				validTarget = scalarTargetMatches(function, index, operation, places, produced)
+			}
+			if !validTarget {
 				return false
 			}
 			initialized[operation.TargetID] = true
 			produced[operation.TargetID] = true
+		case core.OpAddChecked, core.OpLessU64:
+			right, known := places[operation.RightID]
+			want := "U64"
+			if operation.Kind == core.OpLessU64 {
+				want = "Bool"
+			}
+			if !v.check(known && initialized[operation.RightID] && types[source.TypeID].Shape.Constructor == "U64" && types[right.TypeID].Shape.Constructor == "U64" && types[operation.TypeID].Shape.Constructor == want, "core.scalar_operation_invalid", operation.ID) {
+				return false
+			}
+			if !scalarTargetMatches(function, index, operation, places, produced) {
+				return false
+			}
+			initialized[operation.TargetID], produced[operation.TargetID] = true, true
+		case core.OpScalarStore:
+			target, known := places[operation.StoreTargetID]
+			if !v.check(known && target.Mutable && initialized[operation.SourceID] && target.TypeID == source.TypeID && operation.StoreTargetID != function.Parameter.ID, "core.scalar_store_invalid", operation.ID) {
+				return false
+			}
+			initialized[operation.StoreTargetID] = true
+		case core.OpBranch:
+			blockID, known := blockOfOperation[operation.ID]
+			if !v.check(known && lastOperationOfBlock[blockID] == operation.ID && types[source.TypeID].Shape.Constructor == "Bool", "core.scalar_branch_invalid", operation.ID) {
+				return false
+			}
 		case core.OpCopy:
 			if !v.check(hasAbility(types[operation.TypeID], core.AbilityCopy), "core.ability.copy_denied", operation.TypeID) {
 				return false
@@ -4197,6 +4225,18 @@ func (v *validator) targetMatches(function *core.Function, operationIndex int, o
 func scalarTargetMatches(function *core.Function, operationIndex int, operation core.LinearOperation, places map[string]core.Place, produced map[string]bool) bool {
 	target := places[operation.TargetID]
 	return target.ID != "" && operation.TargetID != operation.SourceID && !produced[operation.TargetID] && target.TypeID == operation.TypeID
+}
+
+func hasScalarCFG(function *core.Function) bool {
+	if function == nil || function.Linear == nil {
+		return false
+	}
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
+			return true
+		}
+	}
+	return false
 }
 
 func (v *validator) derive(shape core.TypeRef, depth int) ([]core.Ability, []core.AbilityWitness, bool) {

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
 	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/session"
@@ -71,10 +72,27 @@ func TestPhase26Frontend(t *testing.T) {
 			t.Errorf("malformed statement %q did not recover with a stable source span: %+v", malformed, result.Diagnostics)
 		}
 	}
-	wrongCondition := []byte("module phase26\nfn main(n: U64) -> U64 {\n  if n { } else { }\n  n\n}\n")
+	wrongCondition := []byte("module phase26\nexport { fn main }\nfn main(n: U64) -> U64 {\n  if n { } else { }\n  n\n}\n")
 	if checked := session.Check(wrongCondition); len(checked.Diagnostics) == 0 {
 		t.Fatal("U64 condition was accepted as truthy")
 	}
+	boolMutation := []byte("module phase26\nexport { fn main }\nfn main(n: U64) -> U64 {\n  var flag = n < 1\n  flag = n < 2\n  if flag { } else { }\n  n\n}\n")
+	if checked := session.Check(boolMutation); len(checked.Diagnostics) != 0 {
+		t.Fatalf("Bool scalar declaration, reassignment, and branch were rejected: %+v", checked.Diagnostics)
+	}
+	branchOnly := []byte("module phase26\nexport { fn main }\nfn main(n: U64) -> U64 {\n  if n < 10 { var x = 1 } else { var y = 2 }\n  x\n}\n")
+	if checked := session.Check(branchOnly); !hasDiagnostic(checked.Diagnostics, "name.uninitialized_place") {
+		t.Fatalf("branch-only initialized local was not rejected at the join: %+v", checked.Diagnostics)
+	}
+}
+
+func hasDiagnostic(diagnostics []diagnostic.Diagnostic, code string) bool {
+	for _, item := range diagnostics {
+		if item.Code == code {
+			return true
+		}
+	}
+	return false
 }
 
 func TestPhase26AppBoundary(t *testing.T) {
