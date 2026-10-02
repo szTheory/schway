@@ -2858,9 +2858,11 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 		v.checks++ // dispatch one independently authorized transition
 		switch operation.Kind {
 		case core.OpConst:
-			validTarget := v.targetMatches(function, index, operation, places, produced)
+			validTarget := false
 			if hasScalarCFG(function) {
 				validTarget = scalarTargetMatches(function, index, operation, places, produced)
+			} else {
+				validTarget = v.targetMatches(function, index, operation, places, produced)
 			}
 			if !validTarget {
 				return false

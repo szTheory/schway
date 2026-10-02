@@ -50,7 +50,13 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 		resultID, ok := b.names[function.Body.Linear.Result]
 		if !ok {
 			b.diagnostics = append(b.diagnostics, diagnostic.Error("name.unknown_place", function.Body.Linear.Span, "scalar result is not an initialized local"))
+		} else if !b.initialized[resultID] {
+			b.refuse("name.uninitialized_place", function.Body.Linear.Span, "scalar result is not definitely initialized")
 		} else {
+			if b.places[resultID].TypeID != b.types["U64"] {
+				b.refuse("type.scalar_result", function.Body.Linear.Span, "scalar function result must be U64")
+				return core.Function{}, b.diagnostics, b.work
+			}
 			b.addOperation(core.LinearOperation{Kind: core.OpReturn, SourceID: resultID, TypeID: b.types["U64"]})
 		}
 	}
