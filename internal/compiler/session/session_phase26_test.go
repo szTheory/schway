@@ -61,6 +61,19 @@ func TestPhase26Frontend(t *testing.T) {
 	if parsed := syntax.Parse(first.Canonical); len(parsed.Diagnostics) != 0 || len(parsed.Program.Funcs) != 1 || len(parsed.Program.Funcs[0].Body.Linear.Statements) == 0 {
 		t.Fatalf("scalar syntax did not parse: %+v", parsed.Diagnostics)
 	}
+	operatorSites := 0
+	for _, token := range syntax.Parse(first.Canonical).Tree.Tokens {
+		if token.Kind != syntax.TokenPlus && token.Kind != syntax.TokenLAngle {
+			continue
+		}
+		if token.Span.Start < 0 || token.Span.End > len(first.Canonical) || string(first.Canonical[token.Span.Start:token.Span.End]) != token.Text {
+			t.Errorf("operator %q lost its exact source span: %+v", token.Text, token.Span)
+		}
+		operatorSites++
+	}
+	if operatorSites != 4 {
+		t.Fatalf("scalar source retained %d operator spans, want two less-than and two addition sites", operatorSites)
+	}
 	for _, malformed := range []string{
 		"var = 1",
 		"i = + 1",
@@ -97,6 +110,18 @@ func hasDiagnostic(diagnostics []diagnostic.Diagnostic, code string) bool {
 
 func TestPhase26AppBoundary(t *testing.T) {
 	sourcePath := testsupport.ProjectPath("examples", "sum_to_n.schway")
+	source, err := os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("sum_to_n check diagnostics: %+v", checked.Diagnostics)
+	}
+	zero, err := interp.Run(checked.Program, "main", "0")
+	if err != nil || zero.Outcome.Kind != "returned" || zero.Outcome.Value != "0" {
+		t.Fatalf("zero-iteration interpreter outcome=%+v err=%v, want returned 0", zero.Outcome, err)
+	}
 	artifact := filepath.Join(t.TempDir(), "sum_to_n")
 	_, diagnostics, err := session.BuildApplicationFile(context.Background(), sourcePath, artifact, native.DefaultRunner())
 	if err != nil || len(diagnostics) != 0 {
