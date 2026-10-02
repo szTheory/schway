@@ -2151,7 +2151,7 @@ func TestPhase26CheckedAddC17(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EmitNative: %v", err)
 	}
-	conformance, err := native.DefaultRunner().Run(context.Background(), conformanceC, "-O0", []string{"1"})
+	conformance, err := (native.Runner{Expect: native.ExpectDefect}).Run(context.Background(), conformanceC, "-O0", []string{"1"})
 	if err != nil || len(conformance.Pairs) != 1 {
 		t.Fatalf("conformance run pairs=%d err=%v", len(conformance.Pairs), err)
 	}
