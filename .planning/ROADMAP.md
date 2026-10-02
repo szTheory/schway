@@ -52,7 +52,23 @@ implementation details while preserving the acceptance behavior below.
 4. A loop carrying ownership, a resource, a loan, or loan-derived provenance across its back edge is refused with a stable source-attributed diagnostic. A loop analysis that exceeds its deterministic bound fails closed rather than claiming admission.
 5. The `sum_to_n` result is checked against separately authored expected answers in each engine; a reached wrong-result or skipped-iteration control fails. The accepted input bound is `0 ≤ n ≤ 1,000`; a larger input fails without application output.
 
-**Plans**: TBD
+**Plans**: 5 plans in 4 waves
+**Wave 1**
+
+- [ ] 26-01-PLAN.md
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 26-02-PLAN.md
+- [ ] 26-03-PLAN.md
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 26-04-PLAN.md
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 26-05-PLAN.md
 
 **Runnable witness**: Check in the ordinary `sum_to_n.schway` program and its
 public build/run commands before broadening loop support. Pin the exact
@@ -123,7 +139,7 @@ and new dependencies remain outside M005.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 26. Checked Scalar Sum | 0/TBD | Not started | - |
+| 26. Checked Scalar Sum | 0/5 | Planned    |  |
 | 27. Exact FizzBuzz and Cross-Host Evidence | 0/TBD | Not started | - |
 
 **Coverage:** 9/9 M005 requirements have exactly one phase owner. U64-02's

@@ -4,12 +4,12 @@ milestone: M005
 milestone_name: Practical Computation
 current_phase: 26
 current_phase_name: checked-scalar-sum
-status: planning
-stopped_at: Phase 26 context gathered
-last_updated: "2026-10-02T20:26:22.093Z"
+status: executing
+stopped_at: "Phase 26 planning complete; next command: $gsd-execute-phase 26"
+last_updated: "2026-10-02T20:55:56.951Z"
 last_activity: 2026-10-02
-last_activity_desc: M005 requirements approved and two-phase roadmap prepared
-state_head: f62f27af7f9b5fa4a2a3859245e0e656d5444608
+last_activity_desc: Phase 26 planning complete; five plans ready to execute
+state_head: ddfb5f35d2839e64ed39947e1fb3d8a6bdf8067f
 progress:
   total_phases: 2
   completed_phases: 0
@@ -119,9 +119,9 @@ plans.
 ## Current Position
 
 Phase: 26 (checked-scalar-sum) — READY TO EXECUTE
-Plan: TBD
-Status: Roadmap prepared for approval; Phase 26 planning follows
-Last activity: 2026-10-02 — M005 requirements approved and two-phase roadmap prepared
+Plan: 0 of 5 in current phase
+Status: Ready to execute
+Last activity: 2026-10-02 — Phase 26 planning complete; five plans ready to execute
 Progress: [░░░░░░░░░░] 0%
 
 ## M005 Planning
@@ -132,13 +132,18 @@ U64-02, APP-08, APP-09, EVD-12, and DX-16, delivering FizzBuzz and the complete
 cross-program evidence and documentation contract. The comparison/Bool subset
 needed by `sum_to_n` starts in Phase 26; U64-02 closes only when remainder and
 zero-divisor behavior are present in Phase 27. Every phase has a runnable
-witness. The exact next action after roadmap approval is `$gsd-plan-phase 26`.
+witness. At roadmap approval, the next action was `$gsd-plan-phase 26`; Phase 26
+planning is now complete. The dated handoff below records the current command.
 
 M005 research inspected source and prior receipts but ran no new tests or
 native checks. The M004 Phase 25 dual-host receipt is historical evidence at
 its recorded revision; M005 will need its own macOS/Linux native evidence.
 Resource/loan loop back edges remain refused. Keep the Go standard library,
 existing interpreter, C17/Clang emitter, and application runner.
+
+Planning-complete amendment — 2026-10-02: Phase 26 has five committed plans in
+four waves. After clearing context, run `$gsd-execute-phase 26`. After Phase 26
+execution and verification, continue with `$gsd-discuss-phase 27`.
 
 ## M003 Closeout (archived)
 
@@ -740,12 +745,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-02T19:14:24.185Z
-Stopped at: Phase 26 context gathered
+Last session: 2026-10-02T20:54:09.244Z
+Stopped at: Phase 26 planning complete; next command: $gsd-execute-phase 26
 Resume file: .planning/phases/26-checked-scalar-sum/26-CONTEXT.md
-Next action: Present the Phase 26–27 roadmap for approval. After approval,
-run `$gsd-plan-phase 26`. Phase 25 was the last M004 implementation phase;
-preserve its completed UAT and historical receipts.
+Next action: After clearing context, run $gsd-execute-phase 26; the five committed plans will be loaded. After Phase 26 is executed and verified, run $gsd-discuss-phase 27.
 Routing resolution — 2026-10-02 (current): Phase 25 plans 25-01 through 25-07
 are complete and summarized. Goal-backward verification passes 6/6 must-have
 truths and 5/5 roadmap criteria; `phase complete --phase 25` updated ROADMAP
