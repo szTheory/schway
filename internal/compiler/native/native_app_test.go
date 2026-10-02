@@ -470,6 +470,78 @@ func TestPhase22EvidenceMissingPartialAndCapacityControls(t *testing.T) {
 	})
 }
 
+func TestPhase26FailureChannels(t *testing.T) {
+	sourcePath := testsupport.ProjectPath("examples", "phase26", "checked_add_overflow.schway")
+	source, err := os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("overflow witness parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("overflow witness check diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("overflow witness core validation problems: %+v", validated.Problems)
+	}
+	cSource, err := cgen.EmitApplication(validated.Program())
+	if err != nil {
+		t.Fatalf("EmitApplication: %v", err)
+	}
+	artifact := filepath.Join(t.TempDir(), "checked_add_overflow")
+	if _, err := BuildApplication(context.Background(), source, cSource, artifact); err != nil {
+		t.Fatalf("BuildApplication: %v", err)
+	}
+
+	runner := DefaultRunner()
+	runner.evidenceLimit = 8
+	reportPath := filepath.Join(t.TempDir(), "capacity-report.json")
+	var stdout, stderr bytes.Buffer
+	outcome, report, err := runner.RunApplicationWithEvidence(context.Background(), artifact, "0", reportPath, EvidenceEvents, &stdout, &stderr)
+	var toolError *ToolError
+	if !errors.As(err, &toolError) || toolError.Code != "native.evidence_capacity_exhausted" {
+		t.Fatalf("capacity error=%v, want native.evidence_capacity_exhausted", err)
+	}
+	if outcome.Kind != RunExited || outcome.ExitCode != 0 || report.ProcessOutcome != outcome || report.CaptureStatus != EvidenceStatusCapacityExhausted {
+		t.Fatalf("capacity child outcome=%+v report=%+v; capture exhaustion must retain the successful child outcome", outcome, report)
+	}
+	if stdout.String() != "18446744073709551615\n" || stderr.Len() != 0 {
+		t.Fatalf("capacity path streams stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+
+	artifactCopy := artifact + ".corrupt"
+	artifactBytes, err := os.ReadFile(artifact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	receiptBytes, err := os.ReadFile(applicationReceiptPath(artifact))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(artifactCopy, artifactBytes, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(applicationReceiptPath(artifactCopy), receiptBytes, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(artifactCopy, []byte("corrupted artifact"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	stdout.Reset()
+	stderr.Reset()
+	outcome, err = DefaultRunner().RunApplication(context.Background(), artifactCopy, "1", &stdout, &stderr)
+	if !errors.As(err, &toolError) || toolError.Code != "native.artifact_digest_mismatch" {
+		t.Fatalf("corrupt artifact outcome=%+v err=%v, want native.artifact_digest_mismatch", outcome, err)
+	}
+	if outcome.Kind == RunExited && outcome.ExitCode == 65 {
+		t.Fatalf("corrupt artifact was misclassified as a child overflow: %+v", outcome)
+	}
+}
+
 func TestPhase22EvidenceReportWriteFailurePreservesAppOutcome(t *testing.T) {
 	root := t.TempDir()
 	marker := filepath.Join(root, "launches.txt")
