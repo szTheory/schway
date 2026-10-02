@@ -52,6 +52,21 @@ see the dated provenance amendment below. App build receipts remain
 incomplete/non-cacheable when runtime closure is unknown. M004 is complete;
 M005 now starts the practical-computation horizon at Phase 26.
 
+### Phase 26 discussion — 2026-10-02
+
+The user adopted the specialist fan-out recommendations for Phase 26: use
+function-local mutable `U64`/`Bool` scalars for loop state, a pre-tested
+`while` form and ordinary `if/else` blocks, and only the U64 `<` comparison
+needed by `sum_to_n`. U64 addition uses ordinary infix source spelling with
+checked semantics. Overflow is a program-level non-success at the application
+boundary, with bounded stderr and no stdout; it is not a catchable source-level
+typed error in this phase. Equality and remainder remain Phase 27 work.
+Resource, loan, and loan-derived values remain refused across loop back edges.
+These are accepted planning decisions, not implemented behavior. Current
+source still refuses cyclic CFGs, and no Phase 26 tests or native checks were
+run during this discussion. The existing Go standard library, interpreter,
+and C17/Clang route remain sufficient; no dependency or backend was identified.
+
 The user explicitly requested another deep fan-out and automatic adoption of
 recommendations. The 2026-09-27 decision integrates product/DX, compiler and
 resource architecture, FFI/security, verification, portability, and delivery

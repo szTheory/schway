@@ -131,6 +131,20 @@ boundary for a bounded checksum; (3) admit a bounded JSON configuration reader
 only when a real Schway tool needs it. Keep this order unless a named user
 program shows that another smaller, safe runnable slice has greater value.
 
+### Phase 26 discussion amendment — 2026-10-02
+
+The user adopted the Phase 26 specialist recommendations: mutable local
+`U64`/`Bool` scalar state, pre-tested `while`, `if/else` blocks, and only `<`
+for the sum witness. U64 addition is checked; overflow maps to a program-level
+application failure with bounded stderr and no stdout, rather than a
+source-catchable typed error. Equality and remainder stay with Phase 27. These
+are planning decisions, not implemented capability or new execution evidence.
+Source inspection still finds `check.cfg_back_edge` in
+`internal/compiler/check/check.go`, `TestBackEdgeRejected` in
+`internal/compiler/check/check_test.go`, and the refused checksum frontier in
+`TestPhase20ChecksumFrontier`. No project checks were run for this discussion;
+M004 hosted receipts remain historical and do not prove M005 semantics.
+
 ### Phase 24 closeout amendment — 2026-10-01
 
 Source inspection confirms that `examples/phase24/transfer.schway` and
