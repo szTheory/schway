@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: M005
 milestone_name: Practical Computation
 current_phase: 26
-current_phase_name: checked-scalar-sum
+current_phase_name: Checked Scalar Sum
 status: executing
-stopped_at: "Phase 26 planning complete; next command: $gsd-execute-phase 26"
-last_updated: "2026-10-02T20:55:56.951Z"
+stopped_at: Completed 26-01-PLAN.md
+last_updated: "2026-10-02T22:47:37.762Z"
 last_activity: 2026-10-02
-last_activity_desc: Phase 26 planning complete; five plans ready to execute
-state_head: ddfb5f35d2839e64ed39947e1fb3d8a6bdf8067f
+last_activity_desc: Phase 26 execution started
+state_head: b2034083c2274a2d1d301394def0835047dd5eda
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 5
-  completed_plans: 0
+  completed_plans: 1
 ---
 
 <!-- schway-current:start -->
@@ -55,7 +55,7 @@ See: .planning/PROJECT.md (updated 2026-10-02)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** M005 Practical Computation — Phase 26 checked scalar sum, then Phase 27 exact FizzBuzz and dual-host evidence
+**Current focus:** Phase 26 — Checked Scalar Sum
 
 **Checkout location (2026-10-01):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. Its branch remains
@@ -118,10 +118,10 @@ plans.
 
 ## Current Position
 
-Phase: 26 (checked-scalar-sum) — READY TO EXECUTE
-Plan: 0 of 5 in current phase
+Phase: 26 (Checked Scalar Sum) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-10-02 — Phase 26 planning complete; five plans ready to execute
+Last activity: 2026-10-02 — Phase 26 execution started
 Progress: [░░░░░░░░░░] 0%
 
 ## M005 Planning
@@ -444,6 +444,7 @@ subset alone.
 | Phase 25 P4 | 52min | 2 tasks | 10 files |
 | Phase 25 P05 | 219m | 1 tasks | 10 files |
 | Phase 25 P07 | 7min | 2 tasks | 5 files |
+| Phase 26 P1 | 100min | 2 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -543,6 +544,8 @@ decision history; they no longer describe current status.
 - [Phase 25]: Malformed pointer-lowering candidates fail before serialization, while PublicOrigin borrowed views retain their additive path and Match callback candidates remain refusal-eligible.
 - [Phase 25]: Run 36971855722 closes EVD-10 through paired native Linux/x86_64 and macOS/arm64 evidence aggregates at merge revision a90c27c5b432ef6fc59fbafaa68b50a1374ae138.
 - [Phase 25]: Preserve SECURED / ASVS L1, 15/15 mitigations closed, and zero open threats; hosted evidence supplements rather than expands the security audit.
+- [Phase 26]: Phase 26 scalar loop admission uses bounded, independently derived U64/Bool fixed-point analyses; authority-bearing values remain refused across back edges.
+- [Phase 26]: The acyclic path oracle remains separate from scalar loop proof; focused Phase 26 regression evidence runs hosted on Linux and macOS.
 
 ### Pending Todos
 
@@ -745,9 +748,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-02T20:54:09.244Z
-Stopped at: Phase 26 planning complete; next command: $gsd-execute-phase 26
-Resume file: .planning/phases/26-checked-scalar-sum/26-CONTEXT.md
+Last session: 2026-10-02T22:47:37.748Z
+Stopped at: Completed 26-01-PLAN.md
+Resume file: None
 Next action: After clearing context, run $gsd-execute-phase 26; the five committed plans will be loaded. After Phase 26 is executed and verified, run $gsd-discuss-phase 27.
 Routing resolution — 2026-10-02 (current): Phase 25 plans 25-01 through 25-07
 are complete and summarized. Goal-backward verification passes 6/6 must-have
