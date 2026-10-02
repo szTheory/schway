@@ -3101,7 +3101,7 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 		}
 		lastOpID := block.OperationIDs[len(block.OperationIDs)-1]
 		lastOperation := operationsByID[lastOpID]
-		if lastOperation.Kind == core.OpBranch || lastOperation.Kind == core.OpForeignCall || (lastOperation.Kind == core.OpCall && lastOperation.OkEdgeID != "" && lastOperation.ErrEdgeID != "") {
+		if lastOperation.Kind == core.OpBranch || lastOperation.Kind == core.OpForeignCall || (lastOperation.Kind == core.OpCall && lastOperation.OkEdgeID != "" && lastOperation.ErrEdgeID != "") || (len(block.Successors) > 0 && lastOperation.Kind != core.OpReturn && lastOperation.Kind != core.OpFail && lastOperation.Kind != core.OpDefect) {
 			// A fallible foreign call or function call forks into its declared
 			// successor edges instead of terminating the function (D-04-04 and
 			// Phase 24 typed calls). Only a block whose last operation is an

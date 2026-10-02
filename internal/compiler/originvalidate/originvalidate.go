@@ -198,6 +198,18 @@ func RecomputeOriginPerReturn(function core.Function, calleeContracts map[string
 	if function.Linear == nil || len(function.Linear.Operations) == 0 {
 		return nil
 	}
+	if originHasScalarCFG(function) {
+		if !originScalarFixedPoint(function) {
+			return nil
+		}
+		origins := make([]ReturnOrigin, 0)
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpReturn {
+				origins = append(origins, ReturnOrigin{OperationID: operation.ID, Paths: []string{}, Derived: false})
+			}
+		}
+		return origins
+	}
 	operations := function.Linear.Operations
 	sourceOf := make(map[string]core.LinearOperation, len(operations))
 	sourceIndex := make(map[string]int, len(operations))
@@ -252,6 +264,126 @@ func RecomputeOriginPerReturn(function core.Function, calleeContracts map[string
 		results = append(results, walkReturnOrigin(function, sourceOf, sourceIndex, operationBlock, returnOp, returnIndex, returnBlock, branch, calleeContracts))
 	}
 	return results
+}
+
+type originScalarState map[string]bool
+
+func originHasScalarCFG(function core.Function) bool {
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
+			return true
+		}
+	}
+	return false
+}
+
+func originScalarFixedPoint(function core.Function) bool {
+	linear := function.Linear
+	types := make(map[string]string, len(linear.Types))
+	for _, fact := range linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	for _, place := range linear.Places {
+		if types[place.TypeID] != "U64" && types[place.TypeID] != "Bool" {
+			return false
+		}
+	}
+	blocks := append([]core.Block(nil), linear.Blocks...)
+	sort.Slice(blocks, func(i, j int) bool { return blocks[i].ID < blocks[j].ID })
+	operations := make(map[string]core.LinearOperation, len(linear.Operations))
+	for _, operation := range linear.Operations {
+		operations[operation.ID] = operation
+	}
+	outputs := map[string]originScalarState{}
+	reachable := map[string]bool{}
+	work := 0
+	const budget = 65536
+	for sweep := 0; ; sweep++ {
+		changed := false
+		for _, block := range blocks {
+			incoming := originScalarState{}
+			hasIncoming := false
+			if block.PointID == function.EntryPointID {
+				incoming[function.Parameter.ID] = true
+				hasIncoming = true
+			}
+			for _, edge := range linear.Edges {
+				if edge.ToBlockID != block.ID || !reachable[edge.FromBlockID] {
+					continue
+				}
+				if !hasIncoming {
+					incoming = cloneOriginScalarState(outputs[edge.FromBlockID])
+					hasIncoming = true
+					continue
+				}
+				for _, place := range linear.Places {
+					incoming[place.ID] = incoming[place.ID] && outputs[edge.FromBlockID][place.ID]
+				}
+			}
+			if !hasIncoming {
+				continue
+			}
+			state := cloneOriginScalarState(incoming)
+			for _, id := range block.OperationIDs {
+				work++
+				if work > budget {
+					return false
+				}
+				op := operations[id]
+				switch op.Kind {
+				case core.OpConst:
+					state[op.TargetID] = true
+				case core.OpAddChecked, core.OpLessU64:
+					if !state[op.SourceID] || !state[op.RightID] {
+						return false
+					}
+					state[op.TargetID] = true
+				case core.OpScalarStore:
+					if !state[op.SourceID] {
+						return false
+					}
+					state[op.StoreTargetID] = true
+				case core.OpBranch, core.OpReturn, core.OpDefect:
+					if !state[op.SourceID] {
+						return false
+					}
+				default:
+					return false
+				}
+			}
+			if !reachable[block.ID] || !sameOriginScalarState(outputs[block.ID], state) {
+				outputs[block.ID] = state
+				reachable[block.ID] = true
+				changed = true
+			}
+		}
+		if !changed {
+			return true
+		}
+		if sweep >= budget {
+			return false
+		}
+	}
+}
+
+func cloneOriginScalarState(input originScalarState) originScalarState {
+	clone := make(originScalarState, len(input))
+	for id, initialized := range input {
+		clone[id] = initialized
+	}
+	return clone
+}
+
+func sameOriginScalarState(left, right originScalarState) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for id, initialized := range left {
+		if right[id] != initialized {
+			return false
+		}
+	}
+	return true
 }
 
 // disableOpCallOriginConsultForTest is D-10-08's fault-injection seam for

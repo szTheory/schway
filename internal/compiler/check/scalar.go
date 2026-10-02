@@ -2,6 +2,7 @@ package check
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/szTheory/schway/internal/compiler/ability"
@@ -64,7 +65,153 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 		return core.Function{}, b.diagnostics, b.work
 	}
 	b.linear.Blocks, b.linear.Edges = b.blocks, b.edges
-	return core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: parameter.ID, Name: function.Parameter.Name, Type: "U64"}, ReturnType: "U64", Linear: &b.linear, Span: function.Span}, nil, b.work
+	checked := core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: parameter.ID, Name: function.Parameter.Name, Type: "U64"}, ReturnType: "U64", Linear: &b.linear, Span: function.Span}
+	analysisWork, refusal := checkScalarFixedPoint(checked)
+	b.work += analysisWork
+	if refusal != "" {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(refusal, function.Span, "scalar CFG analysis did not converge or found an uninitialized read")}, b.work
+	}
+	return checked, nil, b.work
+}
+
+type checkerScalarFact struct {
+	initialized bool
+	known       bool
+	boolType    bool
+	u64         uint64
+	boolean     bool
+}
+
+func checkScalarFixedPoint(function core.Function) (int, string) {
+	blocks := append([]core.Block(nil), function.Linear.Blocks...)
+	sort.Slice(blocks, func(i, j int) bool { return blocks[i].ID < blocks[j].ID })
+	ops := make(map[string]core.LinearOperation, len(function.Linear.Operations))
+	for _, operation := range function.Linear.Operations {
+		ops[operation.ID] = operation
+	}
+	types := make(map[string]string, len(function.Linear.Types))
+	for _, fact := range function.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = place
+	}
+	out := map[string]map[string]checkerScalarFact{}
+	reachable := map[string]bool{}
+	work := 0
+	const budget = 65536
+	for sweep := 0; ; sweep++ {
+		changed := false
+		for _, block := range blocks {
+			incoming := map[string]checkerScalarFact{}
+			hasIncoming := false
+			if block.PointID == function.EntryPointID {
+				incoming[function.Parameter.ID] = checkerScalarFact{initialized: true}
+				hasIncoming = true
+			}
+			for _, edge := range function.Linear.Edges {
+				if edge.ToBlockID != block.ID || !reachable[edge.FromBlockID] {
+					continue
+				}
+				if !hasIncoming {
+					incoming = cloneCheckerScalarState(out[edge.FromBlockID])
+					hasIncoming = true
+					continue
+				}
+				for placeID := range places {
+					a, b := incoming[placeID], out[edge.FromBlockID][placeID]
+					merged := checkerScalarFact{initialized: a.initialized && b.initialized, boolType: a.boolType && b.boolType}
+					if merged.initialized && a.known && b.known && a.boolType == b.boolType && a.u64 == b.u64 && a.boolean == b.boolean {
+						merged.known, merged.u64, merged.boolean = true, a.u64, a.boolean
+					}
+					incoming[placeID] = merged
+				}
+			}
+			if !hasIncoming {
+				continue
+			}
+			state := cloneCheckerScalarState(incoming)
+			for _, id := range block.OperationIDs {
+				work++
+				if work > budget {
+					return work, "check.scalar_analysis_limit"
+				}
+				op := ops[id]
+				source := state[op.SourceID]
+				switch op.Kind {
+				case core.OpConst:
+					value, err := strconv.ParseUint(op.ConstU64, 10, 64)
+					if err != nil {
+						return work, "check.scalar_constant_invalid"
+					}
+					state[op.TargetID] = checkerScalarFact{initialized: true, known: true, u64: value}
+				case core.OpAddChecked:
+					right := state[op.RightID]
+					if !source.initialized || !right.initialized {
+						return work, "check.scalar_uninitialized"
+					}
+					fact := checkerScalarFact{initialized: true}
+					if source.known && right.known && ^uint64(0)-source.u64 >= right.u64 {
+						fact.known, fact.u64 = true, source.u64+right.u64
+					}
+					state[op.TargetID] = fact
+				case core.OpLessU64:
+					right := state[op.RightID]
+					if !source.initialized || !right.initialized {
+						return work, "check.scalar_uninitialized"
+					}
+					fact := checkerScalarFact{initialized: true, boolType: true}
+					if source.known && right.known {
+						fact.known, fact.boolean = true, source.u64 < right.u64
+					}
+					state[op.TargetID] = fact
+				case core.OpScalarStore:
+					if !source.initialized {
+						return work, "check.scalar_uninitialized"
+					}
+					state[op.StoreTargetID] = checkerScalarFact{initialized: true, known: source.known, boolType: types[places[op.StoreTargetID].TypeID] == "Bool", u64: source.u64, boolean: source.boolean}
+				case core.OpBranch, core.OpReturn, core.OpDefect:
+					if !source.initialized {
+						return work, "check.scalar_uninitialized"
+					}
+				default:
+					return work, "check.scalar_backedge_authority"
+				}
+			}
+			if !reachable[block.ID] || !equalCheckerScalarState(out[block.ID], state) {
+				out[block.ID] = state
+				reachable[block.ID] = true
+				changed = true
+			}
+		}
+		if !changed {
+			return work, ""
+		}
+		if sweep >= budget {
+			return work, "check.scalar_analysis_limit"
+		}
+	}
+}
+
+func cloneCheckerScalarState(state map[string]checkerScalarFact) map[string]checkerScalarFact {
+	clone := make(map[string]checkerScalarFact, len(state))
+	for id, fact := range state {
+		clone[id] = fact
+	}
+	return clone
+}
+
+func equalCheckerScalarState(left, right map[string]checkerScalarFact) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for id, fact := range left {
+		if right[id] != fact {
+			return false
+		}
+	}
+	return true
 }
 
 func (b *scalarBuilder) addPlace(name, typeName string, mutable bool) core.Place {
