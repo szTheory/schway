@@ -110,7 +110,7 @@ var phase23RequiredExits = map[string]string{
 }
 
 func TestPhase23ContractTransitionsAndEvidenceScopes(t *testing.T) {
-	path := testsupport.ProjectPath(".planning", "phases", "23-live-local-allocation-and-discharge", "23-RESOURCE-DISCHARGE-CONTRACT.json")
+	path := testsupport.ProjectPath(".planning", "milestones", "M004-phases", "23-live-local-allocation-and-discharge", "23-RESOURCE-DISCHARGE-CONTRACT.json")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)

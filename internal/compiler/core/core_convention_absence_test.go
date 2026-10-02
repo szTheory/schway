@@ -44,6 +44,9 @@ var linearOperationExpectedFields = []string{
 	"ID", "PointID", "Kind", "SourceID", "TargetID", "LoanID", "TypeID",
 	"Foreign", "OkEdgeID", "ErrEdgeID", "ErrTargetID", "ReleasesOperationID",
 	"Allocator", "Reason", "CalleeID", "PayloadType", "PayloadTargetID", "ConstU64",
+	// Phase 26 operands, scalar store identity, and Bool successors carry no
+	// per-call convention or ownership override.
+	"RightID", "StoreTargetID", "TrueEdgeID", "FalseEdgeID",
 }
 
 // TestConventionOverrideNotExpressibleInCore is D-09-34/D-09-35's

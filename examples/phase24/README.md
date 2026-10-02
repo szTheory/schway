@@ -70,7 +70,7 @@ while the typed-error case calls neither.
 [`examples/phase24/error.schway`](./error.schway) retain the bounded Phase 24
 owner-transfer examples. The [native observer](../../internal/compiler/native/phase24_observer_test.go)
 checks actual host IO and physical cleanup from generated C, including matching
-allocation/use/release on the typed-error path. The [hosted receipt for run 36856048690](../../.planning/phases/24-ownership-transfer-through-calls-and-errors/24-VALIDATION.md)
+allocation/use/release on the typed-error path. The [hosted receipt for run 36856048690](../../.planning/milestones/M004-phases/24-ownership-transfer-through-calls-and-errors/24-VALIDATION.md)
 records the two-host validation of that observer. Deterministic interpreter replay remains model-only:
 it does not claim actual host IO or physical cleanup. Historical Phase 23
 receipts remain separately identified and do not substitute for Phase 24 or

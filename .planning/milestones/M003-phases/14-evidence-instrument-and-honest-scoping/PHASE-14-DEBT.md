@@ -1897,7 +1897,7 @@ its current equivalent without rewriting the validation or research record.
 first-recorded: M004
 
 ```reconciliation
-file: .planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md
+file: .planning/milestones/M004-phases/23-live-local-allocation-and-discharge/23-VALIDATION.md
 line: 40
 command: go test ./cmd/lang ./internal/compiler/native -run '^TestPhase23PublicFileByte' -count=1
 classification: R2
@@ -1911,3 +1911,7 @@ its current equivalent without rewriting the validation or research record.
 
 *Dated amendment: 2026-09-29, Schway public repository preparation.*
 *Register: PHASE-14-DEBT.md*
+
+*Dated amendment: 2026-10-02, M005 Phase 26 integration.* D-14-144's
+document locator now follows M004 archival. Its historical command, line,
+verdict, and replacement remain unchanged.

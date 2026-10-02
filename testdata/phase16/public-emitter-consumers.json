@@ -226,7 +226,7 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/core/core_test.go:Emit:979",
+      "call": "internal/compiler/core/core_test.go:Emit:1006",
       "classification": "admitted-dynamic-schema2"
     },
     {

@@ -191,7 +191,7 @@ func TestPhase25EvidenceIndex(t *testing.T) {
 		}
 	}
 	const observerLink = "[native observer](../../internal/compiler/native/phase24_observer_test.go)"
-	const validationLink = "[hosted receipt for run 36856048690](../../.planning/phases/24-ownership-transfer-through-calls-and-errors/24-VALIDATION.md)"
+	const validationLink = "[hosted receipt for run 36856048690](../../.planning/milestones/M004-phases/24-ownership-transfer-through-calls-and-errors/24-VALIDATION.md)"
 	sectionParts := strings.SplitN(readme, "## Phase 24 transfer and cleanup evidence\n\n", 2)
 	if len(sectionParts) != 2 {
 		t.Fatal("Phase 24 transfer and cleanup evidence section is missing")
@@ -204,7 +204,7 @@ func TestPhase25EvidenceIndex(t *testing.T) {
 	}
 	for _, destination := range []string{
 		"../../internal/compiler/native/phase24_observer_test.go",
-		"../../.planning/phases/24-ownership-transfer-through-calls-and-errors/24-VALIDATION.md",
+		"../../.planning/milestones/M004-phases/24-ownership-transfer-through-calls-and-errors/24-VALIDATION.md",
 	} {
 		resolved := filepath.Clean(filepath.Join(filepath.Dir(readmePath), filepath.FromSlash(destination)))
 		info, err := os.Stat(resolved)
@@ -216,8 +216,8 @@ func TestPhase25EvidenceIndex(t *testing.T) {
 			t.Errorf("Phase 24 evidence link %q resolves to a non-file target", destination)
 		}
 	}
-	validationPath := filepath.Clean(filepath.Join(filepath.Dir(readmePath), "../../.planning/phases/24-ownership-transfer-through-calls-and-errors/24-VALIDATION.md"))
-	validation := string(phase25ReadRepoFile(t, ".planning", "phases", "24-ownership-transfer-through-calls-and-errors", "24-VALIDATION.md"))
+	validationPath := filepath.Clean(filepath.Join(filepath.Dir(readmePath), "../../.planning/milestones/M004-phases/24-ownership-transfer-through-calls-and-errors/24-VALIDATION.md"))
+	validation := string(phase25ReadRepoFile(t, ".planning", "milestones", "M004-phases", "24-ownership-transfer-through-calls-and-errors", "24-VALIDATION.md"))
 	if !strings.Contains(validation, "36856048690") {
 		t.Errorf("Phase 24 validation record %q omits hosted run 36856048690", validationPath)
 	}
