@@ -1,6 +1,6 @@
 # Schway Language Maturity — Current Evidence
 
-**Re-assessed:** 2026-10-01, against current source and Phases 22–25
+**Re-assessed:** 2026-10-02, against current source and Phases 22–25
 artifacts. Phase 22's passed 5/5 report and completed objective README UAT are
 preserved. Phase 23's refreshed 2026-09-30 report passes 5/5 truths and its
 seven plans are complete. Phase 24's verifier passes 5/5 truths with no
@@ -19,7 +19,8 @@ exclusive U64 read-copy helpers; the independent path and origin peers accept
 the exact transfer chain. The emitted pointer manifest carries no unsupported
 alias, `restrict`, `noalias`, capture, alignment, or ownership promise.
 Mutation, forwarding, retention, callbacks, nonlocal exits, wider pointer
-forms, and borrowed-value return bypasses remain refused.
+forms, and borrowed-value return bypasses remain refused. The hosted result
+below closes EVD-10 without widening this implementation boundary.
 
 **Newly executed checks:** `go test -count=1 ./...`, `go vet ./...`,
 `go build ./...`, and `go test -race -count=1 ./...` passed locally on
@@ -68,10 +69,37 @@ Go unit controls, not native host evidence.
 **Historical receipts:** the macOS/arm64 Phase 25 native lanes remain at
 revision `f00cdf8`, and the earlier Phase 23/24 hosted runs remain scoped to
 their own source revisions. This follow-up ran no native evidence script or
-hosted workflow. Linux rows remain incomplete; hosted macOS/Linux family-by-
-lane receipts are still required, so EVD-10 stays open. The three ranked next
-capabilities and their user witnesses, blockers, slices, checker changes,
-evidence/debt, owners, and reprioritization observations are unchanged.
+hosted workflow. Linux rows were incomplete; hosted macOS/Linux family-by-
+lane receipts were still required, so EVD-10 stayed open at the time of that
+follow-up. The three ranked next capabilities and their user witnesses,
+blockers, slices, checker changes, evidence/debt, owners, and reprioritization
+observations are unchanged.
+
+### Phase 25 hosted-evidence closeout amendment — 2026-10-02
+
+**Newly executed hosted checks:** GitHub Actions run `36971855722` tested
+branch head `421b5b94eb867e940a207dfd64d7971dc8198172` at PR merge revision
+`a90c27c5b432ef6fc59fbafaa68b50a1374ae138`. Its `checks` and `current evidence
+aggregate` jobs passed on both native hosts. Checks included vet, build, full
+Go tests, and race tests; the aggregate included the Phase 25 evidence script.
+Linux ran Go `linux/amd64`, target `x86_64-pc-linux-gnu`, Ubuntu Clang 18.1.3;
+macOS ran Go `darwin/arm64`, target `arm64-apple-darwin25.6.0`, Apple Clang 21.
+Foreign, shared, and exclusive each passed baseline `-O0`, optimized `-O2`,
+and ASan+UBSan on both hosts: all 18 host/family/lane rows passed, each with
+expected/actual 65/66 and typed `0x43` use failure before helper calls. Cold
+min/median/max was 9.350/9.540/9.980s (Linux) and 12.470/12.670/12.930s
+(macOS); warm was 0.390/0.490/0.550s and 0.820/1.400/2.130s respectively.
+Single-host script logs mark only the other host absent in that invocation;
+the paired native aggregate supplies its independently run rows.
+
+**Provenance boundary:** this hosted receipt is distinct from source
+inspection, the local macOS Go/native checks at earlier revisions, and
+historical Phase 23/24 receipts. It closes EVD-10 and establishes the current
+Phase 25 matrix. It does not broaden the exact utility-chain admission or its
+refusals: mutation, forwarding, retention, callbacks, nonlocal exits, wider
+pointer shapes, and unsupported alias/alignment/capture/ownership attributes
+remain unclaimed. The 2026-10-02 security assessment remains SECURED, ASVS L1,
+15/15 mitigations closed, with zero open threats.
 
 The next ranked capabilities are Phase 26 scalar computation (`sum_to_n`, then
 FizzBuzz), one bounded checksum consumer with only the byte operations and
@@ -120,7 +148,7 @@ thresholds below reflect the later Phase 23 closeout.
 | Separate application evidence | Capture is a distinct report with disabled/incomplete/complete/capacity states and never claims verification; explicit `app verify` replays isolated inputs against independent expected answers | `native_app.go`, `main.go`; `TestPhase22EvidenceDisabledCompleteAndStreamIsolation`, `TestPhase22AppVerifyIndependentIdentityCases`, `TestPhase22AppVerifyModelOnlyOutcomes` |
 | Live local foreign allocation | A public file-byte path admits only exact acquire/use/release contracts; Schway holds the acquired byte until local release, and an independent physical observer plus negative controls prove malloc → use → matching free → exit | `examples/phase23/file_byte.schway`, `examples/phase23/adapter.c`, `internal/compiler/cgen/cgen_program.go`, `internal/compiler/native/phase23_observer_test.go`, `scripts/verify-phase23.sh`; the focused script passed in hosted Ubuntu/macOS evidence aggregates at `f991298b`; local macOS/Linux-container receipts at `c50430d` are historical |
 | Bounded transfer and typed-error cleanup | The Phase 23 file-byte owner can move through the Phase 24 helper/return path; repeated calls retain distinct identities and the `0x43` typed-error path releases C,B,A exactly once | `examples/phase24/transfer.schway`, `examples/phase24/error.schway`, `internal/compiler/session/session_phase24_model_test.go`, `internal/compiler/native/phase24_observer_test.go`, `scripts/verify-phase24.sh`; hosted CI 36856048690 passes at `ed94ef79` on Linux/x86_64 and Darwin/arm64 |
-| Bounded shared/exclusive pointer successors | The integrated utility calls separate shared and exclusive U64 read-copy helpers; independent straight-line validation rejects incompatible overlap and borrowed-result escape, and command escape diagnostics name the result and borrow origin; only plain pointer shapes are emitted | `examples/phase24/transfer.schway`, `internal/compiler/cgen/cgen_program.go`, `TestPhase25PointerPathLiveOverlap`, `TestPhase25PointerPathBorrowedResultEscape`, `TestPhase25IndependentPeerMutations`, and session source-attribution tests; local Go controls pass, while hosted macOS/Linux native receipts remain required |
+| Bounded shared/exclusive pointer successors | The integrated utility calls separate shared and exclusive U64 read-copy helpers; independent straight-line validation rejects incompatible overlap and borrowed-result escape, and command escape diagnostics name the result and borrow origin; only plain pointer shapes are emitted | `examples/phase24/transfer.schway`, `internal/compiler/cgen/cgen_program.go`, `TestPhase25PointerPathLiveOverlap`, `TestPhase25PointerPathBorrowedResultEscape`, `TestPhase25IndependentPeerMutations`, and session source-attribution tests; local Go controls and hosted run 36971855722 (18/18 native rows) pass |
 | Calls between Schway functions | Multi-function programs run; call-graph cycles remain refused | Phase 11 archive; `testdata/phase07/call_basic.schway`; `session.RunInterpreter` / native path |
 | Returns independent of parameter type | Admitted through the production pipeline | Phase 17 archive and `session_phase17_test.go` |
 | Computed `Result` matches and payload returns | Admitted; this is not unrestricted statement control flow | `session_phase18_payload_test.go`, Phase 18 archive |
@@ -139,7 +167,7 @@ The available compiler is not a general application runtime yet.
 |---|---|---|
 | General caller input and IO | The app route currently accepts one bounded U64 token; it does not provide general file, byte-string, or network IO | `cmd/schway/main.go:runApplicationRun`, Phase 22 CLI tests |
 | Legacy differential run route | `schway run --engine=native` remains a conformance harness with synthesized inputs and O0/O3 comparison; effectful application code must use `schway app run` | `session.go:runNative`, `cmd/schway/main.go` |
-| Schway foreign operations and pointer parameters | Phases 23–24 admit only the exact file-byte acquire/use/release and bounded transfer/error shapes. Phase 25 admits shared/exclusive U64 read-copy helpers only in its exact utility chain; other foreign-call shapes and broader pointer bodies remain structurally refused | `internal/compiler/cgen/cgen_program.go`, `TestPhase23OperationContract`, `TestPhase25ExclusivePointerRefusal`, `TestPhase25PointerPathLiveOverlap`, `TestPhase25PointerPathBorrowedResultEscape`, `TestPhase25EscapeDiagnosticSourceAttribution`, and peer mutation controls; hosted family receipts remain pending |
+| Schway foreign operations and pointer parameters | Phases 23–24 admit only the exact file-byte acquire/use/release and bounded transfer/error shapes. Phase 25 admits shared/exclusive U64 read-copy helpers only in its exact utility chain; other foreign-call shapes and broader pointer bodies remain structurally refused | `internal/compiler/cgen/cgen_program.go`, `TestPhase23OperationContract`, `TestPhase25ExclusivePointerRefusal`, `TestPhase25PointerPathLiveOverlap`, `TestPhase25PointerPathBorrowedResultEscape`, `TestPhase25EscapeDiagnosticSourceAttribution`, and peer mutation controls; hosted run 36971855722 passes all 18 family/host/lane rows |
 | Host build closure | Known source/header/compiler/target inputs are identity-bound, but the SDK/linker/runtime closure is incomplete; app artifacts are not cacheable | `native/bindings.go`, `examples/phase22/BINDINGS.md`, Phase 22 build receipts |
 | Schway-owned physical cleanup | A bounded owner stays live through helper use and is released exactly once on normal and typed-error paths; general cleanup shapes, fallible destructors, and nonlocal exits remain unadmitted. The C adapter owns file descriptors and frees partial buffers on acquisition failures | `examples/phase24/error.schway`, `examples/phase24/README.md`, `internal/compiler/native/phase24_observer_test.go`, `scripts/verify-phase24.sh`; hosted CI 36856048690 |
 | Arithmetic/comparison and scalar iteration | Cannot add, compute remainder, loop, or write FizzBuzz | syntax/core operation inventory; `pathoracle` rejects CFG cycles |

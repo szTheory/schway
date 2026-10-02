@@ -1,6 +1,6 @@
 # Schway — Living Product Roadmap
 
-Updated 2026-10-01. This document carries current direction; ROADMAP.md owns
+Updated 2026-10-02. This document carries current direction; ROADMAP.md owns
 committed milestone phases, REQUIREMENTS.md owns acceptance, and
 LANGUAGE-MATURITY.md records demonstrated capability. Historical milestone
 forecasts and evidence remain in their archives.
@@ -47,10 +47,10 @@ macOS Darwin/arm64 at source SHA
 were run for closeout. Remaining M004 work is the bounded shared/exclusive
 read-copy pointer families and the integrated utility in Phase 25. Phase 25's
 exact shared/exclusive U64 read-copy helpers and integrated utility are now
-present in source; focused local native receipts are recorded below. Hosted
-macOS/Linux Phase 25 family-by-lane receipts remain pending, so EVD-10 and
-phase acceptance stay open until both native aggregates report them. App build
-receipts remain incomplete/non-cacheable when runtime closure is unknown.
+present in source, with focused local checks and hosted dual-host evidence.
+Hosted run 36971855722 passes all 18 family/host/lane rows and closes EVD-10;
+see the dated provenance amendment below. App build receipts remain
+incomplete/non-cacheable when runtime closure is unknown.
 
 The user explicitly requested another deep fan-out and automatic adoption of
 recommendations. The 2026-09-27 decision integrates product/DX, compiler and
@@ -61,7 +61,7 @@ reviews. Research and dissent: [M004 research](research/M004/SUMMARY.md).
 
 | Horizon | User-visible result | Dependencies and scope | Exit observation |
 |---|---|---|---|
-| **Now: M004** | Complete bounded shared/exclusive read-copy pointer families and a reproducible utility | Phases 22–24 are complete. Phase 25 source admits exact U64 read-copy helpers and the utility; focused local native witnesses exist. Hosted Phase 25 receipts are still required | Existing dual-host CI records each family on macOS/Linux at baseline, optimized, and sanitizer lanes; the documented utility returns 65/66 and preserves typed 0x43 failure ordering |
+| **Now: M004** | Complete bounded shared/exclusive read-copy pointer families and a reproducible utility | Phases 22–25 are complete; Phase 25's exact U64 read-copy helpers and utility have local and hosted evidence | Run 36971855722 passed each family on native Linux/x86_64 and macOS/arm64 at baseline, optimized, and sanitizer lanes; utility returns 65/66 and preserves typed 0x43 failure ordering |
 | **Next milestone: practical computation** | `sum_to_n`, then FizzBuzz from ordinary source | Defined U64 arithmetic/remainder and overflow, comparison/Bool, continuation control flow, scalar loops, fixed text/byte literals, bounded writes and decimal formatting | Public command produces exact expected FizzBuzz output; boundary/error cases and changed-assumption checker controls pass |
 | **Mid term: reusable libraries** | Small byte/file utilities and checksum; a reusable bounded JSON parser/serializer | Arity-N and small aggregates as consumers require, explicit byte views/lengths/indexing, fallible APIs, local modules, explicit resource transfer | Second consumer imports a library without copying it; malformed/truncated/oversized input has specified behavior |
 | **Mid term: network branch** | A bounded HTTP client or server for a selected use case | Explicit sockets/timeouts/body/framing/error ownership; audited C/OS adapter or dependency; cleanup on every admitted outcome | One documented real endpoint flow plus adversarial protocol cases; TLS policy specified when needed |
@@ -104,7 +104,7 @@ engine agreement alone cannot prove correctness.
 | Real application IO | Entry inputs, ordinary IO/exit versus evidence; side effects | Phase 22's automated tests establish bounded U64 input, one native launch, ordinary streams, separate evidence capture, and explicit independent replay; `TestPhase22READMEContract` pins public forms and limits; general file IO remains unimplemented | Phase 22 closed; extend only for a concrete consumer |
 | Live owned allocation | Acquisition-based obligation conservation; per-operation ABI/destructor; noncopyability | Omitted physical destructor with unchanged events must fail; discard must not erase obligation | M004 acquisition/discharge phase |
 | Transfer/calls/errors | Owner and resource identity across frames; reverse completion order; failed acquisition | Phase 24's ordinary success and typed-error apps, distinct activations, acquisition-derived peers, and physical observer passed on both hosted hosts; general cleanup shapes remain refused | Phase 24 complete; extend only for a selected broader cleanup consumer |
-| Shared/exclusive pointer access | Borrow endpoints, independent straight-line overlap/escape refusal, source-attributed escape diagnostics, actual C ABI and emitted attributes | `TestPhase25PointerPathLiveOverlap`, `TestPhase25PointerPathBorrowedResultEscape`, `TestPhase25IndependentPeerMutations`, and command/diagnostic attribution checks pass locally; hosted macOS/Linux receipts remain required. No unsupported alias/alignment/capture promises | Phase 25 evidence aggregate; keep NAT-11/12/13 and EVD-10 open until hosted receipts are bound |
+| Shared/exclusive pointer access | Borrow endpoints, independent straight-line overlap/escape refusal, source-attributed escape diagnostics, actual C ABI and emitted attributes | `TestPhase25PointerPathLiveOverlap`, `TestPhase25PointerPathBorrowedResultEscape`, `TestPhase25IndependentPeerMutations`, and command/diagnostic attribution checks pass locally; hosted run 36971855722 passes 18/18 rows. No unsupported alias/alignment/capture promises | Phase 25 complete; preserve the existing refusal frontier and use hosted evidence aggregate for regression |
 | Arithmetic and Bool | Typed operators; overflow/divide/remainder rules and C definedness | Boundary expected values, wrong-result controls, interpreter/native agreement; no reliance on C undefined behavior | Following practical-computation milestone |
 | Scalar CFG back edges | Fixed-point state/loans, dynamic occurrence identity, finite oracle exploration | Loop spike before planning; separate application semantics from evidence-budget exhaustion; reject unproved resource/loan carries | Following practical-computation milestone |
 | Byte views/indexing/aggregates | Bounds, initialization, subobject layout/ownership and error paths | Empty/one/max/truncated cases; out-of-bounds controls; only admitted moves/copies | Byte-library capability |
@@ -246,8 +246,29 @@ function/return identity for source projection. Newly executed local tests
 `TestPhase25EscapeDiagnosticFunctionIdentity` pass, along with the retained
 conflict/schema/boundary controls. Historical Phase 25 native results remain
 scoped to source revision `f00cdf8`; this follow-up ran no native or hosted
-matrix. EVD-10 and phase acceptance remain open pending hosted family-by-lane
-receipts.
+matrix. That statement describes the follow-up only and is superseded for
+current status by the hosted evidence amendment below.
+
+**2026-10-02 Phase 25 hosted-evidence closeout.** GitHub Actions run
+`36971855722` tested branch head
+`421b5b94eb867e940a207dfd64d7971dc8198172` at PR merge revision
+`a90c27c5b432ef6fc59fbafaa68b50a1374ae138`. Linux ran Go `linux/amd64` on
+`x86_64-pc-linux-gnu` with Ubuntu Clang 18.1.3; macOS ran Go `darwin/arm64` on
+`arm64-apple-darwin25.6.0` with Apple Clang 21. On each host, foreign, shared,
+and exclusive families each passed baseline `-O0`, optimized `-O2`, and
+ASan+UBSan: 18/18 distinct native rows. Every row returned expected/actual
+65/66 and the typed `0x43` use error before either helper. The `checks` and
+`current evidence aggregate` jobs passed on both hosts; checks included vet,
+build, full Go tests, and race tests. Cold min/median/max feedback was
+9.350/9.540/9.980s on Linux and 12.470/12.670/12.930s on macOS; warm was
+0.390/0.490/0.550s and 0.820/1.400/2.130s respectively. A single-host script's
+absent-other-host rows describe that invocation only; the paired native job
+passed the other host's rows. This is newly executed hosted evidence, distinct
+from source inspection, local macOS checks, and historical receipts. EVD-10 is
+closed. The admitted pointer behavior remains bounded to read/copy helpers in
+the exact utility chain, with independent borrow overlap and escape refusal;
+mutation, forwarding, retention, callbacks, nonlocal exits, wider shapes, and
+unsupported attributes remain refused.
 
 **2026-09-30 Phase 23 closeout amendment.** Phase 22's verifier passes 5/5
 roadmap truths and its completed objective README UAT is preserved. Phase 23's
