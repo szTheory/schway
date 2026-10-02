@@ -49,7 +49,7 @@ costs.
 
 ## Verification Operating Preference
 
-Define acceptance checks while planning, then choose the lowest reachable evidence layer that proves each claim: unit, seam, integration, end-to-end, or smoke checks, with negative controls and failure-path cases where relevant. Automate deterministic claims instead of handing them to a user for UAT. Put fast, stable checks into existing CI when their regression value exceeds their runtime and maintenance cost. Keep human handoff for irreducibly subjective judgment, real external systems or devices, and user-owned access or authority.
+Turn acceptance criteria into early deterministic checks at the lowest layer that proves each claim: unit, seam, smoke, integration, or end-to-end checks, with relevant failure controls. Put a check in recurring CI when its regression value justifies its runtime and maintenance cost. Aim for zero human UAT when automated evidence covers the criteria; hand off only genuinely subjective, external, or user-authority properties that lack repeatable proxies. Prefer standard-library and local code, with no new dependency by default.
 
 This preference does not waive mandatory workflow gates, required user authorization, or acceptance decisions explicitly designated as human-only. Future phase plans must name the concrete verification commands that prove their acceptance criteria and arrange for high-value recurring checks to run in existing CI.
 

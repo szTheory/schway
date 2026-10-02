@@ -5,9 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -181,12 +183,80 @@ func TestPhase25EvidenceScript(t *testing.T) {
 }
 
 func TestPhase25EvidenceIndex(t *testing.T) {
+	readmePath := filepath.Join(testsupport.ProjectPath(), "examples", "phase24", "README.md")
 	readme := string(phase25ReadRepoFile(t, "examples", "phase24", "README.md"))
 	for _, want := range []string{"transfer.schway", "file_byte.bindings.json", "0x41", "65", "0x42", "66", "0x43", "UseError.UnsupportedByte", "scripts/verify-phase25.sh", "shared", "exclusive", "Linux", "macOS", "ASan+UBSan"} {
 		if !strings.Contains(readme, want) {
 			t.Errorf("Phase 24/25 README evidence index omits %q", want)
 		}
 	}
+	if err := phase25CheckEvidenceIndexLinks(readme, filepath.Dir(readmePath)); err != nil {
+		t.Fatalf("Phase 24/25 README evidence index links: %v", err)
+	}
+	broken := strings.Replace(readme, "## Evidence index", "## Evidence index\n\n- [missing control](missing-evidence-control.md)", 1)
+	if err := phase25CheckEvidenceIndexLinks(broken, filepath.Dir(readmePath)); err == nil || !strings.Contains(err.Error(), "missing-evidence-control.md") {
+		t.Fatalf("broken-link negative control error = %v; want diagnostic naming missing-evidence-control.md", err)
+	}
+}
+
+var phase25EvidenceLinkPattern = regexp.MustCompile(`\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)`)
+var phase25MarkdownHeadingPattern = regexp.MustCompile(`^#{1,6}\s+`)
+
+func phase25CheckEvidenceIndexLinks(readme, readmeDir string) error {
+	const heading = "## Evidence index"
+	var section strings.Builder
+	inSection := false
+	foundHeading := false
+	for _, line := range strings.Split(readme, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if !foundHeading {
+			if trimmed == heading {
+				foundHeading = true
+				inSection = true
+			}
+			continue
+		}
+		if phase25MarkdownHeadingPattern.MatchString(trimmed) {
+			break
+		}
+		if inSection {
+			section.WriteString(line)
+			section.WriteByte('\n')
+		}
+	}
+	if !foundHeading {
+		return fmt.Errorf("missing %q heading", heading)
+	}
+
+	links := phase25EvidenceLinkPattern.FindAllStringSubmatch(section.String(), -1)
+	localCount := 0
+	for _, match := range links {
+		destination := strings.Trim(match[1], "<>")
+		parsed, err := url.Parse(destination)
+		if err != nil {
+			return fmt.Errorf("invalid link destination %q: %w", destination, err)
+		}
+		if parsed.Scheme != "" || strings.HasPrefix(destination, "//") || destination == "" || strings.HasPrefix(destination, "#") {
+			continue
+		}
+		localCount++
+		filePath := strings.SplitN(destination, "#", 2)[0]
+		if filePath == "" {
+			continue
+		}
+		resolved := filepath.Clean(filepath.Join(readmeDir, filepath.FromSlash(filePath)))
+		info, err := os.Stat(resolved)
+		if err != nil {
+			return fmt.Errorf("local link %q does not resolve to a file: %w", destination, err)
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("local link %q resolves to a non-file target", destination)
+		}
+	}
+	if localCount == 0 {
+		return fmt.Errorf("%q contains no local file links", heading)
+	}
+	return nil
 }
 
 func TestPhase25LivingRoadmap(t *testing.T) {
