@@ -1373,7 +1373,7 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 		}
 	}
 	if len(linear.Blocks) > 0 || len(linear.Edges) > 0 {
-		if !v.blocksAndEdges(function, operationIDs) {
+		if !v.blocksAndEdges(function, operationIDs, types, places) {
 			return nil, nil, false
 		}
 	}
@@ -1961,7 +1961,7 @@ func localOwnerLifecycleValid(function *core.Function) bool {
 // This is deliberately the same "unique + referential closure" shape as
 // every other ordinal-bearing slice in this file (types/places/operations),
 // applied to the two new slices T-03-01/T-03-04 introduce.
-func (v *validator) blocksAndEdges(function *core.Function, operationIDs map[string]struct{}) bool {
+func (v *validator) blocksAndEdges(function *core.Function, operationIDs map[string]struct{}, types map[string]core.TypeFact, places map[string]core.Place) bool {
 	linear := function.Linear
 	blockIDs := make(map[string]struct{}, len(linear.Blocks))
 	claimedOperations := make(map[string]struct{}, len(linear.Operations))
@@ -2085,7 +2085,7 @@ func (v *validator) blocksAndEdges(function *core.Function, operationIDs map[str
 			}
 		}
 	}
-	return true
+	return v.validateScalarFixedPoint(function, types, places)
 }
 
 // loanChainIndex is corevalidate's own place-provenance bookkeeping: for
@@ -4239,6 +4239,154 @@ func hasScalarCFG(function *core.Function) bool {
 		}
 	}
 	return false
+}
+
+type scalarAbstractValue struct {
+	initialized bool
+	known       bool
+	isBool      bool
+	u64         uint64
+	boolean     bool
+}
+
+func (v *validator) validateScalarFixedPoint(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) bool {
+	if !hasScalarCFG(function) {
+		return true
+	}
+	linear := function.Linear
+	for _, place := range linear.Places {
+		constructor := types[place.TypeID].Shape.Constructor
+		if !v.check(constructor == "U64" || constructor == "Bool", "core.scalar_backedge_authority", place.ID) {
+			return false
+		}
+	}
+	blocks := append([]core.Block(nil), linear.Blocks...)
+	sort.Slice(blocks, func(i, j int) bool { return blocks[i].ID < blocks[j].ID })
+	operations := make(map[string]core.LinearOperation, len(linear.Operations))
+	for _, operation := range linear.Operations {
+		operations[operation.ID] = operation
+	}
+	out := make(map[string]map[string]scalarAbstractValue, len(blocks))
+	reachable := make(map[string]bool, len(blocks))
+	const transferLimit = 65536
+	transfers := 0
+	for sweep := 0; ; sweep++ {
+		changed := false
+		for _, block := range blocks {
+			incoming := map[string]scalarAbstractValue{}
+			knownIncoming := false
+			if block.PointID == function.EntryPointID {
+				incoming[function.Parameter.ID] = scalarAbstractValue{initialized: true, isBool: false}
+				knownIncoming = true
+			}
+			for _, edge := range linear.Edges {
+				if edge.ToBlockID != block.ID || !reachable[edge.FromBlockID] {
+					continue
+				}
+				if !knownIncoming {
+					incoming = cloneScalarState(out[edge.FromBlockID])
+					knownIncoming = true
+					continue
+				}
+				incoming = mergeScalarState(incoming, out[edge.FromBlockID], places)
+			}
+			if !knownIncoming {
+				continue
+			}
+			state := cloneScalarState(incoming)
+			for _, operationID := range block.OperationIDs {
+				transfers++
+				if transfers > transferLimit {
+					return v.check(false, "core.scalar_analysis_limit", function.ID)
+				}
+				operation := operations[operationID]
+				source := state[operation.SourceID]
+				switch operation.Kind {
+				case core.OpConst:
+					value, err := strconv.ParseUint(operation.ConstU64, 10, 64)
+					if err != nil {
+						return v.check(false, "core.scalar_constant_invalid", operation.ID)
+					}
+					state[operation.TargetID] = scalarAbstractValue{initialized: true, known: true, u64: value}
+				case core.OpAddChecked:
+					right := state[operation.RightID]
+					if !v.check(source.initialized && right.initialized, "core.place_uninitialized", operation.ID) {
+						return false
+					}
+					value := scalarAbstractValue{initialized: true}
+					if source.known && right.known && ^uint64(0)-source.u64 >= right.u64 {
+						value.known, value.u64 = true, source.u64+right.u64
+					}
+					state[operation.TargetID] = value
+				case core.OpLessU64:
+					right := state[operation.RightID]
+					if !v.check(source.initialized && right.initialized, "core.place_uninitialized", operation.ID) {
+						return false
+					}
+					value := scalarAbstractValue{initialized: true, isBool: true}
+					if source.known && right.known {
+						value.known, value.boolean = true, source.u64 < right.u64
+					}
+					state[operation.TargetID] = value
+				case core.OpScalarStore:
+					if !v.check(source.initialized, "core.place_uninitialized", operation.ID) {
+						return false
+					}
+					state[operation.StoreTargetID] = scalarAbstractValue{initialized: true, known: source.known, isBool: types[places[operation.StoreTargetID].TypeID].Shape.Constructor == "Bool", u64: source.u64, boolean: source.boolean}
+				case core.OpBranch, core.OpReturn, core.OpDefect:
+					if !v.check(source.initialized, "core.place_uninitialized", operation.ID) {
+						return false
+					}
+				default:
+					return v.check(false, "core.scalar_backedge_authority", operation.ID)
+				}
+			}
+			if !reachable[block.ID] || !sameScalarState(out[block.ID], state) {
+				out[block.ID] = state
+				reachable[block.ID] = true
+				changed = true
+			}
+		}
+		if !changed {
+			return true
+		}
+		if sweep >= transferLimit {
+			return v.check(false, "core.scalar_analysis_limit", function.ID)
+		}
+	}
+}
+
+func cloneScalarState(state map[string]scalarAbstractValue) map[string]scalarAbstractValue {
+	clone := make(map[string]scalarAbstractValue, len(state))
+	for id, value := range state {
+		clone[id] = value
+	}
+	return clone
+}
+
+func mergeScalarState(left, right map[string]scalarAbstractValue, places map[string]core.Place) map[string]scalarAbstractValue {
+	merged := make(map[string]scalarAbstractValue, len(places))
+	for id := range places {
+		a, b := left[id], right[id]
+		value := scalarAbstractValue{initialized: a.initialized && b.initialized, isBool: a.isBool && b.isBool}
+		if value.initialized && a.known && b.known && a.isBool == b.isBool && a.u64 == b.u64 && a.boolean == b.boolean {
+			value.known, value.u64, value.boolean = true, a.u64, a.boolean
+		}
+		merged[id] = value
+	}
+	return merged
+}
+
+func sameScalarState(left, right map[string]scalarAbstractValue) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for id, value := range left {
+		if right[id] != value {
+			return false
+		}
+	}
+	return true
 }
 
 func (v *validator) derive(shape core.TypeRef, depth int) ([]core.Ability, []core.AbilityWitness, bool) {
