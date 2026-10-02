@@ -252,35 +252,26 @@ specific changing assumption, executable witness, and decision gate instead.
 **WIP limits.** M003 may not close with more than 5 unowned debt items. Every
 debt item names an owning phase when it is recorded.
 
-## Current Milestone: M004 Native Emission Ownership and Resource Discharge
+## Current Milestone: M005 Practical Computation
 
-**Goal:** A developer can build and run a native program once on real input,
-with a resource acquired in C, owned and used through Schway, and released or
-transferred exactly once according to checked obligations.
+**Goal:** A developer can run ordinary Schway source that sums bounded U64
+input and prints FizzBuzz with defined arithmetic, loop, and output behavior.
 
 **Target features:**
-- An application build/run path with caller-selected bounded input, explicit
-  C build inputs, ordinary output/exit behavior, and separate compiler evidence.
-- One opaque, noncopyable allocation returned live by an audited C adapter;
-  Schway performs its use, ownership transfer, and generated infallible cleanup.
-- Acquisition-derived resource identities and per-operation foreign contracts,
-  with independent checking across calls, normal returns, and typed errors.
-- Bounded shared/exclusive read-copy pointer families through `emitProgram`,
-  no additional alias promises, and family-specific macOS/Linux evidence.
+- Define the admitted U64 arithmetic, comparison, remainder, Bool, and overflow
+  behavior identically for the interpreter and native C17 path.
+- Admit scalar loops with CFG fixed-point analysis; keep resource and loan state
+  across loop back edges refused until independently proved.
+- Run `sum_to_n` through the retained application route with bounded input,
+  exact output, and arithmetic boundary behavior.
+- Print FizzBuzz from ordinary Schway source with bounded text output, backed by
+  independent interpreter/native expected answers and changed-assumption
+  controls.
 
-The first resource consumer reads a bounded byte from a caller-selected file.
-The C adapter owns its internal file descriptor; Schway owns the returned
-allocation. This proves buffer ownership, not Schway-managed file close.
-Release consumes a live obligation; transfer preserves it under a new owner.
-The successor corrects Phase 21's contract-only wording without rewriting its
-historical evidence. The user authorized adopting the second review's
-recommendations automatically on 2026-09-27.
-
-Phase 22 delivered the application/build/evidence boundary (17/17 truths
-verified and objective README contract UAT passed). Subjective README
-readability is not claimed. Resource acquisition,
-Schway-directed use and physical cleanup, interprocedural transfer/error behavior,
-and the bounded pointer families remain the active M004 work.
+M004 is complete through Phase 25, including application execution, live
+allocation ownership and discharge, transfer across calls and typed errors, and
+the separate bounded shared/exclusive pointer successors. Its hosted receipts
+remain scoped to their recorded revisions; M005 adds no new resource claim.
 
 ## Milestone Arc
 
@@ -289,12 +280,11 @@ capability order. The M003-era M004–M006 forecast is superseded prospectively:
 
 | Horizon | Capability | Promotion gate |
 |---|---|---|
-| Current M004 | Real native application execution and bounded resource ownership | Real external input, physical cleanup evidence, explicit family admission |
-| Following milestone | Arithmetic/comparison, scalar iteration, minimal output; `sum_to_n` and FizzBuzz | Decide cycle analysis, dynamic event identity, and bounded evidence before loop planning |
+| Current M005 | Defined scalar computation and loops; `sum_to_n` followed by FizzBuzz | Admit defined arithmetic and scalar loop state with independent interpreter/native evidence; keep resource and loan carries refused |
 | Mid term | Reusable byte-oriented libraries, arity-N/aggregates as needed, local modules, bounded JSON; HTTP as a separate branch | A consumer needs each abstraction; untrusted byte/error/resource behavior is specified |
 | Long term | Separate compilation/contracts, ecosystem, richer generics/effects/concurrency | Concrete clients and measured limits justify the added semantic surface |
 
-`examples/checksum.lang` remains a refused integration target. Its syntax is
+`examples/checksum.schway` remains a refused integration target. Its syntax is
 provisional; advancing its first diagnostic alone does not establish a usable
 program. Small runnable witnesses precede it. D-12-43 already became
 constructible in Phase 18; aggregates are not its reopening gate. DX-06 remains
@@ -395,21 +385,22 @@ milestone number.
 
 ### Active
 
-- [ ] Keep a real foreign allocation live across Schway acquisition, use, transfer,
-  and generated cleanup on normal and typed-error exits.
-- [ ] Admit bounded shared/exclusive pointer shapes only with their own proof;
-  reconcile D-16-11, D-16-12, and D-16-13 against exact successor requirements.
-- [ ] Deliver a documented file/byte utility and physical cleanup controls on
-  the admitted macOS/Linux lanes.
+- [ ] Define U64 arithmetic, comparison, remainder, Bool, and overflow behavior
+  so interpreter and native execution agree at boundary cases.
+- [ ] Admit scalar loops through CFG fixed-point analysis and independently
+  preserve the current resource/loan refusal boundary across back edges.
+- [ ] Run bounded-input `sum_to_n` and FizzBuzz through ordinary Schway source
+  with exact expected outputs and bounded text/decimal output.
+- [ ] Exercise wrong-result, arithmetic-boundary, loop-state, and changed-
+  assumption controls with independent interpreter/native answers.
 
 Atomic IDs and acceptance live in [REQUIREMENTS.md](REQUIREMENTS.md); phase
-ownership lives in [ROADMAP.md](ROADMAP.md). Phase 21 remains completed prework.
+ownership lives in [ROADMAP.md](ROADMAP.md). M004 is archived completed work.
 
 ### Deferred — Named Landing, Not Dropped
 
-- Arithmetic and scalar loops → the following practical-program milestone;
-  cycle analysis and event identity are explicit preconditions for loops.
-- Arity-N, aggregates, local modules → reusable byte-oriented library consumers.
+- Byte views, bounds/indexing, arity-N, aggregates, and local modules → reusable
+  byte-oriented library consumers.
 - DX-06 / B1 blame → the separate-compilation contract boundary (D-13-02b).
 - General strings, recursive data, collections, and generics → promote only
   the minimum needed by a selected library/program. FizzBuzz needs none of them.
@@ -590,4 +581,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-09-27 after Phase 22 completion and Phase 23 routing*
+*Last updated: 2026-10-02 after M005 kickoff*

@@ -44,13 +44,13 @@ replay remains explicit about not proving host IO or physical cleanup. The
 passed the focused aggregate and full/race suites on Ubuntu Linux/x86_64 and
 macOS Darwin/arm64 at source SHA
 `ed94ef7972b25deb85ab90fafbf3403dc31629f5`. No local project tests or scripts
-were run for closeout. Remaining M004 work is the bounded shared/exclusive
-read-copy pointer families and the integrated utility in Phase 25. Phase 25's
-exact shared/exclusive U64 read-copy helpers and integrated utility are now
-present in source, with focused local checks and hosted dual-host evidence.
+were run for closeout. Phase 25 completed the bounded shared/exclusive
+read-copy pointer families and integrated utility, with focused local checks
+and hosted dual-host evidence.
 Hosted run 36971855722 passes all 18 family/host/lane rows and closes EVD-10;
 see the dated provenance amendment below. App build receipts remain
-incomplete/non-cacheable when runtime closure is unknown.
+incomplete/non-cacheable when runtime closure is unknown. M004 is complete;
+M005 now starts the practical-computation horizon at Phase 26.
 
 The user explicitly requested another deep fan-out and automatic adoption of
 recommendations. The 2026-09-27 decision integrates product/DX, compiler and
@@ -61,8 +61,7 @@ reviews. Research and dissent: [M004 research](research/M004/SUMMARY.md).
 
 | Horizon | User-visible result | Dependencies and scope | Exit observation |
 |---|---|---|---|
-| **Now: M004** | Complete bounded shared/exclusive read-copy pointer families and a reproducible utility | Phases 22–25 are complete; Phase 25's exact U64 read-copy helpers and utility have local and hosted evidence | Run 36971855722 passed each family on native Linux/x86_64 and macOS/arm64 at baseline, optimized, and sanitizer lanes; utility returns 65/66 and preserves typed 0x43 failure ordering |
-| **Next milestone: practical computation** | `sum_to_n`, then FizzBuzz from ordinary source | Defined U64 arithmetic/remainder and overflow, comparison/Bool, continuation control flow, scalar loops, fixed text/byte literals, bounded writes and decimal formatting | Public command produces exact expected FizzBuzz output; boundary/error cases and changed-assumption checker controls pass |
+| **Now: M005 practical computation** | `sum_to_n`, then FizzBuzz from ordinary source | Defined U64 arithmetic/remainder and overflow, comparison/Bool, scalar-loop fixed points, fixed text/byte literals, bounded writes and decimal formatting | Public command produces exact expected output; arithmetic boundaries and changed-assumption checker controls pass |
 | **Mid term: reusable libraries** | Small byte/file utilities and checksum; a reusable bounded JSON parser/serializer | Arity-N and small aggregates as consumers require, explicit byte views/lengths/indexing, fallible APIs, local modules, explicit resource transfer | Second consumer imports a library without copying it; malformed/truncated/oversized input has specified behavior |
 | **Mid term: network branch** | A bounded HTTP client or server for a selected use case | Explicit sockets/timeouts/body/framing/error ownership; audited C/OS adapter or dependency; cleanup on every admitted outcome | One documented real endpoint flow plus adversarial protocol cases; TLS policy specified when needed |
 | **Long term: production ecosystem** | Larger independently built libraries and real services/tools | Separate compilation/contracts, package/version reproducibility, richer types/generics when justified, effects/concurrency only with resource semantics | Independent consumers and measured limitations justify each expansion |
@@ -74,9 +73,10 @@ stack over making language recursion a prerequisite. A local module system
 need not introduce separately verified binary contracts.
 
 The former M003-era forecast (M004 loops, M005 aggregates, M006 modules) is
-superseded prospectively. The next milestone now targets FizzBuzz; further
-milestone numbers are assigned at kickoff. `examples/checksum.schway` remains
-a provisional integration target; no unsupported syntax is treated as settled.
+superseded prospectively. M005 now targets `sum_to_n` and FizzBuzz, with phase
+numbering continuing at Phase 26. The next milestone will be scoped from a
+named byte-oriented consumer. `examples/checksum.schway` remains a provisional
+integration target; no unsupported syntax is treated as settled.
 
 ## Decisions and alternatives
 
@@ -105,8 +105,8 @@ engine agreement alone cannot prove correctness.
 | Live owned allocation | Acquisition-based obligation conservation; per-operation ABI/destructor; noncopyability | Omitted physical destructor with unchanged events must fail; discard must not erase obligation | M004 acquisition/discharge phase |
 | Transfer/calls/errors | Owner and resource identity across frames; reverse completion order; failed acquisition | Phase 24's ordinary success and typed-error apps, distinct activations, acquisition-derived peers, and physical observer passed on both hosted hosts; general cleanup shapes remain refused | Phase 24 complete; extend only for a selected broader cleanup consumer |
 | Shared/exclusive pointer access | Borrow endpoints, independent straight-line overlap/escape refusal, source-attributed escape diagnostics, actual C ABI and emitted attributes | `TestPhase25PointerPathLiveOverlap`, `TestPhase25PointerPathBorrowedResultEscape`, `TestPhase25IndependentPeerMutations`, and command/diagnostic attribution checks pass locally; hosted run 36971855722 passes 18/18 rows. No unsupported alias/alignment/capture promises | Phase 25 complete; preserve the existing refusal frontier and use hosted evidence aggregate for regression |
-| Arithmetic and Bool | Typed operators; overflow/divide/remainder rules and C definedness | Boundary expected values, wrong-result controls, interpreter/native agreement; no reliance on C undefined behavior | Following practical-computation milestone |
-| Scalar CFG back edges | Fixed-point state/loans, dynamic occurrence identity, finite oracle exploration | Loop spike before planning; separate application semantics from evidence-budget exhaustion; reject unproved resource/loan carries | Following practical-computation milestone |
+| Arithmetic and Bool | Typed operators; overflow/divide/remainder rules and C definedness | Boundary expected values, wrong-result controls, interpreter/native agreement; no reliance on C undefined behavior | M005 Phase 26 |
+| Scalar CFG back edges | Fixed-point state/loans, dynamic occurrence identity, finite oracle exploration | Loop spike before planning; separate application semantics from evidence-budget exhaustion; reject unproved resource/loan carries | M005 Phase 26 |
 | Byte views/indexing/aggregates | Bounds, initialization, subobject layout/ownership and error paths | Empty/one/max/truncated cases; out-of-bounds controls; only admitted moves/copies | Byte-library capability |
 | JSON/HTTP input | Untrusted bytes, limits, framing/encoding, allocation/error cleanup | Malformed input, depth/size budget, split/truncated messages; adversarial cases from selected protocol | Respective library consumer |
 | Separate compilation | User-declared facts not verifiable inside producer; contract compatibility | Real B1 boundary witness before DX-06 closure; modules alone do not establish it | Separate-compilation capability (D-13-02b) |
@@ -119,7 +119,7 @@ roadmap does not promise to prove arbitrary foreign C correct.
 
 ## Current three recommendations
 
-1. **Deliver ordinary scalar computation in Phase 26.** User-visible program:
+1. **Deliver ordinary scalar computation in M005 Phase 26.** User-visible program:
    `sum_to_n`, followed by FizzBuzz from ordinary Schway source with exact
    output and boundary behavior. Current blocker: defined U64 arithmetic and
    remainder/overflow, comparison/Bool, scalar-loop fixed points, and bounded
@@ -130,9 +130,9 @@ roadmap does not promise to prove arbitrary foreign C correct.
    explicit overflow/error semantics, CFG fixed-point state/loan analysis,
    and bounded output effects. Evidence/debt: NAT-09 and current arithmetic,
    CFG, and output refusal witnesses; add independent interpreter/native
-   answers and changed-assumption controls. Owner/next action: Phase 26
-   kickoff after M004 acceptance. Reprioritize if a named consumer demonstrates
-   a smaller safe computation slice with equal runnable value.
+   answers and changed-assumption controls. Owner/next action: M005 requirements
+   and Phase 26 planning. Reprioritize if a named consumer demonstrates a
+   smaller safe computation slice with equal runnable value.
 2. **Build a bounded byte utility and reusable local module boundary.**
    User-visible program: a `checksum` command that reads a size-limited file,
    computes a specified checksum, and returns exact success and error results.
@@ -168,11 +168,10 @@ For each candidate, the smallest complete slice, checker changes, evidence,
 owner/next action, and reprioritize observation determine whether its ranking
 should change.
 
-The next milestone can then deliver `sum_to_n` and FizzBuzz. Its current
-blockers are defined U64 arithmetic/remainder, comparison/Bool, scalar loop
-fixed points, and minimal text/decimal output. Do not pull that work ahead of
-M004 unless a selected consumer or measured safety constraint demonstrates a
-more valuable complete program.
+M005 now targets `sum_to_n` and FizzBuzz. Its blockers remain defined U64
+arithmetic/remainder, comparison/Bool, scalar-loop fixed points, and bounded
+text/decimal output. Keep the first loop slice scalar; revisit that boundary
+when a runnable witness or measured safety constraint requires broader state.
 
 ## Maintaining pace and truth
 
@@ -200,6 +199,16 @@ more valuable complete program.
   The charter may change; record why, successor ownership, and affected claims.
 
 ## Provenance
+
+**2026-10-02 M005 kickoff amendment.** M004 Phase 25 is complete with hosted
+dual-host evidence recorded in the closeout section above. The user accepted
+M005 Practical Computation: caller-run `sum_to_n`, then FizzBuzz, with explicit
+U64 arithmetic/overflow, scalar-loop fixed points, bounded text output, and
+independent interpreter/native evidence. Source inspection at kickoff confirms
+arithmetic is absent and CFG cycles remain refused; the checksum example
+remains a refusal witness. This is a planning transition, not newly executed
+compiler evidence. Keep the dependency tree shallow and add a dependency only
+when a concrete consumer need earns it.
 
 **2026-10-01 Phase 24 closeout amendment.** Phase 24 completes bounded
 PathToken/file-byte owner transfer through a helper and return, distinct

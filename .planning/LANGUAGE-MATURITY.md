@@ -112,6 +112,25 @@ For each candidate, the smallest complete slice, checker changes, evidence,
 owner/next action, and reprioritize observation determine whether its ranking
 should change.
 
+### M005 kickoff — 2026-10-02
+
+The user accepted M005 Practical Computation: run bounded `sum_to_n`, then
+FizzBuzz through ordinary Schway source. Kickoff source inspection confirms
+`check.cfg_back_edge` still refuses cyclic CFGs in
+`internal/compiler/check/check.go`; `examples/checksum.schway` remains a
+provisional refused loop witness pinned by `TestPhase20ChecksumFrontier`
+in `internal/compiler/session/session_phase20_test.go`. U64 support remains
+limited to constants; arithmetic is absent. No project tests or native
+evidence were run for this planning transition. Phase 26 now owns the smallest
+runnable scalar computation slice. Preserve the resource/loan back-edge refusal
+until fixed-point analysis and independent controls justify widening it.
+
+The next recommendations remain: (1) complete M005 practical computation;
+(2) after a named consumer, admit the minimum byte operations and local module
+boundary for a bounded checksum; (3) admit a bounded JSON configuration reader
+only when a real Schway tool needs it. Keep this order unless a named user
+program shows that another smaller, safe runnable slice has greater value.
+
 ### Phase 24 closeout amendment — 2026-10-01
 
 Source inspection confirms that `examples/phase24/transfer.schway` and
@@ -227,7 +246,7 @@ Machine check: `GOCACHE=/tmp/schway-verification-gocache go test ./internal/comp
 
 ## Next useful thresholds
 
-1. **Phase 26 practical computation.** User-visible program: `sum_to_n`, then
+1. **M005 Phase 26 practical computation.** User-visible program: `sum_to_n`, then
    FizzBuzz from ordinary Schway source with exact output and boundary
    behavior. Current blocker: defined U64 arithmetic/remainder and overflow,
    comparison/Bool, scalar-loop fixed points, and bounded text/decimal output
@@ -238,8 +257,8 @@ Machine check: `GOCACHE=/tmp/schway-verification-gocache go test ./internal/comp
    CFG fixed-point state/loan analysis, and bounded output effects.
    Evidence/debt: NAT-09 and current arithmetic/CFG refusal witnesses;
    independent interpreter/native answers and changed-assumption controls.
-   Owner/next action: Phase 26 kickoff after M004 acceptance. Reprioritize if a
-   named consumer demonstrates a smaller safe computation slice with equal
+   Owner/next action: M005 requirements and Phase 26 planning. Reprioritize if
+   a named consumer demonstrates a smaller safe computation slice with equal
    runnable value.
 2. **A bounded byte utility with a reusable local module boundary.**
    User-visible program: a `checksum` command that reads a size-limited file,
@@ -270,9 +289,11 @@ Machine check: `GOCACHE=/tmp/schway-verification-gocache go test ./internal/comp
    after a named Schway tool needs JSON configuration. Reprioritize if a real
    consumer needs another input format or a smaller bounded representation.
 
-After M004, practical computation can target `sum_to_n` and FizzBuzz. Its
-blockers remain defined arithmetic/remainder, comparison/Bool, scalar-loop
-fixed points, and bounded text/decimal output.
+M005 now targets `sum_to_n` and FizzBuzz. Its blockers remain defined
+arithmetic/remainder, comparison/Bool, scalar-loop fixed points, and bounded
+text/decimal output. Keep the first loop slice scalar and revisit that boundary
+only when a runnable witness or measured safety constraint requires broader
+state.
 
 Do not assign percentages to assurance or language completeness: neither has
 a stable denominator. Report runnable witnesses, known refusals, observed

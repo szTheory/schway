@@ -1,21 +1,16 @@
 ---
 gsd_state_version: "1.0"
-milestone: M004
-milestone_name: Goal
-current_phase: 25
-current_plan: Not started
-status: completed
-stopped_at: Phase 25 complete — all phases complete
-last_updated: "2026-10-02T15:59:03.368Z"
+milestone: M005
+milestone_name: Practical Computation
+status: planning
+last_updated: "2026-10-02T17:17:19.165Z"
 last_activity: 2026-10-02
-last_activity_desc: Quick task 261002-gz6 repaired Phase 25 verification commands flagged by the groundedness audit
-state_head: 7a8ed4748e824545025acbd711e540615954fee3
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 20
-  completed_plans: 20
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 <!-- schway-current:start -->
@@ -124,14 +119,10 @@ completed implementation plans.
 
 ## Current Position
 
-Phase: 25
-Current Plan: Not started
-Total Plans in Phase: 7
-Plan: 7 of 7
-Status: All phases complete
-Last activity: 2026-10-02 — Completed quick task 261002-gz6: repair Phase 25 verification commands flagged by groundedness audit
-
-Progress: [██████████] 100%
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-10-02 — Milestone M005 started
 
 ## M003 Closeout (archived)
 
