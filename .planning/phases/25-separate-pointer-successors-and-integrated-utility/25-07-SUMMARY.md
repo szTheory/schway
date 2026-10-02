@@ -80,6 +80,8 @@ Hosted `checks` and `current evidence aggregate` jobs passed on both hosts. Linu
 1. **Task T-25-11: Bind the hosted matrix to Phase 25 validation and security** — `2daa40c` (docs)
 2. **Task T-25-12: Reconcile current product and maturity claims** — `ba1477e` (docs)
 
+**Plan metadata:** `316fa89` (docs: summary, state, roadmap, and requirement bookkeeping)
+
 ## Files Created/Modified
 
 - `.planning/phases/25-separate-pointer-successors-and-integrated-utility/25-VALIDATION.md` — current hosted matrix and EVD-10 sign-off.
