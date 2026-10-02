@@ -1,6 +1,6 @@
 # Schway — Living Product Roadmap
 
-Updated 2026-09-28. This document carries current direction; ROADMAP.md owns
+Updated 2026-10-02. This document carries current direction; ROADMAP.md owns
 committed milestone phases, REQUIREMENTS.md owns acceptance, and
 LANGUAGE-MATURITY.md records demonstrated capability. Historical milestone
 forecasts and evidence remain in their archives.
@@ -17,23 +17,40 @@ M001 established source-to-native behavior; M002 added executable Schway calls;
 M003 added independent returns, computed matches/payloads, and U64 constants.
 Phase 21 completed contract/retirement prework. Phase 22 delivered its
 application/build/evidence implementation and passed objective README contract
-UAT; its refreshed 2026-09-28 verifier report passes 5/5 truths. No subjective
-readability claim or human UAT remains. The separate `lang app build` /
-`lang app run` route retains a native app, accepts a bounded U64 input, starts
+UAT; its refreshed 2026-09-30 verifier report passes 5/5 truths. No subjective
+readability claim or human UAT remains. The separate `schway app build` /
+`schway app run` route retains a native app, accepts a bounded U64 input, starts
 it once, and preserves ordinary streams and process outcomes. Evidence capture
-and explicit differential replay remain separate. The older `lang run` path is
-still the synthetic-input O0/O3 conformance harness.
+and explicit differential replay remain separate. The older `schway run` path
+is still the synthetic-input O0/O3 conformance harness.
 
-Phase 23 now admits a bounded file-byte allocation that remains live through
+Phase 23 admits a bounded file-byte allocation that remains live through
 Schway-directed use and generated local cleanup. Its independent physical
-observer and close-failure control pass in the focused aggregate on macOS and a
-local Linux ARM64 container; the full Go suite passes on macOS, the security
-audit closes 18/18 declared threats, and the standard-depth code review is
-clean. The hosted Ubuntu `evidence-aggregate` CI receipt has not run, so Phase
-23 validation remains `in-progress` and Nyquist remains false as required by
-23-07. The local Linux receipt is not described as hosted CI. Phase 23 does not
-yet admit ownership transfer through Schway calls or typed errors. App build
-receipts remain incomplete/non-cacheable when runtime closure is unknown.
+observer and close-failure controls have historical focused receipts on macOS
+and a local Linux ARM64 container. Hosted run
+[36707529870](https://github.com/szTheory/schway/actions/runs/36707529870)
+passed the Ubuntu/macOS check suites and both evidence aggregates, including
+`scripts/verify-phase23.sh`, at source SHA
+`f991298b29779838a2b1a5c3cd5ac90aafcb84fc`. The refreshed 2026-09-30 verifier
+passes 5/5 truths and Phase 23 is complete. No local project suites or UAT were
+rerun for that refresh; the hosted receipt supplies current behavioral
+evidence, and the phase context requires no human UAT. Phase 24 now admits the
+bounded file-byte owner transfer through Schway calls and returns, repeated
+helper activations, and exactly-once cleanup on normal and typed-error paths.
+Its independent physical observer proves use and destruction, while model
+replay remains explicit about not proving host IO or physical cleanup. The
+2026-10-01 verifier passes 5/5 truths; hosted run
+[36856048690](https://github.com/szTheory/schway/actions/runs/36856048690)
+passed the focused aggregate and full/race suites on Ubuntu Linux/x86_64 and
+macOS Darwin/arm64 at source SHA
+`ed94ef7972b25deb85ab90fafbf3403dc31629f5`. No local project tests or scripts
+were run for closeout. Remaining M004 work is the bounded shared/exclusive
+read-copy pointer families and the integrated utility in Phase 25. Phase 25's
+exact shared/exclusive U64 read-copy helpers and integrated utility are now
+present in source, with focused local checks and hosted dual-host evidence.
+Hosted run 36971855722 passes all 18 family/host/lane rows and closes EVD-10;
+see the dated provenance amendment below. App build receipts remain
+incomplete/non-cacheable when runtime closure is unknown.
 
 The user explicitly requested another deep fan-out and automatic adoption of
 recommendations. The 2026-09-27 decision integrates product/DX, compiler and
@@ -44,7 +61,7 @@ reviews. Research and dissent: [M004 research](research/M004/SUMMARY.md).
 
 | Horizon | User-visible result | Dependencies and scope | Exit observation |
 |---|---|---|---|
-| **Now: M004** | Close the hosted Ubuntu Phase 23 evidence receipt, then transfer the live file-byte owner through calls and typed errors | Phase 23 source behavior, physical cleanup, refusal controls, and local macOS/Linux focused gates pass; its existing Ubuntu CI matrix job has not run from this checkout. Remaining feature work: transfer/error cleanup and bounded shared/exclusive read-copy pointers | Hosted Ubuntu gate passes on the current code; then the owner survives transfer/error paths and is freed once, unsupported shapes fail closed, and pointer-family receipts cover macOS/Linux |
+| **Now: M004** | Complete bounded shared/exclusive read-copy pointer families and a reproducible utility | Phases 22–25 are complete; Phase 25's exact U64 read-copy helpers and utility have local and hosted evidence | Run 36971855722 passed each family on native Linux/x86_64 and macOS/arm64 at baseline, optimized, and sanitizer lanes; utility returns 65/66 and preserves typed 0x43 failure ordering |
 | **Next milestone: practical computation** | `sum_to_n`, then FizzBuzz from ordinary source | Defined U64 arithmetic/remainder and overflow, comparison/Bool, continuation control flow, scalar loops, fixed text/byte literals, bounded writes and decimal formatting | Public command produces exact expected FizzBuzz output; boundary/error cases and changed-assumption checker controls pass |
 | **Mid term: reusable libraries** | Small byte/file utilities and checksum; a reusable bounded JSON parser/serializer | Arity-N and small aggregates as consumers require, explicit byte views/lengths/indexing, fallible APIs, local modules, explicit resource transfer | Second consumer imports a library without copying it; malformed/truncated/oversized input has specified behavior |
 | **Mid term: network branch** | A bounded HTTP client or server for a selected use case | Explicit sockets/timeouts/body/framing/error ownership; audited C/OS adapter or dependency; cleanup on every admitted outcome | One documented real endpoint flow plus adversarial protocol cases; TLS policy specified when needed |
@@ -58,7 +75,7 @@ need not introduce separately verified binary contracts.
 
 The former M003-era forecast (M004 loops, M005 aggregates, M006 modules) is
 superseded prospectively. The next milestone now targets FizzBuzz; further
-milestone numbers are assigned at kickoff. `examples/checksum.lang` remains
+milestone numbers are assigned at kickoff. `examples/checksum.schway` remains
 a provisional integration target; no unsupported syntax is treated as settled.
 
 ## Decisions and alternatives
@@ -86,8 +103,8 @@ engine agreement alone cannot prove correctness.
 |---|---|---|---|
 | Real application IO | Entry inputs, ordinary IO/exit versus evidence; side effects | Phase 22's automated tests establish bounded U64 input, one native launch, ordinary streams, separate evidence capture, and explicit independent replay; `TestPhase22READMEContract` pins public forms and limits; general file IO remains unimplemented | Phase 22 closed; extend only for a concrete consumer |
 | Live owned allocation | Acquisition-based obligation conservation; per-operation ABI/destructor; noncopyability | Omitted physical destructor with unchanged events must fail; discard must not erase obligation | M004 acquisition/discharge phase |
-| Transfer/calls/errors | Owner and resource identity across frames; reverse completion order; failed acquisition | Use after callee return, repeated site in distinct calls, failure after acquisition; reject double/wrong release and cleanup on transfer | M004 transfer phase |
-| Shared/exclusive pointer access | Borrow endpoints, escape/capture refusal, actual C ABI and emitted attributes | Separate family witnesses on macOS/Linux; no unsupported alias/alignment/capture promises | M004 pointer phase |
+| Transfer/calls/errors | Owner and resource identity across frames; reverse completion order; failed acquisition | Phase 24's ordinary success and typed-error apps, distinct activations, acquisition-derived peers, and physical observer passed on both hosted hosts; general cleanup shapes remain refused | Phase 24 complete; extend only for a selected broader cleanup consumer |
+| Shared/exclusive pointer access | Borrow endpoints, independent straight-line overlap/escape refusal, source-attributed escape diagnostics, actual C ABI and emitted attributes | `TestPhase25PointerPathLiveOverlap`, `TestPhase25PointerPathBorrowedResultEscape`, `TestPhase25IndependentPeerMutations`, and command/diagnostic attribution checks pass locally; hosted run 36971855722 passes 18/18 rows. No unsupported alias/alignment/capture promises | Phase 25 complete; preserve the existing refusal frontier and use hosted evidence aggregate for regression |
 | Arithmetic and Bool | Typed operators; overflow/divide/remainder rules and C definedness | Boundary expected values, wrong-result controls, interpreter/native agreement; no reliance on C undefined behavior | Following practical-computation milestone |
 | Scalar CFG back edges | Fixed-point state/loans, dynamic occurrence identity, finite oracle exploration | Loop spike before planning; separate application semantics from evidence-budget exhaustion; reject unproved resource/loan carries | Following practical-computation milestone |
 | Byte views/indexing/aggregates | Bounds, initialization, subobject layout/ownership and error paths | Empty/one/max/truncated cases; out-of-bounds controls; only admitted moves/copies | Byte-library capability |
@@ -102,50 +119,54 @@ roadmap does not promise to prove arbitrary foreign C correct.
 
 ## Current three recommendations
 
-1. **Close Phase 23 host verification for the live file-byte program.**
-   User-visible program: read files containing `0x41` and `0x42` through a
-   returned allocation and report the matching byte, with acquisition and
-   post-acquisition failure cases. Current witness: the implementation, public
-   README, independent physical observer, reached destructor controls, and
-   focused macOS plus local Linux ARM64 receipts all pass; 18/18 declared
-   threats are closed and the code review is clean. Blocker: the existing
-   hosted Ubuntu `evidence-aggregate` job has not run, and this checkout has no
-   Git remote configured. Smallest complete slice: run the already-wired
-   `sh scripts/verify-phase23.sh` step on Ubuntu at the current source commit
-   or a successor commit; do not add another implementation plan or duplicate
-   the full/race/sanitizer suites. No checker or guarantee changes remain for
-   this slice. Evidence/debt: FFI-03, RES-04/07/08/09, EVD-09, and the new
-   `23-VALIDATION.md` local Linux receipt; Phase 22's EVD-11 replay boundary
-   and FFI-02 manifest limits remain intact. Owner/next action: hosted CI after
-   the branch is available to its runner; then resume `$gsd-execute-phase 23`
-   directly at verifier gates. No human UAT is required. Reprioritize only if
-   the hosted runner is unavailable or its result exposes a reproducible
-   platform-specific failure.
-2. **Carry that owner through a call and a typed error (Phase 24).** User-visible
-   program: the byte reader delegates use to a helper and still releases once
-   on both a normal result and a real later error. Blocker: static resource
-   ownership is not yet tracked by dynamic callee activation, transfer, or
-   typed-error cleanup. Smallest complete slice: one transferred live owner,
-   one caller/callee activation distinction, and one post-acquisition typed
-   error, with reverse-order generated cleanup and an independent observer.
-   Checker/guarantee changes cover interprocedural resource identities and
-   operation-derived cleanup in the same independent peers; never infer the
-   acquisition from a later release. Evidence/debt: RES-05/06, OWN-10/11/12,
-   EVD-09, extending EVD-11. Owner: Phase 24 after the Phase 23 owner model is
-   exercised. Reprioritize only if Phase 23's runnable utility needs this
-   transfer/error behavior to prove its minimum use/release contract.
-3. **Complete the bounded pointer families and utility (Phase 25).**
-   User-visible program: a documented file/byte utility whose shared and
-   exclusive read-copy helpers have separate admitted source witnesses. Blocker:
-   `emitProgram` refuses both families and the checker has no family-specific
-   pointer contract yet. Smallest complete slice: one bounded helper per family,
-   independent borrow/access checks, no unsupported `restrict`/`noalias`/
-   capture claims, plus the reproducible utility command and negative controls.
-   Checker/guarantee changes are family-specific across admission, peer
-   validation, interpreter, and C emission. Evidence/debt: NAT-11/12/13,
-   EVD-10, DX-14/15; retain the explicit FFI-03 transfer boundary. Owner:
-   Phase 25. Move this earlier only if the Phase 23/24 source witnesses show
-   that a pointer family is required for the bounded file-byte operation.
+1. **Deliver ordinary scalar computation in Phase 26.** User-visible program:
+   `sum_to_n`, followed by FizzBuzz from ordinary Schway source with exact
+   output and boundary behavior. Current blocker: defined U64 arithmetic and
+   remainder/overflow, comparison/Bool, scalar-loop fixed points, and bounded
+   text/decimal output are absent. Smallest complete slice: one bounded-input
+   `sum_to_n` command with pinned output, arithmetic boundaries, and a
+   loop-carried-state mutation control; reuse that core for FizzBuzz.
+   Checker/guarantee changes: typed operators with defined C behavior,
+   explicit overflow/error semantics, CFG fixed-point state/loan analysis,
+   and bounded output effects. Evidence/debt: NAT-09 and current arithmetic,
+   CFG, and output refusal witnesses; add independent interpreter/native
+   answers and changed-assumption controls. Owner/next action: Phase 26
+   kickoff after M004 acceptance. Reprioritize if a named consumer demonstrates
+   a smaller safe computation slice with equal runnable value.
+2. **Build a bounded byte utility and reusable local module boundary.**
+   User-visible program: a `checksum` command that reads a size-limited file,
+   computes a specified checksum, and returns exact success and error results.
+   Current blocker: byte views/indexing, bounded iteration, arithmetic, and
+   reusable local modules are not admitted. Smallest complete slice: choose one
+   checksum consumer, specify maximum input and empty/truncated behavior, then
+   admit only the byte operations and module imports it needs. Checker/guarantee
+   changes: prove bounds and initialization, analyze loop-carried state and
+   resource loans, preserve cleanup on errors, and define module visibility.
+   Evidence/debt: build on Phase 24 RES-06 and Phase 26 arithmetic/loop tests;
+   use malformed, empty, maximum-size, and wrong-result controls. Owner/next
+   action: post-Phase-26 planning after a checksum consumer is named.
+   Reprioritize if a concrete file tool needs a smaller non-checksum byte API.
+3. **Enable one bounded JSON configuration consumer after a real need is named.**
+   User-visible program: read and validate a size-limited JSON config file with
+   independently specified success and typed-error results for malformed,
+   truncated, and oversized input. Current blocker: general byte views/indexing,
+   arrays/strings, bounded loops, and reusable modules are not admitted; Phase
+   25 pointer support alone does not provide them. Smallest complete slice:
+   choose one consuming tool, define its schema and byte/depth limits, and
+   implement only the parser forms required by that config with bounds checks
+   and failure cleanup. Checker/guarantee changes: prove bounds and
+   initialization, analyze loop-carried state and resource loans, preserve
+   owned-buffer cleanup on parse errors, and independently mutate truncation,
+   length, and schema cases across interpreter/native runs. Evidence/debt:
+   build on Phase 24 RES-06 typed-error cleanup and define consumer-specific
+   requirement/evidence IDs at kickoff; make no general JSON completeness
+   claim. Owner/next action: post-Phase-26 planning, only after a named Schway
+   tool needs this format. Reprioritize if a real consumer needs another input
+   format or its config fits a smaller bounded representation.
+
+For each candidate, the smallest complete slice, checker changes, evidence,
+owner/next action, and reprioritize observation determine whether its ranking
+should change.
 
 The next milestone can then deliver `sum_to_n` and FizzBuzz. Its current
 blockers are defined U64 arithmetic/remainder, comparison/Bool, scalar loop
@@ -180,14 +201,84 @@ more valuable complete program.
 
 ## Provenance
 
-**2026-09-28 current-state amendment.** Phase 22's verification fingerprint
-was refreshed against the merged tree and passes 5/5 roadmap truths; its
-completed objective UAT is preserved. Phase 23's implementation is now
-source-inspected and its focused gate passes on macOS and a local Linux ARM64
-container after the close-failure fix; a current full Go suite passes on macOS.
-The hosted Linux CI result is still pending. These are distinct receipts, and
-the historical 2026-09-27 observations below remain true of their recorded
-revision.
+**2026-10-01 Phase 24 closeout amendment.** Phase 24 completes bounded
+PathToken/file-byte owner transfer through a helper and return, distinct
+repeated activations, and reverse cleanup on success and a real typed error.
+The verifier passes 5/5 roadmap truths. Hosted run 36856048690 passed the full
+and focused suites on Linux/x86_64 and Darwin/arm64 at source SHA
+`ed94ef7972b25deb85ab90fafbf3403dc31629f5`; focused Phase 24 receipts were
+25s and 22s. No local project tests or scripts were run. The source still
+refuses by-pointer function bodies; Phase 25 owns separate shared/exclusive
+pointer witnesses and the integrated utility.
+
+**2026-10-01 Phase 25 Plan 06 amendment.** Source inspection confirms the
+production emitter admits only the bounded shared and exclusive U64 read-copy
+helpers used by `examples/phase24/transfer.schway`; their manifests make no
+unsupported alias, capture, alignment, or ownership promise. Mutation,
+forwarding, retention, callbacks, nonlocal exits, and wider pointer forms
+remain refused before C serialization. Newly executed local Plan06 checks—the
+focused native contract tests and `sh scripts/verify-phase25.sh`—passed on this
+macOS/arm64 host with Go 1.24.0 and Apple Clang 21.0.0 at source revision
+`f00cdf8` with a modified working tree. Baseline `-O0`, optimized `-O2`, and
+ASan+UBSan native utility runs returned 65/66 and preserved the typed 0x43
+failure before either helper. Reached wrong-result controls, separate
+conflict/escape controls, and pointer manifests also passed. Across the three
+lanes, cold Go-cache min/median/max was 2.44/2.72/2.73s and warm-cache
+min/median/max was 0.27/0.43/0.53s. The full local test suite, race suite,
+`go vet ./...`, and `go build ./...` also passed on macOS/arm64. The Phase 25
+script marks every Linux family/lane row incomplete; these local checks are
+not hosted receipts. Hosted macOS and Linux Phase 25 family-by-lane receipts
+remain pending, so no hosted pass is claimed and EVD-10 remains open.
+Historical receipts are the Phase 24 run 36856048690 and earlier Phase 23
+runs, scoped to their archived source revisions and behaviors.
+
+**2026-10-02 Phase 25 security-audit follow-up.** Source inspection at
+`b19446f` confirms that the command gate invokes core, origin, and path
+validation in precedence order. The independent path oracle derives
+straight-line borrow ancestry, last use, conflict families, and terminal
+escape without reading endpoint claims; the origin peer supplies structured
+function/return identity for source projection. Newly executed local tests
+`TestPhase25PointerPathLiveOverlap`,
+`TestPhase25PointerPathBorrowedResultEscape`,
+`TestPhase25IndependentPeerMutations`,
+`TestPhase25CheckCommandPeerGate`, `TestPhase25CheckCommandPeerObservation`,
+`TestPhase25EscapeDiagnosticSourceAttribution`, and
+`TestPhase25EscapeDiagnosticFunctionIdentity` pass, along with the retained
+conflict/schema/boundary controls. Historical Phase 25 native results remain
+scoped to source revision `f00cdf8`; this follow-up ran no native or hosted
+matrix. That statement describes the follow-up only and is superseded for
+current status by the hosted evidence amendment below.
+
+**2026-10-02 Phase 25 hosted-evidence closeout.** GitHub Actions run
+`36971855722` tested branch head
+`421b5b94eb867e940a207dfd64d7971dc8198172` at PR merge revision
+`a90c27c5b432ef6fc59fbafaa68b50a1374ae138`. Linux ran Go `linux/amd64` on
+`x86_64-pc-linux-gnu` with Ubuntu Clang 18.1.3; macOS ran Go `darwin/arm64` on
+`arm64-apple-darwin25.6.0` with Apple Clang 21. On each host, foreign, shared,
+and exclusive families each passed baseline `-O0`, optimized `-O2`, and
+ASan+UBSan: 18/18 distinct native rows. Every row returned expected/actual
+65/66 and the typed `0x43` use error before either helper. The `checks` and
+`current evidence aggregate` jobs passed on both hosts; checks included vet,
+build, full Go tests, and race tests. Cold min/median/max feedback was
+9.350/9.540/9.980s on Linux and 12.470/12.670/12.930s on macOS; warm was
+0.390/0.490/0.550s and 0.820/1.400/2.130s respectively. A single-host script's
+absent-other-host rows describe that invocation only; the paired native job
+passed the other host's rows. This is newly executed hosted evidence, distinct
+from source inspection, local macOS checks, and historical receipts. EVD-10 is
+closed. The admitted pointer behavior remains bounded to read/copy helpers in
+the exact utility chain, with independent borrow overlap and escape refusal;
+mutation, forwarding, retention, callbacks, nonlocal exits, wider shapes, and
+unsupported attributes remain refused.
+
+**2026-09-30 Phase 23 closeout amendment.** Phase 22's verifier passes 5/5
+roadmap truths and its completed objective README UAT is preserved. Phase 23's
+refreshed verifier also passes 5/5, closes the hosted Ubuntu receipt gap, and
+records Phase 23 complete. Hosted run 36707529870 passed the Ubuntu/macOS
+check suites and both evidence aggregates, including the Phase 23 script, at
+source SHA `f991298b29779838a2b1a5c3cd5ac90aafcb84fc`. No local project suites
+or human UAT were rerun/needed for Phase 23 closeout. The earlier same-date
+pre-closeout snapshot is historical; 2026-09-27 and 2026-09-28 observations
+below remain true at their recorded revisions.
 
 Repository research baseline: `d9bde05`; research date 2026-09-27. Current
 observations are refreshed after Phase 22 from source inspection, its named

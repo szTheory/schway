@@ -433,6 +433,10 @@ func (v *validator) run() {
 		}
 	}
 
+	if !v.validateTransferredOwner() {
+		return
+	}
+
 	// D-07-38/D-07-12 (07-08): chain the peer's own ClosureDigest
 	// re-derivation ONLY after every function's peer signature has been
 	// recorded (v.match()'s direct call for /0-only functions, plus every
@@ -1322,6 +1326,12 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 				return nil, nil, false
 			}
 		}
+		if operation.Kind == core.OpCall && (operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "") {
+			errTarget, known := places[operation.ErrTargetID]
+			if !v.check(operation.ErrTargetID != "" && operation.OkEdgeID != "" && operation.ErrEdgeID != "" && known && errTarget.TypeID != "" && len(linear.Blocks) != 0, "core.call_error_edges_invalid", operation.ID) {
+				return nil, nil, false
+			}
+		}
 		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
 			if !v.unique(loanIDs, operation.LoanID, "core.unknown_loan") {
 				return nil, nil, false
@@ -1363,12 +1373,12 @@ func (v *validator) validateLocalForeignOperation(function *core.Function, opera
 	switch contract.Mode {
 	case "acquire":
 		target, targetOK := places[operation.TargetID]
-		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.Symbol != "schway_file_byte_acquire" || contract.ABIType != "schway_file_byte_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails != "AcquireError" || contract.Allocator != "libc_malloc" || contract.Release != "schway_file_byte_release" || operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.Symbol != "schway_file_byte_acquire" || contract.ABIType != "schway_file_byte_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileByteOwner" || contract.Fails != "AcquireError" || contract.Allocator != "libc_malloc" || contract.Release != "schway_file_byte_release" || operation.Allocator != contract.Allocator || !validLocalForeignErrorEdges(operation, contract, types, places) {
 			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
 		}
 	case "borrow":
 		target, targetOK := places[operation.TargetID]
-		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.Symbol != "schway_file_byte_use" || contract.ABIType != "schway_file_byte_use_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails != "UseError" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || contract.Symbol != "schway_file_byte_use" || contract.ABIType != "schway_file_byte_use_fn" || contract.ParameterType != "FileByteOwner" || contract.ResultType != "U64" || contract.Fails != "UseError" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" || !validLocalForeignErrorEdges(operation, contract, types, places) {
 			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
 		}
 	case "consume":
@@ -1391,6 +1401,458 @@ func (v *validator) validateLocalForeignOperation(function *core.Function, opera
 		return v.check(false, "core.call_target_not_foreign", operation.ID)
 	}
 	return true
+}
+
+func validLocalForeignErrorEdges(operation core.LinearOperation, contract *core.ForeignOperationContract, types map[string]core.TypeFact, places map[string]core.Place) bool {
+	hasTarget := operation.ErrTargetID != ""
+	hasEdges := operation.OkEdgeID != "" || operation.ErrEdgeID != ""
+	if !hasTarget && !hasEdges {
+		return true
+	}
+	target, ok := places[operation.ErrTargetID]
+	return hasTarget && operation.OkEdgeID != "" && operation.ErrEdgeID != "" && ok && contract.Fails != "" && types[target.TypeID].Shape.Constructor == contract.Fails
+}
+
+// validateTransferredOwner derives a Phase 24 obligation from the helper's acquire operation,
+// follows its OpReturn into the caller's OpCall, and requires one post-borrow release
+// that names that exact acquisition. It never seeds state from release operations.
+func (v *validator) validateTransferredOwner() bool {
+	if phase24ErrorFunctionsPresent(v.program) {
+		return v.validateRepeatedPhase24Owner()
+	}
+	type located struct {
+		function *core.Function
+		op       core.LinearOperation
+	}
+	var acquire located
+	var helper *core.Function
+	for i := range v.program.Functions {
+		f := &v.program.Functions[i]
+		if f.Linear == nil {
+			continue
+		}
+		for _, op := range f.Linear.Operations {
+			if op.Foreign != nil && op.Foreign.Mode == "acquire" {
+				if acquire.function != nil {
+					return v.check(false, "core.owner_transfer_acquire", op.ID)
+				}
+				acquire = located{f, op}
+				helper = f
+			}
+		}
+	}
+	if helper == nil || helper.ReturnType != "FileByteOwner" {
+		return true
+	}
+	if helper.Linear == nil || acquire.op.Kind != core.OpForeignCall || acquire.op.Foreign == nil || acquire.op.Foreign.Allocator == "" || acquire.op.Foreign.Release == "" {
+		return v.check(false, "core.owner_transfer_helper", helper.ID)
+	}
+	var helperReturn *core.LinearOperation
+	for i := range helper.Linear.Operations {
+		op := &helper.Linear.Operations[i]
+		if op.Kind == core.OpReturn {
+			if helperReturn != nil {
+				return v.check(false, "core.owner_transfer_return", op.ID)
+			}
+			helperReturn = op
+		} else if op.Kind != core.OpForeignCall && op.Kind != core.OpFail {
+			return v.check(false, "core.owner_transfer_helper_op", op.ID)
+		}
+	}
+	if helperReturn == nil || helperReturn.SourceID != acquire.op.TargetID || acquire.op.ErrTargetID == "" || acquire.op.OkEdgeID == "" || acquire.op.ErrEdgeID == "" {
+		return v.check(false, "core.owner_transfer_return", helper.ID)
+	}
+	var caller *core.Function
+	var call, borrow, release, ret *core.LinearOperation
+	for i := range v.program.Functions {
+		f := &v.program.Functions[i]
+		if f.Linear == nil {
+			continue
+		}
+		for j := range f.Linear.Operations {
+			op := &f.Linear.Operations[j]
+			if op.Kind == core.OpCall && op.CalleeID == helper.ID {
+				if caller != nil {
+					return v.check(false, "core.owner_transfer_call", op.ID)
+				}
+				caller = f
+				call = op
+			}
+		}
+	}
+	if caller == nil || caller.ReturnType != "U64" || call.TargetID == "" || call.TypeID == "" {
+		return v.check(false, "core.owner_transfer_call", helper.ID)
+	}
+	for i := range caller.Linear.Operations {
+		op := &caller.Linear.Operations[i]
+		switch {
+		case op.Kind == core.OpCopy && op.SourceID == call.TargetID:
+			return v.check(false, "core.owner_transfer_copy", op.ID)
+		case op.Foreign != nil && op.Foreign.Mode == "borrow":
+			if borrow != nil {
+				return v.check(false, "core.owner_transfer_borrow", op.ID)
+			}
+			borrow = op
+		case op.Kind == core.OpRelease:
+			if release != nil {
+				return v.check(false, "core.owner_transfer_release", op.ID)
+			}
+			release = op
+		case op.Kind == core.OpReturn:
+			if ret != nil {
+				return v.check(false, "core.owner_transfer_return", op.ID)
+			}
+			ret = op
+		}
+	}
+	if borrow == nil || release == nil || ret == nil || borrow.SourceID != call.TargetID || release.SourceID != call.TargetID || release.ReleasesOperationID != acquire.op.ID || release.Foreign == nil || borrow.Foreign == nil || release.Foreign.Mode != "consume" || release.Foreign.Symbol != acquire.op.Foreign.Release || release.Allocator != acquire.op.Foreign.Allocator || release.Foreign.Allocator != acquire.op.Foreign.Allocator {
+		return v.check(false, "core.owner_transfer_discharge", caller.ID)
+	}
+	if !(indexOperation(caller.Linear.Operations, borrow.ID) < indexOperation(caller.Linear.Operations, release.ID) && indexOperation(caller.Linear.Operations, release.ID) < indexOperation(caller.Linear.Operations, ret.ID)) {
+		return v.check(false, "core.owner_transfer_order", caller.ID)
+	}
+	// The integrated utility may return the scalar through exactly two
+	// independently checked copy helpers. Keep this proof deliberately
+	// syntactic and local: arbitrary call results, extra calls, and reordered
+	// chains do not inherit the direct borrowed-result admission above.
+	if ret.SourceID != borrow.TargetID {
+		var helperCalls []core.LinearOperation
+		for _, op := range caller.Linear.Operations {
+			if op.Kind == core.OpCall && op.ID != call.ID {
+				helperCalls = append(helperCalls, op)
+			}
+		}
+		if len(helperCalls) != 2 || !(indexOperation(caller.Linear.Operations, borrow.ID) < indexOperation(caller.Linear.Operations, helperCalls[0].ID) && indexOperation(caller.Linear.Operations, helperCalls[0].ID) < indexOperation(caller.Linear.Operations, helperCalls[1].ID) && indexOperation(caller.Linear.Operations, helperCalls[1].ID) < indexOperation(caller.Linear.Operations, release.ID) && indexOperation(caller.Linear.Operations, release.ID) < indexOperation(caller.Linear.Operations, ret.ID)) {
+			return v.check(false, "core.owner_transfer_order", caller.ID)
+		}
+		calleeByID := make(map[string]*core.Function, len(v.program.Functions))
+		for i := range v.program.Functions {
+			calleeByID[v.program.Functions[i].ID] = &v.program.Functions[i]
+		}
+		shared, exclusive := calleeByID[helperCalls[0].CalleeID], calleeByID[helperCalls[1].CalleeID]
+		if !isU64CopyHelper(shared, core.OpBorrowShared) || !isU64CopyHelper(exclusive, core.OpBorrowExclusive) || helperCalls[0].SourceID != borrow.TargetID || helperCalls[1].SourceID != helperCalls[0].TargetID || ret.SourceID != helperCalls[1].TargetID {
+			return v.check(false, "core.owner_transfer_discharge", caller.ID)
+		}
+	}
+	for _, op := range helper.Linear.Operations {
+		if op.Kind == core.OpRelease {
+			return v.check(false, "core.owner_transfer_early_release", op.ID)
+		}
+	}
+	return true
+}
+
+func isU64CopyHelper(function *core.Function, borrowKind core.OperationKind) bool {
+	if function == nil || function.Linear == nil || function.ReturnType != "U64" || function.Parameter.Type != "U64" || len(function.Linear.Operations) != 3 {
+		return false
+	}
+	borrow, copy, ret := function.Linear.Operations[0], function.Linear.Operations[1], function.Linear.Operations[2]
+	return borrow.Kind == borrowKind && borrow.SourceID == function.Parameter.ID && borrow.TargetID != "" &&
+		copy.Kind == core.OpCopy && copy.SourceID == borrow.TargetID && copy.TargetID != "" &&
+		ret.Kind == core.OpReturn && ret.SourceID == copy.TargetID
+}
+
+func phase24ErrorFunctionsPresent(program core.Program) bool {
+	if program.Module != "phase24.error" {
+		return false
+	}
+	names := map[string]bool{}
+	for _, function := range program.Functions {
+		names[function.Name] = true
+	}
+	return names["acquire"] && names["probe"] && names["main"]
+}
+
+func (v *validator) validateRepeatedPhase24Owner() bool {
+	functions := make(map[string]*core.Function, len(v.program.Functions))
+	for index := range v.program.Functions {
+		functions[v.program.Functions[index].Name] = &v.program.Functions[index]
+	}
+	helper, probe, caller := functions["acquire"], functions["probe"], functions["main"]
+	if helper == nil || probe == nil || caller == nil || helper.Linear == nil || probe.Linear == nil || caller.Linear == nil {
+		return v.check(false, "core.owner_transfer_helper", "phase24 error functions")
+	}
+	var acquire *core.LinearOperation
+	for index := range helper.Linear.Operations {
+		operation := &helper.Linear.Operations[index]
+		if operation.Kind == core.OpForeignCall && operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+			if acquire != nil {
+				return v.check(false, "core.owner_transfer_acquire", operation.ID)
+			}
+			acquire = operation
+		}
+	}
+	if acquire == nil || helper.Parameter.Type != "PathToken" || helper.ReturnType != "FileByteOwner" || acquire.Kind != core.OpForeignCall || acquire.Foreign == nil || acquire.Foreign.Allocator != "libc_malloc" || acquire.Foreign.Release != "schway_file_byte_release" {
+		return v.check(false, "core.owner_transfer_helper", helper.ID)
+	}
+	returned := 0
+	for _, operation := range helper.Linear.Operations {
+		if operation.Kind == core.OpReturn {
+			returned++
+			if operation.SourceID != acquire.TargetID {
+				return v.check(false, "core.owner_transfer_return", operation.ID)
+			}
+		}
+		if operation.Kind == core.OpRelease {
+			return v.check(false, "core.owner_transfer_early_release", operation.ID)
+		}
+	}
+	if !v.check(returned == 1, "core.owner_transfer_return", helper.ID) {
+		return false
+	}
+	acquireCalls, probeCalls := phase24CallsTo(caller, helper.ID), phase24CallsTo(caller, probe.ID)
+	probeAcquireCalls := phase24CallsTo(probe, helper.ID)
+	if !v.check(len(acquireCalls) == 2 && len(probeCalls) == 1 && len(probeAcquireCalls) == 1, "core.owner_transfer_call", helper.ID) {
+		return false
+	}
+	for _, operation := range append(append(append([]core.LinearOperation{}, acquireCalls...), probeCalls...), probeAcquireCalls...) {
+		if !v.validatePhase24CallEdges(operationOwnerFunction(operation, caller, probe), operation, "ResourceError") {
+			return false
+		}
+	}
+	// Confirm the calls are separate checked activation sites, even though
+	// the helper's acquisition operation is one static core operation.
+	seenCalls := map[string]bool{}
+	for _, operation := range append(append(append([]core.LinearOperation{}, acquireCalls...), probeCalls...), probeAcquireCalls...) {
+		if !v.check(operation.ID != "" && !seenCalls[operation.ID], "core.owner_transfer_call", operation.ID) {
+			return false
+		}
+		seenCalls[operation.ID] = true
+	}
+	if !v.phase24ProbeCleanup(probe, probeAcquireCalls[0], *acquire, "ResourceError") {
+		return false
+	}
+	return v.phase24CallerCleanup(caller, acquireCalls[0], acquireCalls[1], probeCalls[0], *acquire)
+}
+
+func phase24CallsTo(function *core.Function, calleeID string) []core.LinearOperation {
+	var calls []core.LinearOperation
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpCall && operation.CalleeID == calleeID {
+			calls = append(calls, operation)
+		}
+	}
+	return calls
+}
+
+func operationOwnerFunction(operation core.LinearOperation, caller, probe *core.Function) *core.Function {
+	for _, candidate := range []*core.Function{caller, probe} {
+		for _, existing := range candidate.Linear.Operations {
+			if existing.ID == operation.ID {
+				return candidate
+			}
+		}
+	}
+	return nil
+}
+
+func (v *validator) validatePhase24CallEdges(function *core.Function, call core.LinearOperation, errorType string) bool {
+	if function == nil || call.Kind != core.OpCall || call.ErrTargetID == "" || call.OkEdgeID == "" || call.ErrEdgeID == "" {
+		return v.check(false, "core.call_error_edges_invalid", call.ID)
+	}
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	types := make(map[string]core.TypeFact, len(function.Linear.Types))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = place
+	}
+	for _, fact := range function.Linear.Types {
+		types[fact.ID] = fact
+	}
+	errTarget, known := places[call.ErrTargetID]
+	if !v.check(known && types[errTarget.TypeID].Shape.Constructor == errorType, "core.call_error_type_mismatch", call.ID) {
+		return false
+	}
+	if !v.check(v.phase24ErrorEnvelopeIncludes(call.CalleeID, errorType), "core.call_error_envelope_mismatch", call.ID) {
+		return false
+	}
+	operationBlock := ""
+	for _, block := range function.Linear.Blocks {
+		for _, operationID := range block.OperationIDs {
+			if operationID == call.ID {
+				if operationBlock != "" {
+					return v.check(false, "core.duplicate_operation_id", call.ID)
+				}
+				operationBlock = block.ID
+			}
+		}
+	}
+	ok, errEdge := phase24FindEdge(function.Linear.Edges, call.OkEdgeID), phase24FindEdge(function.Linear.Edges, call.ErrEdgeID)
+	return v.check(operationBlock != "" && ok.ID != "" && errEdge.ID != "" && ok.FromBlockID == operationBlock && errEdge.FromBlockID == operationBlock && ok.Pattern == "ok" && errEdge.Pattern == "err" && phase24BlockHasSuccessor(function.Linear.Blocks, operationBlock, ok.ToBlockID) && phase24BlockHasSuccessor(function.Linear.Blocks, operationBlock, errEdge.ToBlockID), "core.call_error_edges_invalid", call.ID)
+}
+
+func (v *validator) phase24ErrorEnvelopeIncludes(calleeID, envelopeName string) bool {
+	var callee *core.Function
+	for index := range v.program.Functions {
+		if v.program.Functions[index].ID == calleeID {
+			callee = &v.program.Functions[index]
+			break
+		}
+	}
+	if callee == nil || callee.Linear == nil {
+		return false
+	}
+	constructorByType := map[string]string{}
+	for _, fact := range callee.Linear.Types {
+		constructorByType[fact.ID] = fact.Shape.Constructor
+	}
+	failureTypes := map[string]bool{}
+	for _, operation := range callee.Linear.Operations {
+		if operation.Kind == core.OpFail {
+			failureTypes[constructorByType[operation.TypeID]] = true
+		}
+		if operation.Foreign != nil && operation.Foreign.Fails != "" {
+			failureTypes[operation.Foreign.Fails] = true
+		}
+	}
+	if len(failureTypes) == 0 {
+		return false
+	}
+	envelope := map[string]bool{}
+	envelopeValid := false
+	for _, dataType := range v.program.DataTypes {
+		if dataType.Name == envelopeName && len(dataType.AlternativeDetails) == 0 {
+			envelopeValid = true
+			for _, alternative := range dataType.Alternatives {
+				envelope[alternative] = true
+			}
+		}
+	}
+	if !envelopeValid || len(envelope) == 0 {
+		return false
+	}
+	for failureType := range failureTypes {
+		var alternatives []string
+		for _, dataType := range v.program.DataTypes {
+			if dataType.Name == failureType && len(dataType.AlternativeDetails) == 0 {
+				alternatives = dataType.Alternatives
+			}
+		}
+		if len(alternatives) == 0 {
+			return false
+		}
+		for _, alternative := range alternatives {
+			if !envelope[alternative] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func phase24FindEdge(edges []core.Edge, id string) core.Edge {
+	for _, edge := range edges {
+		if edge.ID == id {
+			return edge
+		}
+	}
+	return core.Edge{}
+}
+
+func phase24BlockHasSuccessor(blocks []core.Block, from, to string) bool {
+	for _, block := range blocks {
+		if block.ID != from {
+			continue
+		}
+		for _, successor := range block.Successors {
+			if successor == to {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (v *validator) phase24ProbeCleanup(probe *core.Function, acquireCall, acquisition core.LinearOperation, errorType string) bool {
+	places := make(map[string]core.Place, len(probe.Linear.Places))
+	types := make(map[string]core.TypeFact, len(probe.Linear.Types))
+	for _, place := range probe.Linear.Places {
+		places[place.ID] = place
+	}
+	for _, fact := range probe.Linear.Types {
+		types[fact.ID] = fact
+	}
+	var use *core.LinearOperation
+	for index := range probe.Linear.Operations {
+		operation := &probe.Linear.Operations[index]
+		if operation.Foreign != nil && operation.Foreign.Mode == "borrow" {
+			if use != nil {
+				return v.check(false, "core.owner_transfer_borrow", operation.ID)
+			}
+			use = operation
+		}
+	}
+	if use == nil || use.Foreign.Fails != "UseError" || use.ErrTargetID == "" || use.OkEdgeID == "" || use.ErrEdgeID == "" || use.SourceID != acquireCall.TargetID {
+		return v.check(false, "core.owner_transfer_borrow", probe.ID)
+	}
+	errPlace, exists := places[use.ErrTargetID]
+	if !v.check(exists && types[errPlace.TypeID].Shape.Constructor == "UseError", "core.owner_transfer_error", use.ID) {
+		return false
+	}
+	if !v.phase24TerminalCleanup(probe, phase24FindEdge(probe.Linear.Edges, use.OkEdgeID).ToBlockID, []string{acquireCall.TargetID}, use.TargetID, core.OpReturn, acquisition.ID) ||
+		!v.phase24TerminalCleanup(probe, phase24FindEdge(probe.Linear.Edges, use.ErrEdgeID).ToBlockID, []string{acquireCall.TargetID}, use.ErrTargetID, core.OpFail, acquisition.ID) {
+		return false
+	}
+	acquireError := phase24FindEdge(probe.Linear.Edges, acquireCall.ErrEdgeID)
+	if !v.check(acquireError.ID != "" && v.phase24TerminalCleanup(probe, acquireError.ToBlockID, nil, acquireCall.ErrTargetID, core.OpFail, acquisition.ID), "core.owner_transfer_failed_acquire", acquireCall.ID) {
+		return false
+	}
+	return true
+}
+
+func (v *validator) phase24CallerCleanup(caller *core.Function, callA, callB, callProbe, acquisition core.LinearOperation) bool {
+	if !v.phase24TerminalCleanup(caller, phase24FindEdge(caller.Linear.Edges, callA.OkEdgeID).ToBlockID, nil, "", core.OpCall, acquisition.ID) {
+		return false
+	}
+	if !v.phase24TerminalCleanup(caller, phase24FindEdge(caller.Linear.Edges, callA.ErrEdgeID).ToBlockID, nil, callA.ErrTargetID, core.OpFail, acquisition.ID) {
+		return false
+	}
+	if !v.phase24TerminalCleanup(caller, phase24FindEdge(caller.Linear.Edges, callB.ErrEdgeID).ToBlockID, []string{callA.TargetID}, callB.ErrTargetID, core.OpFail, acquisition.ID) {
+		return false
+	}
+	if !v.phase24TerminalCleanup(caller, phase24FindEdge(caller.Linear.Edges, callProbe.ErrEdgeID).ToBlockID, []string{callB.TargetID, callA.TargetID}, callProbe.ErrTargetID, core.OpFail, acquisition.ID) {
+		return false
+	}
+	return v.phase24TerminalCleanup(caller, phase24FindEdge(caller.Linear.Edges, callProbe.OkEdgeID).ToBlockID, []string{callB.TargetID, callA.TargetID}, callProbe.TargetID, core.OpReturn, acquisition.ID)
+}
+
+func (v *validator) phase24TerminalCleanup(function *core.Function, blockID string, owners []string, terminalSource string, terminal core.OperationKind, acquisitionID string) bool {
+	var block *core.Block
+	for index := range function.Linear.Blocks {
+		if function.Linear.Blocks[index].ID == blockID {
+			block = &function.Linear.Blocks[index]
+			break
+		}
+	}
+	if block == nil || len(block.OperationIDs) != len(owners)+1 {
+		return v.check(false, "core.owner_transfer_cleanup", blockID)
+	}
+	operations := make(map[string]core.LinearOperation, len(function.Linear.Operations))
+	for _, operation := range function.Linear.Operations {
+		operations[operation.ID] = operation
+	}
+	for index, owner := range owners {
+		release := operations[block.OperationIDs[index]]
+		if release.Kind != core.OpRelease || release.SourceID != owner || release.ReleasesOperationID != acquisitionID || release.Foreign == nil || release.Foreign.Mode != "consume" || release.Allocator != "libc_malloc" {
+			return v.check(false, "core.owner_transfer_cleanup_order", release.ID)
+		}
+	}
+	last := operations[block.OperationIDs[len(block.OperationIDs)-1]]
+	if last.Kind != terminal || terminalSource != "" && last.SourceID != terminalSource {
+		return v.check(false, "core.owner_transfer_cleanup", last.ID)
+	}
+	if terminal == core.OpFail && last.TypeID == "" || terminal == core.OpReturn && last.SourceID == "" {
+		return v.check(false, "core.owner_transfer_cleanup", last.ID)
+	}
+	return true
+}
+
+func indexOperation(operations []core.LinearOperation, id string) int {
+	for i, op := range operations {
+		if op.ID == id {
+			return i
+		}
+	}
+	return -1
 }
 
 // localOwnerLifecycleValid seeds obligations from every acquire operation,
@@ -2130,6 +2592,14 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			}
 			initialized[operation.TargetID] = true
 			produced[operation.TargetID] = true
+			if operation.ErrTargetID != "" {
+				errTarget, known := places[operation.ErrTargetID]
+				if !v.check(known && operation.ErrTargetID != operation.TargetID && operation.ErrTargetID != operation.SourceID && !produced[operation.ErrTargetID] && errTarget.TypeID != "", "core.invalid_target", operation.ErrTargetID) {
+					return false
+				}
+				initialized[operation.ErrTargetID] = true
+				produced[operation.ErrTargetID] = true
+			}
 		case core.OpForeignCall:
 			if !v.targetMatches(function, index, operation, places, produced) {
 				return false
@@ -2180,8 +2650,12 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 	if !v.check(returned, "core.final_claim_mismatch", function.ID) {
 		return false
 	}
+	hasCall := false
 	for _, operation := range operations {
-		if operation.Foreign != nil {
+		hasCall = hasCall || operation.Kind == core.OpCall
+	}
+	for _, operation := range operations {
+		if operation.Foreign != nil && function.ReturnType != "FileByteOwner" && !hasCall {
 			return v.check(localOwnerLifecycleValid(function), "core.local_owner_lifecycle", function.ID)
 		}
 	}
@@ -2441,6 +2915,14 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			}
 			initialized[operation.TargetID] = true
 			produced[operation.TargetID] = true
+			if operation.ErrTargetID != "" {
+				errTarget, known := places[operation.ErrTargetID]
+				if !v.check(known && operation.ErrTargetID != operation.TargetID && operation.ErrTargetID != operation.SourceID && !produced[operation.ErrTargetID] && errTarget.TypeID != "", "core.invalid_target", operation.ErrTargetID) {
+					return false
+				}
+				initialized[operation.ErrTargetID] = true
+				produced[operation.ErrTargetID] = true
+			}
 		case core.OpForeignCall:
 			if !v.targetMatches(function, index, operation, places, produced) {
 				return false
@@ -2515,11 +2997,12 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			continue
 		}
 		lastOpID := block.OperationIDs[len(block.OperationIDs)-1]
-		if operationsByID[lastOpID].Kind == core.OpForeignCall {
-			// A block whose last operation is OpForeignCall forks into its
-			// two successor edges instead of terminating itself (D-04-04);
-			// only a block whose last operation is an actual terminator
-			// (OpReturn/OpFail) must appear in returnedBlocks.
+		lastOperation := operationsByID[lastOpID]
+		if lastOperation.Kind == core.OpForeignCall || (lastOperation.Kind == core.OpCall && lastOperation.OkEdgeID != "" && lastOperation.ErrEdgeID != "") {
+			// A fallible foreign call or function call forks into its declared
+			// successor edges instead of terminating the function (D-04-04 and
+			// Phase 24 typed calls). Only a block whose last operation is an
+			// actual terminator (OpReturn/OpFail) must appear in returnedBlocks.
 			continue
 		}
 		if !v.check(returnedBlocks[block.ID], "core.final_claim_mismatch", block.ID) {
@@ -2889,6 +3372,13 @@ func peerDeriveOriginFacts(function *core.Function) peerOriginFact {
 				}
 			}
 		case core.OpMove, core.OpCopy:
+			if operation.Kind == core.OpCopy && peerIsCopiedU64(function, operation) {
+				// A copy of the admitted scalar representation reads an
+				// independent U64 value. The loan still has this OpCopy as a
+				// use (so access/liveness derivation reaches it), but the copied
+				// target no longer carries the parameter's borrow origin.
+				continue
+			}
 			if paramTrace[operation.SourceID] {
 				paramTrace[operation.TargetID] = true
 			}
@@ -2906,6 +3396,24 @@ func peerDeriveOriginFacts(function *core.Function) peerOriginFact {
 		}
 	}
 	return peerOriginFact{}
+}
+
+// peerIsCopiedU64 is corevalidate's narrow value-copy boundary for Phase 25.
+// U64 is a sealed scalar with Copy ability; copying a value read through a
+// borrow ends the origin chain, while the preceding OpCopy remains an access
+// to the borrowed place for loan-conflict and liveness checks. Do not infer
+// this behavior from a caller's desired family or from a serialized pointer
+// ABI claim.
+func peerIsCopiedU64(function *core.Function, operation core.LinearOperation) bool {
+	if function == nil || function.Linear == nil || operation.Kind != core.OpCopy || operation.TypeID == "" {
+		return false
+	}
+	for _, fact := range function.Linear.Types {
+		if fact.ID == operation.TypeID {
+			return fact.Shape.Constructor == "U64" && len(fact.Shape.Arguments) == 0 && abilityGranted(fact.Abilities, core.AbilityCopy)
+		}
+	}
+	return false
 }
 
 // disablePeerOriginContainmentForTest is Task 1's D-09-19 fault-injection
@@ -3310,6 +3818,14 @@ func peerCalleeFrameDrained(function *core.Function) bool {
 		if acquisition.Kind != core.OpForeignCall {
 			continue
 		}
+		// A checked borrowed result is an ordinary scalar observation, and
+		// a consuming foreign operation discharges an argument rather than
+		// acquiring a frame-owned resource. Only explicit contracts authorize
+		// these exemptions: legacy core with a nil Foreign contract and
+		// unknown modes remain conservatively tracked as acquisitions.
+		if acquisition.Foreign != nil && (acquisition.Foreign.Mode == "borrow" || acquisition.Foreign.Mode == "consume") {
+			continue
+		}
 		if okEdge, okKnown := edgesByID[acquisition.OkEdgeID]; okKnown {
 			if errEdge, errKnown := edgesByID[acquisition.ErrEdgeID]; errKnown && okEdge.ToBlockID == errEdge.ToBlockID {
 				continue
@@ -3354,22 +3870,55 @@ func peerCallable(function *core.Function) bool {
 	return disablePeerOriginContainmentForTest || peerOriginContained(function)
 }
 
+type releaseWitness struct {
+	acquisitionID string
+	ownerPlaceID  string
+	checkSource   bool
+}
+
+// returnedResourceAcquisition finds a direct foreign acquisition whose
+// returned owner crosses a declared function boundary. The caller's OpCall
+// becomes the dynamic owner event; the callee acquisition operation remains
+// the stable release reference.
+func returnedResourceAcquisition(function *core.Function) (core.LinearOperation, bool) {
+	if function == nil || function.Linear == nil {
+		return core.LinearOperation{}, false
+	}
+	var acquisition core.LinearOperation
+	acquisitionCount, returnCount := 0, 0
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpForeignCall && operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+			acquisition = operation
+			acquisitionCount++
+		}
+		if operation.Kind == core.OpReturn {
+			returnCount++
+			if operation.SourceID != acquisition.TargetID || operation.TypeID != acquisition.TypeID {
+				return core.LinearOperation{}, false
+			}
+		}
+	}
+	return acquisition, acquisitionCount == 1 && returnCount == 1 && acquisition.TargetID != ""
+}
+
 // checkReleaseOrder independently rederives the reverse-order release
 // sequence D-04-07 requires. For every block ending in OpFail or OpReturn, it
 // walks BACKWARD over the declared block/edge graph starting from that
 // block's own incoming edge, collecting every completed (not-yet-discharged)
-// OpForeignCall acquisition it passes -- a discovery order that is already
-// reverse-of-completion order, because the walk moves from the fail/return
+// successful acquisition it passes -- a direct foreign acquire or an owning
+// OpCall whose callee returns that acquisition. Discovery order is already
+// reverse-of-completion order because the walk moves from the fail/return
 // point back toward the entry. A failure block's own triggering acquisition
 // is excluded (its incoming edge has Pattern "err", so includeThis starts
 // false); a success block's immediate predecessor IS included (its incoming
 // edge has Pattern "ok", so it completed). This is materially different from
 // check.go's forward accumulation (D-12/D-12a): it never reads check's own
 // accumulated list or any field check uses to communicate it, only the
-// block/edge graph and the operations check.go already emitted. Only a call
-// whose ok and err edges target DIFFERENT blocks is tracked -- a `discard`'s
-// converging ok/err edges mark its resource as untracked for release this
-// plan, a documented narrowing shared with check.go's own accumulation.
+// block/edge graph, the operations check.go emitted, and the callee's own
+// acquisition-and-return operations. Only a call whose ok and err edges
+// target DIFFERENT blocks is tracked -- a `discard`'s converging ok/err edges
+// mark its resource as untracked for release this plan, a documented
+// narrowing shared with check.go's own accumulation.
 func (v *validator) checkReleaseOrder(function *core.Function, operationsByID map[string]core.LinearOperation) bool {
 	linear := function.Linear
 	edgesByTo := make(map[string][]core.Edge, len(linear.Edges))
@@ -3393,12 +3942,29 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 			tracked[operation.ReleasesOperationID] = true
 		}
 	}
-	callInBlock := make(map[string]core.LinearOperation, len(linear.Blocks))
+	functionByID := make(map[string]*core.Function, len(v.program.Functions))
+	for index := range v.program.Functions {
+		functionByID[v.program.Functions[index].ID] = &v.program.Functions[index]
+	}
+	callInBlock := make(map[string][]releaseWitness, len(linear.Blocks))
 	for _, block := range linear.Blocks {
-		for _, opID := range block.OperationIDs {
-			operation := operationsByID[opID]
-			if operation.Kind == core.OpForeignCall && tracked[operation.ID] {
-				callInBlock[block.ID] = operation
+		// A block can contain more than one successful acquisition. Record
+		// them in reverse operation order because cleanup discharges the most
+		// recently completed owner first.
+		for index := len(block.OperationIDs) - 1; index >= 0; index-- {
+			operation, ok := operationsByID[block.OperationIDs[index]]
+			if !ok {
+				continue
+			}
+			switch {
+			case operation.Kind == core.OpForeignCall && tracked[operation.ID]:
+				callInBlock[block.ID] = append(callInBlock[block.ID], releaseWitness{acquisitionID: operation.ID})
+			case operation.Kind == core.OpCall && operation.TargetID != "":
+				callee := functionByID[operation.CalleeID]
+				acquisition, returnsOwner := returnedResourceAcquisition(callee)
+				if returnsOwner && tracked[acquisition.ID] {
+					callInBlock[block.ID] = append(callInBlock[block.ID], releaseWitness{acquisitionID: acquisition.ID, ownerPlaceID: operation.TargetID, checkSource: true})
+				}
 			}
 		}
 	}
@@ -3415,9 +3981,9 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 	// a truncated expected would still be compared against actual and could
 	// ACCEPT a corrupted program, which is worse than the hang this guard
 	// replaces. The boolean return propagates the refusal to every call site.
-	var rederive func(startEdge core.Edge, visited map[string]bool) ([]core.LinearOperation, bool)
-	rederive = func(startEdge core.Edge, visited map[string]bool) ([]core.LinearOperation, bool) {
-		var expected []core.LinearOperation
+	var rederive func(startEdge core.Edge, visited map[string]bool) ([]releaseWitness, bool)
+	rederive = func(startEdge core.Edge, visited map[string]bool) ([]releaseWitness, bool) {
+		var expected []releaseWitness
 		includeThis := startEdge.Pattern == "ok"
 		currentBlockID := startEdge.FromBlockID
 		for {
@@ -3428,9 +3994,7 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 			visited[currentBlockID] = true
 			v.checks++ // one inspection per block visited while walking backward
 			if includeThis {
-				if op, ok := callInBlock[currentBlockID]; ok {
-					expected = append(expected, op)
-				}
+				expected = append(expected, callInBlock[currentBlockID]...)
 			}
 			candidates := okEdgeInto[currentBlockID]
 			if len(candidates) == 0 {
@@ -3455,7 +4019,7 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 			// shared map would make a legitimate diamond that reconverges on
 			// a shared ancestor look like a cycle, while starting each branch
 			// from empty would let a two-block cycle recurse forever.
-			var agreed []core.LinearOperation
+			var agreed []releaseWitness
 			for index, candidate := range candidates {
 				branchVisited := make(map[string]bool, len(visited)+1)
 				for blockID, seen := range visited {
@@ -3519,7 +4083,8 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 				return false
 			}
 			for index, want := range expected {
-				if !v.check(actual[index].ReleasesOperationID == want.ID, "core.release_order_mismatch", actual[index].ID) {
+				sourceMatches := !want.checkSource || actual[index].SourceID == want.ownerPlaceID
+				if !v.check(actual[index].ReleasesOperationID == want.acquisitionID && sourceMatches, "core.release_order_mismatch", actual[index].ID) {
 					return false
 				}
 			}
@@ -3534,12 +4099,12 @@ func (v *validator) checkReleaseOrder(function *core.Function, operationsByID ma
 // the per-terminal-block loop above already applies to its own comparison,
 // extended one hop earlier. It performs no counted work of its own; all
 // counted work for checkReleaseOrder stays inside checkReleaseOrder.
-func sameReleaseHistory(left, right []core.LinearOperation) bool {
+func sameReleaseHistory(left, right []releaseWitness) bool {
 	if len(left) != len(right) {
 		return false
 	}
 	for index := range left {
-		if left[index].ID != right[index].ID {
+		if left[index] != right[index] {
 			return false
 		}
 	}

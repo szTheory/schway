@@ -700,10 +700,10 @@ func TestMixedAccessChainRejectedAsAccessMismatch(t *testing.T) {
 		t.Fatalf("expected detail to name both declared and body-derived modes, got %q", problems[0].Detail)
 	}
 
-	// Reverse ordering: an exclusive reborrow of a shared loan. The closest
-	// hop to the return is exclusive, so the recomputed answer must be
-	// exclusive — matching a correctly-declared borrow mut(buffer) — proving
-	// the guard is symmetric rather than one-sided.
+	// Reverse ordering: an exclusive reborrow of a shared loan. RecomputeOrigin
+	// still derives the closest access mode, but publication independently
+	// rejects this conflict because a shared parent cannot authorize an
+	// exclusive child.
 	reverseSource := `module owned.public_view_mixed_access_reverse
 
 export {
@@ -724,8 +724,8 @@ fn view(buffer: Buffer) -> borrow mut(buffer) Buffer {
 		t.Fatalf("expected reverse-ordering chain to derive exclusive, got paths=%+v access=%q ok=%v", paths, access, ok)
 	}
 	reverseProblems := originvalidate.ValidatePublished(checkedReverse.Program)
-	if len(reverseProblems) != 0 {
-		t.Fatalf("expected the correctly-declared reverse-ordering fixture to have no problems, got %+v", reverseProblems)
+	if len(reverseProblems) != 1 || reverseProblems[0].Code != "core.borrow_conflict" {
+		t.Fatalf("expected shared-to-exclusive reborrow to fail independently with core.borrow_conflict, got %+v", reverseProblems)
 	}
 }
 

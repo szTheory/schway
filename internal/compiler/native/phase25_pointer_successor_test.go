@@ -1,0 +1,134 @@
+package native_test
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
+)
+
+func TestPhase25SharedNativeShape(t *testing.T) {
+	clang, err := exec.LookPath("clang")
+	if err != nil {
+		t.Fatal("Phase 25 native pointer witness requires installed clang")
+	}
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase25", "shared_copy_accept.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("shared-copy fixture failed to check: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.EmitProgramNativeForTest(checked.Program)
+	if err != nil {
+		t.Fatalf("shared pointer helper was refused: %v", err)
+	}
+	path := filepath.Join(t.TempDir(), "shared_copy.c")
+	if err := os.WriteFile(path, []byte(generated), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr, err := phase25PointerCommand(90*time.Second, clang, "-std=c17", "-Werror", "-fsyntax-only", path)
+	if err != nil {
+		t.Fatalf("clang rejected emitted shared-pointer C: %v\nstdout:\n%s\nstderr:\n%s", err, stdout, stderr)
+	}
+}
+
+func phase25ExclusiveNativeProgram(t *testing.T) (core.Program, string) {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase25", "exclusive_copy_accept.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("exclusive-copy fixture failed to check: %+v", checked.Diagnostics)
+	}
+	program := checked.Program
+	helper := program.Functions[0]
+	typeID, callerID := "phase25:native-main:type:u64", "phase25:native-main"
+	parameterID, resultID := callerID+":place:parameter", callerID+":place:result"
+	program.Functions = append(append([]core.Function(nil), program.Functions...), core.Function{
+		ID: callerID, Name: "main", EntryPointID: callerID + ":point:entry", ReturnPointID: callerID + ":point:return",
+		Parameter: core.Parameter{ID: parameterID, Name: "input", Type: "U64"}, ReturnType: "U64",
+		Linear: &core.LinearBody{
+			ID: callerID + ":linear", Types: []core.TypeFact{{ID: typeID, Shape: core.TypeRef{Constructor: "U64"}}},
+			Places: []core.Place{{ID: parameterID, Name: "input", TypeID: typeID}, {ID: resultID, Name: "result", TypeID: typeID}},
+			Operations: []core.LinearOperation{
+				{ID: callerID + ":op:0", PointID: callerID + ":point:linear:0", Kind: core.OpCall, SourceID: parameterID, TargetID: resultID, TypeID: typeID, CalleeID: helper.ID},
+				{ID: callerID + ":op:1", PointID: callerID + ":point:linear:1", Kind: core.OpReturn, SourceID: resultID, TypeID: typeID},
+			},
+		},
+	})
+	return program, program.Functions[0].Linear.Operations[1].ID
+}
+
+func TestPhase25ExclusiveWrongResult(t *testing.T) {
+	clang, err := exec.LookPath("clang")
+	if err != nil {
+		t.Fatal("Phase 25 native pointer witness requires installed clang")
+	}
+	program, copyID := phase25ExclusiveNativeProgram(t)
+	generated, err := cgen.EmitProgramNativeForTest(program)
+	if err != nil {
+		t.Fatalf("exclusive pointer helper was refused: %v", err)
+	}
+	mutated := ""
+	for _, line := range strings.Split(generated, "\n") {
+		if strings.Contains(line, "/* copy: "+copyID+" */") {
+			comment := strings.Index(line, " /* copy:")
+			assign := strings.Index(line[:comment], " = ")
+			mutated += line[:assign+3] + "UINT64_C(99); /* reached wrong-result control */\n"
+		} else {
+			mutated += line + "\n"
+		}
+	}
+	if mutated == generated {
+		t.Fatalf("exclusive copy operation %q was absent from generated C", copyID)
+	}
+	for _, test := range []struct{ name, source, want string }{
+		{"baseline", generated, `"value":"65"`}, {"mutated helper", mutated, `"value":"99"`},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			cPath, binaryPath := filepath.Join(dir, "exclusive.c"), filepath.Join(dir, "exclusive")
+			if err := os.WriteFile(cPath, []byte(test.source), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			stdout, stderr, err := phase25PointerCommand(90*time.Second, clang, "-std=c17", "-Werror", cPath, "-o", binaryPath)
+			if err != nil {
+				t.Fatalf("clang failed: %v\nstdout:\n%s\nstderr:\n%s", err, stdout, stderr)
+			}
+			stdout, stderr, err = phase25PointerCommand(30*time.Second, binaryPath, "65")
+			output := stdout + stderr
+			if err != nil || !strings.Contains(output, test.want) {
+				t.Fatalf("native stdout=%q stderr=%q err=%v, want payload containing %q", stdout, stderr, err, test.want)
+			}
+		})
+	}
+}
+
+func phase25PointerCommand(timeout time.Duration, name string, args ...string) (string, string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	command := exec.CommandContext(ctx, name, args...)
+	var stdout, stderr phase25BoundedOutput
+	command.Stdout, command.Stderr = &stdout, &stderr
+	err := command.Run()
+	if ctx.Err() == context.DeadlineExceeded {
+		return stdout.String(), stderr.String(), fmt.Errorf("process exceeded %s deadline: %w", timeout, ctx.Err())
+	}
+	if stdout.total > phase25ProcessOutputLimit || stderr.total > phase25ProcessOutputLimit {
+		return stdout.String(), stderr.String(), fmt.Errorf("process output exceeded independent %d-byte stream limit", phase25ProcessOutputLimit)
+	}
+	return stdout.String(), stderr.String(), err
+}

@@ -57,7 +57,13 @@ import (
 // local-owner path. Acquisition seeds obligations; a borrow must observe the
 // live owner and exactly one matching consuming release must discharge it.
 func ValidateLocalOwnerPaths(program core.Program) error {
+	if err := validateTransferredOwner(program); err != nil {
+		return err
+	}
 	for _, function := range program.Functions {
+		if err := validateStraightLinePointerLoans(function); err != nil {
+			return err
+		}
 		if function.Linear == nil {
 			continue
 		}
@@ -65,7 +71,7 @@ func ValidateLocalOwnerPaths(program core.Program) error {
 		for _, operation := range function.Linear.Operations {
 			local = local || operation.Foreign != nil
 		}
-		if !local {
+		if !local || function.ReturnType == "FileByteOwner" || pathHasCall(function) {
 			continue
 		}
 		if function.Parameter.Type != "PathToken" || function.ReturnType != "U64" || len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 {
@@ -145,6 +151,619 @@ func ValidateLocalOwnerPaths(program core.Program) error {
 		}
 	}
 	return nil
+}
+
+// validateStraightLinePointerLoans is a bounded, source-blind replay for
+// straight-line borrow helpers. It derives loan ancestry and terminal escape
+// from operations and place/type facts; serialized LoanEndpoints never
+// participate. RecomputeEndpoints remains scoped to CFG endpoint synthesis.
+func validateStraightLinePointerLoans(function core.Function) error {
+	if function.Linear == nil || len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 {
+		return nil
+	}
+	operations := function.Linear.Operations
+	hasBorrow := false
+	for _, operation := range operations {
+		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
+			hasBorrow = true
+			break
+		}
+	}
+	if !hasBorrow {
+		return nil
+	}
+
+	placeTypes := make(map[string]string, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		if place.ID == "" || place.TypeID == "" {
+			return fmt.Errorf("pathoracle.pointer_place: function %q has an incomplete place fact", function.ID)
+		}
+		if _, exists := placeTypes[place.ID]; exists {
+			return fmt.Errorf("pathoracle.pointer_place: function %q has duplicate place facts", function.ID)
+		}
+		placeTypes[place.ID] = place.TypeID
+	}
+	if placeTypes[function.Parameter.ID] == "" {
+		return fmt.Errorf("pathoracle.pointer_place: function %q has no parameter place", function.ID)
+	}
+	type loan struct {
+		id, owner, access string
+		birth, lastUse    int
+		parents           []string
+	}
+	loans := map[string]loan{}
+	placeLoans := map[string][]string{function.Parameter.ID: nil}
+	for index, operation := range operations {
+		inherited := append([]string(nil), placeLoans[operation.SourceID]...)
+		for _, loanID := range inherited {
+			state, exists := loans[loanID]
+			if !exists {
+				return fmt.Errorf("pathoracle.pointer_loan: function %q uses loan %q before it is derived", function.ID, loanID)
+			}
+			state.lastUse = index
+			loans[loanID] = state
+		}
+		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
+			if operation.LoanID == "" || operation.TargetID == "" || placeTypes[operation.SourceID] == "" || placeTypes[operation.TargetID] != placeTypes[operation.SourceID] {
+				return fmt.Errorf("pathoracle.pointer_loan: function %q has incomplete borrow facts at %q", function.ID, operation.ID)
+			}
+			owner := operation.SourceID
+			if len(inherited) > 0 {
+				owner = loans[inherited[0]].owner
+			}
+			access := "shared"
+			if operation.Kind == core.OpBorrowExclusive {
+				access = "exclusive"
+			}
+			if _, exists := loans[operation.LoanID]; exists {
+				return fmt.Errorf("pathoracle.pointer_loan: function %q repeats loan identity %q", function.ID, operation.LoanID)
+			}
+			loans[operation.LoanID] = loan{id: operation.LoanID, owner: owner, access: access, birth: index, lastUse: index, parents: inherited}
+			inherited = append(inherited, operation.LoanID)
+		}
+		if operation.TargetID != "" {
+			if placeTypes[operation.TargetID] == "" {
+				return fmt.Errorf("pathoracle.pointer_place: function %q operation %q has no target place", function.ID, operation.ID)
+			}
+			// OpCopy produces an owned value. OpCall also breaks local
+			// ancestry: this bounded replay has no callee return-contract
+			// facts, so its result's origin is unknown here. The call still
+			// counts as a use of its source loans above, preserving overlap
+			// checks across the call boundary; corevalidate/originvalidate
+			// independently derive the call result's actual provenance.
+			if operation.Kind == core.OpCopy || operation.Kind == core.OpCall {
+				placeLoans[operation.TargetID] = nil
+			} else {
+				placeLoans[operation.TargetID] = inherited
+			}
+		}
+		if operation.Kind == core.OpReturn {
+			// A declared shared/exclusive return is an intentional borrowed
+			// result. This local check guards an owned result from escaping a
+			// loan; the return contract's origin is checked independently by
+			// corevalidate/originvalidate.
+			if function.PublicOrigin == nil && len(placeLoans[operation.SourceID]) > 0 {
+				return fmt.Errorf("pathoracle.pointer_escape: function %q returns loan-derived place %q", function.ID, operation.SourceID)
+			}
+		}
+	}
+	loanIDs := make([]string, 0, len(loans))
+	for id := range loans {
+		loanIDs = append(loanIDs, id)
+	}
+	sort.Strings(loanIDs)
+	for index, loanID := range loanIDs {
+		left := loans[loanID]
+		for _, otherID := range loanIDs[index+1:] {
+			right := loans[otherID]
+			if left.owner != right.owner || left.access == "shared" && right.access == "shared" {
+				continue
+			}
+			if hasPathAncestor(left.parents, right.id) || hasPathAncestor(right.parents, left.id) {
+				continue
+			}
+			if left.birth <= right.lastUse && right.birth <= left.lastUse {
+				return fmt.Errorf("pathoracle.pointer_borrow_conflict: function %q has overlapping incompatible loans %q and %q", function.ID, left.id, right.id)
+			}
+		}
+	}
+	return nil
+}
+
+func hasPathAncestor(parents []string, candidate string) bool {
+	for _, parent := range parents {
+		if parent == candidate {
+			return true
+		}
+	}
+	return false
+}
+
+func pathHasCall(function core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	for _, op := range function.Linear.Operations {
+		if op.Kind == core.OpCall {
+			return true
+		}
+	}
+	return false
+}
+
+// validateTransferredOwner independently starts at a callee acquisition and
+// carries that obligation through the returned place into the caller.
+func validateTransferredOwner(program core.Program) error {
+	if pathPhase24ErrorProgram(program) {
+		return validateRepeatedPathOwner(program)
+	}
+	type acquisition struct {
+		f  *core.Function
+		op core.LinearOperation
+	}
+	var a acquisition
+	var helper *core.Function
+	fail := func(code, id string) error {
+		return fmt.Errorf("pathoracle.%s: invalid transferred owner at %q", code, id)
+	}
+	for i := range program.Functions {
+		f := &program.Functions[i]
+		if f.Linear == nil {
+			continue
+		}
+		for _, op := range f.Linear.Operations {
+			if op.Foreign != nil && op.Foreign.Mode == "acquire" {
+				if helper != nil {
+					return fail("owner_transfer_acquire", op.ID)
+				}
+				helper = f
+				a = acquisition{f, op}
+			}
+		}
+	}
+	if helper == nil || helper.ReturnType != "FileByteOwner" {
+		return nil
+	}
+	if helper.Parameter.Type != "PathToken" || a.op.Kind != core.OpForeignCall || a.op.Foreign == nil || a.op.Foreign.Symbol != "schway_file_byte_acquire" || a.op.Foreign.ABIType != "schway_file_byte_acquire_fn" || a.op.Foreign.ParameterType != "PathToken" || a.op.Foreign.ResultType != "FileByteOwner" || a.op.Foreign.Fails != "AcquireError" || a.op.Foreign.Allocator != "libc_malloc" || a.op.Foreign.Release != "schway_file_byte_release" || a.op.ErrTargetID == "" || a.op.OkEdgeID == "" || a.op.ErrEdgeID == "" {
+		return fail("owner_transfer_helper", helper.ID)
+	}
+	var retHelper *core.LinearOperation
+	for i := range helper.Linear.Operations {
+		op := &helper.Linear.Operations[i]
+		if op.Kind == core.OpReturn {
+			if retHelper != nil {
+				return fail("owner_transfer_return", op.ID)
+			}
+			retHelper = op
+		}
+		if op.Kind == core.OpRelease {
+			return fail("owner_transfer_early_release", op.ID)
+		}
+	}
+	if retHelper == nil || retHelper.SourceID != a.op.TargetID || a.op.ErrTargetID == "" {
+		return fail("owner_transfer_return", helper.ID)
+	}
+	var caller *core.Function
+	var call, borrow, release, ret *core.LinearOperation
+	for i := range program.Functions {
+		f := &program.Functions[i]
+		if f.Linear == nil {
+			continue
+		}
+		for j := range f.Linear.Operations {
+			op := &f.Linear.Operations[j]
+			if op.Kind == core.OpCall && op.CalleeID == helper.ID {
+				if caller != nil {
+					return fail("owner_transfer_call", op.ID)
+				}
+				caller = f
+				call = op
+			}
+		}
+	}
+	if caller == nil || caller.ReturnType != "U64" {
+		return fail("owner_transfer_call", helper.ID)
+	}
+	bi, ri, ti := -1, -1, -1
+	for i := range caller.Linear.Operations {
+		op := &caller.Linear.Operations[i]
+		switch {
+		case op.Kind == core.OpCopy && op.SourceID == call.TargetID:
+			return fail("owner_transfer_copy", op.ID)
+		case op.Foreign != nil && op.Foreign.Mode == "borrow":
+			if borrow != nil {
+				return fail("owner_transfer_borrow", op.ID)
+			}
+			borrow = op
+			bi = i
+		case op.Kind == core.OpRelease:
+			if release != nil {
+				return fail("owner_transfer_release", op.ID)
+			}
+			release = op
+			ri = i
+		case op.Kind == core.OpReturn:
+			if ret != nil {
+				return fail("owner_transfer_return", op.ID)
+			}
+			ret = op
+			ti = i
+		}
+	}
+	if borrow == nil || release == nil || ret == nil || borrow.SourceID != call.TargetID || release.SourceID != call.TargetID || release.ReleasesOperationID != a.op.ID || release.Foreign == nil || borrow.Foreign == nil || release.Foreign.Mode != "consume" || release.Foreign.Symbol != a.op.Foreign.Release || release.Foreign.ABIType != "schway_file_byte_release_fn" || release.Foreign.ParameterType != "FileByteOwner" || release.Foreign.ResultType != "Unit" || release.Foreign.Fails != "" || release.Foreign.Allocator != a.op.Foreign.Allocator || release.Allocator != a.op.Foreign.Allocator || borrow.Foreign.Symbol != "schway_file_byte_use" || borrow.Foreign.ABIType != "schway_file_byte_use_fn" || borrow.Foreign.ParameterType != "FileByteOwner" || borrow.Foreign.ResultType != "U64" || borrow.Foreign.Fails != "UseError" {
+		return fail("owner_transfer_discharge", caller.ID)
+	}
+	if !(bi >= 0 && bi < ri && ri < ti) {
+		return fail("owner_transfer_order", caller.ID)
+	}
+	if ret.SourceID == borrow.TargetID {
+		if !pathPhase24DirectOwnerResult(program, caller, call, borrow, release, ret) {
+			return fail("owner_transfer_discharge", caller.ID)
+		}
+	} else if !pathPhase25PointerSuccessorResult(program, caller, call, borrow, release, ret) {
+		return fail("owner_transfer_discharge", caller.ID)
+	}
+	return nil
+}
+
+// pathPhase24DirectOwnerResult keeps the original two-function direct-result
+// route bounded to its exact four-operation caller. A Phase 25 program whose
+// return is mutated back to the borrowed result must not fall through here.
+func pathPhase24DirectOwnerResult(program core.Program, caller *core.Function, ownerCall, borrow, release, ret *core.LinearOperation) bool {
+	if caller == nil || caller.Name != "main" || caller.Parameter.Type != "PathToken" || caller.ReturnType != "U64" ||
+		caller.Linear == nil || len(program.Functions) != 2 || len(caller.Linear.Operations) != 4 {
+		return false
+	}
+	ops := caller.Linear.Operations
+	return ops[0].ID == ownerCall.ID && ops[1].ID == borrow.ID && ops[2].ID == release.ID && ops[3].ID == ret.ID &&
+		ops[0].Kind == core.OpCall && ops[1].Kind == core.OpForeignCall && ops[2].Kind == core.OpRelease && ops[3].Kind == core.OpReturn
+}
+
+// pathPhase25PointerSuccessorResult independently recognizes the sole Phase 25
+// exception to the direct borrowed-result owner flow. Only the ordered
+// shared-copy then exclusive-copy U64 result chain may carry the scalar to the
+// caller return; the owner release remains paired and follows both calls.
+func pathPhase25PointerSuccessorResult(program core.Program, caller *core.Function, ownerCall, borrow, release, ret *core.LinearOperation) bool {
+	if caller == nil || caller.Name != "main" || caller.Parameter.Type != "PathToken" || caller.ReturnType != "U64" ||
+		caller.Linear == nil || len(program.Functions) != 4 || len(caller.Linear.Operations) != 6 {
+		return false
+	}
+	ops := caller.Linear.Operations
+	if ops[0].ID != ownerCall.ID || ops[1].ID != borrow.ID || ops[4].ID != release.ID || ops[5].ID != ret.ID ||
+		ops[0].Kind != core.OpCall || ops[1].Kind != core.OpForeignCall || ops[2].Kind != core.OpCall || ops[3].Kind != core.OpCall ||
+		ops[4].Kind != core.OpRelease || ops[5].Kind != core.OpReturn {
+		return false
+	}
+	sharedCall, exclusiveCall := ops[2], ops[3]
+	if sharedCall.ID == "" || exclusiveCall.ID == "" || sharedCall.CalleeID == "" || exclusiveCall.CalleeID == "" ||
+		sharedCall.CalleeID == exclusiveCall.CalleeID || sharedCall.Foreign != nil || exclusiveCall.Foreign != nil ||
+		sharedCall.ErrTargetID != "" || sharedCall.OkEdgeID != "" || sharedCall.ErrEdgeID != "" ||
+		exclusiveCall.ErrTargetID != "" || exclusiveCall.OkEdgeID != "" || exclusiveCall.ErrEdgeID != "" ||
+		sharedCall.SourceID != borrow.TargetID || sharedCall.TargetID == "" || sharedCall.TypeID != borrow.TypeID ||
+		exclusiveCall.SourceID != sharedCall.TargetID || exclusiveCall.TargetID == "" || exclusiveCall.TypeID != sharedCall.TypeID ||
+		ret.SourceID != exclusiveCall.TargetID || ret.TypeID != exclusiveCall.TypeID {
+		return false
+	}
+	if !(indexCallOperation(caller.Linear.Operations, borrow.ID) < indexCallOperation(caller.Linear.Operations, sharedCall.ID) &&
+		indexCallOperation(caller.Linear.Operations, sharedCall.ID) < indexCallOperation(caller.Linear.Operations, exclusiveCall.ID) &&
+		indexCallOperation(caller.Linear.Operations, exclusiveCall.ID) < indexCallOperation(caller.Linear.Operations, release.ID)) {
+		return false
+	}
+	byID := make(map[string]*core.Function, len(program.Functions))
+	for index := range program.Functions {
+		byID[program.Functions[index].ID] = &program.Functions[index]
+	}
+	shared, exclusive := byID[sharedCall.CalleeID], byID[exclusiveCall.CalleeID]
+	if !pathU64CopySuccessorHelper(shared, core.OpBorrowShared) || !pathU64CopySuccessorHelper(exclusive, core.OpBorrowExclusive) {
+		return false
+	}
+	places := make(map[string]core.Place, len(caller.Linear.Places))
+	for _, place := range caller.Linear.Places {
+		if _, exists := places[place.ID]; exists {
+			return false
+		}
+		places[place.ID] = place
+	}
+	types := make(map[string]core.TypeFact, len(caller.Linear.Types))
+	for _, fact := range caller.Linear.Types {
+		if _, exists := types[fact.ID]; exists {
+			return false
+		}
+		types[fact.ID] = fact
+	}
+	parameter, parameterOK := places[caller.Parameter.ID]
+	owner, ownerOK := places[ownerCall.TargetID]
+	value, valueOK := places[borrow.TargetID]
+	sharedValue, sharedOK := places[sharedCall.TargetID]
+	exclusiveValue, exclusiveOK := places[exclusiveCall.TargetID]
+	return len(places) == 5 && len(types) == 3 && parameterOK && ownerOK && valueOK && sharedOK && exclusiveOK &&
+		parameter.TypeID != owner.TypeID && owner.TypeID != value.TypeID && value.TypeID == sharedValue.TypeID && value.TypeID == exclusiveValue.TypeID &&
+		types[parameter.TypeID].Shape.Constructor == "PathToken" && types[owner.TypeID].Shape.Constructor == "FileByteOwner" && types[value.TypeID].Shape.Constructor == "U64" &&
+		ownerCall.TypeID == owner.TypeID && borrow.TypeID == value.TypeID && sharedCall.TypeID == value.TypeID && exclusiveCall.TypeID == value.TypeID && ret.TypeID == value.TypeID
+}
+
+func pathU64CopySuccessorHelper(function *core.Function, borrowKind core.OperationKind) bool {
+	if function == nil || function.Parameter.Type != "U64" || function.ReturnType != "U64" || function.ForeignContract != nil || function.Linear == nil ||
+		len(function.Linear.Operations) != 3 || len(function.Linear.Places) != 3 || len(function.Linear.Types) != 1 ||
+		len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 {
+		return false
+	}
+	borrow, copyValue, ret := function.Linear.Operations[0], function.Linear.Operations[1], function.Linear.Operations[2]
+	if borrow.Kind != borrowKind || borrow.SourceID != function.Parameter.ID || borrow.TargetID == "" || borrow.LoanID == "" ||
+		copyValue.Kind != core.OpCopy || copyValue.SourceID != borrow.TargetID || copyValue.TargetID == "" || copyValue.TypeID != borrow.TypeID ||
+		ret.Kind != core.OpReturn || ret.SourceID != copyValue.TargetID || ret.TypeID != copyValue.TypeID {
+		return false
+	}
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		if _, exists := places[place.ID]; exists {
+			return false
+		}
+		places[place.ID] = place
+	}
+	parameter, parameterOK := places[function.Parameter.ID]
+	borrowed, borrowedOK := places[borrow.TargetID]
+	copied, copiedOK := places[copyValue.TargetID]
+	fact := function.Linear.Types[0]
+	return parameterOK && borrowedOK && copiedOK && parameter.TypeID == borrowed.TypeID && parameter.TypeID == copied.TypeID &&
+		parameter.TypeID == fact.ID && fact.Shape.Constructor == "U64" && borrow.TypeID == fact.ID && copyValue.TypeID == fact.ID
+}
+
+func indexCallOperation(operations []core.LinearOperation, id string) int {
+	for index := range operations {
+		if operations[index].ID == id {
+			return index
+		}
+	}
+	return -1
+}
+
+func pathPhase24ErrorProgram(program core.Program) bool {
+	if program.Module != "phase24.error" {
+		return false
+	}
+	names := map[string]bool{}
+	for _, function := range program.Functions {
+		names[function.Name] = true
+	}
+	return names["acquire"] && names["probe"] && names["main"]
+}
+
+func validateRepeatedPathOwner(program core.Program) error {
+	problem := func(code, id string) error {
+		return fmt.Errorf("pathoracle.%s: invalid repeated owner path at %q", code, id)
+	}
+	byName := map[string]*core.Function{}
+	for index := range program.Functions {
+		byName[program.Functions[index].Name] = &program.Functions[index]
+	}
+	acquireFn, probe, main := byName["acquire"], byName["probe"], byName["main"]
+	if acquireFn == nil || probe == nil || main == nil || acquireFn.Linear == nil || probe.Linear == nil || main.Linear == nil {
+		return problem("owner_transfer_functions", "phase24")
+	}
+	var acquisition *core.LinearOperation
+	for index := range acquireFn.Linear.Operations {
+		op := &acquireFn.Linear.Operations[index]
+		if op.Kind == core.OpForeignCall && op.Foreign != nil && op.Foreign.Mode == "acquire" {
+			if acquisition != nil {
+				return problem("owner_transfer_acquire", op.ID)
+			}
+			acquisition = op
+		}
+	}
+	if acquisition == nil || acquisition.Foreign.Release != "schway_file_byte_release" || acquisition.Allocator != "libc_malloc" {
+		return problem("owner_transfer_helper", acquireFn.ID)
+	}
+	returned := false
+	for _, op := range acquireFn.Linear.Operations {
+		if op.Kind == core.OpReturn && op.SourceID == acquisition.TargetID {
+			returned = true
+		}
+		if op.Kind == core.OpRelease {
+			return problem("owner_transfer_early_release", op.ID)
+		}
+	}
+	if !returned {
+		return problem("owner_transfer_return", acquireFn.ID)
+	}
+	mainAcquireCalls := pathCalls(main, acquireFn.ID)
+	mainProbeCalls := pathCalls(main, probe.ID)
+	probeAcquireCalls := pathCalls(probe, acquireFn.ID)
+	if len(mainAcquireCalls) != 2 || len(mainProbeCalls) != 1 || len(probeAcquireCalls) != 1 {
+		return problem("owner_transfer_call", acquireFn.ID)
+	}
+	callIDs := map[string]bool{}
+	for _, call := range append(append(append([]core.LinearOperation{}, mainAcquireCalls...), mainProbeCalls...), probeAcquireCalls...) {
+		if call.ID == "" || callIDs[call.ID] || !pathCallEdgesPresent(program, main, probe, call) {
+			return problem("owner_transfer_call_edges", call.ID)
+		}
+		callIDs[call.ID] = true
+	}
+	if !pathProbeDischarges(probe, probeAcquireCalls[0], acquisition.ID) {
+		return problem("owner_transfer_probe_cleanup", probe.ID)
+	}
+	if !pathMainDischarges(main, mainAcquireCalls[0], mainAcquireCalls[1], mainProbeCalls[0], acquisition.ID) {
+		return problem("owner_transfer_main_cleanup", main.ID)
+	}
+	return nil
+}
+
+func pathCalls(function *core.Function, calleeID string) []core.LinearOperation {
+	var result []core.LinearOperation
+	for _, op := range function.Linear.Operations {
+		if op.Kind == core.OpCall && op.CalleeID == calleeID {
+			result = append(result, op)
+		}
+	}
+	return result
+}
+
+func pathCallEdgesPresent(program core.Program, main, probe *core.Function, call core.LinearOperation) bool {
+	for _, function := range []*core.Function{main, probe} {
+		for _, operation := range function.Linear.Operations {
+			if operation.ID != call.ID {
+				continue
+			}
+			var containing string
+			for _, block := range function.Linear.Blocks {
+				for _, opID := range block.OperationIDs {
+					if opID == call.ID {
+						containing = block.ID
+					}
+				}
+			}
+			edges := map[string]core.Edge{}
+			for _, edge := range function.Linear.Edges {
+				edges[edge.ID] = edge
+			}
+			okEdge, errEdge := edges[call.OkEdgeID], edges[call.ErrEdgeID]
+			if call.ErrTargetID == "" || containing == "" || okEdge.FromBlockID != containing || errEdge.FromBlockID != containing || okEdge.Pattern != "ok" || errEdge.Pattern != "err" || okEdge.ToBlockID == errEdge.ToBlockID || !pathBlockHasSuccessor(function, containing, okEdge.ToBlockID) || !pathBlockHasSuccessor(function, containing, errEdge.ToBlockID) {
+				return false
+			}
+			for _, place := range function.Linear.Places {
+				if place.ID != call.ErrTargetID {
+					continue
+				}
+				for _, fact := range function.Linear.Types {
+					if fact.ID == place.TypeID {
+						return fact.Shape.Constructor == "ResourceError" && pathFailureEnvelopeCovers(program, call.CalleeID)
+					}
+				}
+			}
+			return false
+		}
+	}
+	return false
+}
+
+func pathBlockHasSuccessor(function *core.Function, blockID, successorID string) bool {
+	for _, block := range function.Linear.Blocks {
+		if block.ID != blockID {
+			continue
+		}
+		for _, successor := range block.Successors {
+			if successor == successorID {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func pathFailureEnvelopeCovers(program core.Program, calleeID string) bool {
+	var callee *core.Function
+	for index := range program.Functions {
+		if program.Functions[index].ID == calleeID {
+			callee = &program.Functions[index]
+			break
+		}
+	}
+	if callee == nil || callee.Linear == nil {
+		return false
+	}
+	constructor := map[string]string{}
+	for _, fact := range callee.Linear.Types {
+		constructor[fact.ID] = fact.Shape.Constructor
+	}
+	wanted := map[string]bool{}
+	for _, op := range callee.Linear.Operations {
+		if op.Kind == core.OpFail {
+			wanted[constructor[op.TypeID]] = true
+		}
+		if op.Foreign != nil && op.Foreign.Fails != "" {
+			wanted[op.Foreign.Fails] = true
+		}
+	}
+	if len(wanted) == 0 {
+		return false
+	}
+	covered := map[string]bool{}
+	for _, dataType := range program.DataTypes {
+		if dataType.Name == "ResourceError" && len(dataType.AlternativeDetails) == 0 {
+			for _, name := range dataType.Alternatives {
+				covered[name] = true
+			}
+		}
+	}
+	if len(covered) == 0 {
+		return false
+	}
+	for name := range wanted {
+		found := false
+		for _, dataType := range program.DataTypes {
+			if dataType.Name != name || len(dataType.AlternativeDetails) != 0 {
+				continue
+			}
+			found = true
+			for _, alternative := range dataType.Alternatives {
+				if !covered[alternative] {
+					return false
+				}
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+func pathEdgeBlock(function *core.Function, edgeID string) string {
+	for _, edge := range function.Linear.Edges {
+		if edge.ID == edgeID {
+			return edge.ToBlockID
+		}
+	}
+	return ""
+}
+
+func pathTerminalCleanup(function *core.Function, edgeID string, reverseOwnerPlaces []string, terminalSource string, terminal core.OperationKind, acquireID string) bool {
+	blockID := pathEdgeBlock(function, edgeID)
+	for _, block := range function.Linear.Blocks {
+		if block.ID != blockID {
+			continue
+		}
+		if len(block.OperationIDs) != len(reverseOwnerPlaces)+1 {
+			return false
+		}
+		byID := map[string]core.LinearOperation{}
+		for _, op := range function.Linear.Operations {
+			byID[op.ID] = op
+		}
+		for index, owner := range reverseOwnerPlaces {
+			op := byID[block.OperationIDs[index]]
+			if op.Kind != core.OpRelease || op.SourceID != owner || op.ReleasesOperationID != acquireID || op.Foreign == nil || op.Foreign.Mode != "consume" || op.Allocator != "libc_malloc" {
+				return false
+			}
+		}
+		last := byID[block.OperationIDs[len(block.OperationIDs)-1]]
+		return last.Kind == terminal && (terminalSource == "" || last.SourceID == terminalSource)
+	}
+	return false
+}
+
+func pathProbeDischarges(probe *core.Function, helperCall core.LinearOperation, acquisitionID string) bool {
+	var use core.LinearOperation
+	count := 0
+	for _, operation := range probe.Linear.Operations {
+		if operation.Foreign != nil && operation.Foreign.Mode == "borrow" {
+			use = operation
+			count++
+		}
+	}
+	if count != 1 || use.SourceID != helperCall.TargetID || use.ErrTargetID == "" || use.Foreign.Fails != "UseError" {
+		return false
+	}
+	return pathTerminalCleanup(probe, use.OkEdgeID, []string{helperCall.TargetID}, use.TargetID, core.OpReturn, acquisitionID) &&
+		pathTerminalCleanup(probe, use.ErrEdgeID, []string{helperCall.TargetID}, use.ErrTargetID, core.OpFail, acquisitionID) &&
+		pathTerminalCleanup(probe, helperCall.ErrEdgeID, nil, helperCall.ErrTargetID, core.OpFail, acquisitionID)
+}
+
+func pathMainDischarges(main *core.Function, callA, callB, callProbe core.LinearOperation, acquisitionID string) bool {
+	return pathTerminalCleanup(main, callA.ErrEdgeID, nil, callA.ErrTargetID, core.OpFail, acquisitionID) &&
+		pathTerminalCleanup(main, callB.ErrEdgeID, []string{callA.TargetID}, callB.ErrTargetID, core.OpFail, acquisitionID) &&
+		pathTerminalCleanup(main, callProbe.ErrEdgeID, []string{callB.TargetID, callA.TargetID}, callProbe.ErrTargetID, core.OpFail, acquisitionID) &&
+		pathTerminalCleanup(main, callProbe.OkEdgeID, []string{callB.TargetID, callA.TargetID}, callProbe.TargetID, core.OpReturn, acquisitionID)
 }
 
 func pathOracleIdentifier(value string) bool {
@@ -305,14 +924,21 @@ type blockIndex struct {
 	byID       map[string]core.Block
 	operations map[string][]core.LinearOperation // blockID -> its operations, resolved from OperationIDs
 	edgeID     map[[2]string]string
+	places     map[string]bool
 }
 
 func indexBlocks(function core.Function) blockIndex {
 	idx := blockIndex{
-		byID: map[string]core.Block{}, operations: map[string][]core.LinearOperation{}, edgeID: map[[2]string]string{},
+		byID: map[string]core.Block{}, operations: map[string][]core.LinearOperation{}, edgeID: map[[2]string]string{}, places: map[string]bool{},
 	}
 	if function.Linear == nil {
 		return idx
+	}
+	for _, place := range function.Linear.Places {
+		idx.places[place.ID] = true
+	}
+	if function.Parameter.ID != "" {
+		idx.places[function.Parameter.ID] = true
 	}
 	byOperationID := make(map[string]core.LinearOperation, len(function.Linear.Operations))
 	for _, operation := range function.Linear.Operations {
@@ -418,6 +1044,9 @@ func linearizePath(functionID string, idx blockIndex, blockIDs []string) (map[st
 		operations := idx.operations[blockID]
 		for opIndex, operation := range operations {
 			work++
+			if operation.Kind != core.OpConst && operation.SourceID != "" && !idx.places[operation.SourceID] {
+				return nil, work, &unknownPlaceError{functionID: functionID, placeID: operation.SourceID, operationID: operation.ID}
+			}
 			if isTerminatorKind(operation.Kind) {
 				sawTerminator = true
 			}
@@ -466,6 +1095,18 @@ func linearizePath(functionID string, idx blockIndex, blockIDs []string) (map[st
 	}
 	return states, work, nil
 }
+
+// unknownPlaceError is returned when a path operation's source is not one of
+// the function's independently indexed places. Without this boundary check,
+// a forged terminal source silently inherited no loans and could make a
+// retained loan appear to have ended earlier than its actual use.
+type unknownPlaceError struct{ functionID, placeID, operationID string }
+
+func (e *unknownPlaceError) Error() string {
+	return fmt.Sprintf("pathoracle.unknown_place: function %q operation %q references unknown source place %q", e.functionID, e.operationID, e.placeID)
+}
+
+func (e *unknownPlaceError) Code() string { return "pathoracle.unknown_place" }
 
 // pathResult is one enumerated path together with its replayed loan states
 // and, derived from those, which blocks along the path each loan is still

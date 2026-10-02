@@ -94,8 +94,10 @@ func ExpectedEscapes() []string { return []string{KnownEscape} }
 // Problem is the origin package's independent-validation finding shape,
 // matching corevalidate.Problem's {Code, Detail} contract.
 type Problem struct {
-	Code   string `json:"code"`
-	Detail string `json:"detail,omitempty"`
+	Code              string `json:"code"`
+	Detail            string `json:"detail,omitempty"`
+	FunctionID        string `json:"function_id,omitempty"`
+	ReturnOperationID string `json:"return_operation_id,omitempty"`
 }
 
 // Error is CheckSummary's typed failure, matching evidence.ValidationError's
@@ -294,6 +296,13 @@ func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOpe
 			// A constant introduces a fresh owned value. It has no parameter
 			// origin and is the terminal root for this backward walk.
 			return ReturnOrigin{OperationID: returnOp.ID}
+		case core.OpCopy:
+			if originCopyIsU64(function, operation) {
+				// The copy operation still reads the borrowed place, but its
+				// target is an independent scalar value and therefore has no
+				// borrowed return origin.
+				return ReturnOrigin{OperationID: returnOp.ID}
+			}
 		case core.OpBorrowExclusive:
 			if derivedAccess == "" {
 				derivedAccess = "exclusive"
@@ -382,6 +391,22 @@ func walkReturnOrigin(function core.Function, sourceOf map[string]core.LinearOpe
 	return ReturnOrigin{OperationID: returnOp.ID, Paths: []string{function.Parameter.Name}, Access: derivedAccess, Derived: true}
 }
 
+// originCopyIsU64 is originvalidate's independent recognition of the only
+// scalar value-copy boundary admitted by Phase 25. The core validator
+// separately re-derives Copy ability; this walk uses the closed U64 shape
+// rather than importing or accepting the producer's origin conclusion.
+func originCopyIsU64(function core.Function, operation core.LinearOperation) bool {
+	if operation.Kind != core.OpCopy || operation.TypeID == "" || function.Linear == nil {
+		return false
+	}
+	for _, fact := range function.Linear.Types {
+		if fact.ID == operation.TypeID {
+			return fact.Shape.Constructor == "U64" && len(fact.Shape.Arguments) == 0
+		}
+	}
+	return false
+}
+
 // RecomputeOrigin derives the origin path(s) and access mode a function's
 // body actually returns, as the conservative combination of every
 // RecomputeOriginPerReturn element (the "combination law", 03-10-PLAN.md):
@@ -428,6 +453,501 @@ func RecomputeOrigin(function core.Function, calleeContracts map[string]calleeOr
 		return orderedPaths, AccessConflicting, true
 	}
 	return orderedPaths, combinedAccess, true
+}
+
+func hasOwnerCall(function core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	for _, op := range function.Linear.Operations {
+		if op.Kind == core.OpCall {
+			return true
+		}
+	}
+	return false
+}
+
+// transferredOwnerProblem derives the helper-owned acquisition and follows its return
+// through the receiving call, borrowed use, and final paired discharge.
+func transferredOwnerProblem(program core.Program) *Problem {
+	if originPhase24ErrorProgram(program) {
+		return originRepeatedOwnerProblem(program)
+	}
+	fail := func(id string) *Problem {
+		return &Problem{Code: "core.local_owner_transfer", Detail: fmt.Sprintf("invalid transferred owner at %s", id)}
+	}
+	type foundOp struct {
+		f  *core.Function
+		op core.LinearOperation
+	}
+	var acq foundOp
+	var helper *core.Function
+	for i := range program.Functions {
+		f := &program.Functions[i]
+		if f.Linear == nil {
+			continue
+		}
+		for _, op := range f.Linear.Operations {
+			if op.Foreign != nil && op.Foreign.Mode == "acquire" {
+				if helper != nil {
+					return fail(op.ID)
+				}
+				helper = f
+				acq = foundOp{f, op}
+			}
+		}
+	}
+	if helper == nil || helper.ReturnType != "FileByteOwner" {
+		return nil
+	}
+	if helper.Parameter.Type != "PathToken" || acq.op.Foreign == nil || acq.op.Kind != core.OpForeignCall || acq.op.Foreign.Symbol != "schway_file_byte_acquire" || acq.op.Foreign.ABIType != "schway_file_byte_acquire_fn" || acq.op.Foreign.ParameterType != "PathToken" || acq.op.Foreign.ResultType != "FileByteOwner" || acq.op.Foreign.Fails != "AcquireError" || acq.op.Foreign.Allocator != "libc_malloc" || acq.op.Foreign.Release != "schway_file_byte_release" || acq.op.ErrTargetID == "" || acq.op.OkEdgeID == "" || acq.op.ErrEdgeID == "" {
+		return fail(helper.ID)
+	}
+	var returned *core.LinearOperation
+	for i := range helper.Linear.Operations {
+		op := &helper.Linear.Operations[i]
+		if op.Kind == core.OpReturn {
+			if returned != nil {
+				return fail(op.ID)
+			}
+			returned = op
+		}
+		if op.Kind == core.OpRelease {
+			return fail(op.ID)
+		}
+	}
+	if returned == nil || returned.SourceID != acq.op.TargetID || acq.op.ErrTargetID == "" {
+		return fail(helper.ID)
+	}
+	var caller *core.Function
+	var call, borrow, release, ret *core.LinearOperation
+	for i := range program.Functions {
+		f := &program.Functions[i]
+		if f.Linear == nil {
+			continue
+		}
+		for j := range f.Linear.Operations {
+			op := &f.Linear.Operations[j]
+			if op.Kind == core.OpCall && op.CalleeID == helper.ID {
+				if caller != nil {
+					return fail(op.ID)
+				}
+				caller = f
+				call = op
+			}
+		}
+	}
+	if caller == nil || caller.ReturnType != "U64" {
+		return fail(helper.ID)
+	}
+	bi, ri, ti := -1, -1, -1
+	for i := range caller.Linear.Operations {
+		op := &caller.Linear.Operations[i]
+		switch {
+		case op.Kind == core.OpCopy && op.SourceID == call.TargetID:
+			return fail(op.ID)
+		case op.Foreign != nil && op.Foreign.Mode == "borrow":
+			if borrow != nil {
+				return fail(op.ID)
+			}
+			borrow = op
+			bi = i
+		case op.Kind == core.OpRelease:
+			if release != nil {
+				return fail(op.ID)
+			}
+			release = op
+			ri = i
+		case op.Kind == core.OpReturn:
+			if ret != nil {
+				return fail(op.ID)
+			}
+			ret = op
+			ti = i
+		}
+	}
+	if borrow == nil || release == nil || ret == nil || borrow.SourceID != call.TargetID || release.SourceID != call.TargetID || release.ReleasesOperationID != acq.op.ID || release.Foreign == nil || borrow.Foreign == nil || release.Foreign.Mode != "consume" || release.Foreign.Symbol != acq.op.Foreign.Release || release.Foreign.ABIType != "schway_file_byte_release_fn" || release.Foreign.ParameterType != "FileByteOwner" || release.Foreign.ResultType != "Unit" || release.Foreign.Fails != "" || release.Foreign.Allocator != acq.op.Foreign.Allocator || release.Allocator != acq.op.Foreign.Allocator || borrow.Foreign.Symbol != "schway_file_byte_use" || borrow.Foreign.ABIType != "schway_file_byte_use_fn" || borrow.Foreign.ParameterType != "FileByteOwner" || borrow.Foreign.ResultType != "U64" || borrow.Foreign.Fails != "UseError" {
+		return fail(caller.ID)
+	}
+	if !(bi >= 0 && bi < ri && ri < ti) {
+		return fail(caller.ID)
+	}
+	if ret.SourceID == borrow.TargetID {
+		if !originPhase24DirectOwnerResult(program, caller, call, borrow, release, ret) {
+			return fail(caller.ID)
+		}
+	} else if !originPhase25PointerSuccessorResult(program, caller, call, borrow, release, ret) {
+		return fail(caller.ID)
+	}
+	return nil
+}
+
+// originPhase24DirectOwnerResult keeps direct borrowed-result return limited
+// to the exact Phase 24 caller; a Phase 25 chain cannot fall back to it after
+// its final result is tampered.
+func originPhase24DirectOwnerResult(program core.Program, caller *core.Function, ownerCall, borrow, release, ret *core.LinearOperation) bool {
+	if caller == nil || caller.Name != "main" || caller.Parameter.Type != "PathToken" || caller.ReturnType != "U64" ||
+		caller.Linear == nil || len(program.Functions) != 2 || len(caller.Linear.Operations) != 4 {
+		return false
+	}
+	ops := caller.Linear.Operations
+	return ops[0].ID == ownerCall.ID && ops[1].ID == borrow.ID && ops[2].ID == release.ID && ops[3].ID == ret.ID &&
+		ops[0].Kind == core.OpCall && ops[1].Kind == core.OpForeignCall && ops[2].Kind == core.OpRelease && ops[3].Kind == core.OpReturn
+}
+
+// originPhase25PointerSuccessorResult independently checks the only copied
+// scalar result chain admitted by the transferred-owner origin peer: a
+// shared U64 helper followed by an exclusive U64 helper, then paired release
+// and return of the exclusive value.
+func originPhase25PointerSuccessorResult(program core.Program, caller *core.Function, ownerCall, borrow, release, ret *core.LinearOperation) bool {
+	if caller == nil || caller.Name != "main" || caller.Parameter.Type != "PathToken" || caller.ReturnType != "U64" ||
+		caller.Linear == nil || len(program.Functions) != 4 || len(caller.Linear.Operations) != 6 {
+		return false
+	}
+	ops := caller.Linear.Operations
+	if ops[0].ID != ownerCall.ID || ops[1].ID != borrow.ID || ops[4].ID != release.ID || ops[5].ID != ret.ID ||
+		ops[0].Kind != core.OpCall || ops[1].Kind != core.OpForeignCall || ops[2].Kind != core.OpCall || ops[3].Kind != core.OpCall ||
+		ops[4].Kind != core.OpRelease || ops[5].Kind != core.OpReturn {
+		return false
+	}
+	sharedCall, exclusiveCall := ops[2], ops[3]
+	if sharedCall.ID == "" || exclusiveCall.ID == "" || sharedCall.CalleeID == "" || exclusiveCall.CalleeID == "" ||
+		sharedCall.CalleeID == exclusiveCall.CalleeID || sharedCall.Foreign != nil || exclusiveCall.Foreign != nil ||
+		sharedCall.ErrTargetID != "" || sharedCall.OkEdgeID != "" || sharedCall.ErrEdgeID != "" ||
+		exclusiveCall.ErrTargetID != "" || exclusiveCall.OkEdgeID != "" || exclusiveCall.ErrEdgeID != "" ||
+		sharedCall.SourceID != borrow.TargetID || sharedCall.TargetID == "" || sharedCall.TypeID != borrow.TypeID ||
+		exclusiveCall.SourceID != sharedCall.TargetID || exclusiveCall.TargetID == "" || exclusiveCall.TypeID != sharedCall.TypeID ||
+		ret.SourceID != exclusiveCall.TargetID || ret.TypeID != exclusiveCall.TypeID {
+		return false
+	}
+	if !(originOperationIndex(caller.Linear.Operations, borrow.ID) < originOperationIndex(caller.Linear.Operations, sharedCall.ID) &&
+		originOperationIndex(caller.Linear.Operations, sharedCall.ID) < originOperationIndex(caller.Linear.Operations, exclusiveCall.ID) &&
+		originOperationIndex(caller.Linear.Operations, exclusiveCall.ID) < originOperationIndex(caller.Linear.Operations, release.ID)) {
+		return false
+	}
+	byID := make(map[string]*core.Function, len(program.Functions))
+	for index := range program.Functions {
+		byID[program.Functions[index].ID] = &program.Functions[index]
+	}
+	shared, exclusive := byID[sharedCall.CalleeID], byID[exclusiveCall.CalleeID]
+	if !originU64CopySuccessorHelper(shared, core.OpBorrowShared) || !originU64CopySuccessorHelper(exclusive, core.OpBorrowExclusive) {
+		return false
+	}
+	places := make(map[string]core.Place, len(caller.Linear.Places))
+	for _, place := range caller.Linear.Places {
+		if _, exists := places[place.ID]; exists {
+			return false
+		}
+		places[place.ID] = place
+	}
+	types := make(map[string]core.TypeFact, len(caller.Linear.Types))
+	for _, fact := range caller.Linear.Types {
+		if _, exists := types[fact.ID]; exists {
+			return false
+		}
+		types[fact.ID] = fact
+	}
+	parameter, parameterOK := places[caller.Parameter.ID]
+	owner, ownerOK := places[ownerCall.TargetID]
+	value, valueOK := places[borrow.TargetID]
+	sharedValue, sharedOK := places[sharedCall.TargetID]
+	exclusiveValue, exclusiveOK := places[exclusiveCall.TargetID]
+	return len(places) == 5 && len(types) == 3 && parameterOK && ownerOK && valueOK && sharedOK && exclusiveOK &&
+		parameter.TypeID != owner.TypeID && owner.TypeID != value.TypeID && value.TypeID == sharedValue.TypeID && value.TypeID == exclusiveValue.TypeID &&
+		types[parameter.TypeID].Shape.Constructor == "PathToken" && types[owner.TypeID].Shape.Constructor == "FileByteOwner" && types[value.TypeID].Shape.Constructor == "U64" &&
+		ownerCall.TypeID == owner.TypeID && borrow.TypeID == value.TypeID && sharedCall.TypeID == value.TypeID && exclusiveCall.TypeID == value.TypeID && ret.TypeID == value.TypeID
+}
+
+func originU64CopySuccessorHelper(function *core.Function, borrowKind core.OperationKind) bool {
+	if function == nil || function.Parameter.Type != "U64" || function.ReturnType != "U64" || function.ForeignContract != nil || function.Linear == nil ||
+		len(function.Linear.Operations) != 3 || len(function.Linear.Places) != 3 || len(function.Linear.Types) != 1 ||
+		len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 {
+		return false
+	}
+	borrow, copyValue, ret := function.Linear.Operations[0], function.Linear.Operations[1], function.Linear.Operations[2]
+	if borrow.Kind != borrowKind || borrow.SourceID != function.Parameter.ID || borrow.TargetID == "" || borrow.LoanID == "" ||
+		copyValue.Kind != core.OpCopy || copyValue.SourceID != borrow.TargetID || copyValue.TargetID == "" || copyValue.TypeID != borrow.TypeID ||
+		ret.Kind != core.OpReturn || ret.SourceID != copyValue.TargetID || ret.TypeID != copyValue.TypeID {
+		return false
+	}
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		if _, exists := places[place.ID]; exists {
+			return false
+		}
+		places[place.ID] = place
+	}
+	parameter, parameterOK := places[function.Parameter.ID]
+	borrowed, borrowedOK := places[borrow.TargetID]
+	copied, copiedOK := places[copyValue.TargetID]
+	fact := function.Linear.Types[0]
+	return parameterOK && borrowedOK && copiedOK && parameter.TypeID == borrowed.TypeID && parameter.TypeID == copied.TypeID &&
+		parameter.TypeID == fact.ID && fact.Shape.Constructor == "U64" && borrow.TypeID == fact.ID && copyValue.TypeID == fact.ID
+}
+
+func originOperationIndex(operations []core.LinearOperation, id string) int {
+	for index := range operations {
+		if operations[index].ID == id {
+			return index
+		}
+	}
+	return -1
+}
+
+func originPhase24ErrorProgram(program core.Program) bool {
+	if program.Module != "phase24.error" {
+		return false
+	}
+	seen := map[string]bool{}
+	for _, function := range program.Functions {
+		seen[function.Name] = true
+	}
+	return seen["acquire"] && seen["probe"] && seen["main"]
+}
+
+func originRepeatedOwnerProblem(program core.Program) *Problem {
+	fail := func(id string) *Problem {
+		return &Problem{Code: "core.local_owner_transfer", Detail: fmt.Sprintf("invalid repeated owner flow at %s", id)}
+	}
+	functions := map[string]*core.Function{}
+	for index := range program.Functions {
+		functions[program.Functions[index].Name] = &program.Functions[index]
+	}
+	helper, probe, caller := functions["acquire"], functions["probe"], functions["main"]
+	if helper == nil || probe == nil || caller == nil || helper.Linear == nil || probe.Linear == nil || caller.Linear == nil {
+		return fail("phase24 functions")
+	}
+	var acquisition *core.LinearOperation
+	for index := range helper.Linear.Operations {
+		op := &helper.Linear.Operations[index]
+		if op.Foreign != nil && op.Foreign.Mode == "acquire" {
+			if acquisition != nil {
+				return fail(op.ID)
+			}
+			acquisition = op
+		}
+	}
+	if acquisition == nil || acquisition.Kind != core.OpForeignCall || acquisition.Foreign == nil || acquisition.Foreign.Release != "schway_file_byte_release" {
+		return fail(helper.ID)
+	}
+	returned := false
+	for _, op := range helper.Linear.Operations {
+		if op.Kind == core.OpReturn && op.SourceID == acquisition.TargetID {
+			returned = true
+		}
+		if op.Kind == core.OpRelease {
+			return fail(op.ID)
+		}
+	}
+	if !returned {
+		return fail(helper.ID)
+	}
+	mainAcquires, mainProbes, probeAcquires := originCalls(caller, helper.ID), originCalls(caller, probe.ID), originCalls(probe, helper.ID)
+	if len(mainAcquires) != 2 || len(mainProbes) != 1 || len(probeAcquires) != 1 {
+		return fail(helper.ID)
+	}
+	allCalls := append(append(append([]core.LinearOperation{}, mainAcquires...), mainProbes...), probeAcquires...)
+	seenCallIDs := map[string]bool{}
+	for _, call := range allCalls {
+		if seenCallIDs[call.ID] || !originFallibleCall(program, caller, probe, call) {
+			return fail(call.ID)
+		}
+		seenCallIDs[call.ID] = true
+	}
+	if !originProbeReleases(probe, probeAcquires[0], acquisition.ID) {
+		return fail(probe.ID)
+	}
+	if !originMainReleases(caller, mainAcquires[0], mainAcquires[1], mainProbes[0], acquisition.ID) {
+		return fail(caller.ID)
+	}
+	return nil
+}
+
+func originCalls(function *core.Function, callee string) []core.LinearOperation {
+	var result []core.LinearOperation
+	for _, op := range function.Linear.Operations {
+		if op.Kind == core.OpCall && op.CalleeID == callee {
+			result = append(result, op)
+		}
+	}
+	return result
+}
+
+func originFallibleCall(program core.Program, caller, probe *core.Function, call core.LinearOperation) bool {
+	for _, function := range []*core.Function{caller, probe} {
+		for _, operation := range function.Linear.Operations {
+			if operation.ID != call.ID {
+				continue
+			}
+			var block string
+			for _, candidate := range function.Linear.Blocks {
+				for _, id := range candidate.OperationIDs {
+					if id == call.ID {
+						block = candidate.ID
+					}
+				}
+			}
+			var okEdge, errEdge *core.Edge
+			for index := range function.Linear.Edges {
+				edge := &function.Linear.Edges[index]
+				if edge.ID == call.OkEdgeID {
+					okEdge = edge
+				}
+				if edge.ID == call.ErrEdgeID {
+					errEdge = edge
+				}
+			}
+			if call.ErrTargetID == "" || block == "" || okEdge == nil || errEdge == nil || okEdge.FromBlockID != block || errEdge.FromBlockID != block || okEdge.Pattern != "ok" || errEdge.Pattern != "err" || okEdge.ToBlockID == errEdge.ToBlockID || !originBlockHasSuccessor(function, block, okEdge.ToBlockID) || !originBlockHasSuccessor(function, block, errEdge.ToBlockID) {
+				return false
+			}
+			return originPlaceType(function, call.ErrTargetID) == "ResourceError" && originFailureEnvelopeFits(program, call.CalleeID)
+		}
+	}
+	return false
+}
+
+func originBlockHasSuccessor(function *core.Function, blockID, successorID string) bool {
+	for _, block := range function.Linear.Blocks {
+		if block.ID != blockID {
+			continue
+		}
+		for _, successor := range block.Successors {
+			if successor == successorID {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func originFailureEnvelopeFits(program core.Program, calleeID string) bool {
+	var callee *core.Function
+	for index := range program.Functions {
+		if program.Functions[index].ID == calleeID {
+			callee = &program.Functions[index]
+			break
+		}
+	}
+	if callee == nil || callee.Linear == nil {
+		return false
+	}
+	byType := map[string]string{}
+	for _, fact := range callee.Linear.Types {
+		byType[fact.ID] = fact.Shape.Constructor
+	}
+	failing := map[string]bool{}
+	for _, operation := range callee.Linear.Operations {
+		if operation.Kind == core.OpFail {
+			failing[byType[operation.TypeID]] = true
+		}
+		if operation.Foreign != nil && operation.Foreign.Fails != "" {
+			failing[operation.Foreign.Fails] = true
+		}
+	}
+	if len(failing) == 0 {
+		return false
+	}
+	envelope := map[string]bool{}
+	for _, dataType := range program.DataTypes {
+		if dataType.Name == "ResourceError" && len(dataType.AlternativeDetails) == 0 {
+			for _, alt := range dataType.Alternatives {
+				envelope[alt] = true
+			}
+		}
+	}
+	if len(envelope) == 0 {
+		return false
+	}
+	for failure := range failing {
+		found := false
+		for _, dataType := range program.DataTypes {
+			if dataType.Name != failure || len(dataType.AlternativeDetails) != 0 {
+				continue
+			}
+			found = true
+			for _, alt := range dataType.Alternatives {
+				if !envelope[alt] {
+					return false
+				}
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+func originPlaceType(function *core.Function, placeID string) string {
+	types := map[string]string{}
+	for _, fact := range function.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	for _, place := range function.Linear.Places {
+		if place.ID == placeID {
+			return types[place.TypeID]
+		}
+	}
+	return ""
+}
+
+func originProbeReleases(probe *core.Function, acquireCall core.LinearOperation, acquisitionID string) bool {
+	var use *core.LinearOperation
+	for index := range probe.Linear.Operations {
+		op := &probe.Linear.Operations[index]
+		if op.Foreign != nil && op.Foreign.Mode == "borrow" {
+			if use != nil {
+				return false
+			}
+			use = op
+		}
+	}
+	if use == nil || use.SourceID != acquireCall.TargetID || use.Foreign.Fails != "UseError" || originPlaceType(probe, use.ErrTargetID) != "UseError" {
+		return false
+	}
+	return originCleanupBlock(probe, originEdgeTarget(probe, use.OkEdgeID), []string{acquireCall.TargetID}, use.TargetID, core.OpReturn, acquisitionID) &&
+		originCleanupBlock(probe, originEdgeTarget(probe, use.ErrEdgeID), []string{acquireCall.TargetID}, use.ErrTargetID, core.OpFail, acquisitionID) &&
+		originCleanupBlock(probe, originEdgeTarget(probe, acquireCall.ErrEdgeID), nil, acquireCall.ErrTargetID, core.OpFail, acquisitionID)
+}
+
+func originMainReleases(main *core.Function, callA, callB, callProbe core.LinearOperation, acquisitionID string) bool {
+	return originCleanupBlock(main, originEdgeTarget(main, callA.ErrEdgeID), nil, callA.ErrTargetID, core.OpFail, acquisitionID) &&
+		originCleanupBlock(main, originEdgeTarget(main, callB.ErrEdgeID), []string{callA.TargetID}, callB.ErrTargetID, core.OpFail, acquisitionID) &&
+		originCleanupBlock(main, originEdgeTarget(main, callProbe.ErrEdgeID), []string{callB.TargetID, callA.TargetID}, callProbe.ErrTargetID, core.OpFail, acquisitionID) &&
+		originCleanupBlock(main, originEdgeTarget(main, callProbe.OkEdgeID), []string{callB.TargetID, callA.TargetID}, callProbe.TargetID, core.OpReturn, acquisitionID)
+}
+
+func originEdgeTarget(function *core.Function, edgeID string) string {
+	for _, edge := range function.Linear.Edges {
+		if edge.ID == edgeID {
+			return edge.ToBlockID
+		}
+	}
+	return ""
+}
+
+func originCleanupBlock(function *core.Function, blockID string, owners []string, terminalSource string, terminal core.OperationKind, acquisitionID string) bool {
+	for _, block := range function.Linear.Blocks {
+		if block.ID != blockID {
+			continue
+		}
+		if len(block.OperationIDs) != len(owners)+1 {
+			return false
+		}
+		operations := map[string]core.LinearOperation{}
+		for _, op := range function.Linear.Operations {
+			operations[op.ID] = op
+		}
+		for index, owner := range owners {
+			release := operations[block.OperationIDs[index]]
+			if release.Kind != core.OpRelease || release.SourceID != owner || release.ReleasesOperationID != acquisitionID || release.Foreign == nil || release.Foreign.Mode != "consume" {
+				return false
+			}
+		}
+		last := operations[block.OperationIDs[len(block.OperationIDs)-1]]
+		return last.Kind == terminal && (terminalSource == "" || last.SourceID == terminalSource)
+	}
+	return false
 }
 
 // ValidatePublished recomputes every function's origin from its body and
@@ -520,8 +1040,10 @@ func checkForeignOriginOmitted(function core.Function) *Problem {
 // list: the word "export" does not appear on this path, because publication
 // safety and export membership are different rules (D-07-31).
 func PublishProblemsFor(function core.Function, calleeContracts map[string]calleeOriginFact) []Problem {
-	if problem := localOwnerOriginProblem(function); problem != nil {
-		return []Problem{*problem}
+	if function.ReturnType != "FileByteOwner" && !hasOwnerCall(function) {
+		if problem := localOwnerOriginProblem(function); problem != nil {
+			return []Problem{*problem}
+		}
 	}
 	if problem := checkForeignOriginOmitted(function); problem != nil {
 		return []Problem{*problem}
@@ -529,10 +1051,18 @@ func PublishProblemsFor(function core.Function, calleeContracts map[string]calle
 	recomputedPaths, recomputedAccess, ok := RecomputeOrigin(function, calleeContracts)
 	if function.PublicOrigin == nil {
 		if ok {
-			return []Problem{{
-				Code:   "core.origin_omitted",
-				Detail: fmt.Sprintf("%s: no declared origin, but body derives origin %v with access %q", function.ID, recomputedPaths, recomputedAccess),
-			}}
+			problem := Problem{
+				Code:       "core.origin_omitted",
+				Detail:     fmt.Sprintf("%s: no declared origin, but body derives origin %v with access %q", function.ID, recomputedPaths, recomputedAccess),
+				FunctionID: function.ID,
+			}
+			for _, returned := range RecomputeOriginPerReturn(function, calleeContracts) {
+				if returned.Derived {
+					problem.ReturnOperationID = returned.OperationID
+					break
+				}
+			}
+			return []Problem{problem}
 		}
 		return nil
 	}
@@ -681,10 +1211,83 @@ func originIdentifier(value string) bool {
 // whole-program first-problem contract exactly, byte-for-byte, by returning
 // the first non-empty PublishProblemsFor result it encounters.
 func ValidatePublished(program core.Program) []Problem {
+	if problem := transferredOwnerProblem(program); problem != nil {
+		return []Problem{*problem}
+	}
 	calleeContracts := BuildCalleeOriginFacts(program)
 	for _, function := range program.Functions {
+		if problem := pointerBorrowConflictProblem(function); problem != nil {
+			return []Problem{*problem}
+		}
 		if problems := PublishProblemsFor(function, calleeContracts); len(problems) > 0 {
 			return problems
+		}
+	}
+	return nil
+}
+
+// pointerBorrowConflictProblem independently replays the bounded straight-
+// line pointer-helper loan shape. It derives each loan's owner, access
+// family, and last use from this function's own operations; it does not
+// consume check/corevalidate classifications or materialized endpoints.
+func pointerBorrowConflictProblem(function core.Function) *Problem {
+	if function.Linear == nil || len(function.Linear.Blocks) != 0 {
+		return nil
+	}
+	operations := function.Linear.Operations
+	placeLoans := map[string][]string{function.Parameter.ID: nil}
+	loanOwner := map[string]string{}
+	loanAccess := map[string]string{}
+	loanBirth := map[string]int{}
+	lastUse := map[string]int{}
+	for index, operation := range operations {
+		carried := placeLoans[operation.SourceID]
+		for _, loanID := range carried {
+			lastUse[loanID] = index
+		}
+		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
+			owner := operation.SourceID
+			if len(carried) > 0 {
+				owner = loanOwner[carried[0]]
+			}
+			loanOwner[operation.LoanID] = owner
+			loanBirth[operation.LoanID] = index
+			if operation.Kind == core.OpBorrowShared {
+				loanAccess[operation.LoanID] = "shared"
+			} else {
+				loanAccess[operation.LoanID] = "exclusive"
+			}
+			lastUse[operation.LoanID] = index
+			carried = append(append([]string(nil), carried...), operation.LoanID)
+		}
+		if operation.TargetID != "" {
+			placeLoans[operation.TargetID] = append([]string(nil), carried...)
+		}
+	}
+	for index, operation := range operations {
+		if operation.Kind != core.OpBorrowShared && operation.Kind != core.OpBorrowExclusive {
+			continue
+		}
+		owner := operation.SourceID
+		carriedBySource := make(map[string]bool)
+		for _, loanID := range placeLoans[operation.SourceID] {
+			owner = loanOwner[loanID]
+			carriedBySource[loanID] = true
+		}
+		newExclusive := operation.Kind == core.OpBorrowExclusive
+		for loanID, activeOwner := range loanOwner {
+			if activeOwner != owner || loanBirth[loanID] >= index || lastUse[loanID] < index {
+				continue
+			}
+			// A borrow through an existing loan is a reborrow, so that
+			// loan itself is not a competing sibling. A shared parent
+			// cannot authorize an exclusive child, however.
+			if carriedBySource[loanID] && (!newExclusive || loanAccess[loanID] == "exclusive") {
+				continue
+			}
+			if newExclusive || loanAccess[loanID] == "exclusive" {
+				return &Problem{Code: "core.borrow_conflict", Detail: operation.ID}
+			}
 		}
 	}
 	return nil

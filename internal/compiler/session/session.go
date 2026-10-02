@@ -839,6 +839,181 @@ func peerRefusalDiagnostic(validated corevalidate.Result, moduleID string) diagn
 	return diagnostic.Error(code, diagnostic.Span{}, detail)
 }
 
+func originPeerRefusalDiagnostic(problem originvalidate.Problem, program core.Program, tree syntax.Tree) diagnostic.Diagnostic {
+	fallback := func() diagnostic.Diagnostic {
+		return diagnostic.Error(problem.Code, diagnostic.Span{}, problem.Detail)
+	}
+	if problem.FunctionID == "" || problem.ReturnOperationID == "" {
+		return fallback()
+	}
+	var function *core.Function
+	for index := range program.Functions {
+		if program.Functions[index].ID == problem.FunctionID {
+			function = &program.Functions[index]
+			break
+		}
+	}
+	if function == nil || function.Linear == nil {
+		return fallback()
+	}
+	var returned *core.LinearOperation
+	for index := range function.Linear.Operations {
+		if function.Linear.Operations[index].ID == problem.ReturnOperationID && function.Linear.Operations[index].Kind == core.OpReturn {
+			returned = &function.Linear.Operations[index]
+			break
+		}
+	}
+	if returned == nil {
+		return fallback()
+	}
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = place
+	}
+	resultPlace, exists := places[returned.SourceID]
+	if !exists || resultPlace.Name == "" {
+		return fallback()
+	}
+	start, end, exists := sourceFunctionTokenBounds(tree.Tokens, function.Name)
+	if !exists {
+		return fallback()
+	}
+	primary, exists := lastIdentifierSpan(tree.Tokens, start, end, resultPlace.Name)
+	if !exists {
+		return fallback()
+	}
+	definitions := make(map[string]core.LinearOperation, len(function.Linear.Operations))
+	for _, operation := range function.Linear.Operations {
+		if operation.TargetID != "" {
+			definitions[operation.TargetID] = operation
+		}
+	}
+	current := returned.SourceID
+	visited := map[string]bool{}
+	var borrow *core.LinearOperation
+	for current != function.Parameter.ID && !visited[current] {
+		visited[current] = true
+		operation, ok := definitions[current]
+		if !ok {
+			break
+		}
+		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
+			borrow = &operation
+			break
+		}
+		if operation.Kind == core.OpCopy {
+			break
+		}
+		current = operation.SourceID
+	}
+	if borrow == nil {
+		return fallback()
+	}
+	borrowedPlace, hasBorrowedPlace := places[borrow.TargetID]
+	borrowSource, hasBorrowSource := places[borrow.SourceID]
+	if !hasBorrowedPlace || !hasBorrowSource || borrowedPlace.Name == "" || borrowSource.Name == "" {
+		return fallback()
+	}
+	cause, exists := borrowExpressionSpan(tree.Tokens, start, end, borrowedPlace.Name, borrowSource.Name)
+	if !exists {
+		return fallback()
+	}
+	return diagnostic.Error(problem.Code, primary, problem.Detail, diagnostic.Cause{
+		Kind:   "borrow_created_here",
+		Detail: "borrow that created the escaped result",
+		Span:   &cause,
+	})
+}
+
+func sourceFunctionTokenBounds(tokens []syntax.Token, functionName string) (int, int, bool) {
+	for index, token := range tokens {
+		if token.Kind != syntax.TokenFn {
+			continue
+		}
+		nameIndex := nextSignificantToken(tokens, index+1)
+		if nameIndex < 0 || tokens[nameIndex].Kind != syntax.TokenIdentifier || tokens[nameIndex].Text != functionName {
+			continue
+		}
+		parameterList := nextSignificantToken(tokens, nameIndex+1)
+		if parameterList < 0 || tokens[parameterList].Kind != syntax.TokenLParen {
+			continue
+		}
+		open := -1
+		for cursor := nameIndex + 1; cursor < len(tokens); cursor++ {
+			if tokens[cursor].Kind == syntax.TokenLBrace {
+				open = cursor
+				break
+			}
+		}
+		if open < 0 {
+			return 0, 0, false
+		}
+		depth := 1
+		for cursor := open + 1; cursor < len(tokens); cursor++ {
+			switch tokens[cursor].Kind {
+			case syntax.TokenLBrace:
+				depth++
+			case syntax.TokenRBrace:
+				depth--
+				if depth == 0 {
+					return open + 1, cursor, true
+				}
+			}
+		}
+		return 0, 0, false
+	}
+	return 0, 0, false
+}
+
+func nextSignificantToken(tokens []syntax.Token, start int) int {
+	for index := start; index < len(tokens); index++ {
+		if !tokens[index].Trivia() && tokens[index].Kind != syntax.TokenEOF {
+			return index
+		}
+	}
+	return -1
+}
+
+func lastIdentifierSpan(tokens []syntax.Token, start, end int, name string) (diagnostic.Span, bool) {
+	var span diagnostic.Span
+	found := false
+	for index := start; index < end; index++ {
+		if tokens[index].Kind == syntax.TokenIdentifier && tokens[index].Text == name {
+			span = tokens[index].Span
+			found = true
+		}
+	}
+	return span, found
+}
+
+func borrowExpressionSpan(tokens []syntax.Token, start, end int, targetName, sourceName string) (diagnostic.Span, bool) {
+	for index := start; index < end; index++ {
+		if tokens[index].Kind != syntax.TokenLet {
+			continue
+		}
+		target := nextSignificantToken(tokens, index+1)
+		if target < 0 || tokens[target].Kind != syntax.TokenIdentifier || tokens[target].Text != targetName {
+			continue
+		}
+		equal := nextSignificantToken(tokens, target+1)
+		if equal < 0 {
+			continue
+		}
+		borrow := nextSignificantToken(tokens, equal+1)
+		if equal < 0 || tokens[equal].Kind != syntax.TokenEqual || borrow < 0 || tokens[borrow].Kind != syntax.TokenBorrow {
+			continue
+		}
+		source := nextSignificantToken(tokens, borrow+1)
+		if source >= 0 && tokens[source].Kind == syntax.TokenMut {
+			source = nextSignificantToken(tokens, source+1)
+		}
+		if source >= 0 && source < end && tokens[source].Kind == syntax.TokenIdentifier && tokens[source].Text == sourceName {
+			return diagnostic.Span{Start: tokens[borrow].Span.Start, End: tokens[source].Span.End}, true
+		}
+	}
+	return diagnostic.Span{}, false
+}
+
 // checkCommandPeerSeam is 07-10 Task 1's unexported fault-injection seam
 // for control:check.peer_consulted: when true, CheckCommandFile skips the
 // corevalidate.Validate consult entirely, restoring the pre-07-10 CR-04
@@ -848,6 +1023,17 @@ func peerRefusalDiagnostic(validated corevalidate.Result, moduleID string) diagn
 // session_phase7_export_test.go's SetCheckCommandPeerSeam; no exported
 // session symbol reaches it on a production path.
 var checkCommandPeerSeam = false
+
+// checkCommandPeerObservedForTest records which independent command peers
+// CheckCommandFile actually consults. Production leaves it nil; same-package
+// tests use it to pin the admission order without merging peer predicates.
+var checkCommandPeerObservedForTest func(string)
+
+func observeCheckCommandPeer(name string) {
+	if checkCommandPeerObservedForTest != nil {
+		checkCommandPeerObservedForTest(name)
+	}
+}
 
 // interfacePeerRefusalSeam is 07-10 Task 2's unexported fault-injection
 // seam for control:interface.peer_refusal_is_invalid: when true, both
@@ -883,6 +1069,7 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 		return completeCommand(result, started, checked.Work), nil
 	}
 	if !checkCommandPeerSeam {
+		observeCheckCommandPeer("corevalidate")
 		validated := corevalidate.Validate(checked.Program)
 		if !validated.Valid {
 			result.Status = protocol.StatusInvalid
@@ -891,6 +1078,7 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 		}
 		checked.Program = validated.Program()
 	}
+	observeCheckCommandPeer("originvalidate")
 	if problems := originvalidate.ValidatePublished(checked.Program); len(problems) > 0 {
 		// D-04-27/WR-01: originvalidate.ValidatePublished no longer runs only
 		// on the `interface export` path -- the foreign declaration surface
@@ -898,9 +1086,15 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 		// so `schway check` must independently recompute every published
 		// origin too, not merely trust what the checker declared.
 		result.Status = protocol.StatusInvalid
-		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error(problems[0].Code, diagnostic.Span{}, problems[0].Detail)}
+		result.Diagnostics = []diagnostic.Diagnostic{originPeerRefusalDiagnostic(problems[0], checked.Program, checked.Tree)}
 	} else {
-		result.ModuleID = checked.Program.ModuleID
+		observeCheckCommandPeer("pathoracle")
+		if err := pathoracle.ValidateLocalOwnerPaths(checked.Program); err != nil {
+			result.Status = protocol.StatusInvalid
+			result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error("core.pathoracle_refused", diagnostic.Span{}, err.Error())}
+		} else {
+			result.ModuleID = checked.Program.ModuleID
+		}
 	}
 	return completeCommand(result, started, checked.Work), nil
 }

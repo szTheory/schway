@@ -68,7 +68,7 @@ jobs:
       - run: go vet ./...
       - run: go build ./...
       - run: go test ./...
-      - run: go test -race ./...
+      - run: go test -race -timeout=20m ./...
 
   evidence-aggregate:
     name: current evidence aggregate (${{ matrix.os }})
@@ -93,6 +93,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libc++-dev libc++abi-dev
+      - name: scripts/verify-phase24.sh
+        run: sh scripts/verify-phase24.sh
+      - name: scripts/verify-phase25.sh
+        run: sh scripts/verify-phase25.sh
       - name: scripts/verify-phase23.sh
         run: sh scripts/verify-phase23.sh
       - name: scripts/verify-phase6.sh

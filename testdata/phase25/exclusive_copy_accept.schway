@@ -1,0 +1,11 @@
+module phase25.exclusive_copy_accept
+
+export {
+  fn exclusive_copy
+}
+
+fn exclusive_copy(value: U64) -> U64 {
+  let borrowed = borrow mut value
+  let copied = borrowed
+  copied
+}

@@ -11,23 +11,23 @@
     {
       "number": "23",
       "name": "Live Local Allocation and Discharge",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "24",
       "name": "Ownership Transfer Through Calls and Errors",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "25",
       "name": "Separate Pointer Successors and Integrated Utility",
-      "status": "pending"
+      "status": "complete"
     }
   ],
   "next": {
-    "command": "/gsd:progress --next",
-    "label": "Advance to the next step (verify)",
-    "reason": "Phase 23 of 4 · 25% · ready to verify"
+    "command": "/gsd:new-milestone",
+    "label": "Start a new milestone",
+    "reason": "All phases complete — start a new milestone"
   },
-  "updated_at": "2026-09-28T14:56:13.932Z"
+  "updated_at": "2026-10-02T12:10:00.815Z"
 }

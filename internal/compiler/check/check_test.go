@@ -2270,6 +2270,220 @@ func readPhase23Fixture(t *testing.T, name string) []byte {
 	return source
 }
 
+func TestPhase24SourceTransfer(t *testing.T) {
+	source, err := os.ReadFile("../../../examples/phase24/transfer.schway")
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("helper-acquired owner transfer was refused: %+v", result.Diagnostics)
+	}
+	functions := make(map[string]core.Function, len(result.Program.Functions))
+	for _, function := range result.Program.Functions {
+		functions[function.Name] = function
+	}
+	helper, ok := functions["acquire"]
+	if !ok || helper.ReturnType != "FileByteOwner" {
+		t.Fatalf("owner-acquiring helper missing owning return: %+v", helper)
+	}
+	types := make(map[string]string, len(helper.Linear.Types))
+	for _, fact := range helper.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	places := make(map[string]core.Place, len(helper.Linear.Places))
+	for _, place := range helper.Linear.Places {
+		places[place.ID] = place
+	}
+	var acquisitionID string
+	for _, operation := range helper.Linear.Operations {
+		if operation.Kind == core.OpForeignCall && operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+			acquisitionID = operation.ID
+			if operation.Foreign.Symbol != "schway_file_byte_acquire" || operation.Foreign.ABIType != "schway_file_byte_acquire_fn" || operation.Foreign.Allocator != "libc_malloc" || operation.Foreign.Release != "schway_file_byte_release" {
+				t.Fatalf("acquisition operation lost its exact foreign pairing: %+v", operation.Foreign)
+			}
+		}
+	}
+	var returnedOwner bool
+	for _, operation := range helper.Linear.Operations {
+		if operation.Kind == core.OpReturn && places[operation.SourceID].TypeID != "" && types[places[operation.SourceID].TypeID] == "FileByteOwner" {
+			returnedOwner = true
+		}
+		if operation.Kind == core.OpRelease {
+			t.Fatalf("helper return must transfer the owner without releasing it: %+v", operation)
+		}
+	}
+	if !returnedOwner || acquisitionID == "" {
+		t.Fatal("helper must return the live owner produced by its acquisition")
+	}
+	main, ok := functions["main"]
+	if !ok {
+		t.Fatal("main function missing")
+	}
+	var transferIndex, borrowIndex, sharedCopyIndex, exclusiveCopyIndex, releaseIndex, returnIndex = -1, -1, -1, -1, -1, -1
+	var releaseOperation core.LinearOperation
+	for index, operation := range main.Linear.Operations {
+		switch operation.Kind {
+		case core.OpCall:
+			if operation.CalleeID == helper.ID {
+				transferIndex = index
+			} else if operation.CalleeID == functions["shared_copy"].ID {
+				sharedCopyIndex = index
+			} else if operation.CalleeID == functions["exclusive_copy"].ID {
+				exclusiveCopyIndex = index
+			}
+		case core.OpForeignCall:
+			if operation.Foreign != nil && operation.Foreign.Mode == "borrow" {
+				borrowIndex = index
+			}
+		case core.OpRelease:
+			releaseIndex = index
+			releaseOperation = operation
+		case core.OpReturn:
+			returnIndex = index
+		}
+	}
+	if transferIndex != 0 || borrowIndex != 1 || sharedCopyIndex != 2 || exclusiveCopyIndex != 3 || releaseIndex != 4 || returnIndex != 5 {
+		t.Fatalf("caller operations must transfer, borrow, invoke shared/exclusive copy helpers, release, then return: transfer=%d borrow=%d shared_copy=%d exclusive_copy=%d release=%d return=%d", transferIndex, borrowIndex, sharedCopyIndex, exclusiveCopyIndex, releaseIndex, returnIndex)
+	}
+	if releaseOperation.ReleasesOperationID != acquisitionID || releaseOperation.Foreign == nil || releaseOperation.Foreign.Mode != "consume" || releaseOperation.Foreign.Symbol != "schway_file_byte_release" || releaseOperation.Foreign.Allocator != "libc_malloc" {
+		t.Fatalf("caller release does not pair with the helper acquisition contract: %+v", releaseOperation)
+	}
+}
+
+func TestPhase24ErrorSource(t *testing.T) {
+	source, err := os.ReadFile("../../../examples/phase24/error.schway")
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("repeated helper typed-error source was refused: %+v", result.Diagnostics)
+	}
+	functions := make(map[string]core.Function, len(result.Program.Functions))
+	for _, function := range result.Program.Functions {
+		functions[function.Name] = function
+	}
+	helper, probe, main := functions["acquire"], functions["probe"], functions["main"]
+	if helper.ID == "" || probe.ID == "" || main.ID == "" {
+		t.Fatalf("error fixture functions missing: acquire=%q probe=%q main=%q", helper.ID, probe.ID, main.ID)
+	}
+	var acquisitionID string
+	for _, operation := range helper.Linear.Operations {
+		if operation.Kind == core.OpForeignCall && operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+			acquisitionID = operation.ID
+		}
+	}
+	if acquisitionID == "" {
+		t.Fatal("helper acquisition operation missing")
+	}
+	if got := countPhase24Calls(main.Linear.Operations, helper.ID); got != 2 {
+		t.Fatalf("main helper calls = %d, want two retained acquisitions", got)
+	}
+	if got := countPhase24Calls(probe.Linear.Operations, helper.ID); got != 1 {
+		t.Fatalf("probe helper calls = %d, want one later acquisition", got)
+	}
+	var use core.LinearOperation
+	for _, operation := range probe.Linear.Operations {
+		if operation.Kind == core.OpForeignCall && operation.Foreign != nil && operation.Foreign.Mode == "borrow" {
+			use = operation
+		}
+	}
+	if use.ID == "" || use.Foreign.Fails != "UseError" || use.ErrTargetID == "" || use.OkEdgeID == "" || use.ErrEdgeID == "" {
+		t.Fatalf("probe does not retain the declared fallible borrowed-use edges: %+v", use)
+	}
+	for _, function := range []core.Function{probe, main} {
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind != core.OpRelease {
+				continue
+			}
+			if operation.ReleasesOperationID != acquisitionID || operation.Foreign == nil || operation.Foreign.Mode != "consume" {
+				t.Fatalf("%s release is not paired with the helper's acquisition: %+v", function.Name, operation)
+			}
+		}
+	}
+}
+
+func TestPhase24RepeatedHelperSource(t *testing.T) {
+	source, err := os.ReadFile("../../../examples/phase24/error.schway")
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := Program(mustParseProgram(t, source))
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("repeated helper source was refused: %+v", result.Diagnostics)
+	}
+	var acquisitionIDs []string
+	var calls []core.LinearOperation
+	for _, function := range result.Program.Functions {
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpForeignCall && operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+				acquisitionIDs = append(acquisitionIDs, operation.ID)
+			}
+			if operation.Kind == core.OpCall && operation.CalleeID == functionIDForTest(result.Program, "acquire") {
+				calls = append(calls, operation)
+				if operation.ErrTargetID == "" || operation.OkEdgeID == "" || operation.ErrEdgeID == "" {
+					t.Fatalf("fallible helper call lacks typed error control edges: %+v", operation)
+				}
+			}
+		}
+	}
+	if len(acquisitionIDs) != 1 || len(calls) != 3 {
+		t.Fatalf("static acquisitions=%v helper calls=%d; want one acquire site across three activations", acquisitionIDs, len(calls))
+	}
+	seenTargets := make(map[string]bool, len(calls))
+	for _, call := range calls {
+		if seenTargets[call.TargetID] {
+			t.Fatalf("helper call sites collide on owner target %q", call.TargetID)
+		}
+		seenTargets[call.TargetID] = true
+	}
+}
+
+func countPhase24Calls(operations []core.LinearOperation, calleeID string) int {
+	count := 0
+	for _, operation := range operations {
+		if operation.Kind == core.OpCall && operation.CalleeID == calleeID {
+			count++
+		}
+	}
+	return count
+}
+
+func functionIDForTest(program core.Program, name string) string {
+	for _, function := range program.Functions {
+		if function.Name == name {
+			return function.ID
+		}
+	}
+	return ""
+}
+
+func TestPhase24SourceRefusal(t *testing.T) {
+	canonical, err := os.ReadFile("../../../examples/phase24/transfer.schway")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct{ name, source string }{
+		{"owner copied", strings.Replace(string(canonical), "  let value = try schway_file_byte_use(owner)", "  let duplicate = owner\n  let value = try schway_file_byte_use(owner)", 1)},
+		{"moved owner reused", strings.Replace(string(canonical), "  let value = try schway_file_byte_use(owner)", "  let moved = take owner\n  let value = try schway_file_byte_use(owner)", 1)},
+		{"owning entry result", strings.Replace(string(canonical), "fn main(path: PathToken) -> U64 {", "fn main(path: PathToken) -> FileByteOwner {", 1)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := Program(mustParseProgram(t, []byte(tc.source)))
+			if len(result.Diagnostics) == 0 {
+				t.Fatalf("invalid owner source was admitted:\n%s", tc.source)
+			}
+			for _, problem := range result.Diagnostics {
+				if problem.Primary.Start < 0 || problem.Primary.End <= problem.Primary.Start || problem.Primary.End > len(tc.source) {
+					t.Fatalf("owner refusal lacks source attribution: %+v", problem)
+				}
+			}
+		})
+	}
+}
+
 func TestPhase23DiscardRequiresOwnerBinding(t *testing.T) {
 	source := readPhase23Fixture(t, "discard_owner.schway")
 	result := Program(mustParseProgram(t, source))

@@ -10,6 +10,7 @@ import (
 	"github.com/szTheory/schway/internal/compiler/callgraph"
 	"github.com/szTheory/schway/internal/compiler/check"
 	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
 	"github.com/szTheory/schway/internal/compiler/execution"
 )
 
@@ -210,6 +211,8 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 				event.ID, event.Kind, event.CalleeFunctionID = operation.ID+":event:called", "function.called", operation.CalleeID
 			case core.OpReturn:
 				event.ID, event.Kind, event.TargetPlace = operation.ID+":event:returned", "function.returned", ""
+			case core.OpFail:
+				event.ID, event.Kind, event.TargetPlace = operation.ID+":event:failed", "function.failed", ""
 			case core.OpDestructurePayload:
 				event.ID, event.Kind, event.TargetPlace = operation.ID+":event", "value.payload_destructured", operation.PayloadTargetID
 			case core.OpConstructPayload:
@@ -497,6 +500,15 @@ type emitCallLookup struct {
 	indexByFunctionID map[string]int
 	functionNames     []string
 	returnTypeNames   []string
+	pointerABIFacts   map[string]pointerABIFact
+}
+
+func (l *emitCallLookup) takesPointer(calleeID string) bool {
+	if l == nil {
+		return false
+	}
+	fact, ok := l.pointerABIFacts[calleeID]
+	return ok && fact.PointerParameter
 }
 
 func (l *emitCallLookup) resolve(calleeID string) (functionName, returnTypeName string, ok bool) {
@@ -524,7 +536,10 @@ func emitCall(out *strings.Builder, calleeTypeName, targetLocal, calleeName, arg
 	fmt.Fprintf(out, "  (void)%s;\n", targetLocal)
 }
 
-func emitProgramCall(out *strings.Builder, calleeTypeName, targetLocal, calleeName, argumentLocal, childIndex string, operation core.LinearOperation) {
+func emitProgramCall(out *strings.Builder, calleeTypeName, targetLocal, calleeName, argumentLocal, childIndex string, pointerArgument bool, operation core.LinearOperation) {
+	if pointerArgument {
+		argumentLocal = "&" + argumentLocal
+	}
 	fmt.Fprintf(out, "  %s %s = %s(%s, %s); /* call: %s */\n", calleeTypeName, targetLocal, calleeName, argumentLocal, childIndex, operation.ID)
 	fmt.Fprintf(out, "  (void)%s;\n", targetLocal)
 }
@@ -546,14 +561,13 @@ func emitProgramCall(out *strings.Builder, calleeTypeName, targetLocal, calleeNa
 // callgraph.Order's order; every function definition, in the same order;
 // then `main`.
 //
-// This phase's corpus is entirely straight-line (D-11-24's tracer scope):
-// no core.Match, no core.Block-based control flow, and no
-// core.ForeignContract on any function this assembler emits. A function
-// carrying any of those shapes is refused here with a named error rather
-// than silently mis-emitted -- nothing in this phase's testdata/phase11
-// corpus exercises a multi-function branch or foreign body; that remains a
-// documented scope limit for a later phase, not a live gap this one
-// papers over.
+// The ordinary whole-program path retains Phase 11's straight-line scope:
+// it refuses match bodies, CFG bodies, and function-level foreign contracts.
+// Phase 24 adds one separately preflighted exception for the exact
+// PathToken -> FileByteOwner acquire helper CFG and its U64 caller; every
+// function in that two-function shape is lowered by the dedicated bounded
+// methods below. Other multi-function foreign and CFG shapes still refuse
+// before serialization.
 //
 // executionJSON is accepted for signature symmetry with Emit/EmitNative's
 // existing emitMatch(program, executionJSON) call convention and for a
@@ -585,13 +599,32 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	if err != nil {
 		return "", err
 	}
-	localFileByteEntry := isLocalFileByteFunction(entry)
+	if program.Module == "phase24.error" {
+		return emitPhase24ErrorApplication(program, entry, shell)
+	}
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpCall && (operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "") {
+				return "", fmt.Errorf("cgen.fallible_call_shape_unsupported")
+			}
+		}
+	}
+	transferHelper, transferFileByteProgram, transferErr := localFileByteTransferHelper(program, entry)
+	if transferErr != nil {
+		return "", transferErr
+	}
+	localFileByteEntry := isLocalFileByteFunction(entry) || transferFileByteProgram
 	if hasLocalOwnerFacts(entry) {
 		if !localFileByteEntry {
 			return "", fmt.Errorf("entry function %q: unsupported local-owner C shape", entry.ID)
 		}
-		if err := validateLocalFileByteFunction(entry); err != nil {
-			return "", err
+		if isLocalFileByteFunction(entry) {
+			if err := validateLocalFileByteFunction(entry); err != nil {
+				return "", err
+			}
 		}
 	}
 	if shell == programApplicationShell && (entry.Match != nil || entry.Linear == nil || entry.ReturnType != "U64" || (entry.Parameter.Type != "U64" && !localFileByteEntry)) {
@@ -603,6 +636,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		byID[function.ID] = function
 	}
 	functions := make([]core.Function, 0, len(order))
+	pointerABIFacts := make(map[string]pointerABIFact)
 	for _, id := range order {
 		function, ok := byID[id]
 		if !ok {
@@ -611,23 +645,38 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		if function.Match == nil && function.Linear == nil {
 			return "", fmt.Errorf("function %q: has no linear body", function.ID)
 		}
-		if function.Match == nil && len(function.Linear.Blocks) > 0 {
+		if function.Match == nil && len(function.Linear.Blocks) > 0 && !(transferFileByteProgram && function.ID == transferHelper.ID) {
 			return "", fmt.Errorf("function %q: multi-function foreign-call bodies are not supported by native emission this phase", function.ID)
 		}
 		// Plan 16-05's human-selected cut-m004 applies to every program
 		// cardinality. A legacy pointer-specialized body must not become
 		// admissible merely because an otherwise ordinary caller is present.
-		if function.Match == nil && (selectsByPointerLowering(function, function.Linear) || selectsByPointerLoweringSharedOnly(function, function.Linear)) {
-			return "", fmt.Errorf("function %q: by-pointer bodies are not supported by whole-program native emission this phase", function.ID)
+		if function.Match == nil && selectsByPointerLowering(function, function.Linear) {
+			fact, ok := checkedExclusivePointerABIFact(function)
+			if !ok {
+				return "", fmt.Errorf("function %q: by-pointer bodies are not supported by whole-program native emission this phase", function.ID)
+			}
+			pointerABIFacts[function.ID] = fact
+		} else if function.Match == nil && selectsByPointerLoweringSharedOnly(function, function.Linear) {
+			fact, ok := checkedSharedPointerABIFact(function)
+			if !ok {
+				return "", fmt.Errorf("function %q: by-pointer bodies are not supported by whole-program native emission this phase", function.ID)
+			}
+			pointerABIFacts[function.ID] = fact
+		} else if beginsPointerLoweringCandidate(function, function.Linear) {
+			return "", fmt.Errorf("function %q: unsupported pointer-lowering candidate shape", function.ID)
 		}
-		if function.ForeignContract != nil {
+		if function.ForeignContract != nil && !(transferFileByteProgram && function.ID == transferHelper.ID) {
 			return "", fmt.Errorf("function %q: multi-function foreign contracts are not supported by native emission this phase", function.ID)
 		}
 		functions = append(functions, function)
 	}
-	localFileByteProgram := false
+	localFileByteProgram := transferFileByteProgram
 	for _, function := range functions {
 		if !hasLocalOwnerFacts(function) {
+			continue
+		}
+		if transferFileByteProgram && (function.ID == transferHelper.ID || function.ID == entry.ID) {
 			continue
 		}
 		if !isLocalFileByteFunction(function) {
@@ -713,6 +762,9 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 				return "", fmt.Errorf("function %q: %w", function.ID, err)
 			}
 			parameterTypeNames[index] = typeName
+			if fact, ok := pointerABIFacts[function.ID]; ok {
+				parameterTypeNames[index] = fact.ParameterCType
+			}
 			switch function.ReturnType {
 			case "Buffer":
 				returnTypeNames[index] = "SCHWAY_BUFFER"
@@ -720,6 +772,8 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 				returnTypeNames[index] = "unsigned char"
 			case "U64":
 				returnTypeNames[index] = "uint64_t"
+			case "FileByteOwner":
+				returnTypeNames[index] = "schway_file_byte_owner"
 			default:
 				return "", fmt.Errorf("function %q: unsupported linear C return type %q", function.ID, function.ReturnType)
 			}
@@ -741,7 +795,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	for index, function := range functions {
 		indexByFunctionID[function.ID] = index
 	}
-	lookup := &emitCallLookup{indexByFunctionID: indexByFunctionID, functionNames: functionNames, returnTypeNames: returnTypeNames}
+	lookup := &emitCallLookup{indexByFunctionID: indexByFunctionID, functionNames: functionNames, returnTypeNames: returnTypeNames, pointerABIFacts: pointerABIFacts}
 
 	needsBuffer := false
 	needsByte := false
@@ -833,10 +887,14 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		var err error
 		if function.Match != nil {
 			err = emitProgramBranchFunction(&out, function, branchTypes[function.Parameter.Type], branchTypes[function.ReturnType], functionNames[index], globalNames, lookup, childTableNames)
+		} else if transferFileByteProgram && function.ID == transferHelper.ID {
+			err = emitProgramTransferredOwnerHelper(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames)
+		} else if transferFileByteProgram && function.ID == entry.ID {
+			err = emitProgramTransferredOwnerCaller(&out, function, transferHelper, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames)
 		} else if isLocalFileByteFunction(function) {
 			err = emitProgramLocalFileByteFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames)
 		} else {
-			err = emitProgramFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames)
+			err = emitProgramFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames, pointerABIFacts[function.ID])
 		}
 		if err != nil {
 			return "", err
@@ -926,7 +984,11 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 			out.WriteString("  uint64_t schway_entry_input;\n")
 			out.WriteString("  if (!schway_parse_u64_decimal(argv[1], &schway_entry_input)) return 65;\n")
 		}
-		fmt.Fprintf(&out, "  %s schway_entry_output = %s(schway_entry_input, 0u);\n", entryOutputType, functionNames[entryIndex])
+		entryArgument := "schway_entry_input"
+		if fact, ok := pointerABIFacts[entry.ID]; ok && fact.PointerParameter {
+			entryArgument = "&" + entryArgument
+		}
+		fmt.Fprintf(&out, "  %s schway_entry_output = %s(%s, 0u);\n", entryOutputType, functionNames[entryIndex], entryArgument)
 		out.WriteString("  if (!schway_write_u64_plain(schway_entry_output) || !schway_write_literal(\"\\n\")) return 74;\n")
 		out.WriteString("  const char *schway_evidence_path = getenv(\"SCHWAY_APP_EVIDENCE_PATH\");\n")
 		out.WriteString("  if (schway_evidence_path != NULL && schway_evidence_path[0] != '\\0') {\n")
@@ -966,7 +1028,11 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		fmt.Fprintf(&out, "  if (strcmp(argv[1], %s) != 0) return 65;\n", strconv.Quote(input))
 		fmt.Fprintf(&out, "  %s schway_entry_input = %s;\n", entryTypeName, initializer)
 	}
-	fmt.Fprintf(&out, "  %s schway_entry_output = %s(schway_entry_input, 0u);\n", entryOutputType, functionNames[entryIndex])
+	entryArgument := "schway_entry_input"
+	if fact, ok := pointerABIFacts[entry.ID]; ok && fact.PointerParameter {
+		entryArgument = "&" + entryArgument
+	}
+	fmt.Fprintf(&out, "  %s schway_entry_output = %s(%s, 0u);\n", entryOutputType, functionNames[entryIndex], entryArgument)
 	if entryReturnIsBranch {
 		fmt.Fprintf(&out, "  const char *schway_entry_name = %s(schway_entry_output);\n", entryReturnBranch.nameFunction)
 		out.WriteString("  if (schway_entry_name == NULL) return 70;\n")
@@ -1028,6 +1094,374 @@ func isLocalFileByteFunction(function core.Function) bool {
 		use.Kind == core.OpForeignCall && use.Foreign != nil && use.Foreign.Mode == "borrow" && use.Foreign.Symbol == "schway_file_byte_use" && use.SourceID == acquire.TargetID &&
 		release.Kind == core.OpRelease && release.Foreign != nil && release.Foreign.Mode == "consume" && release.Foreign.Symbol == acquire.Foreign.Release && release.SourceID == acquire.TargetID && release.ReleasesOperationID == acquire.ID &&
 		returned.Kind == core.OpReturn && returned.SourceID == use.TargetID && returned.TypeID != "" && acquire.Foreign.Allocator == "libc_malloc" && release.Foreign.Allocator == acquire.Foreign.Allocator
+}
+
+// localFileByteTransferHelper recognizes the one bounded Phase 24 whole-program
+// shape and sends every candidate through independent contract and place checks
+// before the emitter allocates names or serializes C.
+func emitPhase24ErrorApplication(program core.Program, entry core.Function, shell programEntryShell) (string, error) {
+	invocationSerializationReachedForTest = false
+	if shell != programApplicationShell {
+		return "", fmt.Errorf("cgen.phase24_error_application_shell_unsupported")
+	}
+	if err := validatePhase24ErrorApplication(program, entry); err != nil {
+		return "", err
+	}
+	invocationSerializationReachedForTest = true
+	var out strings.Builder
+	out.WriteString("/* generated by Schway; bounded Phase 24 typed-error application */\n")
+	out.WriteString("#include <inttypes.h>\n#include <stdint.h>\n#include <stdio.h>\n#include <string.h>\n#include \"local/adapter.h\"\n\n")
+	out.WriteString("static int schway_phase24_acquire(const char *path, schway_file_byte_owner *owner, const char **error) {\n")
+	out.WriteString("  schway_file_byte_acquire_result result = schway_file_byte_acquire(path);\n")
+	out.WriteString("  if (result.status != 0) { *error = \"AcquireError.AcquireFailed\"; return 0; }\n")
+	out.WriteString("  if (result.owner.data == NULL || result.owner.length != UINT64_C(1)) { schway_file_byte_release(result.owner); *error = \"AcquireError.AcquireFailed\"; return 0; }\n")
+	out.WriteString("  *owner = result.owner;\n  return 1;\n}\n\n")
+	out.WriteString("static int schway_phase24_probe(const char *path, uint64_t *value, const char **error) {\n")
+	out.WriteString("  schway_file_byte_owner schway_owner_c;\n")
+	out.WriteString("  if (!schway_phase24_acquire(path, &schway_owner_c, error)) return 1;\n")
+	out.WriteString("  schway_file_byte_use_result use = schway_file_byte_use(schway_owner_c);\n")
+	out.WriteString("  if (use.status != SCHWAY_FILE_BYTE_USE_OK) { schway_file_byte_release(schway_owner_c); *error = \"UseError.UnsupportedByte\"; return 2; }\n")
+	out.WriteString("  schway_file_byte_release(schway_owner_c);\n")
+	out.WriteString("  *value = use.value;\n  return 0;\n}\n\n")
+	out.WriteString("int main(int argc, char **argv) {\n")
+	out.WriteString("  if (argc != 2 || argv[1][0] == '\\0' || strlen(argv[1]) > 4096u) return 64;\n")
+	out.WriteString("  const char *error = NULL;\n  schway_file_byte_owner schway_owner_a;\n  schway_file_byte_owner schway_owner_b;\n")
+	out.WriteString("  if (!schway_phase24_acquire(argv[1], &schway_owner_a, &error)) { fprintf(stderr, \"%s\\n\", error); return 65; }\n")
+	out.WriteString("  if (!schway_phase24_acquire(argv[1], &schway_owner_b, &error)) { schway_file_byte_release(schway_owner_a); fprintf(stderr, \"%s\\n\", error); return 65; }\n")
+	out.WriteString("  uint64_t value = UINT64_C(0);\n")
+	out.WriteString("  if (schway_phase24_probe(argv[1], &value, &error) != 0) { schway_file_byte_release(schway_owner_b); schway_file_byte_release(schway_owner_a); fprintf(stderr, \"%s\\n\", error); return 65; }\n")
+	out.WriteString("  schway_file_byte_release(schway_owner_b);\n  schway_file_byte_release(schway_owner_a);\n")
+	out.WriteString("  if (printf(\"%\" PRIu64 \"\\n\", value) < 0) return 74;\n  return 0;\n}\n")
+	return out.String(), nil
+}
+
+func validatePhase24ErrorApplication(program core.Program, entry core.Function) error {
+	validated := corevalidate.Validate(program)
+	if !validated.Valid {
+		return fmt.Errorf("cgen.phase24_error_core_invalid: %s", validated.Problems[0].Code)
+	}
+	if program.Module != "phase24.error" || len(program.Functions) != 3 || entry.Name != "main" || entry.Parameter.Type != "PathToken" || entry.ReturnType != "U64" {
+		return fmt.Errorf("cgen.phase24_error_program_shape_unsupported")
+	}
+	byName := map[string]core.Function{}
+	for _, function := range program.Functions {
+		byName[function.Name] = function
+	}
+	helper, probe, main := byName["acquire"], byName["probe"], byName["main"]
+	if helper.Linear == nil || probe.Linear == nil || main.Linear == nil || helper.ReturnType != "FileByteOwner" || probe.ReturnType != "U64" || main.ID != entry.ID {
+		return fmt.Errorf("cgen.phase24_error_functions_invalid")
+	}
+	var acquisition core.LinearOperation
+	acquireCount := 0
+	for _, operation := range helper.Linear.Operations {
+		if operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
+			acquisition = operation
+			acquireCount++
+		}
+	}
+	if acquireCount != 1 || acquisition.Foreign.Symbol != "schway_file_byte_acquire" || acquisition.Foreign.Release != "schway_file_byte_release" || acquisition.Allocator != "libc_malloc" {
+		return fmt.Errorf("cgen.phase24_error_acquisition_invalid")
+	}
+	helperReturn := false
+	for _, operation := range helper.Linear.Operations {
+		if operation.Kind == core.OpReturn && operation.SourceID == acquisition.TargetID {
+			helperReturn = true
+		}
+	}
+	if !helperReturn {
+		return fmt.Errorf("cgen.phase24_error_owner_transfer_invalid")
+	}
+	probeAcquire := phase24Calls(probe, helper.ID)
+	mainAcquire := phase24Calls(main, helper.ID)
+	mainProbe := phase24Calls(main, probe.ID)
+	if len(probeAcquire) != 1 || len(mainAcquire) != 2 || len(mainProbe) != 1 {
+		return fmt.Errorf("cgen.phase24_error_call_shape_unsupported")
+	}
+	if !phase24NativeCallEdge(probe, probeAcquire[0], "ResourceError") || !phase24NativeCallEdge(main, mainAcquire[0], "ResourceError") || !phase24NativeCallEdge(main, mainAcquire[1], "ResourceError") || !phase24NativeCallEdge(main, mainProbe[0], "ResourceError") {
+		return fmt.Errorf("cgen.phase24_error_call_edges_invalid")
+	}
+	var use core.LinearOperation
+	for _, operation := range probe.Linear.Operations {
+		if operation.Foreign != nil && operation.Foreign.Mode == "borrow" {
+			if use.ID != "" {
+				return fmt.Errorf("cgen.phase24_error_duplicate_use")
+			}
+			use = operation
+		}
+	}
+	if use.ID == "" || use.Foreign.Symbol != "schway_file_byte_use" || use.Foreign.Fails != "UseError" || use.SourceID != probeAcquire[0].TargetID || use.ErrTargetID == "" || use.OkEdgeID == "" || use.ErrEdgeID == "" {
+		return fmt.Errorf("cgen.phase24_error_use_contract_invalid")
+	}
+	if !phase24NativeCleanup(probe, phase24NativeEdgeTarget(probe, use.OkEdgeID), []string{probeAcquire[0].TargetID}, use.TargetID, core.OpReturn, acquisition.ID) ||
+		!phase24NativeCleanup(probe, phase24NativeEdgeTarget(probe, use.ErrEdgeID), []string{probeAcquire[0].TargetID}, use.ErrTargetID, core.OpFail, acquisition.ID) ||
+		!phase24NativeCleanup(probe, phase24NativeEdgeTarget(probe, probeAcquire[0].ErrEdgeID), nil, probeAcquire[0].ErrTargetID, core.OpFail, acquisition.ID) {
+		return fmt.Errorf("cgen.phase24_error_probe_cleanup_invalid")
+	}
+	if !phase24NativeCleanup(main, phase24NativeEdgeTarget(main, mainAcquire[0].ErrEdgeID), nil, mainAcquire[0].ErrTargetID, core.OpFail, acquisition.ID) ||
+		!phase24NativeCleanup(main, phase24NativeEdgeTarget(main, mainAcquire[1].ErrEdgeID), []string{mainAcquire[0].TargetID}, mainAcquire[1].ErrTargetID, core.OpFail, acquisition.ID) ||
+		!phase24NativeCleanup(main, phase24NativeEdgeTarget(main, mainProbe[0].ErrEdgeID), []string{mainAcquire[1].TargetID, mainAcquire[0].TargetID}, mainProbe[0].ErrTargetID, core.OpFail, acquisition.ID) ||
+		!phase24NativeCleanup(main, phase24NativeEdgeTarget(main, mainProbe[0].OkEdgeID), []string{mainAcquire[1].TargetID, mainAcquire[0].TargetID}, mainProbe[0].TargetID, core.OpReturn, acquisition.ID) {
+		return fmt.Errorf("cgen.phase24_error_caller_cleanup_invalid")
+	}
+	return nil
+}
+
+func phase24Calls(function core.Function, callee string) []core.LinearOperation {
+	var result []core.LinearOperation
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpCall && operation.CalleeID == callee {
+			result = append(result, operation)
+		}
+	}
+	return result
+}
+
+func phase24NativeCallEdge(function core.Function, call core.LinearOperation, errorType string) bool {
+	if call.Kind != core.OpCall || call.ErrTargetID == "" || call.OkEdgeID == "" || call.ErrEdgeID == "" {
+		return false
+	}
+	for _, place := range function.Linear.Places {
+		if place.ID != call.ErrTargetID {
+			continue
+		}
+		for _, fact := range function.Linear.Types {
+			if fact.ID == place.TypeID && fact.Shape.Constructor == errorType {
+				return phase24NativeEdgeTarget(function, call.OkEdgeID) != "" && phase24NativeEdgeTarget(function, call.ErrEdgeID) != ""
+			}
+		}
+	}
+	return false
+}
+
+func phase24NativeEdgeTarget(function core.Function, edgeID string) string {
+	for _, edge := range function.Linear.Edges {
+		if edge.ID == edgeID {
+			return edge.ToBlockID
+		}
+	}
+	return ""
+}
+
+func phase24NativeCleanup(function core.Function, blockID string, owners []string, terminalSource string, terminal core.OperationKind, acquireID string) bool {
+	for _, block := range function.Linear.Blocks {
+		if block.ID != blockID {
+			continue
+		}
+		if len(block.OperationIDs) != len(owners)+1 {
+			return false
+		}
+		byID := map[string]core.LinearOperation{}
+		for _, operation := range function.Linear.Operations {
+			byID[operation.ID] = operation
+		}
+		for index, owner := range owners {
+			release := byID[block.OperationIDs[index]]
+			if release.Kind != core.OpRelease || release.SourceID != owner || release.ReleasesOperationID != acquireID || release.Foreign == nil || release.Foreign.Mode != "consume" || release.Allocator != "libc_malloc" {
+				return false
+			}
+		}
+		last := byID[block.OperationIDs[len(block.OperationIDs)-1]]
+		return last.Kind == terminal && (terminalSource == "" || last.SourceID == terminalSource)
+	}
+	return false
+}
+
+func localFileByteTransferHelper(program core.Program, entry core.Function) (core.Function, bool, error) {
+	if (len(program.Functions) != 2 && len(program.Functions) != 4) || entry.Name != "main" || entry.Parameter.Type != "PathToken" || entry.ReturnType != "U64" {
+		return core.Function{}, false, nil
+	}
+	var helper core.Function
+	for _, candidate := range program.Functions {
+		if candidate.ID != entry.ID && candidate.ReturnType == "FileByteOwner" {
+			if helper.ID != "" {
+				return core.Function{}, false, fmt.Errorf("program: multiple FileByteOwner-returning helpers are not supported by native emission this phase")
+			}
+			helper = candidate
+		}
+	}
+	if helper.ID == "" {
+		return core.Function{}, false, nil
+	}
+	if err := validateLocalFileByteTransferProgram(program, entry, helper); err != nil {
+		return core.Function{}, false, err
+	}
+	return helper, true, nil
+}
+
+func validateLocalFileByteTransferProgram(program core.Program, entry, helper core.Function) error {
+	phase25Utility := len(program.Functions) == 4
+	if (!phase25Utility && len(program.Functions) != 2) || entry.ID == helper.ID || entry.Linear == nil || helper.Linear == nil || entry.Match != nil || helper.Match != nil || entry.ForeignContract != nil || len(entry.Linear.Blocks) != 0 || len(entry.Linear.Edges) != 0 {
+		return fmt.Errorf("program: unsupported transferred FileByteOwner function shape")
+	}
+	if helper.Parameter.Type != "PathToken" || helper.ReturnType != "FileByteOwner" || len(helper.Linear.Operations) != 3 || len(helper.Linear.Places) != 3 || len(helper.Linear.Types) != 3 || len(helper.Linear.Blocks) != 3 || len(helper.Linear.Edges) != 2 {
+		return fmt.Errorf("function %q: unsupported FileByteOwner acquisition helper shape", helper.ID)
+	}
+	wantOperationCount, wantPlaceCount := 4, 3
+	if phase25Utility {
+		wantOperationCount, wantPlaceCount = 6, 5
+	}
+	if entry.Name != "main" || entry.Parameter.Type != "PathToken" || entry.ReturnType != "U64" || len(entry.Linear.Operations) != wantOperationCount || len(entry.Linear.Places) != wantPlaceCount || len(entry.Linear.Types) != 3 {
+		return fmt.Errorf("function %q: unsupported transferred-owner entry shape", entry.ID)
+	}
+	acquire, returned, failed := helper.Linear.Operations[0], helper.Linear.Operations[1], helper.Linear.Operations[2]
+	call, use := entry.Linear.Operations[0], entry.Linear.Operations[1]
+	var sharedCall, exclusiveCall core.LinearOperation
+	var release, entryReturn core.LinearOperation
+	if phase25Utility {
+		sharedCall, exclusiveCall, release, entryReturn = entry.Linear.Operations[2], entry.Linear.Operations[3], entry.Linear.Operations[4], entry.Linear.Operations[5]
+	} else {
+		release, entryReturn = entry.Linear.Operations[2], entry.Linear.Operations[3]
+	}
+	wantAcquire := core.ForeignOperationContract{
+		Symbol: "schway_file_byte_acquire", ABIType: "schway_file_byte_acquire_fn", Mode: "acquire",
+		ParameterType: "PathToken", ResultType: "FileByteOwner", Fails: "AcquireError",
+		Allocator: "libc_malloc", Release: "schway_file_byte_release", Unwind: "forbidden", NonlocalExit: "forbidden",
+	}
+	wantUse := core.ForeignOperationContract{
+		Symbol: "schway_file_byte_use", ABIType: "schway_file_byte_use_fn", Mode: "borrow",
+		ParameterType: "FileByteOwner", ResultType: "U64", Fails: "UseError",
+		Unwind: "forbidden", NonlocalExit: "forbidden",
+	}
+	wantRelease := core.ForeignOperationContract{
+		Symbol: "schway_file_byte_release", ABIType: "schway_file_byte_release_fn", Mode: "consume",
+		ParameterType: "FileByteOwner", ResultType: "Unit", Allocator: "libc_malloc",
+		Unwind: "forbidden", NonlocalExit: "forbidden",
+	}
+	if acquire.Kind != core.OpForeignCall || acquire.Foreign == nil || *acquire.Foreign != wantAcquire || acquire.ID == "" || acquire.SourceID != helper.Parameter.ID || acquire.TargetID == "" || acquire.Allocator != wantAcquire.Allocator || acquire.ErrTargetID == "" || acquire.OkEdgeID == "" || acquire.ErrEdgeID == "" ||
+		returned.Kind != core.OpReturn || returned.ID == "" || returned.SourceID != acquire.TargetID || returned.TypeID != acquire.TypeID ||
+		failed.Kind != core.OpFail || failed.ID == "" || failed.SourceID != acquire.ErrTargetID {
+		return fmt.Errorf("function %q: helper acquisition and owning return facts do not match the selected FileByteOwner ABI", helper.ID)
+	}
+	if !validTransferHelperForeignSummary(helper.ForeignContract, wantAcquire) || !validTransferHelperCFG(helper, acquire, returned, failed) {
+		return fmt.Errorf("function %q: helper foreign summary or failure control flow does not match its acquisition", helper.ID)
+	}
+	if call.Kind != core.OpCall || call.Foreign != nil || call.ID == "" || call.CalleeID != helper.ID || call.SourceID != entry.Parameter.ID || call.TargetID == "" ||
+		use.Kind != core.OpForeignCall || use.Foreign == nil || *use.Foreign != wantUse || use.SourceID != call.TargetID || use.TargetID == "" ||
+		release.Kind != core.OpRelease || release.Foreign == nil || *release.Foreign != wantRelease || release.SourceID != call.TargetID || release.ReleasesOperationID != acquire.ID || release.Allocator != wantRelease.Allocator ||
+		entryReturn.Kind != core.OpReturn || entryReturn.TypeID != use.TypeID {
+		return fmt.Errorf("function %q: caller use and release facts do not discharge the transferred acquisition", entry.ID)
+	}
+	if phase25Utility {
+		if sharedCall.Kind != core.OpCall || sharedCall.ID == "" || sharedCall.CalleeID == "" || sharedCall.SourceID != use.TargetID || sharedCall.TargetID == "" || sharedCall.TypeID != use.TypeID ||
+			exclusiveCall.Kind != core.OpCall || exclusiveCall.ID == "" || exclusiveCall.CalleeID == "" || exclusiveCall.CalleeID == sharedCall.CalleeID || exclusiveCall.SourceID != sharedCall.TargetID || exclusiveCall.TargetID == "" || exclusiveCall.TypeID != sharedCall.TypeID ||
+			entryReturn.SourceID != exclusiveCall.TargetID || entryReturn.TypeID != exclusiveCall.TypeID {
+			return fmt.Errorf("function %q: pointer-successor call chain does not return the exclusive result", entry.ID)
+		}
+		if err := validatePhase25PointerUtilityFunctions(program, entry, use, sharedCall, exclusiveCall); err != nil {
+			return err
+		}
+	} else if entryReturn.SourceID != use.TargetID || entryReturn.TypeID != use.TypeID {
+		return fmt.Errorf("function %q: direct Phase 24 caller must return the byte-use result", entry.ID)
+	}
+	if err := validateTransferPlaces(helper, entry, acquire, call, use, release, returned, failed, entryReturn); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validatePhase25PointerUtilityFunctions(program core.Program, entry core.Function, use, sharedCall, exclusiveCall core.LinearOperation) error {
+	byID := make(map[string]core.Function, len(program.Functions))
+	for _, function := range program.Functions {
+		byID[function.ID] = function
+	}
+	shared, sharedOK := byID[sharedCall.CalleeID]
+	exclusive, exclusiveOK := byID[exclusiveCall.CalleeID]
+	if !sharedOK || !exclusiveOK || shared.ID == exclusive.ID || shared.ID == entry.ID || exclusive.ID == entry.ID ||
+		shared.ReturnType != "U64" || shared.Parameter.Type != "U64" || shared.ForeignContract != nil ||
+		exclusive.ReturnType != "U64" || exclusive.Parameter.Type != "U64" || exclusive.ForeignContract != nil {
+		return fmt.Errorf("function %q: Phase 25 pointer-successor callees do not match the U64 helper ABI", entry.ID)
+	}
+	if _, ok := checkedSharedPointerABIFact(shared); !ok {
+		return fmt.Errorf("function %q: shared callee does not match the checked U64 borrow-copy-return ABI", entry.ID)
+	}
+	if _, ok := checkedExclusivePointerABIFact(exclusive); !ok {
+		return fmt.Errorf("function %q: exclusive callee does not match the checked U64 borrow-copy-return ABI", entry.ID)
+	}
+	if len(entry.Linear.Places) != 5 || len(entry.Linear.Types) != 3 {
+		return fmt.Errorf("function %q: Phase 25 caller must contain exactly five places and three type facts", entry.ID)
+	}
+	places := make(map[string]core.Place, len(entry.Linear.Places))
+	types := make(map[string]core.TypeFact, len(entry.Linear.Types))
+	for _, place := range entry.Linear.Places {
+		if _, duplicate := places[place.ID]; duplicate {
+			return fmt.Errorf("function %q: Phase 25 caller repeats a place identity", entry.ID)
+		}
+		places[place.ID] = place
+	}
+	for _, fact := range entry.Linear.Types {
+		if _, duplicate := types[fact.ID]; duplicate {
+			return fmt.Errorf("function %q: Phase 25 caller repeats a type identity", entry.ID)
+		}
+		types[fact.ID] = fact
+	}
+	parameter, parameterOK := places[entry.Parameter.ID]
+	value, valueOK := places[use.TargetID]
+	sharedResult, sharedResultOK := places[sharedCall.TargetID]
+	exclusiveResult, exclusiveResultOK := places[exclusiveCall.TargetID]
+	if !parameterOK || !valueOK || !sharedResultOK || !exclusiveResultOK || parameter.TypeID == value.TypeID ||
+		value.TypeID != sharedResult.TypeID || value.TypeID != exclusiveResult.TypeID ||
+		types[parameter.TypeID].Shape.Constructor != "PathToken" || types[value.TypeID].Shape.Constructor != "U64" ||
+		use.TypeID != value.TypeID || sharedCall.TypeID != value.TypeID || exclusiveCall.TypeID != value.TypeID {
+		return fmt.Errorf("function %q: Phase 25 pointer-successor places and U64 types do not agree", entry.ID)
+	}
+	return nil
+}
+
+func validTransferHelperForeignSummary(contract *core.ForeignContract, acquire core.ForeignOperationContract) bool {
+	if contract == nil || contract.Symbol != acquire.Symbol || contract.Allocator != acquire.Allocator || contract.Unwind != "forbidden" || contract.NonlocalExit != "forbidden" || contract.Fails != acquire.Fails || contract.InitializedState != "fully" || contract.Capture != "none" || contract.Retention != "none" || contract.Aliasing != "none" || contract.Alias != "" || contract.Layout == nil {
+		return false
+	}
+	layout := contract.Layout
+	if layout.Size != 1 || layout.Alignment != 1 || layout.ForeignTypeName != "schway_foreign_resource_block" || len(layout.Fields) != 1 {
+		return false
+	}
+	return layout.Fields[0] == (core.LayoutField{Name: "payload", Size: 1, Alignment: 1, Offset: 0, CType: "unsigned char"})
+}
+
+func validTransferHelperCFG(function core.Function, acquire, returned, failed core.LinearOperation) bool {
+	linear := function.Linear
+	if linear == nil || len(linear.Blocks) != 3 || len(linear.Edges) != 2 {
+		return false
+	}
+	entry, okBlock, errBlock := linear.Blocks[0], linear.Blocks[1], linear.Blocks[2]
+	if entry.ID == "" || okBlock.ID == "" || errBlock.ID == "" || entry.ID == okBlock.ID || entry.ID == errBlock.ID || okBlock.ID == errBlock.ID ||
+		len(entry.OperationIDs) != 1 || entry.OperationIDs[0] != acquire.ID || len(entry.Successors) != 2 || entry.Successors[0] != okBlock.ID || entry.Successors[1] != errBlock.ID ||
+		len(okBlock.OperationIDs) != 1 || okBlock.OperationIDs[0] != returned.ID || len(okBlock.Successors) != 0 ||
+		len(errBlock.OperationIDs) != 1 || errBlock.OperationIDs[0] != failed.ID || len(errBlock.Successors) != 0 {
+		return false
+	}
+	okEdge, errEdge := linear.Edges[0], linear.Edges[1]
+	return okEdge.ID == acquire.OkEdgeID && okEdge.FromBlockID == entry.ID && okEdge.ToBlockID == okBlock.ID && okEdge.Pattern == "ok" &&
+		errEdge.ID == acquire.ErrEdgeID && errEdge.FromBlockID == entry.ID && errEdge.ToBlockID == errBlock.ID && errEdge.Pattern == "err"
+}
+
+func validateTransferPlaces(helper, entry core.Function, acquire, call, use, release, helperReturn, failed, entryReturn core.LinearOperation) error {
+	lookup := func(function core.Function) (map[string]core.Place, map[string]core.TypeFact) {
+		places := make(map[string]core.Place, len(function.Linear.Places))
+		for _, place := range function.Linear.Places {
+			places[place.ID] = place
+		}
+		types := make(map[string]core.TypeFact, len(function.Linear.Types))
+		for _, fact := range function.Linear.Types {
+			types[fact.ID] = fact
+		}
+		return places, types
+	}
+	helperPlaces, helperTypes := lookup(helper)
+	entryPlaces, entryTypes := lookup(entry)
+	helperParam, hp := helperPlaces[helper.Parameter.ID]
+	helperOwner, ho := helperPlaces[acquire.TargetID]
+	helperError, he := helperPlaces[acquire.ErrTargetID]
+	entryParam, ep := entryPlaces[entry.Parameter.ID]
+	entryOwner, eo := entryPlaces[call.TargetID]
+	entryValue, ev := entryPlaces[use.TargetID]
+	if !hp || !ho || !he || !ep || !eo || !ev || helperParam.TypeID == helperOwner.TypeID || helperOwner.TypeID == helperError.TypeID || entryParam.TypeID == entryOwner.TypeID || entryOwner.TypeID == entryValue.TypeID ||
+		helperTypes[helperParam.TypeID].Shape.Constructor != "PathToken" || helperTypes[helperOwner.TypeID].Shape.Constructor != "FileByteOwner" || helperTypes[helperError.TypeID].Shape.Constructor != "AcquireError" ||
+		entryTypes[entryParam.TypeID].Shape.Constructor != "PathToken" || entryTypes[entryOwner.TypeID].Shape.Constructor != "FileByteOwner" || entryTypes[entryValue.TypeID].Shape.Constructor != "U64" ||
+		acquire.TypeID != helperOwner.TypeID || helperReturn.TypeID != helperOwner.TypeID || failed.TypeID != helperError.TypeID || call.TypeID != entryOwner.TypeID || use.TypeID != entryValue.TypeID || release.TypeID != entryOwner.TypeID || entryReturn.TypeID != entryValue.TypeID {
+		return fmt.Errorf("program: transferred owner places and type facts do not agree")
+	}
+	return nil
 }
 
 // hasLocalOwnerFacts keeps malformed local-owner candidates on the admission
@@ -1126,6 +1560,142 @@ func validateLocalFileByteFunction(function core.Function) error {
 		acquire.TypeID != owner.TypeID || use.TypeID != value.TypeID || release.TypeID != owner.TypeID || returned.TypeID != value.TypeID {
 		return fmt.Errorf("function %q: local-owner path, owner, and result type facts do not agree", function.ID)
 	}
+	return nil
+}
+
+func emitProgramTransferredOwnerHelper(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, globalNames []string) error {
+	if function.Linear == nil || len(function.Linear.Operations) != 3 {
+		return fmt.Errorf("function %q: unsupported transferred-owner helper C shape", function.ID)
+	}
+	acquire, returned := function.Linear.Operations[0], function.Linear.Operations[1]
+	if acquire.Foreign == nil || !validForeignSymbol(acquire.Foreign.Symbol) || !validForeignSymbol(acquire.Foreign.ABIType) || acquire.Foreign.Mode != "acquire" || returned.Kind != core.OpReturn {
+		return fmt.Errorf("function %q: transferred-owner helper ABI is not a closed acquisition shape", function.ID)
+	}
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = place
+	}
+	parameter, parameterOK := places[function.Parameter.ID]
+	owner, ownerOK := places[acquire.TargetID]
+	if !parameterOK || !ownerOK || returned.SourceID != owner.ID {
+		return fmt.Errorf("function %q: transferred-owner helper places do not agree", function.ID)
+	}
+	reserved := append(append([]string(nil), linearFixedNames...), globalNames...)
+	names := newCNames(reserved...)
+	parameterName := names.allocate(cLocal(parameter.Name), "place", 0)
+	ownerName := names.allocate(cLocal(owner.Name), "place", 1)
+	acquireResultName := names.allocate("schway_transfer_acquire_result", "ffi", 0)
+	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n", returnTypeName, functionName, parameterTypeName, parameterName)
+	fmt.Fprintf(out, "  schway_file_byte_acquire_result %s = %s(%s);\n", acquireResultName, acquire.Foreign.Symbol, parameterName)
+	fmt.Fprintf(out, "  if (%s.status != 0) exit(65);\n", acquireResultName)
+	fmt.Fprintf(out, "  schway_file_byte_owner %s = %s.owner;\n", ownerName, acquireResultName)
+	fmt.Fprintf(out, "  if (%s.data == NULL || %s.length != UINT64_C(1)) { schway_file_byte_release(%s); exit(65); }\n", ownerName, ownerName, ownerName)
+	fmt.Fprintf(out, "  if (!schway_record_event(%s, %s, %s, %s, NULL, %s, schway_invocations[invocation_index], NULL)) abort();\n",
+		strconv.Quote("function.returned"), strconv.Quote(returned.ID+":event:returned"), strconv.Quote(function.ID), strconv.Quote(returned.SourceID), strconv.Quote(returned.TypeID))
+	fmt.Fprintf(out, "  return %s;\n", ownerName)
+	out.WriteString("}\n\n")
+	return nil
+}
+
+func emitProgramTransferredOwnerCaller(out *strings.Builder, function, helper core.Function, parameterTypeName, returnTypeName, functionName string, globalNames []string, lookup *emitCallLookup, childTableNames map[string]string) error {
+	if function.Linear == nil || (len(function.Linear.Operations) != 4 && len(function.Linear.Operations) != 6) {
+		return fmt.Errorf("function %q: unsupported transferred-owner caller C shape", function.ID)
+	}
+	phase25Utility := len(function.Linear.Operations) == 6
+	call, use := function.Linear.Operations[0], function.Linear.Operations[1]
+	var sharedCall, exclusiveCall, release, returned core.LinearOperation
+	if phase25Utility {
+		sharedCall, exclusiveCall, release, returned = function.Linear.Operations[2], function.Linear.Operations[3], function.Linear.Operations[4], function.Linear.Operations[5]
+	} else {
+		release, returned = function.Linear.Operations[2], function.Linear.Operations[3]
+	}
+	calleeName, calleeTypeName, ok := lookup.resolve(call.CalleeID)
+	if !ok || call.CalleeID != helper.ID {
+		return fmt.Errorf("operation %q: unresolved transferred-owner helper", call.ID)
+	}
+	childTable, ok := childTableNames[call.ID]
+	if !ok {
+		return fmt.Errorf("operation %q has no invocation child table", call.ID)
+	}
+	var sharedName, sharedTypeName, exclusiveName, exclusiveTypeName, sharedChildTable, exclusiveChildTable string
+	if phase25Utility {
+		sharedName, sharedTypeName, ok = lookup.resolve(sharedCall.CalleeID)
+		if !ok || !lookup.takesPointer(sharedCall.CalleeID) {
+			return fmt.Errorf("operation %q: unresolved checked shared-copy helper", sharedCall.ID)
+		}
+		exclusiveName, exclusiveTypeName, ok = lookup.resolve(exclusiveCall.CalleeID)
+		if !ok || !lookup.takesPointer(exclusiveCall.CalleeID) {
+			return fmt.Errorf("operation %q: unresolved checked exclusive-copy helper", exclusiveCall.ID)
+		}
+		sharedChildTable, ok = childTableNames[sharedCall.ID]
+		if !ok {
+			return fmt.Errorf("operation %q has no invocation child table", sharedCall.ID)
+		}
+		exclusiveChildTable, ok = childTableNames[exclusiveCall.ID]
+		if !ok {
+			return fmt.Errorf("operation %q has no invocation child table", exclusiveCall.ID)
+		}
+	}
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = place
+	}
+	parameter, parameterOK := places[function.Parameter.ID]
+	owner, ownerOK := places[call.TargetID]
+	value, valueOK := places[use.TargetID]
+	var sharedValue, exclusiveValue core.Place
+	var sharedValueOK, exclusiveValueOK bool
+	if phase25Utility {
+		sharedValue, sharedValueOK = places[sharedCall.TargetID]
+		exclusiveValue, exclusiveValueOK = places[exclusiveCall.TargetID]
+	}
+	if !parameterOK || !ownerOK || !valueOK || (phase25Utility && (!sharedValueOK || !exclusiveValueOK)) {
+		return fmt.Errorf("function %q: transferred-owner caller places do not agree", function.ID)
+	}
+	reserved := append(append([]string(nil), linearFixedNames...), globalNames...)
+	names := newCNames(reserved...)
+	parameterName := names.allocate(cLocal(parameter.Name), "place", 0)
+	ownerName := names.allocate(cLocal(owner.Name), "place", 1)
+	valueName := names.allocate(cLocal(value.Name), "place", 2)
+	sharedValueName, exclusiveValueName := "", ""
+	if phase25Utility {
+		sharedValueName = names.allocate(cLocal(sharedValue.Name), "place", 3)
+		exclusiveValueName = names.allocate(cLocal(exclusiveValue.Name), "place", 4)
+	}
+	useResultName := names.allocate("schway_transfer_use_result", "ffi", 0)
+	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n", returnTypeName, functionName, parameterTypeName, parameterName)
+	fmt.Fprintf(out, "  if (!schway_record_event(%s, %s, %s, %s, %s, %s, schway_invocations[invocation_index], %s)) abort();\n",
+		strconv.Quote("function.called"), strconv.Quote(call.ID+":event:called"), strconv.Quote(function.ID), strconv.Quote(call.SourceID), strconv.Quote(call.TargetID), strconv.Quote(call.TypeID), strconv.Quote(helper.ID))
+	fmt.Fprintf(out, "  %s %s = %s(%s, %s[invocation_index]); /* call: %s */\n", calleeTypeName, ownerName, calleeName, parameterName, childTable, call.ID)
+	fmt.Fprintf(out, "  %s %s = %s(%s); /* borrow: %s */\n", "schway_file_byte_use_result", useResultName, use.Foreign.Symbol, ownerName, use.ID)
+	if !phase25Utility {
+		fmt.Fprintf(out, "  %s(%s); /* paired release: %s -> %s */\n", release.Foreign.Symbol, ownerName, release.ID, release.ReleasesOperationID)
+		fmt.Fprintf(out, "  if (%s.status != 0) { fputs(\"schway_file_byte_use: UnsupportedByte\\n\", stderr); exit(65); }\n", useResultName)
+	}
+	fmt.Fprintf(out, "  uint64_t %s = %s.value;\n", valueName, useResultName)
+	if phase25Utility {
+		callExclusiveResultName := names.allocate("schway_transfer_exclusive_result", "ffi", 1)
+		fmt.Fprintf(out, "  uint64_t %s = UINT64_C(0);\n", exclusiveValueName)
+		fmt.Fprintf(out, "  if (%s.status == 0) {\n", useResultName)
+		fmt.Fprintf(out, "  if (!schway_record_event(%s, %s, %s, %s, %s, %s, schway_invocations[invocation_index], %s)) abort();\n",
+			strconv.Quote("function.called"), strconv.Quote(sharedCall.ID+":event:called"), strconv.Quote(function.ID), strconv.Quote(sharedCall.SourceID), strconv.Quote(sharedCall.TargetID), strconv.Quote(sharedCall.TypeID), strconv.Quote(sharedCall.CalleeID))
+		emitProgramCall(out, sharedTypeName, sharedValueName, sharedName, valueName, sharedChildTable+"[invocation_index]", true, sharedCall)
+		fmt.Fprintf(out, "  if (!schway_record_event(%s, %s, %s, %s, %s, %s, schway_invocations[invocation_index], %s)) abort();\n",
+			strconv.Quote("function.called"), strconv.Quote(exclusiveCall.ID+":event:called"), strconv.Quote(function.ID), strconv.Quote(exclusiveCall.SourceID), strconv.Quote(exclusiveCall.TargetID), strconv.Quote(exclusiveCall.TypeID), strconv.Quote(exclusiveCall.CalleeID))
+		emitProgramCall(out, exclusiveTypeName, callExclusiveResultName, exclusiveName, sharedValueName, exclusiveChildTable+"[invocation_index]", true, exclusiveCall)
+		fmt.Fprintf(out, "  %s = %s;\n", exclusiveValueName, callExclusiveResultName)
+		out.WriteString("  }\n")
+		fmt.Fprintf(out, "  %s(%s); /* paired release: %s -> %s */\n", release.Foreign.Symbol, ownerName, release.ID, release.ReleasesOperationID)
+		fmt.Fprintf(out, "  if (%s.status != 0) { fputs(\"UseError.UnsupportedByte\\n\", stderr); exit(65); }\n", useResultName)
+	}
+	fmt.Fprintf(out, "  if (!schway_record_event(%s, %s, %s, %s, NULL, %s, schway_invocations[invocation_index], NULL)) abort();\n",
+		strconv.Quote("function.returned"), strconv.Quote(returned.ID+":event:returned"), strconv.Quote(function.ID), strconv.Quote(returned.SourceID), strconv.Quote(returned.TypeID))
+	if phase25Utility {
+		fmt.Fprintf(out, "  return %s;\n", exclusiveValueName)
+	} else {
+		fmt.Fprintf(out, "  return %s;\n", valueName)
+	}
+	out.WriteString("}\n\n")
 	return nil
 }
 
@@ -1562,7 +2132,7 @@ func emitProgramBranchOperation(out *strings.Builder, function core.Function, op
 			return fmt.Errorf("operation %q has no invocation child table", operation.ID)
 		}
 		fmt.Fprintf(out, "      if (!schway_record_event(%s, %s, %s, %s, %s, %s, schway_invocations[invocation_index], %s)) abort();\n", strconv.Quote("function.called"), strconv.Quote(operation.ID+":event:called"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID), strconv.Quote(operation.CalleeID))
-		emitProgramCall(out, calleeTypeName, locals[operation.TargetID], calleeName, locals[operation.SourceID], childTable+"[invocation_index]", operation)
+		emitProgramCall(out, calleeTypeName, locals[operation.TargetID], calleeName, locals[operation.SourceID], childTable+"[invocation_index]", lookup.takesPointer(operation.CalleeID), operation)
 		declared[operation.TargetID] = true
 	case core.OpDestructurePayload:
 		target, exists := places[operation.PayloadTargetID]
@@ -1706,7 +2276,7 @@ func emitProgramDefectTerminal(out *strings.Builder, function core.Function, ope
 // OpCall, never written to stdout directly; the entry function's own
 // return value is written to stdout exactly once, by `main`, after it
 // returns).
-func emitProgramFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, globalNames []string, lookup *emitCallLookup, childTableNames map[string]string) error {
+func emitProgramFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, globalNames []string, lookup *emitCallLookup, childTableNames map[string]string, pointerABI pointerABIFact) error {
 	places := make(map[string]core.Place, len(function.Linear.Places))
 	for _, place := range function.Linear.Places {
 		places[place.ID] = place
@@ -1775,7 +2345,15 @@ func emitProgramFunction(out *strings.Builder, function core.Function, parameter
 			} else if operation.Kind == core.OpBorrowExclusive {
 				label = "exclusive borrow representation"
 			}
-			fmt.Fprintf(out, "  %s %s = %s; /* %s: %s */%s\n", parameterTypeName, locals[target.ID], locals[source.ID], label, operation.ID, marker)
+			valueTypeName := parameterTypeName
+			sourceValue := locals[source.ID]
+			if pointerABI.PointerParameter {
+				valueTypeName = pointerABI.ValueCType
+				if (operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive) && operation.SourceID == function.Parameter.ID {
+					sourceValue = "*" + sourceValue
+				}
+			}
+			fmt.Fprintf(out, "  %s %s = %s; /* %s: %s */%s\n", valueTypeName, locals[target.ID], sourceValue, label, operation.ID, marker)
 			fmt.Fprintf(out, "  (void)%s;\n", locals[target.ID])
 			eventKind := "value.copied"
 			if operation.Kind == core.OpMove {
@@ -1805,7 +2383,7 @@ func emitProgramFunction(out *strings.Builder, function core.Function, parameter
 			fmt.Fprintf(out, "  if (!schway_record_event(%s, %s, %s, %s, %s, %s, schway_invocations[invocation_index], %s)) abort();\n",
 				strconv.Quote("function.called"), strconv.Quote(operation.ID+":event:called"), strconv.Quote(function.ID),
 				strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID), strconv.Quote(operation.CalleeID))
-			emitProgramCall(out, calleeTypeName, locals[target.ID], calleeName, locals[source.ID], childTable+"[invocation_index]", operation)
+			emitProgramCall(out, calleeTypeName, locals[target.ID], calleeName, locals[source.ID], childTable+"[invocation_index]", lookup.takesPointer(operation.CalleeID), operation)
 			declared[operation.TargetID] = true
 		case core.OpReturn:
 			// Unlike emitLinear's single-function OpReturn arm, this never

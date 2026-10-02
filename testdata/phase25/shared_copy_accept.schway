@@ -1,0 +1,10 @@
+module phase25.shared_copy_accept
+
+export {
+  fn shared_copy
+}
+
+fn shared_copy(value: U64) -> U64 {
+  let borrowed = borrow value
+  borrowed
+}

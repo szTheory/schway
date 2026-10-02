@@ -248,3 +248,23 @@ func TestDiagnosticZeroBytesUnchanged(t *testing.T) {
 		t.Fatalf("Error()-constructed diagnostic must have nil Repairs, got %v", d.Repairs)
 	}
 }
+
+func TestPhase25StructuredDiagnosticWireSchema(t *testing.T) {
+	origin := Span{Start: 1, End: 2}
+	encoded, err := json.Marshal(Error("ownership.unsupported_shape", Span{Start: 3, End: 9}, "safe shape is outside the checked subset", Cause{Kind: "origin.borrowed", Span: &origin, Detail: "origin declared here"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wire map[string]json.RawMessage
+	if err := json.Unmarshal(encoded, &wire); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"schema", "id", "code", "severity", "primary_span", "message", "causes"} {
+		if _, ok := wire[key]; !ok {
+			t.Fatalf("structured diagnostic omitted %q: %s", key, encoded)
+		}
+	}
+	if _, ok := wire["repairs"]; ok {
+		t.Fatalf("unsupported safe shape must not propose an unproven repair: %s", encoded)
+	}
+}

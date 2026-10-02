@@ -378,6 +378,119 @@ func selectsByPointerLoweringSharedOnly(function core.Function, linear *core.Lin
 	return terminatorIndex == len(operations)-1
 }
 
+// beginsPointerLoweringCandidate identifies the narrow U64 helper family
+// before the structural selectors decide whether its body is admissible. A
+// malformed first borrow must not escape the pointer refusal path merely
+// because a broken chain makes the selectors return false.
+func beginsPointerLoweringCandidate(function core.Function, linear *core.LinearBody) bool {
+	if function.PublicOrigin != nil || function.Parameter.Type != "U64" || function.ReturnType != "U64" || linear == nil || len(linear.Operations) == 0 {
+		return false
+	}
+	first := linear.Operations[0]
+	return (first.Kind == core.OpBorrowShared || first.Kind == core.OpBorrowExclusive) &&
+		first.SourceID == function.Parameter.ID && first.TargetID != ""
+}
+
+// pointerABIFact is the single checked shape consumed by the production
+// declaration, call-site, body, and manifest writers. A pointer representation
+// carries no alias, capture, alignment, or ownership promise by itself.
+type pointerABIFact struct {
+	PointerParameter bool
+	ParameterCType   string
+	ValueCType       string
+	Access           string
+	FunctionID       string
+	ParameterID      string
+}
+
+func checkedSharedPointerABIFact(function core.Function) (pointerABIFact, bool) {
+	if function.Parameter.Type != "U64" || function.ReturnType != "U64" || function.Linear == nil ||
+		!selectsByPointerLoweringSharedOnly(function, function.Linear) ||
+		(len(function.Linear.Operations) != 2 && len(function.Linear.Operations) != 3) {
+		return pointerABIFact{}, false
+	}
+	operations := function.Linear.Operations
+	borrow := operations[0]
+	if borrow.Kind != core.OpBorrowShared || borrow.SourceID != function.Parameter.ID || borrow.TargetID == "" || borrow.LoanID == "" {
+		return pointerABIFact{}, false
+	}
+	result := borrow.TargetID
+	copyType := ""
+	if len(operations) == 3 {
+		copyValue := operations[1]
+		if copyValue.Kind != core.OpCopy || copyValue.SourceID != borrow.TargetID || copyValue.TargetID == "" || copyValue.TypeID != borrow.TypeID {
+			return pointerABIFact{}, false
+		}
+		result, copyType = copyValue.TargetID, copyValue.TypeID
+	}
+	ret := operations[len(operations)-1]
+	if ret.Kind != core.OpReturn || ret.SourceID != result || ret.TypeID != borrow.TypeID {
+		return pointerABIFact{}, false
+	}
+	parameterType, borrowType, resultType := "", "", ""
+	for _, place := range function.Linear.Places {
+		switch place.ID {
+		case function.Parameter.ID:
+			parameterType = place.TypeID
+		case borrow.TargetID:
+			borrowType = place.TypeID
+		case result:
+			resultType = place.TypeID
+		}
+	}
+	if len(operations) == 2 {
+		resultType = borrowType
+	}
+	if parameterType == "" || parameterType != borrowType || parameterType != borrow.TypeID || parameterType != resultType ||
+		(len(operations) == 3 && (copyType != parameterType || len(function.Linear.Places) != 3)) ||
+		(len(operations) == 2 && len(function.Linear.Places) != 2) || len(function.Linear.Types) != 1 {
+		return pointerABIFact{}, false
+	}
+	for _, fact := range function.Linear.Types {
+		if fact.ID == parameterType && fact.Shape.Constructor == "U64" {
+			return pointerABIFact{PointerParameter: true, ParameterCType: "const uint64_t *", ValueCType: "uint64_t", Access: "shared", FunctionID: function.ID, ParameterID: function.Parameter.ID}, true
+		}
+	}
+	return pointerABIFact{}, false
+}
+
+// checkedExclusivePointerABIFact admits only the Phase 25 exclusive
+// read/copy helper. The source loan is exclusive while live, but the emitted
+// pointer grants no mutation or optimizer promise; its scalar copy is the
+// only admitted body operation.
+func checkedExclusivePointerABIFact(function core.Function) (pointerABIFact, bool) {
+	if function.Parameter.Type != "U64" || function.ReturnType != "U64" || function.Linear == nil ||
+		!selectsByPointerLowering(function, function.Linear) || len(function.Linear.Operations) != 3 {
+		return pointerABIFact{}, false
+	}
+	borrow, copyValue, ret := function.Linear.Operations[0], function.Linear.Operations[1], function.Linear.Operations[2]
+	if borrow.Kind != core.OpBorrowExclusive || borrow.SourceID != function.Parameter.ID || borrow.TargetID == "" || borrow.LoanID == "" ||
+		copyValue.Kind != core.OpCopy || copyValue.SourceID != borrow.TargetID || copyValue.TargetID == "" ||
+		ret.Kind != core.OpReturn || ret.SourceID != copyValue.TargetID || ret.TypeID != copyValue.TypeID {
+		return pointerABIFact{}, false
+	}
+	parameterType, borrowType, copyType := "", "", ""
+	for _, place := range function.Linear.Places {
+		switch place.ID {
+		case function.Parameter.ID:
+			parameterType = place.TypeID
+		case borrow.TargetID:
+			borrowType = place.TypeID
+		case copyValue.TargetID:
+			copyType = place.TypeID
+		}
+	}
+	if parameterType == "" || parameterType != borrowType || parameterType != copyType || parameterType != borrow.TypeID || parameterType != copyValue.TypeID {
+		return pointerABIFact{}, false
+	}
+	for _, fact := range function.Linear.Types {
+		if fact.ID == parameterType && fact.Shape.Constructor == "U64" {
+			return pointerABIFact{PointerParameter: true, ParameterCType: "uint64_t *", ValueCType: "uint64_t", Access: "exclusive", FunctionID: function.ID, ParameterID: function.Parameter.ID}, true
+		}
+	}
+	return pointerABIFact{}, false
+}
+
 // emittedAttributeForByPointerParameter returns D-05-01's restrict
 // attribute metadata for a shape classified by selectsByPointerLowering.
 // This manifest description does not admit the corresponding program body.
@@ -970,19 +1083,20 @@ const ForeignManifestSchema = "lang.foreign/0"
 // exercises, so a quarantine reader never mistakes a declared fact for a
 // proven one (D-04-12/D-10).
 type foreignManifestDocument struct {
-	Schema               string             `json:"schema"`
-	Symbol               string             `json:"symbol"`
-	Allocator            string             `json:"allocator"`
-	Unwind               string             `json:"unwind"`
-	NonlocalExit         string             `json:"nonlocal_exit"`
-	Fails                string             `json:"fails"`
-	InitializedState     string             `json:"initialized_state"`
-	Capture              string             `json:"capture"`
-	Retention            string             `json:"retention"`
-	Aliasing             string             `json:"aliasing"`
-	Layout               *core.RecordLayout `json:"layout"`
-	EmittedAttributes    []EmittedAttribute `json:"emitted_attributes"`
-	UncheckedObligations []string           `json:"unchecked_obligations"`
+	Schema                   string                    `json:"schema"`
+	Symbol                   string                    `json:"symbol"`
+	Allocator                string                    `json:"allocator"`
+	Unwind                   string                    `json:"unwind"`
+	NonlocalExit             string                    `json:"nonlocal_exit"`
+	Fails                    string                    `json:"fails"`
+	InitializedState         string                    `json:"initialized_state"`
+	Capture                  string                    `json:"capture"`
+	Retention                string                    `json:"retention"`
+	Aliasing                 string                    `json:"aliasing"`
+	Layout                   *core.RecordLayout        `json:"layout"`
+	EmittedAttributes        []EmittedAttribute        `json:"emitted_attributes"`
+	EmittedPointerParameters []EmittedPointerParameter `json:"emitted_pointer_parameters,omitempty"`
+	UncheckedObligations     []string                  `json:"unchecked_obligations"`
 }
 
 // EmittedAttribute is one lang.foreign/0 sidecar emitted_attributes entry
@@ -998,6 +1112,13 @@ type EmittedAttribute struct {
 	CoreNode    string `json:"core_node"`
 	Parameter   string `json:"parameter"`
 	JustifiedBy string `json:"justified_by"`
+}
+
+type EmittedPointerParameter struct {
+	CoreNode  string `json:"core_node"`
+	Parameter string `json:"parameter"`
+	CType     string `json:"c_type"`
+	Access    string `json:"access"`
 }
 
 // uncheckedForeignObligations names every obligation this phase declares but
@@ -1071,6 +1192,12 @@ func singleManifestFunction(program core.Program) (core.Function, error) {
 	}
 	for _, function := range program.Functions {
 		if function.Linear != nil && selectsByPointerLowering(function, function.Linear) {
+			if _, ok := checkedExclusivePointerABIFact(function); ok {
+				return function, nil
+			}
+			return function, nil
+		}
+		if _, ok := checkedSharedPointerABIFact(function); ok {
 			return function, nil
 		}
 	}
@@ -1096,7 +1223,17 @@ func EmitForeignManifest(program core.Program) (string, error) {
 		document.InitializedState, document.Capture, document.Retention, document.Aliasing = contract.InitializedState, contract.Capture, contract.Retention, contract.Aliasing
 		document.Layout = contract.Layout
 	} else {
-		document.EmittedAttributes = append(document.EmittedAttributes, emittedAttributeForByPointerParameter(function))
+		if fact, ok := checkedSharedPointerABIFact(function); ok {
+			document.EmittedPointerParameters = append(document.EmittedPointerParameters, EmittedPointerParameter{
+				CoreNode: fact.FunctionID, Parameter: fact.ParameterID, CType: fact.ParameterCType, Access: fact.Access,
+			})
+		} else if fact, ok := checkedExclusivePointerABIFact(function); ok {
+			document.EmittedPointerParameters = append(document.EmittedPointerParameters, EmittedPointerParameter{
+				CoreNode: fact.FunctionID, Parameter: fact.ParameterID, CType: fact.ParameterCType, Access: fact.Access,
+			})
+		} else {
+			document.EmittedAttributes = append(document.EmittedAttributes, emittedAttributeForByPointerParameter(function))
+		}
 	}
 	encoded, err := json.Marshal(document)
 	if err != nil {

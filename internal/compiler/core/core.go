@@ -861,12 +861,11 @@ type LinearOperation struct {
 	// this fact belongs to one operation and is omitted by every older core
 	// operation.
 	Foreign *ForeignOperationContract `json:"foreign,omitempty"`
-	// OkEdgeID, ErrEdgeID, and ErrTargetID are Phase 4 additive omitempty
-	// facts populated only on an OpForeignCall operation (D-04-04): the ok
-	// edge continues at TargetID (an ordinary place, exactly like OpCopy's
-	// target), while the err edge's own synthesized failure-ADT place is
-	// ErrTargetID. Every pre-Phase-4 operation, and every operation kind
-	// other than OpForeignCall, leaves all three empty.
+	// OkEdgeID, ErrEdgeID, and ErrTargetID are additive omitempty control-flow
+	// facts. OpForeignCall uses them for its foreign result edges (D-04-04);
+	// the bounded Phase 24 fallible-call path also uses them on OpCall, where
+	// ErrTargetID receives the callee's declared failure envelope. Every
+	// operation kind other than OpForeignCall/OpCall leaves all three empty.
 	OkEdgeID    string `json:"ok_edge_id,omitempty"`
 	ErrEdgeID   string `json:"err_edge_id,omitempty"`
 	ErrTargetID string `json:"err_target_id,omitempty"`
@@ -902,7 +901,12 @@ type LinearOperation struct {
 	// corevalidate sites: an OpCall with an empty CalleeID; any non-OpCall
 	// operation with a non-empty CalleeID; and a CalleeID naming no
 	// declared function (its own typed identity, distinct from the cycle
-	// code -- D-07-45).
+	// code -- D-07-45). On the bounded Phase 24 FileByteOwner path,
+	// SourceID and TargetID name the moved owner place across the call;
+	// TargetID's own TypeFact must agree with the callee's declared owning
+	// return type. The callee's acquisition operation retains the exact
+	// foreign ABI and destructor pairing; this call does not release or
+	// reacquire the resource.
 	CalleeID string `json:"callee_id,omitempty"`
 	// PayloadType is Phase 12's additive omitempty fact (D-12-07): populated
 	// only on an OpConstructPayload or OpDestructurePayload operation, it

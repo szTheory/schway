@@ -1,0 +1,12 @@
+module phase25.exclusive_conflict_reject
+
+export {
+  fn relay
+}
+
+fn relay(value: Buffer) -> Buffer {
+  let shared = borrow value
+  let exclusive = borrow mut value
+  let observed = take shared
+  exclusive
+}

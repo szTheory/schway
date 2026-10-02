@@ -680,7 +680,8 @@ func failOnlyTerminatedFunction(terminatorOpID string, terminatorKind core.Opera
 		ID: "s1:fn:fail_only", EntryPointID: "s1:fn:fail_only:point:entry",
 		Parameter: core.Parameter{ID: "s1:fn:fail_only:place:0", Name: "value", Type: "Buffer"},
 		Linear: &core.LinearBody{
-			ID: "s1:fn:fail_only:linear",
+			ID:     "s1:fn:fail_only:linear",
+			Places: []core.Place{{ID: "place:1", Name: "borrowed"}},
 			Operations: []core.LinearOperation{
 				{ID: "op:0", Kind: core.OpBorrowShared, SourceID: "s1:fn:fail_only:place:0", TargetID: "place:1", LoanID: "loan:0"},
 				{ID: terminatorOpID, Kind: terminatorKind, SourceID: "place:1"},

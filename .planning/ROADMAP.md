@@ -40,12 +40,13 @@ borrow leaves ownership unchanged.** M003 remains the shipped predecessor.
 ## Phases
 
 Sequential IDs continue after archived Phase 21. Every new phase delivers a
-runnable source/input/output witness; no implementation plans exist yet.
+runnable source/input/output witness, with executable plans and summaries kept
+in its phase directory.
 
 - [x] **Phase 22: Native Application Build and Single Execution** — A retained scalar application accepts caller input and runs once with ordinary streams. (3/3 implementation plans complete; objective README contract passed; subjective readability not claimed) (completed 2026-09-27)
-- [ ] **Phase 23: Live Local Allocation and Discharge** — A bounded file-byte application uses and releases a real Schway-owned allocation.
-- [ ] **Phase 24: Ownership Transfer Through Calls and Errors** — Live resources survive ownership transfer and discharge across frames and typed errors.
-- [ ] **Phase 25: Separate Pointer Successors and Integrated Utility** — Shared/exclusive pointer helpers have distinct native proof and the complete utility is reproducible.
+- [x] **Phase 23: Live Local Allocation and Discharge** — A bounded file-byte application uses and releases a real Schway-owned allocation. (completed 2026-09-30)
+- [x] **Phase 24: Ownership Transfer Through Calls and Errors** — Live resources survive ownership transfer and discharge across frames and typed errors. (completed 2026-10-01)
+- [x] **Phase 25: Separate Pointer Successors and Integrated Utility** — Shared/exclusive pointer helpers have distinct native proof and the complete utility is reproducible. (completed 2026-10-02)
 
 ## Phase Details
 
@@ -149,7 +150,18 @@ form covers all affected consumers; owning aggregates remain refused.
 4. Copying ownership, using a moved-from owner, or returning an owning process-entry result without an external receiver is rejected before execution with source-attributed diagnostics.
 5. An observer independent of compiler release events proves allocation, use after acquisition/return, and destruction before exit. Reached omitted, premature, duplicate, and wrong-resource destruction controls all fail even with plausible reported events.
 
-**Plans**: TBD
+**Plans**: 3/3 plans complete
+**Wave 1**
+
+- [x] 24-01-PLAN.md — Transfer a live owner through a helper and return
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 24-02-PLAN.md — Preserve repeated activation identity and typed-error cleanup
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 24-03-PLAN.md — Prove physical cleanup and bind dual-host evidence
 
 **Runnable witness**: Extend the file-byte utility so a helper acquires the
 allocation, transfers it through a call/return, and the receiving owner reports
@@ -177,7 +189,52 @@ a narrow form. Defect/process termination stays outside cleanup guarantees.
 4. Each foreign/shared/exclusive family has reproducible macOS and Linux native receipts naming source/build inputs, compiler, target, flags, expected answers, and applicable optimizer/sanitizer lanes. Missing host/lane evidence leaves the corresponding claim incomplete.
 5. From a clean checkout, a developer follows documented public commands to build/run the utility on the two supplied files and a specified failure, gets independent expected results, and locates explicit C bindings and lifetime evidence. Moved-from use, discarded ownership, pointer escape, and unsupported cleanup/exit examples produce stable structured diagnostics with source attribution and actionable boundary explanations.
 
-**Plans**: TBD
+**Plans**: 6/6 implementation plans executed; 1 evidence-record reconciliation plan pending
+
+Plans:
+**Wave 1**
+
+- [x] 25-01-PLAN.md — Admit the shared read/copy pointer ABI
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 25-02-PLAN.md — Independently validate borrow families and live paths
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 25-03-PLAN.md — Admit exclusive helper and integrated caller composition
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 25-04-PLAN.md — Complete exclusive lowering, model behavior, and diagnostics
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [x] 25-05-PLAN.md — Complete production lowering and independent owner-result peer proofs
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [x] 25-06-PLAN.md — Publish utility instructions, dual-host evidence gate, and living-document closeout (local execution complete; hosted matrix pending)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [x] 25-07-PLAN.md — Reconcile Phase 25 validation, security, product-roadmap, and maturity records with the successful hosted dual-host receipt
+
+**Phase status at Plan 25-07 kickoff (historical):** implementation plans were
+complete. Hosted run 36971855722 had passed the macOS/arm64 and Linux/x86_64
+foreign/shared/exclusive matrix across baseline, optimized, and ASan+UBSan
+lanes at one PR merge revision. At that point, the four tracked evidence and
+living-language records still described EVD-10 as pending; Plan 25-07 was
+assigned to reconcile them before goal-backward re-verification.
+
+**Phase 25 closeout amendment — 2026-10-02:** Plan 25-07 reconciled the current
+validation, security, product-roadmap, and language-maturity records to hosted
+run 36971855722. The goal-backward verifier passes 6/6 must-have truths and
+5/5 roadmap criteria; the seven plans and all 24 requirements are complete.
+The independent cold-read and automated README evidence-link checks are
+recorded in `25-VERIFICATION.md`. Final-head hosted CI and the authorized PR
+merge remain the shipping step; the hosted matrix above remains tied to its
+recorded revision.
 
 **Runnable witness**: Separate shared and exclusive helper sources each read/copy
 the known input byte with an exact expected answer. The final utility composes
@@ -226,19 +283,18 @@ JSON, and the independent HTTP branch follow concrete consumer needs.
 
 **Execution order:** 22 → 23 → 24 → 25. Phase 21 is complete historical prework
 outside this new delivery count. All 24 requirements have one owner; none is met
-by roadmap creation. Plan counts remain TBD until phase planning.
+by roadmap creation. Future phase plan counts remain TBD until those phases are
+planned.
 
 | Phase | Plans Complete | Status | Completed |
 |---|---|---|---|
 | 22. Native Application Build and Single Execution | 3/3 | Complete    | 2026-09-27 |
-| 23. Live Local Allocation and Discharge | 7/7 | In Progress|  |
-| 24. Ownership Transfer Through Calls and Errors | 0/TBD | Not started | - |
-| 25. Separate Pointer Successors and Integrated Utility | 0/TBD | Not started | - |
+| 23. Live Local Allocation and Discharge | 7/7 | Complete    | 2026-09-30 |
+| 24. Ownership Transfer Through Calls and Errors | 3/3 | Complete    | 2026-10-01 |
+| 25. Separate Pointer Successors and Integrated Utility | 7/7 | Complete    | 2026-10-02 |
 
 ## Next Action
 
-Run `$gsd-discuss-phase 23 --auto` to settle the source shape, byte encoding,
-maximum size, cleanup control, and independent physical-destruction witness
-before planning implementation.
-Phase 22 is complete: its objective README contract UAT passed, the refreshed
-verifier confirms 17/17 truths, and no subjective readability claim is made.
+After the completed branch is pushed, wait for current-head CI and squash
+auto-merge PR #1 when green as authorized. After that integration, start the
+next milestone with `$gsd-new-milestone`; do not replay Phase 25 plans or UAT.
