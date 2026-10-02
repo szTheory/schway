@@ -2457,7 +2457,7 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 	label := func(id string) string {
 		return "schway_block_" + strconv.Itoa(blockOrdinal(function.Linear.Blocks, id))
 	}
-	fmt.Fprintf(out, "  if (0) goto %s;\n", label(function.EntryPointID))
+	fmt.Fprintf(out, "  if (0) goto %s;\n", label(function.ID+":block:entry"))
 	operations := make(map[string]core.LinearOperation, len(function.Linear.Operations))
 	for _, op := range function.Linear.Operations {
 		operations[op.ID] = op
