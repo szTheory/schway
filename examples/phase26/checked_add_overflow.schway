@@ -1,0 +1,13 @@
+module examples.phase26.checked_add_overflow
+
+export {
+  fn main
+}
+
+fn main(mode: U64) -> U64 {
+  if mode < 1 {
+    18446744073709551615 + 0
+  } else {
+    18446744073709551615 + 1
+  }
+}

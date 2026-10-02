@@ -130,8 +130,8 @@ jobs:
           cache: true
       - name: Require clang
         run: clang --version
-      - name: Phase 26 compiler and native app regressions
-        run: go test ./internal/compiler/session ./internal/compiler/core -run '^TestPhase26|^TestAllOperationKindsHandledAtEverySite$' -count=1 -v
+      - name: Phase 26 compiler, interpreter, C17, and native app regressions
+        run: go test ./internal/compiler/session ./internal/compiler/core ./internal/compiler/interp ./internal/compiler/cgen ./internal/compiler/native -run '^TestPhase26|^TestAllOperationKindsHandledAtEverySite$|^TestPhase19U64NativeExactWidthAndOutput$' -count=1 -v
 
   validation-corpus-receipt:
     name: validation corpus receipt (macos-latest)

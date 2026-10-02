@@ -1,12 +1,14 @@
 package cgen_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -2123,5 +2125,42 @@ func requirePhase24EmitterRefusalBeforeSerialization(t *testing.T, program core.
 	generated, err := cgen.EmitProgramForTest(program)
 	if err == nil || generated != "" || cgen.InvocationSerializationReachedForTest() {
 		t.Fatalf("%s candidate was not refused before C serialization: bytes=%d err=%v reached=%v", name, len(generated), err, cgen.InvocationSerializationReachedForTest())
+	}
+}
+
+func TestPhase26CheckedAddC17(t *testing.T) {
+	sourcePath := testsupport.ProjectPath("examples", "phase26", "checked_add_overflow.schway")
+	source, err := os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("overflow witness check diagnostics: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.EmitApplication(checked.Program)
+	if err != nil {
+		t.Fatalf("EmitApplication: %v", err)
+	}
+	guard := strings.Index(generated, `fputs("schway: U64 addition overflow\n", stderr);`)
+	addition := strings.Index(generated, " + schway_scalar_")
+	if guard < 0 || addition < 0 || guard > addition || !strings.Contains(generated, "exit(65);") {
+		t.Fatalf("generated C does not check overflow before assigning and exit 65:\n%s", generated)
+	}
+	artifact := filepath.Join(t.TempDir(), "checked_add_overflow")
+	_, diagnostics, err := session.BuildApplicationFile(context.Background(), sourcePath, artifact, native.DefaultRunner())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("BuildApplicationFile diagnostics=%+v err=%v", diagnostics, err)
+	}
+	var stdout, stderr bytes.Buffer
+	outcome, err := native.RunApplication(context.Background(), artifact, "1", &stdout, &stderr)
+	if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 65 || stdout.Len() != 0 || stderr.String() != "schway: U64 addition overflow\n" {
+		t.Fatalf("overflow app outcome=%+v stdout=%q stderr=%q err=%v, want exit 65, empty stdout and fixed diagnostic", outcome, stdout.String(), stderr.String(), err)
+	}
+	stdout.Reset()
+	stderr.Reset()
+	outcome, err = native.RunApplication(context.Background(), artifact, "0", &stdout, &stderr)
+	if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 0 || stdout.String() != "18446744073709551615\n" || stderr.Len() != 0 {
+		t.Fatalf("MAX+0 app outcome=%+v stdout=%q stderr=%q err=%v, want exact maximum", outcome, stdout.String(), stderr.String(), err)
 	}
 }

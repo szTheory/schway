@@ -2115,3 +2115,45 @@ func TestCallFromBothMatchArmsAcrossFrames(t *testing.T) {
 		})
 	}
 }
+
+func TestPhase26CheckedAddInterpreter(t *testing.T) {
+	const maximum = "18446744073709551615"
+	source, err := os.ReadFile(filepath.Join(interpProjectRoot(), "examples", "phase26", "checked_add_overflow.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("overflow witness parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("overflow witness check diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("overflow witness core validation problems: %+v", validated.Problems)
+	}
+	for _, test := range []struct {
+		input string
+		kind  string
+		value string
+	}{{input: "0", kind: execution.OutcomeReturned, value: maximum}, {input: "1", kind: execution.OutcomeDefect, value: ""}} {
+		result, err := Run(validated.Program(), "main", test.input)
+		if err != nil {
+			t.Fatalf("Run(main, %q): %v", test.input, err)
+		}
+		if result.Outcome.Kind != test.kind || result.Outcome.Value != test.value {
+			t.Errorf("input %s outcome=%+v, want {%s, %q}", test.input, result.Outcome, test.kind, test.value)
+		}
+		if test.input == "1" {
+			if len(result.Events) == 0 {
+				t.Fatal("overflow returned no attributed defect event")
+			}
+			event := result.Events[len(result.Events)-1]
+			if event.Kind != "function.defected" || event.Output != "U64 addition overflow" || event.ID == "" || event.SourcePlace == "" {
+				t.Fatalf("overflow event=%+v, want source-attributed U64 addition overflow defect", event)
+			}
+		}
+	}
+}
