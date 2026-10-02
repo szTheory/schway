@@ -1,6 +1,6 @@
 ---
 phase: separate-pointer-successors-and-integrated-utility
-verified: "2026-10-02T12:12:04Z"
+verified: "2026-10-02T15:51:10Z"
 status: passed
 score: "6/6 must-have truths verified; 5/5 roadmap criteria verified"
 covered_files:
@@ -27,6 +27,7 @@ covered_files:
   - .planning/phases/25-separate-pointer-successors-and-integrated-utility/25-07-SUMMARY.md
   - .planning/phases/25-separate-pointer-successors-and-integrated-utility/25-CONTEXT.md
   - .planning/phases/25-separate-pointer-successors-and-integrated-utility/25-SECURITY.md
+  - .planning/phases/25-separate-pointer-successors-and-integrated-utility/25-UI-REVIEW.md
   - .planning/phases/25-separate-pointer-successors-and-integrated-utility/25-VALIDATION.md
   - examples/phase23/adapter.c
   - examples/phase23/adapter.h
@@ -68,17 +69,13 @@ covered_files:
   - testdata/phase25/exclusive_copy_accept.schway
   - testdata/phase25/exclusive_escape_reject.schway
   - testdata/phase25/shared_copy_accept.schway
-covered_digest: "v1:sha256:06cf8c350261aa37c7d08365ef1b3cab097de1eef64564503e6486294b6d70dc"
+covered_digest: "v2:sha256:12f3cb7be7ec7397fb5b625d87a18cf2eb73d51d5b8d338a9ad574a109929208"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
-  previous_status: gaps_found
-  previous_score: "5/6 must-have truths verified; 5/5 roadmap criteria verified"
-  gaps_closed:
-    - "Foreign, shared, and exclusive native receipts now cover macOS and Linux across baseline, optimized, and sanitizer lanes."
-    - "Phase-owned validation, security, product-roadmap, and maturity records now reflect hosted EVD-10 receipts, run 36971855722."
-    - "The 34-pair evidence corpus and the T-25-04/T-25-06 Phase 25 groundedness pins now have record-backed identities and ownership."
-    - "The README cleanup claim now links directly to the physical observer and hosted Phase 24 receipt; the focused link test pins both targets and run identity."
+  previous_status: passed
+  previous_score: "6/6 must-have truths verified; 5/5 roadmap criteria verified"
+  gaps_closed: []
   gaps_remaining: []
   regressions: []
 ---
@@ -86,9 +83,9 @@ re_verification:
 # Phase 25: Separate Pointer Successors and Integrated Utility — Verification Report
 
 **Phase Goal:** A developer can use separately checked shared and exclusive read-copy pointer helpers in the documented native utility, with reproducible evidence for each admitted family.
-**Verified:** 2026-10-02T12:12:04Z
+**Verified:** 2026-10-02T15:51:10Z
 **Status:** passed
-**Re-verification:** Yes — after Plan 25-07 and its evidence-groundedness correction.
+**Re-verification:** Yes — refreshed because the covered-file fingerprint was stale after Phase 25 closeout records changed.
 
 ## Goal Achievement
 
@@ -138,7 +135,7 @@ No dependency was added: go.mod and go.sum are unchanged from the Phase 25 start
 | internal/compiler/native/phase25_utility_test.go | Executable family, error-order, wrong-result, conflict, and escape witnesses | ✓ VERIFIED | Tests compile and run emitted C with fixed independent expected results. |
 | examples/phase24/README.md and explicit Phase 23 binding inputs | Clean-checkout commands and evidence index | ✓ VERIFIED | Commands name both source and binding manifest; test confirms family/host/lane index. Previous verifier recorded the command smoke; unchanged since. |
 | scripts/verify-phase25.sh and .github/workflows/ci.yml | Fail-closed receipts owned by the existing aggregate | ✓ VERIFIED | Script verifies each local family/lane and emits other-host rows as incomplete; CI runs it exactly once in each Ubuntu/macOS evidence aggregate. Both passed on the same merge revision. |
-| 25-VALIDATION.md, 25-SECURITY.md, PRODUCT-ROADMAP.md, LANGUAGE-MATURITY.md, PROJECT.md | Current, evidence-calibrated status and shift-left preference | ✓ VERIFIED | Hosted/EVD-10 statements are dated and provenance-scoped; 15/15 security mitigations are closed with zero open threats; current roadmap/maturity rankings are present; PROJECT.md records the default automated-verification preference. |
+| 25-VALIDATION.md, 25-SECURITY.md, PRODUCT-ROADMAP.md, LANGUAGE-MATURITY.md, PROJECT.md | Current, evidence-calibrated status and shift-left preference | ✓ VERIFIED | Validation is `validated`, Nyquist-compliant, and its latest audit has 0 gaps. Hosted/EVD-10 statements are dated and provenance-scoped; the security register has 15/15 closed canonical controls and zero open threats; current roadmap/maturity rankings are present; PROJECT.md records the default automated-verification preference. |
 
 ### Hosted Native Receipt Matrix
 
@@ -151,7 +148,7 @@ The Phase 25 script covers three families (foreign, shared, exclusive) and three
 
 For all 18 rows the native utility returned 65 for 0x41 and 66 for 0x42. The negative 0x43 control returned UseError.UnsupportedByte / exit 65 before either helper. Both pointer families reached their helper-local wrong-result controls (shared 99; exclusive 98), and each has separate conflict, escape, and manifest controls. The local evidence script also passed at branch head 421b5b94; it correctly marked rows for the other host incomplete because local execution cannot claim a remote-host result.
 
-The same hosted run passed all required CI jobs: Linux and macOS vet, build, full tests, and race tests; and Linux and macOS current evidence aggregates covering Phases 24, 25, 23, 6, and Phase 15 admission/session seams. The optional validation-corpus receipt was skipped by its default condition and is not part of Phase 25 acceptance.
+The same hosted run passed all required CI jobs: Linux and macOS vet, build, full tests, and race tests; and Linux and macOS current evidence aggregates covering Phases 24, 25, 23, 6, and Phase 15 admission/session seams. The optional validation-corpus receipt was skipped by its default condition and is not part of Phase 25 acceptance. The final-head CI run [37005701631](https://github.com/szTheory/schway/actions/runs/37005701631), at commit `692f791051ba671c49c68fdd2073229feb51b090`, has since completed successfully: both native `checks` jobs and both current evidence aggregate jobs passed. This final-head run is separate from the detailed 18-row receipt matrix above.
 
 ### Key Link Verification
 
@@ -177,16 +174,17 @@ This compiler/tooling phase has no database, API, or rendered UI data path.
 
 | Behavior | Command/evidence | Result | Status |
 |---|---|---|---|
-| Native utility produces the independent success/error behavior | GOCACHE=/private/tmp/schway-gocache go test -count=1 -run '^(TestPhase25UtilityNative|TestPhase25NativeFamilyWrongResult|TestPhase25UtilityFamilyControls)$' ./internal/compiler/native | Exit 0; named emitted-C tests pass | ✓ PASS |
-| Checker/session rejects family conflict and escape while peers accept valid sequential use | GOCACHE=/private/tmp/schway-gocache go test -count=1 -run '^(TestPhase25FamilyConflict|TestPhase25FamilyEscape|TestPhase25IndependentPeer.*)$' ./internal/compiler/session | Exit 0; named tests pass | ✓ PASS |
-| C ABI and serializer refusal preserve the pointer boundary | GOCACHE=/private/tmp/schway-gocache go test -count=1 -run '^(TestPhase25SharedPointerCopyABI|TestPhase25ExclusivePointerABI|TestPhase25ExclusivePointerRefusal)$' ./internal/compiler/cgen | Exit 0; named tests pass | ✓ PASS |
+| Native utility produces the independent success/error behavior | `go test -count=1 -run '^(TestPhase25UtilityNative|TestPhase25NativeFamilyWrongResult|TestPhase25UtilityFamilyControls|TestPhase25EvidenceIndex)$' ./internal/compiler/native` | Exit 0; emitted-C results, typed failure ordering, both reached wrong-result controls, conflict/escape controls, and evidence-index check pass | ✓ PASS |
+| Shared/exclusive source contracts and bounded caller composition | `go test -count=1 -run '^(TestPhase25SharedSource|TestPhase25ExclusiveSource|TestPhase25TransferCallerComposition)$' ./internal/compiler/check` | Exit 0; source checks retain family identity and the exact helper result chain | ✓ PASS |
+| Independent peer conflict, escape, and loan-family derivations | Named `TestPhase25PointerFamilyCore`, `TestPhase25U64CopyOriginCore`, `TestPhase25PointerOrigin`, `TestPhase25U64CopyOrigin`, `TestPhase25UtilityOwnerTransfer`, `TestPhase25PointerPath*`, `TestPhase25FamilyConflict`, `TestPhase25FamilyEscape`, and `TestPhase25IndependentPeer*` tests in corevalidate, originvalidate, pathoracle, and session | Exit 0 in all four packages; ended loans pass, live conflicts and escapes are rejected | ✓ PASS |
+| C ABI, manifests, and serializer refusal preserve the pointer boundary | `go test -count=1 -run '^(TestPhase25SharedPointerCopyABI|TestPhase25SharedPointerABI|TestPhase25SharedPointerManifest|TestPhase25SharedPointerABIFailClosed|TestPhase25ExclusivePointerABI|TestPhase25ExclusivePointerManifest|TestPhase25ExclusivePointerRefusal)$' ./internal/compiler/cgen` | Exit 0; pointer C forms and manifests agree and out-of-subset shapes refuse | ✓ PASS |
 | Evidence grounding frontier and three-class ownership remain clean | GOCACHE=/private/tmp/schway-gocache go test -count=1 -run '^(TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessThreeClassesAreEmpty)$' ./internal/compiler/session | Exit 0; 1.243s | ✓ PASS |
 | README evidence navigation has valid targets and broken-link negative control | TestPhase25EvidenceIndex | Fresh focused test passed in quick task 261002-awt; target links and receipt identity are pinned | ✓ PASS |
-| Repository regression gate | Historical uncached full suite receipt | Full suite passed after the evidence correction and before the documentation-only README link updates | ✓ PASS (historical receipt) |
-| Static/build/race validation | Hosted run 36971855722 on both native hosts | go vet ./..., go build ./..., go test ./..., and go test -race -timeout=20m ./... all passed | ✓ PASS |
+| Repository regression gate | Current receipt supplied for this verification: `GOCACHE=/tmp/schway-phase-handoff-gocache go test -count=1 ./...` | Full Go suite passed on the unchanged code tree | ✓ PASS |
+| Static/build/race validation | Hosted run 37005701631 on final head; detailed lane receipt remains run 36971855722 | Final-head `checks` passed on Ubuntu and macOS; the detailed Phase 25 matrix passed on both native hosts in run 36971855722 | ✓ PASS |
 | All native family/lane receipts | sh scripts/verify-phase25.sh in hosted aggregate on each native host | 9/9 per host; all 18 rows pass | ✓ PASS |
 
-The three named local re-verification commands completed in under one second each. Existing Phase 25 validation files contain no separately declared probe-* script; verify-phase25.sh is the evidence gate and was executed in the hosted aggregate.
+The focused source, peer, ABI, and native commands above were rerun against the current code tree; the native integration/evidence-index command completed in 1.119s. Existing Phase 25 validation files contain no separately declared `probe-*` script; `verify-phase25.sh` is the evidence gate and its required hosted aggregate jobs passed.
 
 ### Decision Coverage
 
@@ -205,7 +203,7 @@ No disabled requirement-linked test or circular oracle was found. The test expec
 
 ### Probe Execution
 
-N/A — no phase plan or summary declares a probe-* path or probe-specific PASS/stage marker contract. The distinct native evidence script is wired to and passed by the existing dual-host CI aggregate.
+N/A — no phase plan or summary declares a `probe-*` path or probe-specific PASS/stage-marker contract. The distinct `scripts/verify-phase25.sh` native evidence gate is wired to the existing dual-host CI aggregate; both current evidence aggregate jobs passed in final-head run 37005701631, and the detailed 18-row matrix is recorded from run 36971855722.
 
 ### Requirements Coverage
 
@@ -226,19 +224,21 @@ No additional Phase 25 requirement is mapped outside these plan declarations. RE
 |---|---:|---|---|---|
 | — | — | None in the inspected Phase 25 source and test files | — | Debt-marker scan found no unreferenced TBD, FIXME, or XXX. The XXXXXX match is the standard mktemp template; other scanner-token matches are in the groundedness test itself. |
 
+The seven plan-local threat registers use unique IDs T-25-01 through T-25-20. The phase security register retains 15 canonical controls, all closed; its aliases for plan-local IDs 16–20 are explicit. Current security metadata remains SECURED / ASVS L1 with `threats_open: 0` and 15/15 mitigations closed.
+
 ### Human Verification Required
 
 None. The former readability concern decomposes into objective setup, command, output, and evidence-location checks; the remaining first-time readability judgment was independently assessed by this agent's cold read. This is agent evidence, not human UAT or CI.
 
 ### Advisory (New Scope, Unevidenced)
 
-None. The previous documentation mismatch is closed; no new-scope blocker was identified.
+None. No new-scope blocker was identified.
 
 ### Gaps Summary
 
-The runtime/source goal and all five roadmap criteria are verified. Hosted evidence is tied to run 36971855722 at its recorded merge revision; it predates only subsequent evidence-documentation/registry and README navigation changes. Focused link integrity and native README evidence-index checks passed after those changes. The PR's hosted CI has not yet rerun on the final branch head, so this report does not claim such a result.
+The runtime/source goal and all five roadmap criteria are verified. The detailed hosted matrix remains tied to run 36971855722 at its recorded merge revision. Final-head run 37005701631 passed both native checks jobs and both current evidence aggregates. Focused checker, independent-peer, ABI/manifest, emitted-native utility, and evidence-index tests also passed during this refresh. The graphical UI review found no UI deliverable in scope; no UAT or additional human verification is required.
 
 ---
 
-_Verified: 2026-10-02T12:12:04Z_
+_Verified: 2026-10-02T15:51:10Z_
 _Verifier: the agent (gsd-verifier)_

@@ -1,15 +1,15 @@
 ---
 gsd_state_version: "1.0"
 milestone: M004
-milestone_name: Native Emission Ownership and Resource Discharge
+milestone_name: Goal
 current_phase: 25
 current_plan: Not started
 status: completed
 stopped_at: Phase 25 complete — all phases complete
-last_updated: "2026-10-02T12:10:00.799Z"
+last_updated: "2026-10-02T15:59:03.368Z"
 last_activity: 2026-10-02
-last_activity_desc: Phase 25 complete
-state_head: f2707971125ab474a6e26dcced7d41f7519f8961
+last_activity_desc: Quick task 261002-fab repaired Phase 25 threat-ID routing and finalized M004 handoff
+state_head: 7a8ed4748e824545025acbd711e540615954fee3
 progress:
   total_phases: 4
   completed_phases: 4
@@ -56,20 +56,22 @@ See: .planning/PROJECT.md (updated 2026-09-28)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 25 — Separate Pointer Successors and Integrated Utility
+**Current focus:** M004 complete — all four phases pass verification; next start the practical-computation milestone
 
 **Checkout location (2026-10-01):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. Its branch remains
 `worktree-agent-p24-01-retry`. The original pre-publication checkout, including
 its uncommitted planning material and private audit records, is preserved in
 the sibling `schway-archive` directory. Keep those private files outside this
-Git tree. The directory move does not change source or phase completion. Once
-PR #1 is integrated, the next GSD command is `$gsd-new-milestone`; do not reopen
-Phase 25.
+Git tree. The directory move does not change source or phase completion. PR #1
+is integrated. Phases 22–25 all pass fresh verification. The exact next GSD
+command is `$gsd-new-milestone`, which starts planning the practical-computation
+milestone (`sum_to_n`, then FizzBuzz). Preserve completed UAT and do not replay
+completed implementation plans.
 
 **Durable context (survives context clears — read before re-deriving):**
 
-  - **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `15b3a518` reports 1,573 reachable commits and zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Hosted run 36705094434 passed both host check suites and evidence aggregates. Hosted run 36707529870 passed Ubuntu/macOS checks and evidence aggregates; Phase 23's verifier passes 5/5. Phase 24's verifier passes 5/5 at source `ed94ef79`; hosted run 36856048690 passed full/race suites and evidence aggregates on Ubuntu and macOS. No local suite or UAT was rerun for Phase 24 closeout. Phase 25's seven plans are complete; run 36971855722 closes all 18 family/host/lane receipts, and the goal-backward verifier passes 6/6 truths and 5/5 roadmap criteria. Final-head CI and PR #1 integration remain before the next milestone. Private audit artifacts remain in the original checkout under this quick task's `audit/` directory.
+  - **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `15b3a518` reports 1,573 reachable commits and zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Hosted run 36705094434 passed both host check suites and evidence aggregates. Hosted run 36707529870 passed Ubuntu/macOS checks and evidence aggregates; Phase 23's current verifier passes 11/11. Phase 24's verifier passes 5/5 at source `ed94ef79`; hosted run 36856048690 passed full/race suites and evidence aggregates on Ubuntu and macOS. No local suite or UAT was rerun for Phase 24 closeout. Phase 25's seven plans are complete; run 36971855722 closes all 18 family/host/lane receipts, and the current goal-backward verifier passes 6/6 truths and 5/5 roadmap criteria. PR #1 is merged with successful final-head CI; all M004 phases now pass fresh verification. The exact next command is `$gsd-new-milestone`. Private audit artifacts remain in the original checkout under this quick task's `audit/` directory.
 - `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 24. The separate app
   route retains and runs a native U64 identity app once with ordinary streams;
   evidence capture is not verification. Bounded file-byte transfer and
@@ -127,7 +129,7 @@ Current Plan: Not started
 Total Plans in Phase: 7
 Plan: 7 of 7
 Status: All phases complete
-Last activity: 2026-10-02 — Phase 25 complete
+Last activity: 2026-10-02 — Completed quick task 261002-fab: repair Phase 25 threat IDs and finalize M004 handoff
 
 Progress: [██████████] 100%
 
@@ -565,7 +567,7 @@ remain the next M004 capabilities. Phase 22 provides no Linux host result;
 later M004 evidence must keep that lane open. Local app receipts remain
 `dependency_closure: incomplete` and `cacheable: false`.
 
-**Phase 22–24 verification refresh — 2026-10-01 (current):** Phase 22's
+**Phase 22–24 verification refresh — 2026-10-01 (historical; superseded by the current handoff below):** Phase 22's
 objective README contract UAT is `complete` with 1/1 passed and must be
 preserved. Phase 22 and 23 verification fingerprints, and Phase 24's
 fingerprint after final ROADMAP/summary reconciliation, currently report
@@ -715,6 +717,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 261002-4wy | Regenerate the validation corpus run record and manifest from the current consumer-derived pair list after Phase 25 validation became eligible; preserve the fail-closed test gate and verify the isolated test plus full Go suite. | 2026-10-02 | 76f1b2e | Verified | ./quick/261002-4wy-regenerate-the-validation-corpus-run-rec/ |
 | 261002-ahx | Record shift-left verification defaults and automate Phase 25 evidence-index link verification. | 2026-10-02 | 123f8a6 | Verified | [261002-ahx-record-shift-left-verification-as-the-de](./quick/261002-ahx-record-shift-left-verification-as-the-de/) |
 | 261002-awt | Link Phase 24 physical-cleanup observer and hosted receipt in README, and pin them in the focused evidence contract. | 2026-10-02 | 48a1fbb | Verified | [261002-awt-link-the-phase-24-native-physical-cleanu](./quick/261002-awt-link-the-phase-24-native-physical-cleanu/) |
+| 261002-cqo | Record merged M004 closeout and live verifier handoff without replaying UAT. | 2026-10-02 | 704199c | complete | [261002-cqo-record-the-merged-m004-closeout-and-repl](./quick/261002-cqo-record-the-merged-m004-closeout-and-repl/) |
+| 261002-fab | Repair Phase 25 threat-ID collisions and finalize M004 handoff | 2026-10-02 | 7a8ed47 | Verified | [261002-fab-repair-duplicate-phase-25-security-threa](./quick/261002-fab-repair-duplicate-phase-25-security-threa/) |
 
 ## Deferred Items
 
@@ -728,12 +732,12 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-02T07:22:52.868Z
+Last session: 2026-10-02T15:51:54.838Z
 Stopped at: Phase 25 complete — all phases complete
 Resume file: None
-Next action: push the completed branch, wait for current-head CI, and squash
-auto-merge PR #1 when green as authorized; after integration use
-`$gsd-new-milestone`. Do not replay completed Phase 25 plans or UAT.
+Next action: `$gsd-new-milestone` to plan the practical-computation milestone.
+Phase 25 was the last implementation phase; all M004 reports pass. Preserve UAT
+and do not replay plans.
 Routing resolution — 2026-10-02 (current): Phase 25 plans 25-01 through 25-07
 are complete and summarized. Goal-backward verification passes 6/6 must-have
 truths and 5/5 roadmap criteria; `phase complete --phase 25` updated ROADMAP
@@ -744,6 +748,19 @@ aggregate jobs on Linux/x86_64 and macOS/arm64. All 18 foreign/shared/exclusive
 README cold-read and focused link checks are recorded separately from CI. The
 older 2026-10-01 routing note below is historical and superseded by this
 receipt; its local-only limitations were accurate at that earlier time.
+PR #1 (`https://github.com/szTheory/schway/pull/1`) is merged by squash commit
+`a816279d5a5075b2a12592a9973864f5676d3aec`. Final PR head
+`692f791051ba671c49c68fdd2073229feb51b090` was tested by hosted run
+`37005701631` (`https://github.com/szTheory/schway/actions/runs/37005701631`),
+whose overall conclusion and `checks` plus `current evidence aggregate` jobs
+are successful on Ubuntu and macOS. Keep the final PR head, CI receipt, and
+squash commit as distinct identifiers. `state.json` marks Phases 22–25
+complete; `init.progress` confirms all four have current passing verification
+and no work in progress. Phase 22's objective README contract UAT remains
+complete 1/1; preserve it. Both Phase 23 and Phase 25 required only verifier
+refreshes, with no plan or UAT replay. This routing snapshot is superseded by
+the final closeout amendment at the end of this file. Do not route to
+`$gsd-verify-work` or replay plans.
 Routing resolution — 2026-10-01 (historical; superseded by 2026-10-02 closeout): Phase 25 plans 25-01 through 25-06
 are complete and summarized. The local full and race suites, vet, build,
 groundedness/census checks, README/evidence contracts, and macOS/arm64 baseline,
@@ -845,7 +862,11 @@ Unchanged by this pass: arithmetic, iteration, and strings/arrays remain **on no
 roadmap at all** — the maturity file's most important standing entry. M003 does
 not exist yet (`MILESTONES.md` holds M001 only).
 
-## Operator Next Steps
+## Historical Operator Next Steps (undated; superseded 2026-10-02)
+
+The following Phase 23 instruction is retained as historical context. It was
+completed and is superseded by the current M004 closeout and live verifier
+handoff above.
 
 - Continue with `$gsd-discuss-phase 23 --auto` to lock the live allocation witness,
   bounded input contract, and physical cleanup evidence before planning.
@@ -861,3 +882,20 @@ span, e.g. `- **D-08-01 (the falsification that decides the area):**`. Override 
 user; verify-phase should re-surface it.
 
 - Phase 10 decision-coverage gate: OVERRIDDEN at plan time (user: "Proceed anyway"). The gate could not parse `10-CONTEXT.md`'s `- **D-10-NN (title):**` bullets (reported 0/56). Direct check: 59/61 D-10-NN decisions are cited in `10-01..10-09-PLAN.md`; D-10-60 and D-10-61 are discharged by `PHASE-10-DEBT.md`. Re-surface at /gsd-verify-phase 10.
+
+### Final M004 closeout amendment — 2026-10-02
+
+Phases 22–25 are complete and their current verification reports pass. Phase 23
+passes 11/11 goal truths; Phase 25 passes 6/6 must-have truths and 5/5 roadmap
+criteria. The Phase 25 duplicate threat-ID gate is clear, its canonical security
+register remains 15/15 closed at ASVS L1, and the hosted dual-host matrix remains
+18/18 from run 36971855722. Final-head CI run 37005701631 passed on Ubuntu and
+macOS. The uncached repository suite passed locally with
+`GOCACHE=/tmp/schway-phase-handoff-gocache go test -count=1 ./...`.
+
+No human UAT is pending: Phase 22's objective UAT remains complete 1/1, and the
+current Phase 23 and Phase 25 reports require no human verification. Phase 25
+was the last M004 implementation phase. After `/clear`, run the exact next GSD
+command `$gsd-new-milestone` to shape the practical-computation milestone,
+starting with `sum_to_n` and then FizzBuzz. Do not run `$gsd-next`, replay phase
+plans, or reopen Phase 25 implementation.
