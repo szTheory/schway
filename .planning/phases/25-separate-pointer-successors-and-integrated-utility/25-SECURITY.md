@@ -68,6 +68,11 @@ the peer and diagnostic assessment; the later hosted run adds evidence for
 T-25-14 without changing that assessment's scope or claiming that source
 inspection alone proves native behavior.
 
+Later plan-local threats are traceability aliases for the existing controls:
+T-25-16 → canonical T-25-13, T-25-17 → T-25-14, T-25-18 → T-25-15,
+T-25-19 → T-25-14, and T-25-20 → T-25-15. These aliases connect later plan
+work to existing audit evidence; they do not add audited controls or findings.
+
 ---
 
 ## Accepted Risks Log

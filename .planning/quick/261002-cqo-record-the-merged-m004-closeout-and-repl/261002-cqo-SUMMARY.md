@@ -40,7 +40,7 @@ status: complete
 - Confirmed PR #1 is merged at squash commit `a816279d5a5075b2a12592a9973864f5676d3aec`; run `37005701631` succeeded at final PR head `692f791051ba671c49c68fdd2073229feb51b090`, including `checks` and `current evidence aggregate` on Ubuntu and macOS.
 - Re-queried the canonical `gsd_run` resolver and confirmed zero incomplete plans across Phases 22–25. Fresh verification passes for Phase 22 (5/5) and Phase 24 (5/5). Phase 23 previously passed 11/11, but its digest became stale when final handoff wording changed its covered ROADMAP input; Phase 25 also remains stale.
 - Preserved Phase 22's objective README contract UAT complete at 1/1. No human UAT was replayed for any refreshed report.
-- Ran Phase 22's focused current-checkout tests; refreshed Phase 23 from its focused current-checkout gate plus hosted Linux/macOS receipt; refreshed Phase 24 from the successful hosted Phase 24 aggregate. No full project suite was rerun.
+- Ran Phase 22's focused current-checkout tests; Phase 23's verifier recorded its focused current-checkout gate plus hosted Linux/macOS receipt (11/11), then the final ROADMAP wording change made that digest stale; refreshed Phase 24 from the successful hosted Phase 24 aggregate. No full project suite was rerun.
 - Updated current M004 status and handoff prose in STATE and ROADMAP. The live resolver selects Phase 23; the exact next command is `$gsd-execute-phase 23`, which resumes at verifier gates without replaying its seven plans or UAT. Re-query afterward and refresh Phase 25 only if it remains stale; then use `$gsd-new-milestone`.
 - Marked the old, undated Phase 23 Operator Next Steps entry as superseded so it cannot conflict with the current next command.
 
@@ -49,10 +49,9 @@ status: complete
 - `gh pr view 1 --json state,mergeCommit,url` — `MERGED`, URL and squash commit confirmed.
 - `gh run view 37005701631 --json headSha,conclusion,jobs,url` — successful final-head run; both requested job names succeeded on Ubuntu and macOS.
 - `gsd_run query init.progress` — Phases 22 and 24 complete/passed; Phase 23 is the earliest stale report, followed by Phase 25.
-- `gsd_run query init.execute-phase 25` — seven plans summarized, zero incomplete plans.
 - `gsd_run query init.execute-phase 25` — zero incomplete plans (7/7 summarized); the resolver's stale-report path resumes at verifier gates.
 - `22-UAT.md` — complete, 1/1 passed. Phase 23 and 24 verification reports state no human verification is required.
-- `gsd_run query verification.status <phase-dir>` — passed for Phases 22–24.
+- `gsd_run query verification.status` — `passed` for Phases 22 and 24; `stale` for Phase 23 (covered ROADMAP input changed) and Phase 25 (covered planning inputs changed).
 - `git diff --check` — passed.
 
 ## Deviations from Plan

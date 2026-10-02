@@ -5,7 +5,7 @@
 - ✅ **M001 — Source-to-Native Semantic Spine** — Phases 1–6 (shipped 2026-09-07) — [archive](milestones/M001-ROADMAP.md)
 - ✅ **M002 — Interprocedural Semantic Spine** — Phases 07–13 (shipped 2026-09-14) — [archive](milestones/M002-ROADMAP.md)
 - ✅ **M003 — Computation and Honest Instruments** — Phases 14–20 (shipped 2026-09-26; audit: tech debt) — [archive](milestones/M003-ROADMAP.md)
-- ✅ **M004 — Native Emission Ownership and Resource Discharge** — Phases 22–25 implementation and hosted closeout complete; Phase 23 and Phase 25 stale-report refreshes are the final closeout gates
+- ✅ **M004 — Native Emission Ownership and Resource Discharge** — Phases 22–25 implementation and hosted evidence are complete; the final report-only handoff and next milestone are recorded below
 
 ## M004 Goal
 
@@ -192,7 +192,7 @@ a narrow form. Defect/process termination stays outside cleanup guarantees.
 4. Each foreign/shared/exclusive family has reproducible macOS and Linux native receipts naming source/build inputs, compiler, target, flags, expected answers, and applicable optimizer/sanitizer lanes. Missing host/lane evidence leaves the corresponding claim incomplete.
 5. From a clean checkout, a developer follows documented public commands to build/run the utility on the two supplied files and a specified failure, gets independent expected results, and locates explicit C bindings and lifetime evidence. Moved-from use, discarded ownership, pointer escape, and unsupported cleanup/exit examples produce stable structured diagnostics with source attribution and actionable boundary explanations.
 
-**Plans**: 7/7 plans executed and summarized
+**Plans**: 7/7 plans complete and summarized
 
 Plans:
 **Wave 1**
@@ -217,7 +217,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [x] 25-06-PLAN.md — Publish utility instructions, dual-host evidence gate, and living-document closeout (local execution complete; hosted matrix pending)
+- [x] 25-06-PLAN.md — Publish utility instructions, dual-host evidence gate, and living-document closeout (hosted matrix passed: run 36971855722)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
@@ -298,14 +298,11 @@ planned.
 
 ## Next Action
 
-Phase 25 is the phase just finished. PR #1 is merged; the final PR head and
-squash commit are recorded in STATE.md. Phase 22 and 24 have fresh passing
-reports. Phase 23's covered-input digest became stale when this final handoff
-wording changed; Phase 25 also needs a freshness refresh. The live resolver
-selects Phase 23. Run `$gsd-execute-phase 23`, which resumes at verifier gates
-without replaying its seven plans or UAT; then re-query and refresh Phase 25 if
-it remains stale. Once the resolver passes, use `$gsd-new-milestone` to shape
-the next milestone.
-Phase 22 UAT is complete (1/1), and Phases 23 and 24 require no human UAT.
-Preserve completed UAT and do not replay implementation plans or reopen
-Phase 25 implementation.
+Phase 25 was the final M004 implementation phase. PR #1 is merged; the final
+PR head and squash commit are recorded in STATE.md. Phase 22 UAT is complete
+(1/1), and Phases 23–25 require no human UAT. When a completed phase report is
+stale, `$gsd-execute-phase <N>` resumes only at its verification gates; it does
+not replay summarized plans or completed UAT. After the Phase 23 and Phase 25
+reports pass, the exact next command is `$gsd-new-milestone` to shape the
+practical-computation milestone (`sum_to_n`, then FizzBuzz). Preserve completed
+UAT and do not reopen Phase 25 implementation.

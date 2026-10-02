@@ -1,6 +1,6 @@
 ---
 phase: 23-live-local-allocation-and-discharge
-verified: 2026-10-02T14:25:54Z
+verified: 2026-10-02T14:51:56Z
 status: passed
 score: 11/11 must-haves verified
 covered_files:
@@ -62,12 +62,12 @@ covered_files:
   - scripts/verify-phase23.sh
   - testdata/phase16/public-emitter-consumers.json
   - testdata/phase23/discard_owner.schway
-covered_digest: "v1:sha256:e8b93e7d6c6d3308f1ff8ef2124b72f1060c3f6787e34e3b94ce896a78e3a394"
+covered_digest: "v2:sha256:64929304234ca066ccd5b063d55cb919cd82535a623162f678eb0ead1212ee0a"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
   previous_status: passed
-  previous_score: 5/5 roadmap success criteria
+  previous_score: 11/11 must-haves verified
   gaps_closed: []
   gaps_remaining: []
   regressions: []
@@ -76,9 +76,9 @@ re_verification:
 # Phase 23: Live Local Allocation and Discharge — Verification Report
 
 **Phase Goal:** A developer can read a caller-selected file byte through a real allocation returned live to Schway and observe its generated local cleanup.
-**Verified:** 2026-10-02T14:25:54Z
+**Verified:** 2026-10-02T14:51:56Z
 **Status:** passed
-**Re-verification:** This refresh re-derived must-haves from the current roadmap and all seven plans. The prior report had no `gaps:` list. At 2026-10-02T14:25:54Z, the roadmap wording changed only in the M004 handoff instructions; the Phase 23 goal and five success criteria are unchanged. The covered fingerprint was recomputed. No tests or UAT were rerun for this metadata refresh.
+**Verification mode:** Initial-mode goal-backward verification. The prior report had no `gaps:` list, so I re-derived the five roadmap truths and merged the seven plans' additional must-haves instead of treating the prior PASS as evidence. The previous report's covered-input digest was stale after planning handoff edits; the Phase 23 goal and five success criteria are unchanged. The active `gsd_run query verification.fingerprint` produced the v2 digest above. This pass reran the Phase 23 focused evidence script and a named Phase 22 compatibility test; it did not replay plans or UAT.
 
 ## Goal Achievement
 
@@ -86,12 +86,12 @@ re_verification:
 
 | # | Truth | Status | Evidence |
 |---|---|---|---|
-| 1 | An opaque noncopyable resource receives bounded malloc storage, remains live through Schway-directed use, yields the independently expected byte, and is physically destroyed before exit. | ✓ VERIFIED | Current `scripts/verify-phase23.sh` passed locally on revision `704199c` and hosted on Ubuntu/macOS at `692f791` (no non-planning source changes between those revisions). `TestPhase23ObserverPublicLifecycleAndUseFailure` checks pointer identity and ordered `malloc → use → free → outstanding=0`; the public fixture checks 65/66. |
+| 1 | An opaque noncopyable resource receives bounded malloc storage, remains live through Schway-directed use, yields the independently expected byte, and is physically destroyed before exit. | ✓ VERIFIED | This verifier ran `sh scripts/verify-phase23.sh` at `7a8ed4748e824545025acbd711e540615954fee3`: observer tests passed for 0x41/0x42/0x43. Separate receipts require the same pointer through `malloc → use → free → outstanding=0`; hosted Ubuntu/macOS runs also passed at `692f791`. |
 | 2 | Acquire, use, and infallible consuming release each use their own checked signature, operand/failure facts, and release pairing. | ✓ VERIFIED | Current focused gate passed `TestPhase23OperationABI` and the `TestPhase23OperationContractRefusalBeforeCSerialization` mutations. The three binding symbols each name their own prototype in `examples/phase23/file_byte.bindings.json` and `adapter.h`; independent peer mutation tests also passed. |
-| 3 | Empty, maximum-size, oversized, malformed, and failed inputs obey the buffer/error contract; failed acquisition creates no owner and partial storage is cleaned. | ✓ VERIFIED | Current focused gate passed `TestPhase23AcquireFailuresInitializeAndFreePartialAllocations` and public path/acquisition cases for empty token, 1-byte and 4096-byte bounds, 4097-byte and embedded-NUL rejection, empty/2-byte/non-regular/unreadable/open-failed input. Adapter failures return a null owner and free partial storage before returning. |
+| 3 | Empty, maximum-size, oversized, malformed, and failed inputs obey the buffer/error contract; failed acquisition creates no owner and partial storage is cleaned. | ✓ VERIFIED | The current focused gate passed native partial-allocation fault injection and public cases for empty input, 1/4096-byte accepted bounds, 4097-byte and embedded-NUL rejection, empty/2-byte/non-regular/open-failed files, and 0x41/0x42. Failed adapter records have null owners and partial storage is freed. |
 | 4 | Discarded owning success is rejected or immediately destroyed; independent acquisition-seeded validators reject missing, duplicate, wrong-resource, or fabricated cleanup even if every release is removed from candidate core. | ✓ VERIFIED | Current focused gate passed source/emitter discard refusals and all-release-deleted, duplicate, premature, wrong-resource, and fabricated-release mutations in core, origin, and path peers. Each peer derives the obligation from acquisition. |
 | 5 | Normal completion and a real post-acquisition use/output failure clean each remaining owner once; independent physical observation rejects omitted or premature destruction despite plausible compiler events. | ✓ VERIFIED | Current focused gate passed public 0x41/0x42 normal runs, the real 0x43 typed-use failure, and all four reached physical controls. The observer is separately compiled and its receipt is checked independently of plausible semantic events. The 0x43 receipt puts release before the report boundary. |
-| 6 | The bounded path token accepts 1–4096 bytes while the prior Phase 22 U64 application route remains available. | ✓ VERIFIED | Current Phase 23 public tests cover path bounds. The named `TestPhase22IdentityApplicationBuildAndRunCLI` test passed through `gsd-tools run-with-timeout` on this checkout; it still prints the expected `7`. |
+| 6 | The bounded path token accepts 1–4096 bytes while the prior Phase 22 U64 application route remains available. | ✓ VERIFIED | `TestPhase23PublicFileByte` covers path bounds. A fresh named `TestPhase22IdentityApplicationBuildAndRunCLI` test passed on this checkout and checks the retained route prints `7`. |
 | 7 | Unsupported copies, moved-from uses, escapes, cross-call transfers, and exits are refused before native serialization; discarded acquisition cannot hide an obligation. | ✓ VERIFIED | Current focused gate passed source refusal and emitter pre-serialization refusal tests for each form, including discard. Cross-call transfer remains refused in Phase 23 as declared. |
 | 8 | The successor contract distinguishes consuming release, preserving borrow, and future transfer; interpreter/model evidence cannot claim host IO or physical cleanup. | ✓ VERIFIED | `23-RESOURCE-DISCHARGE-CONTRACT.json` declares transfer contract-only for Phase 24 and separates structural, model, and native evidence scopes. Current focused gate passed model-only acquire/use failure tests and contract mutation/schema tests. |
 | 9 | Public documentation and independent expected answers cover 0x41/0x42, acquisition errors, and the 0x43 post-acquisition use error with scoped cleanup evidence. | ✓ VERIFIED | Current focused gate passed `TestPhase23ReadmeContract` and `TestPhase23ReadmeExpectedAnswersAreIndependentConstants`. `file_byte.expected.json` contains authored expected stdout, stderr, and exit codes. |
@@ -149,15 +149,16 @@ All seven plans and all seven summaries were read and mapped to the roadmap crit
 
 | Behavior | Command/evidence | Result | Status |
 |---|---|---|---|
-| Current Phase 23 focused gate | `GOCACHE=/tmp/schway-phase23-verification-cache node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 30 -- sh scripts/verify-phase23.sh` | Exit 0, 21 seconds, Darwin/arm64, Go 1.24.0, Apple Clang 21.0.0, revision `704199c`; all five groups ran with no skips | ✓ PASS |
-| Phase 22 route preserved | `GOCACHE=/tmp/schway-phase23-verification-cache node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 10 -- go test ./cmd/schway -run '^TestPhase22IdentityApplicationBuildAndRunCLI$' -count=1` | Exit 0; expected `7` route remains runnable | ✓ PASS |
-| Current two-host focused gate | Hosted CI run [37005701631](https://github.com/szTheory/schway/actions/runs/37005701631), head `692f791` | Phase 23 step passed on Ubuntu and macOS; current checkout descends from that commit with no intervening non-planning changes | ✓ PASS (hosted receipt) |
+| Current Phase 23 focused gate | `gsd_run run-with-timeout 30 -- env GOCACHE=/tmp/schway-phase-handoff-gocache sh scripts/verify-phase23.sh` | This verifier: exit 0, 14 seconds, Darwin/arm64, Go 1.24.0, Apple Clang 21.0.0 targeting `arm64-apple-darwin25.6.0`, revision `7a8ed4748e824545025acbd711e540615954fee3`; five groups, no skips | ✓ PASS |
+| Phase 22 route preserved | `gsd_run run-with-timeout 10 -- env GOCACHE=/tmp/schway-phase-handoff-gocache go test ./cmd/schway -run '^TestPhase22IdentityApplicationBuildAndRunCLI$' -count=1` | This verifier: exit 0; named test exercises the retained route and expected output `7` | ✓ PASS |
+| Uncached repository regression | `GOCACHE=/tmp/schway-phase-handoff-gocache go test -count=1 ./...` | Orchestrator-run on this checkout: exit 0; includes `cmd/schway-repair` and compiler/session packages. Separate from the focused Phase 23 script. | ✓ PASS (orchestrator receipt) |
+| Current two-host focused gate | Hosted CI run [37005701631](https://github.com/szTheory/schway/actions/runs/37005701631), head `692f791051ba671c49c68fdd2073229feb51b090` | GitHub reports `scripts/verify-phase23.sh` successful in both Ubuntu and macOS evidence-aggregate jobs; all checks jobs also succeeded. Current checkout differs from that tested source only in planning/report artifacts. | ✓ PASS (hosted receipt) |
 
 ### Probe Execution
 
 | Probe | Command | Result | Status |
 |---|---|---|---|
-| `scripts/verify-phase23.sh` | `sh scripts/verify-phase23.sh` on current checkout and through hosted `evidence-aggregate` matrix | Current Darwin run exit 0, 21 seconds; hosted Ubuntu and macOS steps both successful at `692f791` | PASS |
+| `scripts/verify-phase23.sh` | `sh scripts/verify-phase23.sh` on current checkout and through hosted `evidence-aggregate` matrix | This verifier's Darwin run exited 0 in 14 seconds with all five groups passing and no skips; hosted Ubuntu and macOS steps both succeeded at `692f791` | PASS |
 
 ### Requirements Coverage
 
@@ -188,7 +189,8 @@ The ABI unit test contains a Clang-unavailable `t.Skip` fallback, but the focuse
 | File | Line | Pattern | Severity | Impact |
 |---|---:|---|---|---|
 | `internal/compiler/check/check.go` | 4644 | Comment contains “placeholder field” | Info | It describes an existing layout field; no placeholder implementation or user-visible stub. |
-| `internal/compiler/native/testdata/phase23_observer.c` | 30, 55 | `return NULL` | Info | Real allocator failure / observer input guard paths, not empty implementations. |
+| `internal/compiler/native/testdata/phase23_observer.c` | 55 | `return NULL` | Info | Real allocator-failure path in the observer, not an empty implementation. |
+| `internal/compiler/cgen/cgen_program.go`; test files | 79, 471; fixture/scanner definitions | Empty collection / placeholder marker matches | Info | Comments document current no-resource/no-attribute derivations; other matches are test-only fixtures/scanner tokens and do not feed user-visible behavior. |
 
 No unreferenced `TBD`, `FIXME`, or `XXX` markers, user-visible placeholders, empty handlers, or stub data paths were found in the Phase 23 implementation files. The empty collections returned by adjacent compiler helpers are typed structural values, not rendered defaults or absent Phase 23 data.
 
@@ -198,13 +200,13 @@ None. This phase’s acceptance criteria are objective CLI, ABI, model-scope, pe
 
 ### Gaps Summary
 
-No Phase 23 goal or plan must-have remains open. The prior report’s hosted run is superseded by the newer successful two-host run 37005701631, and the exact current checkout also passes the local focused gate. `23-VALIDATION.md` still says the hosted Ubuntu receipt is pending; the newer run demonstrates that this validation note is stale, while its `in-progress` status prevents a false completion claim. No source, roadmap, state, requirements, or other phase files were changed during this refresh.
+No Phase 23 goal or plan must-have remains open. The current checkout passed the local focused gate and uncached repository suite; hosted run 37005701631 passed the Phase 23 aggregate on Ubuntu and macOS. `23-VALIDATION.md` still says the hosted Ubuntu receipt is pending; that note predates the hosted run and is stale. This verifier changed no implementation, roadmap, state, requirements, other phase report, plan, or summary.
 
 ### Decision Coverage
 
-The decision-coverage query reports all 6 trackable `23-CONTEXT.md` decisions honored, with none unhonored. This non-blocking check does not affect status.
+`gsd_run query check.decision-coverage-verify .planning/phases/23-live-local-allocation-and-discharge .planning/phases/23-live-local-allocation-and-discharge/23-CONTEXT.md` reports all 6 trackable context decisions honored, with none unhonored. This non-blocking check does not affect status.
 
 ---
 
-_Verified: 2026-10-02T14:25:54Z_
+_Verified: 2026-10-02T14:51:56Z_
 _Verifier: the agent (gsd-verifier)_
