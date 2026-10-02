@@ -899,7 +899,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		} else if hasScalarOperations(function) {
 			err = emitProgramScalarFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], shell)
 		} else {
-			err = emitProgramFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames, pointerABIFacts[function.ID])
+			err = emitProgramFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames, pointerABIFacts[function.ID], shell)
 		}
 		if err != nil {
 			return "", err
@@ -2281,9 +2281,9 @@ func emitProgramDefectTerminal(out *strings.Builder, function core.Function, ope
 // OpCall, never written to stdout directly; the entry function's own
 // return value is written to stdout exactly once, by `main`, after it
 // returns).
-func emitProgramFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, globalNames []string, lookup *emitCallLookup, childTableNames map[string]string, pointerABI pointerABIFact) error {
+func emitProgramFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, globalNames []string, lookup *emitCallLookup, childTableNames map[string]string, pointerABI pointerABIFact, shell programEntryShell) error {
 	if hasScalarOperations(function) {
-		return emitProgramScalarFunction(out, function, parameterTypeName, returnTypeName, functionName)
+		return emitProgramScalarFunction(out, function, parameterTypeName, returnTypeName, functionName, shell)
 	}
 	places := make(map[string]core.Place, len(function.Linear.Places))
 	for _, place := range function.Linear.Places {
