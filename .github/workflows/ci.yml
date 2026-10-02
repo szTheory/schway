@@ -112,9 +112,13 @@ jobs:
         run: go test ./internal/compiler/session -run 'TestSchema2ComparisonRequiresPeerVerdict|TestPhase5CompareProgramEnginesPreservesLegacySchemas|TestPhase11InterproceduralDifferential/DiamondSharedLeaf|TestPhase15CollisionGuardIsNotInert' -count=1 -v
 
   phase26-focused:
-    name: Phase 26 checked scalar sum (macos-latest)
+    name: Phase 26 checked scalar sum (${{ matrix.os }})
     if: github.event_name == 'workflow_dispatch' && inputs.phase26_focused
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
