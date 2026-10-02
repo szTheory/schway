@@ -897,7 +897,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		} else if isLocalFileByteFunction(function) {
 			err = emitProgramLocalFileByteFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames)
 		} else if hasScalarOperations(function) {
-			err = emitProgramScalarFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index])
+			err = emitProgramScalarFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], shell)
 		} else {
 			err = emitProgramFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames, pointerABIFacts[function.ID])
 		}
@@ -2431,7 +2431,7 @@ func hasScalarOperations(function core.Function) bool {
 	return false
 }
 
-func emitProgramScalarFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string) error {
+func emitProgramScalarFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, shell programEntryShell) error {
 	places := make(map[string]core.Place, len(function.Linear.Places))
 	locals := make(map[string]string, len(function.Linear.Places))
 	for index, place := range function.Linear.Places {
@@ -2471,7 +2471,17 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 			case core.OpConst:
 				fmt.Fprintf(out, "  %s = UINT64_C(%s);\n", locals[op.TargetID], op.ConstU64)
 			case core.OpAddChecked:
-				fmt.Fprintf(out, "  if (UINT64_MAX - %s < %s) { fputs(\"checked U64 addition overflow\\n\", stderr); exit(70); }\n  %s = %s + %s;\n", locals[op.SourceID], locals[op.RightID], locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
+				fmt.Fprintf(out, "  if (UINT64_MAX - %s < %s) {\n", locals[op.SourceID], locals[op.RightID])
+				if shell == programApplicationShell {
+					out.WriteString("    fputs(\"schway: U64 addition overflow\\n\", stderr);\n    exit(65);\n")
+				} else {
+					overflow := op
+					overflow.Reason = "U64 addition overflow"
+					emitProgramDefectTerminal(out, function, overflow)
+					out.WriteString("    exit(0);\n")
+				}
+				out.WriteString("  }\n")
+				fmt.Fprintf(out, "  %s = %s + %s;\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
 			case core.OpLessU64:
 				fmt.Fprintf(out, "  %s = (%s < %s);\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
 			case core.OpScalarStore:

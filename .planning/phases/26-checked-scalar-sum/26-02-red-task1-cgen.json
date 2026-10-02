@@ -1,0 +1,8 @@
+{
+  "command": "GitHub Actions run 37075505541 at c74d783: go test ./internal/compiler/session ./internal/compiler/core ./internal/compiler/interp ./internal/compiler/cgen ./internal/compiler/native -run '^TestPhase26|^TestAllOperationKindsHandledAtEverySite$|^TestPhase19U64NativeExactWidthAndOutput$' -count=1 -v",
+  "exitCode": 1,
+  "targetTest": "TestPhase26CheckedAddC17",
+  "expected": "Generated C checks UINT64_MAX before addition, exits 65, and the app exposes empty stdout plus exactly schway: U64 addition overflow newline on MAX+1.",
+  "actual": "On Ubuntu and macOS the target test failed its generated-C assertion because the application overflow guard and exit-65 behavior are absent.",
+  "output": "not ok 1 - TestPhase26CheckedAddC17\n# assertion: generated C does not check overflow before assigning and exit 65\n# tests 1\n# pass 0\n# fail 1\n# cancelled 0\n"
+}

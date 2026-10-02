@@ -2147,6 +2147,18 @@ func TestPhase26CheckedAddC17(t *testing.T) {
 	if guard < 0 || addition < 0 || guard > addition || !strings.Contains(generated, "exit(65);") {
 		t.Fatalf("generated C does not check overflow before assigning and exit 65:\n%s", generated)
 	}
+	conformanceC, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatalf("EmitNative: %v", err)
+	}
+	conformance, err := native.DefaultRunner().Run(context.Background(), conformanceC, "-O0", []string{"1"})
+	if err != nil || len(conformance.Pairs) != 1 {
+		t.Fatalf("conformance run pairs=%d err=%v", len(conformance.Pairs), err)
+	}
+	defect := conformance.Pairs[0].Execution
+	if defect.Outcome.Kind != execution.OutcomeDefect || defect.Outcome.Value != "" || len(defect.Events) == 0 || defect.Events[len(defect.Events)-1].Kind != "function.defected" || defect.Events[len(defect.Events)-1].Output != "U64 addition overflow" {
+		t.Fatalf("conformance overflow execution=%+v, want serialized defect with overflow event", defect)
+	}
 	artifact := filepath.Join(t.TempDir(), "checked_add_overflow")
 	_, diagnostics, err := session.BuildApplicationFile(context.Background(), sourcePath, artifact, native.DefaultRunner())
 	if err != nil || len(diagnostics) != 0 {

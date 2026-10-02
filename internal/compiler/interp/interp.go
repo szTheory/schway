@@ -1242,7 +1242,12 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 				return Execution{}, fmt.Errorf("operation %q has invalid checked-add operands", operation.ID)
 			}
 			if ^uint64(0)-sourceValue.u64 < right.u64 {
-				return Execution{Outcome: Outcome{Kind: execution.OutcomeDefect}, Events: events, LiveResources: liveResourceList(top.live, top.liveOrder)}, nil
+				events = append(events, Event{
+					Schema: top.eventSchema(), ID: operation.ID + ":event:defected", Kind: "function.defected",
+					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
+					TypeID: operation.TypeID, Output: "U64 addition overflow",
+				})
+				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourceList(top.live, top.liveOrder)}, nil
 			}
 			top.values[operation.TargetID] = value{u64: sourceValue.u64 + right.u64, isU64: true}
 			top.idx++

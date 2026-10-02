@@ -1,0 +1,8 @@
+{
+  "command": "GitHub Actions run 37075505541 at c74d783: go test ./internal/compiler/session ./internal/compiler/core ./internal/compiler/interp ./internal/compiler/cgen ./internal/compiler/native -run '^TestPhase26|^TestAllOperationKindsHandledAtEverySite$|^TestPhase19U64NativeExactWidthAndOutput$' -count=1 -v",
+  "exitCode": 1,
+  "targetTest": "TestPhase26CheckedAddInterpreter",
+  "expected": "The direct MAX+1 witness returns OutcomeDefect and includes a source-attributed function.defected event with output U64 addition overflow.",
+  "actual": "On Ubuntu and macOS the target test failed its assertion: overflow returned no attributed defect event. MAX+0 and OutcomeDefect assertions passed.",
+  "output": "not ok 1 - TestPhase26CheckedAddInterpreter\n# assertion: overflow returned no attributed defect event\n# tests 1\n# pass 0\n# fail 1\n# cancelled 0\n"
+}
