@@ -127,7 +127,7 @@ Current Plan: 7
 Total Plans in Phase: 7
 Plan: 7 of 7
 Status: All plans complete; hosted EVD-10 matrix is bound; run goal-backward verifier before phase transition
-Last activity: 2026-10-02 — Completed quick task 261002-ahx: recorded shift-left verification defaults and automated Phase 25 evidence-index navigation
+Last activity: 2026-10-02 — Completed quick task 261002-awt: linked Phase 24 physical-cleanup observer and hosted validation receipt
 
 Progress: [████████░░] 75%
 
@@ -713,6 +713,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 261002-8ry | Pin the two measured Phase 25 groundedness R2b validation commands and assign their existing P25 owners; preserve classifier behavior and verify the frontier and ownership gates. | 2026-10-02 | abe9124 | Verified | ./quick/261002-8ry-pin-the-two-measured-phase-25-groundne/ |
 | 261002-4wy | Regenerate the validation corpus run record and manifest from the current consumer-derived pair list after Phase 25 validation became eligible; preserve the fail-closed test gate and verify the isolated test plus full Go suite. | 2026-10-02 | 76f1b2e | Verified | ./quick/261002-4wy-regenerate-the-validation-corpus-run-rec/ |
 | 261002-ahx | Record shift-left verification defaults and automate Phase 25 evidence-index link verification. | 2026-10-02 | 123f8a6 | Verified | [261002-ahx-record-shift-left-verification-as-the-de](./quick/261002-ahx-record-shift-left-verification-as-the-de/) |
+| 261002-awt | Link Phase 24 physical-cleanup observer and hosted receipt in README, and pin them in the focused evidence contract. | 2026-10-02 | 48a1fbb | Verified | [261002-awt-link-the-phase-24-native-physical-cleanu](./quick/261002-awt-link-the-phase-24-native-physical-cleanu/) |
 
 ## Deferred Items
 
