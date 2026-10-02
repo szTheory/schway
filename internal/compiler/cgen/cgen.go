@@ -392,25 +392,45 @@ type pointerABIFact struct {
 
 func checkedSharedPointerABIFact(function core.Function) (pointerABIFact, bool) {
 	if function.Parameter.Type != "U64" || function.ReturnType != "U64" || function.Linear == nil ||
-		!selectsByPointerLoweringSharedOnly(function, function.Linear) || len(function.Linear.Operations) != 2 {
+		!selectsByPointerLoweringSharedOnly(function, function.Linear) ||
+		(len(function.Linear.Operations) != 2 && len(function.Linear.Operations) != 3) {
 		return pointerABIFact{}, false
 	}
-	borrow, ret := function.Linear.Operations[0], function.Linear.Operations[1]
-	if borrow.Kind != core.OpBorrowShared || borrow.SourceID != function.Parameter.ID || borrow.TargetID == "" || borrow.LoanID == "" ||
-		ret.Kind != core.OpReturn || ret.SourceID != borrow.TargetID || ret.TypeID != borrow.TypeID {
+	operations := function.Linear.Operations
+	borrow := operations[0]
+	if borrow.Kind != core.OpBorrowShared || borrow.SourceID != function.Parameter.ID || borrow.TargetID == "" || borrow.LoanID == "" {
 		return pointerABIFact{}, false
 	}
-	parameterType := ""
-	borrowType := ""
+	result := borrow.TargetID
+	copyType := ""
+	if len(operations) == 3 {
+		copyValue := operations[1]
+		if copyValue.Kind != core.OpCopy || copyValue.SourceID != borrow.TargetID || copyValue.TargetID == "" || copyValue.TypeID != borrow.TypeID {
+			return pointerABIFact{}, false
+		}
+		result, copyType = copyValue.TargetID, copyValue.TypeID
+	}
+	ret := operations[len(operations)-1]
+	if ret.Kind != core.OpReturn || ret.SourceID != result || ret.TypeID != borrow.TypeID {
+		return pointerABIFact{}, false
+	}
+	parameterType, borrowType, resultType := "", "", ""
 	for _, place := range function.Linear.Places {
-		if place.ID == function.Parameter.ID {
+		switch place.ID {
+		case function.Parameter.ID:
 			parameterType = place.TypeID
-		}
-		if place.ID == borrow.TargetID {
+		case borrow.TargetID:
 			borrowType = place.TypeID
+		case result:
+			resultType = place.TypeID
 		}
 	}
-	if parameterType == "" || parameterType != borrowType || parameterType != borrow.TypeID {
+	if len(operations) == 2 {
+		resultType = borrowType
+	}
+	if parameterType == "" || parameterType != borrowType || parameterType != borrow.TypeID || parameterType != resultType ||
+		(len(operations) == 3 && (copyType != parameterType || len(function.Linear.Places) != 3)) ||
+		(len(operations) == 2 && len(function.Linear.Places) != 2) || len(function.Linear.Types) != 1 {
 		return pointerABIFact{}, false
 	}
 	for _, fact := range function.Linear.Types {

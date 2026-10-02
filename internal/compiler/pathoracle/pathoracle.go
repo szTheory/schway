@@ -261,13 +261,132 @@ func validateTransferredOwner(program core.Program) error {
 			ti = i
 		}
 	}
-	if borrow == nil || release == nil || ret == nil || borrow.SourceID != call.TargetID || release.SourceID != call.TargetID || release.ReleasesOperationID != a.op.ID || release.Foreign == nil || borrow.Foreign == nil || release.Foreign.Mode != "consume" || release.Foreign.Symbol != a.op.Foreign.Release || release.Foreign.ABIType != "schway_file_byte_release_fn" || release.Foreign.ParameterType != "FileByteOwner" || release.Foreign.ResultType != "Unit" || release.Foreign.Fails != "" || release.Foreign.Allocator != a.op.Foreign.Allocator || release.Allocator != a.op.Foreign.Allocator || borrow.Foreign.Symbol != "schway_file_byte_use" || borrow.Foreign.ABIType != "schway_file_byte_use_fn" || borrow.Foreign.ParameterType != "FileByteOwner" || borrow.Foreign.ResultType != "U64" || borrow.Foreign.Fails != "UseError" || ret.SourceID != borrow.TargetID {
+	if borrow == nil || release == nil || ret == nil || borrow.SourceID != call.TargetID || release.SourceID != call.TargetID || release.ReleasesOperationID != a.op.ID || release.Foreign == nil || borrow.Foreign == nil || release.Foreign.Mode != "consume" || release.Foreign.Symbol != a.op.Foreign.Release || release.Foreign.ABIType != "schway_file_byte_release_fn" || release.Foreign.ParameterType != "FileByteOwner" || release.Foreign.ResultType != "Unit" || release.Foreign.Fails != "" || release.Foreign.Allocator != a.op.Foreign.Allocator || release.Allocator != a.op.Foreign.Allocator || borrow.Foreign.Symbol != "schway_file_byte_use" || borrow.Foreign.ABIType != "schway_file_byte_use_fn" || borrow.Foreign.ParameterType != "FileByteOwner" || borrow.Foreign.ResultType != "U64" || borrow.Foreign.Fails != "UseError" {
 		return fail("owner_transfer_discharge", caller.ID)
 	}
 	if !(bi >= 0 && bi < ri && ri < ti) {
 		return fail("owner_transfer_order", caller.ID)
 	}
+	if ret.SourceID == borrow.TargetID {
+		if !pathPhase24DirectOwnerResult(program, caller, call, borrow, release, ret) {
+			return fail("owner_transfer_discharge", caller.ID)
+		}
+	} else if !pathPhase25PointerSuccessorResult(program, caller, call, borrow, release, ret) {
+		return fail("owner_transfer_discharge", caller.ID)
+	}
 	return nil
+}
+
+// pathPhase24DirectOwnerResult keeps the original two-function direct-result
+// route bounded to its exact four-operation caller. A Phase 25 program whose
+// return is mutated back to the borrowed result must not fall through here.
+func pathPhase24DirectOwnerResult(program core.Program, caller *core.Function, ownerCall, borrow, release, ret *core.LinearOperation) bool {
+	if caller == nil || caller.Name != "main" || caller.Parameter.Type != "PathToken" || caller.ReturnType != "U64" ||
+		caller.Linear == nil || len(program.Functions) != 2 || len(caller.Linear.Operations) != 4 {
+		return false
+	}
+	ops := caller.Linear.Operations
+	return ops[0].ID == ownerCall.ID && ops[1].ID == borrow.ID && ops[2].ID == release.ID && ops[3].ID == ret.ID &&
+		ops[0].Kind == core.OpCall && ops[1].Kind == core.OpForeignCall && ops[2].Kind == core.OpRelease && ops[3].Kind == core.OpReturn
+}
+
+// pathPhase25PointerSuccessorResult independently recognizes the sole Phase 25
+// exception to the direct borrowed-result owner flow. Only the ordered
+// shared-copy then exclusive-copy U64 result chain may carry the scalar to the
+// caller return; the owner release remains paired and follows both calls.
+func pathPhase25PointerSuccessorResult(program core.Program, caller *core.Function, ownerCall, borrow, release, ret *core.LinearOperation) bool {
+	if caller == nil || caller.Name != "main" || caller.Parameter.Type != "PathToken" || caller.ReturnType != "U64" ||
+		caller.Linear == nil || len(program.Functions) != 4 || len(caller.Linear.Operations) != 6 {
+		return false
+	}
+	ops := caller.Linear.Operations
+	if ops[0].ID != ownerCall.ID || ops[1].ID != borrow.ID || ops[4].ID != release.ID || ops[5].ID != ret.ID ||
+		ops[0].Kind != core.OpCall || ops[1].Kind != core.OpForeignCall || ops[2].Kind != core.OpCall || ops[3].Kind != core.OpCall ||
+		ops[4].Kind != core.OpRelease || ops[5].Kind != core.OpReturn {
+		return false
+	}
+	sharedCall, exclusiveCall := ops[2], ops[3]
+	if sharedCall.ID == "" || exclusiveCall.ID == "" || sharedCall.CalleeID == "" || exclusiveCall.CalleeID == "" ||
+		sharedCall.CalleeID == exclusiveCall.CalleeID || sharedCall.Foreign != nil || exclusiveCall.Foreign != nil ||
+		sharedCall.ErrTargetID != "" || sharedCall.OkEdgeID != "" || sharedCall.ErrEdgeID != "" ||
+		exclusiveCall.ErrTargetID != "" || exclusiveCall.OkEdgeID != "" || exclusiveCall.ErrEdgeID != "" ||
+		sharedCall.SourceID != borrow.TargetID || sharedCall.TargetID == "" || sharedCall.TypeID != borrow.TypeID ||
+		exclusiveCall.SourceID != sharedCall.TargetID || exclusiveCall.TargetID == "" || exclusiveCall.TypeID != sharedCall.TypeID ||
+		ret.SourceID != exclusiveCall.TargetID || ret.TypeID != exclusiveCall.TypeID {
+		return false
+	}
+	if !(indexCallOperation(caller.Linear.Operations, borrow.ID) < indexCallOperation(caller.Linear.Operations, sharedCall.ID) &&
+		indexCallOperation(caller.Linear.Operations, sharedCall.ID) < indexCallOperation(caller.Linear.Operations, exclusiveCall.ID) &&
+		indexCallOperation(caller.Linear.Operations, exclusiveCall.ID) < indexCallOperation(caller.Linear.Operations, release.ID)) {
+		return false
+	}
+	byID := make(map[string]*core.Function, len(program.Functions))
+	for index := range program.Functions {
+		byID[program.Functions[index].ID] = &program.Functions[index]
+	}
+	shared, exclusive := byID[sharedCall.CalleeID], byID[exclusiveCall.CalleeID]
+	if !pathU64CopySuccessorHelper(shared, core.OpBorrowShared) || !pathU64CopySuccessorHelper(exclusive, core.OpBorrowExclusive) {
+		return false
+	}
+	places := make(map[string]core.Place, len(caller.Linear.Places))
+	for _, place := range caller.Linear.Places {
+		if _, exists := places[place.ID]; exists {
+			return false
+		}
+		places[place.ID] = place
+	}
+	types := make(map[string]core.TypeFact, len(caller.Linear.Types))
+	for _, fact := range caller.Linear.Types {
+		if _, exists := types[fact.ID]; exists {
+			return false
+		}
+		types[fact.ID] = fact
+	}
+	parameter, parameterOK := places[caller.Parameter.ID]
+	owner, ownerOK := places[ownerCall.TargetID]
+	value, valueOK := places[borrow.TargetID]
+	sharedValue, sharedOK := places[sharedCall.TargetID]
+	exclusiveValue, exclusiveOK := places[exclusiveCall.TargetID]
+	return len(places) == 5 && len(types) == 3 && parameterOK && ownerOK && valueOK && sharedOK && exclusiveOK &&
+		parameter.TypeID != owner.TypeID && owner.TypeID != value.TypeID && value.TypeID == sharedValue.TypeID && value.TypeID == exclusiveValue.TypeID &&
+		types[parameter.TypeID].Shape.Constructor == "PathToken" && types[owner.TypeID].Shape.Constructor == "FileByteOwner" && types[value.TypeID].Shape.Constructor == "U64" &&
+		ownerCall.TypeID == owner.TypeID && borrow.TypeID == value.TypeID && sharedCall.TypeID == value.TypeID && exclusiveCall.TypeID == value.TypeID && ret.TypeID == value.TypeID
+}
+
+func pathU64CopySuccessorHelper(function *core.Function, borrowKind core.OperationKind) bool {
+	if function == nil || function.Parameter.Type != "U64" || function.ReturnType != "U64" || function.ForeignContract != nil || function.Linear == nil ||
+		len(function.Linear.Operations) != 3 || len(function.Linear.Places) != 3 || len(function.Linear.Types) != 1 ||
+		len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 {
+		return false
+	}
+	borrow, copyValue, ret := function.Linear.Operations[0], function.Linear.Operations[1], function.Linear.Operations[2]
+	if borrow.Kind != borrowKind || borrow.SourceID != function.Parameter.ID || borrow.TargetID == "" || borrow.LoanID == "" ||
+		copyValue.Kind != core.OpCopy || copyValue.SourceID != borrow.TargetID || copyValue.TargetID == "" || copyValue.TypeID != borrow.TypeID ||
+		ret.Kind != core.OpReturn || ret.SourceID != copyValue.TargetID || ret.TypeID != copyValue.TypeID {
+		return false
+	}
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		if _, exists := places[place.ID]; exists {
+			return false
+		}
+		places[place.ID] = place
+	}
+	parameter, parameterOK := places[function.Parameter.ID]
+	borrowed, borrowedOK := places[borrow.TargetID]
+	copied, copiedOK := places[copyValue.TargetID]
+	fact := function.Linear.Types[0]
+	return parameterOK && borrowedOK && copiedOK && parameter.TypeID == borrowed.TypeID && parameter.TypeID == copied.TypeID &&
+		parameter.TypeID == fact.ID && fact.Shape.Constructor == "U64" && borrow.TypeID == fact.ID && copyValue.TypeID == fact.ID
+}
+
+func indexCallOperation(operations []core.LinearOperation, id string) int {
+	for index := range operations {
+		if operations[index].ID == id {
+			return index
+		}
+	}
+	return -1
 }
 
 func pathPhase24ErrorProgram(program core.Program) bool {

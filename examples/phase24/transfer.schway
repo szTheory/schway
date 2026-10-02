@@ -2,6 +2,8 @@ module phase24.transfer
 
 export {
   fn main
+  fn shared_copy
+  fn exclusive_copy
 }
 
 foreign C {
@@ -43,8 +45,22 @@ fn acquire(path: PathToken) -> FileByteOwner {
   owner
 }
 
+fn shared_copy(value: U64) -> U64 {
+  let borrowed = borrow value
+  let copied = borrowed
+  copied
+}
+
+fn exclusive_copy(value: U64) -> U64 {
+  let borrowed = borrow mut value
+  let copied = borrowed
+  copied
+}
+
 fn main(path: PathToken) -> U64 {
   let owner = acquire(path)
   let value = try schway_file_byte_use(owner)
-  value
+  let shared = shared_copy(value)
+  let exclusive = exclusive_copy(shared)
+  exclusive
 }
