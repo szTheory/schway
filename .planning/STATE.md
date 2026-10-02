@@ -6,16 +6,16 @@ current_phase: 25
 current_phase_name: separate-pointer-successors-and-integrated-utility
 current_plan: 5
 status: executing
-stopped_at: Completed 25-04-PLAN.md
-last_updated: "2026-10-01T21:23:34.836Z"
+stopped_at: Completed 25-05-PLAN.md; ready for 25-06-PLAN.md
+last_updated: "2026-10-02T01:17:00.446Z"
 last_activity: 2026-10-01
 last_activity_desc: Archived the original checkout and restored the current source to the canonical schway directory
-state_head: 5ccab2ddc009faa0efb4304ebed5c08595d9a4be
+state_head: e18886cd061058364d52b6ee46db5f4eeaef3d5d
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 18
-  completed_plans: 17
+  total_plans: 19
+  completed_plans: 18
   percent: 75
 ---
 
@@ -427,6 +427,7 @@ subset alone.
 | Phase 25 P2 | 13min | 2 tasks | 5 files |
 | Phase 25 P3 | 45m | 2 tasks | 10 files |
 | Phase 25 P4 | 52min | 2 tasks | 10 files |
+| Phase 25 P05 | 219m | 1 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -521,6 +522,9 @@ decision history; they no longer describe current status.
 - [Phase 25]: Explicit Foreign borrow/consume modes do not seed frame-owned acquisition tracking; missing or unknown contracts remain conservative.
 - [Phase 25]: Owner transfer admits only the exact checked shared-copy then exclusive-copy U64 result chain after matching owner release, preserving the direct Phase 24 path.
 - [Phase 25]: Pointer-body forms not expressible in current source remain tested at production serializer admission; source controls cover expressible ownership boundaries.
+- [Phase 25]: Phase 25 shared U64 copy lowering admits only the exact borrow-copy-return ABI shape and derives all C-facing details from one checked fact.
+- [Phase 25]: The Phase 24 direct-result route remains an explicit two-function/four-operation shape; Phase 25 adds only the exact shared-copy then exclusive-copy result chain.
+- [Phase 25]: Malformed pointer-lowering candidates fail before serialization, while PublicOrigin borrowed views retain their additive path and Match callback candidates remain refusal-eligible.
 
 ### Pending Todos
 
@@ -715,8 +719,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-01T21:23:34.808Z
-Stopped at: Completed 25-04-PLAN.md
+Last session: 2026-10-02T01:17:00.418Z
+Stopped at: Completed 25-05-PLAN.md; ready for 25-06-PLAN.md
 Resume file: None
 Next command: `$gsd-discuss-phase 25`
 Routing resolution — 2026-10-01 (post-closeout): canonical `init.progress` now
