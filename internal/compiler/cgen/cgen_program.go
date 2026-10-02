@@ -2443,6 +2443,7 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 		return fmt.Errorf("function %q: scalar parameter place is absent", function.ID)
 	}
 	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n  (void)invocation_index;\n", returnTypeName, functionName, parameterTypeName, locals[parameter.ID])
+	fmt.Fprintf(out, "  if (0) goto %s;\n", label(function.EntryPointID))
 	for _, place := range function.Linear.Places {
 		if place.ID == parameter.ID {
 			continue

@@ -205,7 +205,7 @@ func RecomputeOriginPerReturn(function core.Function, calleeContracts map[string
 		origins := make([]ReturnOrigin, 0)
 		for _, operation := range function.Linear.Operations {
 			if operation.Kind == core.OpReturn {
-				origins = append(origins, ReturnOrigin{OperationID: operation.ID, Paths: []string{}, Derived: false})
+				origins = append(origins, ReturnOrigin{OperationID: operation.ID})
 			}
 		}
 		return origins
