@@ -47,8 +47,8 @@ The exact AST, type facts, lowering, and formatter mechanics remain planning wor
 ### The agent's Discretion
 
 - Choose the precise grammar productions and canonical formatting for `var`, `while`, `if/else`, `<`, and checked infix `+`, with source spans and stable recovery.
-- Choose the scalar lattice, CFG worklist and fail-closed analysis budget, independently derived validation facts, and the source-attributed refusal diagnostics, while preserving D-26-07 and D-26-08.
-- Choose how loop-event occurrence identity is represented and what focused evidence proves it; do not conflate repeated dynamic events or application outcomes with exhausted tooling capacity.
+- Implement the resolved scalar lattice, CFG worklist and fail-closed analysis budget, independently derived validation facts, and source-attributed refusal diagnostics, while preserving D-26-07 and D-26-08.
+- Implement the resolved per-`(invocation, static operation ID)` occurrence ordinal and independent peer derivation; keep occurrence identity separate from app outcome and evidence-capacity status.
 - Use `if/else` as block control flow in the initial slice. Keep branch values, condition chains, `break`/`continue`, iterator forms, and nested-loop guarantees outside unless required by the approved witnesses.
 
 ### Deferred Ideas (OUT OF SCOPE)
@@ -85,21 +85,22 @@ The exact AST, type facts, lowering, and formatter mechanics remain planning wor
 
 Phase 26 should be planned as one thin vertical capability through the existing frontend, typed core/CFG, peer validators, interpreter, native C serializer, and application runner. Context fixes the source contract: scoped mutable U64/Bool locals; pre-tested `while`; block `if/else`; only checked `+` and `<`; and a public `sum_to_n` program with bounded input. The core already has blocks, edges, source operation identities and U64 constants; cyclic CFGs are currently refused. Adding loop syntax alone, or deleting that refusal, would leave a hole in the proof boundary. [VERIFIED: `.planning/phases/26-checked-scalar-sum/26-CONTEXT.md`; `internal/compiler/core/core.go`; `internal/compiler/check/check.go`; `internal/compiler/pathoracle/pathoracle.go`]
 
-Use a finite abstract state containing only local U64/Bool scalar facts for back-edge admission. A forward CFG worklist can merge predecessor states, transfer assignments and branch predicates, and continue until no abstract state changes. Keep the transfer monotone and the lattice finite; use a deterministic transfer/queue budget and reject closed when exhausted. The implementation choice of exact lattice elements and bound belongs to planning, but ownership/resource/loan/provenance facts must remain outside the admitted loop-carried subset. Independent peer implementations should rederive the facts from core rather than accept checker annotations. This is a design recommendation inferred from the locked constraints and existing independent-validator split, not a claim that the repo already has scalar-loop analysis. [CITED: `.claude/skills/spike-findings-ai-lang/references/ownership-kernel-semantics.md`; `.claude/skills/spike-findings-ai-lang/references/differential-verification-harness.md`; inferred from repository architecture]
+Use a finite abstract state containing only local U64/Bool scalar facts for back-edge admission. A forward CFG worklist merges predecessor states, transfers assignments and branch predicates, and runs until no abstract state changes. The selected lattice and deterministic 65,536-transfer cap are recorded under Planning Questions Resolved; ownership/resource/loan/provenance facts stay outside the admitted loop-carried subset. Independent peers rederive facts from core rather than accept checker annotations. These are planning choices, not claims that the repo already has scalar-loop analysis. [CITED: `.claude/skills/spike-findings-ai-lang/references/ownership-kernel-semantics.md`; `.claude/skills/spike-findings-ai-lang/references/differential-verification-harness.md`; inferred from repository architecture]
 
 **Primary recommendation:** Put the phase boundary around the runnable sum witness and its decisive controls. Implement structured scalar control flow and checked add through every semantic consumer; fail closed on unsupported carries or exhausted analysis; pin exact interpreter/native application outcomes independently. Keep Phase 27 operators, text, and cross-host closure out. [VERIFIED: `.planning/phases/26-checked-scalar-sum/26-CONTEXT.md`; `.planning/ROADMAP.md`]
 
 ## Architectural Responsibility Map
 
-| Capability | Primary Tier | Secondary Tier | Rationale |
-|------------|-------------|----------------|-----------|
-| Source forms, spans, formatting and recovery | Browser / Client | — | The lossless parser/AST/formatter owns source authority; there is no browser tier in this compiler. |
-| Typing, scalar loop facts, CFG and refusal diagnostics | API / Backend | — | Checker and typed core own admission; independent validators must derive their own acceptance facts. |
-| Interpreter result and checked failure | API / Backend | — | Interpreter is an independent semantic implementation. |
-| C17 translation and native program outcome | API / Backend | — | `cgen` and native application runner implement the production route; C behavior must not accidentally choose Schway overflow semantics. |
-| Caller input and stdout/stderr/process status | API / Backend | — | Existing `schway app run` is the public app boundary and distinguishes process outcomes from evidence capture. |
+| Stakeholder lens | Main accountability | Phase 26 concern |
+|------------------|---------------------|------------------|
+| Language and compiler architecture | Keep one coherent source/core contract across syntax, types, CFG, and diagnostics | Structured source control lowers to the existing CFG; scalar facts use a finite monotone analysis. |
+| Static analysis and formal methods | Establish sound admission and explicit refusal boundaries | Each validator derives loop facts independently; budget exhaustion fails closed. |
+| Runtime and native toolchain | Preserve the same checked semantics in Go interpretation and C17 output | C unsigned wraparound cannot implement Schway checked addition; pin a direct overflow witness. |
+| Security and resource safety | Prevent invalid ownership/provenance authority from crossing cycles | Loop-carried owners, resources, loans, and loan-derived provenance remain refused. |
+| Test and evidence engineering | Detect common-mode errors with independent expected answers and reached controls | Pin outputs/status separately for each engine; keep evidence capacity distinct from program outcome. |
+| CLI and user experience | Make accepted inputs and program failures predictable to callers | Use the existing `schway app run` route with bounded input/output and a deterministic failure surface. |
 
-“Browser / Client” and “API / Backend” are the requested tier labels; here they identify compiler responsibilities conceptually, not network components. [ASSUMED: tier terminology adapted to a compiler; no web application tier exists.]
+These lenses map to actual compiler and toolchain responsibilities; no browser, network service, graphics engine, or new deployment tier exists in this phase.
 
 ## Standard Stack
 
@@ -181,7 +182,7 @@ These are existing seams from phase context and repository paths. [VERIFIED: `.p
 
 **When to use:** Every phase 26 branch and loop, including zero-iteration behavior.
 
-**Planning detail:** Represent mutable scalar assignment explicitly in the source/core contract. Avoid reusing affine `OpMove` as an implicit mutation primitive; preserve stable binding/operation IDs and source spans, then make each peer's transfer rules explicit. The precise operation design is still open planning work. [VERIFIED: `.planning/phases/26-checked-scalar-sum/26-CONTEXT.md`; `internal/compiler/core/core.go`]
+**Planning detail:** Represent mutable scalar assignment explicitly in the source/core contract. Avoid reusing affine `OpMove` as an implicit mutation primitive; preserve stable binding/operation IDs and source spans, then make each peer's transfer rules explicit. The plans select a distinct typed scalar-store operation. [VERIFIED: `.planning/phases/26-checked-scalar-sum/26-CONTEXT.md`; `.planning/phases/26-checked-scalar-sum/26-01-PLAN.md`; `internal/compiler/core/core.go`]
 
 ### Pattern 2: Bounded monotone fixed point for scalar facts
 
@@ -228,7 +229,7 @@ These are existing seams from phase context and repository paths. [VERIFIED: `.p
 
 ### Pitfall 2: Abstract state either never converges or loses a necessary fact
 
-**What goes wrong:** Exact counters grow indefinitely, or widening merges known loop facts unsafely. **Why:** `i = i + 1` creates an unbounded ascending sequence if the lattice stores exact values without a top/finite bound. **How to avoid:** Choose and document a finite abstract domain, conservative join, monotone transfer, deterministic processing order, and a budget. Fail closed on bound exhaustion. **Warning signs:** iteration-count heuristics that accept when stopped, iteration-order dependent results, or a silently permissive top value. [ASSUMED: analysis algorithm details are not yet implemented.]
+**What goes wrong:** Exact counters grow indefinitely, or widening merges known loop facts unsafely. **Why:** `i = i + 1` creates an unbounded ascending sequence if the lattice stores exact values without a top/finite bound. **How to avoid:** Use the selected finite per-place constant-or-unknown domain, conservative joins, monotone transfers, deterministic ordering, and 65,536-transfer cap. Fail closed on bound exhaustion. **Warning signs:** iteration-count heuristics that accept when stopped, iteration-order dependent results, or a silently permissive top value. [RESOLVED PLANNING CHOICE; implementation must still prove convergence and refusal controls.]
 
 ### Pitfall 3: C wraps while interpreter reports checked overflow
 
@@ -240,7 +241,7 @@ These are existing seams from phase context and repository paths. [VERIFIED: `.p
 
 ### Pitfall 5: Static event identities alias across iterations
 
-**What goes wrong:** Evidence validation rejects repeated events as duplicates or treats multiple executions as one. **Why:** Existing static operation IDs name core sites, whereas an execution trace may visit them repeatedly. **How to avoid:** Preserve static site identity and add a dynamic occurrence coordinate derived deterministically from invocation/iteration or ordered sequence, then cap the evidence buffer independently. The chosen representation remains an open implementation decision. [VERIFIED: phase context; `internal/compiler/execution` and `internal/compiler/executionpeer`]
+**What goes wrong:** Evidence validation rejects repeated events as duplicates or treats multiple executions as one. **Why:** Existing static operation IDs name core sites, whereas an execution trace may visit them repeatedly. **How to avoid:** Preserve static site identity and add the resolved per-`(invocation, static operation ID)` occurrence ordinal; executionpeer independently checks its sequence. Cap the evidence buffer independently so exhaustion cannot alias or rewrite an occurrence. [VERIFIED: phase context; `internal/compiler/execution` and `internal/compiler/executionpeer`; resolved planning choice]
 
 ### Pitfall 6: Tests prove only success paths or the two engines' agreement
 
@@ -272,7 +273,7 @@ if rhs > U64_MAX - lhs:
 result = lhs + rhs
 ```
 
-This pseudocode specifies the overflow predicate only; exact core operation/outcome shape is a planning decision. The native path must not perform unchecked modulo addition and then inspect the wrapped value. [CITED: [Rust `u64::checked_add`](https://doc.rust-lang.org/std/primitive.u64.html#method.checked_add); [WG14 N1570 §6.2.5](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf)]
+This pseudocode specifies the overflow predicate. The plans select an explicit checked-add core operation and the existing noncatchable defect outcome; implementation must check before accepting a native result. [CITED: [Rust `u64::checked_add`](https://doc.rust-lang.org/std/primitive.u64.html#method.checked_add); [WG14 N1570 §6.2.5](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf)]
 
 ## State of the Art
 
@@ -287,18 +288,20 @@ This pseudocode specifies the overflow predicate only; exact core operation/outc
 
 | # | Claim | Section | Risk if Wrong |
 |---|---|---|---|
-| A1 | A finite abstract domain with an unknown/top scalar fact is sufficient to prove the phase's scalar loop slice without relational domain features. | Architecture Patterns | An overly coarse join may prevent safe `sum_to_n` admission or obscure exact safety facts; planning must validate against the approved witness and refusal controls. |
-| A2 | A dynamic event occurrence coordinate can be added within existing evidence schemas without requiring a schema break. | Common Pitfalls | Repeated event evidence could be ambiguous or invalid; inspect exact schema compatibility before implementation. |
-| A3 | The current application runner's output behavior can satisfy Phase 26's bounded stderr/no stdout overflow contract without changing public result types. | Standard Stack | Overflow may collide with tool errors or existing process outcomes; inspect runner/native boundary during planning. |
+| A1 | The resolved finite per-place reachable/initialization/type/constant-or-unknown lattice is sufficient for the approved scalar witness without relational facts. | Architecture Patterns | Execution must demonstrate convergence and independent refusals; a coarse implementation may reject the witness. |
+| A2 | The resolved per-invocation/per-static-site ordinal fits the existing event schema with ordinal zero omitted. | Common Pitfalls | Execution must pin canonical bytes and prove repeat identities independently. |
+| A3 | Existing `RunOutcome`, `ToolError`, and capture fields can express the locked overflow outcome without a new public result type. | Standard Stack | Execution must verify exit 65, bounded deterministic stderr, empty stdout, and separate capacity/tool states. |
 | A4 | A minimum cross-platform standard C implementation is available for the native exact-width U64 representation already used by the codebase. | Standard Stack | Build portability risk; inspect emitted C and host support as implementation work, without changing the locked backend. |
 
-## Open Questions
+## Planning Questions Resolved (2026-10-02)
 
-1. **What finite abstract scalar domain admits the witness while conservatively handling arbitrary user loops?** Existing decisions require finite monotone convergence but do not prescribe intervals, constants-plus-top, or another lattice. Recommend selecting the smallest domain that admits the checked-in source witness and the branch/control discriminators; fail closed if not proved.
-2. **What deterministic analysis budget should trigger refusal?** No numeric analysis cap is locked. Base it on stable work units (transfer evaluations/queue operations), not wall time, and pin exhaustion behavior.
-3. **How should looped execution events remain distinct?** Existing IDs identify static operations and nested invocation occurrences; phase context requires repeated dynamic identity but doesn't choose a coordinate. Decide whether a bounded loop iteration ordinal or ordered occurrence counter is more stable, and decide how it affects capture encoding/capacity.
-4. **How does app overflow map to current process/app outcome representation?** The contract fixes nonzero program outcome, bounded stderr and empty stdout, but not an exit number/message. Keep compiler/tool errors and evidence capacity distinguishable; derive the precise existing integration point before adding result variants.
-5. **What syntax mutation form distinguishes scalar reassignment from affine move/copy?** `var` source surface is locked; core operation kind and formatter/recovery details are not. Plan exact parse/format round-trip, source span, Bool typing, and reassignment-before-initialization rules.
+1. **Scalar analysis domain:** Use a finite per-place lattice of reachable state, definite initialization, exact U64/Bool type, and constant-or-unknown value. Sorted worklists and monotone joins retain only facts true on every predecessor; conflicting constants become unknown. Checker, corevalidate, and originvalidate derive facts separately. This is a compile-time admission analysis, not a termination proof.
+2. **Analysis budget:** Cap each checker/peer fixed point at 65,536 transfer evaluations, with a deterministic fail-closed analysis diagnostic on exhaustion. A test-only override forces the negative case; the cap does not limit runtime loop iterations.
+3. **Repeated event identity:** Use a per-`(invocation, static operation ID)` occurrence ordinal in execution order. The first occurrence is zero and omitted from canonical JSON for backward compatibility. Interpreter and native C17 derive their counters independently, and executionpeer derives the expected sequence separately. Finite evidence capacity has its own incomplete/error result and cannot alias an occurrence or change the child program outcome.
+4. **Overflow result surface:** Reuse existing `RunOutcome`, `ToolError`, and evidence capture fields. A reached checked U64 addition overflow exits the child with code 65, empty stdout, and bounded deterministic stderr (`schway: U64 addition overflow\n` for the direct witness); compiler/tool failures and capacity exhaustion remain distinct. No public result-shape extension is planned.
+5. **Source and core form:** Add block statements to the existing `LinearBody` AST, with mutable function-local U64/Bool `var` store, block `if/else`, pretested `while`, checked infix `+`, and U64 `<`. Reassignment lowers to a distinct typed scalar store, not affine move/copy. Parser recovery, statement/operator spans, formatting, and definite initialization remain required.
+
+These are resolved planning choices, not implementation evidence. Phase 26 execution must still prove the witness and negative controls before any correctness claim.
 
 ## Environment Availability
 
@@ -343,7 +346,7 @@ No checks were run during research. The following is the lowest-cost decisive ev
 - [ ] Add focused syntax/formatter round trip for mutable scalar, `if/else`, `<`, `+`, and `while`, including source spans and malformed recovery.
 - [ ] Add checker/core validator/origin validator tests for fixed-point admission, deterministic bound exhaustion, and resource/loan/provenance refusals.
 - [ ] Add hand-pinned interpreter and native app results for all accepted inputs, 1001 rejection, near-max overflow, reached wrong-result control, and skipped-iteration control.
-- [ ] Add repeated-event identity/capacity control if this source operation set emits dynamic events.
+- [ ] Add repeated-event identity for admitted scalar-copy events and a separate application capture-capacity control.
 
 ## Security Domain
 
@@ -386,7 +389,7 @@ Security enforcement is enabled at ASVS Level 1 in `.planning/config.json`. This
 
 ### Tertiary (LOW confidence)
 
-- Proposed exact lattice, work budget, dynamic loop event coordinate, and precise process outcome mapping — implementation decisions still open; see Assumptions Log and Open Questions.
+- Exact lattice, work budget, dynamic loop event coordinate, and process outcome mapping are planning resolutions dated 2026-10-02; implementation evidence remains pending.
 
 ## Metadata
 

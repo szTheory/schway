@@ -1,33 +1,23 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "M005",
+  "milestone": "M005 — Practical Computation",
   "phases": [
     {
-      "number": "22",
-      "name": "Native Application Build and Single Execution",
-      "status": "complete"
+      "number": "26",
+      "name": "Checked Scalar Sum",
+      "status": "pending"
     },
     {
-      "number": "23",
-      "name": "Live Local Allocation and Discharge",
-      "status": "complete"
-    },
-    {
-      "number": "24",
-      "name": "Ownership Transfer Through Calls and Errors",
-      "status": "complete"
-    },
-    {
-      "number": "25",
-      "name": "Separate Pointer Successors and Integrated Utility",
-      "status": "complete"
+      "number": "27",
+      "name": "Exact FizzBuzz and Cross-Host Evidence",
+      "status": "pending"
     }
   ],
   "next": {
-    "command": "/gsd:discuss-phase",
-    "label": "Discuss the first phase",
-    "reason": "Project initialized — plan your first phase"
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step (plan phase 26)",
+    "reason": "Phase 26 of 2 — needs a plan"
   },
-  "updated_at": "2026-10-02T17:17:19.168Z"
+  "updated_at": "2026-10-02T20:26:22.106Z"
 }
