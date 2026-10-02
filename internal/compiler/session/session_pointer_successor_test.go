@@ -3,11 +3,13 @@ package session_test
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
 	"github.com/szTheory/schway/internal/compiler/originvalidate"
 	"github.com/szTheory/schway/internal/compiler/pathoracle"
 	"github.com/szTheory/schway/internal/compiler/session"
@@ -47,6 +49,63 @@ func TestPhase25FamilyEscape(t *testing.T) {
 	problem := result.Diagnostics[0]
 	if problem.Code != "core.origin_omitted" {
 		t.Fatalf("escape must identify its source and semantic boundary: %+v", problem)
+	}
+}
+
+func TestPhase25EscapeDiagnosticSourceAttribution(t *testing.T) {
+	tests := []struct {
+		name, source, primary, cause string
+	}{
+		{"exclusive", string(mustPhase25Fixture(t, "exclusive_escape_reject.schway")), "exclusive", "borrow mut value"},
+		{"shared", "module phase25.shared_escape\nexport { fn relay }\nfn relay(value: Buffer) -> Buffer {\n  let shared = borrow value\n  shared\n}\n", "shared", "borrow value"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "escape.schway")
+			if err := os.WriteFile(path, []byte(test.source), 0600); err != nil {
+				t.Fatal(err)
+			}
+			result, err := session.CheckCommandFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.Status != "invalid" || len(result.Diagnostics) != 1 {
+				t.Fatalf("expected one command refusal, got %+v", result)
+			}
+			problem := result.Diagnostics[0]
+			if problem.Code != "core.origin_omitted" || problem.Schema != diagnostic.Schema || problem.Primary.Start >= problem.Primary.End || len(problem.Repairs) != 0 {
+				t.Fatalf("escape diagnostic lost its code/schema/span or suggested a repair: %+v", problem)
+			}
+			if got := test.source[problem.Primary.Start:problem.Primary.End]; got != test.primary {
+				t.Fatalf("primary span selects %q, want escaping result %q", got, test.primary)
+			}
+			if len(problem.Causes) == 0 || problem.Causes[0].Kind != "borrow_created_here" || problem.Causes[0].Span == nil {
+				t.Fatalf("escape diagnostic lost its source-located borrow cause: %+v", problem.Causes)
+			}
+			span := *problem.Causes[0].Span
+			if got := test.source[span.Start:span.End]; got != test.cause {
+				t.Fatalf("borrow cause span selects %q, want %q", got, test.cause)
+			}
+		})
+	}
+}
+
+func TestPhase25EscapeDiagnosticFunctionIdentity(t *testing.T) {
+	source := "module phase25.escape_identity\nexport { fn relay }\nfn owned(value: Buffer) -> Buffer {\n  let result = take value\n  result\n}\nfn relay(value: Buffer) -> Buffer {\n  let result = borrow value\n  result\n}\n"
+	path := filepath.Join(t.TempDir(), "identity.schway")
+	if err := os.WriteFile(path, []byte(source), 0600); err != nil {
+		t.Fatal(err)
+	}
+	result, err := session.CheckCommandFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != "invalid" || len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "core.origin_omitted" {
+		t.Fatalf("expected an escape refusal attributed to relay, got %+v", result)
+	}
+	primary := result.Diagnostics[0].Primary
+	if got := source[primary.Start:primary.End]; got != "result" || primary.Start != strings.LastIndex(source, "result") {
+		t.Fatalf("similar earlier return redirected the escape source selection to %q at %d", got, primary.Start)
 	}
 }
 

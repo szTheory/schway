@@ -94,8 +94,10 @@ func ExpectedEscapes() []string { return []string{KnownEscape} }
 // Problem is the origin package's independent-validation finding shape,
 // matching corevalidate.Problem's {Code, Detail} contract.
 type Problem struct {
-	Code   string `json:"code"`
-	Detail string `json:"detail,omitempty"`
+	Code              string `json:"code"`
+	Detail            string `json:"detail,omitempty"`
+	FunctionID        string `json:"function_id,omitempty"`
+	ReturnOperationID string `json:"return_operation_id,omitempty"`
 }
 
 // Error is CheckSummary's typed failure, matching evidence.ValidationError's
@@ -1049,10 +1051,18 @@ func PublishProblemsFor(function core.Function, calleeContracts map[string]calle
 	recomputedPaths, recomputedAccess, ok := RecomputeOrigin(function, calleeContracts)
 	if function.PublicOrigin == nil {
 		if ok {
-			return []Problem{{
-				Code:   "core.origin_omitted",
-				Detail: fmt.Sprintf("%s: no declared origin, but body derives origin %v with access %q", function.ID, recomputedPaths, recomputedAccess),
-			}}
+			problem := Problem{
+				Code:       "core.origin_omitted",
+				Detail:     fmt.Sprintf("%s: no declared origin, but body derives origin %v with access %q", function.ID, recomputedPaths, recomputedAccess),
+				FunctionID: function.ID,
+			}
+			for _, returned := range RecomputeOriginPerReturn(function, calleeContracts) {
+				if returned.Derived {
+					problem.ReturnOperationID = returned.OperationID
+					break
+				}
+			}
+			return []Problem{problem}
 		}
 		return nil
 	}
