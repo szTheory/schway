@@ -107,3 +107,13 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Why not caught:** Snapshot inputs changed after their prior pinned revision, while the exact-set and digest checks correctly failed closed.
 - **Recurrence guard:** TestVerificationGroundednessFrontierIsPinned, TestValidationRowGradesAreEarnedOverArchivedCorpus, and the Phase 20 corpus manifest.
 ---
+
+## phase25-pathoracle-regression — Local loan replay misclassified call and declared borrowed returns
+- **Date:** 2026-10-02
+- **Error patterns:** core.pathoracle_refused, pathoracle.pointer_escape, OpCall result ancestry, repair reverify_failed, Phase 25 full-suite regression
+- **Root cause(s):** The straight-line local loan replay propagated source ancestry through every non-copy operation, including OpCall whose return provenance depends on callee contracts, and treated every loan-derived return as an owned-result escape even when a borrow return was declared.
+- **Fix:** Break local result ancestry at OpCall while continuing to count source loans as call uses; only reject loan-derived returns when the function has no declared return origin; keep contract-aware peers authoritative for call result and borrowed-return provenance.
+- **Files changed:** internal/compiler/pathoracle/pathoracle.go, internal/compiler/pathoracle/pathoracle_pointer_successor_test.go, internal/compiler/session/verification_groundedness_test.go, testdata/phase16/public-emitter-consumers.json
+- **Why not caught:** The original focused oracle controls did not exercise OpCall-return provenance or declared borrowed-return exits, and the local package check did not compose origin/admission/repair consumers; the uncached repository-wide suite exposed the gap.
+- **Recurrence guard:** `TestPhase25PointerPathDefersCallResultProvenance`, `TestPhase25PointerPathAllowsDeclaredBorrowReturn`, `TestPhase25PointerPathChecksOverlapAcrossCalls`, and `TestPhase25PointerPathChecksEscapeInCallFunction` in `internal/compiler/pathoracle/pathoracle_pointer_successor_test.go`, plus the uncached full Go suite.
+---
