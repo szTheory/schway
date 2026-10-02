@@ -1,9 +1,12 @@
 package session_test
 
 import (
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 
+	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/corevalidate"
 	"github.com/szTheory/schway/internal/compiler/originvalidate"
 	"github.com/szTheory/schway/internal/compiler/pathoracle"
@@ -64,6 +67,173 @@ func TestPhase25IndependentPeer(t *testing.T) {
 	if err := pathoracle.ValidateLocalOwnerPaths(checked.Program); err != nil {
 		t.Fatalf("pathoracle rejected sequential families: %v", err)
 	}
+}
+
+func TestPhase25IndependentPeerMutations(t *testing.T) {
+	for _, positive := range []struct{ phase, fixture string }{
+		{"phase3", "sequential_shared_then_exclusive_accept.schway"},
+		{"phase3", "shared_shared_accept.schway"},
+		{"phase25", "exclusive_copy_accept.schway"},
+	} {
+		t.Run("positive/"+positive.fixture, func(t *testing.T) {
+			program := checkedPhase25Program(t, positive.phase, positive.fixture)
+			assertPhase25Peers(t, program, "", true)
+		})
+	}
+	for _, mutation := range []struct {
+		name    string
+		phase   string
+		fixture string
+		mutate  func(*core.Program)
+	}{
+		{"overlap", "phase3", "sequential_shared_then_exclusive_accept.schway", mutatePhase25Overlap},
+		{"escape", "phase25", "exclusive_copy_accept.schway", mutatePhase25Escape},
+	} {
+		t.Run("mutation/"+mutation.name, func(t *testing.T) {
+			program := checkedPhase25Program(t, mutation.phase, mutation.fixture)
+			mutation.mutate(&program)
+			assertPhase25Peers(t, program, mutation.name, false)
+		})
+	}
+}
+
+func TestPhase25CheckCommandPeerGate(t *testing.T) {
+	for _, fixture := range []struct {
+		name, phase, file string
+		status            string
+	}{
+		{"ended shared then exclusive", "phase3", "sequential_shared_then_exclusive_accept.schway", "pass"},
+		{"compatible readers", "phase3", "shared_shared_accept.schway", "pass"},
+		{"overlap", "phase25", "exclusive_conflict_reject.schway", "invalid"},
+		{"borrowed result escape", "phase25", "exclusive_escape_reject.schway", "invalid"},
+	} {
+		t.Run(fixture.name, func(t *testing.T) {
+			result, err := session.CheckCommandFile(testsupport.ProjectPath("testdata", fixture.phase, fixture.file))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.Status != fixture.status {
+				t.Fatalf("command gate returned %q with diagnostics %+v, want %q", result.Status, result.Diagnostics, fixture.status)
+			}
+			if fixture.status == "invalid" && len(result.Diagnostics) == 0 {
+				t.Fatal("command gate refused without a diagnostic")
+			}
+		})
+	}
+}
+
+func assertPhase25Peers(t *testing.T, program core.Program, mutation string, wantValid bool) {
+	t.Helper()
+	coreResult := corevalidate.Validate(program)
+	originProblems := originvalidate.ValidatePublished(program)
+	pathErr := pathoracle.ValidateLocalOwnerPaths(program)
+	coreValid := coreResult.Valid
+	var coreCode string
+	if len(coreResult.Problems) > 0 {
+		coreCode = coreResult.Problems[0].Code
+	}
+	if mutation == "escape" {
+		function := phase25SessionFunction(&program, "exclusive_copy")
+		peer, exists := coreResult.PeerSignatures()[function.ID]
+		coreValid = exists && peer.Callable
+		if exists && !peer.Callable {
+			coreCode = "core.peer_callable_false"
+		}
+	}
+	originValid := len(originProblems) == 0
+	pathValid := pathErr == nil
+	if coreValid != wantValid || originValid != wantValid || pathValid != wantValid {
+		t.Fatalf("independent peers disagree with expected %v for %q: core valid=%v problems=%+v, origin valid=%v problems=%+v, path err=%v", wantValid, mutation, coreValid, coreResult.Problems, originValid, originProblems, pathErr)
+	}
+	if !wantValid {
+		if mutation == "overlap" && len(coreResult.Problems) == 0 || mutation == "escape" && coreValid || len(originProblems) == 0 || pathErr == nil {
+			t.Fatalf("each peer must report its own refusal for %q", mutation)
+		}
+		if mutation == "overlap" && (coreCode != "core.operation_order" && coreCode != "core.borrow_conflict" || originProblems[0].Code != "core.borrow_conflict" || !strings.HasPrefix(pathErr.Error(), "pathoracle.pointer_borrow_conflict:")) {
+			t.Fatalf("overlap mutation did not produce distinct peer refusals: core=%+v origin=%+v path=%v", coreResult.Problems, originProblems, pathErr)
+		}
+		if mutation == "escape" && (coreCode != "core.peer_callable_false" || originProblems[0].Code != "core.origin_omitted" || !strings.HasPrefix(pathErr.Error(), "pathoracle.pointer_escape:")) {
+			t.Fatalf("escape mutation did not produce its expected peer refusals: core=%+v origin=%+v path=%v", coreResult.Problems, originProblems, pathErr)
+		}
+	}
+}
+
+func checkedPhase25Program(t *testing.T, phase, fixture string) core.Program {
+	t.Helper()
+	data, err := os.ReadFile(testsupport.ProjectPath("testdata", phase, fixture))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(data)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("accepted fixture %s had diagnostics: %+v", fixture, checked.Diagnostics)
+	}
+	return clonePhase25Program(checked.Program)
+}
+
+func clonePhase25Program(program core.Program) core.Program {
+	program.Functions = append([]core.Function(nil), program.Functions...)
+	for i := range program.Functions {
+		if program.Functions[i].Linear == nil {
+			continue
+		}
+		linear := *program.Functions[i].Linear
+		linear.Types = append([]core.TypeFact(nil), linear.Types...)
+		linear.Places = append([]core.Place(nil), linear.Places...)
+		linear.Operations = append([]core.LinearOperation(nil), linear.Operations...)
+		linear.LoanEndpoints = append([]core.LoanEndpoint(nil), linear.LoanEndpoints...)
+		program.Functions[i].Linear = &linear
+	}
+	return program
+}
+
+func mutatePhase25Overlap(program *core.Program) {
+	function := phase25SessionFunction(program, "relay")
+	ops := function.Linear.Operations
+	use, borrow := -1, -1
+	for i, operation := range ops {
+		if operation.Kind == core.OpBorrowShared && use < 0 {
+			for j := i + 1; j < len(ops); j++ {
+				if ops[j].SourceID == operation.TargetID {
+					use = j
+					break
+				}
+			}
+		}
+		if operation.Kind == core.OpBorrowExclusive {
+			borrow = i
+		}
+	}
+	if use < 0 || borrow < 0 || use >= borrow {
+		panic("sequential fixture did not contain an ended shared loan before an exclusive borrow")
+	}
+	firstUse := ops[use]
+	moved := append([]core.LinearOperation(nil), ops[:use]...)
+	moved = append(moved, ops[use+1:]...)
+	moved = append(moved[:borrow], append([]core.LinearOperation{firstUse}, moved[borrow:]...)...)
+	for i := range moved {
+		moved[i].ID = fmt.Sprintf("%s:op:%d", function.ID, i)
+		moved[i].PointID = fmt.Sprintf("%s:point:linear:%d", function.ID, i)
+	}
+	function.Linear.Operations = moved
+}
+
+func mutatePhase25Escape(program *core.Program) {
+	function := phase25SessionFunction(program, "exclusive_copy")
+	ops := function.Linear.Operations
+	if len(ops) != 3 || ops[0].Kind != core.OpBorrowExclusive || ops[2].Kind != core.OpReturn {
+		panic("exclusive copy fixture did not contain a borrow and terminal return")
+	}
+	ops[2].SourceID = ops[0].TargetID
+}
+
+func phase25SessionFunction(program *core.Program, name string) *core.Function {
+	for i := range program.Functions {
+		if program.Functions[i].Name == name {
+			return &program.Functions[i]
+		}
+	}
+	panic("Phase 25 mutation function not found: " + name)
 }
 
 func TestPhase25UnsupportedPointerShape(t *testing.T) {

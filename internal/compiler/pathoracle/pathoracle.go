@@ -61,6 +61,9 @@ func ValidateLocalOwnerPaths(program core.Program) error {
 		return err
 	}
 	for _, function := range program.Functions {
+		if err := validateStraightLinePointerLoans(function); err != nil {
+			return err
+		}
 		if function.Linear == nil {
 			continue
 		}
@@ -148,6 +151,124 @@ func ValidateLocalOwnerPaths(program core.Program) error {
 		}
 	}
 	return nil
+}
+
+// validateStraightLinePointerLoans is a bounded, source-blind replay for
+// straight-line borrow helpers. It derives loan ancestry and terminal escape
+// from operations and place/type facts; serialized LoanEndpoints never
+// participate. RecomputeEndpoints remains scoped to CFG endpoint synthesis.
+func validateStraightLinePointerLoans(function core.Function) error {
+	if function.Linear == nil || len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 {
+		return nil
+	}
+	operations := function.Linear.Operations
+	hasBorrow := false
+	for _, operation := range operations {
+		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
+			hasBorrow = true
+			break
+		}
+	}
+	if !hasBorrow {
+		return nil
+	}
+
+	placeTypes := make(map[string]string, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		if place.ID == "" || place.TypeID == "" {
+			return fmt.Errorf("pathoracle.pointer_place: function %q has an incomplete place fact", function.ID)
+		}
+		if _, exists := placeTypes[place.ID]; exists {
+			return fmt.Errorf("pathoracle.pointer_place: function %q has duplicate place facts", function.ID)
+		}
+		placeTypes[place.ID] = place.TypeID
+	}
+	if placeTypes[function.Parameter.ID] == "" {
+		return fmt.Errorf("pathoracle.pointer_place: function %q has no parameter place", function.ID)
+	}
+	type loan struct {
+		id, owner, access string
+		birth, lastUse    int
+		parents           []string
+	}
+	loans := map[string]loan{}
+	placeLoans := map[string][]string{function.Parameter.ID: nil}
+	for index, operation := range operations {
+		inherited := append([]string(nil), placeLoans[operation.SourceID]...)
+		for _, loanID := range inherited {
+			state, exists := loans[loanID]
+			if !exists {
+				return fmt.Errorf("pathoracle.pointer_loan: function %q uses loan %q before it is derived", function.ID, loanID)
+			}
+			state.lastUse = index
+			loans[loanID] = state
+		}
+		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
+			if operation.LoanID == "" || operation.TargetID == "" || placeTypes[operation.SourceID] == "" || placeTypes[operation.TargetID] != placeTypes[operation.SourceID] {
+				return fmt.Errorf("pathoracle.pointer_loan: function %q has incomplete borrow facts at %q", function.ID, operation.ID)
+			}
+			owner := operation.SourceID
+			if len(inherited) > 0 {
+				owner = loans[inherited[0]].owner
+			}
+			access := "shared"
+			if operation.Kind == core.OpBorrowExclusive {
+				access = "exclusive"
+			}
+			if _, exists := loans[operation.LoanID]; exists {
+				return fmt.Errorf("pathoracle.pointer_loan: function %q repeats loan identity %q", function.ID, operation.LoanID)
+			}
+			loans[operation.LoanID] = loan{id: operation.LoanID, owner: owner, access: access, birth: index, lastUse: index, parents: inherited}
+			inherited = append(inherited, operation.LoanID)
+		}
+		if operation.TargetID != "" {
+			if placeTypes[operation.TargetID] == "" {
+				return fmt.Errorf("pathoracle.pointer_place: function %q operation %q has no target place", function.ID, operation.ID)
+			}
+			// OpCopy produces an owned value. Other derived places, including
+			// reborrows, continue to carry their source's loan ancestry.
+			if operation.Kind == core.OpCopy {
+				placeLoans[operation.TargetID] = nil
+			} else {
+				placeLoans[operation.TargetID] = inherited
+			}
+		}
+		if operation.Kind == core.OpReturn {
+			if len(placeLoans[operation.SourceID]) > 0 {
+				return fmt.Errorf("pathoracle.pointer_escape: function %q returns loan-derived place %q", function.ID, operation.SourceID)
+			}
+		}
+	}
+	loanIDs := make([]string, 0, len(loans))
+	for id := range loans {
+		loanIDs = append(loanIDs, id)
+	}
+	sort.Strings(loanIDs)
+	for index, loanID := range loanIDs {
+		left := loans[loanID]
+		for _, otherID := range loanIDs[index+1:] {
+			right := loans[otherID]
+			if left.owner != right.owner || left.access == "shared" && right.access == "shared" {
+				continue
+			}
+			if hasPathAncestor(left.parents, right.id) || hasPathAncestor(right.parents, left.id) {
+				continue
+			}
+			if left.birth <= right.lastUse && right.birth <= left.lastUse {
+				return fmt.Errorf("pathoracle.pointer_borrow_conflict: function %q has overlapping incompatible loans %q and %q", function.ID, left.id, right.id)
+			}
+		}
+	}
+	return nil
+}
+
+func hasPathAncestor(parents []string, candidate string) bool {
+	for _, parent := range parents {
+		if parent == candidate {
+			return true
+		}
+	}
+	return false
 }
 
 func pathHasCall(function core.Function) bool {

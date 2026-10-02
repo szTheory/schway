@@ -899,6 +899,9 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 		// origin too, not merely trust what the checker declared.
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error(problems[0].Code, diagnostic.Span{}, problems[0].Detail)}
+	} else if err := pathoracle.ValidateLocalOwnerPaths(checked.Program); err != nil {
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error("core.pathoracle_refused", diagnostic.Span{}, err.Error())}
 	} else {
 		result.ModuleID = checked.Program.ModuleID
 	}

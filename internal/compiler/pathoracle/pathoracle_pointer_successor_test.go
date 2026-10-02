@@ -63,6 +63,76 @@ func TestPhase25PointerPath(t *testing.T) {
 	}
 }
 
+func TestPhase25PointerPathLiveOverlap(t *testing.T) {
+	program := checkedProgram(t, "phase3", "sequential_shared_then_exclusive_accept.schway")
+	function := functionNamed(t, program, "relay")
+	mutated := phase25CloneOwnerTransferProgram(core.Program{Functions: []core.Function{function}}).Functions[0]
+	ops := mutated.Linear.Operations
+	sharedUse, exclusiveBorrow := -1, -1
+	for i, op := range ops {
+		if op.Kind == core.OpBorrowShared && sharedUse < 0 {
+			for j := i + 1; j < len(ops); j++ {
+				if ops[j].SourceID == op.TargetID {
+					sharedUse = j
+					break
+				}
+			}
+		}
+		if op.Kind == core.OpBorrowExclusive {
+			exclusiveBorrow = i
+		}
+	}
+	if sharedUse < 0 || exclusiveBorrow < 0 || sharedUse >= exclusiveBorrow {
+		t.Fatalf("accepted sequential witness did not have the expected first-loan last use before the exclusive borrow: %+v", ops)
+	}
+	firstUse := ops[sharedUse]
+	moved := append([]core.LinearOperation(nil), ops[:sharedUse]...)
+	moved = append(moved, ops[sharedUse+1:]...)
+	insertion := exclusiveBorrow
+	moved = append(moved[:insertion], append([]core.LinearOperation{firstUse}, moved[insertion:]...)...)
+	mutated.Linear.Operations = moved
+	for _, endpoints := range [][]core.LoanEndpoint{nil, {{ID: "forged", LoanID: "not-a-real-loan", Kind: "point", AfterOperationID: "fake"}}} {
+		t.Run(map[bool]string{true: "forged", false: "empty"}[len(endpoints) != 0], func(t *testing.T) {
+			candidate := mutated
+			linear := *mutated.Linear
+			linear.LoanEndpoints = endpoints
+			candidate.Linear = &linear
+			if err := pathoracle.ValidateLocalOwnerPaths(core.Program{Functions: []core.Function{candidate}}); err == nil {
+				t.Fatal("path oracle accepted a real shared/exclusive overlap")
+			}
+			if _, _, err := pathoracle.RecomputeEndpoints(candidate, nil); err != nil {
+				t.Fatalf("straight-line endpoint synthesis contract changed: %v", err)
+			}
+		})
+	}
+}
+
+func TestPhase25PointerPathBorrowedResultEscape(t *testing.T) {
+	program := checkedProgram(t, "phase25", "exclusive_copy_accept.schway")
+	function := functionNamed(t, program, "exclusive_copy")
+	mutated := phase25CloneOwnerTransferProgram(core.Program{Functions: []core.Function{function}}).Functions[0]
+	ops := mutated.Linear.Operations
+	if len(ops) != 3 || ops[0].Kind != core.OpBorrowExclusive || ops[1].Kind != core.OpCopy || ops[2].Kind != core.OpReturn {
+		t.Fatalf("expected exact exclusive U64-copy witness, got %+v", ops)
+	}
+	borrowedPlace := ops[0].TargetID
+	mutated.Linear.Operations[2].SourceID = borrowedPlace
+	for _, endpoints := range [][]core.LoanEndpoint{nil, {{ID: "forged", LoanID: "not-a-real-loan", Kind: "point", AfterOperationID: "fake"}}} {
+		t.Run(map[bool]string{true: "forged", false: "empty"}[len(endpoints) != 0], func(t *testing.T) {
+			candidate := mutated
+			linear := *mutated.Linear
+			linear.LoanEndpoints = endpoints
+			candidate.Linear = &linear
+			if err := pathoracle.ValidateLocalOwnerPaths(core.Program{Functions: []core.Function{candidate}}); err == nil {
+				t.Fatal("path oracle accepted a genuine borrowed-result escape")
+			}
+		})
+	}
+	if err := pathoracle.ValidateLocalOwnerPaths(core.Program{Functions: []core.Function{function}}); err != nil {
+		t.Fatalf("path oracle rejected the copied U64 result: %v", err)
+	}
+}
+
 func TestPhase25UtilityOwnerTransfer(t *testing.T) {
 	program := phase25OwnerTransferProgram(t)
 	if err := pathoracle.ValidateLocalOwnerPaths(program); err != nil {
