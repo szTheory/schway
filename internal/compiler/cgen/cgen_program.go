@@ -828,7 +828,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 				}
 			}
 		}
-		if functionHasDefect(function) {
+		if functionHasDefect(function) && !hasScalarOperations(function) {
 			needsDefect = true
 		}
 		if branchType, ok := branchTypes[function.Parameter.Type]; ok && branchType.hasPayload && branchType.hasCType("SCHWAY_BUFFER") {
