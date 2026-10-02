@@ -51,7 +51,7 @@ func TestPhase26TracerAppSum10(t *testing.T) {
 }
 
 func TestPhase26Frontend(t *testing.T) {
-	source := []byte("module phase26\n\nfn main(n: U64) -> U64 {\n  // checked scalar path\n  var i = 0\n  var total = 0\n  if n < 1001 {\n    while i < n {\n      i = i + 1\n      total = total + i\n    }\n  } else {\n    defect \"input exceeds 1000\"\n  }\n  total\n}\n")
+	source := []byte("module phase26\n\nexport {\n  fn main\n}\n\nfn main(n: U64) -> U64 {\n  // checked scalar path\n  var i = 0\n  var total = 0\n  if n < 1001 {\n    while i < n {\n      i = i + 1\n      total = total + i\n    }\n  } else {\n    defect \"input exceeds 1000\"\n  }\n  total\n}\n")
 	first := session.Format(source)
 	second := session.Format(first.Canonical)
 	if len(first.Diagnostics) != 0 || len(second.Diagnostics) != 0 || !bytes.Equal(first.Canonical, second.Canonical) || !bytes.Contains(first.Canonical, []byte("// checked scalar path")) {

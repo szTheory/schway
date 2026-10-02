@@ -133,7 +133,7 @@ func (d *deriver) deriveAt(shape core.TypeRef, depth int) (derivedShape, error) 
 	}
 
 	switch shape.Constructor {
-	case "Byte", "U64", "PathToken", "Unit":
+	case "Byte", "U64", "Bool", "PathToken", "Unit":
 		if len(shape.Arguments) != 0 {
 			return derivedShape{}, fmt.Errorf("%s takes no type arguments", shape.Constructor)
 		}

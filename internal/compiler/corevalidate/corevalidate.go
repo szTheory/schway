@@ -4196,7 +4196,7 @@ func (v *validator) targetMatches(function *core.Function, operationIndex int, o
 
 func scalarTargetMatches(function *core.Function, operationIndex int, operation core.LinearOperation, places map[string]core.Place, produced map[string]bool) bool {
 	target := places[operation.TargetID]
-	return target.ID != "" && operation.TargetID != operation.SourceID && !target.Mutable && !produced[operation.TargetID] && target.TypeID == operation.TypeID
+	return target.ID != "" && operation.TargetID != operation.SourceID && !produced[operation.TargetID] && target.TypeID == operation.TypeID
 }
 
 func (v *validator) derive(shape core.TypeRef, depth int) ([]core.Ability, []core.AbilityWitness, bool) {
@@ -4278,7 +4278,7 @@ func deriveAbility(shape core.TypeRef, requested core.Ability, depth int, sealed
 		return true, nil, true
 	}
 	switch shape.Constructor {
-	case "Byte", "U64":
+	case "Byte", "U64", "Bool":
 		if len(shape.Arguments) != 0 {
 			return false, nil, false
 		}

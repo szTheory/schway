@@ -21,6 +21,12 @@ func Format(tree Tree) []byte {
 		if index+1 < len(tokens) {
 			next = tokens[index+1].Kind
 		}
+		if token.Kind == TokenIdentifier && next == TokenEqual && index > 0 && f.lineOpen && (f.context() == "function" || f.context() == "arm") {
+			previous := tokens[index-1]
+			if previous.Span.End <= token.Span.Start && bytes.Contains(tree.Source[previous.Span.End:token.Span.Start], []byte("\n")) {
+				f.newline()
+			}
+		}
 		f.token(token, next)
 	}
 	return append(bytes.TrimRight([]byte(f.out.String()), " \t\r\n"), '\n')
