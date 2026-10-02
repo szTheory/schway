@@ -225,16 +225,24 @@ func validateStraightLinePointerLoans(function core.Function) error {
 			if placeTypes[operation.TargetID] == "" {
 				return fmt.Errorf("pathoracle.pointer_place: function %q operation %q has no target place", function.ID, operation.ID)
 			}
-			// OpCopy produces an owned value. Other derived places, including
-			// reborrows, continue to carry their source's loan ancestry.
-			if operation.Kind == core.OpCopy {
+			// OpCopy produces an owned value. OpCall also breaks local
+			// ancestry: this bounded replay has no callee return-contract
+			// facts, so its result's origin is unknown here. The call still
+			// counts as a use of its source loans above, preserving overlap
+			// checks across the call boundary; corevalidate/originvalidate
+			// independently derive the call result's actual provenance.
+			if operation.Kind == core.OpCopy || operation.Kind == core.OpCall {
 				placeLoans[operation.TargetID] = nil
 			} else {
 				placeLoans[operation.TargetID] = inherited
 			}
 		}
 		if operation.Kind == core.OpReturn {
-			if len(placeLoans[operation.SourceID]) > 0 {
+			// A declared shared/exclusive return is an intentional borrowed
+			// result. This local check guards an owned result from escaping a
+			// loan; the return contract's origin is checked independently by
+			// corevalidate/originvalidate.
+			if function.PublicOrigin == nil && len(placeLoans[operation.SourceID]) > 0 {
 				return fmt.Errorf("pathoracle.pointer_escape: function %q returns loan-derived place %q", function.ID, operation.SourceID)
 			}
 		}

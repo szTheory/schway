@@ -1,9 +1,11 @@
 package pathoracle_test
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/core"
@@ -131,6 +133,94 @@ func TestPhase25PointerPathBorrowedResultEscape(t *testing.T) {
 	if err := pathoracle.ValidateLocalOwnerPaths(core.Program{Functions: []core.Function{function}}); err != nil {
 		t.Fatalf("path oracle rejected the copied U64 result: %v", err)
 	}
+}
+
+func TestPhase25PointerPathDefersCallResultProvenance(t *testing.T) {
+	program := checkedProgram(t, "phase08", "twin_a_accept.schway")
+	function := functionNamed(t, program, "escort")
+	if !pathHasCallForTest(function) {
+		t.Fatal("interprocedural fixture no longer contains a call")
+	}
+	if err := pathoracle.ValidateLocalOwnerPaths(core.Program{Functions: []core.Function{function}}); err != nil {
+		t.Fatalf("bounded local replay must defer call-result provenance to contract-aware peers: %v", err)
+	}
+}
+
+func TestPhase25PointerPathAllowsDeclaredBorrowReturn(t *testing.T) {
+	program := checkedProgram(t, "phase6", "heldout_borrow_defect.schway")
+	function := functionNamed(t, program, "relay")
+	if function.PublicOrigin == nil || function.PublicOrigin.Access != "shared" {
+		t.Fatalf("fixture return origin changed: got %+v, want declared shared", function.PublicOrigin)
+	}
+	if err := pathoracle.ValidateLocalOwnerPaths(core.Program{Functions: []core.Function{function}}); err != nil {
+		t.Fatalf("bounded local replay rejected an explicitly declared borrowed return: %v", err)
+	}
+}
+
+func TestPhase25PointerPathChecksOverlapAcrossCalls(t *testing.T) {
+	program := checkedProgram(t, "phase11", "multi_function_relay_depth2.schway")
+	function := functionNamed(t, program, "relay")
+	mutated := phase25CloneOwnerTransferProgram(core.Program{Functions: []core.Function{function}}).Functions[0]
+	var call core.LinearOperation
+	var exclusiveIndex int = -1
+	for index, operation := range mutated.Linear.Operations {
+		if operation.Kind == core.OpCall {
+			call = operation
+		}
+		if operation.Kind == core.OpMove {
+			// This is the fixture's final `take buffer`; turn it into a
+			// second live direct loan of the same owner.
+			exclusiveIndex = index
+			mutated.Linear.Operations[index].Kind = core.OpBorrowExclusive
+			mutated.Linear.Operations[index].LoanID = "injected-exclusive-loan"
+		}
+	}
+	if call.Kind != core.OpCall || exclusiveIndex < 0 {
+		t.Fatalf("expected call and final move in relay operations: %+v", mutated.Linear.Operations)
+	}
+	call.ID = function.ID + ":op:injected-call"
+	call.PointID = function.ID + ":point:injected-call"
+	ops := mutated.Linear.Operations
+	ops = append(ops[:exclusiveIndex+1], append([]core.LinearOperation{call}, ops[exclusiveIndex+1:]...)...)
+	mutated.Linear.Operations = ops
+	ops[len(ops)-1].SourceID = mutated.Parameter.ID
+	for index := range ops {
+		ops[index].ID = fmt.Sprintf("%s:op:%d", function.ID, index)
+		ops[index].PointID = fmt.Sprintf("%s:point:linear:%d", function.ID, index)
+	}
+	if err := pathoracle.ValidateLocalOwnerPaths(core.Program{Functions: []core.Function{mutated}}); err == nil || !strings.HasPrefix(err.Error(), "pathoracle.pointer_borrow_conflict:") {
+		t.Fatalf("local replay must retain overlap detection across an OpCall use, got %v", err)
+	}
+}
+
+func TestPhase25PointerPathChecksEscapeInCallFunction(t *testing.T) {
+	program := checkedProgram(t, "phase11", "multi_function_relay_depth2.schway")
+	function := functionNamed(t, program, "relay")
+	mutated := phase25CloneOwnerTransferProgram(core.Program{Functions: []core.Function{function}}).Functions[0]
+	if !pathHasCallForTest(mutated) {
+		t.Fatal("interprocedural fixture no longer contains a call")
+	}
+	for index := range mutated.Linear.Operations {
+		if mutated.Linear.Operations[index].Kind == core.OpBorrowShared {
+			mutated.Linear.Operations[len(mutated.Linear.Operations)-1].SourceID = mutated.Linear.Operations[index].TargetID
+			break
+		}
+	}
+	if err := pathoracle.ValidateLocalOwnerPaths(core.Program{Functions: []core.Function{mutated}}); err == nil || !strings.HasPrefix(err.Error(), "pathoracle.pointer_escape:") {
+		t.Fatalf("local replay must retain direct borrowed-result escape detection in a function with calls, got %v", err)
+	}
+}
+
+func pathHasCallForTest(function core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpCall {
+			return true
+		}
+	}
+	return false
 }
 
 func TestPhase25UtilityOwnerTransfer(t *testing.T) {
