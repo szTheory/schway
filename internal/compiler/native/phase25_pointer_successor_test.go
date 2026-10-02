@@ -1,11 +1,14 @@
 package native_test
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/szTheory/schway/internal/compiler/cgen"
 	"github.com/szTheory/schway/internal/compiler/core"
@@ -34,8 +37,9 @@ func TestPhase25SharedNativeShape(t *testing.T) {
 	if err := os.WriteFile(path, []byte(generated), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if output, err := exec.Command(clang, "-std=c17", "-Werror", "-fsyntax-only", path).CombinedOutput(); err != nil {
-		t.Fatalf("clang rejected emitted shared-pointer C: %v\n%s", err, output)
+	stdout, stderr, err := phase25PointerCommand(90*time.Second, clang, "-std=c17", "-Werror", "-fsyntax-only", path)
+	if err != nil {
+		t.Fatalf("clang rejected emitted shared-pointer C: %v\nstdout:\n%s\nstderr:\n%s", err, stdout, stderr)
 	}
 }
 
@@ -100,13 +104,31 @@ func TestPhase25ExclusiveWrongResult(t *testing.T) {
 			if err := os.WriteFile(cPath, []byte(test.source), 0o600); err != nil {
 				t.Fatal(err)
 			}
-			if output, err := exec.Command(clang, "-std=c17", "-Werror", cPath, "-o", binaryPath).CombinedOutput(); err != nil {
-				t.Fatalf("clang failed: %v\n%s", err, output)
+			stdout, stderr, err := phase25PointerCommand(90*time.Second, clang, "-std=c17", "-Werror", cPath, "-o", binaryPath)
+			if err != nil {
+				t.Fatalf("clang failed: %v\nstdout:\n%s\nstderr:\n%s", err, stdout, stderr)
 			}
-			output, err := exec.Command(binaryPath, "65").CombinedOutput()
-			if err != nil || !strings.Contains(string(output), test.want) {
-				t.Fatalf("native result=%q err=%v, want payload containing %q", output, err, test.want)
+			stdout, stderr, err = phase25PointerCommand(30*time.Second, binaryPath, "65")
+			output := stdout + stderr
+			if err != nil || !strings.Contains(output, test.want) {
+				t.Fatalf("native stdout=%q stderr=%q err=%v, want payload containing %q", stdout, stderr, err, test.want)
 			}
 		})
 	}
+}
+
+func phase25PointerCommand(timeout time.Duration, name string, args ...string) (string, string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	command := exec.CommandContext(ctx, name, args...)
+	var stdout, stderr phase25BoundedOutput
+	command.Stdout, command.Stderr = &stdout, &stderr
+	err := command.Run()
+	if ctx.Err() == context.DeadlineExceeded {
+		return stdout.String(), stderr.String(), fmt.Errorf("process exceeded %s deadline: %w", timeout, ctx.Err())
+	}
+	if stdout.total > phase25ProcessOutputLimit || stderr.total > phase25ProcessOutputLimit {
+		return stdout.String(), stderr.String(), fmt.Errorf("process output exceeded independent %d-byte stream limit", phase25ProcessOutputLimit)
+	}
+	return stdout.String(), stderr.String(), err
 }

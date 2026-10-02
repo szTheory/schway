@@ -2320,13 +2320,17 @@ func TestPhase24SourceTransfer(t *testing.T) {
 	if !ok {
 		t.Fatal("main function missing")
 	}
-	var transferIndex, borrowIndex, releaseIndex, returnIndex = -1, -1, -1, -1
+	var transferIndex, borrowIndex, sharedCopyIndex, exclusiveCopyIndex, releaseIndex, returnIndex = -1, -1, -1, -1, -1, -1
 	var releaseOperation core.LinearOperation
 	for index, operation := range main.Linear.Operations {
 		switch operation.Kind {
 		case core.OpCall:
 			if operation.CalleeID == helper.ID {
 				transferIndex = index
+			} else if operation.CalleeID == functions["shared_copy"].ID {
+				sharedCopyIndex = index
+			} else if operation.CalleeID == functions["exclusive_copy"].ID {
+				exclusiveCopyIndex = index
 			}
 		case core.OpForeignCall:
 			if operation.Foreign != nil && operation.Foreign.Mode == "borrow" {
@@ -2339,8 +2343,8 @@ func TestPhase24SourceTransfer(t *testing.T) {
 			returnIndex = index
 		}
 	}
-	if transferIndex != 0 || borrowIndex != 1 || releaseIndex != 2 || returnIndex != 3 {
-		t.Fatalf("caller operations must transfer, borrow, release, then return: transfer=%d borrow=%d release=%d return=%d", transferIndex, borrowIndex, releaseIndex, returnIndex)
+	if transferIndex != 0 || borrowIndex != 1 || sharedCopyIndex != 2 || exclusiveCopyIndex != 3 || releaseIndex != 4 || returnIndex != 5 {
+		t.Fatalf("caller operations must transfer, borrow, invoke shared/exclusive copy helpers, release, then return: transfer=%d borrow=%d shared_copy=%d exclusive_copy=%d release=%d return=%d", transferIndex, borrowIndex, sharedCopyIndex, exclusiveCopyIndex, releaseIndex, returnIndex)
 	}
 	if releaseOperation.ReleasesOperationID != acquisitionID || releaseOperation.Foreign == nil || releaseOperation.Foreign.Mode != "consume" || releaseOperation.Foreign.Symbol != "schway_file_byte_release" || releaseOperation.Foreign.Allocator != "libc_malloc" {
 		t.Fatalf("caller release does not pair with the helper acquisition contract: %+v", releaseOperation)

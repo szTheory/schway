@@ -1,63 +1,81 @@
-# Phase 24 owner transfer and typed-error applications
+# Phase 24–25 file-byte utility
 
-This example contains two ordinary native application entries:
+[`transfer.schway`](./transfer.schway) acquires and transfers one
+`FileByteOwner`, reads a byte as `U64`, then passes that scalar through separate
+shared and exclusive read/copy helpers before returning it. The helpers borrow
+the copied scalar value; neither points into the owner's allocation. The C
+adapter continues to own its file descriptor, and the declared local release
+discharges the buffer allocation.
 
-- [`transfer.schway`](./transfer.schway) acquires a `FileByteOwner` in a helper,
-  returns that live owner to its caller, borrows it to read one byte, and then
-  releases it.
-- [`error.schway`](./error.schway) performs two caller acquisitions and a third
-  acquisition through `probe`. Its `0x43` input reaches a typed
-  `UseError.UnsupportedByte` after all three owners exist.
+## Clean-checkout run
 
-Both entries receive the same one-path input and use the explicit Phase 23
-local-C binding contract. Build and run them from the repository root with Go
-1.24 and Clang installed:
+From the repository root, with Go 1.24 and Clang installed, build the CLI and
+the retained application using the explicit Phase 23 C-binding manifest:
 
 ```sh
 go build -o ./schway ./cmd/schway
 ./schway build examples/phase24/transfer.schway \
-  --manifest examples/phase23/file_byte.bindings.json --output ./phase24-transfer
-./schway build examples/phase24/error.schway \
-  --manifest examples/phase23/file_byte.bindings.json --output ./phase24-error
+  --manifest examples/phase23/file_byte.bindings.json \
+  --output ./phase25-transfer
 printf '\101' > ./byte-41.bin
 printf '\102' > ./byte-42.bin
 printf '\103' > ./byte-43.bin
-./schway app run ./phase24-transfer -- ./byte-41.bin
-./schway app run ./phase24-transfer -- ./byte-42.bin
-./schway app run ./phase24-error -- ./byte-41.bin
-./schway app run ./phase24-error -- ./byte-42.bin
-./schway app run ./phase24-error -- ./byte-43.bin
+./schway app run ./phase25-transfer -- ./byte-41.bin
+./schway app run ./phase25-transfer -- ./byte-42.bin
 ```
 
-The independently fixed public answers are `0x41 → 65` and `0x42 → 66` for
-both entries. The error entry reports `UseError.UnsupportedByte` on `0x43` and
-exits with status 65. The adapter accepts one raw byte and probes for EOF;
-`PathToken` remains bounded to 4,096 bytes.
+Inputs `0x41` and `0x42` print `65` and `66`, respectively. The `0x43` input
+follows the existing typed use failure before either infallible copy helper
+and exits with status 65:
 
-## Evidence scope
+```sh
+set +e
+./schway app run ./phase25-transfer -- ./byte-43.bin
+result=$?
+set -e
+test "$result" -eq 65
+```
 
-The Phase 24 native observer test links the generated error application to an
-instrumented copy of the declared adapter. It privately matches actual C
-pointers across allocation, the successful return from the owner-producing
-helper called by `probe`, use, and release, then writes only the static
-acquisition operation ID and its dynamic activation number. The passing `0x43`
-receipt records allocations A, B, C; helper return and use of transferred owner
-C; frees C, B, A; and zero outstanding allocations before the typed error is
-reported. The observer never prints pointer addresses. Five reached controls
-reject an omitted, premature, duplicate, or wrong-resource release and a semantic
-identity collision. The generated Phase 24 error application has no serialized
-compiler event stream; model events remain a separate semantic view, and no
-compiler event is treated as physical-cleanup evidence.
+Its stderr is `UseError.UnsupportedByte`. The native test instruments each
+helper entry and confirms that the success cases call both helpers in order
+while the typed-error case calls neither.
 
-The deterministic interpreter replay supplies acquisition and use outcomes.
-It fixes `65`, `66`, and `UseError.UnsupportedByte` independently. It does not
-claim actual host IO or physical cleanup, reports `actual_host_io=false` and
-`physical_cleanup=false`, and does not open the path.
-The focused hosted receipt from `scripts/verify-phase24.sh` records its host,
-target, source revision, tree state, and elapsed time. New Ubuntu and macOS
-Phase 24 receipts are kept distinct from the historical Phase 23 receipts.
+## Evidence index
 
-These guarantees cover only the admitted `PathToken`/`FileByteOwner` programs,
-the declared C ABI, infallible local release, and the supported success and
-typed-error exits. They do not establish general file IO, arbitrary foreign
-calls, pointer safety, unwinding, or physical cleanup from model output alone.
+- The trusted foreign operations and local build authority are declared in
+  [`file_byte.bindings.json`](../phase23/file_byte.bindings.json), with their
+  adapter in [`adapter.c`](../phase23/adapter.c) and
+  [`adapter.h`](../phase23/adapter.h).
+- [`phase25_utility_test.go`](../../internal/compiler/native/phase25_utility_test.go)
+  builds and runs the integrated native utility, reached wrong-result controls
+  for both families, and separate family conflict/escape controls.
+- [`cgen_pointer_successor_test.go`](../../internal/compiler/cgen/cgen_pointer_successor_test.go)
+  checks shared `const uint64_t *` and exclusive `uint64_t *` emission and each
+  family's pointer manifest. Those shapes carry no `restrict`, `noalias`,
+  capture, alignment, or ownership promise.
+- [`session_pointer_successor_test.go`](../../internal/compiler/session/session_pointer_successor_test.go)
+  and the Phase 25 checker/core/origin/path tests cover independent conflict,
+  escape, and fail-closed boundaries.
+- [`scripts/verify-phase25.sh`](../../scripts/verify-phase25.sh) prints
+  separately indexed foreign/shared/exclusive receipts for macOS and Linux at
+  baseline `-O0`, optimized `-O2`, and ASan+UBSan. A missing host or lane is
+  incomplete; CI runs this script once in its existing dual-host evidence
+  aggregate. The [CI workflow](../../.github/workflows/ci.yml) links the job
+  that owns those host receipts; the focused records are its run logs, not the
+  historical Phase 23/24 receipts.
+
+## Phase 24 transfer and cleanup evidence
+
+[`examples/phase24/transfer.schway`](./transfer.schway) and
+[`examples/phase24/error.schway`](./error.schway) retain the bounded Phase 24
+owner-transfer examples. The native observer checks actual host IO and
+physical cleanup from generated C, including matching allocation/use/release
+on the typed-error path. Deterministic interpreter replay remains model-only:
+it does not claim actual host IO or physical cleanup. Historical Phase 23
+receipts remain separately identified and do not substitute for Phase 24 or
+Phase 25 evidence.
+
+The model-only interpreter replay remains separate: it fixes semantic results
+and typed-error ordering but does not claim host IO, native pointer behavior,
+or physical cleanup. The Phase 24 owner observer proves the allocation's
+bounded lifecycle; it is not evidence for either scalar pointer family.

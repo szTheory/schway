@@ -1206,7 +1206,7 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 		}
 		var sourceValue value
 		modeledFailureContinuation := top.modeledFailure != nil && (operation.Kind == core.OpForeignCall || operation.Kind == core.OpRelease || operation.Kind == core.OpReturn)
-		if top.modeledFailure != nil && operation.Kind != core.OpRelease && operation.Kind != core.OpReturn && operation.Kind != core.OpForeignCall {
+		if top.modeledFailure != nil && operation.Kind != core.OpRelease && operation.Kind != core.OpReturn && operation.Kind != core.OpForeignCall && operation.Kind != core.OpFail {
 			// A modeled foreign failure has already selected the checked error
 			// edge. Do not evaluate successful-path calls or value operations
 			// while walking toward cleanup and the enclosing typed failure.

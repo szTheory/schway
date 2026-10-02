@@ -32,7 +32,7 @@ type phase25UtilityFixture struct {
 	exclusive core.LinearOperation
 }
 
-const phase25CompilerOutputLimit = 1 << 20
+const phase25ProcessOutputLimit = 1 << 20
 
 type phase25BoundedOutput struct {
 	buffer bytes.Buffer
@@ -41,7 +41,7 @@ type phase25BoundedOutput struct {
 
 func (w *phase25BoundedOutput) Write(data []byte) (int, error) {
 	w.total += len(data)
-	remaining := phase25CompilerOutputLimit - w.buffer.Len()
+	remaining := phase25ProcessOutputLimit - w.buffer.Len()
 	if remaining > 0 {
 		if remaining > len(data) {
 			remaining = len(data)
@@ -52,8 +52,8 @@ func (w *phase25BoundedOutput) Write(data []byte) (int, error) {
 }
 
 func (w *phase25BoundedOutput) String() string {
-	if w.total > phase25CompilerOutputLimit {
-		return w.buffer.String() + "\n[compiler output truncated]"
+	if w.total > phase25ProcessOutputLimit {
+		return w.buffer.String() + "\n[process output truncated]"
 	}
 	return w.buffer.String()
 }
@@ -88,6 +88,7 @@ func TestPhase25UtilityNative(t *testing.T) {
 				t.Fatalf("native utility lane=%s exit=%d stdout=%q stderr=%q; want exit=%d stdout=%q stderr=%q", lane, code, stdout, stderr, test.wantExit, test.wantStdout, test.wantStderr)
 			}
 			if test.value != 0x43 {
+				t.Logf("phase25 native receipt family=foreign lane=%s host=%s/%s input=0x%02x expected=%q actual=%q status=pass", lane, runtime.GOOS, runtime.GOARCH, test.value, strings.TrimSpace(test.wantStdout), strings.TrimSpace(stdout))
 				t.Logf("phase25 native receipt family=shared lane=%s host=%s/%s input=0x%02x expected=%q actual=%q status=pass", lane, runtime.GOOS, runtime.GOARCH, test.value, strings.TrimSpace(test.wantStdout), strings.TrimSpace(stdout))
 				t.Logf("phase25 native receipt family=exclusive lane=%s host=%s/%s input=0x%02x expected=%q actual=%q status=pass", lane, runtime.GOOS, runtime.GOARCH, test.value, strings.TrimSpace(test.wantStdout), strings.TrimSpace(stdout))
 			} else {

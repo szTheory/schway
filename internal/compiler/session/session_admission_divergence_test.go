@@ -67,6 +67,8 @@ var knownAdmissionDivergences = []admissionDivergence{
 	{"testdata/phase07/clean_but_unpublishable.schway", "core.origin_omitted", "intended: the fixture's own name states it -- it checks clean but is unpublishable"},
 	{"testdata/phase10/compose_per_path_borrow_callee_accept.schway", "core.origin_omitted", "incidental: a positive compose-lane fixture whose callee derives a per-path borrow origin"},
 	{"testdata/phase11/multi_function_gate_corpus.schway", "core.origin_omitted", "incidental: the fixture 11-MIDPHASE-GATE.md flagged; `touch` is modeled on phase5/restrict_borrow.schway below"},
+	{"testdata/phase25/exclusive_escape_reject.schway", "core.origin_omitted", "intended: the exclusive successor escape fixture is admitted by the internal checker but refused by the CLI publication gate"},
+	{"testdata/phase25/shared_copy_accept.schway", "core.origin_omitted", "incidental: a positive shared-copy fixture whose public borrowed return lacks a declared origin"},
 	{"testdata/phase3/public_view_mixed_access.schway", "core.origin_access_mismatch", "intended: a declared-vs-derived access conflict fixture"},
 	{"testdata/phase3/public_view_multi_arm_access_conflict.schway", "core.origin_omitted", "intended: a multi-arm access conflict fixture"},
 	{"testdata/phase3/public_view_multi_arm_omitted.schway", "core.origin_omitted", "intended: an omitted-origin fixture"},

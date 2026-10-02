@@ -4,18 +4,18 @@ milestone: M004
 milestone_name: Native Emission Ownership and Resource Discharge
 current_phase: 25
 current_phase_name: separate-pointer-successors-and-integrated-utility
-current_plan: 5
+current_plan: 6
 status: executing
-stopped_at: Completed 25-05-PLAN.md; ready for 25-06-PLAN.md
-last_updated: "2026-10-02T01:17:00.446Z"
+stopped_at: Completed 25-06-PLAN.md; local validation passed; hosted EVD-10 matrix pending
+last_updated: "2026-10-02T02:23:56Z"
 last_activity: 2026-10-01
-last_activity_desc: Archived the original checkout and restored the current source to the canonical schway directory
-state_head: e18886cd061058364d52b6ee46db5f4eeaef3d5d
+last_activity_desc: Completed Phase 25 Plan06 and passed local full, race, vet, build, and macOS evidence checks; hosted family-by-lane receipts remain open
+state_head: f00cdf843bb3b7ed93948a47d3b2acd4af3085af
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 19
-  completed_plans: 18
+  completed_plans: 19
   percent: 75
 ---
 
@@ -122,12 +122,12 @@ next command: `$gsd-discuss-phase 25`.
 
 ## Current Position
 
-Phase: 25 (separate-pointer-successors-and-integrated-utility) — READY TO EXECUTE
-Current Plan: 5
-Total Plans in Phase: 5
-Plan: 5 of 5
-Status: Ready to execute
-Last activity: 2026-10-01 — Canonical checkout location restored and archive preservation verified; Phase 24 remains complete
+Phase: 25 (separate-pointer-successors-and-integrated-utility) — LOCAL IMPLEMENTATION COMPLETE; HOSTED EVIDENCE OPEN
+Current Plan: 6
+Total Plans in Phase: 6
+Plan: 6 of 6
+Status: Implementation plans complete; hosted EVD-10 evidence pending before phase verification can pass
+Last activity: 2026-10-01 — Phase 25 Plan06 local validation completed; hosted dual-host family/lane receipts remain open
 
 Progress: [████████░░] 75%
 
@@ -719,16 +719,17 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-02T01:17:00.418Z
-Stopped at: Completed 25-05-PLAN.md; ready for 25-06-PLAN.md
+Last session: 2026-10-02T02:23:56Z
+Stopped at: Completed 25-06-PLAN.md; local validation passed; hosted EVD-10 matrix pending
 Resume file: None
-Next command: `$gsd-discuss-phase 25`
-Routing resolution — 2026-10-01 (post-closeout): canonical `init.progress` now
-reports Phases 22, 23, and 24 complete with verification `passed`; Phase 22's
-objective README contract UAT remains complete (1/1). Phase 25 — Separate
-Pointer Successors and Integrated Utility — is pending, has no plans, and has
-no `25-CONTEXT.md`. Continue with `$gsd-discuss-phase 25`, then plan Phase 25;
-do not replay completed plans or UAT.
+Next action: run the current Phase 25 tree through the existing hosted dual-host
+CI aggregate, then use `$gsd-execute-phase 25` for verification-only closeout.
+Routing resolution — 2026-10-01 (current): Phase 25 plans 25-01 through 25-06
+are complete and summarized. The local full and race suites, vet, build,
+groundedness/census checks, README/evidence contracts, and macOS/arm64 baseline,
+optimized, and ASan+UBSan family receipts pass. The evidence script marks Linux
+rows incomplete. Phase 25 remains open until the hosted native macOS/Linux
+family-by-lane receipts satisfy EVD-10; do not infer closure from local checks.
 Routing reconciliation — 2026-10-01 (pre-closeout; superseded below): `init.progress` still reports Phase 22 as
 the earliest phase because Phase 22 and 23 verification reports are stale at
 this source revision. `init.execute-phase 22` and `23` confirm all 3 and 7 plans

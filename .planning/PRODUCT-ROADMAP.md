@@ -45,7 +45,11 @@ passed the focused aggregate and full/race suites on Ubuntu Linux/x86_64 and
 macOS Darwin/arm64 at source SHA
 `ed94ef7972b25deb85ab90fafbf3403dc31629f5`. No local project tests or scripts
 were run for closeout. Remaining M004 work is the bounded shared/exclusive
-read-copy pointer families and the integrated utility in Phase 25. App build
+read-copy pointer families and the integrated utility in Phase 25. Phase 25's
+exact shared/exclusive U64 read-copy helpers and integrated utility are now
+present in source; focused local native receipts are recorded below. Hosted
+macOS/Linux Phase 25 family-by-lane receipts remain pending, so EVD-10 and
+phase acceptance stay open until both native aggregates report them. App build
 receipts remain incomplete/non-cacheable when runtime closure is unknown.
 
 The user explicitly requested another deep fan-out and automatic adoption of
@@ -57,7 +61,7 @@ reviews. Research and dissent: [M004 research](research/M004/SUMMARY.md).
 
 | Horizon | User-visible result | Dependencies and scope | Exit observation |
 |---|---|---|---|
-| **Now: M004** | Admit bounded shared/exclusive read-copy pointer families and complete a reproducible utility | Phases 22–24 are complete. Phase 24 verifies bounded transfer, repeated activation identity, and normal/typed-error cleanup on hosted Ubuntu/macOS. Phase 25 still refuses by-pointer native bodies | Separate pointer-family witnesses and negative controls pass on macOS/Linux; the documented utility produces its pinned result |
+| **Now: M004** | Complete bounded shared/exclusive read-copy pointer families and a reproducible utility | Phases 22–24 are complete. Phase 25 source admits exact U64 read-copy helpers and the utility; focused local native witnesses exist. Hosted Phase 25 receipts are still required | Existing dual-host CI records each family on macOS/Linux at baseline, optimized, and sanitizer lanes; the documented utility returns 65/66 and preserves typed 0x43 failure ordering |
 | **Next milestone: practical computation** | `sum_to_n`, then FizzBuzz from ordinary source | Defined U64 arithmetic/remainder and overflow, comparison/Bool, continuation control flow, scalar loops, fixed text/byte literals, bounded writes and decimal formatting | Public command produces exact expected FizzBuzz output; boundary/error cases and changed-assumption checker controls pass |
 | **Mid term: reusable libraries** | Small byte/file utilities and checksum; a reusable bounded JSON parser/serializer | Arity-N and small aggregates as consumers require, explicit byte views/lengths/indexing, fallible APIs, local modules, explicit resource transfer | Second consumer imports a library without copying it; malformed/truncated/oversized input has specified behavior |
 | **Mid term: network branch** | A bounded HTTP client or server for a selected use case | Explicit sockets/timeouts/body/framing/error ownership; audited C/OS adapter or dependency; cleanup on every admitted outcome | One documented real endpoint flow plus adversarial protocol cases; TLS policy specified when needed |
@@ -100,7 +104,7 @@ engine agreement alone cannot prove correctness.
 | Real application IO | Entry inputs, ordinary IO/exit versus evidence; side effects | Phase 22's automated tests establish bounded U64 input, one native launch, ordinary streams, separate evidence capture, and explicit independent replay; `TestPhase22READMEContract` pins public forms and limits; general file IO remains unimplemented | Phase 22 closed; extend only for a concrete consumer |
 | Live owned allocation | Acquisition-based obligation conservation; per-operation ABI/destructor; noncopyability | Omitted physical destructor with unchanged events must fail; discard must not erase obligation | M004 acquisition/discharge phase |
 | Transfer/calls/errors | Owner and resource identity across frames; reverse completion order; failed acquisition | Phase 24's ordinary success and typed-error apps, distinct activations, acquisition-derived peers, and physical observer passed on both hosted hosts; general cleanup shapes remain refused | Phase 24 complete; extend only for a selected broader cleanup consumer |
-| Shared/exclusive pointer access | Borrow endpoints, escape/capture refusal, actual C ABI and emitted attributes | Separate family witnesses on macOS/Linux; no unsupported alias/alignment/capture promises | Phase 25 — separate pointer successors and integrated utility |
+| Shared/exclusive pointer access | Borrow endpoints, escape/capture refusal, actual C ABI and emitted attributes | Source and focused local native witnesses cover both families; hosted macOS/Linux receipts remain required. No unsupported alias/alignment/capture promises | Phase 25 evidence aggregate; keep NAT-11/12/13 and EVD-10 open until hosted receipts are bound |
 | Arithmetic and Bool | Typed operators; overflow/divide/remainder rules and C definedness | Boundary expected values, wrong-result controls, interpreter/native agreement; no reliance on C undefined behavior | Following practical-computation milestone |
 | Scalar CFG back edges | Fixed-point state/loans, dynamic occurrence identity, finite oracle exploration | Loop spike before planning; separate application semantics from evidence-budget exhaustion; reject unproved resource/loan carries | Following practical-computation milestone |
 | Byte views/indexing/aggregates | Bounds, initialization, subobject layout/ownership and error paths | Empty/one/max/truncated cases; out-of-bounds controls; only admitted moves/copies | Byte-library capability |
@@ -115,54 +119,54 @@ roadmap does not promise to prove arbitrary foreign C correct.
 
 ## Current three recommendations
 
-1. **Complete the bounded pointer families and utility (Phase 25).**
-   User-visible program: a bounded file-byte utility grown from
-   `examples/phase24/transfer.schway`, with separate shared and exclusive
-   read-copy helper witnesses and a pinned result. Blocker: `emitProgram` still rejects by-pointer
-   function bodies, and no Phase 25 family-specific foreign ABI contract or
-   utility witness is admitted. Smallest complete slice: one bounded helper per
-   family, independent borrow/access checks, positive and conflict/escape
-   controls, and a reproducible utility command. Checker/guarantee changes:
-   family-specific admission and peer validation, conservative interpreter/C
-   behavior, and emitted ABI facts limited to checked promises; add no
-   unsupported `restrict`, `noalias`, alignment, or capture claims. Evidence
-   and debt: NAT-11/12/13, EVD-10, DX-14/15; retain the explicit FFI-03 trust
-   boundary. Owner/next action: Phase 25; run `$gsd-discuss-phase 25`, then
-   plan and execute the smallest witness that exercises both families.
-   Reprioritize if a named consumer needs only one family or the bounded
-   utility cannot be made runnable without a prerequisite outside Phase 25.
-2. **Deliver ordinary scalar computation in the next milestone.** User-visible
-   program: `sum_to_n`, then FizzBuzz from ordinary Schway source with exact
-   output and boundary behavior. Blocker: defined U64 arithmetic/remainder and
-   overflow, comparison/Bool, scalar loop fixed points, and bounded text and
-   decimal output are not implemented. Smallest complete slice: one runnable
-   `sum_to_n` command with bounded input, exact expected output, arithmetic
-   boundaries, and one loop-carried-state mutation control; then use that core
-   for FizzBuzz. Checker/guarantee changes: typed operators with defined C
-   lowering, overflow/error semantics, CFG fixed-point state and loan analysis,
-   and bounded output effects. Evidence/debt: NAT-09, arithmetic/CFG refusal
-   witnesses, independent interpreter/native answers, and changed-assumption
-   controls assigned at next-milestone kickoff. Owner/next action: the
-   post-M004 milestone, after Phase 25 closes. Reprioritize if a selected user
-   program needs arithmetic sooner and can name a smaller complete slice with
-   the same safety and evidence obligations.
+1. **Deliver ordinary scalar computation in Phase 26.** User-visible program:
+   `sum_to_n`, followed by FizzBuzz from ordinary Schway source with exact
+   output and boundary behavior. Current blocker: defined U64 arithmetic and
+   remainder/overflow, comparison/Bool, scalar-loop fixed points, and bounded
+   text/decimal output are absent. Smallest complete slice: one bounded-input
+   `sum_to_n` command with pinned output, arithmetic boundaries, and a
+   loop-carried-state mutation control; reuse that core for FizzBuzz.
+   Checker/guarantee changes: typed operators with defined C behavior,
+   explicit overflow/error semantics, CFG fixed-point state/loan analysis,
+   and bounded output effects. Evidence/debt: NAT-09 and current arithmetic,
+   CFG, and output refusal witnesses; add independent interpreter/native
+   answers and changed-assumption controls. Owner/next action: Phase 26
+   kickoff after M004 acceptance. Reprioritize if a named consumer demonstrates
+   a smaller safe computation slice with equal runnable value.
+2. **Build a bounded byte utility and reusable local module boundary.**
+   User-visible program: a `checksum` command that reads a size-limited file,
+   computes a specified checksum, and returns exact success and error results.
+   Current blocker: byte views/indexing, bounded iteration, arithmetic, and
+   reusable local modules are not admitted. Smallest complete slice: choose one
+   checksum consumer, specify maximum input and empty/truncated behavior, then
+   admit only the byte operations and module imports it needs. Checker/guarantee
+   changes: prove bounds and initialization, analyze loop-carried state and
+   resource loans, preserve cleanup on errors, and define module visibility.
+   Evidence/debt: build on Phase 24 RES-06 and Phase 26 arithmetic/loop tests;
+   use malformed, empty, maximum-size, and wrong-result controls. Owner/next
+   action: post-Phase-26 planning after a checksum consumer is named.
+   Reprioritize if a concrete file tool needs a smaller non-checksum byte API.
 3. **Enable one bounded JSON configuration consumer after a real need is named.**
    User-visible program: read and validate a size-limited JSON config file with
    independently specified success and typed-error results for malformed,
-   truncated, and oversized input. Blocker: general byte views/indexing,
-   arrays/strings, bounded loops, and a reusable module boundary are not
-   admitted; Phase 25 pointer support alone does not provide them. Smallest
-   complete slice: choose one consuming tool, define its schema and byte/depth
-   limits, and implement only the parser forms required by that config with
-   bounds checks and failure cleanup. Checker/guarantee changes: prove bounds
-   and initialization, analyze loop-carried state and resource loans, and
-   preserve owned-buffer cleanup on parse errors; independently mutate
-   truncation, length, and schema cases across interpreter/native runs.
-   Evidence/debt: build on Phase 24's RES-06 typed-error cleanup and define
-   consumer-specific requirement and evidence IDs at milestone kickoff; make no
-   general JSON completeness claim. Owner/next action: post-M004 planning, only
-   after a named Schway tool needs this format. Reprioritize if a real consumer
-   needs another input format or its config can use a smaller bounded format.
+   truncated, and oversized input. Current blocker: general byte views/indexing,
+   arrays/strings, bounded loops, and reusable modules are not admitted; Phase
+   25 pointer support alone does not provide them. Smallest complete slice:
+   choose one consuming tool, define its schema and byte/depth limits, and
+   implement only the parser forms required by that config with bounds checks
+   and failure cleanup. Checker/guarantee changes: prove bounds and
+   initialization, analyze loop-carried state and resource loans, preserve
+   owned-buffer cleanup on parse errors, and independently mutate truncation,
+   length, and schema cases across interpreter/native runs. Evidence/debt:
+   build on Phase 24 RES-06 typed-error cleanup and define consumer-specific
+   requirement/evidence IDs at kickoff; make no general JSON completeness
+   claim. Owner/next action: post-Phase-26 planning, only after a named Schway
+   tool needs this format. Reprioritize if a real consumer needs another input
+   format or its config fits a smaller bounded representation.
+
+For each candidate, the smallest complete slice, checker changes, evidence,
+owner/next action, and reprioritize observation determine whether its ranking
+should change.
 
 The next milestone can then deliver `sum_to_n` and FizzBuzz. Its current
 blockers are defined U64 arithmetic/remainder, comparison/Bool, scalar loop
@@ -206,6 +210,27 @@ and focused suites on Linux/x86_64 and Darwin/arm64 at source SHA
 25s and 22s. No local project tests or scripts were run. The source still
 refuses by-pointer function bodies; Phase 25 owns separate shared/exclusive
 pointer witnesses and the integrated utility.
+
+**2026-10-01 Phase 25 Plan 06 amendment.** Source inspection confirms the
+production emitter admits only the bounded shared and exclusive U64 read-copy
+helpers used by `examples/phase24/transfer.schway`; their manifests make no
+unsupported alias, capture, alignment, or ownership promise. Mutation,
+forwarding, retention, callbacks, nonlocal exits, and wider pointer forms
+remain refused before C serialization. Newly executed local Plan06 checks—the
+focused native contract tests and `sh scripts/verify-phase25.sh`—passed on this
+macOS/arm64 host with Go 1.24.0 and Apple Clang 21.0.0 at source revision
+`f00cdf8` with a modified working tree. Baseline `-O0`, optimized `-O2`, and
+ASan+UBSan native utility runs returned 65/66 and preserved the typed 0x43
+failure before either helper. Reached wrong-result controls, separate
+conflict/escape controls, and pointer manifests also passed. Across the three
+lanes, cold Go-cache min/median/max was 2.44/2.72/2.73s and warm-cache
+min/median/max was 0.27/0.43/0.53s. The full local test suite, race suite,
+`go vet ./...`, and `go build ./...` also passed on macOS/arm64. The Phase 25
+script marks every Linux family/lane row incomplete; these local checks are
+not hosted receipts. Hosted macOS and Linux Phase 25 family-by-lane receipts
+remain pending, so no hosted pass is claimed and EVD-10 remains open.
+Historical receipts are the Phase 24 run 36856048690 and earlier Phase 23
+runs, scoped to their archived source revisions and behaviors.
 
 **2026-09-30 Phase 23 closeout amendment.** Phase 22's verifier passes 5/5
 roadmap truths and its completed objective README UAT is preserved. Phase 23's
