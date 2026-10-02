@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: M005
 milestone_name: Practical Computation
 status: planning
-last_updated: "2026-10-02T17:17:19.165Z"
+last_updated: "2026-10-02T18:11:26.000Z"
 last_activity: 2026-10-02
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -46,12 +46,12 @@ control list is parsed. Do not run project suites locally.
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-28)
+See: .planning/PROJECT.md (updated 2026-10-02)
 
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** M004 complete — all four phases pass verification; next start the practical-computation milestone
+**Current focus:** M005 Practical Computation — Phase 26 checked scalar sum, then Phase 27 exact FizzBuzz and dual-host evidence
 
 **Checkout location (2026-10-01):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. Its branch remains
@@ -59,24 +59,19 @@ checkout, renamed from `schway-public`. Its branch remains
 its uncommitted planning material and private audit records, is preserved in
 the sibling `schway-archive` directory. Keep those private files outside this
 Git tree. The directory move does not change source or phase completion. PR #1
-is integrated. Phases 22–25 all pass fresh verification. The exact next GSD
-command is `$gsd-new-milestone`, which starts planning the practical-computation
-milestone (`sum_to_n`, then FizzBuzz). Preserve completed UAT and do not replay
-completed implementation plans.
+is integrated. Phases 22–25 all pass fresh verification. The
+`$gsd-new-milestone` route recorded at this 2026-10-01 handoff has since
+started M005. Preserve completed UAT and do not replay completed implementation
+plans.
 
 **Durable context (survives context clears — read before re-deriving):**
 
-  - **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `15b3a518` reports 1,573 reachable commits and zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Hosted run 36705094434 passed both host check suites and evidence aggregates. Hosted run 36707529870 passed Ubuntu/macOS checks and evidence aggregates; Phase 23's current verifier passes 11/11. Phase 24's verifier passes 5/5 at source `ed94ef79`; hosted run 36856048690 passed full/race suites and evidence aggregates on Ubuntu and macOS. No local suite or UAT was rerun for Phase 24 closeout. Phase 25's seven plans are complete; run 36971855722 closes all 18 family/host/lane receipts, and the current goal-backward verifier passes 6/6 truths and 5/5 roadmap criteria. PR #1 is merged with successful final-head CI; all M004 phases now pass fresh verification. The exact next command is `$gsd-new-milestone`. Private audit artifacts remain in the original checkout under this quick task's `audit/` directory.
-- `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 24. The separate app
-  route retains and runs a native U64 identity app once with ordinary streams;
-  evidence capture is not verification. Bounded file-byte transfer and
-  typed-error cleanup pass hosted physical-observer checks. General IO and both
-  shared/exclusive by-pointer families remain refused. The macOS receipt has
-  incomplete dependency closure and is non-cacheable.
+  - **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `15b3a518` reports 1,573 reachable commits and zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Hosted run 36705094434 passed both host check suites and evidence aggregates. Hosted run 36707529870 passed Ubuntu/macOS checks and evidence aggregates; Phase 23's current verifier passes 11/11. Phase 24's verifier passes 5/5 at source `ed94ef79`; hosted run 36856048690 passed full/race suites and evidence aggregates on Ubuntu and macOS. No local suite or UAT was rerun for Phase 24 closeout. Phase 25's seven plans are complete; run 36971855722 closes all 18 family/host/lane receipts, and the current goal-backward verifier passes 6/6 truths and 5/5 roadmap criteria. PR #1 is merged with successful final-head CI; all M004 phases now pass fresh verification. M005 planning now supersedes the former `$gsd-new-milestone` next-command pointer. Private audit artifacts remain in the original checkout under this quick task's `audit/` directory.
+- `.planning/LANGUAGE-MATURITY.md` — M005 kickoff source-inspection snapshot
+  and historical Phase 25 receipts. Scalar arithmetic and loops remain refused;
+  Phase 26 owns the first admitted `sum_to_n` witness.
 - `.planning/PRODUCT-ROADMAP.md` — living capability order and current three
-  recommendations. Phases 22–24 are complete; Phase 25 owns separate bounded
-  pointer families and the integrated utility, with scalar computation after
-  M004.
+  recommendations. M004 is complete; M005 practical computation is active.
 
 - `.planning/STANDING-VERDICTS.md` — already-researched verdicts (deps,
   anti-features, the six dispatch sites, why `-flto` is load-bearing).
@@ -119,10 +114,27 @@ completed implementation plans.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-10-02 — Milestone M005 started
+Phase: 26 of 27 (Checked Scalar Sum)
+Plan: TBD
+Status: Roadmap prepared for approval; Phase 26 planning follows
+Last activity: 2026-10-02 — M005 requirements approved and two-phase roadmap prepared
+Progress: [░░░░░░░░░░] 0%
+
+## M005 Planning
+
+The user approved nine M005 requirements on 2026-10-02. Phase 26 owns U64-01,
+FLOW-01, FLOW-02, and APP-07, delivering caller-run `sum_to_n`. Phase 27 owns
+U64-02, APP-08, APP-09, EVD-12, and DX-16, delivering FizzBuzz and the complete
+cross-program evidence and documentation contract. The comparison/Bool subset
+needed by `sum_to_n` starts in Phase 26; U64-02 closes only when remainder and
+zero-divisor behavior are present in Phase 27. Every phase has a runnable
+witness. The exact next action after roadmap approval is `$gsd-plan-phase 26`.
+
+M005 research inspected source and prior receipts but ran no new tests or
+native checks. The M004 Phase 25 dual-host receipt is historical evidence at
+its recorded revision; M005 will need its own macOS/Linux native evidence.
+Resource/loan loop back edges remain refused. Keep the Go standard library,
+existing interpreter, C17/Clang emitter, and application runner.
 
 ## M003 Closeout (archived)
 
@@ -724,12 +736,12 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-02T15:51:54.838Z
-Stopped at: Phase 25 complete — all phases complete
+Last session: 2026-10-02T18:11:26.000Z
+Stopped at: M005 requirements approved; roadmap prepared for review
 Resume file: None
-Next action: `$gsd-new-milestone` to plan the practical-computation milestone.
-Phase 25 was the last implementation phase; all M004 reports pass. Preserve UAT
-and do not replay plans.
+Next action: Present the Phase 26–27 roadmap for approval. After approval,
+run `$gsd-plan-phase 26`. Phase 25 was the last M004 implementation phase;
+preserve its completed UAT and historical receipts.
 Routing resolution — 2026-10-02 (current): Phase 25 plans 25-01 through 25-07
 are complete and summarized. Goal-backward verification passes 6/6 must-have
 truths and 5/5 roadmap criteria; `phase complete --phase 25` updated ROADMAP

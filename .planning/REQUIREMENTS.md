@@ -50,21 +50,24 @@ These capabilities are acknowledged but not part of M005 acceptance.
 
 ## Traceability
 
-The roadmap assigns one phase owner to each requirement.
+Each M005 requirement has one phase owner. Phase 26 implements the
+comparison/Bool subset needed by its runnable sum; U64-02 as a complete
+requirement closes in Phase 27 with remainder and zero-divisor behavior.
+APP-09 and EVD-12 span both programs and close with Phase 27.
 
 | Requirement | Phase | Status |
 |---|---|---|
-| U64-01 | TBD | Pending |
-| U64-02 | TBD | Pending |
-| FLOW-01 | TBD | Pending |
-| FLOW-02 | TBD | Pending |
-| APP-07 | TBD | Pending |
-| APP-08 | TBD | Pending |
-| APP-09 | TBD | Pending |
-| EVD-12 | TBD | Pending |
-| DX-16 | TBD | Pending |
+| U64-01 | Phase 26 | Pending |
+| U64-02 | Phase 27 | Pending |
+| FLOW-01 | Phase 26 | Pending |
+| FLOW-02 | Phase 26 | Pending |
+| APP-07 | Phase 26 | Pending |
+| APP-08 | Phase 27 | Pending |
+| APP-09 | Phase 27 | Pending |
+| EVD-12 | Phase 27 | Pending |
+| DX-16 | Phase 27 | Pending |
 
-**Coverage:** 9 requirements; roadmap ownership pending.
+**Coverage:** 9/9 requirements assigned to exactly one phase.
 
 ---
 *Requirements defined: 2026-10-02*
