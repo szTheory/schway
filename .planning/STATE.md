@@ -8,7 +8,7 @@ status: completed
 stopped_at: Phase 25 complete — all phases complete
 last_updated: "2026-10-02T15:59:03.368Z"
 last_activity: 2026-10-02
-last_activity_desc: Quick task 261002-fab repaired Phase 25 threat-ID routing and finalized M004 handoff
+last_activity_desc: Quick task 261002-gz6 repaired Phase 25 verification commands flagged by the groundedness audit
 state_head: 7a8ed4748e824545025acbd711e540615954fee3
 progress:
   total_phases: 4
@@ -129,7 +129,7 @@ Current Plan: Not started
 Total Plans in Phase: 7
 Plan: 7 of 7
 Status: All phases complete
-Last activity: 2026-10-02 — Completed quick task 261002-fab: repair Phase 25 threat IDs and finalize M004 handoff
+Last activity: 2026-10-02 — Completed quick task 261002-gz6: repair Phase 25 verification commands flagged by groundedness audit
 
 Progress: [██████████] 100%
 
@@ -719,6 +719,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 261002-awt | Link Phase 24 physical-cleanup observer and hosted receipt in README, and pin them in the focused evidence contract. | 2026-10-02 | 48a1fbb | Verified | [261002-awt-link-the-phase-24-native-physical-cleanu](./quick/261002-awt-link-the-phase-24-native-physical-cleanu/) |
 | 261002-cqo | Record merged M004 closeout and live verifier handoff without replaying UAT. | 2026-10-02 | 704199c | complete | [261002-cqo-record-the-merged-m004-closeout-and-repl](./quick/261002-cqo-record-the-merged-m004-closeout-and-repl/) |
 | 261002-fab | Repair Phase 25 threat-ID collisions and finalize M004 handoff | 2026-10-02 | 7a8ed47 | Verified | [261002-fab-repair-duplicate-phase-25-security-threa](./quick/261002-fab-repair-duplicate-phase-25-security-threa/) |
+| 261002-gz6 | Repair Phase 25 verification commands flagged by groundedness audit | 2026-10-02 | 88f39a8 | passed | [261002-gz6-repair-phase-25-verification-commands-fl](./quick/261002-gz6-repair-phase-25-verification-commands-fl/) |
 
 ## Deferred Items
 
