@@ -7,7 +7,7 @@ tags: [phase-25, groundedness, ci]
 status: complete
 completed: 2026-10-02
 tasks: 1
-commits: 0
+commits: 1
 key-files:
   modified:
     - .planning/phases/25-separate-pointer-successors-and-integrated-utility/25-VERIFICATION.md
