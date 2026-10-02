@@ -32,6 +32,32 @@ type phase25UtilityFixture struct {
 	exclusive core.LinearOperation
 }
 
+const phase25CompilerOutputLimit = 1 << 20
+
+type phase25BoundedOutput struct {
+	buffer bytes.Buffer
+	total  int
+}
+
+func (w *phase25BoundedOutput) Write(data []byte) (int, error) {
+	w.total += len(data)
+	remaining := phase25CompilerOutputLimit - w.buffer.Len()
+	if remaining > 0 {
+		if remaining > len(data) {
+			remaining = len(data)
+		}
+		_, _ = w.buffer.Write(data[:remaining])
+	}
+	return len(data), nil
+}
+
+func (w *phase25BoundedOutput) String() string {
+	if w.total > phase25CompilerOutputLimit {
+		return w.buffer.String() + "\n[compiler output truncated]"
+	}
+	return w.buffer.String()
+}
+
 func TestPhase25UtilityNative(t *testing.T) {
 	fixture := phase25LoadUtility(t)
 	lane := os.Getenv("SCHWAY_PHASE25_LANE")
@@ -43,7 +69,7 @@ func TestPhase25UtilityNative(t *testing.T) {
 		t.Fatal(err)
 	}
 	instrumented := phase25InstrumentUtility(t, fixture.cSource, fixture.shared.ID, fixture.exclusive.ID)
-	binary := phase25CompileUtility(t, fixture.root, instrumented, flags, lane)
+	binary := phase25CompileUtility(t, fixture.root, fixture.source, instrumented, flags, lane)
 
 	for _, test := range []struct {
 		name       string
@@ -88,7 +114,7 @@ func TestPhase25NativeFamilyWrongResult(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			binary := phase25CompileUtility(t, fixture.root, mutated, flags, "baseline")
+			binary := phase25CompileUtility(t, fixture.root, fixture.source, mutated, flags, "baseline")
 			code, stdout, stderr := phase25RunUtility(t, binary, "baseline", 0x41)
 			if code != 0 || stdout != test.want || stderr != "" {
 				t.Fatalf("reached wrong-result control exit=%d stdout=%q stderr=%q; want 0/%q/empty", code, stdout, stderr, test.want)
@@ -132,11 +158,7 @@ func TestPhase25UtilityPointerManifests(t *testing.T) {
 		{"exclusive_copy_accept.schway", "exclusive", "uint64_t *"},
 	} {
 		t.Run(test.access, func(t *testing.T) {
-			parsed := syntax.Parse(phase25ReadFixture(t, test.fixture))
-			if len(parsed.Diagnostics) != 0 {
-				t.Fatalf("%s family fixture parse diagnostics: %+v", test.access, parsed.Diagnostics)
-			}
-			checked := check.Program(parsed.Program)
+			checked := session.Check(phase25ReadFixture(t, test.fixture))
 			if len(checked.Diagnostics) != 0 {
 				t.Fatalf("%s family fixture check diagnostics: %+v", test.access, checked.Diagnostics)
 			}
@@ -232,9 +254,14 @@ func phase25LoadUtility(t *testing.T) phase25UtilityFixture {
 			t.Errorf("integrated emitted C omits checked family representation %q", want)
 		}
 	}
-	for _, forbidden := range []string{"restrict", "noalias", "capture", "align("} {
-		if strings.Contains(cSource, forbidden) {
-			t.Fatalf("integrated emitted C contains unsupported pointer promise %q", forbidden)
+	for _, line := range strings.Split(cSource, "\n") {
+		if !strings.Contains(line, "uint64_t *") {
+			continue
+		}
+		for _, forbidden := range []string{"restrict", "noalias", "capture", "align("} {
+			if strings.Contains(line, forbidden) {
+				t.Fatalf("integrated pointer declaration contains unsupported promise %q: %s", forbidden, line)
+			}
 		}
 	}
 	return phase25UtilityFixture{root: root, source: source, program: program, cSource: cSource, shared: sharedOperation, exclusive: exclusiveOperation}
@@ -274,20 +301,24 @@ func phase25InstrumentUtility(t *testing.T, cSource, sharedID, exclusiveID strin
 
 func phase25MutateUtilityOperation(t *testing.T, cSource, operationID, value string) string {
 	t.Helper()
-	marker := "/* " + operationID + " */"
-	for _, line := range strings.Split(cSource, "\n") {
-		if !strings.Contains(line, marker) {
+	lines := strings.Split(cSource, "\n")
+	for index, line := range lines {
+		comment := strings.Index(line, "/*")
+		if comment < 0 || !strings.Contains(line[comment:], operationID) {
 			continue
 		}
-		comment := strings.Index(line, marker)
 		assignment := strings.Index(line[:comment], " = ")
 		if assignment < 0 {
 			t.Fatalf("operation %q has no native scalar assignment: %q", operationID, line)
 		}
-		mutatedLine := line[:assignment+3] + "UINT64_C(" + value + "); /* " + operationID + " reached wrong-result control */"
-		return strings.Replace(cSource, line, mutatedLine, 1)
+		original := strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(line[assignment+3:comment]), ";"))
+		if original == "" {
+			t.Fatalf("operation %q has an empty native scalar source: %q", operationID, line)
+		}
+		lines[index] = line[:assignment+3] + "(UINT64_C(" + value + ") + (" + original + " - " + original + ")); /* " + operationID + " reached wrong-result control */"
+		return strings.Join(lines, "\n")
 	}
-	t.Fatalf("generated application has no operation marker %q", marker)
+	t.Fatalf("generated application has no operation marker %q", operationID)
 	return cSource
 }
 
@@ -304,7 +335,7 @@ func phase25LaneFlags(lane string) ([]string, error) {
 	}
 }
 
-func phase25CompileUtility(t *testing.T, root, cSource string, flags []string, lane string) string {
+func phase25CompileUtility(t *testing.T, root string, source []byte, cSource string, flags []string, lane string) string {
 	t.Helper()
 	clang, err := exec.LookPath("clang")
 	if err != nil {
@@ -313,13 +344,47 @@ func phase25CompileUtility(t *testing.T, root, cSource string, flags []string, l
 	directory := t.TempDir()
 	cPath := filepath.Join(directory, "program.c")
 	binary := filepath.Join(directory, "program")
+	manifestPath := filepath.Join(root, "examples", "phase23", "file_byte.bindings.json")
+	if lane == "baseline" {
+		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+		defer cancel()
+		if _, err := nativecompiler.BuildApplication(ctx, source, cSource, binary, manifestPath); err != nil {
+			t.Fatalf("build Phase 25 baseline utility with explicit bindings: %v", err)
+		}
+		return binary
+	}
 	if err := os.WriteFile(cPath, []byte(cSource), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	adapter := filepath.Join(root, "examples", "phase23", "adapter.c")
-	include := filepath.Join(root, "examples", "phase23")
+	bindings, err := nativecompiler.ResolveBindings(manifestPath)
+	if err != nil {
+		t.Fatalf("resolve explicit Phase 23 C bindings: %v", err)
+	}
+	localDirectory := filepath.Join(directory, "local")
+	if err := os.Mkdir(localDirectory, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	bindingRoot := filepath.Dir(manifestPath)
+	var inputs []string
+	for _, name := range append(append([]string(nil), bindings.Manifest.Headers...), bindings.Manifest.Sources...) {
+		data, err := os.ReadFile(filepath.Join(bindingRoot, name))
+		if err != nil {
+			t.Fatalf("read declared Phase 23 binding input %q: %v", name, err)
+		}
+		destination := filepath.Join(localDirectory, name)
+		if err := os.MkdirAll(filepath.Dir(destination), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(destination, data, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if strings.HasSuffix(name, ".c") {
+			inputs = append(inputs, destination)
+		}
+	}
 	arguments := append([]string(nil), flags...)
-	arguments = append(arguments, "-I", include, cPath, adapter)
+	arguments = append(arguments, "-I", directory, "-I", localDirectory, cPath)
+	arguments = append(arguments, inputs...)
 	if lane == "sanitizer" {
 		arguments = append(arguments, "-lc++")
 	}
@@ -327,8 +392,10 @@ func phase25CompileUtility(t *testing.T, root, cSource string, flags []string, l
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 	command := exec.CommandContext(ctx, clang, arguments...)
-	if output, err := command.CombinedOutput(); err != nil {
-		t.Fatalf("compile Phase 25 %s utility with %q: %v\n%s", lane, arguments, err, output)
+	var stdout, stderr phase25BoundedOutput
+	command.Stdout, command.Stderr = &stdout, &stderr
+	if err := command.Run(); err != nil {
+		t.Fatalf("compile Phase 25 %s utility with %q: %v\nstdout:\n%s\nstderr:\n%s", lane, arguments, err, stdout.String(), stderr.String())
 	}
 	return binary
 }

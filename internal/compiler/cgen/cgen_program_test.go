@@ -2058,7 +2058,39 @@ func phase24TransferProgramForEmitter(t *testing.T) core.Program {
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("transfer fixture checker diagnostics: %+v", checked.Diagnostics)
 	}
-	validated := corevalidate.Validate(checked.Program)
+	// The public example now exercises the integrated Phase 25 utility. Keep
+	// Phase 24 emitter regressions anchored to its exact direct-result shape:
+	// acquire call, byte use, paired release, return.
+	program := checked.Program
+	var main *core.Function
+	for index := range program.Functions {
+		if program.Functions[index].Name == "main" {
+			main = &program.Functions[index]
+			break
+		}
+	}
+	if main == nil || main.Linear == nil || len(program.Functions) != 4 || len(main.Linear.Operations) != 6 || len(main.Linear.Places) != 5 {
+		t.Fatalf("integrated utility fixture no longer matches the expected Phase 25 source shape")
+	}
+	operations := main.Linear.Operations
+	main.Linear.Operations = []core.LinearOperation{operations[0], operations[1], operations[4], operations[5]}
+	main.Linear.Operations[3].SourceID = operations[1].TargetID
+	for index := range main.Linear.Operations {
+		main.Linear.Operations[index].ID = fmt.Sprintf("%s:op:%d", main.ID, index)
+		main.Linear.Operations[index].PointID = fmt.Sprintf("%s:point:linear:%d", main.ID, index)
+	}
+	main.Linear.Places = append([]core.Place(nil), main.Linear.Places[:3]...)
+	phase24Functions := make([]core.Function, 0, 2)
+	for _, function := range program.Functions {
+		if function.Name == "acquire" || function.Name == "main" {
+			phase24Functions = append(phase24Functions, function)
+		}
+	}
+	program.Functions = phase24Functions
+	if len(program.Functions) != 2 || len(main.Linear.Operations) != 4 {
+		t.Fatalf("Phase 24 emitter fixture is not the exact two-function/four-operation direct route")
+	}
+	validated := corevalidate.Validate(program)
 	if !validated.Valid {
 		t.Fatalf("transfer fixture core validation problems: %+v", validated.Problems)
 	}

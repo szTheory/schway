@@ -3,6 +3,7 @@ package cgen_test
 import (
 	"encoding/json"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -87,6 +88,110 @@ func TestPhase25SharedPointerCopyABI(t *testing.T) {
 	}
 }
 
+func TestPhase25TransferredOwnerCallerRefusesNonExactPointerPaths(t *testing.T) {
+	cases := []struct {
+		name   string
+		mutate func(*core.Program)
+	}{
+		{"return shared result", func(program *core.Program) {
+			main := phase25Function(program, "main")
+			main.Linear.Operations[5].SourceID = main.Linear.Operations[2].TargetID
+		}},
+		{"exclusive skips shared result", func(program *core.Program) {
+			main := phase25Function(program, "main")
+			main.Linear.Operations[3].SourceID = main.Linear.Operations[2].SourceID
+		}},
+		{"shared call targets exclusive helper", func(program *core.Program) {
+			main := phase25Function(program, "main")
+			main.Linear.Operations[2].CalleeID = phase25Function(program, "exclusive_copy").ID
+		}},
+		{"release order changes", func(program *core.Program) {
+			main := phase25Function(program, "main")
+			main.Linear.Operations[3], main.Linear.Operations[4] = main.Linear.Operations[4], main.Linear.Operations[3]
+		}},
+		{"extra call", func(program *core.Program) {
+			main := phase25Function(program, "main")
+			main.Linear.Operations = append(main.Linear.Operations, main.Linear.Operations[2])
+		}},
+	}
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			program := phase25UtilityProgram(t)
+			test.mutate(&program)
+			if _, err := cgen.EmitProgramNativeForTest(program); err == nil {
+				t.Fatal("non-exact transferred-owner caller unexpectedly reached application emission")
+			}
+			if cgen.InvocationSerializationReachedForTest() {
+				t.Fatal("non-exact transferred-owner caller reached C serialization")
+			}
+		})
+	}
+}
+
+func TestPhase25PreservesPhase24DirectTransferredOwnerPath(t *testing.T) {
+	program := phase25UtilityProgram(t)
+	main := phase25Function(&program, "main")
+	operations := main.Linear.Operations
+	main.Linear.Operations = []core.LinearOperation{operations[0], operations[1], operations[4], operations[5]}
+	main.Linear.Operations[3].SourceID = operations[1].TargetID
+	for index := range main.Linear.Operations {
+		main.Linear.Operations[index].ID = main.ID + ":op:" + strconv.Itoa(index)
+		main.Linear.Operations[index].PointID = main.ID + ":point:linear:" + strconv.Itoa(index)
+	}
+	main.Linear.Places = append([]core.Place(nil), main.Linear.Places[:3]...)
+	filtered := make([]core.Function, 0, 2)
+	for _, function := range program.Functions {
+		if function.Name == "main" || function.Name == "acquire" {
+			filtered = append(filtered, function)
+		}
+	}
+	program.Functions = filtered
+	generated, err := cgen.EmitApplication(program)
+	if err != nil {
+		t.Fatalf("Phase 24 direct transfer caller was refused: %v", err)
+	}
+	if !strings.Contains(generated, "schway_file_byte_use(") || !strings.Contains(generated, "paired release:") ||
+		strings.Contains(generated, "SCHWAY_SHARED_COPY(") || strings.Contains(generated, "SCHWAY_EXCLUSIVE_COPY(") {
+		t.Fatalf("Phase 24 direct result lowering changed while adding Phase 25 helpers:\n%s", generated)
+	}
+}
+
+func phase25UtilityProgram(t *testing.T) core.Program {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase24", "transfer.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("integrated utility fixture failed to check: %+v", checked.Diagnostics)
+	}
+	program := checked.Program
+	program.Functions = append([]core.Function(nil), program.Functions...)
+	for index := range program.Functions {
+		if program.Functions[index].Linear == nil {
+			continue
+		}
+		linear := *program.Functions[index].Linear
+		linear.Types = append([]core.TypeFact(nil), linear.Types...)
+		linear.Places = append([]core.Place(nil), linear.Places...)
+		linear.Operations = append([]core.LinearOperation(nil), linear.Operations...)
+		linear.Blocks = append([]core.Block(nil), linear.Blocks...)
+		linear.Edges = append([]core.Edge(nil), linear.Edges...)
+		program.Functions[index].Linear = &linear
+	}
+	return program
+}
+
+func phase25Function(program *core.Program, name string) *core.Function {
+	for index := range program.Functions {
+		if program.Functions[index].Name == name {
+			return &program.Functions[index]
+		}
+	}
+	panic("Phase 25 fixture function not found: " + name)
+}
+
 func phase25ExclusiveProgramWithCaller(t *testing.T) core.Program {
 	t.Helper()
 	checked := session.Check(phase25ExclusiveProgram(t))
@@ -114,7 +219,8 @@ func phase25ExclusiveProgramWithCaller(t *testing.T) core.Program {
 }
 
 func TestPhase25SharedPointerABI(t *testing.T) {
-	generated, err := cgen.EmitProgramNativeForTest(phase25SharedProgramWithCaller(t))
+	program := phase25SharedProgramWithCaller(t)
+	generated, err := cgen.EmitProgramNativeForTest(program)
 	if err != nil {
 		t.Fatalf("shared pointer helper was refused: %v", err)
 	}
