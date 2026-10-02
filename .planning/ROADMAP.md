@@ -218,7 +218,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 25-07-PLAN.md — Reconcile Phase 25 validation, security, product-roadmap, and maturity records with the successful hosted dual-host receipt
+- [x] 25-07-PLAN.md — Reconcile Phase 25 validation, security, product-roadmap, and maturity records with the successful hosted dual-host receipt
 
 **Phase status:** implementation plans are complete. Hosted run 36971855722
 passed the macOS/arm64 and Linux/x86_64 foreign/shared/exclusive matrix across
@@ -281,7 +281,7 @@ planned.
 | 22. Native Application Build and Single Execution | 3/3 | Complete    | 2026-09-27 |
 | 23. Live Local Allocation and Discharge | 7/7 | Complete    | 2026-09-30 |
 | 24. Ownership Transfer Through Calls and Errors | 3/3 | Complete    | 2026-10-01 |
-| 25. Separate Pointer Successors and Integrated Utility | 5/6 | In Progress|  |
+| 25. Separate Pointer Successors and Integrated Utility | 7/7 | In Progress|  |
 
 ## Next Action
 

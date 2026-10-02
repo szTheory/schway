@@ -43,20 +43,20 @@ IDs continue existing categories, including reserved historical future IDs.
 
 ### Bounded pointer successors
 
-- [ ] **NAT-11**: The sole production emitter admits a bounded shared plain by-pointer read/copy helper with actual pointer-parameter C, a source-level consumer, independent shared-borrow checking, and its own positive and incompatible-access/escape negative witnesses.
-- [ ] **NAT-12**: The sole production emitter admits a bounded exclusive borrowed-by-pointer read/copy helper with actual pointer-parameter C, a source-level consumer, independent exclusive-borrow checking, and its own positive and conflicting-access/escape negative witnesses.
-- [ ] **NAT-13**: Bounded pointer lowering and its manifests agree on emitted attributes and add no `restrict`, `noalias`, capture, or alignment promise unsupported by checked facts; unsupported mutation, forwarding, retention, callbacks, nonlocal exits, and wider pointer shapes remain structurally refused before C serialization.
+- [x] **NAT-11**: The sole production emitter admits a bounded shared plain by-pointer read/copy helper with actual pointer-parameter C, a source-level consumer, independent shared-borrow checking, and its own positive and incompatible-access/escape negative witnesses.
+- [x] **NAT-12**: The sole production emitter admits a bounded exclusive borrowed-by-pointer read/copy helper with actual pointer-parameter C, a source-level consumer, independent exclusive-borrow checking, and its own positive and conflicting-access/escape negative witnesses.
+- [x] **NAT-13**: Bounded pointer lowering and its manifests agree on emitted attributes and add no `restrict`, `noalias`, capture, or alignment promise unsupported by checked facts; unsupported mutation, forwarding, retention, callbacks, nonlocal exits, and wider pointer shapes remain structurally refused before C serialization.
 
 ### Decisive native evidence
 
 - [x] **EVD-09**: An observer independent of compiler release events establishes actual allocation, post-acquisition use, and destruction before process exit; reached controls for omitted, premature, duplicate, and wrong-resource destruction fail even when reported events remain plausible.
-- [ ] **EVD-10**: Every admitted foreign/shared/exclusive family has its own reproducible macOS and Linux native receipt identifying source/build inputs, compiler, target, flags, expected result, and applicable optimizer/sanitizer lanes; missing host or lane evidence keeps that claim incomplete.
+- [x] **EVD-10**: Every admitted foreign/shared/exclusive family has its own reproducible macOS and Linux native receipt identifying source/build inputs, compiler, target, flags, expected result, and applicable optimizer/sanitizer lanes; missing host or lane evidence keeps that claim incomplete.
 - [x] **EVD-11**: Explicit differential verification uses isolated or replayable inputs and declared foreign outcomes, compares against independent expected answers, and never claims that modeled foreign success proves actual host IO or that process reclamation proves cleanup.
 
 ### Developer usability
 
-- [ ] **DX-14**: From a clean checkout, a developer can follow documented commands to build and run the bounded file-byte utility against two supplied files, observe the expected differing result and an admitted failure, and locate its explicit C bindings and resource-lifetime evidence.
-- [ ] **DX-15**: Unsupported ownership/resource/pointer uses produce stable structured diagnostics with source attribution and an actionable boundary explanation; examples cover moved-from use, discarded ownership, pointer escape, and unsupported cleanup/exit behavior.
+- [x] **DX-14**: From a clean checkout, a developer can follow documented commands to build and run the bounded file-byte utility against two supplied files, observe the expected differing result and an admitted failure, and locate its explicit C bindings and resource-lifetime evidence.
+- [x] **DX-15**: Unsupported ownership/resource/pointer uses produce stable structured diagnostics with source attribution and an actionable boundary explanation; examples cover moved-from use, discarded ownership, pointer escape, and unsupported cleanup/exit behavior.
 
 ## Scope and acceptance rules
 
@@ -158,14 +158,14 @@ No new requirement maps to completed historical Phase 21. All remain Pending.
 | OWN-10 | Phase 24 | Complete |
 | OWN-11 | Phase 24 | Complete |
 | OWN-12 | Phase 24 | Complete |
-| NAT-11 | Phase 25 | Gaps Found |
-| NAT-12 | Phase 25 | Pending |
-| NAT-13 | Phase 25 | Pending |
+| NAT-11 | Phase 25 | Complete |
+| NAT-12 | Phase 25 | Complete |
+| NAT-13 | Phase 25 | Complete |
 | EVD-09 | Phase 24 | Complete |
-| EVD-10 | Phase 25 | Pending |
+| EVD-10 | Phase 25 | Complete |
 | EVD-11 | Phase 22 | Complete |
-| DX-14 | Phase 25 | Pending |
-| DX-15 | Phase 25 | Pending |
+| DX-14 | Phase 25 | Complete |
+| DX-15 | Phase 25 | Complete |
 
 Coverage: 24/24 requirements mapped; zero orphans, zero duplicate owners.
 

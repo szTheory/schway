@@ -6,16 +6,16 @@ current_phase: 25
 current_phase_name: separate-pointer-successors-and-integrated-utility
 current_plan: 6
 status: executing
-stopped_at: Completed 25-06-PLAN.md; local validation passed; hosted EVD-10 matrix pending
-last_updated: "2026-10-02T06:00:16Z"
+stopped_at: Completed 25-07-PLAN.md; hosted dual-host evidence bound; ready for goal-backward verification
+last_updated: "2026-10-02T07:22:52.895Z"
 last_activity: 2026-10-02
 last_activity_desc: Closed Phase 25 quick security repair, regression hardening, and fresh full-suite validation; hosted EVD-10 family-by-lane receipts remain open
-state_head: a4d8373
+state_head: ba1477ec52439e92937f85c29fe6a6c386d1f788
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 19
-  completed_plans: 19
+  total_plans: 20
+  completed_plans: 20
   percent: 75
 ---
 
@@ -122,12 +122,12 @@ next command: `$gsd-discuss-phase 25`.
 
 ## Current Position
 
-Phase: 25 (separate-pointer-successors-and-integrated-utility) — LOCAL IMPLEMENTATION COMPLETE; HOSTED EVIDENCE OPEN
-Current Plan: 6
-Total Plans in Phase: 6
-Plan: 6 of 6
-Status: Implementation plans complete; hosted EVD-10 evidence pending before phase verification can pass
-Last activity: 2026-10-01 — Phase 25 Plan06 local validation completed; hosted dual-host family/lane receipts remain open
+Phase: 25 (separate-pointer-successors-and-integrated-utility) — IMPLEMENTATION AND HOSTED EVIDENCE COMPLETE; VERIFICATION PENDING
+Current Plan: 7
+Total Plans in Phase: 7
+Plan: 7 of 7
+Status: All plans complete; hosted EVD-10 matrix is bound; run goal-backward verifier before phase transition
+Last activity: 2026-10-02 — Phase 25 Plan07 reconciled validation, security, roadmap, and maturity with hosted run 36971855722
 
 Progress: [████████░░] 75%
 
@@ -428,6 +428,7 @@ subset alone.
 | Phase 25 P3 | 45m | 2 tasks | 10 files |
 | Phase 25 P4 | 52min | 2 tasks | 10 files |
 | Phase 25 P05 | 219m | 1 tasks | 10 files |
+| Phase 25 P07 | 7min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -525,6 +526,8 @@ decision history; they no longer describe current status.
 - [Phase 25]: Phase 25 shared U64 copy lowering admits only the exact borrow-copy-return ABI shape and derives all C-facing details from one checked fact.
 - [Phase 25]: The Phase 24 direct-result route remains an explicit two-function/four-operation shape; Phase 25 adds only the exact shared-copy then exclusive-copy result chain.
 - [Phase 25]: Malformed pointer-lowering candidates fail before serialization, while PublicOrigin borrowed views retain their additive path and Match callback candidates remain refusal-eligible.
+- [Phase 25]: Run 36971855722 closes EVD-10 through paired native Linux/x86_64 and macOS/arm64 evidence aggregates at merge revision a90c27c5b432ef6fc59fbafaa68b50a1374ae138.
+- [Phase 25]: Preserve SECURED / ASVS L1, 15/15 mitigations closed, and zero open threats; hosted evidence supplements rather than expands the security audit.
 
 ### Pending Todos
 
@@ -720,11 +723,19 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-02T03:08:16Z
-Stopped at: Completed 25-06-PLAN.md; local validation passed; hosted EVD-10 matrix pending
+Last session: 2026-10-02T07:22:52.868Z
+Stopped at: Completed 25-07-PLAN.md; hosted dual-host evidence bound; ready for goal-backward verification
 Resume file: None
-Next action: run the current Phase 25 tree through the existing hosted dual-host
-CI aggregate, then use `$gsd-execute-phase 25` for verification-only closeout.
+Next action: use `$gsd-execute-phase 25` for verification-only goal-backward
+closeout; do not replay completed plans or local/native UAT.
+Routing resolution — 2026-10-02 (current): Phase 25 plans 25-01 through 25-07
+are complete and summarized. Hosted run 36971855722 passed the checks and
+current evidence aggregate jobs on Linux/x86_64 and macOS/arm64. All 18
+foreign/shared/exclusive × host × lane rows passed at merge revision
+`a90c27c5b432ef6fc59fbafaa68b50a1374ae138`; EVD-10 is closed. Phase 25 is
+ready for goal-backward verification, after which GSD can transition the phase.
+The older 2026-10-01 routing note below is historical and superseded by this
+receipt; its local-only limitations were accurate at that earlier time.
 Routing resolution — 2026-10-01 (current): Phase 25 plans 25-01 through 25-06
 are complete and summarized. The local full and race suites, vet, build,
 groundedness/census checks, README/evidence contracts, and macOS/arm64 baseline,
