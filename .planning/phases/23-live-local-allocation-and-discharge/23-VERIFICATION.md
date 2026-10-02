@@ -1,12 +1,15 @@
 ---
 phase: 23-live-local-allocation-and-discharge
-verified: 2026-10-01T12:28:24Z
+verified: 2026-10-02T14:25:54Z
 status: passed
-score: 5/5 roadmap success criteria verified
+score: 11/11 must-haves verified
 covered_files:
   - .github/workflows/ci.yml
   - .planning/REQUIREMENTS.md
   - .planning/ROADMAP.md
+  - .planning/phases/23-live-local-allocation-and-discharge/23-CONTEXT.md
+  - .planning/phases/23-live-local-allocation-and-discharge/23-RESOURCE-DISCHARGE-CONTRACT.json
+  - .planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md
   - .planning/phases/23-live-local-allocation-and-discharge/23-01-PLAN.md
   - .planning/phases/23-live-local-allocation-and-discharge/23-01-SUMMARY.md
   - .planning/phases/23-live-local-allocation-and-discharge/23-02-PLAN.md
@@ -21,9 +24,6 @@ covered_files:
   - .planning/phases/23-live-local-allocation-and-discharge/23-06-SUMMARY.md
   - .planning/phases/23-live-local-allocation-and-discharge/23-07-PLAN.md
   - .planning/phases/23-live-local-allocation-and-discharge/23-07-SUMMARY.md
-  - .planning/phases/23-live-local-allocation-and-discharge/23-REVIEW.md
-  - .planning/phases/23-live-local-allocation-and-discharge/23-SECURITY.md
-  - .planning/phases/23-live-local-allocation-and-discharge/23-VALIDATION.md
   - cmd/schway/main.go
   - cmd/schway/main_test.go
   - examples/phase23/README.md
@@ -35,28 +35,40 @@ covered_files:
   - internal/compiler/ability/ability.go
   - internal/compiler/cgen/cgen.go
   - internal/compiler/cgen/cgen_program.go
+  - internal/compiler/cgen/cgen_program_test.go
   - internal/compiler/check/check.go
+  - internal/compiler/check/check_test.go
   - internal/compiler/core/core.go
+  - internal/compiler/core/core_convention_absence_test.go
   - internal/compiler/corevalidate/corevalidate.go
+  - internal/compiler/corevalidate/corevalidate_test.go
   - internal/compiler/interp/interp.go
+  - internal/compiler/interp/interp_test.go
   - internal/compiler/native/bindings.go
   - internal/compiler/native/native_app.go
   - internal/compiler/native/native_app_test.go
   - internal/compiler/native/phase23_observer_test.go
+  - internal/compiler/native/testdata/phase23_observer.c
   - internal/compiler/originvalidate/originvalidate.go
+  - internal/compiler/originvalidate/originvalidate_test.go
   - internal/compiler/pathoracle/pathoracle.go
+  - internal/compiler/pathoracle/pathoracle_test.go
   - internal/compiler/session/session.go
   - internal/compiler/session/session_app_verify.go
+  - internal/compiler/session/session_phase23_contract_test.go
+  - internal/compiler/session/session_phase23_model_test.go
+  - internal/compiler/session/session_phase6_test.go
+  - internal/compiler/session/verification_groundedness_test.go
   - scripts/verify-phase23.sh
+  - testdata/phase16/public-emitter-consumers.json
   - testdata/phase23/discard_owner.schway
-covered_digest: "v1:sha256:0675c6277581e232550158b03d2e284406203be69c454526718953579f152722"
+covered_digest: "v1:sha256:e8b93e7d6c6d3308f1ff8ef2124b72f1060c3f6787e34e3b94ce896a78e3a394"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
-  previous_status: gaps_found
-  previous_score: 5/5 roadmap truths verified
-  gaps_closed:
-    - "The configured hosted Ubuntu evidence-aggregate lane has a passing Phase 23 receipt."
+  previous_status: passed
+  previous_score: 5/5 roadmap success criteria
+  gaps_closed: []
   gaps_remaining: []
   regressions: []
 ---
@@ -64,9 +76,9 @@ re_verification:
 # Phase 23: Live Local Allocation and Discharge — Verification Report
 
 **Phase Goal:** A developer can read a caller-selected file byte through a real allocation returned live to Schway and observe its generated local cleanup.
-**Verified:** 2026-10-01T12:28:24Z
+**Verified:** 2026-10-02T14:25:54Z
 **Status:** passed
-**Re-verification:** Yes — freshness refresh against the hosted-tested source revision; no tests or hosted workflows were rerun.
+**Re-verification:** This refresh re-derived must-haves from the current roadmap and all seven plans. The prior report had no `gaps:` list. At 2026-10-02T14:25:54Z, the roadmap wording changed only in the M004 handoff instructions; the Phase 23 goal and five success criteria are unchanged. The covered fingerprint was recomputed. No tests or UAT were rerun for this metadata refresh.
 
 ## Goal Achievement
 
@@ -74,114 +86,125 @@ re_verification:
 
 | # | Truth | Status | Evidence |
 |---|---|---|---|
-| 1 | An opaque noncopyable resource receives bounded malloc storage, remains live through Schway-directed use, yields the independently expected byte, and is physically destroyed before exit. | ✓ VERIFIED | Source inspection: `examples/phase23/file_byte.schway`, `adapter.c`, and `adapter.h` implement separate acquisition, use, and consuming release. `cmd/schway/main_test.go#TestPhase23PublicFileByte` covers caller-selected byte files; `internal/compiler/native/phase23_observer_test.go#TestPhase23ObserverPublicLifecycleAndUseFailure` independently observes allocation, use, cleanup, and the post-acquisition use error. The hosted focused gate passed on Ubuntu and macOS at the tested source SHA. |
-| 2 | Acquire, use, and infallible consuming release each use their own checked signature, operand/failure facts, and release pairing. | ✓ VERIFIED | Source inspection: operation contracts in `core.LinearOperation`, admission/replay in `check`, `corevalidate`, `originvalidate`, and `pathoracle`, emission in `cgen`, and per-symbol C prototype probes in `native/bindings.go`. `TestPhase23OperationABI` and peer/emitter refusal tests are included in the hosted focused gate. |
-| 3 | Empty, maximum-size, oversized, malformed, and failed inputs obey the buffer/error contract; failed acquisition creates no owner and partial storage is cleaned. | ✓ VERIFIED | Source inspection: bounded path/file handling and initialized empty failure owner in `adapter.c`; injected failures and partial cleanup in `native_app_test.go`; public cases in `cmd/schway/main_test.go`. Named `TestPhase23AcquireFailuresInitializeAndFreePartialAllocations` and related acquisition/public tests are exercised by the focused gate. |
-| 4 | Discarded owning success is rejected or immediately destroyed; independent acquisition-seeded validators reject missing, duplicate, wrong-resource, or fabricated cleanup even if every release is removed from candidate core. | ✓ VERIFIED | Independent obligation derivation is present in `corevalidate`, `originvalidate`, and `pathoracle`; source/emitter discard refusals are in `check` and `cgen`. Named peer mutation tests cover all-release-deleted, duplicate, premature, wrong-resource, and fabricated cases and are included in the hosted focused gate. |
-| 5 | Normal completion and a real post-acquisition use/output failure clean each remaining owner once; independent physical observation rejects omitted or premature destruction despite plausible compiler events. | ✓ VERIFIED | `TestPhase23ObserverPublicLifecycleAndUseFailure` executes normal and use-failure paths. `TestPhase23ObserverMutationControlsPreservePlausibleEvents` exercises omitted, premature, duplicate, and wrong-resource physical destruction controls. These tests ran under the passing hosted Phase 23 gate. |
+| 1 | An opaque noncopyable resource receives bounded malloc storage, remains live through Schway-directed use, yields the independently expected byte, and is physically destroyed before exit. | ✓ VERIFIED | Current `scripts/verify-phase23.sh` passed locally on revision `704199c` and hosted on Ubuntu/macOS at `692f791` (no non-planning source changes between those revisions). `TestPhase23ObserverPublicLifecycleAndUseFailure` checks pointer identity and ordered `malloc → use → free → outstanding=0`; the public fixture checks 65/66. |
+| 2 | Acquire, use, and infallible consuming release each use their own checked signature, operand/failure facts, and release pairing. | ✓ VERIFIED | Current focused gate passed `TestPhase23OperationABI` and the `TestPhase23OperationContractRefusalBeforeCSerialization` mutations. The three binding symbols each name their own prototype in `examples/phase23/file_byte.bindings.json` and `adapter.h`; independent peer mutation tests also passed. |
+| 3 | Empty, maximum-size, oversized, malformed, and failed inputs obey the buffer/error contract; failed acquisition creates no owner and partial storage is cleaned. | ✓ VERIFIED | Current focused gate passed `TestPhase23AcquireFailuresInitializeAndFreePartialAllocations` and public path/acquisition cases for empty token, 1-byte and 4096-byte bounds, 4097-byte and embedded-NUL rejection, empty/2-byte/non-regular/unreadable/open-failed input. Adapter failures return a null owner and free partial storage before returning. |
+| 4 | Discarded owning success is rejected or immediately destroyed; independent acquisition-seeded validators reject missing, duplicate, wrong-resource, or fabricated cleanup even if every release is removed from candidate core. | ✓ VERIFIED | Current focused gate passed source/emitter discard refusals and all-release-deleted, duplicate, premature, wrong-resource, and fabricated-release mutations in core, origin, and path peers. Each peer derives the obligation from acquisition. |
+| 5 | Normal completion and a real post-acquisition use/output failure clean each remaining owner once; independent physical observation rejects omitted or premature destruction despite plausible compiler events. | ✓ VERIFIED | Current focused gate passed public 0x41/0x42 normal runs, the real 0x43 typed-use failure, and all four reached physical controls. The observer is separately compiled and its receipt is checked independently of plausible semantic events. The 0x43 receipt puts release before the report boundary. |
+| 6 | The bounded path token accepts 1–4096 bytes while the prior Phase 22 U64 application route remains available. | ✓ VERIFIED | Current Phase 23 public tests cover path bounds. The named `TestPhase22IdentityApplicationBuildAndRunCLI` test passed through `gsd-tools run-with-timeout` on this checkout; it still prints the expected `7`. |
+| 7 | Unsupported copies, moved-from uses, escapes, cross-call transfers, and exits are refused before native serialization; discarded acquisition cannot hide an obligation. | ✓ VERIFIED | Current focused gate passed source refusal and emitter pre-serialization refusal tests for each form, including discard. Cross-call transfer remains refused in Phase 23 as declared. |
+| 8 | The successor contract distinguishes consuming release, preserving borrow, and future transfer; interpreter/model evidence cannot claim host IO or physical cleanup. | ✓ VERIFIED | `23-RESOURCE-DISCHARGE-CONTRACT.json` declares transfer contract-only for Phase 24 and separates structural, model, and native evidence scopes. Current focused gate passed model-only acquire/use failure tests and contract mutation/schema tests. |
+| 9 | Public documentation and independent expected answers cover 0x41/0x42, acquisition errors, and the 0x43 post-acquisition use error with scoped cleanup evidence. | ✓ VERIFIED | Current focused gate passed `TestPhase23ReadmeContract` and `TestPhase23ReadmeExpectedAnswersAreIndependentConstants`. `file_byte.expected.json` contains authored expected stdout, stderr, and exit codes. |
+| 10 | One focused command is wired into both existing native CI host lanes and does not repeat full, race, vet, or sanitizer suites. | ✓ VERIFIED | `.github/workflows/ci.yml` calls `scripts/verify-phase23.sh` once in the `evidence-aggregate` Ubuntu/macOS matrix. The script runs five focused groups only. Hosted run [37005701631](https://github.com/szTheory/schway/actions/runs/37005701631) reports the Phase 23 step successful on both hosts at `692f791`. |
+| 11 | Missing or skipped host evidence is kept incomplete rather than silently treated as a complete multi-host receipt. | ✓ VERIFIED | The script requires Clang and fails on a skipped or unmatched group; it prints `status=incomplete` before execution and reports `status=pass` only for the host it actually ran on. `23-VALIDATION.md` remains `in-progress` / `nyquist_compliant: false`, so its stale pending-host state is not a false pass. The newer hosted run above supplies both host receipts. |
 
-**Score:** 5/5 roadmap success criteria verified (0 behavior-unverified).
+**Score:** 11/11 must-haves verified (0 present, behavior-unverified).
 
 ### Seven-Plan Cross-Check
 
-All seven plan files and summaries were reviewed against their implementation paths and the phase criteria. The named Phase 23 tests exist in the source and the hosted `scripts/verify-phase23.sh` step passed, supplying current behavioral evidence for the testable claims.
+All seven plans and all seven summaries were read and mapped to the roadmap criteria plus plan-specific truths above. The plan artifacts/tests are current; historical `.lang` names in early plan snapshots reflect the later coordinated rename, while the implementation and current README use `.schway`.
 
-| Plan | Claim checked against implementation/evidence | Result |
+| Plan | Current evidence cross-check | Status |
 |---|---|---|
-| 23-01 | Public retained file-byte route, distinct operation contracts, and 0x41/0x42 expected outputs | ✓ VERIFIED |
-| 23-02 | Independent acquire-seeded core, origin, and path validation plus reached mutations | ✓ VERIFIED |
-| 23-03 | Discard/copy/moved-from/escape/unsupported-exit refusals before C serialization | ✓ VERIFIED |
-| 23-04 | Bounded input, typed acquisition failures, no owner on failure, and partial cleanup | ✓ VERIFIED |
-| 23-05 | Interpreter outcomes remain model-only and successor ownership contract distinguishes release, borrow, and transfer | ✓ VERIFIED |
-| 23-06 | Independent native allocation/use/free observer and reached physical mutation controls | ✓ VERIFIED |
-| 23-07 | Published runnable witness, expected answers, and focused macOS/Linux CI integration | ✓ VERIFIED |
+| 23-01 | Public retained app, 0x41/0x42 values, separate operation contracts, C prototype/layout checks | ✓ VERIFIED |
+| 23-02 | Acquire-seeded core/origin/path obligations and reached lifecycle/contract mutations | ✓ VERIFIED |
+| 23-03 | Discard/copy/moved-from/escape/call/exit refusals before C emission | ✓ VERIFIED |
+| 23-04 | Bounded input, typed failures, no owner on failure, descriptor and partial-allocation cleanup | ✓ VERIFIED |
+| 23-05 | Model-only outcomes and release/borrow/transfer contract | ✓ VERIFIED |
+| 23-06 | Independent physical observer, use-error cleanup, and four reached destruction controls | ✓ VERIFIED |
+| 23-07 | Public instructions/expected answers, focused script, and two-host CI wiring/receipts | ✓ VERIFIED |
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |---|---|---|---|
-| `examples/phase23/file_byte.schway` | Public checked local-owner flow | ✓ VERIFIED | Source-constructible opaque owner and distinct acquire, borrowed use, and consuming release operations. |
-| `examples/phase23/adapter.c`, `adapter.h`, `file_byte.bindings.json` | Bounded adapter and explicit pinned ABI | ✓ VERIFIED | Adapter reads caller path, returns live allocation, exposes contracted use/free operations, and is compiled against per-symbol declarations. |
-| `internal/compiler/{check,corevalidate,originvalidate,pathoracle,cgen}` | Admission, independent validation, and sole emission | ✓ VERIFIED | Each layer has phase-specific validation/refusal coverage; independent peers seed obligations from acquisition operations. |
-| `internal/compiler/native/phase23_observer_test.go` | Physical lifetime evidence | ✓ VERIFIED | Independently observes malloc/use/free/exit and rejects reached lifecycle mutations. |
-| `scripts/verify-phase23.sh` and `.github/workflows/ci.yml` | Focused host evidence | ✓ VERIFIED | Script is wired in `current evidence aggregate` for Ubuntu and macOS; both hosted invocations passed. |
-| `examples/phase23/README.md` and expected-answer fixture | Clean-checkout usage and independent expected results | ✓ VERIFIED | Contract tests are among the hosted focused gate. |
+| `examples/phase23/file_byte.schway` | Public checked owner path | ✓ VERIFIED | Source acquires a `FileByteOwner`, borrows it for use, and generated local cleanup consumes the owner. |
+| `examples/phase23/adapter.c`, `adapter.h`, `file_byte.bindings.json` | Bounded adapter and explicit ABI | ✓ VERIFIED | Adapter reads one regular-file byte plus EOF, returns malloc-backed storage, and exposes separate acquire/use/release functions with target layout assertions. |
+| `internal/compiler/{check,corevalidate,originvalidate,pathoracle,cgen}` | Admission, independent derivation, and sole emission | ✓ VERIFIED | Source and emitter refusals plus acquire-seeded peer mutations passed in the focused gate. |
+| `internal/compiler/native/testdata/phase23_observer.c` and `phase23_observer_test.go` | Physical lifetime evidence | ✓ VERIFIED | Separate observer tracks pointer identity, order, outstanding allocations, and reached invalid destructor attempts. |
+| `examples/phase23/README.md`, `file_byte.expected.json` | Reproducible public witness | ✓ VERIFIED | Current documentation contract test passes and expected answers are fixed constants. |
+| `scripts/verify-phase23.sh`, `.github/workflows/ci.yml` | Focused native host gate | ✓ VERIFIED | Gate passes locally and in both hosted matrix jobs; no expensive suites are duplicated in the script. |
+| `23-RESOURCE-DISCHARGE-CONTRACT.json` | Successor ownership/evidence contract | ✓ VERIFIED | Contract-only transfer is explicitly separated from Phase 23 local release behavior. |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |---|---|---|---|---|
-| `cmd/schway/main.go` | native retained app runner | CLI dispatch | WIRED | Public `TestPhase23PublicFileByte` invokes the path with caller-selected files. |
-| Generated native entry | checked acquire/use/release | `.schway` source plus manifest | WIRED | Public and independent observer tests exercise the emitted app and local cleanup. |
-| Foreign operation contract | adapter declaration | per-symbol compiled ABI probe | WIRED | `TestPhase23OperationABI` covers acquire, use, and release prototypes. |
-| Independent acquire operation | peer-derived obligation | core/origin/path replay | WIRED | Peer tests and mutation controls exercise discharged and invalid paths. |
-| Ubuntu/macOS evidence aggregate | `scripts/verify-phase23.sh` | workflow step | WIRED | Hosted job metadata records the named step successful on both hosts. |
+| `cmd/schway` | retained native app runner | CLI build/run dispatch | WIRED | `TestPhase23PublicFileByte` exercises caller-selected paths and expected results. |
+| `.schway` source | checked foreign operation facts | source checker → validated core | WIRED | Focused source, operation ABI, and peer groups pass. |
+| checked operations | `adapter.c` functions | manifest symbols and per-symbol prototypes | WIRED | Build tests compile the declared prototypes and native public tests invoke them. |
+| successful acquire | peer owner obligation | core/origin/path acquisition-derived replay | WIRED | Removing all candidate releases still fails all three independent peers. |
+| emitted cleanup | actual physical release | adapter hooks → separately compiled observer | WIRED | Native receipts require same-pointer use and release before normal return or error reporting. |
+| CI evidence matrix | focused Phase 23 script | one step per Ubuntu/macOS job | WIRED | Hosted run 37005701631 records successful Phase 23 steps on both hosts. |
 
 ### Data-Flow Trace (Level 4)
 
 | Artifact | Data variable | Source | Produces real data | Status |
 |---|---|---|---|---|
-| File-byte result | owner pointer and loaded byte | Caller file → adapter read → malloc-backed owner → Schway-directed use | Yes | ✓ FLOWING |
-| Generated cleanup | owner pointer | Matching consuming release → adapter `free` | Yes; observed independently in native process | ✓ FLOWING |
+| File-byte result | `owner.data`, then byte result | caller-selected file → `read` → `malloc` allocation → borrowed adapter dereference → Schway U64 output | Yes; current native tests compare independent 65/66 answers | ✓ FLOWING |
+| Cleanup obligation | owner pointer | successful acquisition → local owner → checked consume operation → adapter `free` | Yes; separate observer matches pointer identity and zero outstanding allocations | ✓ FLOWING |
+| Interpreter outcome | modeled owner/value | deterministic supplied operation outcomes | Does not represent host file IO or physical cleanup | ✓ MODEL-ONLY (correctly scoped) |
 
 ### Behavioral Spot-Checks
 
-No local project suite or project script was run during this report refresh. Behavioral evidence is the hosted CI receipt below at source revision `ed94ef7972b25deb85ab90fafbf3403dc31629f5`. Per the supplied execution record, implementation sources are unchanged since that run; the local checkout is at `ee1190031484dfb7e468db0b597d954802c06b8b` and its current uncommitted changes are planning metadata only. The hosted receipt is historical evidence, not a run performed during this refresh.
-
 | Behavior | Command/evidence | Result | Status |
 |---|---|---|---|
-| Full CI checks | Hosted workflow run [36856048690](https://github.com/szTheory/schway/actions/runs/36856048690), `checks` jobs on Ubuntu and macOS | Vet, build, full tests, and race suites passed on both hosts at `ed94ef7972b25deb85ab90fafbf3403dc31629f5` | ✓ PASS (historical hosted receipt) |
-| Phase 23 focused evidence aggregate | Same hosted run, `current evidence aggregate` on Ubuntu and macOS, step `scripts/verify-phase23.sh` | Step passed on both hosts at `ed94ef7972b25deb85ab90fafbf3403dc31629f5` | ✓ PASS (historical hosted receipt) |
+| Current Phase 23 focused gate | `GOCACHE=/tmp/schway-phase23-verification-cache node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 30 -- sh scripts/verify-phase23.sh` | Exit 0, 21 seconds, Darwin/arm64, Go 1.24.0, Apple Clang 21.0.0, revision `704199c`; all five groups ran with no skips | ✓ PASS |
+| Phase 22 route preserved | `GOCACHE=/tmp/schway-phase23-verification-cache node "$HOME/.codex/gsd-core/bin/gsd-tools.cjs" run-with-timeout 10 -- go test ./cmd/schway -run '^TestPhase22IdentityApplicationBuildAndRunCLI$' -count=1` | Exit 0; expected `7` route remains runnable | ✓ PASS |
+| Current two-host focused gate | Hosted CI run [37005701631](https://github.com/szTheory/schway/actions/runs/37005701631), head `692f791` | Phase 23 step passed on Ubuntu and macOS; current checkout descends from that commit with no intervening non-planning changes | ✓ PASS (hosted receipt) |
 
 ### Probe Execution
 
 | Probe | Command | Result | Status |
 |---|---|---|---|
-| `scripts/verify-phase23.sh` | Hosted workflow step on Ubuntu and macOS | Both step conclusions `success` in run `36856048690`, source SHA `ed94ef7972b25deb85ab90fafbf3403dc31629f5` | PASS (historical hosted receipt) |
-
-The optional validation-corpus receipt job was skipped by workflow configuration. It is outside Phase 23's hosted Ubuntu focused-evidence criterion and is not treated as a missing Phase 23 receipt.
-
-Historical/local receipts retained from the earlier validation record (not rerun during this refresh):
-
-| Receipt | Environment and revision | Result | Scope |
-|---|---|---|---|
-| Focused aggregate, 2026-09-28 | macOS Darwin/arm64, revision `c50430d9fa1490b393c5d22805f094787ee99186` | Pass, 8 s | Local focused Phase 23 evidence after the close-failure fix. |
-| Focused aggregate, 2026-09-28 | Local Docker Linux ARM64, Go 1.24.13, Debian Clang 14.0.6, revision `c50430d` | Pass, 14 s | Container host evidence; not a hosted Ubuntu receipt. |
-| Full Go suite, 2026-09-28 | Local macOS after the close-failure fix | Pass (historical) | Distinct from the hosted run and the focused host receipts. |
+| `scripts/verify-phase23.sh` | `sh scripts/verify-phase23.sh` on current checkout and through hosted `evidence-aggregate` matrix | Current Darwin run exit 0, 21 seconds; hosted Ubuntu and macOS steps both successful at `692f791` | PASS |
 
 ### Requirements Coverage
 
 | Requirement | Source plans | Description | Status | Evidence |
 |---|---|---|---|---|
-| FFI-03 | 01, 02, 03, 05, 07 | Each foreign operation has its own checked signature, operand/failure facts, and release pairing | ✓ SATISFIED | Operation contracts, independent peers, compiled ABI probes, hosted focused gate. |
-| RES-04 | 01, 02, 04, 05, 06, 07 | Real bounded allocation remains live and supplies caller-selected byte through Schway use | ✓ SATISFIED | Public success tests and independent physical observer; hosted Ubuntu/macOS focused receipts. |
-| RES-07 | 01, 04, 06, 07 | Failed acquisition creates no owner and adapter cleans partial allocation under published bounds | ✓ SATISFIED | Source and injected failure cases; hosted focused gate. |
-| RES-08 | 03, 07 | Discarded owning acquisition is refused or immediately consumed | ✓ SATISFIED | Checker/emitter refusal tests; hosted focused gate. |
-| RES-09 | 02, 03, 06, 07 | Independent validation rejects invalid or missing cleanup from acquire-derived obligation | ✓ SATISFIED | Peer mutation tests and physical observer controls; hosted focused gate. |
+| FFI-03 | 01, 02, 03, 05, 07 | Each foreign operation uses its own checked signature, operand/failure facts, and release pairing | ✓ SATISFIED | Operation ABI probes, per-operation refusal mutations, independent peers, and public native build. |
+| RES-04 | 01, 02, 04, 05, 06, 07 | Real bounded allocation remains live and supplies caller-selected byte through Schway use | ✓ SATISFIED | Public results and independent pointer lifecycle observer; hosted/current focused gate. |
+| RES-07 | 01, 04, 06, 07 | Failed acquisition creates no owner and adapter cleans partial allocation under published bounds | ✓ SATISFIED | Native fault injection and public boundary cases pass. |
+| RES-08 | 03, 07 | Discarded owning acquisition is refused or immediately consumed | ✓ SATISFIED | Checker/emitter discard refusal tests pass. |
+| RES-09 | 02, 03, 06, 07 | Independent validation rejects missing or invalid cleanup from acquisition-derived obligation | ✓ SATISFIED | Core/origin/path mutations and physical observer controls pass. |
 
-No additional `REQUIREMENTS.md` item is assigned to Phase 23 outside these five; no mapped requirement is orphaned from the plans.
+All requirements assigned to Phase 23 are listed above; no additional requirement is mapped to this phase outside the plans.
+
+### Test Quality Audit
+
+| Test File | Linked requirement | Active | Skipped | Circular | Assertion level | Verdict |
+|---|---|---:|---:|---|---|---|
+| `cmd/schway/main_test.go` | RES-04, RES-07 | Yes | 0 in run | No | Public input/output and failure values | ✓ ADEQUATE |
+| `internal/compiler/native/native_app_test.go` | FFI-03, RES-04, RES-07 | Yes | 0 in run | No | Prototype/layout and acquisition failure behavior | ✓ ADEQUATE |
+| `internal/compiler/native/phase23_observer_test.go` | RES-04, RES-09 | Yes | 0 in run | No | Ordered pointer lifecycle and reached physical mutations | ✓ ADEQUATE |
+| `internal/compiler/corevalidate/corevalidate_test.go`, `originvalidate_test.go`, `pathoracle_test.go` | FFI-03, RES-09 | Yes | 0 | No | Reached positive/negative ownership mutations | ✓ ADEQUATE |
+| `internal/compiler/session/session_phase23_contract_test.go`, `session_phase23_model_test.go` | FFI-03, RES-04, RES-07 | Yes | 0 | No | Contract/schema mutations and model/native evidence separation | ✓ ADEQUATE |
+
+The ABI unit test contains a Clang-unavailable `t.Skip` fallback, but the focused script requires Clang before running and fails on any `--- SKIP:` output. Current local and hosted runs did not skip it. Test input files are generated by the harness; expected public answers come from checked-in authored constants, not from the system under test. Disabled tests linked to these requirements: 0. Circular expected-value generation: 0. Insufficient assertions: 0.
 
 ### Anti-Patterns Found
 
 | File | Line | Pattern | Severity | Impact |
-|---|---|---|---|---|
-| — | — | No blocking stub or unreferenced debt marker found in the inspected Phase 23 implementation paths. | — | — |
+|---|---:|---|---|---|
+| `internal/compiler/check/check.go` | 4644 | Comment contains “placeholder field” | Info | It describes an existing layout field; no placeholder implementation or user-visible stub. |
+| `internal/compiler/native/testdata/phase23_observer.c` | 30, 55 | `return NULL` | Info | Real allocator failure / observer input guard paths, not empty implementations. |
+
+No unreferenced `TBD`, `FIXME`, or `XXX` markers, user-visible placeholders, empty handlers, or stub data paths were found in the Phase 23 implementation files. The empty collections returned by adjacent compiler helpers are typed structural values, not rendered defaults or absent Phase 23 data.
 
 ### Human Verification Required
 
-None. The phase defines observable behavior through the public command, native observer, and independent negative controls; hosted runs exercise those tests. No visual, subjective UX, or external service behavior is required.
+None. This phase’s acceptance criteria are objective CLI, ABI, model-scope, peer-mutation, and native lifetime behaviors. Current automated evidence covers both requested host lanes. No conversational UAT was replayed.
 
 ### Gaps Summary
 
-The prior report's only gap (a passing hosted Phase 23 evidence aggregate) is closed. Hosted run [36856048690](https://github.com/szTheory/schway/actions/runs/36856048690) passed the full vet/build/test/race checks and the Phase 23 focused script on Ubuntu and macOS at source SHA `ed94ef7972b25deb85ab90fafbf3403dc31629f5`. This is a historical hosted receipt; no tests, probes, or hosted workflows were rerun for this refresh. The current checkout is `ee1190031484dfb7e468db0b597d954802c06b8b`; per the supplied run record, implementation sources are unchanged since the tested revision, while current uncommitted changes are planning metadata only. The tested source commit object is unavailable in this checkout, so no local commit-to-commit comparison was possible. The covered digest was regenerated with `gsd_run query verification.fingerprint` over the exact existing `covered_files` list. No Phase 23 UAT was created or replayed. The optional validation-corpus receipt remains outside this phase's hosted Ubuntu/macOS focused-evidence criterion.
-
-Evidence classes are kept distinct: source inspection establishes wiring and implementation shape; the 2026-09-30 hosted run is the current behavioral/CI receipt; earlier local macOS/Linux-container and full-suite receipts remain historical and were not rerun. The Phase 23 goal and its five roadmap success criteria are achieved.
+No Phase 23 goal or plan must-have remains open. The prior report’s hosted run is superseded by the newer successful two-host run 37005701631, and the exact current checkout also passes the local focused gate. `23-VALIDATION.md` still says the hosted Ubuntu receipt is pending; the newer run demonstrates that this validation note is stale, while its `in-progress` status prevents a false completion claim. No source, roadmap, state, requirements, or other phase files were changed during this refresh.
 
 ### Decision Coverage
 
-The decision-coverage query reports all 6 trackable CONTEXT.md decisions honored, with no unhonored decisions. This non-blocking check does not affect status.
+The decision-coverage query reports all 6 trackable `23-CONTEXT.md` decisions honored, with none unhonored. This non-blocking check does not affect status.
 
 ---
 
-_Verified: 2026-10-01T12:28:24Z_
+_Verified: 2026-10-02T14:25:54Z_
 _Verifier: the agent (gsd-verifier)_

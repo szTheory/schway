@@ -6,9 +6,9 @@ current_phase: 25
 current_plan: Not started
 status: completed
 stopped_at: Phase 25 complete — all phases complete
-last_updated: "2026-10-02T12:10:00.799Z"
+last_updated: "2026-10-02T13:49:43.000Z"
 last_activity: 2026-10-02
-last_activity_desc: Phase 25 complete
+last_activity_desc: Quick task 261002-cqo recorded merged M004 and live verifier handoff
 state_head: f2707971125ab474a6e26dcced7d41f7519f8961
 progress:
   total_phases: 4
@@ -56,7 +56,7 @@ See: .planning/PROJECT.md (updated 2026-09-28)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** M004 closeout — Phase 25 just finished; refresh stale Phase 22–24 verification through the live GSD resolver
+**Current focus:** M004 closeout — Phase 25 just finished; refresh stale Phase 23 and 25 reports through GSD verification gates
 
 **Checkout location (2026-10-01):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. Its branch remains
@@ -64,8 +64,10 @@ checkout, renamed from `schway-public`. Its branch remains
 its uncommitted planning material and private audit records, is preserved in
 the sibling `schway-archive` directory. Keep those private files outside this
 Git tree. The directory move does not change source or phase completion. PR #1
-is integrated. The next GSD command is `$gsd-execute-phase 22` to refresh the
-earliest stale verifier report; do not reopen Phase 25.
+is integrated. Phases 22 and 24 pass fresh verification; Phase 23 and Phase 25
+reports are stale after planning-record edits. The next GSD command is
+`$gsd-execute-phase 23`; it resumes at verifier gates without replaying plans
+or UAT. Re-query after it passes and refresh Phase 25 if it remains stale.
 
 **Durable context (survives context clears — read before re-deriving):**
 
@@ -127,7 +129,7 @@ Current Plan: Not started
 Total Plans in Phase: 7
 Plan: 7 of 7
 Status: All phases complete
-Last activity: 2026-10-02 — Phase 25 complete
+Last activity: 2026-10-02 — Completed quick task 261002-cqo: record M004 merge and live verifier handoff
 
 Progress: [██████████] 100%
 
@@ -715,6 +717,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 261002-4wy | Regenerate the validation corpus run record and manifest from the current consumer-derived pair list after Phase 25 validation became eligible; preserve the fail-closed test gate and verify the isolated test plus full Go suite. | 2026-10-02 | 76f1b2e | Verified | ./quick/261002-4wy-regenerate-the-validation-corpus-run-rec/ |
 | 261002-ahx | Record shift-left verification defaults and automate Phase 25 evidence-index link verification. | 2026-10-02 | 123f8a6 | Verified | [261002-ahx-record-shift-left-verification-as-the-de](./quick/261002-ahx-record-shift-left-verification-as-the-de/) |
 | 261002-awt | Link Phase 24 physical-cleanup observer and hosted receipt in README, and pin them in the focused evidence contract. | 2026-10-02 | 48a1fbb | Verified | [261002-awt-link-the-phase-24-native-physical-cleanu](./quick/261002-awt-link-the-phase-24-native-physical-cleanu/) |
+| 261002-cqo | Record merged M004 closeout and live verifier handoff without replaying UAT. | 2026-10-02 | 704199c | complete | [261002-cqo-record-the-merged-m004-closeout-and-repl](./quick/261002-cqo-record-the-merged-m004-closeout-and-repl/) |
 
 ## Deferred Items
 
@@ -731,8 +734,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 Last session: 2026-10-02T07:22:52.868Z
 Stopped at: Phase 25 complete — all phases complete
 Resume file: None
-Next action: `$gsd-execute-phase 22` to refresh the earliest stale verifier
-report. Phase 25 is the phase just finished; do not replay its plans or UAT.
+Next action: `$gsd-execute-phase 23` to refresh its stale covered-input report
+through GSD verification gates; then refresh Phase 25 if it remains stale.
+Phase 25 is the phase just finished; do not replay plans or UAT.
 Routing resolution — 2026-10-02 (current): Phase 25 plans 25-01 through 25-07
 are complete and summarized. Goal-backward verification passes 6/6 must-have
 truths and 5/5 roadmap criteria; `phase complete --phase 25` updated ROADMAP
@@ -751,17 +755,15 @@ whose overall conclusion and `checks` plus `current evidence aggregate` jobs
 are successful on Ubuntu and macOS. Keep the final PR head, CI receipt, and
 squash commit as distinct identifiers. `state.json` marks Phases 22–25
 complete and advertises `/gsd:new-milestone`; the live `init.progress` resolver
-currently selects Phase 22 because `verification.status` reports stale for
-Phases 22–25. `init.execute-phase` confirms 0 incomplete plans for 22 (3/3),
-23 (7/7), and 24 (3/3). Phase 22's objective README contract UAT remains
-complete 1/1; Phase 23 and Phase 24 reports say no human verification is
-required. Preserve Phase 22 UAT. After each refresh, re-query `init.progress`;
-refresh the earliest stale phase through `$gsd-execute-phase`, continuing
-through 23, 24, and 25 only if each remains stale when it becomes next. The
-ROADMAP prose edit changed a file listed in Phase 25's `covered_files`, so its
-report also needs a verifier-only freshness refresh. This does not reopen Phase
-25 implementation or UAT. Use `$gsd-new-milestone` only after the live resolver
-permits it. Do not route to `$gsd-verify-work` or replay any plans.
+currently selects Phase 23, followed by Phase 25; `init.execute-phase` confirms
+zero incomplete plans for all four phases. Phase 22 and 24 pass fresh
+verification. Phase 23's covered-input digest became stale when the final
+ROADMAP handoff wording changed; its earlier 11/11 goal check remains useful
+evidence but is not a current report. Phase 22's objective README contract UAT
+remains complete 1/1; preserve it. Run `$gsd-execute-phase 23`, re-query, then
+refresh Phase 25 if it remains stale. Both commands resume at verifier gates
+without replaying plans or UAT. After `init.progress` passes, use
+`$gsd-new-milestone`. Do not route to `$gsd-verify-work` or replay plans.
 Routing resolution — 2026-10-01 (historical; superseded by 2026-10-02 closeout): Phase 25 plans 25-01 through 25-06
 are complete and summarized. The local full and race suites, vet, build,
 groundedness/census checks, README/evidence contracts, and macOS/arm64 baseline,
@@ -863,7 +865,11 @@ Unchanged by this pass: arithmetic, iteration, and strings/arrays remain **on no
 roadmap at all** — the maturity file's most important standing entry. M003 does
 not exist yet (`MILESTONES.md` holds M001 only).
 
-## Operator Next Steps
+## Historical Operator Next Steps (undated; superseded 2026-10-02)
+
+The following Phase 23 instruction is retained as historical context. It was
+completed and is superseded by the current M004 closeout and live verifier
+handoff above.
 
 - Continue with `$gsd-discuss-phase 23 --auto` to lock the live allocation witness,
   bounded input contract, and physical cleanup evidence before planning.
