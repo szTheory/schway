@@ -1,6 +1,6 @@
 ---
 phase: separate-pointer-successors-and-integrated-utility
-verified: "2026-10-02T02:23:56Z"
+verified: "2026-10-02T03:08:16Z"
 status: gaps_found
 score: 4/5 roadmap success criteria verified
 covered_files:
@@ -46,7 +46,7 @@ covered_files:
   - internal/compiler/pathoracle/pathoracle_test.go
   - internal/compiler/session/session_admission_divergence_test.go
   - internal/compiler/session/verification_groundedness_test.go
-covered_digest: "v1:sha256:8207e637325a3b7f5f8f1792924e18684f9e0d5b80468a852ef92114f59de3b5"
+covered_digest: "v1:sha256:af771080075c437fcd935121b19a0a247e7cdd8ce72ce1c8f7df6d475d65c16d"
 behavior_unverified: 0
 overrides_applied: 0
 ---
@@ -54,7 +54,7 @@ overrides_applied: 0
 # Phase 25: Separate Pointer Successors and Integrated Utility — Verification Report
 
 **Phase Goal:** A developer can use separately checked shared and exclusive read-copy pointer helpers in the documented native utility, with reproducible evidence for each admitted family.
-**Verified:** 2026-10-02T02:23:56Z
+**Verified:** 2026-10-02T03:08:16Z
 **Status:** gaps_found
 **Re-verification:** Initial goal-backward review after all six implementation plans.
 
@@ -127,5 +127,5 @@ One acceptance gap remains: the current source revision must run through the exi
 
 ---
 
-_Verified: 2026-10-02T02:23:56Z_
+_Verified: 2026-10-02T03:08:16Z_
 _Verifier: local goal-backward review_

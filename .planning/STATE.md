@@ -7,10 +7,10 @@ current_phase_name: separate-pointer-successors-and-integrated-utility
 current_plan: 6
 status: executing
 stopped_at: Completed 25-06-PLAN.md; local validation passed; hosted EVD-10 matrix pending
-last_updated: "2026-10-02T02:23:56Z"
+last_updated: "2026-10-02T03:08:16Z"
 last_activity: 2026-10-01
 last_activity_desc: Completed Phase 25 Plan06 and passed local full, race, vet, build, and macOS evidence checks; hosted family-by-lane receipts remain open
-state_head: f00cdf843bb3b7ed93948a47d3b2acd4af3085af
+state_head: a4d8373
 progress:
   total_phases: 4
   completed_phases: 3
@@ -69,7 +69,7 @@ next command: `$gsd-discuss-phase 25`.
 
 **Durable context (survives context clears — read before re-deriving):**
 
-  - **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `15b3a518` reports 1,573 reachable commits and zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Hosted run 36705094434 passed both host check suites and evidence aggregates. Hosted run 36707529870 passed Ubuntu/macOS checks and evidence aggregates; Phase 23's verifier passes 5/5. Phase 24's verifier passes 5/5 at source `ed94ef79`; hosted run 36856048690 passed full/race suites and evidence aggregates on Ubuntu and macOS. No local suite or UAT was rerun for Phase 24 closeout. Phase 25 is next. Private audit artifacts remain in the original checkout under this quick task's `audit/` directory.
+  - **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `15b3a518` reports 1,573 reachable commits and zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Hosted run 36705094434 passed both host check suites and evidence aggregates. Hosted run 36707529870 passed Ubuntu/macOS checks and evidence aggregates; Phase 23's verifier passes 5/5. Phase 24's verifier passes 5/5 at source `ed94ef79`; hosted run 36856048690 passed full/race suites and evidence aggregates on Ubuntu and macOS. No local suite or UAT was rerun for Phase 24 closeout. Phase 25's six implementation plans and local checks are complete; hosted family-by-lane receipts remain open. Private audit artifacts remain in the original checkout under this quick task's `audit/` directory.
 - `.planning/LANGUAGE-MATURITY.md` — refreshed after Phase 24. The separate app
   route retains and runs a native U64 identity app once with ordinary streams;
   evidence capture is not verification. Bounded file-byte transfer and
@@ -719,7 +719,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-02T02:23:56Z
+Last session: 2026-10-02T03:08:16Z
 Stopped at: Completed 25-06-PLAN.md; local validation passed; hosted EVD-10 matrix pending
 Resume file: None
 Next action: run the current Phase 25 tree through the existing hosted dual-host

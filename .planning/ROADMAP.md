@@ -40,7 +40,8 @@ borrow leaves ownership unchanged.** M003 remains the shipped predecessor.
 ## Phases
 
 Sequential IDs continue after archived Phase 21. Every new phase delivers a
-runnable source/input/output witness; no implementation plans exist yet.
+runnable source/input/output witness, with executable plans and summaries kept
+in its phase directory.
 
 - [x] **Phase 22: Native Application Build and Single Execution** — A retained scalar application accepts caller input and runs once with ordinary streams. (3/3 implementation plans complete; objective README contract passed; subjective readability not claimed) (completed 2026-09-27)
 - [x] **Phase 23: Live Local Allocation and Discharge** — A bounded file-byte application uses and releases a real Schway-owned allocation. (completed 2026-09-30)
