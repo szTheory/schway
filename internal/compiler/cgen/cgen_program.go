@@ -199,6 +199,9 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 			case core.OpConst:
 				// Constants change local state but intentionally add no public event.
 				continue
+			case core.OpAddChecked, core.OpLessU64, core.OpScalarStore, core.OpBranch:
+				// Phase 26 scalar computation and CFG control are event-free.
+				continue
 			case core.OpCopy:
 				event.ID, event.Kind = operation.ID+":event", "value.copied"
 			case core.OpMove:
