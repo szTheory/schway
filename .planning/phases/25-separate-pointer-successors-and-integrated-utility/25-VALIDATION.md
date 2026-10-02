@@ -130,7 +130,7 @@ hosted evidence closeout above closes EVD-10.
 
 ## Wave 0 Requirements
 
-No separate Wave 0 setup was needed. Each task created its focused tests and source fixtures alongside implementation. Local focused tests, the repository-wide suite, and the native evidence script are recorded during execution; hosted dual-host receipts remain open.
+No separate Wave 0 setup was needed. Each task created its focused tests and source fixtures alongside implementation. Local focused tests, the repository-wide suite, and the native evidence script are recorded during execution. Hosted dual-host run 36971855722 completed the required matrix: all foreign/shared/exclusive families passed baseline, optimized, and ASan+UBSan lanes on Linux/x86_64 and macOS/arm64 (18/18 rows); EVD-10 is closed.
 
 ## Manual-Only Verifications
 
