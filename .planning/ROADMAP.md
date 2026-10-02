@@ -189,7 +189,7 @@ a narrow form. Defect/process termination stays outside cleanup guarantees.
 4. Each foreign/shared/exclusive family has reproducible macOS and Linux native receipts naming source/build inputs, compiler, target, flags, expected answers, and applicable optimizer/sanitizer lanes. Missing host/lane evidence leaves the corresponding claim incomplete.
 5. From a clean checkout, a developer follows documented public commands to build/run the utility on the two supplied files and a specified failure, gets independent expected results, and locates explicit C bindings and lifetime evidence. Moved-from use, discarded ownership, pointer escape, and unsupported cleanup/exit examples produce stable structured diagnostics with source attribution and actionable boundary explanations.
 
-**Plans**: 6/6 implementation plans executed; hosted Phase 25 receipts remain open
+**Plans**: 6/6 implementation plans executed; 1 evidence-record reconciliation plan pending
 
 Plans:
 **Wave 1**
@@ -216,9 +216,15 @@ Plans:
 
 - [x] 25-06-PLAN.md — Publish utility instructions, dual-host evidence gate, and living-document closeout (local execution complete; hosted matrix pending)
 
-**Phase status:** implementation plans are complete. The local macOS/arm64
-matrix passes baseline, optimized, and ASan+UBSan lanes for all three families.
-EVD-10 remains incomplete until hosted macOS and Linux receipts are recorded.
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 25-07-PLAN.md — Reconcile Phase 25 validation, security, product-roadmap, and maturity records with the successful hosted dual-host receipt
+
+**Phase status:** implementation plans are complete. Hosted run 36971855722
+passed the macOS/arm64 and Linux/x86_64 foreign/shared/exclusive matrix across
+baseline, optimized, and ASan+UBSan lanes at one PR merge revision. The four
+tracked evidence and living-language records still describe EVD-10 as pending;
+Plan 25-07 will reconcile them before goal-backward re-verification.
 
 **Runnable witness**: Separate shared and exclusive helper sources each read/copy
 the known input byte with an exact expected answer. The final utility composes
