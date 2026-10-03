@@ -1,8 +1,8 @@
 ---
 phase: "26"
 slug: "checked-scalar-sum"
-status: validated
-nyquist_compliant: true
+status: in_progress
+nyquist_compliant: false
 wave_0_complete: true
 created: "2026-10-02"
 ---
@@ -49,7 +49,7 @@ created: "2026-10-02"
 | 26-05-T1 | 26-05 | 4 | U64-01, FLOW-01, APP-07 | T-26-09 | Each engine matches hand-pinned 0/55/500500; 1001 fails; reached wrong-result and skipped-iteration controls fail. | End-to-end expected-answer/mutation | `go test ./internal/compiler/session -run '^TestPhase26ExactSumMatrix$' -count=1` | Existing test home | ✅ hosted in 37092337472 |
 | 26-05-T2 | 26-05 | 4 | U64-01, FLOW-02, APP-07 | T-26-10 | Exact public CLI 0/10/1000/1001/overflow streams/status; native app capture accepts complete 0/1/2 events and reports forced capacity separately from child result; frontend recovery remains stable. | Public command/app evidence | `go test ./cmd/schway -run '^TestPhase26PublicAppCLI$' -count=1 && go test ./internal/compiler/native -run '^TestPhase26EvidenceCapacity$' -count=1 && go test ./internal/compiler/session -run '^TestPhase26SourceRepeatedCopyEvidence$' -count=1 && go test ./internal/compiler/syntax -run '^TestPhase26FrontendRecovery$' -count=1` | Existing test homes | ✅ hosted pending |
 
-*Task, plan, wave, and threat mappings are assigned. All status rows remain pending until execution produces evidence.*
+*Plan 01–04 rows refer to completed hosted evidence. Plan 05 awaits its corrected focused run; phase validation awaits the corpus receipt and full hosted gate.*
 
 ---
 
@@ -74,12 +74,6 @@ created: "2026-10-02"
 
 ---
 
-## Manual-Only Verifications
-
-| Behavior | Requirement | Why Manual | Test Instructions |
-|----------|-------------|------------|-------------------|
-| Review public overflow diagnostics and stream/status separation | U64-01 | Human check that bounded stderr is deterministic and understandable while stdout is empty and compiler/tool/evidence failures remain distinct. | Run the near-max source witness through each public engine route; inspect captured stdout, stderr, and process outcome against the pinned contract. |
-
 ---
 
 ## Validation Sign-Off
@@ -91,4 +85,4 @@ created: "2026-10-02"
 - [ ] Feedback latency < measured target
 - [ ] `nyquist_compliant: true` set in frontmatter after validation
 
-**Approval:** pending plan decomposition and execution evidence
+**Approval:** pending the corrected Plan 05 hosted run, validation-corpus receipt, and full hosted gate.

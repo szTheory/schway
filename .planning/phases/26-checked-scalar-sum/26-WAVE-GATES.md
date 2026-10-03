@@ -81,3 +81,16 @@ The final full hosted gate 37090678253 passes vet and build on both hosts. Full 
 The Phase 23, 24, and 25 evidence aggregates pass. Phase 6 aggregates fail on the active Phase 26 findings. Race checks and dependent Phase 15 aggregate checks were skipped after test failures; the validation corpus receipt and Phase 26 workflow jobs were skipped in the full workflow. No full-suite or race pass is claimed, and none of these active findings were suppressed. Plan 05 and phase closeout own the validation rows, lifecycle transition, and hosted receipt refresh.
 
 Plan 04's loop tests inject `OpCopy` into checked core. They verify core/backend occurrence behavior and do not establish the requested public source witness `let snapshot = i`; Plan 05 owns that source-level consumer and must add it before claiming the source witness.
+
+## Plan 05 focused regression — 2026-10-03
+
+Run 37092941501 passed the source grammar/lowering controls, checker and peer
+back-edge controls, event encoding, interpreter/native synthetic repetition,
+the public CLI task command, and the native capture-capacity case on the
+macOS job. It exposed that the new source-authored interpreter event consumer
+must project its legacy event document to schema 2 before invoking the
+independent peer; the test was corrected to use the existing projection API.
+The full Phase 26 session command also stopped the later CLI and syntax test
+commands, so those commands were moved earlier in the focused workflow. The
+new source-level event test has not yet passed in hosted CI. No receipt or
+full-gate success is claimed.

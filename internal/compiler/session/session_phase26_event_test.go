@@ -61,11 +61,15 @@ func TestPhase26SourceRepeatedCopyEvidence(t *testing.T) {
 			if err != nil || interpreted.Outcome.Kind != "returned" || interpreted.Outcome.Value != test.want {
 				t.Fatalf("interpreter outcome=%+v err=%v", interpreted.Outcome, err)
 			}
-			if err := executionpeer.Validate(checked.Program, interpreted); err != nil {
+			interpretedEvidence, err := session.ProjectExecutionSchema2(checked.Program, interpreted)
+			if err != nil {
+				t.Fatalf("project interpreter execution evidence: %v", err)
+			}
+			if err := executionpeer.Validate(checked.Program, interpretedEvidence); err != nil {
 				t.Fatalf("interpreter peer verification failed: %v", err)
 			}
 			var interpreterCopies []uint64
-			for _, event := range interpreted.Events {
+			for _, event := range interpretedEvidence.Events {
 				if event.ID == copyID+":event" {
 					interpreterCopies = append(interpreterCopies, event.Occurrence)
 				}
