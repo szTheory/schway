@@ -523,8 +523,13 @@ func ProjectExecutionSchema2(program core.Program, document execution.Execution)
 			continue
 		}
 		for _, operation := range function.Linear.Operations {
-			if operation.Kind == core.OpDefect && operation.Reason != "" {
-				defectReasons[operation.ID+":event:defected"] = operation.Reason
+			switch operation.Kind {
+			case core.OpDefect:
+				if operation.Reason != "" {
+					defectReasons[operation.ID+":event:defected"] = operation.Reason
+				}
+			case core.OpAddChecked:
+				defectReasons[operation.ID+":event:defected"] = "U64 addition overflow"
 			}
 		}
 	}
