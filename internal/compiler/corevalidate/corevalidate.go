@@ -2549,9 +2549,11 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			if !v.check(hasAbility(types[operation.TypeID], core.AbilityCopy), "core.ability.copy_denied", operation.TypeID) {
 				return false
 			}
-			targetValid := v.targetMatches(function, index, operation, places, produced)
+			var targetValid bool
 			if hasScalarCFG(function) {
 				targetValid = scalarTargetMatches(function, index, operation, places, produced)
+			} else {
+				targetValid = v.targetMatches(function, index, operation, places, produced)
 			}
 			if !targetValid {
 				return false
@@ -2901,9 +2903,11 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			if !v.check(hasAbility(types[operation.TypeID], core.AbilityCopy), "core.ability.copy_denied", operation.TypeID) {
 				return false
 			}
-			targetValid := v.targetMatches(function, index, operation, places, produced)
+			var targetValid bool
 			if hasScalarCFG(function) {
 				targetValid = scalarTargetMatches(function, index, operation, places, produced)
+			} else {
+				targetValid = v.targetMatches(function, index, operation, places, produced)
 			}
 			if !targetValid {
 				return false
