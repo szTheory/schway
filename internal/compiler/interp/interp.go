@@ -165,8 +165,9 @@ type Event = execution.Event
 type Execution = execution.Execution
 
 // ApplicationResult keeps application stdout separate from the canonical
-// execution document. Writes are observable only through Output; they do not
-// change the execution schema or add events.
+// execution document. Successful writes do not add events; a write that
+// crosses the application byte limit produces a stable defect event while
+// preserving already completed chunks.
 type ApplicationResult struct {
 	Execution Execution
 	Output    []byte
@@ -501,6 +502,27 @@ func Run(program core.Program, functionName, input string) (Execution, error) {
 // writes stream into Output, while a U64 return keeps the application's
 // historical automatic decimal line. Unit returns do not add output.
 func RunApplication(program core.Program, functionName, input string) (ApplicationResult, error) {
+	return runApplicationWithOutputLimit(program, functionName, input, execution.MaxApplicationOutputBytes)
+}
+
+type applicationOutputSink struct {
+	bytes []byte
+	limit int
+}
+
+func (sink *applicationOutputSink) write(chunk []byte) bool {
+	if sink == nil {
+		return true
+	}
+	used := len(sink.bytes)
+	if sink.limit < 0 || used > sink.limit || len(chunk) > sink.limit-used {
+		return false
+	}
+	sink.bytes = append(sink.bytes, chunk...)
+	return true
+}
+
+func runApplicationWithOutputLimit(program core.Program, functionName, input string, outputLimit int) (ApplicationResult, error) {
 	validated := corevalidate.Validate(program)
 	if !validated.Valid {
 		return ApplicationResult{}, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
@@ -520,21 +542,31 @@ func RunApplication(program core.Program, functionName, input string) (Applicati
 	if err != nil {
 		return ApplicationResult{}, err
 	}
-	output := []byte{}
+	sink := &applicationOutputSink{bytes: []byte{}, limit: outputLimit}
 	base := newFlatFrame(function, map[string]value{function.Parameter.ID: initial})
 	if len(function.Linear.Blocks) > 0 {
 		base = newBlockFrame(function, map[string]value{function.Parameter.ID: initial}, function.ID+":block:entry")
 	}
-	base.applicationOutput = &output
+	base.applicationOutput = sink
 	execution, err := runProgramFrameStack(program, base)
 	if err != nil {
 		return ApplicationResult{}, err
 	}
 	if execution.Outcome.Kind == "returned" && function.ReturnType == "U64" {
-		output = append(output, execution.Outcome.Value...)
-		output = append(output, '\n')
+		var returnOperation core.LinearOperation
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpReturn {
+				returnOperation = operation
+			}
+		}
+		if !sink.write([]byte(execution.Outcome.Value)) || !sink.write([]byte{'\n'}) {
+			if len(execution.Events) > 0 && execution.Events[len(execution.Events)-1].Kind == "function.returned" {
+				execution.Events = execution.Events[:len(execution.Events)-1]
+			}
+			execution = applicationOutputLimitExecution(execution.Schema, returnOperation.ID, function.ID, "", returnOperation.SourceID, returnOperation.TypeID, execution.Events, execution.LiveResources)
+		}
 	}
-	return ApplicationResult{Execution: execution, Output: output}, nil
+	return ApplicationResult{Execution: execution, Output: sink.bytes}, nil
 }
 
 // runBranchArm executes the selected match arm's own block on interp's
@@ -701,7 +733,7 @@ type frame struct {
 	function core.Function
 	// applicationOutput is non-nil only for RunApplication. The same sink is
 	// inherited by callees so writes remain ordered on the application stream.
-	applicationOutput *[]byte
+	applicationOutput *applicationOutputSink
 
 	// schema and invocation are activation-local evidence context. They are
 	// intentionally carried by every frame rather than reconstructed from a
@@ -1008,6 +1040,20 @@ func (f *frame) configureChild(child *frame, operation core.LinearOperation) {
 	child.errorEdge = operation.ErrEdgeID
 }
 
+const applicationOutputLimitDefectReason = "application output limit exceeded"
+
+func applicationOutputLimitExecution(schema, operationID, functionID, invocation, sourcePlace, typeID string, events []Event, liveResources []string) Execution {
+	event := Event{
+		Schema: schema, ID: operationID + ":event:defected", Kind: "function.defected",
+		FunctionID: functionID, Invocation: invocation, SourcePlace: sourcePlace,
+		TypeID: typeID, Output: applicationOutputLimitDefectReason,
+	}
+	return Execution{
+		Schema: schema, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""},
+		Events: append(events, event), LiveResources: liveResources,
+	}
+}
+
 // pushResult is partitionFrameForCall's outcome: either a genuine callee
 // frame to push onto the stack (Frame non-nil), or an immediate
 // resolution. A bare match arm (core.MatchArm.BlockID == "") needs no
@@ -1295,17 +1341,30 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				return Execution{}, fmt.Errorf("operation %q write_u64 operand is not U64", operation.ID)
 			}
 			if top.applicationOutput != nil {
-				*top.applicationOutput = strconv.AppendUint(*top.applicationOutput, sourceValue.u64, 10)
+				chunk := strconv.AppendUint(make([]byte, 0, 20), sourceValue.u64, 10)
+				if !top.applicationOutput.write(chunk) {
+					leakEvents, liveResources := drainStackForAbruptExit(stack)
+					events = append(events, leakEvents...)
+					return applicationOutputLimitExecution(top.eventSchema(), operation.ID, top.function.ID, top.invocation, operation.SourceID, operation.TypeID, events, liveResources), nil
+				}
 			}
 			top.idx++
 		case core.OpWriteNewline:
 			if top.applicationOutput != nil {
-				*top.applicationOutput = append(*top.applicationOutput, '\n')
+				if !top.applicationOutput.write([]byte{'\n'}) {
+					leakEvents, liveResources := drainStackForAbruptExit(stack)
+					events = append(events, leakEvents...)
+					return applicationOutputLimitExecution(top.eventSchema(), operation.ID, top.function.ID, top.invocation, "", operation.TypeID, events, liveResources), nil
+				}
 			}
 			top.idx++
 		case core.OpWriteText:
 			if top.applicationOutput != nil {
-				*top.applicationOutput = append(*top.applicationOutput, operation.TextBytes...)
+				if !top.applicationOutput.write(operation.TextBytes) {
+					leakEvents, liveResources := drainStackForAbruptExit(stack)
+					events = append(events, leakEvents...)
+					return applicationOutputLimitExecution(top.eventSchema(), operation.ID, top.function.ID, top.invocation, "", operation.TypeID, events, liveResources), nil
+				}
 			}
 			top.idx++
 		case core.OpConst:

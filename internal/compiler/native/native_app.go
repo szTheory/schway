@@ -343,7 +343,7 @@ func (r Runner) RunApplicationWithEvidence(parent context.Context, artifactPath,
 		data, readErr := os.ReadFile(capturePath)
 		limit := r.evidenceCapacityLimit()
 		switch {
-		case readErr == nil && len(data) >= limit:
+		case readErr == nil && len(data) > limit:
 			report.CaptureStatus = EvidenceStatusCapacityExhausted
 		case readErr == nil:
 			capture, captureErr := decodeApplicationCapture(data, limit)
@@ -544,8 +544,8 @@ func decodeApplicationCapture(data []byte, limit int) (struct {
 		Status    EvidenceCaptureStatus
 		Execution execution.Execution
 	}{}
-	if len(data) == 0 || len(data) >= limit {
-		return result, errors.New("application capture is empty or at capacity")
+	if len(data) == 0 || len(data) > limit {
+		return result, errors.New("application capture is empty or exceeds capacity")
 	}
 	if err := rejectDuplicateJSONKeys(data); err != nil {
 		return result, err

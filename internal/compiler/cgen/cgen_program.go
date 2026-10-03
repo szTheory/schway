@@ -29,6 +29,28 @@ func EmitProgramNativeForTest(program core.Program) (string, error) {
 }
 
 var executionOutputLimit = execution.MaxDocumentBytes
+var applicationOutputLimit = execution.MaxApplicationOutputBytes
+var applicationEvidenceOutputLimit = execution.MaxApplicationEvidenceBytes
+
+// SetApplicationOutputLimitForTest installs a lower boundary for generated
+// retained applications. Production callers never mutate this test seam.
+// Callers must immediately defer the returned restore function and must not
+// run the emitter concurrently while the override is active.
+func SetApplicationOutputLimitForTest(limit int) (restore func()) {
+	previous := applicationOutputLimit
+	applicationOutputLimit = limit
+	return func() { applicationOutputLimit = previous }
+}
+
+// SetApplicationEvidenceOutputLimitForTest independently lowers the generated
+// evidence-document ceiling for a retained application test. It never changes
+// the application stdout ceiling. Callers must immediately defer restore and
+// must not run the emitter concurrently while the override is active.
+func SetApplicationEvidenceOutputLimitForTest(limit int) (restore func()) {
+	previous := applicationEvidenceOutputLimit
+	applicationEvidenceOutputLimit = limit
+	return func() { applicationEvidenceOutputLimit = previous }
+}
 
 // These bounds are shared by the terminal writer and its output-size
 // preflight. A Buffer payload is rejected above four bytes and Byte payloads
@@ -883,7 +905,11 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	}
 	entryReturnBranch, entryReturnIsBranch := branchTypes[entry.ReturnType]
 	needsTerminalJSONContent := entryReturnIsBranch && entryReturnBranch.hasPayload
-	emitEventSupportSchema2(&out, eventCapacity, executionOutputLimit, needsTerminalJSONContent, shell == programApplicationShell, trackEventOccurrences, execution.MaxApplicationEvidenceBytes)
+	cOutputLimit := executionOutputLimit
+	if shell == programApplicationShell {
+		cOutputLimit = applicationOutputLimit
+	}
+	emitEventSupportSchema2(&out, eventCapacity, cOutputLimit, needsTerminalJSONContent, shell == programApplicationShell, trackEventOccurrences, applicationEvidenceOutputLimit)
 	if needsDefect {
 		emitDefectSupport(&out)
 	}
@@ -1004,7 +1030,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		// lowering, but does not serialize those events onto application stdout.
 		// Taking the evidence writers' addresses keeps this shared support
 		// translation unit valid under the strict -Wunused-function build.
-		out.WriteString("  (void)schway_write_events;\n  (void)schway_write_live_resources;\n")
+		out.WriteString("  (void)schway_write_events;\n  (void)schway_write_live_resources;\n  (void)schway_application_output_failure;\n")
 	}
 	out.WriteString("  if (argc != 2) return 64;\n")
 	if shell == programApplicationShell {
@@ -1024,7 +1050,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 			fmt.Fprintf(&out, "  %s(%s, 0u);\n", functionNames[entryIndex], entryArgument)
 		} else {
 			fmt.Fprintf(&out, "  %s schway_entry_output = %s(%s, 0u);\n", entryOutputType, functionNames[entryIndex], entryArgument)
-			out.WriteString("  if (!schway_write_u64_plain(schway_entry_output) || !schway_write_literal(\"\\n\")) return 74;\n")
+			out.WriteString("  if (!schway_write_u64_plain(schway_entry_output) || !schway_write_literal(\"\\n\")) schway_application_output_failure();\n")
 		}
 		out.WriteString("  const char *schway_evidence_path = getenv(\"SCHWAY_APP_EVIDENCE_PATH\");\n")
 		out.WriteString("  if (schway_evidence_path != NULL && schway_evidence_path[0] != '\\0') {\n")
@@ -1039,7 +1065,8 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		}
 		out.WriteString("        (void)schway_write_literal(\"},\\\"events\\\":[\");\n        (void)schway_write_events();\n")
 		out.WriteString("        (void)schway_write_literal(\"],\\\"live_resources\\\":\");\n        (void)schway_write_live_resources();\n")
-		out.WriteString("        (void)schway_write_literal(\"}}\\n\");\n      }\n      (void)fclose(schway_evidence_file);\n    }\n  }\n")
+		out.WriteString("        (void)schway_write_literal(\"}}\\n\");\n      }\n      (void)fclose(schway_evidence_file);\n")
+		out.WriteString("      if (schway_evidence_output_overflow) {\n        FILE *schway_overflow_file = fopen(schway_evidence_path, \"wb\");\n        if (schway_overflow_file != NULL) {\n          static const char schway_capacity_capture[] = \"{\\\"schema\\\":\\\"lang.app-capture/1\\\",\\\"status\\\":\\\"capacity_exhausted\\\"}\\n\";\n          (void)fwrite(schway_capacity_capture, 1u, sizeof schway_capacity_capture - 1u, schway_overflow_file);\n          (void)fclose(schway_overflow_file);\n        }\n      }\n    }\n  }\n")
 		out.WriteString("  return 0;\n}\n")
 		return out.String(), nil
 	}
@@ -1807,7 +1834,7 @@ func emitProgramU64Support(out *strings.Builder) {
 // retained applications. The conformance shell keeps schway_write_u64's JSON
 // string encoding unchanged.
 func emitProgramU64ApplicationWriter(out *strings.Builder) {
-	out.WriteString("static int schway_write_u64_plain(uint64_t value) {\n  char digits[20];\n  size_t length = 0u;\n  do { digits[length++] = (char)('0' + (value % UINT64_C(10))); value /= UINT64_C(10); } while (value != 0u && length < sizeof digits);\n  if (value != 0u) return 0;\n  while (length > 0u) { --length; if (!schway_write_bytes(&digits[length], 1u)) return 0; }\n  return 1;\n}\n\n")
+	out.WriteString("static int schway_write_u64_plain(uint64_t value) {\n  char reversed[20];\n  char digits[20];\n  size_t length = 0u;\n  size_t index;\n  do { reversed[length++] = (char)('0' + (value % UINT64_C(10))); value /= UINT64_C(10); } while (value != 0u && length < sizeof reversed);\n  if (value != 0u) return 0;\n  for (index = 0u; index < length; index++) digits[index] = reversed[length - index - 1u];\n  return schway_write_bytes(digits, length);\n}\n\n")
 }
 
 // emitProgramTerminalValueWriter makes a returned payload-bearing ADT value
@@ -2368,11 +2395,11 @@ func emitProgramFunction(out *strings.Builder, function core.Function, parameter
 		switch operation.Kind {
 		case core.OpWriteU64:
 			if shell == programApplicationShell {
-				fmt.Fprintf(out, "  if (!schway_write_u64_plain(%s)) exit(74);\n", locals[source.ID])
+				fmt.Fprintf(out, "  if (!schway_write_u64_plain(%s)) schway_application_output_failure();\n", locals[source.ID])
 			}
 		case core.OpWriteNewline:
 			if shell == programApplicationShell {
-				out.WriteString("  if (!schway_write_literal(\"\\n\")) exit(74);\n")
+				out.WriteString("  if (!schway_write_literal(\"\\n\")) schway_application_output_failure();\n")
 			}
 		case core.OpWriteText:
 			if shell == programApplicationShell {
@@ -2654,11 +2681,11 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 				terminated = true
 			case core.OpWriteU64:
 				if shell == programApplicationShell {
-					fmt.Fprintf(out, "  if (!schway_write_u64_plain(%s)) exit(74);\n", locals[op.SourceID])
+					fmt.Fprintf(out, "  if (!schway_write_u64_plain(%s)) schway_application_output_failure();\n", locals[op.SourceID])
 				}
 			case core.OpWriteNewline:
 				if shell == programApplicationShell {
-					out.WriteString("  if (!schway_write_literal(\"\\n\")) exit(74);\n")
+					out.WriteString("  if (!schway_write_literal(\"\\n\")) schway_application_output_failure();\n")
 				}
 			case core.OpWriteText:
 				if shell == programApplicationShell {
@@ -2706,7 +2733,7 @@ func emitProgramTextWrite(out *strings.Builder, operation core.LinearOperation) 
 			fmt.Fprintf(out, "0x%02xu", value)
 		}
 	}
-	fmt.Fprintf(out, "}, (size_t)UINT64_C(%d))) exit(74);\n", operation.TextLength)
+	fmt.Fprintf(out, "}, (size_t)UINT64_C(%d))) schway_application_output_failure();\n", operation.TextLength)
 }
 
 func placesTypeName(linear *core.LinearBody, typeID string) string {

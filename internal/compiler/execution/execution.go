@@ -13,6 +13,10 @@ const (
 	// MaxApplicationEvidenceBytes bounds a same-run application capture and
 	// its published report independently from conformance execution documents.
 	MaxApplicationEvidenceBytes = 64 * 1024
+
+	// MaxApplicationOutputBytes bounds bytes streamed by retained applications.
+	// It is a separate contract from execution documents and application evidence.
+	MaxApplicationOutputBytes = 65_536
 )
 
 // MaxDocumentBytes is the native execution-document capture ceiling. Schema-2

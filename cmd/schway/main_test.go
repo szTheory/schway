@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/szTheory/schway/internal/compiler/cgen"
 	"github.com/szTheory/schway/internal/compiler/execution"
 	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/session"
@@ -145,6 +146,50 @@ func TestPhase26PublicAppCLI(t *testing.T) {
 	code, stdout, stderr = captureLangRun(t, []string{"app", "run", overflowArtifact, "--", "1"})
 	if code != 65 || stdout != "" || stderr != "schway: U64 addition overflow\n" {
 		t.Fatalf("overflow app run code=%d stdout=%q stderr=%q; want exit 65 with exact overflow stderr", code, stdout, stderr)
+	}
+}
+
+func TestPhase27AppBoundary(t *testing.T) {
+	source := testsupport.ProjectPath("examples", "fizzbuzz.schway")
+	artifact := filepath.Join(t.TempDir(), "fizzbuzz")
+	code, stdout, stderr := captureLangRun(t, []string{"build", source, "--output", artifact})
+	if code != 0 || stdout != "built "+artifact+"\n" || stderr != "" {
+		t.Fatalf("FizzBuzz build code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	fifteen, err := os.ReadFile(testsupport.ProjectPath("examples", "phase27", "fizzbuzz-15.out"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	oneThousand, err := os.ReadFile(testsupport.ProjectPath("examples", "phase27", "fizzbuzz-1000.out"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		input, want string
+		code        int
+		stderr      string
+	}{{"0", "", 0, ""}, {"1", "1\n", 0, ""}, {"15", string(fifteen), 0, ""}, {"1000", string(oneThousand), 0, ""}, {"1001", "", 65, "schway app: input exceeds 1000\n"}} {
+		t.Run("fizzbuzz-"+test.input, func(t *testing.T) {
+			code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", test.input})
+			if code != test.code || stdout != test.want || stderr != test.stderr {
+				t.Fatalf("app run input=%s code=%d stdout length=%d stderr=%q; want code=%d stdout length=%d stderr=%q", test.input, code, len(stdout), stderr, test.code, len(test.want), test.stderr)
+			}
+		})
+	}
+}
+
+func TestPhase27OutputPublicStatus(t *testing.T) {
+	restore := cgen.SetApplicationOutputLimitForTest(4)
+	defer restore()
+	source := testsupport.ProjectPath("examples", "fizzbuzz.schway")
+	artifact := filepath.Join(t.TempDir(), "fizzbuzz-limited")
+	code, stdout, stderr := captureLangRun(t, []string{"build", source, "--output", artifact})
+	if code != 0 || stdout != "built "+artifact+"\n" || stderr != "" {
+		t.Fatalf("limited FizzBuzz build code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	code, stdout, stderr = captureLangRun(t, []string{"app", "run", artifact, "--", "3"})
+	if code != 65 || stdout != "1\n2\n" || stderr != "schway: application output limit exceeded\n" {
+		t.Fatalf("limited FizzBuzz status code=%d stdout=%q stderr=%q; want child exit 65 with completed prefix and exact reason", code, stdout, stderr)
 	}
 }
 

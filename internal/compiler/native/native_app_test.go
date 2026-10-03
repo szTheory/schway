@@ -584,6 +584,23 @@ func TestPhase26EvidenceCapacity(t *testing.T) {
 	}
 }
 
+func TestPhase27OutputEvidenceExactLimit(t *testing.T) {
+	capture := phase22CompleteCapture(t)
+	body := fmt.Sprintf("printf 'app\\n'\nprintf %%s %s > \"$SCHWAY_APP_EVIDENCE_PATH\"\n", shellQuote(capture))
+	artifact := writePhase22EvidenceScript(t, body)
+	runner := DefaultRunner()
+	runner.evidenceLimit = len(capture)
+	reportPath := filepath.Join(t.TempDir(), "exact-capacity-report.json")
+	var stdout, stderr bytes.Buffer
+	outcome, report, err := runner.RunApplicationWithEvidence(context.Background(), artifact, "7", reportPath, EvidenceEvents, &stdout, &stderr)
+	if err != nil || outcome.Kind != RunExited || outcome.ExitCode != 0 || report.ProcessOutcome != outcome || report.CaptureStatus != EvidenceStatusComplete || report.Execution == nil {
+		t.Fatalf("exact evidence-capacity outcome=%+v report=%+v err=%v; want complete evidence at exactly %d bytes", outcome, report, err, len(capture))
+	}
+	if stdout.String() != "app\n" || stderr.Len() != 0 {
+		t.Fatalf("exact evidence capacity changed application streams: stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+}
+
 func TestPhase22EvidenceReportWriteFailurePreservesAppOutcome(t *testing.T) {
 	root := t.TempDir()
 	marker := filepath.Join(root, "launches.txt")
