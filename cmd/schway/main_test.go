@@ -116,6 +116,38 @@ func TestPhase22IdentityApplicationBuildAndRunCLI(t *testing.T) {
 	}
 }
 
+func TestPhase26PublicAppCLI(t *testing.T) {
+	source := testsupport.ProjectPath("examples", "sum_to_n.schway")
+	artifact := filepath.Join(t.TempDir(), "sum_to_n")
+	code, stdout, stderr := captureLangRun(t, []string{"build", source, "--output", artifact})
+	if code != 0 || stdout != "built "+artifact+"\n" || stderr != "" {
+		t.Fatalf("sum build code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	for _, test := range []struct {
+		input, want string
+		code        int
+		stderr      string
+	}{{"0", "0\n", 0, ""}, {"10", "55\n", 0, ""}, {"1000", "500500\n", 0, ""}, {"1001", "", 65, "schway app: input exceeds 1000\n"}} {
+		t.Run("sum-"+test.input, func(t *testing.T) {
+			code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", test.input})
+			if code != test.code || stdout != test.want || stderr != test.stderr {
+				t.Fatalf("app run input=%s code=%d stdout=%q stderr=%q; want code=%d stdout=%q stderr=%q", test.input, code, stdout, stderr, test.code, test.want, test.stderr)
+			}
+		})
+	}
+
+	overflowSource := testsupport.ProjectPath("examples", "phase26", "checked_add_overflow.schway")
+	overflowArtifact := filepath.Join(t.TempDir(), "checked_add_overflow")
+	code, stdout, stderr = captureLangRun(t, []string{"build", overflowSource, "--output", overflowArtifact})
+	if code != 0 || stdout != "built "+overflowArtifact+"\n" || stderr != "" {
+		t.Fatalf("overflow build code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	code, stdout, stderr = captureLangRun(t, []string{"app", "run", overflowArtifact, "--", "1"})
+	if code != 65 || stdout != "" || stderr != "schway: U64 addition overflow\n" {
+		t.Fatalf("overflow app run code=%d stdout=%q stderr=%q; want exit 65 with exact overflow stderr", code, stdout, stderr)
+	}
+}
+
 func TestPhase23PublicFileByte(t *testing.T) {
 	source := testsupport.ProjectPath("examples", "phase23", "file_byte.schway")
 	manifest := testsupport.ProjectPath("examples", "phase23", "file_byte.bindings.json")

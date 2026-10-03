@@ -75,6 +75,55 @@ func TestFormatIdempotent(t *testing.T) {
 	}
 }
 
+func TestPhase26FrontendRecovery(t *testing.T) {
+	source := []byte(`module phase26
+export { fn main }
+fn main(n: U64) -> U64 {
+  // immutable scalar snapshot
+  var i = 0
+  var total = 0
+  if n < 1001 {
+    while i < n {
+      i = i + 1
+      let snapshot = i
+      total = total + snapshot
+    }
+  } else {
+    defect "input exceeds 1000"
+  }
+  total
+}
+`)
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("scalar source parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	first := syntax.Format(parsed.Tree)
+	formatted := syntax.Parse(first)
+	second := syntax.Format(formatted.Tree)
+	if len(formatted.Diagnostics) != 0 || !bytes.Contains(first, []byte("// immutable scalar snapshot")) || !bytes.Equal(first, second) {
+		t.Fatalf("scalar formatter lost comments or stability: first=%q second=%q diagnostics=%+v", first, second, formatted.Diagnostics)
+	}
+	for _, malformed := range []string{
+		"var = 1",
+		"let = i",
+		"i = + 1",
+		"if n { var x = 0 }",
+		"while { var x = 0 }",
+	} {
+		input := []byte("module malformed\nexport { fn main }\nfn main(n: U64) -> U64 {\n  " + malformed + "\n  n\n}\n")
+		result := syntax.Parse(input)
+		if len(result.Diagnostics) == 0 {
+			t.Errorf("malformed statement %q was accepted", malformed)
+			continue
+		}
+		span := result.Diagnostics[0].Primary
+		if span.End <= span.Start || span.Start < 0 || span.End > len(input) {
+			t.Errorf("malformed statement %q has invalid recovery span %+v for %d bytes", malformed, span, len(input))
+		}
+	}
+}
+
 func withoutSpans(program ast.Program) ast.Program {
 	noSpan := diagnostic.Span{}
 	for index := range program.Exports {

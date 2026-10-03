@@ -542,6 +542,48 @@ func TestPhase26FailureChannels(t *testing.T) {
 	}
 }
 
+func TestPhase26EvidenceCapacity(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "sum_to_n.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("sum_to_n parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("sum_to_n check diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("sum_to_n core validation problems: %+v", validated.Problems)
+	}
+	cSource, err := cgen.EmitApplication(validated.Program())
+	if err != nil {
+		t.Fatalf("EmitApplication: %v", err)
+	}
+	artifact := filepath.Join(t.TempDir(), "sum_to_n")
+	if _, err := BuildApplication(context.Background(), source, cSource, artifact); err != nil {
+		t.Fatalf("BuildApplication: %v", err)
+	}
+	runner := DefaultRunner()
+	runner.evidenceLimit = 8
+	reportPath := filepath.Join(t.TempDir(), "capacity-report.json")
+	var stdout, stderr bytes.Buffer
+	outcome, report, err := runner.RunApplicationWithEvidence(context.Background(), artifact, "3", reportPath, EvidenceEvents, &stdout, &stderr)
+	var toolError *ToolError
+	if !errors.As(err, &toolError) || toolError.Code != "native.evidence_capacity_exhausted" {
+		t.Fatalf("capacity error=%v, want native.evidence_capacity_exhausted", err)
+	}
+	if outcome.Kind != RunExited || outcome.ExitCode != 0 || report.ProcessOutcome != outcome || report.CaptureStatus != EvidenceStatusCapacityExhausted || report.Verified || report.Execution != nil {
+		t.Fatalf("capacity child outcome=%+v report=%+v; exhaustion must remain incomplete and retain the successful child outcome", outcome, report)
+	}
+	if stdout.String() != "6\n" || stderr.Len() != 0 {
+		t.Fatalf("capacity child streams stdout=%q stderr=%q; want application output to remain intact", stdout.String(), stderr.String())
+	}
+}
+
 func TestPhase22EvidenceReportWriteFailurePreservesAppOutcome(t *testing.T) {
 	root := t.TempDir()
 	marker := filepath.Join(root, "launches.txt")

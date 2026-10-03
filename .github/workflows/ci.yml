@@ -142,6 +142,8 @@ jobs:
           go test ./internal/compiler/pathoracle -run '^TestCompositionCycleGuardFailsClosed$' -count=1 -v
           go test ./internal/compiler/executionpeer -run '^TestPhase26PeerOccurrenceOrder$' -count=1 -v
           go test ./internal/compiler/session ./internal/compiler/core ./internal/compiler/interp ./internal/compiler/cgen ./internal/compiler/native -run '^TestPhase26|^TestAllOperationKindsHandledAtEverySite$|^TestPhase19U64NativeExactWidthAndOutput$' -count=1 -v
+          go test ./cmd/schway -run '^TestPhase26PublicAppCLI$' -count=1 -v
+          go test ./internal/compiler/syntax -run '^TestPhase26FrontendRecovery$' -count=1 -v
           go test ./internal/compiler/cgen ./internal/compiler/executionpeer ./internal/compiler/session -count=1
 
   validation-corpus-receipt:
