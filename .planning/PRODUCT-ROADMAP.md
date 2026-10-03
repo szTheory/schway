@@ -179,9 +179,11 @@ roadmap does not promise to prove arbitrary foreign C correct.
    and loan back-edge refusals. Evidence/debt: Phase 26 U64-01/FLOW-01/FLOW-02/
    APP-07 are verified; Phase 27 owns U64-02, APP-08, APP-09, EVD-12, and DX-16,
    including independent literal answers, reached mutations, and both-host
-   evidence. Owner/next action: Phase 27 discussion and planning. Reprioritize
-   only if a named consumer exposes a smaller safe slice with greater runnable
-   value or a Phase 26 safety regression blocks reuse.
+   evidence. Owner/next action: Phase 27 planning from the approved
+   `27-CONTEXT.md`, then execute the resulting runnable slice. The discussion is
+   complete; do not repeat it. Reprioritize only if a named consumer exposes a
+   smaller safe slice with greater runnable value or a Phase 26 safety
+   regression blocks reuse.
 2. **Build a bounded byte utility and reusable local module boundary.**
    User-visible program: a `checksum` command reads a size-limited file and
    computes one specified checksum with exact success/error results. Current
