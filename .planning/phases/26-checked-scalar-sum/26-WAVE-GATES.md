@@ -94,3 +94,11 @@ The full Phase 26 session command also stopped the later CLI and syntax test
 commands, so those commands were moved earlier in the focused workflow. The
 new source-level event test has not yet passed in hosted CI. No receipt or
 full-gate success is claimed.
+
+The hosted receipt job 37095533226 completed successfully at revision
+`677a4538d030e4549909b94b7777efd42bd29ef4`. Its artifact passed the workflow's
+privacy scan and was downloaded and installed verbatim. The checked-in record
+digest is `4d81704e730f27fe708f1288cc1bf7e196fa9b674f45bb86ad56a3763c20ec65`,
+the pair digest is `af2dafc4f3f15ecb2087e41b8fddc4ca08fff37232f55bc1ed7904c58499da4d`,
+and hosted sequential recording took `147.286s`. Focused/full validation after
+installation remains pending.
