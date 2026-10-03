@@ -2164,11 +2164,11 @@ func TestPhase26InterpreterRepeatedCopy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	loop := []byte("while i < n {")
+	loop := []byte("while i < n {\n      i = i + 1\n      total = total + i")
 	if !bytes.Contains(source, loop) {
-		t.Fatal("sum_to_n witness has no expected loop site")
+		t.Fatal("sum_to_n witness has no expected loop body")
 	}
-	source = bytes.Replace(source, loop, []byte("while i < n {\n      var snapshot = i"), 1)
+	source = bytes.Replace(source, loop, []byte("while i < n {\n      i = i + 1\n      var snapshot = i\n      total = total + snapshot"), 1)
 	source = append(source, []byte("\nfn entry(n: U64) -> U64 {\n  let result = main(n)\n  result\n}\n")...)
 	parsed := syntax.Parse(source)
 	if len(parsed.Diagnostics) != 0 {
