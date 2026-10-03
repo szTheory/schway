@@ -5,9 +5,12 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/executionpeer"
 	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/session"
@@ -141,5 +144,171 @@ func TestPhase26AppBoundary(t *testing.T) {
 	outcome, err := native.RunApplication(context.Background(), artifact, "1001", &stdout, &stderr)
 	if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode == 0 || stdout.Len() != 0 || stderr.String() != "schway app: input exceeds 1000\n" {
 		t.Fatalf("input 1001 outcome=%+v stdout=%q stderr=%q err=%v, want nonzero with no stdout and bounded defect", outcome, stdout.String(), stderr.String(), err)
+	}
+}
+
+func TestPhase26ExactSumMatrix(t *testing.T) {
+	sourcePath := testsupport.ProjectPath("examples", "sum_to_n.schway")
+	source, err := os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("sum_to_n check diagnostics: %+v", checked.Diagnostics)
+	}
+	artifact := filepath.Join(t.TempDir(), "sum_to_n")
+	_, diagnostics, err := session.BuildApplicationFile(context.Background(), sourcePath, artifact, native.DefaultRunner())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("BuildApplicationFile diagnostics=%+v err=%v", diagnostics, err)
+	}
+	for _, test := range []struct {
+		input, want string
+	}{{"0", "0"}, {"10", "55"}, {"1000", "500500"}} {
+		t.Run("input-"+test.input, func(t *testing.T) {
+			interpreted, err := interp.Run(checked.Program, "main", test.input)
+			if err != nil || interpreted.Outcome.Kind != "returned" || interpreted.Outcome.Value != test.want {
+				t.Fatalf("interpreter outcome=%+v err=%v, want literal U64 %s", interpreted.Outcome, err, test.want)
+			}
+			var stdout, stderr bytes.Buffer
+			outcome, err := native.RunApplication(context.Background(), artifact, test.input, &stdout, &stderr)
+			if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 0 || stdout.String() != test.want+"\n" || stderr.Len() != 0 {
+				t.Fatalf("native outcome=%+v stdout=%q stderr=%q err=%v, want %q", outcome, stdout.String(), stderr.String(), err, test.want+"\n")
+			}
+		})
+	}
+	var stdout, stderr bytes.Buffer
+	outcome, err := native.RunApplication(context.Background(), artifact, "1001", &stdout, &stderr)
+	if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 65 || stdout.Len() != 0 || stderr.String() != "schway app: input exceeds 1000\n" {
+		t.Fatalf("input 1001 outcome=%+v stdout=%q stderr=%q err=%v, want exact pre-output defect", outcome, stdout.String(), stderr.String(), err)
+	}
+
+	for _, mutation := range []struct {
+		name, from, to, want string
+	}{{"wrong-accumulation", "total = total + snapshot", "total = total + 1", "10"}, {"skipped-first-iteration", "var i = 0", "var i = 1", "65"}} {
+		t.Run(mutation.name, func(t *testing.T) {
+			mutated := strings.Replace(string(source), mutation.from, mutation.to, 1)
+			if mutated == string(source) {
+				t.Fatalf("source mutation %q did not reach its target", mutation.name)
+			}
+			mutatedPath := filepath.Join(t.TempDir(), "mutant.schway")
+			if err := os.WriteFile(mutatedPath, []byte(mutated), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			mutantArtifact := filepath.Join(t.TempDir(), "mutant")
+			_, diagnostics, err := session.BuildApplicationFile(context.Background(), mutatedPath, mutantArtifact, native.DefaultRunner())
+			if err != nil || len(diagnostics) != 0 {
+				t.Fatalf("reached source mutant did not build: diagnostics=%+v err=%v", diagnostics, err)
+			}
+			mutantCheck := session.Check([]byte(mutated))
+			if len(mutantCheck.Diagnostics) != 0 {
+				t.Fatalf("mutated source check diagnostics: %+v", mutantCheck.Diagnostics)
+			}
+			interpreted, err := interp.Run(mutantCheck.Program, "main", "10")
+			if err != nil || interpreted.Outcome.Kind != "returned" || interpreted.Outcome.Value == "55" || interpreted.Outcome.Value != mutation.want {
+				t.Fatalf("interpreter mutant outcome=%+v err=%v; original literal oracle is 55", interpreted.Outcome, err)
+			}
+			var mutantStdout, mutantStderr bytes.Buffer
+			mutantOutcome, err := native.RunApplication(context.Background(), mutantArtifact, "10", &mutantStdout, &mutantStderr)
+			if err != nil || mutantOutcome.Kind != native.RunExited || mutantOutcome.ExitCode != 0 || mutantStdout.String() == "55\n" || mutantStderr.Len() != 0 {
+				t.Fatalf("native mutant outcome=%+v stdout=%q stderr=%q err=%v; original literal oracle is 55", mutantOutcome, mutantStdout.String(), mutantStderr.String(), err)
+			}
+		})
+	}
+}
+
+func TestPhase26SourceRepeatedCopyEvidence(t *testing.T) {
+	sourcePath := testsupport.ProjectPath("examples", "sum_to_n.schway")
+	source, err := os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("source-authored scalar-copy check diagnostics: %+v", checked.Diagnostics)
+	}
+	var copyID, counterID string
+	for _, function := range checked.Program.Functions {
+		if function.Name != "main" || function.Linear == nil {
+			continue
+		}
+		for _, place := range function.Linear.Places {
+			if place.Name == "i" {
+				counterID = place.ID
+			}
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpCopy {
+				copyID = operation.ID
+				if operation.SourceID != counterID {
+					t.Fatalf("source-authored snapshot copies %q, want loop counter %q", operation.SourceID, counterID)
+				}
+			}
+		}
+	}
+	if copyID == "" || counterID == "" {
+		t.Fatal("ordinary sum_to_n source did not lower let snapshot = i to a scalar OpCopy")
+	}
+
+	for _, test := range []struct {
+		input string
+		count int
+		want  string
+	}{{"3", 3, "6"}, {"0", 0, "0"}} {
+		t.Run("input-"+test.input, func(t *testing.T) {
+			interpreted, err := interp.Run(checked.Program, "main", test.input)
+			if err != nil || interpreted.Outcome.Kind != "returned" || interpreted.Outcome.Value != test.want {
+				t.Fatalf("interpreter outcome=%+v err=%v", interpreted.Outcome, err)
+			}
+			if err := executionpeer.Validate(checked.Program, interpreted); err != nil {
+				t.Fatalf("interpreter peer verification failed: %v", err)
+			}
+			var interpreterCopies []uint64
+			for _, event := range interpreted.Events {
+				if event.ID == copyID+":event" {
+					interpreterCopies = append(interpreterCopies, event.Occurrence)
+				}
+			}
+			if len(interpreterCopies) != test.count {
+				t.Fatalf("interpreter source copy events=%v, want %d", interpreterCopies, test.count)
+			}
+			for index, occurrence := range interpreterCopies {
+				if occurrence != uint64(index) {
+					t.Fatalf("interpreter copy event %d occurrence=%d, want %d", index, occurrence, index)
+				}
+			}
+
+			artifact := filepath.Join(t.TempDir(), "sum_to_n")
+			_, diagnostics, err := session.BuildApplicationFile(context.Background(), sourcePath, artifact, native.DefaultRunner())
+			if err != nil || len(diagnostics) != 0 {
+				t.Fatalf("BuildApplicationFile diagnostics=%+v err=%v", diagnostics, err)
+			}
+			reportPath := filepath.Join(t.TempDir(), "capture.json")
+			var stdout, stderr bytes.Buffer
+			outcome, report, err := native.RunApplicationWithEvidence(context.Background(), artifact, test.input, reportPath, native.EvidenceEvents, &stdout, &stderr)
+			if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 0 || stdout.String() != test.want+"\n" || stderr.Len() != 0 {
+				t.Fatalf("native outcome=%+v stdout=%q stderr=%q err=%v", outcome, stdout.String(), stderr.String(), err)
+			}
+			if report.CaptureStatus != native.EvidenceStatusComplete || report.Execution == nil {
+				t.Fatalf("native event capture status=%q execution=%v", report.CaptureStatus, report.Execution)
+			}
+			if err := executionpeer.Validate(checked.Program, *report.Execution); err != nil {
+				t.Fatalf("native peer verification failed: %v", err)
+			}
+			var nativeCopies []uint64
+			for _, event := range report.Execution.Events {
+				if event.ID == copyID+":event" {
+					nativeCopies = append(nativeCopies, event.Occurrence)
+				}
+			}
+			if len(nativeCopies) != test.count {
+				t.Fatalf("native source copy events=%v, want %d", nativeCopies, test.count)
+			}
+			for index, occurrence := range nativeCopies {
+				if occurrence != uint64(index) {
+					t.Fatalf("native copy event %d occurrence=%d, want %d", index, occurrence, index)
+				}
+			}
+		})
 	}
 }

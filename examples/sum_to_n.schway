@@ -10,7 +10,8 @@ fn main(n: U64) -> U64 {
   if n < 1001 {
     while i < n {
       i = i + 1
-      total = total + i
+      let snapshot = i
+      total = total + snapshot
     }
   } else {
     defect "input exceeds 1000"
