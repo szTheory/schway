@@ -117,7 +117,10 @@ M004 receipts do not prove this phase's new semantics.
    and run both programs and find the exact expected output, accepted input
    range, checked failure behavior, and output limit.
 
-**Plans**: 6 plans in 5 waves
+**Plans**: 7 plans in 6 waves
+
+The seventh plan isolates D-27-04's guarded native remainder and independent
+checker/peer admission as a safety obligation before literal-output composition.
 
 **Wave 1**
 
@@ -125,20 +128,24 @@ M004 receipts do not prove this phase's new semantics.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 27-02-PLAN.md — equality, guarded remainder, literal text, exact FizzBuzz
+- [ ] 27-02-PLAN.md — equality, guarded remainder, and independent semantic admission
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 27-03-PLAN.md — shared incremental output limit and public failure channels
+- [ ] 27-03-PLAN.md — literal text output and complete exact FizzBuzz
 
-**Wave 4** *(blocked on Wave 3 completion; independent plan files)*
+**Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 27-04-PLAN.md — independent answers, reached controls, event and capacity evidence
-- [ ] 27-05-PLAN.md — native host driver, two-host receipt gate, CI matrix
+- [ ] 27-04-PLAN.md — shared incremental output limit and public failure channels
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 27-06-PLAN.md — clean-checkout guide and actual macOS/Linux receipts
+- [ ] 27-05-PLAN.md — independent answers, reached controls, event and capacity evidence
+- [ ] 27-06-PLAN.md — native host driver, two-host receipt gate, CI matrix
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 27-07-PLAN.md — clean-checkout guide and actual macOS/Linux receipts
 
 **Runnable witness**: Check in `fizzbuzz.schway` with independently authored
 golden outputs for `n = 0`, `1`, `15`, and `1,000`; include a rejected
@@ -161,7 +168,7 @@ and new dependencies remain outside M005.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 26. Checked Scalar Sum | 5/5 | Complete    | 2026-10-03 |
-| 27. Exact FizzBuzz and Cross-Host Evidence | 0/6 | Planned | - |
+| 27. Exact FizzBuzz and Cross-Host Evidence | 0/7 | Planned | - |
 
 **Coverage:** 9/9 M005 requirements have exactly one phase owner. U64-02's
 comparison/Bool subset enables the first runnable program; its complete
