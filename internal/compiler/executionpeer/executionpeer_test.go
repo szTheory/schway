@@ -80,6 +80,83 @@ func ret(invocation, id, functionID string) execution.Event {
 	return event(invocation, id+":event:returned", "function.returned", functionID)
 }
 
+func phase26OccurrenceFixture(t *testing.T) (core.Program, execution.Execution) {
+	t.Helper()
+	const functionID = "entry"
+	const copyID = "entry:copy"
+	const returnID = "entry:return"
+	const loopID = "entry:block:loop"
+	invocation := inv(t, functionID)
+	program := core.Program{Functions: []core.Function{{
+		ID: functionID, Name: functionID,
+		Parameter: core.Parameter{ID: "entry:arg", Name: "n", Type: "U64"}, ReturnType: "U64",
+		Linear: &core.LinearBody{
+			Types: []core.TypeFact{{ID: "u64", Shape: core.TypeRef{Constructor: "U64"}}},
+			Places: []core.Place{
+				{ID: "entry:arg", Name: "n", TypeID: "u64"},
+				{ID: "entry:copy-place", Name: "snapshot", TypeID: "u64"},
+			},
+			Operations: []core.LinearOperation{
+				{ID: copyID, PointID: "entry:point:copy", Kind: core.OpCopy, SourceID: "entry:arg", TargetID: "entry:copy-place", TypeID: "u64"},
+				{ID: returnID, PointID: "entry:point:return", Kind: core.OpReturn, SourceID: "entry:copy-place", TypeID: "u64"},
+			},
+			Blocks: []core.Block{
+				{ID: "entry:block:entry", OperationIDs: []string{}, Successors: []string{"entry:block:loop"}},
+				{ID: loopID, OperationIDs: []string{copyID}, Successors: []string{loopID, "entry:block:exit"}},
+				{ID: "entry:block:exit", OperationIDs: []string{returnID}, Successors: []string{}},
+			},
+			Edges: []core.Edge{
+				{ID: "entry:edge:entry-loop", FromBlockID: "entry:block:entry", ToBlockID: loopID},
+				{ID: "entry:edge:back", FromBlockID: loopID, ToBlockID: loopID},
+				{ID: "entry:edge:exit", FromBlockID: loopID, ToBlockID: "entry:block:exit"},
+			},
+		},
+	}}}
+	document := execution.Execution{Schema: execution.Schema2, Outcome: execution.Outcome{Kind: execution.OutcomeReturned, Value: "3"}, Events: []execution.Event{
+		{Schema: execution.Schema2, ID: copyID + ":event", Kind: "value.copied", FunctionID: functionID, Invocation: invocation, SourcePlace: "entry:arg", TargetPlace: "entry:copy-place", TypeID: "u64", Occurrence: 0},
+		{Schema: execution.Schema2, ID: copyID + ":event", Kind: "value.copied", FunctionID: functionID, Invocation: invocation, SourcePlace: "entry:arg", TargetPlace: "entry:copy-place", TypeID: "u64", Occurrence: 1},
+		{Schema: execution.Schema2, ID: copyID + ":event", Kind: "value.copied", FunctionID: functionID, Invocation: invocation, SourcePlace: "entry:arg", TargetPlace: "entry:copy-place", TypeID: "u64", Occurrence: 2},
+		{Schema: execution.Schema2, ID: returnID + ":event:returned", Kind: "function.returned", FunctionID: functionID, Invocation: invocation, SourcePlace: "entry:copy-place", TypeID: "u64"},
+	}, LiveResources: []string{}}
+	return program, document
+}
+
+func TestPhase26PeerOccurrenceOrder(t *testing.T) {
+	program, document := phase26OccurrenceFixture(t)
+	if err := executionpeer.Validate(program, document); err != nil {
+		t.Fatalf("complete 0/1/2 copy trace rejected: %v", err)
+	}
+	tests := []struct {
+		name   string
+		mutate func(*core.Program, *execution.Execution)
+	}{
+		{name: "duplicate zero", mutate: func(_ *core.Program, doc *execution.Execution) { doc.Events[1].Occurrence = 0 }},
+		{name: "gap", mutate: func(_ *core.Program, doc *execution.Execution) { doc.Events[1].Occurrence = 2 }},
+		{name: "swapped", mutate: func(_ *core.Program, doc *execution.Execution) {
+			doc.Events[1].Occurrence, doc.Events[2].Occurrence = 2, 1
+		}},
+		{name: "wrong invocation", mutate: func(_ *core.Program, doc *execution.Execution) {
+			doc.Events[1].Invocation = inv(t, "entry", "entry:missing")
+		}},
+		{name: "wrong static site", mutate: func(_ *core.Program, doc *execution.Execution) { doc.Events[0].ID = "entry:forged:event" }},
+		{name: "non-scalar cycle event", mutate: func(program *core.Program, doc *execution.Execution) {
+			program.Functions[0].Linear.Operations[0].Kind = core.OpMove
+			for index := range doc.Events[:3] {
+				doc.Events[index].Kind = "value.transferred"
+			}
+		}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			program, document := phase26OccurrenceFixture(t)
+			test.mutate(&program, &document)
+			if err := executionpeer.Validate(program, document); err == nil {
+				t.Fatal("forged occurrence trace was accepted")
+			}
+		})
+	}
+}
+
 func validPartial(t *testing.T) execution.Execution {
 	root := inv(t, "entry")
 	child := inv(t, "entry", "entry:a")
