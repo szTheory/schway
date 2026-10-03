@@ -31,8 +31,10 @@ The first three milestones were deliberately narrower than the full vision:
 prove one real source-to-native semantic spine (M001), prove it survives a
 function boundary (M002), then prove it survives computation (M003), before
 expanding into effects, services, agents, databases, GUIs, or an ecosystem.
-Calls between Schway functions, computed-value matches, and U64 constants now
-exist end to end; loops, arithmetic, and generic user code still do not.
+Calls between Schway functions, computed-value matches, and U64 constants run
+end to end. Phase 26 now adds checked U64 addition, comparison/Bool branching,
+and scalar loops through an ordinary `sum_to_n` application; general strings,
+collections, modules, and resource-carrying loops remain future work.
 
 The development destination is a usable general-purpose language: small native
 programs, FizzBuzz and file utilities, reusable byte-oriented libraries, JSON,
@@ -68,6 +70,21 @@ existing CI job as the next action, keep the phase incomplete, and resume its
 verifier after the receipt arrives without replaying completed plans.
 
 ## Current State
+
+**2026-10-03 Phase 26 closeout.** M004 is complete and M005 has delivered
+`examples/sum_to_n.schway`: exact results 0/55/500500 for inputs 0/10/1,000,
+no stdout for rejected 1,001, and defined checked U64 overflow. Independent
+verification passes 5/5 roadmap truths; code review is clean, Nyquist coverage
+is complete for all four phase requirements, and all twelve declared security
+mitigations are closed at ASVS L1. Hosted focused run 37118144404 and full run
+37118315516 pass on Ubuntu and macOS at implementation revision
+`46bee44ad87891d8a8547b2489f029d0fe237899`. No local tests or native runs were
+performed for this phase. Scalar loop admission preserves resource/loan
+back-edge refusals, independent peer derivation, and explicit capture versus
+verification boundaries. Phase 27 is next: exact FizzBuzz, remainder/equality,
+bounded text output, and the remaining M005 evidence/documentation contract.
+
+### Historical state records (superseded by dated closeouts)
 
 **M004 opened 2026-09-27.** Phase 21 is completed, archived contract/retirement
 prework; its six plans and seven UAT cases must not be replayed. Phase 22 is
@@ -295,6 +312,14 @@ milestone number.
 
 ### Validated
 
+- ✓ Checked U64 addition and defined overflow; `<` and Bool branching; scalar
+  U64/Bool loops with independent deterministic fixed points and explicit
+  ownership/resource/loan/provenance back-edge refusals — M005 Phase 26
+  (U64-01, FLOW-01, FLOW-02).
+- ✓ Ordinary `sum_to_n` source runs through the public app route with literal
+  expected answers, rejected-input/overflow tuples, reached mutations, dynamic
+  event identities, and capacity separation — M005 Phase 26 (APP-07).
+
 - ✓ A clean checkout can format, check, interpret, and natively run a small
   canonical Schway program through one production command — M001 (Phase 1;
   `lang format` / `lang check` / `lang run --engine={interp,native}`).
@@ -385,14 +410,13 @@ milestone number.
 
 ### Active
 
-- [ ] Define U64 arithmetic, comparison, remainder, Bool, and overflow behavior
-  so interpreter and native execution agree at boundary cases.
-- [ ] Admit scalar loops through CFG fixed-point analysis and independently
-  preserve the current resource/loan refusal boundary across back edges.
-- [ ] Run bounded-input `sum_to_n` and FizzBuzz through ordinary Schway source
-  with exact expected outputs and bounded text/decimal output.
-- [ ] Exercise wrong-result, arithmetic-boundary, loop-state, and changed-
-  assumption controls with independent interpreter/native answers.
+- [ ] Complete U64 equality/remainder with static zero-divisor refusal and
+  defined dynamic checked failure — Phase 27 (U64-02).
+- [ ] Run exact bounded FizzBuzz through ordinary source, and close the shared
+  65,536-byte output limit for both M005 programs — Phase 27 (APP-08, APP-09).
+- [ ] Close independently pinned cross-program and dual-host evidence,
+  reached negative controls, and clean-checkout documentation — Phase 27
+  (EVD-12, DX-16).
 
 Atomic IDs and acceptance live in [REQUIREMENTS.md](REQUIREMENTS.md); phase
 ownership lives in [ROADMAP.md](ROADMAP.md). M004 is archived completed work.
@@ -560,6 +584,9 @@ Canonical planning inputs:
 | Separate application execution from differential replay | Real IO cannot safely run once per optimization tier on the user's input | Adopted for M004; explicit verification uses isolated/replayable inputs |
 | Lower bounded pointer borrows without `restrict` | Schway exclusivity and an optimizer alias promise are distinct obligations | Prospective D-16-07 amendment; retain per-family proofs and broad-shape refusals |
 | Maintain a program-driven living roadmap | The user wants automatic planning suggestions and steady progress toward usable software | Agent-executed planning reviews in AGENTS.md; no background service or new planning framework |
+| Start loop admission with independently derived U64/Bool scalar fixed points | A runnable sum proves useful iteration without widening resource/loan authority | ✓ Phase 26 — exact source-to-app answers and independent refusals pass on both hosts |
+| Distinguish repeated events by invocation/site occurrence while preserving legacy bytes | Static event IDs alone alias loop iterations; zero omission preserves existing documents | ✓ Phase 26 — source-authored copies emit 0/1/2 and independent mutations reject forged sequences |
+| Validate checked-add terminal evidence separately from arithmetic semantics | Structural event membership cannot prove operand arithmetic; native size admission must include possible failure records | ✓ Phase 26 CR-01 — peer attribution/outcome and N−1/N capture-bound controls pass; actual overflow is exercised in each engine |
 
 ## Evolution
 
@@ -581,4 +608,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-02 after M005 kickoff*
+*Last updated: 2026-10-03 after Phase 26 verification*

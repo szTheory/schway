@@ -1,16 +1,44 @@
 # Schway Language Maturity — Current Evidence
 
-**Re-assessed:** 2026-10-02, against current source and Phases 22–25
-artifacts. Phase 22's passed 5/5 report and completed objective README UAT are
-preserved. Phase 23's refreshed 2026-09-30 report passes 5/5 truths and its
-seven plans are complete. Phase 24's verifier passes 5/5 truths with no
-behavior-unverified items. Hosted run 36856048690 passed full vet/build/test/
-race suites and current evidence aggregates on Ubuntu Linux/x86_64 and macOS
-Darwin/arm64 at source SHA `ed94ef7972b25deb85ab90fafbf3403dc31629f5`; the
-focused Phase 24 receipts took 25s and 22s. No local project suites or scripts
-were run for Phase 24 closeout. Phase 23's security review covers 18/18 threats.
-Objective checks cover acceptance; subjective readability is not claimed.
+**Re-assessed:** 2026-10-03, against current source and Phase 26's passed
+5/5 goal verification. The checked scalar sum is now runnable through the
+public app route. Current focused and full hosted receipts pass on Ubuntu and
+macOS; details and remaining refusals are below. Earlier phase amendments are
+preserved as dated evidence, not substituted for current implementation checks.
 Future direction lives in [PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md).
+
+### Phase 26 completion amendment — 2026-10-03
+
+**Source inspection:** `examples/sum_to_n.schway` now uses local mutable U64
+state, `<`, checked `+`, `if/else`, and pre-tested `while`; its immutable scalar
+copy emits distinct dynamic occurrences. Checker, core validator, and origin
+validator derive scalar admission independently with deterministic 65,536-work
+budgets. Ownership, resources, loans, loan-derived provenance, and unsupported
+cyclic events remain refused. The path oracle remains acyclic; it is not used
+as a scalar-loop proof. No new backend or dependency was added.
+
+**Newly executed hosted evidence:** focused run
+[37118144404](https://github.com/szTheory/schway/actions/runs/37118144404) and full
+run [37118315516](https://github.com/szTheory/schway/actions/runs/37118315516)
+passed on Ubuntu and macOS at source revision
+`46bee44ad87891d8a8547b2489f029d0fe237899`. Public inputs 0/10/1,000 produce
+exactly `0\n`/`55\n`/`500500\n`; 1,001 fails without stdout. Direct overflow
+fails with exit 65 and exact `schway: U64 addition overflow\n` stderr. Each
+engine is checked against literal expected answers, including reached
+wrong-result and skipped-iteration controls. Repeated-copy ordinals, forged
+sequences, independent analysis exhaustion/refusals, and evidence capacity
+controls pass. Full/race suites and current evidence aggregates pass too.
+Independent verification passes 5/5 roadmap truths; review is clean and all
+12 declared security mitigations are closed at ASVS L1.
+
+**Limits and provenance:** no local tests or native runs were performed for
+Phase 26. Prior M004 receipts remain historical. The 35-pair validation corpus
+receipt is from hosted run 37098702559; current semantic proof comes from the
+later implementation-bound runs above. Cold/warm latency distributions were
+not measured. Capture remains separate from independent verification, and the
+event peer checks structural attribution rather than proving overflow operands.
+Equality, remainder, fixed text, shared output limits, and the complete M005
+cross-program evidence/documentation contract remain Phase 27-owned.
 
 ### Phase 25 closeout amendment — 2026-10-01
 
@@ -185,7 +213,8 @@ thresholds below reflect the later Phase 23 closeout.
 | Calls between Schway functions | Multi-function programs run; call-graph cycles remain refused | Phase 11 archive; `testdata/phase07/call_basic.schway`; `session.RunInterpreter` / native path |
 | Returns independent of parameter type | Admitted through the production pipeline | Phase 17 archive and `session_phase17_test.go` |
 | Computed `Result` matches and payload returns | Admitted; this is not unrestricted statement control flow | `session_phase18_payload_test.go`, Phase 18 archive |
-| U64 constants | Literals and `OpConst` run; arithmetic does not exist | `session_phase19_test.go`, `testdata/phase19/` |
+| U64 constants and checked scalar computation | Constants, checked addition, `<`, Bool branches, mutable U64/Bool state, and pre-tested scalar loops run; equality/remainder are not yet admitted | `examples/sum_to_n.schway`, `examples/phase26/checked_add_overflow.schway`, `TestPhase26ExactSumMatrix`, `TestPhase26CheckedAddInterpreter`, `TestPhase26CheckedAddC17` |
+| Bounded scalar CFG and repeated events | Three independent analyses admit scalar state with deterministic bounds; repeated copies have per-invocation/site occurrence identity | `check/scalar.go`, `corevalidate`, `originvalidate`, `TestPhase26AnalysisExhaustion`, `TestPhase26PeerOccurrenceOrder`, `TestPhase26SourceRepeatedCopyEvidence`; authority-bearing carries remain refused |
 | Ownership/borrow checking | Affine ownership, interprocedural loans, independent core/origin validation, bounded path oracle | `check`, `corevalidate`, `originvalidate`, `pathoracle` |
 | Evidence | Interpreter/native comparison, mutation controls, manifests, scoped optimizer/sanitizer lanes, structured diagnostics/repair | Phase 14–20 records; each claim retains its scope/grade |
 | Phase 21 | Completed contract and emitter-retirement work, six plans, seven UAT cases | `milestones/M004-phases/21-native-emission-ownership-and-resource-discharge-m004/` |
@@ -203,7 +232,8 @@ The available compiler is not a general application runtime yet.
 | Schway foreign operations and pointer parameters | Phases 23–24 admit only the exact file-byte acquire/use/release and bounded transfer/error shapes. Phase 25 admits shared/exclusive U64 read-copy helpers only in its exact utility chain; other foreign-call shapes and broader pointer bodies remain structurally refused | `internal/compiler/cgen/cgen_program.go`, `TestPhase23OperationContract`, `TestPhase25ExclusivePointerRefusal`, `TestPhase25PointerPathLiveOverlap`, `TestPhase25PointerPathBorrowedResultEscape`, `TestPhase25EscapeDiagnosticSourceAttribution`, and peer mutation controls; hosted run 36971855722 passes all 18 family/host/lane rows |
 | Host build closure | Known source/header/compiler/target inputs are identity-bound, but the SDK/linker/runtime closure is incomplete; app artifacts are not cacheable | `native/bindings.go`, `examples/phase22/BINDINGS.md`, Phase 22 build receipts |
 | Schway-owned physical cleanup | A bounded owner stays live through helper use and is released exactly once on normal and typed-error paths; general cleanup shapes, fallible destructors, and nonlocal exits remain unadmitted. The C adapter owns file descriptors and frees partial buffers on acquisition failures | `examples/phase24/error.schway`, `examples/phase24/README.md`, `internal/compiler/native/phase24_observer_test.go`, `scripts/verify-phase24.sh`; hosted CI 36856048690 |
-| Arithmetic/comparison and scalar iteration | Cannot add, compute remainder, loop, or write FizzBuzz | syntax/core operation inventory; `pathoracle` rejects CFG cycles |
+| Remaining computation/output surface | Checked addition, `<`, Bool branches, and scalar loops run; equality, remainder, fixed text, and the shared M005 output contract still block FizzBuzz | Phase 26 source/tests and 26-VERIFICATION.md; Phase 27 owns U64-02/APP-08/APP-09/EVD-12/DX-16 |
+| Resource/loan loop carries and cyclic path enumeration | Scalar-loop admission does not authorize ownership, resources, loans, or loan-derived provenance across back edges; the path oracle remains acyclic | Phase 26 category/peer mutation controls and `TestCompositionCycleGuardFailsClosed` |
 | General strings, arrays, collections, usable library modules | Ordinary JSON/HTTP libraries are not yet writable | current syntax/checker frontier; design wiki is prospective |
 | Recursion and broader resource control | Call cycles, nonlocal exits, cancellation, general fallible cleanup and escaped pointers require further contracts | callgraph and current foreign refusal boundaries |
 
@@ -260,54 +290,55 @@ Machine check: `GOCACHE=/tmp/schway-verification-gocache go test ./internal/comp
 
 ## Next useful thresholds
 
-1. **M005 Phase 26 practical computation.** User-visible program: `sum_to_n`, then
-   FizzBuzz from ordinary Schway source with exact output and boundary
-   behavior. Current blocker: defined U64 arithmetic/remainder and overflow,
-   comparison/Bool, scalar-loop fixed points, and bounded text/decimal output
-   do not exist. Smallest complete slice: one bounded-input `sum_to_n` command
-   with exact expected output, arithmetic boundaries, and a loop-carried-state
-   mutation control, then reuse that core for FizzBuzz. Checker/guarantee
-   changes: typed operators with defined C behavior, overflow/error semantics,
-   CFG fixed-point state/loan analysis, and bounded output effects.
-   Evidence/debt: NAT-09 and current arithmetic/CFG refusal witnesses;
-   independent interpreter/native answers and changed-assumption controls.
-   Owner/next action: M005 requirements and Phase 26 planning. Reprioritize if
-   a named consumer demonstrates a smaller safe computation slice with equal
-   runnable value.
-2. **A bounded byte utility with a reusable local module boundary.**
-   User-visible program: a `checksum` command that reads a size-limited file,
-   computes a specified checksum, and returns exact success/error results.
-   Current blocker: byte views/indexing, bounded iteration, arithmetic, and
-   local modules are absent. Smallest complete slice: choose one checksum
-   consumer, define input limits and empty/truncated behavior, then admit only
-   the byte operations and imports it needs. Checker/guarantee changes: prove
-   bounds and initialization, analyze loop-carried state and resource loans,
-   preserve cleanup on errors, and define module visibility. Evidence/debt:
-   build on Phase 24 RES-06 and Phase 26 arithmetic/loop tests; cover malformed,
-   empty, maximum-size, and wrong-result controls. Owner/next action:
-   post-Phase-26 planning after a checksum consumer is named. Reprioritize if a
-   concrete file tool needs a smaller non-checksum byte API.
-3. **A bounded JSON configuration consumer if a real need is named.**
-   User-visible program: validate a size-limited JSON config file with pinned
-   success and typed-error results for malformed, truncated, and oversized
-   input. Current blocker: general byte views/indexing, arrays/strings, bounded
-   loops, and reusable modules are not admitted; Phase 25 pointers alone do not
-   provide those capabilities. Smallest complete slice: choose one consumer,
-   fix its schema and byte/depth limits, and implement only the parser forms it
-   needs with bounds checks and cleanup on error. Checker/guarantee changes:
-   prove bounds and initialization, analyze loop-carried state and resource
-   loans, preserve owned-buffer cleanup, and independently mutate truncation,
-   length, and schema cases across interpreter/native runs. Evidence/debt:
-   build on Phase 24 RES-06 and define consumer-specific IDs at kickoff; make no
-   general JSON completeness claim. Owner/next action: post-Phase-26 planning
-   after a named Schway tool needs JSON configuration. Reprioritize if a real
-   consumer needs another input format or a smaller bounded representation.
+1. **Complete Phase 27 with exact FizzBuzz.** User-visible program: ordinary
+   `fizzbuzz.schway` prints the exact lines for inputs 0–1,000. Current blocker:
+   equality, remainder with defined zero-divisor behavior, fixed text, and the
+   shared output-limit contract are not admitted. Smallest complete slice:
+   reuse Phase 26 scalar loops and decimal output, add only the operators and
+   fixed writes needed by FizzBuzz, and pin both programs' 65,536-byte ceiling.
+   Checker/guarantee changes: typed equality/remainder, static zero-divisor
+   refusal, dynamic checked failure, and bounded output effects; keep resource
+   and loan back-edge refusals. Evidence/debt: Phase 26 U64-01/FLOW-01/FLOW-02/
+   APP-07 are verified; Phase 27 owns U64-02, APP-08, APP-09, EVD-12, and DX-16,
+   including independent literal answers, reached mutations, and both-host
+   evidence. Owner/next action: Phase 27 discussion and planning. Reprioritize
+   only if a named consumer exposes a smaller safe slice with greater runnable
+   value or a Phase 26 safety regression blocks reuse.
+2. **Build a bounded byte utility and reusable local module boundary.**
+   User-visible program: a `checksum` command reads a size-limited file and
+   computes one specified checksum with exact success/error results. Current
+   blocker: byte views, lengths/indexing, required checksum operations, and
+   local modules are absent; scalar loops now exist, but resource/loan carries
+   remain refused. Smallest complete slice: name one consumer and algorithm,
+   specify empty/maximum/truncated behavior, then admit only its byte operations
+   and an import used by a second consumer. Checker/guarantee changes: bounds,
+   initialization, necessary scalar operators, borrow lifetime around iteration,
+   cleanup on errors, and module visibility. Evidence/debt: Phase 24 RES-06
+   cleanup, Phase 25 pointer controls, Phase 26 exact-loop and refusal tests,
+   plus new byte-boundary and wrong-result controls; the provisional checksum
+   fixture is still a refusal witness. Owner/next action: post-M005 consumer
+   selection. Reprioritize if a real file tool needs a smaller byte API first.
+3. **Enable one bounded JSON configuration consumer when a real need is named.**
+   User-visible program: validate a size-limited config against one fixed schema,
+   with exact success and typed-error results. Current blocker: byte indexing,
+   aggregates, a bounded parser stack, and reusable modules remain unavailable;
+   scalar loops alone do not supply them. Smallest complete slice: choose a
+   consuming tool, define schema and byte/depth limits, and implement only its
+   parser forms with failure cleanup. Checker/guarantee changes: bounds and
+   initialization, parser-state ownership, borrow lifetime during iteration,
+   and owned-buffer cleanup on every error. Evidence/debt: Phase 24 RES-06,
+   Phase 26 scalar/refusal controls, and consumer-specific malformed, truncated,
+   oversized, depth, and schema cases with independent answers. Assign new
+   requirement/evidence IDs at kickoff; make no general JSON completeness claim.
+   Owner/next action: post-M005 planning after a named Schway tool needs JSON.
+   Reprioritize if another format or a smaller bounded representation serves
+   the actual consumer.
 
-M005 now targets `sum_to_n` and FizzBuzz. Its blockers remain defined
-arithmetic/remainder, comparison/Bool, scalar-loop fixed points, and bounded
-text/decimal output. Keep the first loop slice scalar and revisit that boundary
-only when a runnable witness or measured safety constraint requires broader
-state.
+M005 has delivered `sum_to_n`; reuse its checked scalar computation for
+FizzBuzz. Equality/remainder, fixed text, shared output limits, and the complete
+cross-program evidence/documentation contract remain Phase 27 work. Keep
+resource/loan back-edge refusals until a named consumer and independent safety
+evidence justify a wider contract.
 
 Do not assign percentages to assurance or language completeness: neither has
 a stable denominator. Report runnable witnesses, known refusals, observed

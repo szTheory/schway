@@ -2,19 +2,20 @@
 gsd_state_version: "1.0"
 milestone: M005
 milestone_name: Practical Computation
-current_phase: 26
-current_phase_name: Checked Scalar Sum
-status: executing
-stopped_at: Completed 26-05-PLAN.md; awaiting independent Phase 26 verification
-last_updated: "2026-10-03T07:59:59.559Z"
+current_phase: 27
+current_phase_name: Exact FizzBuzz and Cross-Host Evidence
+status: planning
+stopped_at: Phase 26 complete, ready to plan Phase 27
+last_updated: "2026-10-03T11:25:41.374Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 26 Plan 05 complete; awaiting independent verification
-state_head: ffb92b5eac39f618ef5b36371d9e5502b0276569
+last_activity_desc: Phase 26 complete, transitioned to Phase 27
+state_head: 34b76c199396e434135fb474107fb71021713ff2
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
   completed_plans: 5
+  percent: 50
 ---
 
 <!-- schway-current:start -->
@@ -50,12 +51,12 @@ control list is parsed. Do not run project suites locally.
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-02)
+See: .planning/PROJECT.md (updated 2026-10-03)
 
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 26 — Checked Scalar Sum
+**Current focus:** Phase 27 — Exact FizzBuzz and Cross-Host Evidence
 
 **Checkout location (2026-10-01):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. Its branch remains
@@ -71,9 +72,9 @@ plans.
 **Durable context (survives context clears — read before re-deriving):**
 
   - **Name decision:** Schway is the chosen public language and project name (2026-09-28). The current source and tools use `github.com/szTheory/schway`, `schway`/`schway-repair`, `.schway`, `schway.*`/`schway:*`, and `schway_`/`SCHWAY_`; earlier commit trees remain historical evidence. The initial isolated publication audit preserved 1,538 original commits, 18 merges, and three milestone tags; later coordinated history cleanup and source updates are recorded in this quick task's chronological plan. The latest full-history audit at `15b3a518` reports 1,573 reachable commits and zero personal home paths, message/contact candidates, and unclassified phone/secret candidates. Hosted run 36705094434 passed both host check suites and evidence aggregates. Hosted run 36707529870 passed Ubuntu/macOS checks and evidence aggregates; Phase 23's current verifier passes 11/11. Phase 24's verifier passes 5/5 at source `ed94ef79`; hosted run 36856048690 passed full/race suites and evidence aggregates on Ubuntu and macOS. No local suite or UAT was rerun for Phase 24 closeout. Phase 25's seven plans are complete; run 36971855722 closes all 18 family/host/lane receipts, and the current goal-backward verifier passes 6/6 truths and 5/5 roadmap criteria. PR #1 is merged with successful final-head CI; all M004 phases now pass fresh verification. M005 planning now supersedes the former `$gsd-new-milestone` next-command pointer. Private audit artifacts remain in the original checkout under this quick task's `audit/` directory.
-- `.planning/LANGUAGE-MATURITY.md` — M005 kickoff source-inspection snapshot
-  and historical Phase 25 receipts. Scalar arithmetic and loops remain refused;
-  Phase 26 owns the first admitted `sum_to_n` witness.
+- `.planning/LANGUAGE-MATURITY.md` — Phase 26 completion snapshot and source-bound
+  hosted receipts. Checked addition, `<`/Bool, and scalar loops now run;
+  resource/loan back-edge carries remain refused.
 - `.planning/PRODUCT-ROADMAP.md` — living capability order and current three
   recommendations. M004 is complete; M005 practical computation is active.
 
@@ -118,11 +119,11 @@ plans.
 
 ## Current Position
 
-Phase: 26 (Checked Scalar Sum) — EXECUTING
-Plan: 5 of 5
-Status: Awaiting independent verification
-Last activity: 2026-10-03 — Phase 26 Plan 05 hosted gate passed
-Progress: [░░░░░░░░░░] 0%
+Phase: 27 — Exact FizzBuzz and Cross-Host Evidence
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-03 — Phase 26 complete, transitioned to Phase 27
+Progress: 1/2 phases complete; 5/5 defined plans complete; Phase 27 unplanned
 
 ## M005 Planning
 
@@ -133,7 +134,8 @@ cross-program evidence and documentation contract. The comparison/Bool subset
 needed by `sum_to_n` starts in Phase 26; U64-02 closes only when remainder and
 zero-divisor behavior are present in Phase 27. Every phase has a runnable
 witness. At roadmap approval, the next action was `$gsd-plan-phase 26`; Phase 26
-planning is now complete. The dated handoff below records the current command.
+execution and goal verification are now complete. The dated handoff below
+records the current command.
 
 M005 research inspected source and prior receipts but ran no new tests or
 native checks. The M004 Phase 25 dual-host receipt is historical evidence at
@@ -141,7 +143,7 @@ its recorded revision; M005 will need its own macOS/Linux native evidence.
 Resource/loan loop back edges remain refused. Keep the Go standard library,
 existing interpreter, C17/Clang emitter, and application runner.
 
-Planning-complete amendment — 2026-10-02: Phase 26 has five committed plans in
+Planning-complete amendment — 2026-10-02 (historical): Phase 26 has five committed plans in
 four waves. After clearing context, run `$gsd-execute-phase 26`. After Phase 26
 execution and verification, continue with `$gsd-discuss-phase 27`.
 
@@ -240,7 +242,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 207
+- Total plans completed: 212
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -254,6 +256,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 23 | 7 | - | - |
 | 24 | 3 | - | - |
 | 25 | 7 | - | - |
+| 26 | 5 | - | - |
 
 The archived aggregate preserves the cumulative project total. The detailed
 rows above are the M004 subset; do not recompute the project total from that
@@ -548,19 +551,11 @@ decision history; they no longer describe current status.
 - [Phase 25]: Malformed pointer-lowering candidates fail before serialization, while PublicOrigin borrowed views retain their additive path and Match callback candidates remain refusal-eligible.
 - [Phase 25]: Run 36971855722 closes EVD-10 through paired native Linux/x86_64 and macOS/arm64 evidence aggregates at merge revision a90c27c5b432ef6fc59fbafaa68b50a1374ae138.
 - [Phase 25]: Preserve SECURED / ASVS L1, 15/15 mitigations closed, and zero open threats; hosted evidence supplements rather than expands the security audit.
-- [Phase 26]: Phase 26 scalar loop admission uses bounded, independently derived U64/Bool fixed-point analyses; authority-bearing values remain refused across back edges.
-- [Phase 26]: The acyclic path oracle remains separate from scalar loop proof; focused Phase 26 regression evidence runs hosted on Linux and macOS.
-- [Phase 26]: Reused OutcomeDefect and existing process/capture channels; no public outcome type was needed.
-- [Phase 26]: Hosted phase26_focused CI is the verification receipt; project suites remain unrun locally.
-- [Phase 26]: Admit only initialized, matching U64/Bool OpCopy transfers in scalar cycles; retain legacy ownership copies outside scalar analysis.
-- [Phase 26]: Keep checker, corevalidate, and originvalidate scalar analysis independent, with pathoracle acyclic-only.
-- [Phase 26]: Occurrence zero is omitted in JSON to preserve existing one-shot schema-2 canonical bytes.
-- [Phase 26]: The execution peer independently admits only contiguous scalar-copy occurrences in cyclic CFG sites; Plan 05 owns public capture capacity.
-- [Phase 26]: Phase 26 scalar immutable let snapshots copy into a fresh place to preserve value semantics.
-- [Phase 26]: Keep scalar let parser routing narrow; unsupported generic call lets retain the generic parse path.
-- [Phase 26]: Project legacy interpreter event documents through the existing schema-2 API before independent peer validation.
-- [Phase 26]: Keep app result shape unchanged; force capture exhaustion through the existing evidence-limit seam.
-- [Phase 26]: Ground validation selectors and row grades in hosted per-package checks and the generated receipt.
+- [Phase 26]: Admit initialized U64/Bool scalar loops with three independent bounded fixed-point analyses; authority-bearing carries stay refused and the path oracle stays acyclic.
+- [Phase 26]: Scalar immutable snapshots copy into fresh places; per-invocation/site occurrence zero is omitted to preserve legacy bytes, and the execution peer rejects forged sequences.
+- [Phase 26]: Keep child outcome, ToolError, capture status, and independent verification separate; capture never self-claims verification. The dated 26-PLANNING-AMENDMENTS.md corrects Plan 05 wording.
+- [Phase 26]: Checked-add terminal evidence requires fixed reason/source/type, final position and empty defect outcome; C size preflight includes the possible terminal record. Peer structural attribution does not prove operand arithmetic.
+- [Phase 26]: Focused/full hosted runs 37118144404/37118315516 pass on Ubuntu/macOS at 46bee44; no local tests/native runs. Independent goal verification passes 5/5, review is clean, and all 12 declared security mitigations are closed.
 
 ### Pending Todos
 
@@ -586,6 +581,12 @@ Carried into M003 as cheap, unowned cleanup:
   retro-strengthening branch and reported what it found.
 
 ### Blockers/Concerns
+
+**Current — Phase 26 closeout (2026-10-03):** No Phase 26 blocker or human UAT
+remains. Phase 27 owns equality/remainder, fixed text, shared output limits,
+and the complete cross-program evidence/documentation contract. Resource/loan
+loop carries remain refused. Cold/warm Phase 26 latency distributions were not
+measured; app host dependency closure remains incomplete/non-cacheable.
 
 **Phase 22 closeout (2026-09-27; historical snapshot):** The implementation and automated checks are
 complete, and the refreshed verifier confirms 17/17 automated truths. Phase
@@ -763,11 +764,23 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-03T07:59:49.160Z
-Stopped at: Completed 26-05-PLAN.md; awaiting independent Phase 26 verification
+Last session: 2026-10-03T11:26:22+00:00
+Stopped at: Phase 26 complete, ready to plan Phase 27
 Resume file: None
-Next action: After clearing context, run $gsd-execute-phase 26; the five committed plans will be loaded. After Phase 26 is executed and verified, run $gsd-discuss-phase 27.
-Routing resolution — 2026-10-02 (current): Phase 25 plans 25-01 through 25-07
+Next action: After clearing context, run `$gsd-discuss-phase 27`. Phase 26 is complete; do not replay its five plans or completed verification.
+Routing resolution — 2026-10-03 (current): Phase 26 has five summaries and a
+passed 5/5 independent goal report. The completion command returned no
+warnings and advanced to Phase 27. No Phase 27 CONTEXT.md or plans exist;
+discussion precedes planning. `init.progress` confirms Phase 26 complete and
+Phase 27 not started; its generic missing-verification hint for the unplanned
+Phase 27 is not the next workflow step. Use discussion to establish scope.
+Implementation-bound focused/full hosted runs
+37118144404/37118315516 passed both hosts. This branch is
+`phase26-validation`; only documentation changed after implementation revision
+46bee44. The three next capability recommendations and their evidence/owners
+are current in PRODUCT-ROADMAP.md and LANGUAGE-MATURITY.md.
+
+Routing resolution — 2026-10-02 (historical; superseded above): Phase 25 plans 25-01 through 25-07
 are complete and summarized. Goal-backward verification passes 6/6 must-have
 truths and 5/5 roadmap criteria; `phase complete --phase 25` updated ROADMAP
 and STATE. Hosted run 36971855722 passed the checks and current evidence

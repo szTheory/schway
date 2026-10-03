@@ -31,7 +31,7 @@ Phase IDs continue from M004's Phase 25. Each feature phase has a runnable
 source/input/output gain. Phase plans will choose the narrow source spelling and
 implementation details while preserving the acceptance behavior below.
 
-- [ ] **Phase 26: Checked Scalar Sum** - A caller runs bounded `sum_to_n` from ordinary Schway source, with checked U64 addition and safe scalar loops.
+- [x] **Phase 26: Checked Scalar Sum** - A caller runs bounded `sum_to_n` from ordinary Schway source, with checked U64 addition and safe scalar loops. (completed 2026-10-03)
 - [ ] **Phase 27: Exact FizzBuzz and Cross-Host Evidence** - A caller runs exact FizzBuzz, and both M005 programs have bounded output and independent interpreter/native evidence.
 
 ## Phase Details
@@ -52,7 +52,7 @@ implementation details while preserving the acceptance behavior below.
 4. A loop carrying ownership, a resource, a loan, or loan-derived provenance across its back edge is refused with a stable source-attributed diagnostic. A loop analysis that exceeds its deterministic bound fails closed rather than claiming admission.
 5. The `sum_to_n` result is checked against separately authored expected answers in each engine; a reached wrong-result or skipped-iteration control fails. The accepted input bound is `0 ≤ n ≤ 1,000`; a larger input fails without application output.
 
-**Plans**: 5/5 plans executed in 4 waves
+**Plans**: 5/5 plans complete in 4 waves
 **Wave 1**
 
 - [x] 26-01-PLAN.md
@@ -139,7 +139,7 @@ and new dependencies remain outside M005.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 26. Checked Scalar Sum | 5/5 | In Progress|  |
+| 26. Checked Scalar Sum | 5/5 | Complete    | 2026-10-03 |
 | 27. Exact FizzBuzz and Cross-Host Evidence | 0/TBD | Not started | - |
 
 **Coverage:** 9/9 M005 requirements have exactly one phase owner. U64-02's

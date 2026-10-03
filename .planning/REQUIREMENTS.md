@@ -71,4 +71,4 @@ APP-09 and EVD-12 span both programs and close with Phase 27.
 
 ---
 *Requirements defined: 2026-10-02*
-*Last updated: 2026-10-02 after M005 requirements approval*
+*Last updated: 2026-10-03 after Phase 26 verification; four Phase 26 requirements complete, five Phase 27 requirements pending*
