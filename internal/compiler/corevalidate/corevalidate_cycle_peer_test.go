@@ -403,3 +403,17 @@ func TestCyclePeerDeterministicUnderRepeat(t *testing.T) {
 		t.Fatalf("expected identical refusal code across repeated runs, got %q vs %q", first.Problems[0].Code, second.Problems[0].Code)
 	}
 }
+
+func TestPhase26AnalysisExhaustion(t *testing.T) {
+	checked := mustCheckFixture(t, "examples", "sum_to_n.schway")
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("sum_to_n checker diagnostics: %+v", checked.Diagnostics)
+	}
+	previous := scalarTransferBudgetForTest
+	scalarTransferBudgetForTest = 1
+	defer func() { scalarTransferBudgetForTest = previous }()
+	result := Validate(checked.Program)
+	if result.Valid || !hasProblem(result.Problems, "core.scalar_analysis_limit") {
+		t.Fatalf("forced scalar budget did not fail closed with core.scalar_analysis_limit: %+v", result)
+	}
+}

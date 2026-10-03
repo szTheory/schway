@@ -268,6 +268,19 @@ func RecomputeOriginPerReturn(function core.Function, calleeContracts map[string
 
 type originScalarState map[string]bool
 
+// originScalarTransferBudgetForTest keeps the independent origin peer's
+// exhaustion boundary directly testable without a large input fixture.
+var originScalarTransferBudgetForTest int
+
+// SetOriginScalarTransferBudgetForTest overrides the origin peer's work
+// budget and returns a restore function. Production callers should not use
+// this test seam.
+func SetOriginScalarTransferBudgetForTest(budget int) func() {
+	previous := originScalarTransferBudgetForTest
+	originScalarTransferBudgetForTest = budget
+	return func() { originScalarTransferBudgetForTest = previous }
+}
+
 func originHasScalarCFG(function core.Function) bool {
 	for _, operation := range function.Linear.Operations {
 		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
@@ -297,7 +310,10 @@ func originScalarFixedPoint(function core.Function) bool {
 	outputs := map[string]originScalarState{}
 	reachable := map[string]bool{}
 	work := 0
-	const budget = 65536
+	budget := originScalarTransferBudgetForTest
+	if budget <= 0 {
+		budget = 65536
+	}
 	for sweep := 0; ; sweep++ {
 		changed := false
 		for _, block := range blocks {

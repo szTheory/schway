@@ -26,6 +26,10 @@ type scalarBuilder struct {
 	diagnostics []diagnostic.Diagnostic
 }
 
+// scalarAnalysisBudgetForTest overrides the deterministic production budget
+// so tests can prove exhaustion without constructing adversarial source.
+var scalarAnalysisBudgetForTest int
+
 func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Function, []diagnostic.Diagnostic, int) {
 	if function.Parameter.Type.Constructor != "U64" || function.ReturnType.Constructor != "U64" {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.scalar_signature", function.Span, "scalar CFG functions require U64 input and output")}, 1
@@ -100,7 +104,10 @@ func checkScalarFixedPoint(function core.Function) (int, string) {
 	out := map[string]map[string]checkerScalarFact{}
 	reachable := map[string]bool{}
 	work := 0
-	const budget = 65536
+	budget := scalarAnalysisBudgetForTest
+	if budget <= 0 {
+		budget = 65536
+	}
 	for sweep := 0; ; sweep++ {
 		changed := false
 		for _, block := range blocks {

@@ -5695,3 +5695,160 @@ func TestInterproceduralDisclosedFieldSet(t *testing.T) {
 		})
 	}
 }
+
+func TestPhase26FixedPoint(t *testing.T) {
+	source, err := os.ReadFile("../../../examples/sum_to_n.schway")
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("sum_to_n parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	checked := Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("sum_to_n checker diagnostics: %+v", checked.Diagnostics)
+	}
+	for _, function := range checked.Program.Functions {
+		if function.Linear == nil || len(function.Linear.Blocks) < 3 {
+			continue
+		}
+		if _, code := checkScalarFixedPoint(function); code != "" {
+			t.Fatalf("source-order blocks refused with %s", code)
+		}
+		reversed := function
+		linear := *function.Linear
+		linear.Blocks = append([]core.Block(nil), function.Linear.Blocks...)
+		for left, right := 0, len(linear.Blocks)-1; left < right; left, right = left+1, right-1 {
+			linear.Blocks[left], linear.Blocks[right] = linear.Blocks[right], linear.Blocks[left]
+		}
+		reversed.Linear = &linear
+		if _, code := checkScalarFixedPoint(reversed); code != "" {
+			t.Fatalf("reversed blocks refused with %s", code)
+		}
+		return
+	}
+	t.Fatal("sum_to_n did not contain a scalar CFG function")
+}
+
+func TestPhase26AnalysisExhaustion(t *testing.T) {
+	source, err := os.ReadFile("../../../examples/sum_to_n.schway")
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	checked := Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("sum_to_n checker diagnostics: %+v", checked.Diagnostics)
+	}
+	for _, function := range checked.Program.Functions {
+		if function.Linear == nil || len(function.Linear.Blocks) < 3 {
+			continue
+		}
+		previous := scalarAnalysisBudgetForTest
+		scalarAnalysisBudgetForTest = 1
+		_, code := checkScalarFixedPoint(function)
+		scalarAnalysisBudgetForTest = previous
+		if code != "check.scalar_analysis_limit" {
+			t.Fatalf("forced budget result = %q, want check.scalar_analysis_limit", code)
+		}
+		return
+	}
+	t.Fatal("sum_to_n did not contain a scalar CFG function")
+}
+
+func phase26CheckedSum(t *testing.T) core.Program {
+	t.Helper()
+	source, err := os.ReadFile("../../../examples/sum_to_n.schway")
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("sum_to_n parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	checked := Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("sum_to_n checker diagnostics: %+v", checked.Diagnostics)
+	}
+	return checked.Program
+}
+
+func TestPhase26PeerIndependence(t *testing.T) {
+	program := phase26CheckedSum(t)
+	if result := corevalidate.Validate(program); !result.Valid {
+		t.Fatalf("independent core peer rejected sum_to_n: %+v", result.Problems)
+	}
+	if problems := originvalidate.ValidatePublished(program); len(problems) != 0 {
+		t.Fatalf("independent origin peer rejected sum_to_n: %+v", problems)
+	}
+}
+
+func TestPhase26BackEdgeAuthority(t *testing.T) {
+	program := phase26CheckedSum(t)
+	mutated := program
+	mutated.Functions = append([]core.Function(nil), program.Functions...)
+	found := false
+	for i := range mutated.Functions {
+		if mutated.Functions[i].Linear == nil {
+			continue
+		}
+		linear := *mutated.Functions[i].Linear
+		linear.Operations = append([]core.LinearOperation(nil), linear.Operations...)
+		for j := range linear.Operations {
+			op := &linear.Operations[j]
+			if op.Kind == core.OpBranch && op.TrueEdgeID != "" && op.FalseEdgeID != "" {
+				op.TrueEdgeID = op.FalseEdgeID
+				found = true
+				break
+			}
+		}
+		mutated.Functions[i].Linear = &linear
+		if found {
+			break
+		}
+	}
+	if !found {
+		t.Fatal("sum_to_n has no branch to mutate")
+	}
+	if result := corevalidate.Validate(mutated); result.Valid || len(result.Problems) == 0 {
+		t.Fatalf("core peer accepted a forged scalar CFG edge: %+v", result)
+	}
+	if problems := originvalidate.ValidatePublished(mutated); len(problems) == 0 {
+		t.Fatal("origin peer accepted a forged scalar CFG edge")
+	}
+}
+
+func TestPhase26ScalarCopyCycleBoundary(t *testing.T) {
+	program := phase26CheckedSum(t)
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		mutated := function
+		linear := *function.Linear
+		linear.Operations = append([]core.LinearOperation(nil), function.Linear.Operations...)
+		for i := range linear.Operations {
+			op := &linear.Operations[i]
+			if op.Kind != core.OpScalarStore {
+				continue
+			}
+			op.Kind, op.TargetID, op.StoreTargetID = core.OpCopy, op.StoreTargetID, ""
+			linear.Operations[i] = *op
+			mutated.Linear = &linear
+			if _, code := checkScalarFixedPoint(mutated); code != "" {
+				t.Fatalf("scalar-copy cycle refused with %s", code)
+			}
+			bad := mutated
+			badLinear := *linear
+			badLinear.Places = append([]core.Place(nil), linear.Places...)
+			badLinear.Places[0].TypeID = "forged-owner-type"
+			bad.Linear = &badLinear
+			if _, code := checkScalarFixedPoint(bad); code != "check.scalar_backedge_authority" {
+				t.Fatalf("forged non-scalar copy result = %q", code)
+			}
+			return
+		}
+	}
+	t.Fatal("sum_to_n did not contain a scalar store suitable for copy-cycle control")
+}

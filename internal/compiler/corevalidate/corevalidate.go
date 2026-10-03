@@ -4249,6 +4249,10 @@ type scalarAbstractValue struct {
 	boolean     bool
 }
 
+// scalarTransferBudgetForTest overrides the production budget to exercise
+// fail-closed exhaustion with a small synthetic transfer count.
+var scalarTransferBudgetForTest int
+
 func (v *validator) validateScalarFixedPoint(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) bool {
 	if !hasScalarCFG(function) {
 		return true
@@ -4268,7 +4272,10 @@ func (v *validator) validateScalarFixedPoint(function *core.Function, types map[
 	}
 	out := make(map[string]map[string]scalarAbstractValue, len(blocks))
 	reachable := make(map[string]bool, len(blocks))
-	const transferLimit = 65536
+	transferLimit := scalarTransferBudgetForTest
+	if transferLimit <= 0 {
+		transferLimit = 65536
+	}
 	transfers := 0
 	for sweep := 0; ; sweep++ {
 		changed := false

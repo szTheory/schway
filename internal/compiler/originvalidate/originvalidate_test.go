@@ -138,6 +138,40 @@ func phase23LocalOwnerProgram(t *testing.T) core.Program {
 	return checked.Program
 }
 
+func TestPhase26AnalysisExhaustion(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "sum_to_n.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("sum_to_n parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("sum_to_n checker diagnostics: %+v", checked.Diagnostics)
+	}
+	var scalar core.Function
+	for _, function := range checked.Program.Functions {
+		if function.Linear != nil && len(function.Linear.Blocks) > 1 {
+			scalar = function
+			break
+		}
+	}
+	if scalar.Linear == nil {
+		t.Fatal("sum_to_n did not contain a scalar CFG function")
+	}
+	contracts := originvalidate.BuildCalleeOriginFacts(checked.Program)
+	if got := originvalidate.RecomputeOriginPerReturn(scalar, contracts); len(got) == 0 {
+		t.Fatal("origin peer rejected the production scalar analysis budget")
+	}
+	restore := originvalidate.SetOriginScalarTransferBudgetForTest(1)
+	defer restore()
+	if got := originvalidate.RecomputeOriginPerReturn(scalar, contracts); len(got) != 0 {
+		t.Fatalf("origin peer admitted scalar analysis after a forced tiny budget: %+v", got)
+	}
+}
+
 func removePhase23Releases(program *core.Program) {
 	function := &program.Functions[0]
 	operations := function.Linear.Operations[:0]
