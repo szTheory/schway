@@ -5,16 +5,16 @@ milestone_name: Practical Computation
 current_phase: 27
 current_phase_name: Exact FizzBuzz and Cross-Host Evidence
 status: executing
-stopped_at: Completed 27-03-PLAN.md; ready for 27-04
-last_updated: "2026-10-03T19:04:21.625Z"
+stopped_at: Completed 27-04-PLAN.md
+last_updated: "2026-10-03T19:46:31.469Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 27 plan 27-03 completed; ready for plan 27-04
-state_head: 9a62cbe0bbed1c411997ee809031d3f133f735f6
+last_activity_desc: Phase 27 plan 27-04 completed; ready for plan 27-05
+state_head: a101cac3c9be23f30f3578df8c0f29dce9471bc5
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 15
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 <!-- schway-current:start -->
@@ -119,10 +119,10 @@ plans.
 ## Current Position
 
 Phase: 27 (Exact FizzBuzz and Cross-Host Evidence) — EXECUTING
-Plan: 4 of 10
+Plan: 5 of 10
 Status: Ready to execute
-Last activity: 2026-10-03 — Phase 27 plan 27-03 completed
-Progress: 1/2 phases complete; 8/15 defined plans complete; Phase 27 has 3/10 plans complete
+Last activity: 2026-10-03 — Phase 27 plan 27-04 completed
+Progress: 1/2 phases complete; 9/15 defined plans complete; Phase 27 has 4/10 plans complete
 
 ## M005 Planning
 
@@ -454,6 +454,7 @@ subset alone.
 | Phase 27 P01 | 40 min | 2 tasks | 7 files |
 | Phase 27 P02 | 30 min | 2 tasks | 6 files |
 | Phase 27 P03 | 8 min | 2 tasks | 7 files |
+| Phase 27 P04 | 38min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -562,6 +563,9 @@ decision history; they no longer describe current status.
 - [Phase 27]: Write operations produce no place: write_u64 consumes a typed U64 operand and write_newline consumes no operand. — Separate operation identities let later interpreter/native evidence distinguish output events without granting general formatting or string values.
 - [Phase 27]: Keep application bytes separate from interpreter execution evidence; Unit returns add no line while U64 returns retain the automatic decimal line. — The Phase 27 tracer needs explicit output to share the existing app boundary without changing the execution-document schema, and the legacy sum control pins return-type-selected printing.
 - [Phase 27]: U64 == and % use the existing binary AST; known-zero remainder divisors are rejected during scalar checking, while unknown divisors wait for runtime guarding in Plan 27-04.
+- [Phase 27]: Keep each validation peer's arithmetic facts independent so checker-produced metadata is not treated as proof.
+- [Phase 27]: Keep unknown divisors admissible for a runtime guard, while rejecting every divisor independently proven to be zero.
+- [Phase 27]: Use separate failure channels for machine-readable conformance evidence and the public app's exact diagnostic/status contract.
 
 ### Pending Todos
 
@@ -770,19 +774,21 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-03T19:04:21.602Z
-Stopped at: Completed 27-03-PLAN.md; ready for 27-04
-Resume file: .planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/27-04-PLAN.md
-Next action: After clearing context, run $gsd-execute-phase 27; plan 27-04 is ready.
-Routing resolution — 2026-10-03 (current): Phase 27 has three of ten plans
-complete; 27-04 is ready. The focused Phase 27 arithmetic-admission selectors
-and Phase 26 scalar negative controls pass at the current source revision; no
+Last session: 2026-10-03T19:45:29.759Z
+Stopped at: Completed 27-04-PLAN.md
+Resume file: None
+Next action: After clearing context, run $gsd-execute-phase 27; plan 27-05 is ready.
+Routing resolution — 2026-10-03 (current): Phase 27 has four of ten plans
+complete; 27-05 is next. Source inspection confirms the equality/remainder
+facts in both independent validators, the interpreter's stable zero-divisor
+defect, and the native guard before `%`. The two Plan 27-04 acceptance selectors
+and their Phase 26 negative controls passed at the current source revision; no
 full local suite was run. `init.progress` continues to select Phase 26 because
 its five-plan verification fingerprint is stale after Phase 27 changed compiler
 sources. Defer that verifier-only refresh until Phase 27 source changes
 stabilize, then follow its `$gsd-execute-phase 26` route without replaying
 implementation plans. Continue Phase 27 now without replaying plans 27-01
-through 27-03. Phase 26 hosted receipts remain historical evidence at their
+through 27-04. Phase 26 hosted receipts remain historical evidence at their
 recorded revision, not current Phase 27 receipts.
 
 Routing resolution — 2026-10-02 (historical; superseded above): Phase 25 plans 25-01 through 25-07

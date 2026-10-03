@@ -117,7 +117,7 @@ M004 receipts do not prove this phase's new semantics.
    and run both programs and find the exact expected output, accepted input
    range, checked failure behavior, and output limit.
 
-**Plans**: 3/10 plans executed in 9 waves
+**Plans**: 4/10 plans executed in 9 waves
 
 The safety slices enforce three named obligations before composition:
 source write-operation admission before byte emission, D-27-04's checked zero
@@ -138,7 +138,7 @@ byte emission. Plan 27-02 delivers the runnable end-to-end FizzBuzz tracer.
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 27-04-PLAN.md — independent arithmetic peers and guarded runtime remainder
+- [x] 27-04-PLAN.md — independent arithmetic peers and guarded runtime remainder
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -182,7 +182,7 @@ and new dependencies remain outside M005.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 26. Checked Scalar Sum | 5/5 | Complete    | 2026-10-03 |
-| 27. Exact FizzBuzz and Cross-Host Evidence | 3/10 | In Progress|  |
+| 27. Exact FizzBuzz and Cross-Host Evidence | 4/10 | In Progress|  |
 
 **Coverage:** 9/9 M005 requirements have exactly one phase owner. U64-02's
 comparison/Bool subset enables the first runnable program; its complete
