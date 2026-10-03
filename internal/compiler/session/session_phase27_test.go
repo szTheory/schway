@@ -13,6 +13,7 @@ import (
 	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/originvalidate"
 	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
@@ -40,6 +41,94 @@ func TestPhase27TracerFizzBuzz1(t *testing.T) {
 	outcome, err := native.RunApplication(context.Background(), artifact, "1", &stdout, &stderr)
 	if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 0 || stdout.String() != "1\n" || stderr.Len() != 0 {
 		t.Fatalf("native outcome=%+v stdout=%q stderr=%q err=%v, want exit 0, literal 1 LF, empty stderr", outcome, stdout.String(), stderr.String(), err)
+	}
+}
+
+func TestPhase27TracerBoundaries(t *testing.T) {
+	sourcePath := testsupport.ProjectPath("examples", "fizzbuzz.schway")
+	source, err := os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifact := filepath.Join(t.TempDir(), "fizzbuzz")
+	_, diagnostics, err := session.BuildApplicationFile(context.Background(), sourcePath, artifact, native.DefaultRunner())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("BuildApplicationFile diagnostics=%+v err=%v", diagnostics, err)
+	}
+	for _, test := range []struct {
+		input       string
+		wantOutcome string
+		wantCode    int
+		wantStdout  string
+		wantStderr  string
+	}{{"0", "returned", 0, "", ""}, {"1001", "defect", 65, "", "schway app: input exceeds 1000\n"}} {
+		t.Run("input-"+test.input, func(t *testing.T) {
+			interpreted, diagnostics, err := session.RunInterpreterApplication(source, test.input)
+			if err != nil || len(diagnostics) != 0 || interpreted.Execution.Outcome.Kind != test.wantOutcome || len(interpreted.Output) != 0 {
+				t.Fatalf("interpreter diagnostics=%+v execution=%+v output=%q err=%v", diagnostics, interpreted.Execution, interpreted.Output, err)
+			}
+			var stdout, stderr bytes.Buffer
+			outcome, err := native.RunApplication(context.Background(), artifact, test.input, &stdout, &stderr)
+			if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != test.wantCode || stdout.String() != test.wantStdout || stderr.String() != test.wantStderr {
+				t.Fatalf("native outcome=%+v stdout=%q stderr=%q err=%v, want exit %d stdout=%q stderr=%q", outcome, stdout.String(), stderr.String(), err, test.wantCode, test.wantStdout, test.wantStderr)
+			}
+		})
+	}
+
+	sumPath := testsupport.ProjectPath("examples", "sum_to_n.schway")
+	sumSource, err := os.ReadFile(sumPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sumResult, diagnostics, err := session.RunInterpreterApplication(sumSource, "0")
+	if err != nil || len(diagnostics) != 0 || string(sumResult.Output) != "0\n" || sumResult.Execution.Outcome.Value != "0" {
+		t.Fatalf("sum interpreter diagnostics=%+v execution=%+v output=%q err=%v, want returned 0 and 0 LF", diagnostics, sumResult.Execution, sumResult.Output, err)
+	}
+	sumArtifact := filepath.Join(t.TempDir(), "sum_to_n")
+	_, diagnostics, err = session.BuildApplicationFile(context.Background(), sumPath, sumArtifact, native.DefaultRunner())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("sum BuildApplicationFile diagnostics=%+v err=%v", diagnostics, err)
+	}
+	var sumStdout, sumStderr bytes.Buffer
+	sumOutcome, err := native.RunApplication(context.Background(), sumArtifact, "0", &sumStdout, &sumStderr)
+	if err != nil || sumOutcome.Kind != native.RunExited || sumOutcome.ExitCode != 0 || sumStdout.String() != "0\n" || sumStderr.Len() != 0 {
+		t.Fatalf("sum native outcome=%+v stdout=%q stderr=%q err=%v, want 0 LF", sumOutcome, sumStdout.String(), sumStderr.String(), err)
+	}
+
+	u64Source := []byte("module phase27_u64_write\nexport { fn main }\nfn main(n: U64) -> U64 {\n  if n < 1001 {\n    write_u64(n)\n    write_newline()\n  } else {\n    defect \"input exceeds 1000\"\n  }\n  n\n}\n")
+	u64Result, diagnostics, err := session.RunInterpreterApplication(u64Source, "2")
+	if err != nil || len(diagnostics) != 0 || u64Result.Execution.Outcome.Value != "2" || string(u64Result.Output) != "2\n2\n" {
+		t.Fatalf("U64 write interpreter diagnostics=%+v execution=%+v output=%q err=%v, want explicit and automatic lines", diagnostics, u64Result.Execution, u64Result.Output, err)
+	}
+	u64Path := filepath.Join(t.TempDir(), "u64_write.schway")
+	if err := os.WriteFile(u64Path, u64Source, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	u64Artifact := filepath.Join(t.TempDir(), "u64_write")
+	_, diagnostics, err = session.BuildApplicationFile(context.Background(), u64Path, u64Artifact, native.DefaultRunner())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("U64 write BuildApplicationFile diagnostics=%+v err=%v", diagnostics, err)
+	}
+	var u64Stdout, u64Stderr bytes.Buffer
+	u64Outcome, err := native.RunApplication(context.Background(), u64Artifact, "2", &u64Stdout, &u64Stderr)
+	if err != nil || u64Outcome.Kind != native.RunExited || u64Outcome.ExitCode != 0 || u64Stdout.String() != "2\n2\n" || u64Stderr.Len() != 0 {
+		t.Fatalf("U64 write native outcome=%+v stdout=%q stderr=%q err=%v, want explicit and automatic lines", u64Outcome, u64Stdout.String(), u64Stderr.String(), err)
+	}
+
+	first := session.Format(source)
+	second := session.Format(first.Canonical)
+	if len(first.Diagnostics) != 0 || len(second.Diagnostics) != 0 || !bytes.Equal(first.Canonical, second.Canonical) || !bytes.Contains(first.Canonical, []byte("// bound before output")) || !bytes.Contains(first.Canonical, []byte("// emit current value")) {
+		t.Fatalf("Unit/write formatting did not preserve comments and stabilize: first=%q second=%q diagnostics=%+v/%+v", first.Canonical, second.Canonical, first.Diagnostics, second.Diagnostics)
+	}
+	for _, token := range syntax.Parse(first.Canonical).Tree.Tokens {
+		if token.Kind == syntax.TokenIdentifier && (token.Text == "write_u64" || token.Text == "write_newline") && (token.Span.End <= token.Span.Start || string(first.Canonical[token.Span.Start:token.Span.End]) != token.Text) {
+			t.Errorf("write token lost its exact source span: %+v", token)
+		}
+	}
+	malformed := []byte(strings.Replace(string(source), "write_u64(i)", "write_u64(,)", 1))
+	parsed := syntax.Parse(malformed)
+	if len(parsed.Diagnostics) == 0 || parsed.Diagnostics[0].Primary.End <= parsed.Diagnostics[0].Primary.Start {
+		t.Fatalf("malformed write did not recover with a stable span: %+v", parsed.Diagnostics)
 	}
 }
 
