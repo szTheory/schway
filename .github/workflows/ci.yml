@@ -130,6 +130,11 @@ jobs:
           cache: true
       - name: Require clang
         run: clang --version
+      - name: Install libc++ for sanitizer evidence
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libc++-dev libc++abi-dev
       - name: Phase 26 checker, peer, path, and native app regressions
         run: |
           go test ./internal/compiler/execution ./internal/compiler/interp ./internal/compiler/cgen -run '^TestPhase26(EventOccurrenceEncoding|InterpreterRepeatedCopy|NativeRepeatedCopy)$' -count=1 -v

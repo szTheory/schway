@@ -318,7 +318,7 @@ func (p *parser) funcDecl() ast.FuncDecl {
 	if p.peek().Kind == TokenMatch {
 		match := p.matchExpr()
 		body.MatchExpr = match
-	} else if p.atAny(TokenVar, TokenIf, TokenWhile) {
+	} else if p.atAny(TokenLet, TokenVar, TokenIf, TokenWhile) {
 		linear := p.scalarLinearBody()
 		body.Linear = &linear
 	} else {
@@ -357,6 +357,12 @@ func (p *parser) scalarStatements(inBlock bool) []ast.Statement {
 			return statements
 		}
 		switch start.Kind {
+		case TokenLet:
+			p.advance()
+			name := p.identifier("syntax.expected_binding_name")
+			p.expect(TokenEqual, "syntax.expected_equal")
+			expr := p.scalarExpr()
+			statements = append(statements, ast.Statement{Kind: "let", Name: name.Text, Expr: expr, Span: diagnostic.Span{Start: start.Span.Start, End: expr.Span.End}})
 		case TokenVar:
 			p.advance()
 			name := p.identifier("syntax.expected_binding_name")

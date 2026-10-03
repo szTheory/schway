@@ -315,6 +315,35 @@ func (b *scalarBuilder) lower(statements []ast.Statement) {
 	for _, statement := range statements {
 		b.work++
 		switch statement.Kind {
+		case "let":
+			if _, exists := b.names[statement.Name]; exists {
+				b.refuse("name.duplicate_binding", statement.Span, "scalar binding is already declared")
+				continue
+			}
+			if statement.Expr != nil && statement.Expr.Kind == "number" {
+				place := b.addPlace(statement.Name, "U64", false)
+				b.names[statement.Name] = place.ID
+				value, err := strconv.ParseUint(statement.Expr.Value, 0, 64)
+				if err != nil {
+					value, err = strconv.ParseUint(statement.Expr.Value, 10, 64)
+				}
+				if err != nil {
+					b.refuse("type.invalid_u64", statement.Expr.Span, "invalid U64 literal")
+					continue
+				}
+				b.addOperation(core.LinearOperation{Kind: core.OpConst, TargetID: place.ID, ConstU64: strconv.FormatUint(value, 10), TypeID: b.types["U64"]})
+				b.initialized[place.ID] = true
+			} else {
+				value, typeName := b.expression(statement.Expr)
+				if typeName != "U64" && typeName != "Bool" {
+					b.refuse("type.scalar_binding", statement.Span, "let accepts only U64 or Bool scalars")
+					continue
+				}
+				place := b.addPlace(statement.Name, typeName, false)
+				b.names[statement.Name] = place.ID
+				b.addOperation(core.LinearOperation{Kind: core.OpCopy, SourceID: value, TargetID: place.ID, TypeID: b.types[typeName]})
+				b.initialized[place.ID] = true
+			}
 		case "var":
 			if _, exists := b.names[statement.Name]; exists {
 				b.refuse("name.duplicate_binding", statement.Span, "scalar binding is already declared")
