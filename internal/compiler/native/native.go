@@ -940,7 +940,8 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 		return fmt.Errorf("unsupported expected terminal outcome %q", expect)
 	}
 	seenIDs := make(map[string]struct{}, len(value.Events))
-	seenInvocationIDs := make(map[string]struct{}, len(value.Events))
+	nextOccurrence := make(map[string]uint64, len(value.Events))
+	exhaustedOccurrence := make(map[string]bool)
 	for index, event := range value.Events {
 		// D-11-05/Phase 11: a multi-function execution's own events span
 		// more than one function -- a callee's own function.returned event
@@ -968,10 +969,14 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 				return errors.New("callee function ID is reserved for function called events")
 			}
 			key := event.Invocation + "\x00" + event.ID
-			if _, duplicate := seenInvocationIDs[key]; duplicate {
+			if exhaustedOccurrence[key] || event.Occurrence != nextOccurrence[key] {
 				return errors.New("duplicate execution invocation and event id")
 			}
-			seenInvocationIDs[key] = struct{}{}
+			if event.Occurrence == ^uint64(0) {
+				exhaustedOccurrence[key] = true
+			} else {
+				nextOccurrence[key] = event.Occurrence + 1
+			}
 		}
 		isLast := index == len(value.Events)-1
 		switch event.Kind {
