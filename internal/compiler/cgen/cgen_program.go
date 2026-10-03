@@ -2470,6 +2470,10 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 			switch op.Kind {
 			case core.OpConst:
 				fmt.Fprintf(out, "  %s = UINT64_C(%s);\n", locals[op.TargetID], op.ConstU64)
+			case core.OpCopy:
+				fmt.Fprintf(out, "  %s = %s;\n", locals[op.TargetID], locals[op.SourceID])
+				fmt.Fprintf(out, "  if (!schway_record_event(\"value.copied\", %s, %s, %s, %s, %s, schway_invocations[invocation_index], NULL)) abort();\n",
+					strconv.Quote(op.ID+":event"), strconv.Quote(function.ID), strconv.Quote(op.SourceID), strconv.Quote(op.TargetID), strconv.Quote(op.TypeID))
 			case core.OpAddChecked:
 				fmt.Fprintf(out, "  if (UINT64_MAX - %s < %s) {\n", locals[op.SourceID], locals[op.RightID])
 				if shell == programApplicationShell {

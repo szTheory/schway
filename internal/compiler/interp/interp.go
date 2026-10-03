@@ -1145,7 +1145,16 @@ func terminalOutcome(f *frame, operation core.LinearOperation, value string) (Ou
 // phase, so a callee's typed failure or defect is not caught by its
 // caller. This is a documented scope limit (a functionality gap, not an
 // architectural one) -- no fixture yet raises either from inside a call.
-func runFrameStack(program core.Program, base frame) (Execution, error) {
+func runFrameStack(program core.Program, base frame) (result Execution, runErr error) {
+	defer func() {
+		if runErr != nil {
+			return
+		}
+		if err := assignEventOccurrences(result.Events); err != nil {
+			result = Execution{}
+			runErr = err
+		}
+	}()
 	stack := []frame{base}
 	events := make([]Event, 0, len(base.operations))
 
@@ -1549,6 +1558,26 @@ func runFrameStack(program core.Program, base frame) (Execution, error) {
 			return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
 		}
 	}
+}
+
+func assignEventOccurrences(events []Event) error {
+	next := make(map[string]uint64)
+	exhausted := make(map[string]bool)
+	for index := range events {
+		event := &events[index]
+		key := event.Invocation + "\x00" + event.ID
+		if exhausted[key] {
+			return fmt.Errorf("event occurrence overflow for invocation %q event %q", event.Invocation, event.ID)
+		}
+		ordinal := next[key]
+		event.Occurrence = ordinal
+		if ordinal == ^uint64(0) {
+			exhausted[key] = true
+			continue
+		}
+		next[key] = ordinal + 1
+	}
+	return nil
 }
 
 func ownedEvent(f *frame, operation core.LinearOperation, kind string) Event {

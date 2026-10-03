@@ -1,9 +1,9 @@
 {
   "command": "go test ./internal/compiler/execution ./internal/compiler/interp ./internal/compiler/cgen -run '^TestPhase26(EventOccurrenceEncoding|InterpreterRepeatedCopy|NativeRepeatedCopy)$' -count=1 -v (GitHub Actions workflow_dispatch phase26_focused, run 37088120033 at 461bf07; normalized target-test results from Ubuntu and macOS)",
   "exitCode": 1,
-  "targetTest": "TestPhase26EventOccurrenceEncoding",
-  "expected": "CanonicalBytes preserves nonzero occurrence and omits zero so one-shot schema-2 bytes remain unchanged.",
-  "actual": "Both hosted jobs failed this assertion because unmarshalling the nonzero field and re-encoding dropped occurrence; the interp and cgen runtime tests also failed at their target behavior checks.",
+  "targetTest": "TestPhase26InterpreterRepeatedCopy",
+  "expected": "Interpreter events from three visits to the loop copy site keep one static ID/invocation and serialize ordinals 0, 1, 2; zero input emits none.",
+  "actual": "Both hosted jobs reached the repeated-copy assertion, where visit 1 omitted its required occurrence ordinal.",
   "output": "TAP version 13\nnot ok 1 - TestPhase26EventOccurrenceEncoding\nnot ok 2 - TestPhase26InterpreterRepeatedCopy\nnot ok 3 - TestPhase26NativeRepeatedCopy\n# tests 3\n# pass 0\n# fail 3\n",
   "hostedTranscript": "https://github.com/szTheory/schway/actions/runs/37088120033"
 }

@@ -98,7 +98,11 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:2150",
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:2151",
+      "classification": "admitted-dynamic-schema2"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_program_test.go:EmitNative:2228",
       "classification": "admitted-dynamic-schema2"
     },
     {

@@ -60,6 +60,7 @@ type Event struct {
 	TypeID           string `json:"type_id,omitempty"`
 	Invocation       string `json:"invocation,omitempty"`
 	CalleeFunctionID string `json:"callee_function_id,omitempty"`
+	Occurrence       uint64 `json:"occurrence,omitempty"`
 }
 
 type Execution struct {

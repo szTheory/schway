@@ -1,9 +1,9 @@
 {
   "command": "go test ./internal/compiler/execution ./internal/compiler/interp ./internal/compiler/cgen -run '^TestPhase26(EventOccurrenceEncoding|InterpreterRepeatedCopy|NativeRepeatedCopy)$' -count=1 -v (GitHub Actions workflow_dispatch phase26_focused, run 37088120033 at 461bf07; normalized target-test results from Ubuntu and macOS)",
   "exitCode": 1,
-  "targetTest": "TestPhase26EventOccurrenceEncoding",
-  "expected": "CanonicalBytes preserves nonzero occurrence and omits zero so one-shot schema-2 bytes remain unchanged.",
-  "actual": "Both hosted jobs failed this assertion because unmarshalling the nonzero field and re-encoding dropped occurrence; the interp and cgen runtime tests also failed at their target behavior checks.",
+  "targetTest": "TestPhase26NativeRepeatedCopy",
+  "expected": "Native emission supports the admitted scalar copy site and emits repeated copy ordinals independently of interpreter evidence.",
+  "actual": "Both hosted jobs failed the target test because emitProgramScalarFunction refused the loop copy with unsupported scalar kind copy.",
   "output": "TAP version 13\nnot ok 1 - TestPhase26EventOccurrenceEncoding\nnot ok 2 - TestPhase26InterpreterRepeatedCopy\nnot ok 3 - TestPhase26NativeRepeatedCopy\n# tests 3\n# pass 0\n# fail 3\n",
   "hostedTranscript": "https://github.com/szTheory/schway/actions/runs/37088120033"
 }
