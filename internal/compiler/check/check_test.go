@@ -5814,8 +5814,14 @@ func TestPhase26BackEdgeAuthority(t *testing.T) {
 	if result := corevalidate.Validate(mutated); result.Valid || len(result.Problems) == 0 {
 		t.Fatalf("core peer accepted a forged scalar CFG edge: %+v", result)
 	}
-	if problems := originvalidate.ValidatePublished(mutated); len(problems) == 0 {
-		t.Fatal("origin peer accepted a forged scalar CFG edge")
+	contracts := originvalidate.BuildCalleeOriginFacts(mutated)
+	for _, function := range mutated.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		if got := originvalidate.RecomputeOriginPerReturn(function, contracts); len(got) != 0 {
+			t.Fatal("origin peer accepted the forged scalar CFG edge")
+		}
 	}
 }
 
