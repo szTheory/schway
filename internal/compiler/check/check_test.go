@@ -5919,7 +5919,8 @@ func TestPhase26BackEdgeCauseCategories(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := scalarAuthorityCategory(tc.op, types, places); got != tc.want {
+			got := scalarAuthorityCategory(tc.op, types, places)
+			if got != tc.want {
 				t.Fatalf("category = %q, want %q", got, tc.want)
 			}
 			span := diagnostic.Span{Start: 8, End: 13}
