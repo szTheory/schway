@@ -5834,42 +5834,26 @@ func TestPhase26ScalarCopyCycleBoundary(t *testing.T) {
 		mutated := function
 		linear := *function.Linear
 		linear.Operations = append([]core.LinearOperation(nil), function.Linear.Operations...)
-		linear.Places = append([]core.Place(nil), function.Linear.Places...)
-		typeByName := map[string]string{}
-		for _, fact := range linear.Types {
-			typeByName[fact.Shape.Constructor] = fact.ID
-		}
-		var bodyBlock *core.Block
-		var boolSource string
-		for blockIndex := range linear.Blocks {
-			block := &linear.Blocks[blockIndex]
-			hasAdd, hasStore := false, false
-			for _, operationID := range block.OperationIDs {
-				for _, operation := range linear.Operations {
-					if operation.ID == operationID {
-						hasAdd = hasAdd || operation.Kind == core.OpAddChecked
-						hasStore = hasStore || operation.Kind == core.OpScalarStore
-						if operation.Kind == core.OpBranch {
-							boolSource = operation.SourceID
-						}
-					}
-				}
+		firstBoolTarget := ""
+		convertedBool, convertedU64 := false, false
+		for i := range linear.Operations {
+			op := &linear.Operations[i]
+			if op.Kind == core.OpLessU64 && firstBoolTarget == "" {
+				firstBoolTarget = op.TargetID
+				continue
 			}
-			if hasAdd && hasStore {
-				bodyBlock = block
+			if op.Kind == core.OpLessU64 && firstBoolTarget != "" && !convertedBool {
+				op.Kind, op.SourceID, op.RightID = core.OpCopy, firstBoolTarget, ""
+				convertedBool = true
+				continue
+			}
+			if op.Kind == core.OpAddChecked && !convertedU64 {
+				op.Kind, op.SourceID, op.RightID = core.OpCopy, function.Parameter.ID, ""
+				convertedU64 = true
 			}
 		}
-		if bodyBlock == nil || boolSource == "" {
+		if !convertedBool || !convertedU64 {
 			continue
-		}
-		copySources := []struct{ placeID, typeName string }{{function.Parameter.ID, "U64"}, {boolSource, "Bool"}}
-		for _, source := range copySources {
-			operationIndex := len(linear.Operations)
-			targetID := fmt.Sprintf("%s:place:%d", function.ID, operationIndex+1)
-			linear.Places = append(linear.Places, core.Place{ID: targetID, Name: "phase26_copy", TypeID: typeByName[source.typeName]})
-			operationID := fmt.Sprintf("%s:op:%d", function.ID, operationIndex)
-			linear.Operations = append(linear.Operations, core.LinearOperation{ID: operationID, PointID: fmt.Sprintf("%s:point:linear:%d", function.ID, operationIndex), Kind: core.OpCopy, SourceID: source.placeID, TargetID: targetID, TypeID: typeByName[source.typeName]})
-			bodyBlock.OperationIDs = append(bodyBlock.OperationIDs, operationID)
 		}
 		mutated.Linear = &linear
 		if _, code := checkScalarFixedPoint(mutated); code != "" {
