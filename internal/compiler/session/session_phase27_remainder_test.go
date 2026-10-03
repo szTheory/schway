@@ -81,3 +81,30 @@ func TestPhase27StaticZero(t *testing.T) {
 		t.Fatalf("literal zero diagnostic span=%+v, want divisor byte [%d,%d)", checked.Diagnostics[0].Primary, zeroOffset, zeroOffset+1)
 	}
 }
+
+func TestPhase27ScalarZero(t *testing.T) {
+	knownZero := []byte("module phase27_scalar_zero\nexport { fn main }\nfn main(n: U64) -> U64 {\n  var zero = 0\n  let copied_zero = zero\n  let rem = n % copied_zero\n  n\n}\n")
+	checked := session.Check(knownZero)
+	if len(checked.Diagnostics) == 0 || checked.Diagnostics[0].Code != "type.scalar_remainder_zero" {
+		t.Fatalf("copied known-zero remainder divisor was not rejected: %+v", checked.Diagnostics)
+	}
+	divisorOffset := strings.Index(string(knownZero), "n % copied_zero") + len("n % ")
+	if checked.Diagnostics[0].Primary.Start != divisorOffset || checked.Diagnostics[0].Primary.End != divisorOffset+len("copied_zero") {
+		t.Fatalf("copied zero diagnostic span=%+v, want divisor [%d,%d)", checked.Diagnostics[0].Primary, divisorOffset, divisorOffset+len("copied_zero"))
+	}
+
+	unknown := []byte("module phase27_unknown_zero\nexport { fn main }\nfn main(n: U64) -> U64 {\n  var divisor = n\n  let rem = n % divisor\n  rem\n}\n")
+	admitted := session.Check(unknown)
+	if len(admitted.Diagnostics) != 0 {
+		t.Fatalf("unknown divisor was not admitted for guarded execution: %+v", admitted.Diagnostics)
+	}
+	var remainders int
+	for _, operation := range admitted.Program.Functions[0].Linear.Operations {
+		if operation.Kind == core.OpRemainderU64 {
+			remainders++
+		}
+	}
+	if remainders != 1 {
+		t.Fatalf("unknown-divisor core contains %d remainder operations, want one", remainders)
+	}
+}

@@ -12,18 +12,19 @@ import (
 )
 
 type scalarBuilder struct {
-	function    ast.FuncDecl
-	functionID  string
-	linear      core.LinearBody
-	types       map[string]string
-	places      map[string]core.Place
-	names       map[string]string
-	initialized map[string]bool
-	blocks      []core.Block
-	edges       []core.Edge
-	current     int
-	work        int
-	diagnostics []diagnostic.Diagnostic
+	function       ast.FuncDecl
+	functionID     string
+	linear         core.LinearBody
+	types          map[string]string
+	places         map[string]core.Place
+	names          map[string]string
+	initialized    map[string]bool
+	blocks         []core.Block
+	edges          []core.Edge
+	current        int
+	work           int
+	diagnostics    []diagnostic.Diagnostic
+	remainderSpans map[string]diagnostic.Span
 }
 
 // scalarAnalysisBudgetForTest overrides the deterministic production budget
@@ -34,7 +35,7 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 	if function.Parameter.Type.Constructor != "U64" || (function.ReturnType.Constructor != "U64" && function.ReturnType.Constructor != "Unit") {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.scalar_signature", function.Span, "scalar CFG functions require U64 input and either U64 or Unit output")}, 1
 	}
-	b := &scalarBuilder{function: function, functionID: functionID, types: map[string]string{}, places: map[string]core.Place{}, names: map[string]string{}, initialized: map[string]bool{}}
+	b := &scalarBuilder{function: function, functionID: functionID, types: map[string]string{}, places: map[string]core.Place{}, names: map[string]string{}, initialized: map[string]bool{}, remainderSpans: map[string]diagnostic.Span{}}
 	b.linear = core.LinearBody{ID: functionID + ":linear"}
 	for _, name := range []string{"U64", "Bool", "Unit"} {
 		shape := core.TypeRef{Constructor: name}
@@ -79,6 +80,9 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 	analysisWork, refusal, category := checkScalarFixedPointDetailed(checked)
 	b.work += analysisWork
 	if refusal != "" {
+		if refusal == "check.scalar_remainder_zero" {
+			return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.scalar_remainder_zero", b.remainderSpans[category], "U64 remainder divisor is statically zero")}, b.work
+		}
 		if refusal == "check.cfg_back_edge" {
 			return core.Function{}, []diagnostic.Diagnostic{scalarBackEdgeDiagnostic(functionID, category, function.Span)}, b.work
 		}
@@ -339,7 +343,7 @@ func (b *scalarBuilder) edge(from, to, pattern string) string {
 	return id
 }
 
-func (b *scalarBuilder) addOperation(op core.LinearOperation) {
+func (b *scalarBuilder) addOperation(op core.LinearOperation) string {
 	op.ID = fmt.Sprintf("%s:op:%d", b.functionID, len(b.linear.Operations))
 	op.PointID = fmt.Sprintf("%s:point:linear:%d", b.functionID, len(b.linear.Operations))
 	if op.TypeID == "" {
@@ -348,6 +352,7 @@ func (b *scalarBuilder) addOperation(op core.LinearOperation) {
 	b.linear.Operations = append(b.linear.Operations, op)
 	b.blocks[b.current].OperationIDs = append(b.blocks[b.current].OperationIDs, op.ID)
 	b.work++
+	return op.ID
 }
 
 func (b *scalarBuilder) lower(statements []ast.Statement) {
@@ -596,7 +601,10 @@ func (b *scalarBuilder) expression(expr *ast.Expr) (string, string) {
 			}
 		}
 		place := b.addPlace("scalar", ""+resultType, false)
-		b.addOperation(core.LinearOperation{Kind: kind, SourceID: left, RightID: right, TargetID: place.ID, TypeID: b.types[resultType]})
+		operationID := b.addOperation(core.LinearOperation{Kind: kind, SourceID: left, RightID: right, TargetID: place.ID, TypeID: b.types[resultType]})
+		if expr.Kind == "remainder" {
+			b.remainderSpans[operationID] = expr.Right.Span
+		}
 		b.initialized[place.ID] = true
 		return place.ID, resultType
 	default:
