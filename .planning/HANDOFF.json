@@ -1,0 +1,50 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-10-03T23:08:13.091Z",
+  "phase": "27",
+  "phase_name": "exact-fizzbuzz-and-cross-host-evidence",
+  "phase_dir": ".planning/phases/27-exact-fizzbuzz-and-cross-host-evidence",
+  "plan": 9,
+  "task": 1,
+  "total_tasks": 2,
+  "status": "paused",
+  "completed_tasks": [],
+  "remaining_tasks": [
+    {
+      "id": 1,
+      "name": "Implement native host driver, receipt gate, and host-gate tests",
+      "status": "not_started"
+    },
+    {
+      "id": 2,
+      "name": "Wire host driver and artifacts into existing CI matrix",
+      "status": "not_started"
+    }
+  ],
+  "blockers": [],
+  "async_jobs": [],
+  "human_actions_pending": [],
+  "decisions": [
+    {
+      "decision": "Resolve the three stalled plan-review findings by adjusting the plan approach, then use the final passing checker result.",
+      "rationale": "The research questions were marked resolved, repeated threat IDs were made unique, and the oversized plan shape was narrowed; the final checker passed all ten plans.",
+      "phase": "27"
+    },
+    {
+      "decision": "Keep Phase 27 active and execute plan 27-09 next; do not route to Phase 26's stale verifier yet.",
+      "rationale": "Phase 27 has eight of ten plans complete and its source is still changing. The Phase 26 verifier refresh was explicitly deferred until Phase 27 source stabilizes.",
+      "phase": "27"
+    },
+    {
+      "decision": "Distinguish local Phase 27 focused evidence from actual hosted dual-host receipts.",
+      "rationale": "Focused macOS tests at 21fb123 do not establish Linux execution or close EVD-12; Phase 27 receipts must bind both hosts to one final revision and inputs.",
+      "phase": "27"
+    }
+  ],
+  "uncommitted_files": [
+    " M .planning/config.json",
+    "?? .planning/milestone.lock"
+  ],
+  "next_action": "Resume with $gsd-execute-phase 27 and begin 27-09 Task 1. Preserve the measured pre-existing .planning/config.json modification and .planning/milestone.lock; do not include them in a commit.",
+  "context_notes": "Phase 27 is executing at plan 9 of 10 with eight summaries complete. Plans 27-01..27-08 are complete. Plan review is complete and the latest checker passed all ten plans, all five phase requirements, and the seven tracked context decisions. The living roadmap and maturity docs were updated and committed as c98f82e. Focused local checks for plans 27-07/27-08 passed at implementation commit 21fb123; no full suite or Phase 27 hosted run is claimed. init.progress currently surfaces Phase 26's stale verifier as its route, but STATE.md and ROADMAP.md show Phase 27 in progress; follow the recorded no-loop decision to finish Phase 27 first, then refresh Phase 26 verification without replaying its plans. Local host is Darwin 25.6.0 arm64 with Go 1.24.0 and Apple Clang 21.0.1. Prefix Go checks with GOCACHE=/tmp/ai-lang-verification-gocache. No async jobs or servers are running. No phase summaries contain placeholder/TBD text."
+}
