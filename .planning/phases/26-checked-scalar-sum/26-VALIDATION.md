@@ -60,7 +60,7 @@ created: "2026-10-02"
 | 26-05-T2c | 26-05 | 4 | FLOW-01, FLOW-02, APP-07 | T-26-10 | Source-authored immutable copy event ordinals 0/1/2 with independent peers. | Source-to-native evidence | `go test ./internal/compiler/session -run '^TestPhase26SourceRepeatedCopyEvidence$' -count=1` | Existing test home | EXERCISED | — | ✅ hosted in 37096489094 |
 | 26-05-T2d | 26-05 | 4 | FLOW-01 | T-26-10 | Malformed source spans, recovery, and comment roundtrip. | Syntax recovery | `go test ./internal/compiler/syntax -run '^TestPhase26FrontendRecovery$' -count=1` | Existing test home | EXERCISED | — | ✅ hosted in 37096489094 |
 
-*Plan 01–04 rows refer to completed hosted evidence. Plan 05 controls and active session validation passed on Ubuntu and macOS in 37096489094; the full hosted gate is the remaining phase-wide check.*
+*All rows have completed hosted evidence. Plan 05 controls passed on both hosts in 37096489094. After the overflow-evidence review repair, focused run 37118144404 and full run 37118315516 passed on Ubuntu and macOS at source revision 46bee44ad87891d8a8547b2489f029d0fe237899.*
 
 ---
 
@@ -92,8 +92,20 @@ created: "2026-10-02"
 - [x] All tasks have `<automated>` verify or Wave 0 dependencies
 - [x] Sampling continuity: no 3 consecutive tasks without automated verify
 - [x] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
+- [x] No watch-mode flags
 - [x] Focused hosted feedback time recorded; no latency distribution claim
 - [x] `nyquist_compliant: true` set after focused hosted validation
 
-**Approval:** focused hosted validation and the full hosted gate passed. Run 37101934669 completed Ubuntu and macOS checks and evidence aggregates, including vet, builds, full Go suites, race suites, and Phase 23/24/25 aggregates. Phase 26 plan execution is complete; independent phase review and verification remain pending.
+**Approval:** focused hosted validation and the full hosted gate passed. The latest full run, 37118315516, completed Ubuntu and macOS checks and evidence aggregates, including vet, builds, full Go suites, race suites, and Phase 23/24/25 aggregates. Independent code re-review is clean; goal verification is recorded separately in 26-VERIFICATION.md.
+
+## Validation Audit 2026-10-03
+
+| Metric | Result |
+|---|---|
+| Phase requirements covered | 4: U64-01, FLOW-01, FLOW-02, APP-07 |
+| Coverage gaps | 0 |
+| Escalated items | 0 |
+| Test execution authority | Hosted GitHub Actions only; no local tests or native runs |
+| Latest full receipt | [37118315516](https://github.com/szTheory/schway/actions/runs/37118315516), revision 46bee44ad87891d8a8547b2489f029d0fe237899 |
+
+The audit cross-referenced the four requirements with the source witness, literal per-engine answer tests, public CLI matrix, deterministic independent fixed-point/refusal controls, occurrence mutations, and capacity controls. The review repair adds checked-add terminal attribution, final-position/outcome controls, and native N−1/N evidence-size admission. The peer validates structural event attribution; actual arithmetic overflow is established separately by engine tests. Existing command rows are unchanged, preserving the 35-pair hosted corpus receipt from run 37098702559. No missing test required a Nyquist auditor dispatch. UI review is not applicable: the phase changes no frontend or UI files and has no UI specification.

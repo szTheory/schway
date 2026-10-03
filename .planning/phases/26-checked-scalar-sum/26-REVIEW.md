@@ -1,6 +1,6 @@
 ---
 phase: 26-checked-scalar-sum
-reviewed: 2026-10-03T08:41:27Z
+reviewed: 2026-10-03T11:14:45Z
 depth: standard
 files_reviewed: 45
 files_reviewed_list:
@@ -50,38 +50,36 @@ files_reviewed_list:
   - testdata/phase16/validation-corpus-run-record.jsonl
   - testdata/phase16/validation-corpus-run-record.manifest.json
 findings:
-  critical: 1
+  critical: 0
   warning: 0
   info: 0
-  total: 1
-status: issues_found
+  total: 0
+status: clean
 ---
 
 # Phase 26: Code Review Report
 
-**Reviewed:** 2026-10-03T08:41:27Z  
+**Reviewed:** 2026-10-03T11:14:45Z  
 **Depth:** standard  
 **Files Reviewed:** 45  
-**Status:** issues_found
+**Status:** clean
 
 ## Summary
 
-Reviewed all 45 files in the resolved Phase 26 scope, including scalar parsing and lowering, fixed-point validation, interpreter/native execution, event handling, and application evidence. Checked U64 overflow produces a defect event in both execution paths, but the independent event peer cannot classify that event and the native size preflight incorrectly treats the overflowing operation as event-free. No tests or native programs were run under project policy.
+Re-reviewed the CR-01 fix across the execution peer, interpreter projection, native serializer, and their regression tests. The checked-add terminal event now has fixed reason and source/type attribution, must be final with an empty defect outcome, is admitted through cyclic-event checks only for this terminal case, and is included in the conservative C output-size bound. The peer checks structural attribution and terminal membership; it cannot prove arithmetic overflow because the event has no operand values. Hosted focused and full receipts are recorded in `26-REVIEW-FIX.md`; no tests or native programs were run locally under project policy.
 
-## Critical Issues
+## Narrative Findings (AI reviewer)
 
-### CR-01: Checked-add overflow events are rejected by the independent peer
+### CR-01: Checked-add overflow event admission and size preflight — RESOLVED
 
+**Original severity:** BLOCKER  
 **File:** `internal/compiler/executionpeer/executionpeer.go:451`  
-**Issue:** On overflow, the interpreter emits `function.defected` with ID `<OpAddChecked ID>:event:defected` (`internal/compiler/interp/interp.go:1253-1259`). The non-application C execution path emits the same terminal event (`internal/compiler/cgen/cgen_program.go:2564-2572`, `2255-2272`). The peer only classifies `:event:defected` when the underlying operation is `OpDefect`, so validating either engine's direct checked-add overflow execution fails with `unknown_kind`. Also, `schema2ExecutionDocumentSize` skips every `OpAddChecked` as event-free (`cgen_program.go:202`) even though the overflow path appends a terminal event, so its capacity preflight undercounts overflow executions and can let an oversized document reach a runtime abort. Together these make valid overflow evidence unusable and can turn capacity exhaustion into a process abort instead of a clean refusal.
-**Fix:** In `classify`, recognize `OpAddChecked`'s `:event:defected` event as the fixed checked-overflow defect, and validate its reason and source/type attribution against the operation. Add a peer acceptance case for a reached overflow plus controls that reject a forged overflow event on non-overflowing execution.
-
-## Warnings
-
-## Info
+**Original issue:** Overflow events used `<OpAddChecked ID>:event:defected`, but the peer only classified `OpDefect` terminal events. The native size preflight also omitted the possible checked-add terminal record.
+**Resolution verified:** `classify` now maps the checked-add terminal ID; peer validation checks fixed reason, source/type equality, empty target, final event position, and empty defect outcome. The loop exception is restricted to this checked-add terminal event. Interpreter schema-2 projection adds the fixed reason. C size estimation reserves the defect event, with N-1 refusal and exact N admission coverage. Engine tests exercise actual overflow separately; the peer's claim remains structural only.
+**Evidence:** Commits `4b508f0`, `88584a7`, `774e92f`, and `46bee44`; hosted focused run `37118144404` and full run `37118315516` are recorded in `26-REVIEW-FIX.md`.
 
 ---
 
-_Reviewed: 2026-10-03T08:41:27Z_  
+_Reviewed: 2026-10-03T11:14:45Z_  
 _Reviewer: the agent (gsd-code-reviewer)_  
 _Depth: standard_
