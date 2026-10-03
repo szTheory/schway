@@ -318,7 +318,8 @@ func (p *parser) funcDecl() ast.FuncDecl {
 	if p.peek().Kind == TokenMatch {
 		match := p.matchExpr()
 		body.MatchExpr = match
-	} else if p.atAny(TokenLet, TokenVar, TokenIf, TokenWhile) {
+	} else if p.atAny(TokenVar, TokenIf, TokenWhile) ||
+		(p.peek().Kind == TokenLet && parameterType.Constructor == "U64" && returnType.Constructor == "U64" && p.scalarLetStart()) {
 		linear := p.scalarLinearBody()
 		body.Linear = &linear
 	} else {
@@ -334,6 +335,25 @@ func (p *parser) funcDecl() ast.FuncDecl {
 		Body:         body,
 		Span:         spanFrom(start, end),
 	}
+}
+
+// scalarLetStart distinguishes scalar value bindings from the generic `let`
+// form, whose right-hand side may be a call or an ownership expression. The
+// scalar grammar only claims a literal/place with an optional scalar operator.
+func (p *parser) scalarLetStart() bool {
+	if p.peekNonTrivia(0).Kind != TokenLet || p.peekNonTrivia(1).Kind != TokenIdentifier || p.peekNonTrivia(2).Kind != TokenEqual {
+		return false
+	}
+	value := p.peekNonTrivia(3)
+	if value.Kind != TokenNumber && value.Kind != TokenIdentifier {
+		return false
+	}
+	next := p.peekNonTrivia(4).Kind
+	if next == TokenPlus || next == TokenLAngle {
+		operand := p.peekNonTrivia(5).Kind
+		return operand == TokenNumber || operand == TokenIdentifier
+	}
+	return next != TokenLParen && next != TokenDot
 }
 
 func (p *parser) scalarLinearBody() ast.LinearBody {
