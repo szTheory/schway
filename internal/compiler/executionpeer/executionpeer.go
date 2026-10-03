@@ -365,8 +365,17 @@ func (i *index) validate(document execution.Execution) error {
 			return refusal("loop_event", n, event.Invocation, "", occ.functionID, "cyclic or repeated event is not an admitted scalar copy")
 		}
 		if checkedOverflow {
-			if event.Output != "U64 addition overflow" || event.SourcePlace != op.value.SourceID || event.TypeID != op.value.TypeID || event.TargetPlace != "" {
-				return refusal("checked_add_attribution", n, event.Invocation, "", occ.functionID, "checked-add defect reason or source/type attribution disagrees with operation")
+			if event.Output != "U64 addition overflow" {
+				return refusal("checked_add_attribution", n, event.Invocation, "", occ.functionID, "checked-add defect reason disagrees with fixed overflow reason")
+			}
+			if event.SourcePlace != op.value.SourceID {
+				return refusal("checked_add_attribution", n, event.Invocation, "", occ.functionID, "checked-add source place disagrees with operation source")
+			}
+			if event.TypeID != op.value.TypeID {
+				return refusal("checked_add_attribution", n, event.Invocation, "", occ.functionID, "checked-add type disagrees with operation type")
+			}
+			if event.TargetPlace != "" {
+				return refusal("checked_add_attribution", n, event.Invocation, "", occ.functionID, "checked-add defect must not name a target place")
 			}
 			if n != len(document.Events)-1 || document.Outcome.Kind != execution.OutcomeDefect || document.Outcome.Value != "" {
 				return refusal("checked_add_terminal", n, event.Invocation, "", occ.functionID, "checked-add overflow must be the final event and carry an empty defect outcome")
