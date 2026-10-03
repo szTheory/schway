@@ -710,6 +710,11 @@ const (
 	OpWriteU64 OperationKind = "write_u64"
 	// OpWriteNewline is a bounded LF output event with no operand or result.
 	OpWriteNewline OperationKind = "write_newline"
+	// OpWriteText is a bounded compile-time text-literal output event. The
+	// source token and its checked byte payload/length travel together so
+	// independent validators can re-derive literal provenance. It has no
+	// runtime string place, operand, or result.
+	OpWriteText OperationKind = "write_text"
 )
 
 // CallCalleeUnresolved is Phase 07's typed identity for an OpCall whose
@@ -851,7 +856,7 @@ const CalleeFrameNotDrained = "core.callee_frame_not_drained"
 // slice is exactly the defect this registry exists to catch --
 // TestAllOperationKindsRegistered fails the moment the two counts diverge.
 func AllOperationKinds() []OperationKind {
-	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConst, OpConstructPayload, OpDestructurePayload, OpAddChecked, OpLessU64, OpEqualU64, OpRemainderU64, OpScalarStore, OpBranch, OpWriteU64, OpWriteNewline}
+	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConst, OpConstructPayload, OpDestructurePayload, OpAddChecked, OpLessU64, OpEqualU64, OpRemainderU64, OpScalarStore, OpBranch, OpWriteU64, OpWriteNewline, OpWriteText}
 }
 
 // TerminatorKinds returns exactly the operation kinds that end a block --
@@ -939,7 +944,13 @@ type LinearOperation struct {
 	// ConstU64 is Phase 19's kind-exclusive canonical U64 value, represented
 	// as base-10 digits (including "0"). It is populated only on OpConst;
 	// all other operation kinds leave it empty so legacy core JSON is stable.
-	ConstU64      string `json:"const_u64,omitempty"`
+	ConstU64 string `json:"const_u64,omitempty"`
+	// TextSource is the exact quoted source token admitted by OpWriteText.
+	// TextBytes and TextLength are its decoded byte payload and exact length;
+	// every other operation kind leaves all three fields empty/zero.
+	TextSource    string `json:"text_source,omitempty"`
+	TextBytes     []byte `json:"text_bytes,omitempty"`
+	TextLength    uint64 `json:"text_length,omitempty"`
 	RightID       string `json:"right_id,omitempty"`
 	StoreTargetID string `json:"store_target_id,omitempty"`
 	TrueEdgeID    string `json:"true_edge_id,omitempty"`

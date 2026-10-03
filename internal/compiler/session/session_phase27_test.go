@@ -246,6 +246,193 @@ func TestPhase27WritePeerAdmission(t *testing.T) {
 	}
 }
 
+func TestPhase27LiteralWriteAdmission(t *testing.T) {
+	source := []byte(`module phase27_literal_write
+export { fn main }
+fn main(n: U64) -> Unit {
+  if n < 1001 {
+    write_text("Fizz")
+    write_text("quote: \" slash: \\ nul: \x00 newline: \n unicode: \u03bb")
+    write_text("")
+  } else {
+    defect "input exceeds 1000"
+  }
+}
+`)
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("literal-only write diagnostics: %+v", checked.Diagnostics)
+	}
+	if len(checked.Program.Functions) != 1 || checked.Program.Functions[0].ReturnType != "Unit" {
+		t.Fatalf("literal-write program = %+v, want one Unit function", checked.Program.Functions)
+	}
+	if peer := corevalidate.Validate(checked.Program); !peer.Valid {
+		t.Fatalf("core peer refused exact literal write facts: %+v", peer.Problems)
+	}
+	if problems := originvalidate.ValidatePublished(checked.Program); len(problems) != 0 {
+		t.Fatalf("origin peer refused exact literal write facts: %+v", problems)
+	}
+	wantSources := []string{`"Fizz"`, `"quote: \" slash: \\ nul: \x00 newline: \n unicode: \u03bb"`, `""`}
+	wantBytes := [][]byte{
+		[]byte("Fizz"),
+		[]byte("quote: \" slash: \\ nul: \x00 newline: \n unicode: λ"),
+		{},
+	}
+	var writes []core.LinearOperation
+	for _, operation := range checked.Program.Functions[0].Linear.Operations {
+		if operation.Kind == core.OpWriteText {
+			writes = append(writes, operation)
+		}
+	}
+	if len(writes) != len(wantSources) {
+		t.Fatalf("write_text operation count = %d, want %d", len(writes), len(wantSources))
+	}
+	for index, operation := range writes {
+		if operation.TextSource != wantSources[index] || !bytes.Equal(operation.TextBytes, wantBytes[index]) || operation.TextLength != uint64(len(wantBytes[index])) {
+			t.Errorf("literal %d source=%q bytes=%v length=%d, want source=%q bytes=%v length=%d", index, operation.TextSource, operation.TextBytes, operation.TextLength, wantSources[index], wantBytes[index], len(wantBytes[index]))
+		}
+		if operation.SourceID != "" || operation.TargetID != "" || operation.TypeID != typeIDFor(t, checked.Program.Functions[0].Linear.Types, "Unit") {
+			t.Errorf("literal %d has runtime operand/result or non-Unit type: %+v", index, operation)
+		}
+	}
+	for _, fact := range checked.Program.Functions[0].Linear.Types {
+		if fact.Shape.Constructor == "String" {
+			t.Fatal("literal write introduced a runtime String type")
+		}
+	}
+	for _, mutation := range []struct {
+		name   string
+		mutate func(*testing.T, *core.Program)
+	}{
+		{name: "length-mismatch", mutate: func(t *testing.T, program *core.Program) {
+			t.Helper()
+			for index := range program.Functions[0].Linear.Operations {
+				op := &program.Functions[0].Linear.Operations[index]
+				if op.Kind == core.OpWriteText {
+					op.TextLength++
+					return
+				}
+			}
+			t.Fatal("write_text operation missing")
+		}},
+		{name: "payload-mismatch", mutate: func(t *testing.T, program *core.Program) {
+			t.Helper()
+			for index := range program.Functions[0].Linear.Operations {
+				op := &program.Functions[0].Linear.Operations[index]
+				if op.Kind == core.OpWriteText && len(op.TextBytes) > 0 {
+					op.TextBytes[0] ^= 1
+					return
+				}
+			}
+			t.Fatal("non-empty write_text operation missing")
+		}},
+		{name: "nonliteral-provenance", mutate: func(t *testing.T, program *core.Program) {
+			t.Helper()
+			for index := range program.Functions[0].Linear.Operations {
+				op := &program.Functions[0].Linear.Operations[index]
+				if op.Kind == core.OpWriteText {
+					op.TextSource = "n"
+					return
+				}
+			}
+			t.Fatal("write_text operation missing")
+		}},
+		{name: "wrong-operation-kind", mutate: func(t *testing.T, program *core.Program) {
+			t.Helper()
+			for index := range program.Functions[0].Linear.Operations {
+				op := &program.Functions[0].Linear.Operations[index]
+				if op.Kind == core.OpWriteText {
+					op.Kind = core.OpWriteU64
+					return
+				}
+			}
+			t.Fatal("write_text operation missing")
+		}},
+		{name: "embedded-zero-length", mutate: func(t *testing.T, program *core.Program) {
+			t.Helper()
+			for index := range program.Functions[0].Linear.Operations {
+				op := &program.Functions[0].Linear.Operations[index]
+				if op.Kind == core.OpWriteText && bytes.IndexByte(op.TextBytes, 0) >= 0 {
+					op.TextLength--
+					return
+				}
+			}
+			t.Fatal("embedded-zero write_text operation missing")
+		}},
+	} {
+		t.Run(mutation.name, func(t *testing.T) {
+			forged := checked.Program
+			forged.Functions = append([]core.Function(nil), checked.Program.Functions...)
+			forged.Functions[0].Linear = clonePhase27Linear(checked.Program.Functions[0].Linear)
+			mutation.mutate(t, &forged)
+			if peer := corevalidate.Validate(forged); peer.Valid {
+				t.Fatal("core peer accepted forged literal bytes, length, or provenance")
+			}
+			if problems := originvalidate.ValidatePublished(forged); len(problems) == 0 {
+				t.Fatal("origin peer accepted forged literal bytes, length, or provenance")
+			}
+		})
+	}
+
+	dynamic := []byte(strings.Replace(string(source), `write_text("Fizz")`, `write_text(n)`, 1))
+	dynamicResult := session.Check(dynamic)
+	if !hasDiagnostic(dynamicResult.Diagnostics, "type.scalar_write_literal") {
+		t.Fatalf("dynamic text operand was not refused: %+v", dynamicResult.Diagnostics)
+	}
+	dynamicStart := strings.Index(string(dynamic), "write_text(n)") + len("write_text(")
+	if dynamicResult.Diagnostics[0].Primary.Start != dynamicStart || dynamicResult.Diagnostics[0].Primary.End != dynamicStart+1 {
+		t.Fatalf("dynamic operand diagnostic span=%+v, want only %q", dynamicResult.Diagnostics[0].Primary, "n")
+	}
+	compound := []byte(strings.Replace(string(source), `write_text("Fizz")`, `write_text("F" + "izz")`, 1))
+	compoundResult := session.Check(compound)
+	if !hasDiagnostic(compoundResult.Diagnostics, "type.scalar_write_literal") {
+		t.Fatalf("general text expression was not refused: %+v", compoundResult.Diagnostics)
+	}
+	compoundStart := strings.Index(string(compound), `"F" + "izz"`)
+	if compoundResult.Diagnostics[0].Primary.Start != compoundStart || compoundResult.Diagnostics[0].Primary.End != compoundStart+len(`"F" + "izz"`) {
+		t.Fatalf("compound text diagnostic span=%+v, want full expression at %d", compoundResult.Diagnostics[0].Primary, compoundStart)
+	}
+
+	malformed := []byte("module phase27_malformed_text\nexport { fn main }\nfn main(n: U64) -> Unit {\n  write_text(\"\\q\")\n}\n")
+	malformedResult := session.Check(malformed)
+	if !hasDiagnostic(malformedResult.Diagnostics, "type.scalar_write_literal") {
+		t.Fatalf("malformed escape was not refused: %+v", malformedResult.Diagnostics)
+	}
+	malformedStart := strings.Index(string(malformed), `"\q"`)
+	if malformedResult.Diagnostics[0].Primary.Start != malformedStart || malformedResult.Diagnostics[0].Primary.End != malformedStart+4 {
+		t.Fatalf("malformed escape diagnostic span=%+v, want full quoted token at %d", malformedResult.Diagnostics[0].Primary, malformedStart)
+	}
+}
+
+func TestPhase27LiteralEscapeFormat(t *testing.T) {
+	source := []byte(`module phase27_literal_format
+export { fn main }
+fn main(n: U64) -> Unit {
+  // This comment remains attached to the literal write.
+  write_text( "a\"b\\c\x00\n\u03bb" ) // trailing comment stays visible
+}
+`)
+	first := session.Format(source)
+	second := session.Format(first.Canonical)
+	if len(first.Diagnostics) != 0 || len(second.Diagnostics) != 0 || !bytes.Equal(first.Canonical, second.Canonical) {
+		t.Fatalf("literal formatting did not stabilize: first=%q second=%q diagnostics=%+v/%+v", first.Canonical, second.Canonical, first.Diagnostics, second.Diagnostics)
+	}
+	if !bytes.Contains(first.Canonical, []byte(`write_text("a\"b\\c\x00\n\u03bb")`)) || !bytes.Contains(first.Canonical, []byte("// This comment remains attached to the literal write.")) || !bytes.Contains(first.Canonical, []byte("// trailing comment stays visible")) || first.Canonical[len(first.Canonical)-1] != '\n' {
+		t.Fatalf("canonical source changed quoted spelling, comments, or final LF: %q", first.Canonical)
+	}
+	for _, token := range syntax.Parse(source).Tree.Tokens {
+		if token.Kind == syntax.TokenString && (token.Span.End <= token.Span.Start || string(source[token.Span.Start:token.Span.End]) != token.Text) {
+			t.Errorf("quoted token lost exact source span: %+v", token)
+		}
+	}
+
+	malformedEscape := []byte("module phase27_format_recovery\nexport { fn main }\nfn main(n: U64) -> Unit {\n  write_text(\"\\q\")\n}\n")
+	recovered := session.Format(malformedEscape)
+	if !bytes.Contains(recovered.Canonical, []byte(`write_text("\q")`)) || len(recovered.Diagnostics) != 0 {
+		t.Fatalf("formatter did not preserve malformed quoted token for checker refusal: canonical=%q diagnostics=%+v", recovered.Canonical, recovered.Diagnostics)
+	}
+}
+
 func phase27WriteSource() []byte {
 	return []byte("module phase27\nexport { fn main }\nfn main(n: U64) -> Unit {\n  if n < 1001 {\n    write_u64(n)\n    write_newline()\n  } else {\n    defect \"input exceeds 1000\"\n  }\n}\n")
 }
@@ -269,6 +456,9 @@ func clonePhase27Linear(linear *core.LinearBody) *core.LinearBody {
 	clone.Types = append([]core.TypeFact(nil), linear.Types...)
 	clone.Places = append([]core.Place(nil), linear.Places...)
 	clone.Operations = append([]core.LinearOperation(nil), linear.Operations...)
+	for index := range clone.Operations {
+		clone.Operations[index].TextBytes = append([]byte(nil), linear.Operations[index].TextBytes...)
+	}
 	clone.Blocks = append([]core.Block(nil), linear.Blocks...)
 	clone.Edges = append([]core.Edge(nil), linear.Edges...)
 	return &clone

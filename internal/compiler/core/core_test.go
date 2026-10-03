@@ -797,7 +797,7 @@ func splitPath(path string) []string {
 // listed twice, so a constant added without registering it is caught
 // (D-04-22).
 func TestAllOperationKindsRegistered(t *testing.T) {
-	const declaredCount = 17 // legacy operation kinds plus Phase 26 checked add, less-than, scalar store, and branch
+	const declaredCount = 22 // legacy kinds plus Phase 26 scalar CFG and Phase 27 arithmetic/text writes
 	all := core.AllOperationKinds()
 	if len(all) != declaredCount {
 		t.Fatalf("AllOperationKinds() has %d entries, want %d", len(all), declaredCount)
@@ -808,6 +808,21 @@ func TestAllOperationKindsRegistered(t *testing.T) {
 			t.Fatalf("duplicate operation kind %q in registry", kind)
 		}
 		seen[kind] = true
+	}
+}
+
+func TestPhase27TextWriteOperationInventory(t *testing.T) {
+	registered := false
+	for _, kind := range core.AllOperationKinds() {
+		registered = registered || kind == core.OpWriteText
+	}
+	if !registered {
+		t.Fatal("Phase 27 literal text-write operation is absent from AllOperationKinds")
+	}
+	for _, kind := range core.TerminatorKinds() {
+		if kind == core.OpWriteText {
+			t.Fatal("literal text-write operation must not terminate a block")
+		}
 	}
 }
 

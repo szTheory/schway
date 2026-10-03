@@ -60,7 +60,7 @@ type formatter struct {
 	// line prematurely (the same rule a plain binding's source identifier
 	// follows), leaving the argument list stranded on the next line.
 	callBinding bool
-	// statementWriteCall tracks the two typed output statements, whose callee
+	// statementWriteCall tracks the typed output statements, whose callee
 	// names remain ordinary identifiers in the lossless token stream.
 	statementWriteCall bool
 	// header records the declaration keyword that opened the line currently
@@ -196,7 +196,7 @@ func (f *formatter) token(token Token, next Kind) {
 			f.newline()
 		} else if f.previous == TokenPipe || f.previous == TokenFatArrow {
 			f.newline()
-		} else if f.insideFunctionBody() && next == TokenLParen && (token.Text == "write_u64" || token.Text == "write_newline") {
+		} else if f.insideFunctionBody() && next == TokenLParen && (token.Text == "write_text" || token.Text == "write_u64" || token.Text == "write_newline") {
 			f.statementWriteCall = true
 		} else if f.insideFunctionBody() && f.linearBinding && f.previous == TokenEqual && next == TokenLParen {
 			// D-07-01/D-07-40: this identifier is a bare call's callee, not

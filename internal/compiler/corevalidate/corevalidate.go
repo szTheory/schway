@@ -1207,7 +1207,7 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 		// 12, D-12-10): it names its own produced place via PayloadTargetID,
 		// never the ordinary TargetID, which it leaves empty -- checked
 		// separately immediately below.
-		if operation.Kind != core.OpReturn && operation.Kind != core.OpFail && operation.Kind != core.OpRelease && operation.Kind != core.OpDefect && operation.Kind != core.OpDestructurePayload && operation.Kind != core.OpScalarStore && operation.Kind != core.OpBranch && operation.Kind != core.OpWriteU64 && operation.Kind != core.OpWriteNewline {
+		if operation.Kind != core.OpReturn && operation.Kind != core.OpFail && operation.Kind != core.OpRelease && operation.Kind != core.OpDefect && operation.Kind != core.OpDestructurePayload && operation.Kind != core.OpScalarStore && operation.Kind != core.OpBranch && operation.Kind != core.OpWriteU64 && operation.Kind != core.OpWriteNewline && operation.Kind != core.OpWriteText {
 			if _, ok := places[operation.TargetID]; !v.check(ok, "core.unknown_place", operation.TargetID) {
 				return nil, nil, false
 			}
@@ -1228,6 +1228,10 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 			}
 		case core.OpWriteNewline:
 			if !v.check(types[operation.TypeID].Shape.Constructor == "Unit" && operation.TargetID == "" && operation.RightID == "" && operation.StoreTargetID == "" && operation.TrueEdgeID == "" && operation.FalseEdgeID == "", "core.write_operation_invalid", operation.ID) {
+				return nil, nil, false
+			}
+		case core.OpWriteText:
+			if !v.check(validTextWriteOperation(operation, types), "core.write_operation_invalid", operation.ID) {
 				return nil, nil, false
 			}
 		case core.OpAddChecked, core.OpLessU64, core.OpEqualU64, core.OpRemainderU64:
@@ -1381,6 +1385,11 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 		}
 		if operation.Kind != core.OpAddChecked && operation.Kind != core.OpLessU64 && operation.Kind != core.OpEqualU64 && operation.Kind != core.OpRemainderU64 && operation.RightID != "" || operation.Kind != core.OpScalarStore && operation.StoreTargetID != "" || operation.Kind != core.OpBranch && (operation.TrueEdgeID != "" || operation.FalseEdgeID != "") {
 			if !v.check(false, "core.scalar_field_kind_exclusive", operation.ID) {
+				return nil, nil, false
+			}
+		}
+		if operation.Kind != core.OpWriteText && (operation.TextSource != "" || len(operation.TextBytes) != 0 || operation.TextLength != 0) {
+			if !v.check(false, "core.write_text_fields_kind_exclusive", operation.ID) {
 				return nil, nil, false
 			}
 		}
@@ -2560,6 +2569,10 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			if !v.check(operation.SourceID == "" && types[operation.TypeID].Shape.Constructor == "Unit" && operation.TargetID == "", "core.write_operation_invalid", operation.ID) {
 				return false
 			}
+		case core.OpWriteText:
+			if !v.check(validTextWriteOperation(operation, types), "core.write_operation_invalid", operation.ID) {
+				return false
+			}
 		case core.OpConst:
 			if !scalarTargetMatches(function, index, operation, places, produced) {
 				return false
@@ -2894,6 +2907,10 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			}
 		case core.OpWriteNewline:
 			if !v.check(operation.SourceID == "" && types[operation.TypeID].Shape.Constructor == "Unit" && operation.TargetID == "", "core.write_operation_invalid", operation.ID) {
+				return false
+			}
+		case core.OpWriteText:
+			if !v.check(validTextWriteOperation(operation, types), "core.write_operation_invalid", operation.ID) {
 				return false
 			}
 		case core.OpConst:
@@ -4283,7 +4300,7 @@ func hasScalarCFG(function *core.Function) bool {
 		return false
 	}
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline || operation.Kind == core.OpWriteText {
 			return true
 		}
 	}
@@ -4291,7 +4308,25 @@ func hasScalarCFG(function *core.Function) bool {
 }
 
 func optionalOperationSource(function *core.Function, operation core.LinearOperation) bool {
-	return operation.Kind == core.OpConst || operation.Kind == core.OpWriteNewline || operation.Kind == core.OpReturn && function.ReturnType == "Unit"
+	return operation.Kind == core.OpConst || operation.Kind == core.OpWriteNewline || operation.Kind == core.OpWriteText || operation.Kind == core.OpReturn && function.ReturnType == "Unit"
+}
+
+func validTextWriteOperation(operation core.LinearOperation, types map[string]core.TypeFact) bool {
+	raw := operation.TextSource
+	if len(raw) < 2 || raw[0] != '"' || raw[len(raw)-1] != '"' {
+		return false
+	}
+	decoded, err := strconv.Unquote(raw)
+	if err != nil || string(operation.TextBytes) != decoded || operation.TextLength != uint64(len(decoded)) {
+		return false
+	}
+	typeFact, knownType := types[operation.TypeID]
+	return knownType && typeFact.Shape.Constructor == "Unit" && len(typeFact.Shape.Arguments) == 0 &&
+		operation.SourceID == "" && operation.TargetID == "" && operation.RightID == "" && operation.StoreTargetID == "" &&
+		operation.TrueEdgeID == "" && operation.FalseEdgeID == "" && operation.LoanID == "" && operation.Foreign == nil &&
+		operation.OkEdgeID == "" && operation.ErrEdgeID == "" && operation.ErrTargetID == "" && operation.ReleasesOperationID == "" &&
+		operation.Allocator == "" && operation.Reason == "" && operation.CalleeID == "" && operation.PayloadType == "" &&
+		operation.PayloadTargetID == "" && operation.ConstU64 == ""
 }
 
 type scalarAbstractValue struct {
@@ -4426,6 +4461,8 @@ func (v *validator) validateScalarFixedPoint(function *core.Function, types map[
 				case core.OpWriteNewline:
 					// The event has no scalar-state effect; its static operation ID
 					// remains available to execution and evidence consumers.
+				case core.OpWriteText:
+					// The literal byte payload has no scalar-state effect.
 				case core.OpCopy:
 					if !v.check(source.initialized, "core.place_uninitialized", operation.ID) {
 						return false
@@ -4512,7 +4549,7 @@ func (v *validator) validateStraightLineScalarFacts(function *core.Function, typ
 		case core.OpScalarStore:
 			state[operation.StoreTargetID] = source
 		case core.OpWriteU64:
-		case core.OpWriteNewline, core.OpReturn, core.OpBranch, core.OpDefect:
+		case core.OpWriteNewline, core.OpWriteText, core.OpReturn, core.OpBranch, core.OpDefect:
 		default:
 			if operation.TargetID != "" {
 				constructor := types[places[operation.TargetID].TypeID].Shape.Constructor

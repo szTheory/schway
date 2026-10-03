@@ -369,7 +369,7 @@ func (p *parser) isWriteCallStart(token Token) bool {
 	if token.Kind != TokenIdentifier || p.peekNonTrivia(1).Kind != TokenLParen {
 		return false
 	}
-	return token.Text == "write_u64" || token.Text == "write_newline"
+	return token.Text == "write_text" || token.Text == "write_u64" || token.Text == "write_newline"
 }
 
 func (p *parser) scalarLinearBody(unitResult bool) ast.LinearBody {
@@ -458,11 +458,15 @@ func (p *parser) scalarWriteStatement() ast.Statement {
 	name := p.advance()
 	p.expect(TokenLParen, "syntax.expected_lparen")
 	statement := ast.Statement{Kind: name.Text}
-	if name.Text == "write_u64" {
+	if name.Text == "write_u64" || name.Text == "write_text" {
 		if p.peek().Kind != TokenRParen {
 			statement.Expr = p.scalarExpr()
 		} else {
-			p.problem("syntax.write_u64_arity", p.peek(), "write_u64 requires one U64 operand")
+			if name.Text == "write_text" {
+				p.problem("syntax.write_text_arity", p.peek(), "write_text requires one quoted text literal")
+			} else {
+				p.problem("syntax.write_u64_arity", p.peek(), "write_u64 requires one U64 operand")
+			}
 		}
 	} else if p.peek().Kind != TokenRParen {
 		argument := p.peek()
@@ -526,6 +530,8 @@ func (p *parser) scalarExprAtom() *ast.Expr {
 	switch leftToken.Kind {
 	case TokenNumber:
 		return &ast.Expr{Kind: "number", Value: leftToken.Text, Span: leftToken.Span}
+	case TokenString:
+		return &ast.Expr{Kind: "text", Value: leftToken.Text, Span: leftToken.Span}
 	default:
 		if leftToken.Kind != TokenIdentifier {
 			p.problem("syntax.expected_scalar_operand", leftToken, "expected a scalar operand")

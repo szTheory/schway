@@ -234,6 +234,8 @@ func checkScalarFixedPointDetailed(function core.Function) (int, string, string)
 				case core.OpWriteNewline:
 					// An output event has a static operation identity but carries
 					// no scalar state across a control-flow edge.
+				case core.OpWriteText:
+					// A compile-time byte literal has no runtime scalar value.
 				case core.OpReturn:
 					if function.ReturnType == "Unit" {
 						if op.SourceID != "" || types[op.TypeID] != "Unit" {
@@ -359,6 +361,22 @@ func (b *scalarBuilder) lower(statements []ast.Statement) {
 	for _, statement := range statements {
 		b.work++
 		switch statement.Kind {
+		case "write_text":
+			if statement.Expr == nil {
+				b.refuse("type.scalar_write_literal", statement.Span, "write_text requires one quoted text literal")
+				continue
+			}
+			if statement.Expr.Kind != "text" {
+				b.refuse("type.scalar_write_literal", statement.Expr.Span, "write_text requires one quoted text literal")
+				continue
+			}
+			decoded, err := strconv.Unquote(statement.Expr.Value)
+			if err != nil || len(statement.Expr.Value) < 2 || statement.Expr.Value[0] != '"' || statement.Expr.Value[len(statement.Expr.Value)-1] != '"' {
+				b.refuse("type.scalar_write_literal", statement.Expr.Span, "write_text requires a valid quoted text literal")
+				continue
+			}
+			payload := []byte(decoded)
+			b.addOperation(core.LinearOperation{Kind: core.OpWriteText, TypeID: b.types["Unit"], TextSource: statement.Expr.Value, TextBytes: payload, TextLength: uint64(len(payload))})
 		case "write_u64":
 			value, typeName := b.expression(statement.Expr)
 			if typeName != "U64" {

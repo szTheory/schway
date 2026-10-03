@@ -167,7 +167,7 @@ type LinearBody struct {
 }
 
 type Statement struct {
-	Kind  string // var, assign, if, while, defect, write_u64, write_newline
+	Kind  string // var, assign, if, while, defect, write_text, write_u64, write_newline
 	Name  string
 	Expr  *Expr
 	Then  []Statement
@@ -177,7 +177,7 @@ type Statement struct {
 }
 
 type Expr struct {
-	Kind        string // name, number, add, less
+	Kind        string // name, number, text, add, less
 	Name, Value string
 	Left, Right *Expr
 	Span        diagnostic.Span

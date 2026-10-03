@@ -292,7 +292,7 @@ func SetOriginScalarTransferBudgetForTest(budget int) func() {
 
 func originHasScalarCFG(function core.Function) bool {
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline || operation.Kind == core.OpWriteText {
 			return true
 		}
 	}
@@ -476,6 +476,8 @@ func originTransferScalarOperation(operation core.LinearOperation, state originS
 		return source.initialized
 	case core.OpWriteNewline:
 		// This output event has no scalar dataflow effect.
+	case core.OpWriteText:
+		// A compile-time text payload carries no scalar dataflow state.
 	case core.OpReturn:
 		if operation.SourceID == "" {
 			return operation.TypeID != "" // Return mode is checked independently by corevalidate.
@@ -1433,8 +1435,10 @@ func phase27WriteProblem(function core.Function) *Problem {
 		return nil
 	}
 	types := make(map[string]string, len(function.Linear.Types))
+	typeFacts := make(map[string]core.TypeFact, len(function.Linear.Types))
 	for _, fact := range function.Linear.Types {
 		types[fact.ID] = fact.Shape.Constructor
+		typeFacts[fact.ID] = fact
 	}
 	places := make(map[string]string, len(function.Linear.Places))
 	for _, place := range function.Linear.Places {
@@ -1442,6 +1446,9 @@ func phase27WriteProblem(function core.Function) *Problem {
 	}
 	unitReturns := 0
 	for _, operation := range function.Linear.Operations {
+		if operation.Kind != core.OpWriteText && (operation.TextSource != "" || len(operation.TextBytes) != 0 || operation.TextLength != 0) {
+			return &Problem{Code: "core.write_text_fields_kind_exclusive", Detail: fmt.Sprintf("%s: text literal fields occur on %s operation %q", function.ID, operation.Kind, operation.ID)}
+		}
 		switch operation.Kind {
 		case core.OpWriteU64:
 			if places[operation.SourceID] != "U64" || operation.TypeID == "" || types[operation.TypeID] != "U64" || operation.TypeID != placeTypeID(function.Linear.Places, operation.SourceID) || operation.TargetID != "" || operation.RightID != "" || operation.StoreTargetID != "" || operation.TrueEdgeID != "" || operation.FalseEdgeID != "" {
@@ -1450,6 +1457,10 @@ func phase27WriteProblem(function core.Function) *Problem {
 		case core.OpWriteNewline:
 			if operation.SourceID != "" || types[operation.TypeID] != "Unit" || operation.TargetID != "" || operation.RightID != "" || operation.StoreTargetID != "" || operation.TrueEdgeID != "" || operation.FalseEdgeID != "" {
 				return &Problem{Code: "core.write_operation_invalid", Detail: fmt.Sprintf("%s: invalid write_newline operation %q", function.ID, operation.ID)}
+			}
+		case core.OpWriteText:
+			if !validOriginTextWriteOperation(operation, typeFacts) {
+				return &Problem{Code: "core.write_operation_invalid", Detail: fmt.Sprintf("%s: invalid write_text operation %q", function.ID, operation.ID)}
 			}
 		case core.OpReturn:
 			if function.ReturnType == "Unit" {
@@ -1466,6 +1477,24 @@ func phase27WriteProblem(function core.Function) *Problem {
 		return &Problem{Code: "core.return_type_mismatch", Detail: fmt.Sprintf("%s: expected one explicit Unit return operation", function.ID)}
 	}
 	return nil
+}
+
+func validOriginTextWriteOperation(operation core.LinearOperation, types map[string]core.TypeFact) bool {
+	raw := operation.TextSource
+	if len(raw) < 2 || raw[0] != '"' || raw[len(raw)-1] != '"' {
+		return false
+	}
+	decoded, err := strconv.Unquote(raw)
+	if err != nil || string(operation.TextBytes) != decoded || operation.TextLength != uint64(len(decoded)) {
+		return false
+	}
+	typeFact, knownType := types[operation.TypeID]
+	return knownType && typeFact.Shape.Constructor == "Unit" && len(typeFact.Shape.Arguments) == 0 &&
+		operation.SourceID == "" && operation.TargetID == "" && operation.RightID == "" && operation.StoreTargetID == "" &&
+		operation.TrueEdgeID == "" && operation.FalseEdgeID == "" && operation.LoanID == "" && operation.Foreign == nil &&
+		operation.OkEdgeID == "" && operation.ErrEdgeID == "" && operation.ErrTargetID == "" && operation.ReleasesOperationID == "" &&
+		operation.Allocator == "" && operation.Reason == "" && operation.CalleeID == "" && operation.PayloadType == "" &&
+		operation.PayloadTargetID == "" && operation.ConstU64 == ""
 }
 
 func placeTypeID(places []core.Place, placeID string) string {

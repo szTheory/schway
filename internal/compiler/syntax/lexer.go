@@ -82,13 +82,21 @@ func lex(source []byte) ([]Token, []diagnostic.Diagnostic, bool) {
 		}
 
 		if source[offset] == '"' {
-			// Phase 4's only string-literal use is the allocator identity
-			// (`allocator: "libc_malloc"`); no escape sequences are
-			// supported this phase -- an unterminated or newline-crossing
-			// literal is a lexer-level rejection, not a parser recovery.
+			// Keep quoted source spelling lossless and skip escaped bytes while
+			// finding the closing quote. Escape validity belongs to the narrow
+			// compile-time write_text admission path, which can report the full
+			// token span without creating a runtime string value.
 			end := offset + 1
 			closed := false
 			for end < len(source) && source[end] != '\n' {
+				if source[end] == '\\' {
+					if end+1 < len(source) && source[end+1] != '\n' {
+						end += 2
+					} else {
+						end++
+					}
+					continue
+				}
 				if source[end] == '"' {
 					end++
 					closed = true
