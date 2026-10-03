@@ -318,9 +318,8 @@ func (p *parser) funcDecl() ast.FuncDecl {
 	if p.peek().Kind == TokenMatch {
 		match := p.matchExpr()
 		body.MatchExpr = match
-	} else if p.atAny(TokenVar, TokenIf, TokenWhile) ||
-		(p.peek().Kind == TokenLet && parameterType.Constructor == "U64" && returnType.Constructor == "U64" && p.scalarLetStart()) {
-		linear := p.scalarLinearBody()
+	} else if p.scalarBodyStart(parameterType, returnType) {
+		linear := p.scalarLinearBody(returnType.Constructor == "Unit")
 		body.Linear = &linear
 	} else {
 		linear := p.linearBody(true)
@@ -356,10 +355,31 @@ func (p *parser) scalarLetStart() bool {
 	return next != TokenLParen && next != TokenDot
 }
 
-func (p *parser) scalarLinearBody() ast.LinearBody {
+func (p *parser) scalarBodyStart(parameterType, returnType ast.TypeRef) bool {
+	if p.atAny(TokenVar, TokenIf, TokenWhile) {
+		return true
+	}
+	if parameterType.Constructor == "U64" && (returnType.Constructor == "U64" || returnType.Constructor == "Unit") && p.scalarLetStart() {
+		return true
+	}
+	return p.isWriteCallStart(p.peek())
+}
+
+func (p *parser) isWriteCallStart(token Token) bool {
+	if token.Kind != TokenIdentifier || p.peekNonTrivia(1).Kind != TokenLParen {
+		return false
+	}
+	return token.Text == "write_u64" || token.Text == "write_newline"
+}
+
+func (p *parser) scalarLinearBody(unitResult bool) ast.LinearBody {
 	body := ast.LinearBody{Span: p.peek().Span}
 	body.Statements = p.scalarStatements(false)
-	if p.peek().Kind == TokenIdentifier {
+	if unitResult && p.peek().Kind == TokenRBrace {
+		if len(body.Statements) > 0 {
+			body.Span.End = body.Statements[len(body.Statements)-1].Span.End
+		}
+	} else if p.peek().Kind == TokenIdentifier {
 		result := p.advance()
 		body.Result = result.Text
 		body.Span.End = result.Span.End
@@ -373,7 +393,7 @@ func (p *parser) scalarStatements(inBlock bool) []ast.Statement {
 	statements := []ast.Statement{}
 	for p.peek().Kind != TokenEOF && p.peek().Kind != TokenRBrace {
 		start := p.peek()
-		if !inBlock && start.Kind == TokenIdentifier && p.peekNonTrivia(1).Kind != TokenEqual {
+		if !inBlock && start.Kind == TokenIdentifier && p.peekNonTrivia(1).Kind != TokenEqual && !p.isWriteCallStart(start) {
 			return statements
 		}
 		switch start.Kind {
@@ -390,6 +410,10 @@ func (p *parser) scalarStatements(inBlock bool) []ast.Statement {
 			expr := p.scalarExpr()
 			statements = append(statements, ast.Statement{Kind: "var", Name: name.Text, Expr: expr, Span: diagnostic.Span{Start: start.Span.Start, End: expr.Span.End}})
 		case TokenIdentifier:
+			if p.isWriteCallStart(start) {
+				statements = append(statements, p.scalarWriteStatement())
+				continue
+			}
 			name := p.advance()
 			p.expect(TokenEqual, "syntax.expected_equal")
 			expr := p.scalarExpr()
@@ -428,6 +452,31 @@ func (p *parser) scalarStatements(inBlock bool) []ast.Statement {
 		}
 	}
 	return statements
+}
+
+func (p *parser) scalarWriteStatement() ast.Statement {
+	name := p.advance()
+	p.expect(TokenLParen, "syntax.expected_lparen")
+	statement := ast.Statement{Kind: name.Text}
+	if name.Text == "write_u64" {
+		if p.peek().Kind != TokenRParen {
+			statement.Expr = p.scalarExpr()
+		} else {
+			p.problem("syntax.write_u64_arity", p.peek(), "write_u64 requires one U64 operand")
+		}
+	} else if p.peek().Kind != TokenRParen {
+		argument := p.peek()
+		for !p.atAny(TokenRParen, TokenEOF) {
+			p.advance()
+		}
+		p.problem("syntax.write_newline_arity", argument, "write_newline takes no operands")
+	}
+	end := p.expect(TokenRParen, "syntax.expected_rparen")
+	statement.Span = diagnostic.Span{Start: name.Span.Start, End: end.Span.End}
+	if statement.Expr != nil {
+		statement.Span.End = end.Span.End
+	}
+	return statement
 }
 
 func (p *parser) scalarExpr() *ast.Expr {

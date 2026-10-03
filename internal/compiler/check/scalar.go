@@ -31,12 +31,12 @@ type scalarBuilder struct {
 var scalarAnalysisBudgetForTest int
 
 func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Function, []diagnostic.Diagnostic, int) {
-	if function.Parameter.Type.Constructor != "U64" || function.ReturnType.Constructor != "U64" {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.scalar_signature", function.Span, "scalar CFG functions require U64 input and output")}, 1
+	if function.Parameter.Type.Constructor != "U64" || (function.ReturnType.Constructor != "U64" && function.ReturnType.Constructor != "Unit") {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.scalar_signature", function.Span, "scalar CFG functions require U64 input and either U64 or Unit output")}, 1
 	}
 	b := &scalarBuilder{function: function, functionID: functionID, types: map[string]string{}, places: map[string]core.Place{}, names: map[string]string{}, initialized: map[string]bool{}}
 	b.linear = core.LinearBody{ID: functionID + ":linear"}
-	for _, name := range []string{"U64", "Bool"} {
+	for _, name := range []string{"U64", "Bool", "Unit"} {
 		shape := core.TypeRef{Constructor: name}
 		derived, err := ability.Derive(shape)
 		if err != nil {
@@ -51,7 +51,13 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 	b.initialized[parameter.ID] = true
 	b.newBlock("entry")
 	b.lower(function.Body.Linear.Statements)
-	if len(b.diagnostics) == 0 {
+	if len(b.diagnostics) == 0 && function.ReturnType.Constructor == "Unit" {
+		if function.Body.Linear.Result != "" {
+			b.diagnostics = append(b.diagnostics, diagnostic.Error("type.unit_result", function.Body.Linear.Span, "Unit functions do not return a value"))
+		} else {
+			b.addOperation(core.LinearOperation{Kind: core.OpReturn, TypeID: b.types["Unit"]})
+		}
+	} else if len(b.diagnostics) == 0 {
 		resultID, ok := b.names[function.Body.Linear.Result]
 		if !ok {
 			b.diagnostics = append(b.diagnostics, diagnostic.Error("name.unknown_place", function.Body.Linear.Span, "scalar result is not an initialized local"))
@@ -69,7 +75,7 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 		return core.Function{}, b.diagnostics, b.work
 	}
 	b.linear.Blocks, b.linear.Edges = b.blocks, b.edges
-	checked := core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: parameter.ID, Name: function.Parameter.Name, Type: "U64"}, ReturnType: "U64", Linear: &b.linear, Span: function.Span}
+	checked := core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: parameter.ID, Name: function.Parameter.Name, Type: "U64"}, ReturnType: function.ReturnType.Constructor, Linear: &b.linear, Span: function.Span}
 	analysisWork, refusal, category := checkScalarFixedPointDetailed(checked)
 	b.work += analysisWork
 	if refusal != "" {
@@ -199,7 +205,22 @@ func checkScalarFixedPointDetailed(function core.Function) (int, string, string)
 						return work, "check.cfg_back_edge", scalarAuthorityCategory(op, types, places)
 					}
 					state[op.TargetID] = source
-				case core.OpBranch, core.OpReturn, core.OpDefect:
+				case core.OpWriteU64:
+					if !source.initialized {
+						return work, "check.scalar_uninitialized", ""
+					}
+				case core.OpWriteNewline:
+					// An output event has a static operation identity but carries
+					// no scalar state across a control-flow edge.
+				case core.OpReturn:
+					if function.ReturnType == "Unit" {
+						if op.SourceID != "" || types[op.TypeID] != "Unit" {
+							return work, "check.scalar_return_mode", ""
+						}
+					} else if !source.initialized {
+						return work, "check.scalar_uninitialized", ""
+					}
+				case core.OpBranch, core.OpDefect:
 					if !source.initialized {
 						return work, "check.scalar_uninitialized", ""
 					}
@@ -315,6 +336,19 @@ func (b *scalarBuilder) lower(statements []ast.Statement) {
 	for _, statement := range statements {
 		b.work++
 		switch statement.Kind {
+		case "write_u64":
+			value, typeName := b.expression(statement.Expr)
+			if typeName != "U64" {
+				b.refuse("type.scalar_write_operand", statement.Span, "write_u64 requires one U64 operand")
+				continue
+			}
+			b.addOperation(core.LinearOperation{Kind: core.OpWriteU64, SourceID: value, TypeID: b.types["U64"]})
+		case "write_newline":
+			if statement.Expr != nil {
+				b.refuse("type.scalar_write_arity", statement.Span, "write_newline takes no operands")
+				continue
+			}
+			b.addOperation(core.LinearOperation{Kind: core.OpWriteNewline, TypeID: b.types["Unit"]})
 		case "let":
 			if _, exists := b.names[statement.Name]; exists {
 				b.refuse("name.duplicate_binding", statement.Span, "scalar binding is already declared")

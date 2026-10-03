@@ -167,7 +167,7 @@ type LinearBody struct {
 }
 
 type Statement struct {
-	Kind  string // var, assign, if, while, defect
+	Kind  string // var, assign, if, while, defect, write_u64, write_newline
 	Name  string
 	Expr  *Expr
 	Then  []Statement
