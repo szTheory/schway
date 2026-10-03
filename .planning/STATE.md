@@ -5,16 +5,16 @@ milestone_name: Practical Computation
 current_phase: 27
 current_phase_name: Exact FizzBuzz and Cross-Host Evidence
 status: executing
-stopped_at: Completed 27-07-PLAN.md
-last_updated: "2026-10-03T21:24:10.167Z"
+stopped_at: Completed 27-08-PLAN.md
+last_updated: "2026-10-03T22:02:23.668Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 27 plan 27-07 completed; ready for plan 27-08
-state_head: ad0b9b7b380f47fd9d967a71f06cbb30a9928ef1
+last_activity_desc: Phase 27 plan 27-08 completed; ready for plan 27-09
+state_head: d5d07f03ce5b055f47a952c6fc6fa4a76a2287ba
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 15
-  completed_plans: 12
+  completed_plans: 13
 ---
 
 <!-- schway-current:start -->
@@ -119,10 +119,10 @@ plans.
 ## Current Position
 
 Phase: 27 (Exact FizzBuzz and Cross-Host Evidence) — EXECUTING
-Plan: 8 of 10
+Plan: 9 of 10
 Status: Ready to execute
-Last activity: 2026-10-03 — Phase 27 plan 27-07 completed
-Progress: 1/2 phases complete; 12/15 defined plans complete; Phase 27 has 7/10 plans complete
+Last activity: 2026-10-03 — Phase 27 plan 27-08 completed
+Progress: 1/2 phases complete; 13/15 defined plans complete; Phase 27 has 8/10 plans complete
 
 ## M005 Planning
 
@@ -458,6 +458,7 @@ subset alone.
 | Phase 27 P05 | 38min | 2 tasks | 10 files |
 | Phase 27 P06 | 11min | 2 tasks | 6 files |
 | Phase 27 P07 | 43m | 2 tasks | 10 files |
+| Phase 27 P08 | 34m | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -572,6 +573,8 @@ decision history; they no longer describe current status.
 - [Phase 27]: Keep text writes literal-only: preserve the raw quoted token and carry decoded bytes plus exact length, without a runtime String value.
 - [Phase 27]: Decode quoted source once in the checker and independently re-derive the payload in both validators.
 - [Phase 27]: Keep escape validity at write_text admission so malformed quoted tokens retain their full source span.
+- [Phase 27]: Native output-limit failures stop further app writes, allow normal cleanup and requested evidence serialization, then return exit 65. — Plan 27-08 requires the child failure and evidence verdict to remain independently observable in one run. Immediate exit from the output writer prevented that evidence capture.
+- [Phase 27]: Validate retained application captures under a private returned-application contract that permits a Unit empty result while preserving strict U64 conformance validation. — FizzBuzz has a Unit entry and writes bytes on the application output channel. The previous native capture decoder reused a U64-only non-empty result contract, which incorrectly marked valid Unit evidence incomplete.
 
 ### Pending Todos
 
@@ -780,21 +783,21 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-03T21:24:10.124Z
-Stopped at: Completed 27-07-PLAN.md
-Resume file: .planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/27-08-PLAN.md
-Next action: After clearing context, run $gsd-execute-phase 27; plan 27-08 is next.
-Routing resolution — 2026-10-03 (current): Phase 27 has seven of ten plans
-complete; 27-08 is next. Plan 27-07's focused interpreter, C emitter, session,
-native evidence, and public CLI selectors passed at the current source revision.
-Exact and crossing application writes, separate evidence exhaustion, exact
-evidence capacity, FizzBuzz inputs 0 through 1000, and pre-output 1001 refusal
-were checked. No full local suite was run.
+Last session: 2026-10-03T22:00:21.959Z
+Stopped at: Completed 27-08-PLAN.md
+Resume file: .planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/27-09-PLAN.md
+Next action: After clearing context, run $gsd-execute-phase 27; plan 27-09 is next.
+Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
+complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
+overflow/zero controls, occurrence-aware peer controls, separate capacity
+verdicts, Unit capture, and public CLI selectors passed at the current source
+revision. The focused 27-07 output-limit and Phase 26 event/overflow regressions
+also passed. No full local suite was run.
 `init.progress` continues to select Phase 26 because its five-plan verification
 fingerprint is stale after Phase 27 changed compiler sources. Defer that
 verifier-only refresh until Phase 27 source changes stabilize, then follow its
 `$gsd-execute-phase 26` route without replaying implementation plans. Continue
-Phase 27 now without replaying plans 27-01 through 27-07. Phase 26 hosted
+Phase 27 now without replaying plans 27-01 through 27-08. Phase 26 hosted
 receipts remain historical evidence at their recorded revision, not current
 Phase 27 receipts.
 
