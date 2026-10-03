@@ -5878,7 +5878,7 @@ func TestPhase26ScalarCopyCycleBoundary(t *testing.T) {
 			}
 		}
 		bad.Linear = &badLinear
-		if _, code := checkScalarFixedPoint(bad); code != "check.scalar_backedge_authority" {
+		if _, code := checkScalarFixedPoint(bad); code != "check.cfg_back_edge" {
 			t.Fatalf("forged non-scalar copy result = %q", code)
 		}
 		badProgram := copyProgram
@@ -5894,4 +5894,34 @@ func TestPhase26ScalarCopyCycleBoundary(t *testing.T) {
 		return
 	}
 	t.Fatal("sum_to_n did not contain a scalar store suitable for copy-cycle control")
+}
+
+func TestPhase26BackEdgeCauseCategories(t *testing.T) {
+	types := map[string]string{"owner-type": "Owner", "resource-type": "Resource", "loan-type": "Borrowed", "u64-type": "U64"}
+	places := map[string]core.Place{
+		"owner":    {ID: "owner", TypeID: "owner-type"},
+		"resource": {ID: "resource", TypeID: "resource-type"},
+		"loan":     {ID: "loan", TypeID: "loan-type"},
+		"scalar":   {ID: "scalar", TypeID: "u64-type"},
+	}
+	cases := []struct {
+		name string
+		op   core.LinearOperation
+		want string
+	}{
+		{"owner", core.LinearOperation{Kind: core.OpMove}, "owner"},
+		{"resource", core.LinearOperation{Kind: core.OpForeignCall}, "resource"},
+		{"loan", core.LinearOperation{Kind: core.OpBorrowShared}, "loan"},
+		{"loan-derived provenance", core.LinearOperation{Kind: core.OpCopy, SourceID: "loan"}, "loan_derived_provenance"},
+		{"unsupported event", core.LinearOperation{Kind: core.OpCall}, "unsupported_event_kind"},
+		{"owner copy", core.LinearOperation{Kind: core.OpCopy, SourceID: "owner"}, "owner"},
+		{"resource copy", core.LinearOperation{Kind: core.OpCopy, SourceID: "resource"}, "resource"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := scalarAuthorityCategory(tc.op, types, places); got != tc.want {
+				t.Fatalf("category = %q, want %q", got, tc.want)
+			}
+		})
+	}
 }

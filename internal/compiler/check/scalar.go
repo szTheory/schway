@@ -70,10 +70,14 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 	}
 	b.linear.Blocks, b.linear.Edges = b.blocks, b.edges
 	checked := core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: parameter.ID, Name: function.Parameter.Name, Type: "U64"}, ReturnType: "U64", Linear: &b.linear, Span: function.Span}
-	analysisWork, refusal := checkScalarFixedPoint(checked)
+	analysisWork, refusal, category := checkScalarFixedPointDetailed(checked)
 	b.work += analysisWork
 	if refusal != "" {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(refusal, function.Span, "scalar CFG analysis did not converge or found an uninitialized read")}, b.work
+		causes := []diagnostic.Cause{}
+		if refusal == "check.cfg_back_edge" {
+			causes = append(causes, diagnostic.Cause{Kind: category, Detail: "cyclic scalar analysis refused this carried authority or event"})
+		}
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(refusal, function.Span, "scalar CFG analysis did not converge or found an uninitialized read", causes...)}, b.work
 	}
 	return checked, nil, b.work
 }
@@ -87,6 +91,11 @@ type checkerScalarFact struct {
 }
 
 func checkScalarFixedPoint(function core.Function) (int, string) {
+	work, code, _ := checkScalarFixedPointDetailed(function)
+	return work, code
+}
+
+func checkScalarFixedPointDetailed(function core.Function) (int, string, string) {
 	blocks := append([]core.Block(nil), function.Linear.Blocks...)
 	sort.Slice(blocks, func(i, j int) bool { return blocks[i].ID < blocks[j].ID })
 	ops := make(map[string]core.LinearOperation, len(function.Linear.Operations))
@@ -142,7 +151,7 @@ func checkScalarFixedPoint(function core.Function) (int, string) {
 			for _, id := range block.OperationIDs {
 				work++
 				if work > budget {
-					return work, "check.scalar_analysis_limit"
+					return work, "check.scalar_analysis_limit", ""
 				}
 				op := ops[id]
 				source := state[op.SourceID]
@@ -150,13 +159,13 @@ func checkScalarFixedPoint(function core.Function) (int, string) {
 				case core.OpConst:
 					value, err := strconv.ParseUint(op.ConstU64, 10, 64)
 					if err != nil {
-						return work, "check.scalar_constant_invalid"
+						return work, "check.scalar_constant_invalid", ""
 					}
 					state[op.TargetID] = checkerScalarFact{initialized: true, known: true, u64: value}
 				case core.OpAddChecked:
 					right := state[op.RightID]
 					if !source.initialized || !right.initialized {
-						return work, "check.scalar_uninitialized"
+						return work, "check.scalar_uninitialized", ""
 					}
 					fact := checkerScalarFact{initialized: true}
 					if source.known && right.known && ^uint64(0)-source.u64 >= right.u64 {
@@ -166,7 +175,7 @@ func checkScalarFixedPoint(function core.Function) (int, string) {
 				case core.OpLessU64:
 					right := state[op.RightID]
 					if !source.initialized || !right.initialized {
-						return work, "check.scalar_uninitialized"
+						return work, "check.scalar_uninitialized", ""
 					}
 					fact := checkerScalarFact{initialized: true, boolType: true}
 					if source.known && right.known {
@@ -175,20 +184,20 @@ func checkScalarFixedPoint(function core.Function) (int, string) {
 					state[op.TargetID] = fact
 				case core.OpScalarStore:
 					if !source.initialized {
-						return work, "check.scalar_uninitialized"
+						return work, "check.scalar_uninitialized", ""
 					}
 					state[op.StoreTargetID] = checkerScalarFact{initialized: true, known: source.known, boolType: types[places[op.StoreTargetID].TypeID] == "Bool", u64: source.u64, boolean: source.boolean}
 				case core.OpCopy:
 					if !source.initialized || (types[places[op.SourceID].TypeID] != "U64" && types[places[op.SourceID].TypeID] != "Bool") || (types[places[op.TargetID].TypeID] != "U64" && types[places[op.TargetID].TypeID] != "Bool") || places[op.SourceID].TypeID != places[op.TargetID].TypeID {
-						return work, "check.scalar_backedge_authority"
+						return work, "check.cfg_back_edge", scalarAuthorityCategory(op, types, places)
 					}
 					state[op.TargetID] = source
 				case core.OpBranch, core.OpReturn, core.OpDefect:
 					if !source.initialized {
-						return work, "check.scalar_uninitialized"
+						return work, "check.scalar_uninitialized", ""
 					}
 				default:
-					return work, "check.scalar_backedge_authority"
+					return work, "check.cfg_back_edge", scalarAuthorityCategory(op, types, places)
 				}
 			}
 			if !reachable[block.ID] || !equalCheckerScalarState(out[block.ID], state) {
@@ -198,12 +207,36 @@ func checkScalarFixedPoint(function core.Function) (int, string) {
 			}
 		}
 		if !changed {
-			return work, ""
+			return work, "", ""
 		}
 		if sweep >= budget {
-			return work, "check.scalar_analysis_limit"
+			return work, "check.scalar_analysis_limit", ""
 		}
 	}
+}
+
+func scalarAuthorityCategory(op core.LinearOperation, types map[string]string, places map[string]core.Place) string {
+	switch op.Kind {
+	case core.OpMove:
+		return "owner"
+	case core.OpBorrowShared, core.OpBorrowExclusive:
+		return "loan"
+	case core.OpForeignCall, core.OpRelease:
+		return "resource"
+	case core.OpCopy:
+		constructor := types[places[op.SourceID].TypeID]
+		switch constructor {
+		case "Resource", "File", "Handle":
+			return "resource"
+		case "Owner", "Box", "Buffer":
+			return "owner"
+		case "Loan", "Borrowed", "View":
+			return "loan_derived_provenance"
+		}
+	default:
+		return "unsupported_event_kind"
+	}
+	return "unsupported_event_kind"
 }
 
 func cloneCheckerScalarState(state map[string]checkerScalarFact) map[string]checkerScalarFact {
