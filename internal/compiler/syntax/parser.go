@@ -348,7 +348,7 @@ func (p *parser) scalarLetStart() bool {
 		return false
 	}
 	next := p.peekNonTrivia(4).Kind
-	if next == TokenPlus || next == TokenLAngle {
+	if scalarBinaryOperator(next) != 0 {
 		operand := p.peekNonTrivia(5).Kind
 		return operand == TokenNumber || operand == TokenIdentifier
 	}
@@ -480,39 +480,58 @@ func (p *parser) scalarWriteStatement() ast.Statement {
 }
 
 func (p *parser) scalarExpr() *ast.Expr {
+	return p.scalarBinaryExpr(1)
+}
+
+func scalarBinaryOperator(kind Kind) int {
+	switch kind {
+	case TokenLAngle, TokenEqualEqual:
+		return 1
+	case TokenPlus:
+		return 2
+	case TokenPercent:
+		return 3
+	default:
+		return 0
+	}
+}
+
+func (p *parser) scalarBinaryExpr(minPrecedence int) *ast.Expr {
+	left := p.scalarExprAtom()
+	for {
+		operator := p.peek()
+		precedence := scalarBinaryOperator(operator.Kind)
+		if precedence < minPrecedence || precedence == 0 {
+			return left
+		}
+		p.advance()
+		right := p.scalarBinaryExpr(precedence + 1)
+		kind := ""
+		switch operator.Kind {
+		case TokenPlus:
+			kind = "add"
+		case TokenLAngle:
+			kind = "less"
+		case TokenEqualEqual:
+			kind = "equal"
+		case TokenPercent:
+			kind = "remainder"
+		}
+		left = &ast.Expr{Kind: kind, Left: left, Right: right, Span: diagnostic.Span{Start: left.Span.Start, End: right.Span.End}}
+	}
+}
+
+func (p *parser) scalarExprAtom() *ast.Expr {
 	leftToken := p.advance()
-	left := &ast.Expr{Span: leftToken.Span}
 	switch leftToken.Kind {
 	case TokenNumber:
-		left.Kind, left.Value = "number", leftToken.Text
+		return &ast.Expr{Kind: "number", Value: leftToken.Text, Span: leftToken.Span}
 	default:
 		if leftToken.Kind != TokenIdentifier {
 			p.problem("syntax.expected_scalar_operand", leftToken, "expected a scalar operand")
 		}
-		left.Kind, left.Name = "name", leftToken.Text
+		return &ast.Expr{Kind: "name", Name: leftToken.Text, Span: leftToken.Span}
 	}
-	operator := p.peek()
-	if operator.Kind != TokenPlus && operator.Kind != TokenLAngle {
-		return left
-	}
-	p.advance()
-	right := p.scalarExprAtom()
-	kind := "add"
-	if operator.Kind == TokenLAngle {
-		kind = "less"
-	}
-	return &ast.Expr{Kind: kind, Left: left, Right: right, Span: diagnostic.Span{Start: left.Span.Start, End: right.Span.End}}
-}
-
-func (p *parser) scalarExprAtom() *ast.Expr {
-	token := p.advance()
-	if token.Kind == TokenNumber {
-		return &ast.Expr{Kind: "number", Value: token.Text, Span: token.Span}
-	}
-	if token.Kind != TokenIdentifier {
-		p.problem("syntax.expected_scalar_operand", token, "expected a scalar operand")
-	}
-	return &ast.Expr{Kind: "name", Name: token.Text, Span: token.Span}
 }
 
 // borrowOrigin parses the optional Phase 3 return-type annotation preceding

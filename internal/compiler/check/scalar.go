@@ -185,14 +185,32 @@ func checkScalarFixedPointDetailed(function core.Function) (int, string, string)
 						fact.known, fact.u64 = true, source.u64+right.u64
 					}
 					state[op.TargetID] = fact
-				case core.OpLessU64:
+				case core.OpLessU64, core.OpEqualU64:
 					right := state[op.RightID]
 					if !source.initialized || !right.initialized {
 						return work, "check.scalar_uninitialized", ""
 					}
 					fact := checkerScalarFact{initialized: true, boolType: true}
 					if source.known && right.known {
-						fact.known, fact.boolean = true, source.u64 < right.u64
+						fact.known = true
+						if op.Kind == core.OpEqualU64 {
+							fact.boolean = source.u64 == right.u64
+						} else {
+							fact.boolean = source.u64 < right.u64
+						}
+					}
+					state[op.TargetID] = fact
+				case core.OpRemainderU64:
+					right := state[op.RightID]
+					if !source.initialized || !right.initialized {
+						return work, "check.scalar_uninitialized", ""
+					}
+					if right.known && right.u64 == 0 {
+						return work, "check.scalar_remainder_zero", op.ID
+					}
+					fact := checkerScalarFact{initialized: true}
+					if source.known && right.known {
+						fact.known, fact.u64 = true, source.u64%right.u64
 					}
 					state[op.TargetID] = fact
 				case core.OpScalarStore:
@@ -551,7 +569,7 @@ func (b *scalarBuilder) expression(expr *ast.Expr) (string, string) {
 		b.addOperation(core.LinearOperation{Kind: core.OpConst, TargetID: place.ID, ConstU64: strconv.FormatUint(value, 10), TypeID: b.types["U64"]})
 		b.initialized[place.ID] = true
 		return place.ID, "U64"
-	case "add", "less":
+	case "add", "less", "equal", "remainder":
 		left, leftType := b.expression(expr.Left)
 		right, rightType := b.expression(expr.Right)
 		if leftType != "U64" || rightType != "U64" {
@@ -559,8 +577,23 @@ func (b *scalarBuilder) expression(expr *ast.Expr) (string, string) {
 			return "", ""
 		}
 		resultType, kind := "U64", core.OpAddChecked
-		if expr.Kind == "less" {
+		switch expr.Kind {
+		case "less":
 			resultType, kind = "Bool", core.OpLessU64
+		case "equal":
+			resultType, kind = "Bool", core.OpEqualU64
+		case "remainder":
+			kind = core.OpRemainderU64
+			if expr.Right.Kind == "number" {
+				literal, err := strconv.ParseUint(expr.Right.Value, 0, 64)
+				if err != nil {
+					literal, err = strconv.ParseUint(expr.Right.Value, 10, 64)
+				}
+				if err == nil && literal == 0 {
+					b.refuse("type.scalar_remainder_zero", expr.Right.Span, "U64 remainder divisor is statically zero")
+					return "", ""
+				}
+			}
 		}
 		place := b.addPlace("scalar", ""+resultType, false)
 		b.addOperation(core.LinearOperation{Kind: kind, SourceID: left, RightID: right, TargetID: place.ID, TypeID: b.types[resultType]})

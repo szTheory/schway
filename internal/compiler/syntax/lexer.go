@@ -211,6 +211,8 @@ func numericDigit(value byte) int {
 func punctuation(source []byte) (Kind, int) {
 	if len(source) >= 2 {
 		switch string(source[:2]) {
+		case "==":
+			return TokenEqualEqual, 2
 		case "->":
 			return TokenArrow, 2
 		case "=>":
@@ -236,6 +238,8 @@ func punctuation(source []byte) (Kind, int) {
 		return TokenEqual, 1
 	case '+':
 		return TokenPlus, 1
+	case '%':
+		return TokenPercent, 1
 	default:
 		return TokenUnknown, 0
 	}

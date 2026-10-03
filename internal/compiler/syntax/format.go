@@ -320,9 +320,17 @@ func (f *formatter) token(token Token, next Kind) {
 			f.indent++
 			f.contexts = append(f.contexts, "data")
 		}
+	case TokenEqualEqual:
+		f.trimSpace()
+		f.out.WriteString(" == ")
+		f.lineOpen = true
 	case TokenPlus:
 		f.trimSpace()
 		f.out.WriteString(" + ")
+		f.lineOpen = true
+	case TokenPercent:
+		f.trimSpace()
+		f.out.WriteString(" % ")
 		f.lineOpen = true
 	case TokenPipe:
 		f.ensureLine()
