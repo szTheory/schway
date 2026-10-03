@@ -5,16 +5,16 @@ milestone_name: Practical Computation
 current_phase: 26
 current_phase_name: Checked Scalar Sum
 status: executing
-stopped_at: Completed 26-03-PLAN.md
-last_updated: "2026-10-03T01:21:19.885Z"
+stopped_at: Completed 26-04-PLAN.md
+last_updated: "2026-10-03T02:15:55.091Z"
 last_activity: 2026-10-02
 last_activity_desc: Phase 26 execution started
-state_head: d653312ee81917ada28c932ca84ba90f7381af96
+state_head: e88ea82df25f848aa61c30b81c6da53a08680827
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 <!-- schway-current:start -->
@@ -119,7 +119,7 @@ plans.
 ## Current Position
 
 Phase: 26 (Checked Scalar Sum) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-10-02 — Phase 26 execution started
 Progress: [░░░░░░░░░░] 0%
@@ -447,6 +447,7 @@ subset alone.
 | Phase 26 P1 | 100min | 2 tasks | 17 files |
 | Phase 26 P02 | 93 min | 2 tasks | 11 files |
 | Phase 26 P03 | 31min | 2 tasks | 9 files |
+| Phase 26 P04 | 53min | 2 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -552,6 +553,8 @@ decision history; they no longer describe current status.
 - [Phase 26]: Hosted phase26_focused CI is the verification receipt; project suites remain unrun locally.
 - [Phase 26]: Admit only initialized, matching U64/Bool OpCopy transfers in scalar cycles; retain legacy ownership copies outside scalar analysis.
 - [Phase 26]: Keep checker, corevalidate, and originvalidate scalar analysis independent, with pathoracle acyclic-only.
+- [Phase 26]: Occurrence zero is omitted in JSON to preserve existing one-shot schema-2 canonical bytes.
+- [Phase 26]: The execution peer independently admits only contiguous scalar-copy occurrences in cyclic CFG sites; Plan 05 owns public capture capacity.
 
 ### Pending Todos
 
@@ -754,8 +757,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-03T01:21:19.870Z
-Stopped at: Completed 26-03-PLAN.md
+Last session: 2026-10-03T02:15:55.073Z
+Stopped at: Completed 26-04-PLAN.md
 Resume file: None
 Next action: After clearing context, run $gsd-execute-phase 26; the five committed plans will be loaded. After Phase 26 is executed and verified, run $gsd-discuss-phase 27.
 Routing resolution — 2026-10-02 (current): Phase 25 plans 25-01 through 25-07
