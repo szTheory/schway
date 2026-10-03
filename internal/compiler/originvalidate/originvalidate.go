@@ -283,7 +283,7 @@ func SetOriginScalarTransferBudgetForTest(budget int) func() {
 
 func originHasScalarCFG(function core.Function) bool {
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline {
 			return true
 		}
 	}
@@ -381,12 +381,26 @@ func originScalarFixedPoint(function core.Function) bool {
 						return false
 					}
 					state[op.StoreTargetID] = true
+				case core.OpWriteU64:
+					if !state[op.SourceID] {
+						return false
+					}
+				case core.OpWriteNewline:
+					// This output event has no scalar dataflow effect.
 				case core.OpCopy:
 					if !state[op.SourceID] || placeTypes[op.SourceID] == "" || placeTypes[op.TargetID] == "" || placeTypes[op.SourceID] != placeTypes[op.TargetID] {
 						return false
 					}
 					state[op.TargetID] = true
-				case core.OpBranch, core.OpReturn, core.OpDefect:
+				case core.OpReturn:
+					if function.ReturnType == "Unit" {
+						if op.SourceID != "" {
+							return false
+						}
+					} else if !state[op.SourceID] {
+						return false
+					}
+				case core.OpBranch, core.OpDefect:
 					if !state[op.SourceID] {
 						return false
 					}
@@ -1215,6 +1229,9 @@ func checkForeignOriginOmitted(function core.Function) *Problem {
 // list: the word "export" does not appear on this path, because publication
 // safety and export membership are different rules (D-07-31).
 func PublishProblemsFor(function core.Function, calleeContracts map[string]calleeOriginFact) []Problem {
+	if problem := phase27WriteProblem(function); problem != nil {
+		return []Problem{*problem}
+	}
 	if function.ReturnType != "FileByteOwner" && !hasOwnerCall(function) {
 		if problem := localOwnerOriginProblem(function); problem != nil {
 			return []Problem{*problem}
@@ -1265,6 +1282,58 @@ func PublishProblemsFor(function core.Function, calleeContracts map[string]calle
 		}}
 	}
 	return nil
+}
+
+// phase27WriteProblem independently derives the narrow write and Unit-return
+// contracts from core operand/type facts. The origin peer must refuse a
+// forged write shape on its own rather than relying on corevalidate's verdict.
+func phase27WriteProblem(function core.Function) *Problem {
+	if function.Linear == nil {
+		return nil
+	}
+	types := make(map[string]string, len(function.Linear.Types))
+	for _, fact := range function.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	places := make(map[string]string, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = types[place.TypeID]
+	}
+	unitReturns := 0
+	for _, operation := range function.Linear.Operations {
+		switch operation.Kind {
+		case core.OpWriteU64:
+			if places[operation.SourceID] != "U64" || operation.TypeID == "" || types[operation.TypeID] != "U64" || operation.TypeID != placeTypeID(function.Linear.Places, operation.SourceID) || operation.TargetID != "" || operation.RightID != "" || operation.StoreTargetID != "" || operation.TrueEdgeID != "" || operation.FalseEdgeID != "" {
+				return &Problem{Code: "core.write_operation_invalid", Detail: fmt.Sprintf("%s: invalid write_u64 operation %q", function.ID, operation.ID)}
+			}
+		case core.OpWriteNewline:
+			if operation.SourceID != "" || types[operation.TypeID] != "Unit" || operation.TargetID != "" || operation.RightID != "" || operation.StoreTargetID != "" || operation.TrueEdgeID != "" || operation.FalseEdgeID != "" {
+				return &Problem{Code: "core.write_operation_invalid", Detail: fmt.Sprintf("%s: invalid write_newline operation %q", function.ID, operation.ID)}
+			}
+		case core.OpReturn:
+			if function.ReturnType == "Unit" {
+				unitReturns++
+				if operation.SourceID != "" || types[operation.TypeID] != "Unit" || operation.TargetID != "" {
+					return &Problem{Code: "core.return_type_mismatch", Detail: fmt.Sprintf("%s: invalid Unit return operation %q", function.ID, operation.ID)}
+				}
+			} else if operation.SourceID == "" && types[operation.TypeID] == "Unit" {
+				return &Problem{Code: "core.return_type_mismatch", Detail: fmt.Sprintf("%s: Unit result conflicts with declared return mode at %q", function.ID, operation.ID)}
+			}
+		}
+	}
+	if function.ReturnType == "Unit" && unitReturns != 1 {
+		return &Problem{Code: "core.return_type_mismatch", Detail: fmt.Sprintf("%s: expected one explicit Unit return operation", function.ID)}
+	}
+	return nil
+}
+
+func placeTypeID(places []core.Place, placeID string) string {
+	for _, place := range places {
+		if place.ID == placeID {
+			return place.TypeID
+		}
+	}
+	return ""
 }
 
 // localOwnerOriginProblem independently checks the operation-specific owner

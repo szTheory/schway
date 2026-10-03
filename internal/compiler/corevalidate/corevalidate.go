@@ -1189,6 +1189,10 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 			if !v.check(operation.SourceID == "", "core.source_kind_exclusive", operation.ID) {
 				return nil, nil, false
 			}
+		} else if optionalOperationSource(function, operation) {
+			if !v.check(operation.SourceID == "", "core.source_kind_exclusive", operation.ID) {
+				return nil, nil, false
+			}
 		} else if _, ok := places[operation.SourceID]; !v.check(ok, "core.unknown_place", operation.SourceID) {
 			return nil, nil, false
 		}
@@ -1203,7 +1207,7 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 		// 12, D-12-10): it names its own produced place via PayloadTargetID,
 		// never the ordinary TargetID, which it leaves empty -- checked
 		// separately immediately below.
-		if operation.Kind != core.OpReturn && operation.Kind != core.OpFail && operation.Kind != core.OpRelease && operation.Kind != core.OpDefect && operation.Kind != core.OpDestructurePayload && operation.Kind != core.OpScalarStore && operation.Kind != core.OpBranch {
+		if operation.Kind != core.OpReturn && operation.Kind != core.OpFail && operation.Kind != core.OpRelease && operation.Kind != core.OpDefect && operation.Kind != core.OpDestructurePayload && operation.Kind != core.OpScalarStore && operation.Kind != core.OpBranch && operation.Kind != core.OpWriteU64 && operation.Kind != core.OpWriteNewline {
 			if _, ok := places[operation.TargetID]; !v.check(ok, "core.unknown_place", operation.TargetID) {
 				return nil, nil, false
 			}
@@ -1217,6 +1221,15 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 			}
 		}
 		switch operation.Kind {
+		case core.OpWriteU64:
+			source, known := places[operation.SourceID]
+			if !v.check(known && types[source.TypeID].Shape.Constructor == "U64" && operation.TypeID == source.TypeID && operation.TargetID == "" && operation.RightID == "" && operation.StoreTargetID == "" && operation.TrueEdgeID == "" && operation.FalseEdgeID == "", "core.write_operation_invalid", operation.ID) {
+				return nil, nil, false
+			}
+		case core.OpWriteNewline:
+			if !v.check(types[operation.TypeID].Shape.Constructor == "Unit" && operation.TargetID == "" && operation.RightID == "" && operation.StoreTargetID == "" && operation.TrueEdgeID == "" && operation.FalseEdgeID == "", "core.write_operation_invalid", operation.ID) {
+				return nil, nil, false
+			}
 		case core.OpAddChecked, core.OpLessU64:
 			right, known := places[operation.RightID]
 			want := "U64"
@@ -2527,7 +2540,7 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 		if !v.check(operation.Kind == core.OpConst || operation.Kind != core.OpCall || source.TypeID == operation.TypeID || function.Parameter.Type != function.ReturnType, "core.type_mismatch", operation.ID) {
 			return false
 		}
-		if !v.check(operation.Kind == core.OpConst || initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
+		if !v.check(optionalOperationSource(function, operation) || initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
 			return false
 		}
 		// D-07-29: CalleeID is populated only on an OpCall -- every other
@@ -2539,6 +2552,14 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 		}
 		v.checks++ // dispatch one independently authorized transition
 		switch operation.Kind {
+		case core.OpWriteU64:
+			if !v.check(initialized[operation.SourceID] && types[places[operation.SourceID].TypeID].Shape.Constructor == "U64" && operation.TypeID == places[operation.SourceID].TypeID && operation.TargetID == "", "core.write_operation_invalid", operation.ID) {
+				return false
+			}
+		case core.OpWriteNewline:
+			if !v.check(operation.SourceID == "" && types[operation.TypeID].Shape.Constructor == "Unit" && operation.TargetID == "", "core.write_operation_invalid", operation.ID) {
+				return false
+			}
 		case core.OpConst:
 			if !scalarTargetMatches(function, index, operation, places, produced) {
 				return false
@@ -2628,10 +2649,14 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			initialized[operation.TargetID] = true
 			produced[operation.TargetID] = true
 		case core.OpReturn:
-			if !v.check(types[source.TypeID].Shape.Constructor == function.ReturnType, core.ReturnTypeMismatch, operation.ID) {
+			if function.ReturnType == "Unit" {
+				if !v.check(operation.SourceID == "" && types[operation.TypeID].Shape.Constructor == "Unit", core.ReturnTypeMismatch, operation.ID) {
+					return false
+				}
+			} else if !v.check(types[source.TypeID].Shape.Constructor == function.ReturnType, core.ReturnTypeMismatch, operation.ID) {
 				return false
 			}
-			if index != len(operations)-1 || returned || operation.TargetID != "" || operation.TypeID != source.TypeID {
+			if index != len(operations)-1 || returned || operation.TargetID != "" || function.ReturnType != "Unit" && operation.TypeID != source.TypeID {
 				return v.check(false, "core.final_claim_mismatch", operation.ID)
 			}
 			returned = true
@@ -2853,7 +2878,7 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 		if !v.check(operation.Kind == core.OpConst || operation.Kind != core.OpCall || source.TypeID == operation.TypeID || function.Parameter.Type != function.ReturnType, "core.type_mismatch", operation.ID) {
 			return false
 		}
-		if !v.check(operation.Kind == core.OpConst || initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
+		if !v.check(optionalOperationSource(function, operation) || initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
 			return false
 		}
 		// See replayStraightLine's identical check (D-07-29): CalleeID is
@@ -2863,6 +2888,14 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 		}
 		v.checks++ // dispatch one independently authorized transition
 		switch operation.Kind {
+		case core.OpWriteU64:
+			if !v.check(initialized[operation.SourceID] && types[places[operation.SourceID].TypeID].Shape.Constructor == "U64" && operation.TypeID == places[operation.SourceID].TypeID && operation.TargetID == "", "core.write_operation_invalid", operation.ID) {
+				return false
+			}
+		case core.OpWriteNewline:
+			if !v.check(operation.SourceID == "" && types[operation.TypeID].Shape.Constructor == "Unit" && operation.TargetID == "", "core.write_operation_invalid", operation.ID) {
+				return false
+			}
 		case core.OpConst:
 			validTarget := false
 			if hasScalarCFG(function) {
@@ -2992,14 +3025,18 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			initialized[operation.PayloadTargetID] = true
 			produced[operation.PayloadTargetID] = true
 		case core.OpReturn:
-			if !v.check(types[source.TypeID].Shape.Constructor == function.ReturnType, core.ReturnTypeMismatch, operation.ID) {
+			if function.ReturnType == "Unit" {
+				if !v.check(operation.SourceID == "" && types[operation.TypeID].Shape.Constructor == "Unit", core.ReturnTypeMismatch, operation.ID) {
+					return false
+				}
+			} else if !v.check(types[source.TypeID].Shape.Constructor == function.ReturnType, core.ReturnTypeMismatch, operation.ID) {
 				return false
 			}
 			blockID, known := blockOfOperation[operation.ID]
 			if !v.check(known && lastOperationOfBlock[blockID] == operation.ID, "core.final_claim_mismatch", operation.ID) {
 				return false
 			}
-			if !v.check(!returnedBlocks[blockID] && operation.TargetID == "" && operation.TypeID == source.TypeID, "core.final_claim_mismatch", operation.ID) {
+			if !v.check(!returnedBlocks[blockID] && operation.TargetID == "" && (function.ReturnType == "Unit" || operation.TypeID == source.TypeID), "core.final_claim_mismatch", operation.ID) {
 				return false
 			}
 			returnedBlocks[blockID] = true
@@ -4246,11 +4283,15 @@ func hasScalarCFG(function *core.Function) bool {
 		return false
 	}
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline {
 			return true
 		}
 	}
 	return false
+}
+
+func optionalOperationSource(function *core.Function, operation core.LinearOperation) bool {
+	return operation.Kind == core.OpConst || operation.Kind == core.OpWriteNewline || operation.Kind == core.OpReturn && function.ReturnType == "Unit"
 }
 
 type scalarAbstractValue struct {
@@ -4352,6 +4393,13 @@ func (v *validator) validateScalarFixedPoint(function *core.Function, types map[
 						return false
 					}
 					state[operation.StoreTargetID] = scalarAbstractValue{initialized: true, known: source.known, isBool: types[places[operation.StoreTargetID].TypeID].Shape.Constructor == "Bool", u64: source.u64, boolean: source.boolean}
+				case core.OpWriteU64:
+					if !v.check(source.initialized, "core.place_uninitialized", operation.ID) {
+						return false
+					}
+				case core.OpWriteNewline:
+					// The event has no scalar-state effect; its static operation ID
+					// remains available to execution and evidence consumers.
 				case core.OpCopy:
 					if !v.check(source.initialized, "core.place_uninitialized", operation.ID) {
 						return false
@@ -4362,7 +4410,15 @@ func (v *validator) validateScalarFixedPoint(function *core.Function, types map[
 						return false
 					}
 					state[operation.TargetID] = source
-				case core.OpBranch, core.OpReturn, core.OpDefect:
+				case core.OpReturn:
+					if function.ReturnType == "Unit" {
+						if !v.check(operation.SourceID == "" && types[operation.TypeID].Shape.Constructor == "Unit", "core.return_type_mismatch", operation.ID) {
+							return false
+						}
+					} else if !v.check(source.initialized, "core.place_uninitialized", operation.ID) {
+						return false
+					}
+				case core.OpBranch, core.OpDefect:
 					if !v.check(source.initialized, "core.place_uninitialized", operation.ID) {
 						return false
 					}

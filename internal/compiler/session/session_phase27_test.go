@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/originvalidate"
 	"github.com/szTheory/schway/internal/compiler/session"
 	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
@@ -60,6 +62,70 @@ func TestPhase27WriteAdmission(t *testing.T) {
 	}
 }
 
+func TestPhase27WritePeerAdmission(t *testing.T) {
+	checked := session.Check(phase27WriteSource())
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("Unit write source diagnostics: %+v", checked.Diagnostics)
+	}
+	if peer := corevalidate.Validate(checked.Program); !peer.Valid {
+		t.Fatalf("core peer refused valid writes: %+v", peer.Problems)
+	}
+	if problems := originvalidate.ValidatePublished(checked.Program); len(problems) != 0 {
+		t.Fatalf("origin peer refused Unit entry: %+v", problems)
+	}
+
+	for _, check := range []struct {
+		name   string
+		mutate func(*core.Program)
+	}{
+		{name: "wrong-write-type", mutate: func(program *core.Program) {
+			boolType := typeIDFor(t, program.Functions[0].Linear.Types, "Bool")
+			var boolPlace string
+			for _, place := range program.Functions[0].Linear.Places {
+				if place.TypeID == boolType {
+					boolPlace = place.ID
+					break
+				}
+			}
+			for i := range program.Functions[0].Linear.Operations {
+				op := &program.Functions[0].Linear.Operations[i]
+				if op.Kind == core.OpWriteU64 {
+					op.SourceID = boolPlace
+				}
+			}
+		}},
+		{name: "newline-operand", mutate: func(program *core.Program) {
+			for i := range program.Functions[0].Linear.Operations {
+				op := &program.Functions[0].Linear.Operations[i]
+				if op.Kind == core.OpWriteNewline {
+					op.SourceID = program.Functions[0].Parameter.ID
+				}
+			}
+		}},
+		{name: "forged-unit-result", mutate: func(program *core.Program) {
+			for i := range program.Functions[0].Linear.Operations {
+				op := &program.Functions[0].Linear.Operations[i]
+				if op.Kind == core.OpReturn {
+					op.SourceID = program.Functions[0].Parameter.ID
+				}
+			}
+		}},
+	} {
+		t.Run(check.name, func(t *testing.T) {
+			forged := checked.Program
+			forged.Functions = append([]core.Function(nil), checked.Program.Functions...)
+			forged.Functions[0].Linear = clonePhase27Linear(checked.Program.Functions[0].Linear)
+			check.mutate(&forged)
+			if peer := corevalidate.Validate(forged); peer.Valid {
+				t.Fatal("core peer accepted a forged write or Unit return fact")
+			}
+			if problems := originvalidate.ValidatePublished(forged); len(problems) == 0 {
+				t.Fatal("origin peer accepted a forged write or Unit return fact")
+			}
+		})
+	}
+}
+
 func phase27WriteSource() []byte {
 	return []byte("module phase27\nexport { fn main }\nfn main(n: U64) -> Unit {\n  if n < 1001 {\n    write_u64(n)\n    write_newline()\n  } else {\n    defect \"input exceeds 1000\"\n  }\n}\n")
 }
@@ -73,4 +139,17 @@ func typeIDFor(t *testing.T, types []core.TypeFact, name string) string {
 	}
 	t.Fatalf("type %s missing from checked facts", name)
 	return ""
+}
+
+func clonePhase27Linear(linear *core.LinearBody) *core.LinearBody {
+	if linear == nil {
+		return nil
+	}
+	clone := *linear
+	clone.Types = append([]core.TypeFact(nil), linear.Types...)
+	clone.Places = append([]core.Place(nil), linear.Places...)
+	clone.Operations = append([]core.LinearOperation(nil), linear.Operations...)
+	clone.Blocks = append([]core.Block(nil), linear.Blocks...)
+	clone.Edges = append([]core.Edge(nil), linear.Edges...)
+	return &clone
 }
