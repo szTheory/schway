@@ -5,16 +5,16 @@ milestone_name: Practical Computation
 current_phase: 27
 current_phase_name: Exact FizzBuzz and Cross-Host Evidence
 status: executing
-stopped_at: Completed 27-01-PLAN.md; ready for 27-02
-last_updated: "2026-10-03T17:00:48.899Z"
+stopped_at: Completed 27-02-PLAN.md; ready for 27-03
+last_updated: "2026-10-03T17:39:01.602Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 27 execution started
-state_head: d5aa8833bb3ae61586438409310c83c3bc6a607b
+last_activity_desc: Phase 27 plan 27-02 completed; ready for plan 27-03
+state_head: a669602933b676faa1f6634e3228e63244432392
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 15
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 <!-- schway-current:start -->
@@ -119,10 +119,10 @@ plans.
 ## Current Position
 
 Phase: 27 (Exact FizzBuzz and Cross-Host Evidence) — EXECUTING
-Plan: 2 of 10
+Plan: 3 of 10
 Status: Ready to execute
-Last activity: 2026-10-03 — Phase 27 execution started
-Progress: 1/2 phases complete; 5/5 defined plans complete; Phase 27 unplanned
+Last activity: 2026-10-03 — Phase 27 plan 27-02 completed
+Progress: 1/2 phases complete; 7/15 defined plans complete; Phase 27 has 2/10 plans complete
 
 ## M005 Planning
 
@@ -452,6 +452,7 @@ subset alone.
 | Phase 26 P04 | 90min | 2 tasks | 24 files |
 | Phase 26 P5 | 217 | 2 tasks | 14 files |
 | Phase 27 P01 | 40 min | 2 tasks | 7 files |
+| Phase 27 P02 | 30 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -558,6 +559,7 @@ decision history; they no longer describe current status.
 - [Phase 26]: Focused/full hosted runs 37118144404/37118315516 pass on Ubuntu/macOS at 46bee44; no local tests/native runs. Independent goal verification passes 5/5, review is clean, and all 12 declared security mitigations are closed.
 - [Phase 27]: Unit is an explicit scalar return mode recorded in the declared function signature; it is not inferred from write events. — This keeps the legacy U64-returning application behavior independent from explicitly-writing applications.
 - [Phase 27]: Write operations produce no place: write_u64 consumes a typed U64 operand and write_newline consumes no operand. — Separate operation identities let later interpreter/native evidence distinguish output events without granting general formatting or string values.
+- [Phase 27]: Keep application bytes separate from interpreter execution evidence; Unit returns add no line while U64 returns retain the automatic decimal line. — The Phase 27 tracer needs explicit output to share the existing app boundary without changing the execution-document schema, and the legacy sum control pins return-type-selected printing.
 
 ### Pending Todos
 
@@ -766,21 +768,18 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-03T17:00:48.867Z
-Stopped at: Completed 27-01-PLAN.md; ready for 27-02
-Resume file: .planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/27-02-PLAN.md
-Next action: After clearing context, run $gsd-plan-phase 27. Phase 26 is complete; Phase 27 discussion/context is complete, so continue directly to planning.
-Routing resolution — 2026-10-03 (current): Phase 26 has five summaries and a
-passed 5/5 independent goal report. The completion command returned no
-warnings and advanced to Phase 27. No Phase 27 CONTEXT.md or plans exist;
-discussion precedes planning. `init.progress` confirms Phase 26 complete and
-Phase 27 not started; its generic missing-verification hint for the unplanned
-Phase 27 is not the next workflow step. Use discussion to establish scope.
-Implementation-bound focused/full hosted runs
-37118144404/37118315516 passed both hosts. This branch is
-`phase26-validation`; only documentation changed after implementation revision
-46bee44. The three next capability recommendations and their evidence/owners
-are current in PRODUCT-ROADMAP.md and LANGUAGE-MATURITY.md.
+Last session: 2026-10-03T17:35:50.303Z
+Stopped at: Completed 27-02-PLAN.md; ready for 27-03
+Resume file: .planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/27-03-PLAN.md
+Next action: After clearing context, run $gsd-execute-phase 27; plan 27-03 is ready.
+Routing resolution — 2026-10-03 (current): Phase 27 has two of ten plans
+complete; 27-03 is ready. The focused Phase 27 tracer/boundary selectors pass
+at the current source revision; no full local suite was run. `init.progress`
+reports Phase 26's five-plan verification fingerprint as stale because Phase
+27 changed compiler sources. Defer that refresh until Phase 27 source changes
+stabilize, then follow its routed `$gsd-execute-phase 26` refresh without
+replaying implementation plans. The Phase 26 hosted receipts remain historical
+evidence at their recorded revision, not a current Phase 27 receipt.
 
 Routing resolution — 2026-10-02 (historical; superseded above): Phase 25 plans 25-01 through 25-07
 are complete and summarized. Goal-backward verification passes 6/6 must-have
