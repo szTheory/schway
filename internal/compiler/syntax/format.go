@@ -60,6 +60,9 @@ type formatter struct {
 	// line prematurely (the same rule a plain binding's source identifier
 	// follows), leaving the argument list stranded on the next line.
 	callBinding bool
+	// statementWriteCall tracks the two typed output statements, whose callee
+	// names remain ordinary identifiers in the lossless token stream.
+	statementWriteCall bool
 	// header records the declaration keyword that opened the line currently
 	// being written, so an opening brace is classified by the construct it
 	// belongs to rather than by whichever token happens to precede it. The
@@ -193,6 +196,8 @@ func (f *formatter) token(token Token, next Kind) {
 			f.newline()
 		} else if f.previous == TokenPipe || f.previous == TokenFatArrow {
 			f.newline()
+		} else if f.insideFunctionBody() && next == TokenLParen && (token.Text == "write_u64" || token.Text == "write_newline") {
+			f.statementWriteCall = true
 		} else if f.insideFunctionBody() && f.linearBinding && f.previous == TokenEqual && next == TokenLParen {
 			// D-07-01/D-07-40: this identifier is a bare call's callee, not
 			// a plain binding source -- its own argument list still follows
@@ -291,6 +296,11 @@ func (f *formatter) token(token Token, next Kind) {
 			}
 		} else if f.callBinding {
 			f.callBinding = false
+			if f.insideFunctionBody() {
+				f.newline()
+			}
+		} else if f.statementWriteCall {
+			f.statementWriteCall = false
 			if f.insideFunctionBody() {
 				f.newline()
 			}

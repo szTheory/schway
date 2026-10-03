@@ -205,8 +205,9 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 				// Reserve its full representation before C serialization.
 				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", "U64 addition overflow"
 				event.TargetPlace = ""
-			case core.OpLessU64, core.OpScalarStore, core.OpBranch:
-				// Phase 26 comparisons, stores, and CFG control are event-free.
+			case core.OpLessU64, core.OpScalarStore, core.OpBranch, core.OpWriteU64, core.OpWriteNewline:
+				// Comparisons, stores, CFG control, and application writes are
+				// event-free. Application bytes are tracked by the bounded writer.
 				continue
 			case core.OpCopy:
 				event.ID, event.Kind = operation.ID+":event", "value.copied"
@@ -636,8 +637,9 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 			}
 		}
 	}
-	if shell == programApplicationShell && (entry.Match != nil || entry.Linear == nil || entry.ReturnType != "U64" || (entry.Parameter.Type != "U64" && !localFileByteEntry)) {
-		return "", fmt.Errorf("application entry %q: only a linear U64-to-U64 entry is supported", entry.ID)
+	u64Application := entry.Parameter.Type == "U64" && (entry.ReturnType == "U64" || entry.ReturnType == "Unit")
+	if shell == programApplicationShell && (entry.Match != nil || entry.Linear == nil || (!u64Application && !(localFileByteEntry && entry.ReturnType == "U64"))) {
+		return "", fmt.Errorf("application entry %q: only a linear U64-to-U64 or U64-to-Unit entry is supported", entry.ID)
 	}
 
 	byID := make(map[string]core.Function, len(program.Functions))
@@ -775,6 +777,11 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 				parameterTypeNames[index] = fact.ParameterCType
 			}
 			switch function.ReturnType {
+			case "Unit":
+				if shell != programApplicationShell {
+					return "", fmt.Errorf("function %q: Unit C return is supported only by the application shell", function.ID)
+				}
+				returnTypeNames[index] = "void"
 			case "Buffer":
 				returnTypeNames[index] = "SCHWAY_BUFFER"
 			case "Byte":
@@ -983,6 +990,9 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	}
 	if needsU64 {
 		out.WriteString("  (void)schway_parse_u64_decimal;\n  (void)schway_write_u64;\n")
+		if shell == programApplicationShell {
+			out.WriteString("  (void)schway_write_u64_plain;\n")
+		}
 	}
 	if shell == programApplicationShell {
 		// The application keeps semantic event recording in the shared body
@@ -1005,15 +1015,23 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		if fact, ok := pointerABIFacts[entry.ID]; ok && fact.PointerParameter {
 			entryArgument = "&" + entryArgument
 		}
-		fmt.Fprintf(&out, "  %s schway_entry_output = %s(%s, 0u);\n", entryOutputType, functionNames[entryIndex], entryArgument)
-		out.WriteString("  if (!schway_write_u64_plain(schway_entry_output) || !schway_write_literal(\"\\n\")) return 74;\n")
+		if entry.ReturnType == "Unit" {
+			fmt.Fprintf(&out, "  %s(%s, 0u);\n", functionNames[entryIndex], entryArgument)
+		} else {
+			fmt.Fprintf(&out, "  %s schway_entry_output = %s(%s, 0u);\n", entryOutputType, functionNames[entryIndex], entryArgument)
+			out.WriteString("  if (!schway_write_u64_plain(schway_entry_output) || !schway_write_literal(\"\\n\")) return 74;\n")
+		}
 		out.WriteString("  const char *schway_evidence_path = getenv(\"SCHWAY_APP_EVIDENCE_PATH\");\n")
 		out.WriteString("  if (schway_evidence_path != NULL && schway_evidence_path[0] != '\\0') {\n")
 		out.WriteString("    FILE *schway_evidence_file = fopen(schway_evidence_path, \"wb\");\n")
 		out.WriteString("    if (schway_evidence_file != NULL) {\n      schway_output_stream = schway_evidence_file;\n      schway_output_limit = SCHWAY_EVIDENCE_OUTPUT_LIMIT;\n      schway_output_count = 0u;\n")
 		out.WriteString("      if (schway_event_overflow) {\n        (void)schway_write_literal(\"{\\\"schema\\\":\\\"lang.app-capture/1\\\",\\\"status\\\":\\\"capacity_exhausted\\\"}\\n\");\n      } else {\n")
 		out.WriteString("        (void)schway_write_literal(\"{\\\"schema\\\":\\\"lang.app-capture/1\\\",\\\"status\\\":\\\"complete\\\",\\\"execution\\\":{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\");\n")
-		out.WriteString("        (void)schway_write_u64(schway_entry_output);\n")
+		if entry.ReturnType == "Unit" {
+			out.WriteString("        (void)schway_write_literal(\"\\\"\\\"\");\n")
+		} else {
+			out.WriteString("        (void)schway_write_u64(schway_entry_output);\n")
+		}
 		out.WriteString("        (void)schway_write_literal(\"},\\\"events\\\":[\");\n        (void)schway_write_events();\n")
 		out.WriteString("        (void)schway_write_literal(\"],\\\"live_resources\\\":\");\n        (void)schway_write_live_resources();\n")
 		out.WriteString("        (void)schway_write_literal(\"}}\\n\");\n      }\n      (void)fclose(schway_evidence_file);\n    }\n  }\n")
@@ -2335,7 +2353,7 @@ func emitProgramFunction(out *strings.Builder, function core.Function, parameter
 	returned := false
 	for _, operation := range function.Linear.Operations {
 		var source core.Place
-		if operation.Kind != core.OpConst {
+		if operation.Kind != core.OpConst && operation.Kind != core.OpWriteNewline && !(operation.Kind == core.OpReturn && function.ReturnType == "Unit") {
 			var sourceKnown bool
 			source, sourceKnown = places[operation.SourceID]
 			if !sourceKnown {
@@ -2343,6 +2361,14 @@ func emitProgramFunction(out *strings.Builder, function core.Function, parameter
 			}
 		}
 		switch operation.Kind {
+		case core.OpWriteU64:
+			if shell == programApplicationShell {
+				fmt.Fprintf(out, "  if (!schway_write_u64_plain(%s)) exit(74);\n", locals[source.ID])
+			}
+		case core.OpWriteNewline:
+			if shell == programApplicationShell {
+				out.WriteString("  if (!schway_write_literal(\"\\n\")) exit(74);\n")
+			}
 		case core.OpConst:
 			target, exists := places[operation.TargetID]
 			if !exists || declared[operation.TargetID] {
@@ -2415,10 +2441,18 @@ func emitProgramFunction(out *strings.Builder, function core.Function, parameter
 			// caller's own events and the callee's own function.returned
 			// event both land in the shared events buffer in execution
 			// order regardless of call depth.
+			sourcePlace := "NULL"
+			if operation.SourceID != "" {
+				sourcePlace = strconv.Quote(operation.SourceID)
+			}
 			fmt.Fprintf(out, "  if (!schway_record_event(%s, %s, %s, %s, NULL, %s, schway_invocations[invocation_index], NULL)) abort(); /* returned place: %s */\n",
 				strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID),
-				strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), operation.ID)
-			fmt.Fprintf(out, "  return %s;\n", locals[source.ID])
+				sourcePlace, strconv.Quote(operation.TypeID), operation.ID)
+			if function.ReturnType == "Unit" {
+				out.WriteString("  return;\n")
+			} else {
+				fmt.Fprintf(out, "  return %s;\n", locals[source.ID])
+			}
 			returned = true
 		default:
 			return fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
@@ -2595,8 +2629,25 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 				}
 				fmt.Fprintf(out, "  if (%s) goto %s; else goto %s;\n", locals[op.SourceID], label(yes.ToBlockID), label(no.ToBlockID))
 				terminated = true
+			case core.OpWriteU64:
+				if shell == programApplicationShell {
+					fmt.Fprintf(out, "  if (!schway_write_u64_plain(%s)) exit(74);\n", locals[op.SourceID])
+				}
+			case core.OpWriteNewline:
+				if shell == programApplicationShell {
+					out.WriteString("  if (!schway_write_literal(\"\\n\")) exit(74);\n")
+				}
 			case core.OpReturn:
-				fmt.Fprintf(out, "  if (!schway_record_event(\"function.returned\", %s, %s, %s, NULL, %s, schway_invocations[invocation_index], NULL)) abort();\n  return %s;\n", strconv.Quote(op.ID+":event:returned"), strconv.Quote(function.ID), strconv.Quote(op.SourceID), strconv.Quote(op.TypeID), locals[op.SourceID])
+				sourcePlace := "NULL"
+				if op.SourceID != "" {
+					sourcePlace = strconv.Quote(op.SourceID)
+				}
+				fmt.Fprintf(out, "  if (!schway_record_event(\"function.returned\", %s, %s, %s, NULL, %s, schway_invocations[invocation_index], NULL)) abort();\n", strconv.Quote(op.ID+":event:returned"), strconv.Quote(function.ID), sourcePlace, strconv.Quote(op.TypeID))
+				if function.ReturnType == "Unit" {
+					out.WriteString("  return;\n")
+				} else {
+					fmt.Fprintf(out, "  return %s;\n", locals[op.SourceID])
+				}
 				terminated = true
 			case core.OpDefect:
 				fmt.Fprintf(out, "  fputs(%s, stderr);\n  exit(65);\n", strconv.Quote("schway app: "+op.Reason+"\n"))

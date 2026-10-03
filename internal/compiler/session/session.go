@@ -1136,6 +1136,39 @@ func RunInterpreter(source []byte) ([]interp.Execution, []diagnostic.Diagnostic,
 	return executions, nil, nil
 }
 
+// RunInterpreterApplication runs one checked U64 application input. Its
+// execution document and application bytes remain separate in the result,
+// matching the retained native application boundary.
+func RunInterpreterApplication(source []byte, input string) (interp.ApplicationResult, []diagnostic.Diagnostic, error) {
+	checked := Check(source)
+	if len(checked.Diagnostics) > 0 {
+		return interp.ApplicationResult{}, checked.Diagnostics, nil
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		if len(validated.Problems) == 0 {
+			return interp.ApplicationResult{}, nil, errors.New("core validation failed without a named problem")
+		}
+		return interp.ApplicationResult{}, nil, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	program := validated.Program()
+	if problems := originvalidate.ValidatePublished(program); len(problems) > 0 {
+		return interp.ApplicationResult{}, nil, fmt.Errorf("origin validation failed: %s", problems[0].Code)
+	}
+	entry, err := callgraph.EntryFunction(program)
+	if err != nil {
+		return interp.ApplicationResult{}, nil, err
+	}
+	if entry.Match != nil || entry.Linear == nil || entry.Parameter.Type != "U64" || (entry.ReturnType != "U64" && entry.ReturnType != "Unit") {
+		return interp.ApplicationResult{}, nil, fmt.Errorf("application entry %q: only a linear U64-to-U64 or U64-to-Unit entry is supported", entry.ID)
+	}
+	result, err := interp.RunApplication(program, entry.Name, input)
+	if err != nil {
+		return interp.ApplicationResult{}, nil, err
+	}
+	return result, nil, nil
+}
+
 // interpreterInputs derives the single-Byte/Buffer synthetic input this
 // project's differential lanes drive every fixture with, reading the
 // PARAMETER TYPE from the program's own resolved entry function
@@ -1362,8 +1395,9 @@ func BuildApplication(ctx context.Context, source []byte, outputPath string, run
 		return native.BuildReceipt{}, nil, err
 	}
 	localOwnerEntry := entry.Parameter.Type == "PathToken" && hasLocalForeignOperations(program)
-	if entry.Match != nil || entry.Linear == nil || (entry.Parameter.Type != "U64" && !localOwnerEntry) || entry.ReturnType != "U64" {
-		return native.BuildReceipt{}, nil, fmt.Errorf("application entry %q: only a linear U64-to-U64 or checked PathToken-to-U64 entry is supported", entry.ID)
+	u64Application := entry.Parameter.Type == "U64" && (entry.ReturnType == "U64" || entry.ReturnType == "Unit")
+	if entry.Match != nil || entry.Linear == nil || (!u64Application && !(localOwnerEntry && entry.ReturnType == "U64")) {
+		return native.BuildReceipt{}, nil, fmt.Errorf("application entry %q: only a linear U64-to-U64, U64-to-Unit, or checked PathToken-to-U64 entry is supported", entry.ID)
 	}
 	if localOwnerEntry {
 		if err := pathoracle.ValidateLocalOwnerPaths(program); err != nil {

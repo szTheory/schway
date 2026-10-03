@@ -1,16 +1,47 @@
 package session_test
 
 import (
+	"bytes"
+	"context"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/originvalidate"
 	"github.com/szTheory/schway/internal/compiler/session"
 	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
+
+func TestPhase27TracerFizzBuzz1(t *testing.T) {
+	sourcePath := testsupport.ProjectPath("examples", "fizzbuzz.schway")
+	source, err := os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	interpreted, diagnostics, err := session.RunInterpreterApplication(source, "1")
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("interpreter application diagnostics=%+v err=%v", diagnostics, err)
+	}
+	if interpreted.Execution.Outcome.Kind != "returned" || interpreted.Execution.Outcome.Value != "" || len(interpreted.Execution.Events) != 1 || interpreted.Execution.Events[0].Kind != "function.returned" || string(interpreted.Output) != "1\n" {
+		t.Fatalf("interpreter execution=%+v output=%q, want Unit and literal 1 LF", interpreted.Execution, interpreted.Output)
+	}
+
+	artifact := filepath.Join(t.TempDir(), "fizzbuzz")
+	_, diagnostics, err = session.BuildApplicationFile(context.Background(), sourcePath, artifact, native.DefaultRunner())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("BuildApplicationFile diagnostics=%+v err=%v (the tracer requires installed Clang)", diagnostics, err)
+	}
+	var stdout, stderr bytes.Buffer
+	outcome, err := native.RunApplication(context.Background(), artifact, "1", &stdout, &stderr)
+	if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 0 || stdout.String() != "1\n" || stderr.Len() != 0 {
+		t.Fatalf("native outcome=%+v stdout=%q stderr=%q err=%v, want exit 0, literal 1 LF, empty stderr", outcome, stdout.String(), stderr.String(), err)
+	}
+}
 
 func TestPhase27WriteAdmission(t *testing.T) {
 	source := phase27WriteSource()

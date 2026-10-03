@@ -164,6 +164,14 @@ type Outcome = execution.Outcome
 type Event = execution.Event
 type Execution = execution.Execution
 
+// ApplicationResult keeps application stdout separate from the canonical
+// execution document. Writes are observable only through Output; they do not
+// change the execution schema or add events.
+type ApplicationResult struct {
+	Execution Execution
+	Output    []byte
+}
+
 const EvidenceScopeModelOnly = "interpreter_model_only"
 
 // ForeignOutcome is an independently supplied semantic result for one
@@ -489,6 +497,46 @@ func Run(program core.Program, functionName, input string) (Execution, error) {
 	return Execution{}, fmt.Errorf("checked match %q has no arm for %q", function.Match.ID, input)
 }
 
+// RunApplication interprets the retained U64 application boundary. Explicit
+// writes stream into Output, while a U64 return keeps the application's
+// historical automatic decimal line. Unit returns do not add output.
+func RunApplication(program core.Program, functionName, input string) (ApplicationResult, error) {
+	validated := corevalidate.Validate(program)
+	if !validated.Valid {
+		return ApplicationResult{}, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	program = validated.Program()
+	function, ok := findFunction(program, functionName)
+	if !ok {
+		return ApplicationResult{}, fmt.Errorf("function %q is absent from checked core", functionName)
+	}
+	if !function.HasClosedBody() || function.Linear == nil || function.Match != nil {
+		return ApplicationResult{}, fmt.Errorf("application function %q must have a linear body", functionName)
+	}
+	if function.Parameter.Type != "U64" || (function.ReturnType != "U64" && function.ReturnType != "Unit") {
+		return ApplicationResult{}, fmt.Errorf("application function %q must be U64-to-U64 or U64-to-Unit", functionName)
+	}
+	initial, err := inputValue(program, function, input)
+	if err != nil {
+		return ApplicationResult{}, err
+	}
+	output := []byte{}
+	base := newFlatFrame(function, map[string]value{function.Parameter.ID: initial})
+	if len(function.Linear.Blocks) > 0 {
+		base = newBlockFrame(function, map[string]value{function.Parameter.ID: initial}, function.ID+":block:entry")
+	}
+	base.applicationOutput = &output
+	execution, err := runProgramFrameStack(program, base)
+	if err != nil {
+		return ApplicationResult{}, err
+	}
+	if execution.Outcome.Kind == "returned" && function.ReturnType == "U64" {
+		output = append(output, execution.Outcome.Value...)
+		output = append(output, '\n')
+	}
+	return ApplicationResult{Execution: execution, Output: output}, nil
+}
+
 // runBranchArm executes the selected match arm's own block on interp's
 // explicit frame stack (D-10-21/D-10-39): the unselected arms' operations
 // are never visited, so they produce no events (03-01-02's behavior
@@ -651,6 +699,9 @@ func inputValue(program core.Program, function core.Function, input string) (val
 // the one frame with hasCaller == false.
 type frame struct {
 	function core.Function
+	// applicationOutput is non-nil only for RunApplication. The same sink is
+	// inherited by callees so writes remain ordered on the application stream.
+	applicationOutput *[]byte
 
 	// schema and invocation are activation-local evidence context. They are
 	// intentionally carried by every frame rather than reconstructed from a
@@ -947,6 +998,7 @@ func (f *frame) childInvocation(operation core.LinearOperation) string {
 }
 
 func (f *frame) configureChild(child *frame, operation core.LinearOperation) {
+	child.applicationOutput = f.applicationOutput
 	child.schema = f.eventSchema()
 	child.entryID = f.entryID
 	child.segments = append(append([]execution.InvocationSegment{}, f.segments...), execution.InvocationSegment{OpCallID: operation.ID, Ordinal: 0})
@@ -1229,7 +1281,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			// for the unconditional cleanup operation. A failed acquisition has
 			// no initialized value at this place and remains a no-op release.
 			sourceValue = top.values[operation.SourceID]
-		} else if operation.Kind != core.OpConst && !modeledFailureContinuation {
+		} else if operation.Kind != core.OpConst && operation.Kind != core.OpWriteNewline && !(operation.Kind == core.OpReturn && top.function.ReturnType == "Unit") && !modeledFailureContinuation {
 			var initialized bool
 			sourceValue, initialized = top.values[operation.SourceID]
 			if !initialized {
@@ -1238,6 +1290,19 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 		}
 
 		switch operation.Kind {
+		case core.OpWriteU64:
+			if !sourceValue.isU64 {
+				return Execution{}, fmt.Errorf("operation %q write_u64 operand is not U64", operation.ID)
+			}
+			if top.applicationOutput != nil {
+				*top.applicationOutput = strconv.AppendUint(*top.applicationOutput, sourceValue.u64, 10)
+			}
+			top.idx++
+		case core.OpWriteNewline:
+			if top.applicationOutput != nil {
+				*top.applicationOutput = append(*top.applicationOutput, '\n')
+			}
+			top.idx++
 		case core.OpConst:
 			parsed, err := strconv.ParseUint(operation.ConstU64, 10, 64)
 			if err != nil {
