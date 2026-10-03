@@ -1,0 +1,9 @@
+{
+  "command": "go test ./internal/compiler/execution -run '^TestPhase26EventOccurrenceEncoding$' -count=1 -v (GitHub Actions workflow_dispatch phase26_focused, run 37086736065 at 9bf337b; normalized single-test result from Ubuntu and macOS)",
+  "exitCode": 1,
+  "targetTest": "TestPhase26EventOccurrenceEncoding",
+  "expected": "CanonicalBytes preserves nonzero occurrence and omits zero so one-shot schema-2 bytes remain unchanged.",
+  "actual": "Both hosted jobs failed the target assertion because unmarshalling the nonzero field and re-encoding dropped occurrence.",
+  "output": "TAP version 13\nnot ok 1 - TestPhase26EventOccurrenceEncoding\n# tests 1\n# pass 0\n# fail 1\n",
+  "hostedTranscript": "https://github.com/szTheory/schway/actions/runs/37086736065"
+}

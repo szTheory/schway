@@ -3,6 +3,7 @@ package interp
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -2153,6 +2154,68 @@ func TestPhase26CheckedAddInterpreter(t *testing.T) {
 			event := result.Events[len(result.Events)-1]
 			if event.Kind != "function.defected" || event.Output != "U64 addition overflow" || event.ID == "" || event.SourcePlace == "" {
 				t.Fatalf("overflow event=%+v, want source-attributed U64 addition overflow defect", event)
+			}
+		}
+	}
+}
+
+func TestPhase26InterpreterRepeatedCopy(t *testing.T) {
+	source, err := os.ReadFile(filepath.Join(interpProjectRoot(), "examples", "sum_to_n.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	loop := []byte("while i < n {")
+	if !bytes.Contains(source, loop) {
+		t.Fatal("sum_to_n witness has no expected loop site")
+	}
+	source = bytes.Replace(source, loop, []byte("while i < n {\n      var snapshot = i"), 1)
+	source = append(source, []byte("\nfn entry(n: U64) -> U64 {\n  let result = main(n)\n  result\n}\n")...)
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("repeated-copy source parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("repeated-copy source check diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("repeated-copy source validation problems: %+v", validated.Problems)
+	}
+	for _, input := range []struct {
+		value string
+		count int
+	}{{"3", 3}, {"0", 0}} {
+		result, err := Run(validated.Program(), "entry", input.value)
+		if err != nil {
+			t.Fatalf("Run(entry, %q): %v", input.value, err)
+		}
+		if result.Outcome.Kind != execution.OutcomeReturned || result.Outcome.Value != map[string]string{"3": "6", "0": "0"}[input.value] {
+			t.Fatalf("input %s outcome=%+v", input.value, result.Outcome)
+		}
+		var document struct {
+			Events []map[string]any `json:"events"`
+		}
+		encoded, err := CanonicalBytes(result)
+		if err != nil || json.Unmarshal(encoded, &document) != nil {
+			t.Fatalf("decode execution events: err=%v bytes=%s", err, encoded)
+		}
+		var visits []map[string]any
+		for _, event := range document.Events {
+			if event["kind"] == "value.copied" && event["source_place"] != nil {
+				visits = append(visits, event)
+			}
+		}
+		if len(visits) != input.count {
+			t.Fatalf("input %s scalar copy events=%d, want %d: %+v", input.value, len(visits), input.count, visits)
+		}
+		if input.count == 3 {
+			firstID, firstInvocation := visits[0]["id"], visits[0]["invocation"]
+			for index, event := range visits {
+				ordinal, present := event["occurrence"].(float64)
+				if event["id"] != firstID || event["invocation"] != firstInvocation || (index == 0 && present) || (index > 0 && (!present || ordinal != float64(index))) {
+					t.Fatalf("copy visit %d identity=%+v, want stable site/invocation and ordinal %d (zero omitted)", index, event, index)
+				}
 			}
 		}
 	}

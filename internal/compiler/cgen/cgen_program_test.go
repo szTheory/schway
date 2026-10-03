@@ -3,6 +3,7 @@ package cgen_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -2174,5 +2175,61 @@ func TestPhase26CheckedAddC17(t *testing.T) {
 	outcome, err = native.RunApplication(context.Background(), artifact, "0", &stdout, &stderr)
 	if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 0 || stdout.String() != "18446744073709551615\n" || stderr.Len() != 0 {
 		t.Fatalf("MAX+0 app outcome=%+v stdout=%q stderr=%q err=%v, want exact maximum", outcome, stdout.String(), stderr.String(), err)
+	}
+}
+
+func TestPhase26NativeRepeatedCopy(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "sum_to_n.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	loop := []byte("while i < n {")
+	if !bytes.Contains(source, loop) {
+		t.Fatal("sum_to_n witness has no expected loop site")
+	}
+	source = bytes.Replace(source, loop, []byte("while i < n {\n      var snapshot = i"), 1)
+	source = append(source, []byte("\nfn entry(n: U64) -> U64 {\n  let result = main(n)\n  result\n}\n")...)
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("repeated-copy source check diagnostics: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatalf("EmitNative: %v", err)
+	}
+	for _, input := range []struct {
+		value string
+		count int
+		want  string
+	}{{"3", 3, "6\n"}, {"0", 0, "0\n"}} {
+		got, runErr := native.DefaultRunner().Run(context.Background(), generated, "-O0", []string{input.value})
+		if runErr != nil || len(got.Pairs) != 1 || got.Pairs[0].Execution.Outcome.Value != strings.TrimSpace(input.want) {
+			t.Fatalf("native input %s pairs=%d outcome=%+v err=%v", input.value, len(got.Pairs), got.Pairs[0].Execution.Outcome, runErr)
+		}
+		observed := got.Pairs[0].Execution
+		var document struct {
+			Events []map[string]any `json:"events"`
+		}
+		encoded, err := execution.CanonicalBytes(observed)
+		if err != nil || json.Unmarshal(encoded, &document) != nil {
+			t.Fatalf("decode native execution events: err=%v bytes=%s", err, encoded)
+		}
+		var copies []map[string]any
+		for _, event := range document.Events {
+			if event["kind"] == "value.copied" && event["source_place"] != nil && event["target_place"] != nil {
+				copies = append(copies, event)
+			}
+		}
+		if len(copies) != input.count {
+			t.Fatalf("native input %s scalar copy events=%d, want %d: %+v", input.value, len(copies), input.count, copies)
+		}
+		if input.count == 3 {
+			for index, event := range copies {
+				ordinal, present := event["occurrence"].(float64)
+				if event["id"] != copies[0]["id"] || event["invocation"] != copies[0]["invocation"] || (index == 0 && present) || (index > 0 && (!present || ordinal != float64(index))) {
+					t.Fatalf("native copy visit %d identity=%+v, want stable site/invocation and ordinal %d", index, event, index)
+				}
+			}
+		}
 	}
 }
