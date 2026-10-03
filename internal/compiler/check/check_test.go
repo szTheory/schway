@@ -687,15 +687,23 @@ func TestPhase18BothArmLoanEndpointControl(t *testing.T) {
 func TestBackEdgeRejected(t *testing.T) {
 	a := cfgBlockSpec{id: "fn:block:a", operations: nil, successors: []string{"fn:block:b"}}
 	b := cfgBlockSpec{id: "fn:block:b", operations: nil, successors: []string{"fn:block:a"}}
-	_, diag := loanLivenessFixpoint("fn", []cfgBlockSpec{a, b}, interproceduralSummaryTable{}, diagnostic.Span{})
+	span := diagnostic.Span{Start: 10, End: 20}
+	_, diag := loanLivenessFixpoint("fn", []cfgBlockSpec{a, b}, interproceduralSummaryTable{}, span)
 	if diag == nil {
 		t.Fatalf("expected a back-edge rejection, got none")
 	}
 	if diag.Code != "check.cfg_back_edge" {
 		t.Fatalf("expected code check.cfg_back_edge, got %q", diag.Code)
 	}
+	if diag.Primary != span {
+		t.Fatalf("back-edge diagnostic lost stable source span: %+v", diag.Primary)
+	}
 	var sawCycleBlock bool
+	var sawCategory bool
 	for _, cause := range diag.Causes {
+		if cause.Kind == "unsupported_event_kind" {
+			sawCategory = true
+		}
 		if cause.Kind != "cycle_block" {
 			continue
 		}
@@ -706,6 +714,30 @@ func TestBackEdgeRejected(t *testing.T) {
 	}
 	if !sawCycleBlock {
 		t.Fatalf("expected a cycle_block cause, got %+v", diag.Causes)
+	}
+	if !sawCategory {
+		t.Fatalf("expected an unsupported_event_kind cause, got %+v", diag.Causes)
+	}
+}
+
+func TestPhase26CFGBackEdgeCategories(t *testing.T) {
+	cases := []struct {
+		name       string
+		operations []core.LinearOperation
+		want       string
+	}{
+		{"owner", []core.LinearOperation{{Kind: core.OpMove}}, "owner"},
+		{"resource", []core.LinearOperation{{Kind: core.OpRelease}}, "resource"},
+		{"loan", []core.LinearOperation{{Kind: core.OpBorrowShared}}, "loan"},
+		{"loan-derived provenance", []core.LinearOperation{{Kind: core.OpBorrowShared, TargetID: "view"}, {Kind: core.OpCopy, SourceID: "view"}}, "loan_derived_provenance"},
+		{"event", []core.LinearOperation{{Kind: core.OpCall}}, "unsupported_event_kind"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := cfgBackEdgeCategory(tc.operations); got != tc.want {
+				t.Fatalf("category = %q, want %q", got, tc.want)
+			}
+		})
 	}
 }
 

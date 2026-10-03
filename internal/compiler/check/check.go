@@ -2822,12 +2822,40 @@ func detectCFGCycle(order []string, byID map[string]cfgBlockSpec) (blockID strin
 // span-local edit resolves (matching core.call_graph_cycle's own
 // non-repairable disposition for the analogous whole-program cycle,
 // D-07-31c's reasoning restated at the intraprocedural CFG level).
-func cfgBackEdgeDiagnostic(functionID, blockID string, span diagnostic.Span) diagnostic.Diagnostic {
+func cfgBackEdgeDiagnostic(functionID, blockID, category string, span diagnostic.Span) diagnostic.Diagnostic {
 	return diagnostic.Error(
 		"check.cfg_back_edge", span,
 		fmt.Sprintf("function %q's control-flow graph contains a cycle", functionID),
 		diagnostic.Cause{Kind: "cycle_block", Detail: blockID},
+		diagnostic.Cause{Kind: category, Detail: "back edge carries authority or unsupported event semantics"},
 	)
+}
+
+func cfgBackEdgeCategory(operations []core.LinearOperation) string {
+	loanPlaces := map[string]bool{}
+	for _, operation := range operations {
+		if operation.Kind == core.OpBorrowShared || operation.Kind == core.OpBorrowExclusive {
+			loanPlaces[operation.TargetID] = true
+		}
+	}
+	for _, operation := range operations {
+		switch operation.Kind {
+		case core.OpMove:
+			return "owner"
+		case core.OpRelease, core.OpForeignCall:
+			return "resource"
+		case core.OpBorrowShared, core.OpBorrowExclusive:
+			return "loan"
+		case core.OpCopy:
+			if loanPlaces[operation.SourceID] {
+				return "loan_derived_provenance"
+			}
+			return "unsupported_event_kind"
+		case core.OpCall, core.OpFail:
+			return "unsupported_event_kind"
+		}
+	}
+	return "unsupported_event_kind"
 }
 
 // loanLivenessBoundFactor is Task 2's derived iteration-bound multiplier
@@ -2933,7 +2961,7 @@ func loanLivenessFixpoint(functionID string, blocks []cfgBlockSpec, summaries in
 	placeLoan := derivePlaceLoans(allOps, summaries)
 
 	if cycleBlockID, cyclic := detectCFGCycle(order, byID); cyclic {
-		diag := cfgBackEdgeDiagnostic(functionID, cycleBlockID, span)
+		diag := cfgBackEdgeDiagnostic(functionID, cycleBlockID, cfgBackEdgeCategory(allOps), span)
 		return loanLivenessResult{}, &diag
 	}
 

@@ -132,7 +132,7 @@ jobs:
         run: clang --version
       - name: Phase 26 checker, peer, path, and native app regressions
         run: |
-          go test ./internal/compiler/check ./internal/compiler/corevalidate ./internal/compiler/originvalidate -run '^TestPhase26(FixedPoint|AnalysisExhaustion|PeerIndependence|BackEdgeAuthority|BackEdgeCauseCategories|ScalarCopyCycleBoundary)' -count=1 -v
+          go test ./internal/compiler/check ./internal/compiler/corevalidate ./internal/compiler/originvalidate -run '^(TestBackEdgeRejected|TestPhase26(FixedPoint|AnalysisExhaustion|PeerIndependence|BackEdgeAuthority|BackEdgeCauseCategories|CFGBackEdgeCategories|ScalarCopyCycleBoundary))' -count=1 -v
           go test ./internal/compiler/pathoracle -run '^TestCompositionCycleGuardFailsClosed$' -count=1 -v
           go test ./internal/compiler/session ./internal/compiler/core ./internal/compiler/interp ./internal/compiler/cgen ./internal/compiler/native -run '^TestPhase26|^TestAllOperationKindsHandledAtEverySite$|^TestPhase19U64NativeExactWidthAndOutput$' -count=1 -v
 
