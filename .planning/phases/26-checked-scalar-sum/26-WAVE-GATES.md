@@ -117,5 +117,9 @@ gap: the Phase 26 primary task table lacked required `Grade` and
 `Non-inertness` columns, so row 26-01-T1 could not be graded. Both host full
 suites reported only this session assertion; race and dependent aggregate
 checks were skipped. The columns are now present, with each exercised row tied
-to the hosted receipt. Focused CI will recheck the grade derivation before the
-next full gate.
+to the hosted receipt. Focused CI run 37101757588 passed on Ubuntu and macOS,
+including grade, groundedness, receipt, CLI, syntax, source-event, capacity,
+and sum checks. The subsequent full hosted gate 37101934669 passed on both
+hosts. It completed vet, builds, all implementation and race suites, and the
+Phase 23, 24, and 25 evidence aggregates. This is the current Phase 26 full-gate
+receipt; independent review and goal-backward verification remain pending.
