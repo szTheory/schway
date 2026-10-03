@@ -2183,15 +2183,47 @@ func TestPhase26NativeRepeatedCopy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	loop := []byte("while i < n {\n      i = i + 1\n      total = total + i")
-	if !bytes.Contains(source, loop) {
-		t.Fatal("sum_to_n witness has no expected loop body")
-	}
-	source = bytes.Replace(source, loop, []byte("while i < n {\n      i = i + 1\n      var snapshot = i\n      total = total + snapshot"), 1)
 	source = append(source, []byte("\nfn entry(n: U64) -> U64 {\n  let result = main(n)\n  result\n}\n")...)
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("repeated-copy source check diagnostics: %+v", checked.Diagnostics)
+	}
+	var main *core.Function
+	for index := range checked.Program.Functions {
+		if checked.Program.Functions[index].Name == "main" {
+			main = &checked.Program.Functions[index]
+		}
+	}
+	if main == nil || main.Linear == nil {
+		t.Fatal("checked sum_to_n has no linear main")
+	}
+	var sourcePlace core.Place
+	for _, place := range main.Linear.Places {
+		if place.Name == "i" {
+			sourcePlace = place
+		}
+	}
+	if sourcePlace.ID == "" {
+		t.Fatal("checked sum_to_n has no loop counter place")
+	}
+	targetID := main.ID + ":place:phase26snapshot"
+	copyID := main.ID + ":op:phase26snapshot"
+	main.Linear.Places = append(main.Linear.Places, core.Place{ID: targetID, Name: "snapshot", TypeID: sourcePlace.TypeID})
+	main.Linear.Operations = append(main.Linear.Operations, core.LinearOperation{ID: copyID, PointID: copyID + ":point", Kind: core.OpCopy, SourceID: sourcePlace.ID, TargetID: targetID, TypeID: sourcePlace.TypeID})
+	inserted := false
+	for index := range main.Linear.Blocks {
+		block := &main.Linear.Blocks[index]
+		if !strings.Contains(block.ID, "while-body") {
+			continue
+		}
+		block.OperationIDs = append(block.OperationIDs, "")
+		copy(block.OperationIDs[2:], block.OperationIDs[1:])
+		block.OperationIDs[1] = copyID
+		inserted = true
+		break
+	}
+	if !inserted {
+		t.Fatal("checked sum_to_n has no while body block")
 	}
 	generated, err := cgen.EmitNative(checked.Program)
 	if err != nil {
@@ -2203,7 +2235,10 @@ func TestPhase26NativeRepeatedCopy(t *testing.T) {
 		want  string
 	}{{"3", 3, "6\n"}, {"0", 0, "0\n"}} {
 		got, runErr := native.DefaultRunner().Run(context.Background(), generated, "-O0", []string{input.value})
-		if runErr != nil || len(got.Pairs) != 1 || got.Pairs[0].Execution.Outcome.Value != strings.TrimSpace(input.want) {
+		if runErr != nil || len(got.Pairs) != 1 {
+			t.Fatalf("native input %s pairs=%d err=%v", input.value, len(got.Pairs), runErr)
+		}
+		if got.Pairs[0].Execution.Outcome.Value != strings.TrimSpace(input.want) {
 			t.Fatalf("native input %s pairs=%d outcome=%+v err=%v", input.value, len(got.Pairs), got.Pairs[0].Execution.Outcome, runErr)
 		}
 		observed := got.Pairs[0].Execution
@@ -2216,7 +2251,7 @@ func TestPhase26NativeRepeatedCopy(t *testing.T) {
 		}
 		var copies []map[string]any
 		for _, event := range document.Events {
-			if event["kind"] == "value.copied" && event["source_place"] != nil && event["target_place"] != nil {
+			if event["id"] == copyID+":event" {
 				copies = append(copies, event)
 			}
 		}

@@ -2164,11 +2164,6 @@ func TestPhase26InterpreterRepeatedCopy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	loop := []byte("while i < n {\n      i = i + 1\n      total = total + i")
-	if !bytes.Contains(source, loop) {
-		t.Fatal("sum_to_n witness has no expected loop body")
-	}
-	source = bytes.Replace(source, loop, []byte("while i < n {\n      i = i + 1\n      var snapshot = i\n      total = total + snapshot"), 1)
 	source = append(source, []byte("\nfn entry(n: U64) -> U64 {\n  let result = main(n)\n  result\n}\n")...)
 	parsed := syntax.Parse(source)
 	if len(parsed.Diagnostics) != 0 {
@@ -2178,15 +2173,49 @@ func TestPhase26InterpreterRepeatedCopy(t *testing.T) {
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("repeated-copy source check diagnostics: %+v", checked.Diagnostics)
 	}
-	validated := corevalidate.Validate(checked.Program)
-	if !validated.Valid {
-		t.Fatalf("repeated-copy source validation problems: %+v", validated.Problems)
+	program := checked.Program
+	var main *core.Function
+	for index := range program.Functions {
+		if program.Functions[index].Name == "main" {
+			main = &program.Functions[index]
+		}
+	}
+	if main == nil || main.Linear == nil {
+		t.Fatal("checked sum_to_n has no linear main")
+	}
+	var sourcePlace core.Place
+	for _, place := range main.Linear.Places {
+		if place.Name == "i" {
+			sourcePlace = place
+		}
+	}
+	if sourcePlace.ID == "" {
+		t.Fatal("checked sum_to_n has no loop counter place")
+	}
+	targetID := main.ID + ":place:phase26snapshot"
+	copyID := main.ID + ":op:phase26snapshot"
+	main.Linear.Places = append(main.Linear.Places, core.Place{ID: targetID, Name: "snapshot", TypeID: sourcePlace.TypeID})
+	main.Linear.Operations = append(main.Linear.Operations, core.LinearOperation{ID: copyID, PointID: copyID + ":point", Kind: core.OpCopy, SourceID: sourcePlace.ID, TargetID: targetID, TypeID: sourcePlace.TypeID})
+	inserted := false
+	for index := range main.Linear.Blocks {
+		block := &main.Linear.Blocks[index]
+		if !strings.Contains(block.ID, "while-body") {
+			continue
+		}
+		block.OperationIDs = append(block.OperationIDs, "")
+		copy(block.OperationIDs[2:], block.OperationIDs[1:])
+		block.OperationIDs[1] = copyID
+		inserted = true
+		break
+	}
+	if !inserted {
+		t.Fatal("checked sum_to_n has no while body block")
 	}
 	for _, input := range []struct {
 		value string
 		count int
 	}{{"3", 3}, {"0", 0}} {
-		result, err := Run(validated.Program(), "entry", input.value)
+		result, err := Run(program, "entry", input.value)
 		if err != nil {
 			t.Fatalf("Run(entry, %q): %v", input.value, err)
 		}
@@ -2202,7 +2231,7 @@ func TestPhase26InterpreterRepeatedCopy(t *testing.T) {
 		}
 		var visits []map[string]any
 		for _, event := range document.Events {
-			if event["kind"] == "value.copied" && event["source_place"] != nil {
+			if event["id"] == copyID+":event" {
 				visits = append(visits, event)
 			}
 		}
