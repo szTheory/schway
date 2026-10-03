@@ -73,13 +73,20 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 	analysisWork, refusal, category := checkScalarFixedPointDetailed(checked)
 	b.work += analysisWork
 	if refusal != "" {
-		causes := []diagnostic.Cause{}
 		if refusal == "check.cfg_back_edge" {
-			causes = append(causes, diagnostic.Cause{Kind: category, Detail: "cyclic scalar analysis refused this carried authority or event"})
+			return core.Function{}, []diagnostic.Diagnostic{scalarBackEdgeDiagnostic(functionID, category, function.Span)}, b.work
 		}
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(refusal, function.Span, "scalar CFG analysis did not converge or found an uninitialized read", causes...)}, b.work
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(refusal, function.Span, "scalar CFG analysis did not converge or found an uninitialized read")}, b.work
 	}
 	return checked, nil, b.work
+}
+
+func scalarBackEdgeDiagnostic(functionID, category string, span diagnostic.Span) diagnostic.Diagnostic {
+	return diagnostic.Error(
+		"check.cfg_back_edge", span,
+		fmt.Sprintf("function %q's cyclic control-flow carries unsupported authority or event semantics", functionID),
+		diagnostic.Cause{Kind: category, Detail: "cyclic scalar analysis refused this carried authority or event"},
+	)
 }
 
 type checkerScalarFact struct {

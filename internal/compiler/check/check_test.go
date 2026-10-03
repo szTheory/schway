@@ -5922,6 +5922,11 @@ func TestPhase26BackEdgeCauseCategories(t *testing.T) {
 			if got := scalarAuthorityCategory(tc.op, types, places); got != tc.want {
 				t.Fatalf("category = %q, want %q", got, tc.want)
 			}
+			span := diagnostic.Span{Start: 8, End: 13}
+			diag := scalarBackEdgeDiagnostic("sum_to_n", got, span)
+			if diag.Code != "check.cfg_back_edge" || diag.Primary != span || len(diag.Causes) != 1 || diag.Causes[0].Kind != tc.want {
+				t.Fatalf("back-edge refusal lost category or source span: %+v", diag)
+			}
 		})
 	}
 }
