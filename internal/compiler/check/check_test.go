@@ -5873,7 +5873,7 @@ func TestPhase26ScalarCopyCycleBoundary(t *testing.T) {
 		badLinear := *mutated.Linear
 		badLinear.Places = append([]core.Place(nil), mutated.Linear.Places...)
 		for placeIndex := range badLinear.Places {
-			if badLinear.Places[placeIndex].ID == copySources[0].placeID {
+			if badLinear.Places[placeIndex].ID == function.Parameter.ID {
 				badLinear.Places[placeIndex].TypeID = "forged-owner-type"
 			}
 		}
