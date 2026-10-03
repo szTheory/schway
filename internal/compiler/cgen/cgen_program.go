@@ -210,7 +210,7 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 				// remainder expression is evaluated; reserve it in the evidence bound.
 				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", "U64 remainder by zero"
 				event.TargetPlace = ""
-			case core.OpLessU64, core.OpEqualU64, core.OpScalarStore, core.OpBranch, core.OpWriteU64, core.OpWriteNewline:
+			case core.OpLessU64, core.OpEqualU64, core.OpScalarStore, core.OpBranch, core.OpWriteU64, core.OpWriteNewline, core.OpWriteText:
 				// Comparisons, stores, CFG control, and application writes are
 				// event-free. Application bytes are tracked by the bounded writer.
 				continue
@@ -2358,7 +2358,7 @@ func emitProgramFunction(out *strings.Builder, function core.Function, parameter
 	returned := false
 	for _, operation := range function.Linear.Operations {
 		var source core.Place
-		if operation.Kind != core.OpConst && operation.Kind != core.OpWriteNewline && !(operation.Kind == core.OpReturn && function.ReturnType == "Unit") {
+		if operation.Kind != core.OpConst && operation.Kind != core.OpWriteNewline && operation.Kind != core.OpWriteText && !(operation.Kind == core.OpReturn && function.ReturnType == "Unit") {
 			var sourceKnown bool
 			source, sourceKnown = places[operation.SourceID]
 			if !sourceKnown {
@@ -2373,6 +2373,10 @@ func emitProgramFunction(out *strings.Builder, function core.Function, parameter
 		case core.OpWriteNewline:
 			if shell == programApplicationShell {
 				out.WriteString("  if (!schway_write_literal(\"\\n\")) exit(74);\n")
+			}
+		case core.OpWriteText:
+			if shell == programApplicationShell {
+				emitProgramTextWrite(out, operation)
 			}
 		case core.OpConst:
 			target, exists := places[operation.TargetID]
@@ -2656,6 +2660,10 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 				if shell == programApplicationShell {
 					out.WriteString("  if (!schway_write_literal(\"\\n\")) exit(74);\n")
 				}
+			case core.OpWriteText:
+				if shell == programApplicationShell {
+					emitProgramTextWrite(out, op)
+				}
 			case core.OpReturn:
 				sourcePlace := "NULL"
 				if op.SourceID != "" {
@@ -2681,6 +2689,24 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 	}
 	out.WriteString("}\n\n")
 	return nil
+}
+
+// emitProgramTextWrite preserves every admitted byte, including NUL and
+// non-ASCII bytes, by passing an unsigned-byte compound literal and its
+// independently checked length to the counted application writer.
+func emitProgramTextWrite(out *strings.Builder, operation core.LinearOperation) {
+	out.WriteString("  if (!schway_write_bytes((const char *)(const unsigned char[]){")
+	if len(operation.TextBytes) == 0 {
+		out.WriteString("0u")
+	} else {
+		for index, value := range operation.TextBytes {
+			if index > 0 {
+				out.WriteString(", ")
+			}
+			fmt.Fprintf(out, "0x%02xu", value)
+		}
+	}
+	fmt.Fprintf(out, "}, (size_t)UINT64_C(%d))) exit(74);\n", operation.TextLength)
 }
 
 func placesTypeName(linear *core.LinearBody, typeID string) string {

@@ -28,8 +28,18 @@ func TestPhase27TracerFizzBuzz1(t *testing.T) {
 	if err != nil || len(diagnostics) != 0 {
 		t.Fatalf("interpreter application diagnostics=%+v err=%v", diagnostics, err)
 	}
-	if interpreted.Execution.Outcome.Kind != "returned" || interpreted.Execution.Outcome.Value != "" || len(interpreted.Execution.Events) != 1 || interpreted.Execution.Events[0].Kind != "function.returned" || string(interpreted.Output) != "1\n" {
+	if interpreted.Execution.Outcome.Kind != "returned" || interpreted.Execution.Outcome.Value != "" || len(interpreted.Execution.Events) < 2 || interpreted.Execution.Events[len(interpreted.Execution.Events)-1].Kind != "function.returned" || string(interpreted.Output) != "1\n" {
 		t.Fatalf("interpreter execution=%+v output=%q, want Unit and literal 1 LF", interpreted.Execution, interpreted.Output)
+	}
+	copyEvents := 0
+	for _, event := range interpreted.Execution.Events[:len(interpreted.Execution.Events)-1] {
+		if event.Kind != "value.copied" {
+			t.Fatalf("unexpected event before Unit return: %+v", event)
+		}
+		copyEvents++
+	}
+	if copyEvents == 0 {
+		t.Fatal("FizzBuzz iteration did not retain its copied scalar snapshot event")
 	}
 
 	artifact := filepath.Join(t.TempDir(), "fizzbuzz")
@@ -41,6 +51,100 @@ func TestPhase27TracerFizzBuzz1(t *testing.T) {
 	outcome, err := native.RunApplication(context.Background(), artifact, "1", &stdout, &stderr)
 	if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 0 || stdout.String() != "1\n" || stderr.Len() != 0 {
 		t.Fatalf("native outcome=%+v stdout=%q stderr=%q err=%v, want exit 0, literal 1 LF, empty stderr", outcome, stdout.String(), stderr.String(), err)
+	}
+}
+
+func TestPhase27LiteralTextApp(t *testing.T) {
+	source := []byte(`module phase27_literal_app
+export { fn main }
+fn main(n: U64) -> Unit {
+  if n < 1001 {
+    write_text("Fizz")
+    write_text("\x00λ")
+    write_text("")
+    write_newline()
+  } else {
+    defect "input exceeds 1000"
+  }
+}
+`)
+	want := []byte("Fizz\x00λ\n")
+
+	interpreted, diagnostics, err := session.RunInterpreterApplication(source, "1")
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("interpreter application diagnostics=%+v err=%v", diagnostics, err)
+	}
+	if interpreted.Execution.Outcome.Kind != "returned" || interpreted.Execution.Outcome.Value != "" || len(interpreted.Execution.Events) != 1 || interpreted.Execution.Events[0].Kind != "function.returned" || !bytes.Equal(interpreted.Output, want) {
+		t.Fatalf("interpreter execution=%+v output=%v, want Unit and exact bytes %v", interpreted.Execution, interpreted.Output, want)
+	}
+
+	sourcePath := filepath.Join(t.TempDir(), "literal_app.schway")
+	if err := os.WriteFile(sourcePath, source, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	artifact := filepath.Join(t.TempDir(), "literal_app")
+	_, diagnostics, err = session.BuildApplicationFile(context.Background(), sourcePath, artifact, native.DefaultRunner())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("BuildApplicationFile diagnostics=%+v err=%v (literal bytes require installed Clang)", diagnostics, err)
+	}
+	var stdout, stderr bytes.Buffer
+	outcome, err := native.RunApplication(context.Background(), artifact, "1", &stdout, &stderr)
+	if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 0 || !bytes.Equal(stdout.Bytes(), want) || stderr.Len() != 0 {
+		t.Fatalf("native outcome=%+v stdout=%v stderr=%q err=%v, want exact bytes %v and empty stderr", outcome, stdout.Bytes(), stderr.String(), err, want)
+	}
+}
+
+func TestPhase27FizzBuzzExact(t *testing.T) {
+	sourcePath := testsupport.ProjectPath("examples", "fizzbuzz.schway")
+	source, err := os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fifteen, err := os.ReadFile(testsupport.ProjectPath("examples", "phase27", "fizzbuzz-15.out"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	oneThousand, err := os.ReadFile(testsupport.ProjectPath("examples", "phase27", "fizzbuzz-1000.out"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(string(fifteen), "\n") != 15 || !bytes.HasSuffix(fifteen, []byte("FizzBuzz\n")) {
+		t.Fatalf("15-line fixture has %d lines or wrong ending: %q", strings.Count(string(fifteen), "\n"), fifteen[len(fifteen)-min(len(fifteen), 32):])
+	}
+	if strings.Count(string(oneThousand), "\n") != 1000 || !bytes.HasSuffix(oneThousand, []byte("Buzz\n")) {
+		t.Fatalf("1000-line fixture has %d lines or wrong ending: %q", strings.Count(string(oneThousand), "\n"), oneThousand[len(oneThousand)-min(len(oneThousand), 32):])
+	}
+
+	artifact := filepath.Join(t.TempDir(), "fizzbuzz")
+	_, diagnostics, err := session.BuildApplicationFile(context.Background(), sourcePath, artifact, native.DefaultRunner())
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("BuildApplicationFile diagnostics=%+v err=%v", diagnostics, err)
+	}
+	for _, test := range []struct {
+		input string
+		want  []byte
+	}{{"0", []byte{}}, {"1", []byte("1\n")}, {"15", fifteen}, {"1000", oneThousand}} {
+		t.Run("input-"+test.input, func(t *testing.T) {
+			interpreted, diagnostics, err := session.RunInterpreterApplication(source, test.input)
+			if err != nil || len(diagnostics) != 0 || interpreted.Execution.Outcome.Kind != "returned" || interpreted.Execution.Outcome.Value != "" || !bytes.Equal(interpreted.Output, test.want) {
+				t.Fatalf("interpreter diagnostics=%+v execution=%+v output length=%d err=%v, want Unit and %d exact bytes", diagnostics, interpreted.Execution, len(interpreted.Output), err, len(test.want))
+			}
+			var stdout, stderr bytes.Buffer
+			outcome, err := native.RunApplication(context.Background(), artifact, test.input, &stdout, &stderr)
+			if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 0 || !bytes.Equal(stdout.Bytes(), test.want) || stderr.Len() != 0 {
+				t.Fatalf("native outcome=%+v stdout length=%d stderr=%q err=%v, want exit 0 and %d exact bytes", outcome, stdout.Len(), stderr.String(), err, len(test.want))
+			}
+		})
+	}
+
+	interpreted, diagnostics, err := session.RunInterpreterApplication(source, "1001")
+	if err != nil || len(diagnostics) != 0 || interpreted.Execution.Outcome.Kind != "defect" || len(interpreted.Output) != 0 {
+		t.Fatalf("interpreter input 1001 diagnostics=%+v execution=%+v output=%q err=%v, want defect before output", diagnostics, interpreted.Execution, interpreted.Output, err)
+	}
+	var stdout, stderr bytes.Buffer
+	outcome, err := native.RunApplication(context.Background(), artifact, "1001", &stdout, &stderr)
+	if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 65 || stdout.Len() != 0 || stderr.String() != "schway app: input exceeds 1000\n" {
+		t.Fatalf("native input 1001 outcome=%+v stdout=%q stderr=%q err=%v, want exit 65, empty stdout, and bounded defect", outcome, stdout.String(), stderr.String(), err)
 	}
 }
 

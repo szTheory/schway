@@ -6,12 +6,27 @@ export {
 
 fn main(n: U64) -> Unit {
   var i = 0
-  // bound before output
+  // Bound input before emitting any output.
   if n < 1001 {
     while i < n {
       i = i + 1
-      // emit current value
-      write_u64(i)
+      let snapshot = i
+      let by_fifteen = snapshot % 15
+      if by_fifteen == 0 {
+        write_text("FizzBuzz")
+      } else {
+        let by_three = snapshot % 3
+        if by_three == 0 {
+          write_text("Fizz")
+        } else {
+          let by_five = snapshot % 5
+          if by_five == 0 {
+            write_text("Buzz")
+          } else {
+            write_u64(snapshot)
+          }
+        }
+      }
       write_newline()
     }
   } else {

@@ -1281,7 +1281,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			// for the unconditional cleanup operation. A failed acquisition has
 			// no initialized value at this place and remains a no-op release.
 			sourceValue = top.values[operation.SourceID]
-		} else if operation.Kind != core.OpConst && operation.Kind != core.OpWriteNewline && !(operation.Kind == core.OpReturn && top.function.ReturnType == "Unit") && !modeledFailureContinuation {
+		} else if operation.Kind != core.OpConst && operation.Kind != core.OpWriteNewline && operation.Kind != core.OpWriteText && !(operation.Kind == core.OpReturn && top.function.ReturnType == "Unit") && !modeledFailureContinuation {
 			var initialized bool
 			sourceValue, initialized = top.values[operation.SourceID]
 			if !initialized {
@@ -1301,6 +1301,11 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 		case core.OpWriteNewline:
 			if top.applicationOutput != nil {
 				*top.applicationOutput = append(*top.applicationOutput, '\n')
+			}
+			top.idx++
+		case core.OpWriteText:
+			if top.applicationOutput != nil {
+				*top.applicationOutput = append(*top.applicationOutput, operation.TextBytes...)
 			}
 			top.idx++
 		case core.OpConst:
