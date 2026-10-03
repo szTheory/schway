@@ -5827,66 +5827,87 @@ func TestPhase26BackEdgeAuthority(t *testing.T) {
 
 func TestPhase26ScalarCopyCycleBoundary(t *testing.T) {
 	program := phase26CheckedSum(t)
-	for _, function := range program.Functions {
+	for functionIndex, function := range program.Functions {
 		if function.Linear == nil {
 			continue
 		}
 		mutated := function
 		linear := *function.Linear
 		linear.Operations = append([]core.LinearOperation(nil), function.Linear.Operations...)
-		for i := range linear.Operations {
-			op := &linear.Operations[i]
-			if op.Kind != core.OpScalarStore {
-				continue
-			}
-			op.Kind, op.TargetID, op.StoreTargetID = core.OpCopy, op.StoreTargetID, ""
-			linear.Operations[i] = *op
-			mutated.Linear = &linear
-			if _, code := checkScalarFixedPoint(mutated); code != "" {
-				t.Fatalf("scalar-copy cycle refused with %s", code)
-			}
-			copyProgram := program
-			copyProgram.Functions = append([]core.Function(nil), program.Functions...)
-			for functionIndex := range copyProgram.Functions {
-				if copyProgram.Functions[functionIndex].ID == mutated.ID {
-					copyProgram.Functions[functionIndex] = mutated
-				}
-			}
-			if result := corevalidate.Validate(copyProgram); !result.Valid {
-				t.Fatalf("core peer rejected scalar-copy cycle: %+v", result.Problems)
-			}
-			contracts := originvalidate.BuildCalleeOriginFacts(copyProgram)
-			if got := originvalidate.RecomputeOriginPerReturn(mutated, contracts); len(got) == 0 {
-				t.Fatal("origin peer rejected scalar-copy cycle")
-			}
-			bad := mutated
-			badLinear := linear
-			badLinear.Places = append([]core.Place(nil), linear.Places...)
-			for placeIndex := range badLinear.Places {
-				if badLinear.Places[placeIndex].ID == op.SourceID {
-					badLinear.Places[placeIndex].TypeID = "forged-owner-type"
-				}
-			}
-			bad.Linear = &badLinear
-			if _, code := checkScalarFixedPoint(bad); code != "check.scalar_backedge_authority" {
-				t.Fatalf("forged non-scalar copy result = %q", code)
-			}
-			badProgram := copyProgram
-			badProgram.Functions = append([]core.Function(nil), copyProgram.Functions...)
-			for functionIndex := range badProgram.Functions {
-				if badProgram.Functions[functionIndex].ID == bad.ID {
-					badProgram.Functions[functionIndex] = bad
-				}
-			}
-			if result := corevalidate.Validate(badProgram); result.Valid || len(result.Problems) == 0 {
-				t.Fatal("core peer accepted a forged non-scalar copy")
-			}
-			badContracts := originvalidate.BuildCalleeOriginFacts(badProgram)
-			if got := originvalidate.RecomputeOriginPerReturn(bad, badContracts); len(got) != 0 {
-				t.Fatal("origin peer accepted a forged non-scalar copy")
-			}
-			return
+		linear.Places = append([]core.Place(nil), function.Linear.Places...)
+		typeByName := map[string]string{}
+		for _, fact := range linear.Types {
+			typeByName[fact.Shape.Constructor] = fact.ID
 		}
+		var bodyBlock *core.Block
+		var boolSource string
+		for blockIndex := range linear.Blocks {
+			block := &linear.Blocks[blockIndex]
+			hasAdd, hasStore := false, false
+			for _, operationID := range block.OperationIDs {
+				for _, operation := range linear.Operations {
+					if operation.ID == operationID {
+						hasAdd = hasAdd || operation.Kind == core.OpAddChecked
+						hasStore = hasStore || operation.Kind == core.OpScalarStore
+						if operation.Kind == core.OpBranch {
+							boolSource = operation.SourceID
+						}
+					}
+				}
+			}
+			if hasAdd && hasStore {
+				bodyBlock = block
+			}
+		}
+		if bodyBlock == nil || boolSource == "" {
+			continue
+		}
+		copySources := []struct{ placeID, typeName string }{{function.Parameter.ID, "U64"}, {boolSource, "Bool"}}
+		for _, source := range copySources {
+			operationIndex := len(linear.Operations)
+			targetID := fmt.Sprintf("%s:place:%d", function.ID, operationIndex+1)
+			linear.Places = append(linear.Places, core.Place{ID: targetID, Name: "phase26_copy", TypeID: typeByName[source.typeName]})
+			operationID := fmt.Sprintf("%s:op:%d", function.ID, operationIndex)
+			linear.Operations = append(linear.Operations, core.LinearOperation{ID: operationID, PointID: fmt.Sprintf("%s:point:linear:%d", function.ID, operationIndex), Kind: core.OpCopy, SourceID: source.placeID, TargetID: targetID, TypeID: typeByName[source.typeName]})
+			bodyBlock.OperationIDs = append(bodyBlock.OperationIDs, operationID)
+		}
+		mutated.Linear = &linear
+		if _, code := checkScalarFixedPoint(mutated); code != "" {
+			t.Fatalf("scalar-copy cycle refused with %s", code)
+		}
+		copyProgram := program
+		copyProgram.Functions = append([]core.Function(nil), program.Functions...)
+		copyProgram.Functions[functionIndex] = mutated
+		if result := corevalidate.Validate(copyProgram); !result.Valid {
+			t.Fatalf("core peer rejected scalar-copy cycle: %+v", result.Problems)
+		}
+		contracts := originvalidate.BuildCalleeOriginFacts(copyProgram)
+		if got := originvalidate.RecomputeOriginPerReturn(mutated, contracts); len(got) == 0 {
+			t.Fatal("origin peer rejected scalar-copy cycle")
+		}
+		bad := mutated
+		badLinear := *mutated.Linear
+		badLinear.Places = append([]core.Place(nil), mutated.Linear.Places...)
+		for placeIndex := range badLinear.Places {
+			if badLinear.Places[placeIndex].ID == copySources[0].placeID {
+				badLinear.Places[placeIndex].TypeID = "forged-owner-type"
+			}
+		}
+		bad.Linear = &badLinear
+		if _, code := checkScalarFixedPoint(bad); code != "check.scalar_backedge_authority" {
+			t.Fatalf("forged non-scalar copy result = %q", code)
+		}
+		badProgram := copyProgram
+		badProgram.Functions = append([]core.Function(nil), copyProgram.Functions...)
+		badProgram.Functions[functionIndex] = bad
+		if result := corevalidate.Validate(badProgram); result.Valid || len(result.Problems) == 0 {
+			t.Fatal("core peer accepted a forged non-scalar copy")
+		}
+		badContracts := originvalidate.BuildCalleeOriginFacts(badProgram)
+		if got := originvalidate.RecomputeOriginPerReturn(bad, badContracts); len(got) != 0 {
+			t.Fatal("origin peer accepted a forged non-scalar copy")
+		}
+		return
 	}
 	t.Fatal("sum_to_n did not contain a scalar store suitable for copy-cycle control")
 }
