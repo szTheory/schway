@@ -226,6 +226,7 @@ var Phase5ComparedComparisonFields = []string{
 	"Execution.Events.TypeID",
 	"Execution.Events.Invocation",
 	"Execution.Events.CalleeFunctionID",
+	"Execution.Events.Occurrence",
 	"Execution.LiveResources",
 	"Execution.ExitSignaled",
 	"Execution.ExitSignal",

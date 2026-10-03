@@ -1,0 +1,67 @@
+{
+  "schema": "phase26.plan04.integration-red/v1",
+  "command": "go test ./...",
+  "workflowRun": 37089290645,
+  "headSha": "8894da69d816aeca566197a109a9a66d6cdf8330",
+  "hosts": ["ubuntu-latest", "macos-latest"],
+  "exitCode": 1,
+  "expected": "The full repository suite preserves legacy C bytes, compares occurrence identity, accepts known duplicate diagnostics, and passes all relevant native compilations and inventories.",
+  "actual": "Both hosted suites failed after unconditional occurrence support changed non-loop generated C. The shared schema-2 recorder required uint64_t/UINT64_MAX in programs without the U64 include, legacy emitter bytes changed, new fixed C names were unclassified, occurrence was absent from comparison routing, a duplicate-pair refusal changed its stable code, and cgen consumer locations were stale.",
+  "failures": [
+    {
+      "host": "ubuntu-latest",
+      "package": "internal/compiler/cgen",
+      "test": "TestLegacyEventWritersFrozen",
+      "output": "cgen_program_test.go:1139: legacy /0 event writer bytes changed"
+    },
+    {
+      "host": "macos-latest",
+      "package": "internal/compiler/cgen",
+      "test": "TestGeneratedIdentifierNamespacesStayConfined",
+      "output": "cgen_names_test.go:218: emitter writes fixed identifiers that are neither reserved nor known external C names: [UINT64_C UINT64_MAX digit_index digits do occurrence prior uint64_t]"
+    },
+    {
+      "host": "ubuntu-latest",
+      "package": "internal/compiler/cgen",
+      "test": "TestEmitProgramSingleFunctionBytesUnchanged / TestExistingEmittersAreByteIdentical",
+      "output": "single-function output moved; existing emitter output moved after adding the streaming emitter"
+    },
+    {
+      "host": "ubuntu-latest",
+      "package": "internal/compiler/cgen",
+      "test": "native compilation across non-U64 programs",
+      "output": "program.c:31:3: error: unknown type name 'uint64_t'; program.c:73:3: error: use of undeclared identifier 'uint64_t'; program.c:73:25: error: use of undeclared identifier 'UINT64_MAX'"
+    },
+    {
+      "host": "ubuntu-latest",
+      "package": "internal/compiler/executionpeer",
+      "test": "TestExecutionPeerFailuresAreActionable/duplicate_pair",
+      "output": "executionpeer_test.go:267: error = executionpeer.occurrence: event index 1 invocation \"inv:entry:entry\" expected function \"entry\": expected occurrence 1, want actionable \"duplicate_pair\""
+    },
+    {
+      "host": "ubuntu-latest",
+      "package": "internal/compiler/session",
+      "test": "TestComparisonFieldRoutingIsExhaustive",
+      "output": "Execution.Events.Occurrence was UNROUTED"
+    },
+    {
+      "host": "macos-latest",
+      "package": "internal/compiler/session",
+      "test": "TestPhase15CollisionGuardIsNotInert",
+      "output": "restored duplicate occurrence identity was not refused: ... executionpeer.occurrence ... expected occurrence 1"
+    },
+    {
+      "host": "ubuntu-latest",
+      "package": "internal/compiler/session",
+      "test": "TestUnroutedFieldFailsTheRoutingTest",
+      "output": "expected exactly [Execution.ExtraField] reported as unrouted, got [Execution.Events.Occurrence Execution.ExtraField]"
+    },
+    {
+      "host": "ubuntu-latest",
+      "package": "internal/compiler/session",
+      "test": "TestPhase16PublicEmitterConsumerInventory",
+      "output": "missing registry entries for every shifted cgen_program_test.go Emit/EmitNative callsite; stale entries remained at the previous line numbers"
+    }
+  ],
+  "hostedTranscript": "https://github.com/szTheory/schway/actions/runs/37089290645"
+}

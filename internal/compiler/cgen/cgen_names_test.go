@@ -33,10 +33,11 @@ import (
 // an emitter must be a deliberate edit here, not a silent one.
 var cExternalNames = map[string]bool{
 	"break": true, "case": true, "char": true, "const": true, "default": true,
-	"else": true, "enum": true, "for": true, "if": true, "int": true,
+	"else": true, "enum": true, "for": true, "if": true, "int": true, "do": true,
 	"return": true, "sizeof": true, "static": true, "struct": true,
 	"switch": true, "typedef": true, "unsigned": true, "void": true,
-	"while": true,
+	"while":    true,
+	"uint64_t": true, "UINT64_C": true, "UINT64_MAX": true,
 
 	"NULL": true, "size_t": true, "stdout": true,
 	"fwrite": true, "printf": true, "puts": true,

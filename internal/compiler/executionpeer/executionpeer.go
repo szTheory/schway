@@ -363,6 +363,9 @@ func (i *index) validate(document execution.Execution) error {
 			return refusal("loop_event", n, event.Invocation, "", occ.functionID, "cyclic or repeated event is not an admitted scalar copy")
 		}
 		pair := event.Invocation + "\x00" + event.ID
+		if event.Occurrence < nextOccurrence[pair] || (exhaustedOccurrence[pair] && event.Occurrence == ^uint64(0)) {
+			return refusal("duplicate_pair", n, event.Invocation, "", occ.functionID, "event pair was already observed")
+		}
 		if exhaustedOccurrence[pair] || event.Occurrence != nextOccurrence[pair] {
 			return refusal("occurrence", n, event.Invocation, "", occ.functionID, fmt.Sprintf("expected occurrence %d", nextOccurrence[pair]))
 		}

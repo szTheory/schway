@@ -282,6 +282,7 @@ func TestInvocationFieldsAreCompared(t *testing.T) {
 	for _, mutate := range []func(*execution.Event){
 		func(event *execution.Event) { event.Invocation = "inv:entry:other" },
 		func(event *execution.Event) { event.CalleeFunctionID = "callee:other" },
+		func(event *execution.Event) { event.Occurrence = 1 },
 	} {
 		left, right := baseline, baseline
 		left.Events = append([]execution.Event(nil), baseline.Events...)

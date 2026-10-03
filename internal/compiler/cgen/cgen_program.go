@@ -835,6 +835,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 			needsBuffer = true
 		}
 	}
+	trackEventOccurrences := hasCyclicScalarCopy(program)
 
 	invocationSerializationReachedForTest = true
 	var out strings.Builder
@@ -845,10 +846,15 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	if localFileByteProgram {
 		out.WriteString("#include \"local/adapter.h\"\n\n")
 	}
-	if needsU64 {
+	if needsU64 || trackEventOccurrences {
 		out.WriteString("#include <stdint.h>\n\n")
-		out.WriteString("#if !defined(UINT64_MAX)\n#error \"Schway U64 requires exact-width uint64_t support\"\n#endif\n")
-		out.WriteString("#if UINT64_MAX != 18446744073709551615ULL\n#error \"Schway U64 requires an exact 64-bit unsigned type\"\n#endif\n\n")
+		if needsU64 {
+			out.WriteString("#if !defined(UINT64_MAX)\n#error \"Schway U64 requires exact-width uint64_t support\"\n#endif\n")
+			out.WriteString("#if UINT64_MAX != 18446744073709551615ULL\n#error \"Schway U64 requires an exact 64-bit unsigned type\"\n#endif\n\n")
+		} else {
+			out.WriteString("#if !defined(UINT64_MAX)\n#error \"Schway execution occurrences require exact-width uint64_t support\"\n#endif\n")
+			out.WriteString("#if UINT64_MAX != 18446744073709551615ULL\n#error \"Schway execution occurrences require an exact 64-bit unsigned type\"\n#endif\n\n")
+		}
 	}
 	emitInvocationPathTable(&out, paths, childTableNames)
 	if needsBuffer {
@@ -859,7 +865,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	}
 	entryReturnBranch, entryReturnIsBranch := branchTypes[entry.ReturnType]
 	needsTerminalJSONContent := entryReturnIsBranch && entryReturnBranch.hasPayload
-	emitEventSupportSchema2(&out, eventCapacity, executionOutputLimit, needsTerminalJSONContent, shell == programApplicationShell, execution.MaxApplicationEvidenceBytes)
+	emitEventSupportSchema2(&out, eventCapacity, executionOutputLimit, needsTerminalJSONContent, shell == programApplicationShell, trackEventOccurrences, execution.MaxApplicationEvidenceBytes)
 	if needsDefect {
 		emitDefectSupport(&out)
 	}
@@ -2427,6 +2433,87 @@ func hasScalarOperations(function core.Function) bool {
 		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
 			return true
 		}
+	}
+	return false
+}
+
+func hasCyclicScalarCopy(program core.Program) bool {
+	for _, function := range program.Functions {
+		linear := function.Linear
+		if linear == nil || len(linear.Blocks) == 0 || len(linear.Edges) == 0 {
+			continue
+		}
+		adjacency := make(map[string][]string, len(linear.Blocks))
+		for _, edge := range linear.Edges {
+			adjacency[edge.FromBlockID] = append(adjacency[edge.FromBlockID], edge.ToBlockID)
+		}
+		places := make(map[string]core.Place, len(linear.Places))
+		for _, place := range linear.Places {
+			places[place.ID] = place
+		}
+		types := make(map[string]string, len(linear.Types))
+		for _, fact := range linear.Types {
+			types[fact.ID] = fact.Shape.Constructor
+		}
+		operations := make(map[string]core.LinearOperation, len(linear.Operations))
+		for _, operation := range linear.Operations {
+			operations[operation.ID] = operation
+		}
+		for _, block := range linear.Blocks {
+			cyclic := false
+			for _, successor := range adjacency[block.ID] {
+				if cfgBlockReachable(adjacency, successor, block.ID) {
+					cyclic = true
+					break
+				}
+			}
+			if !cyclic {
+				continue
+			}
+			for _, operationID := range block.OperationIDs {
+				operation, ok := operations[operationID]
+				if !ok || operation.Kind != core.OpCopy || operation.LoanID != "" || operation.TypeID == "" {
+					continue
+				}
+				source, sourceOK := places[operation.SourceID]
+				target, targetOK := places[operation.TargetID]
+				if !sourceOK || !targetOK || source.TypeID != target.TypeID || source.TypeID != operation.TypeID {
+					continue
+				}
+				shape := types[source.TypeID]
+				if shape != "U64" && shape != "Bool" {
+					continue
+				}
+				loanDerived := false
+				for _, endpoint := range linear.LoanEndpoints {
+					if endpoint.AfterOperationID == operation.ID {
+						loanDerived = true
+						break
+					}
+				}
+				if !loanDerived {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func cfgBlockReachable(adjacency map[string][]string, from, target string) bool {
+	queue := []string{from}
+	visited := make(map[string]bool)
+	for len(queue) > 0 {
+		block := queue[0]
+		queue = queue[1:]
+		if block == target {
+			return true
+		}
+		if visited[block] {
+			continue
+		}
+		visited[block] = true
+		queue = append(queue, adjacency[block]...)
 	}
 	return false
 }
