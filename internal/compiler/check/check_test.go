@@ -5842,7 +5842,11 @@ func TestPhase26ScalarCopyCycleBoundary(t *testing.T) {
 			bad := mutated
 			badLinear := linear
 			badLinear.Places = append([]core.Place(nil), linear.Places...)
-			badLinear.Places[0].TypeID = "forged-owner-type"
+			for placeIndex := range badLinear.Places {
+				if badLinear.Places[placeIndex].ID == op.SourceID {
+					badLinear.Places[placeIndex].TypeID = "forged-owner-type"
+				}
+			}
 			bad.Linear = &badLinear
 			if _, code := checkScalarFixedPoint(bad); code != "check.scalar_backedge_authority" {
 				t.Fatalf("forged non-scalar copy result = %q", code)

@@ -293,6 +293,7 @@ func originHasScalarCFG(function core.Function) bool {
 func originScalarFixedPoint(function core.Function) bool {
 	linear := function.Linear
 	types := make(map[string]string, len(linear.Types))
+	placeTypes := make(map[string]string, len(linear.Places))
 	for _, fact := range linear.Types {
 		types[fact.ID] = fact.Shape.Constructor
 	}
@@ -300,12 +301,33 @@ func originScalarFixedPoint(function core.Function) bool {
 		if types[place.TypeID] != "U64" && types[place.TypeID] != "Bool" {
 			return false
 		}
+		placeTypes[place.ID] = types[place.TypeID]
 	}
 	blocks := append([]core.Block(nil), linear.Blocks...)
 	sort.Slice(blocks, func(i, j int) bool { return blocks[i].ID < blocks[j].ID })
 	operations := make(map[string]core.LinearOperation, len(linear.Operations))
 	for _, operation := range linear.Operations {
 		operations[operation.ID] = operation
+	}
+	blockForOperation := make(map[string]string, len(operations))
+	edges := make(map[string]core.Edge, len(linear.Edges))
+	for _, block := range linear.Blocks {
+		for _, operationID := range block.OperationIDs {
+			blockForOperation[operationID] = block.ID
+		}
+	}
+	for _, edge := range linear.Edges {
+		edges[edge.ID] = edge
+	}
+	for _, operation := range linear.Operations {
+		if operation.Kind != core.OpBranch {
+			continue
+		}
+		trueEdge, hasTrue := edges[operation.TrueEdgeID]
+		falseEdge, hasFalse := edges[operation.FalseEdgeID]
+		if !hasTrue || !hasFalse || trueEdge.FromBlockID != blockForOperation[operation.ID] || falseEdge.FromBlockID != blockForOperation[operation.ID] || trueEdge.Pattern != "true" || falseEdge.Pattern != "false" {
+			return false
+		}
 	}
 	outputs := map[string]originScalarState{}
 	reachable := map[string]bool{}
