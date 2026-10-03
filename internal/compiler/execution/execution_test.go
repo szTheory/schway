@@ -2,6 +2,7 @@ package execution_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -26,6 +27,30 @@ func TestExecutionCanonicalBytesExcludePhysicalObservations(t *testing.T) {
 		if strings.Contains(string(encoded), forbidden) {
 			t.Fatalf("physical observation %q entered semantic bytes: %s", forbidden, encoded)
 		}
+	}
+}
+
+func TestPhase26EventOccurrenceEncoding(t *testing.T) {
+	var value execution.Execution
+	input := `{"schema":"lang.execution/2","outcome":{"kind":"returned","value":"7"},"events":[{"schema":"lang.execution/2","id":"copy:event","kind":"value.copied","function_id":"fn:main","invocation":"fn:main","occurrence":1}],"live_resources":[]}`
+	if err := json.Unmarshal([]byte(input), &value); err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := execution.CanonicalBytes(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(encoded, []byte(`"occurrence":1`)) {
+		t.Fatalf("canonical execution dropped nonzero occurrence: %s", encoded)
+	}
+
+	legacy := execution.Execution{Schema: execution.Schema2, Outcome: execution.Outcome{Kind: "returned", Value: "7"}, Events: []execution.Event{{Schema: execution.Schema2, ID: "copy:event", Kind: "value.copied", FunctionID: "fn:main", Invocation: "fn:main"}}, LiveResources: []string{}}
+	legacyBytes, err := execution.CanonicalBytes(legacy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(legacyBytes, []byte(`"occurrence"`)) {
+		t.Fatalf("zero occurrence changed one-shot canonical bytes: %s", legacyBytes)
 	}
 }
 
