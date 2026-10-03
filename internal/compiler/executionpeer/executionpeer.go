@@ -335,6 +335,7 @@ func (i *index) validate(document execution.Execution) error {
 	stack := make([]string, 0)
 	pending := ""
 	checkedAddDefect := -1
+	checkedRemainderDefect := -1
 	for n, event := range document.Events {
 		parsed, parseErr := execution.ParseInvocation(event.Invocation)
 		if parseErr != nil {
@@ -361,7 +362,8 @@ func (i *index) validate(document execution.Execution) error {
 			return refusal("unknown_kind", n, event.Invocation, "", occ.functionID, err.Error())
 		}
 		checkedOverflow := op.value.Kind == core.OpAddChecked && event.Kind == "function.defected"
-		if (i.loopOperations[op.value.ID] || event.Occurrence > 0) && !i.scalarLoopCopies[op.value.ID] && !checkedOverflow {
+		checkedRemainderZero := op.value.Kind == core.OpRemainderU64 && event.Kind == "function.defected"
+		if (i.loopOperations[op.value.ID] || event.Occurrence > 0) && !i.scalarLoopCopies[op.value.ID] && !checkedOverflow && !checkedRemainderZero {
 			return refusal("loop_event", n, event.Invocation, "", occ.functionID, "cyclic or repeated event is not an admitted scalar copy")
 		}
 		if checkedOverflow {
@@ -381,8 +383,27 @@ func (i *index) validate(document execution.Execution) error {
 				return refusal("checked_add_terminal", n, event.Invocation, "", occ.functionID, "checked-add overflow must be the final event and carry an empty defect outcome")
 			}
 			checkedAddDefect = n
+		} else if checkedRemainderZero {
+			if event.Output != "U64 remainder by zero" {
+				return refusal("remainder_zero_attribution", n, event.Invocation, "", occ.functionID, "remainder defect reason disagrees with fixed zero-divisor reason")
+			}
+			if event.SourcePlace != op.value.SourceID {
+				return refusal("remainder_zero_attribution", n, event.Invocation, "", occ.functionID, "remainder source place disagrees with operation source")
+			}
+			if event.TypeID != op.value.TypeID {
+				return refusal("remainder_zero_attribution", n, event.Invocation, "", occ.functionID, "remainder type disagrees with operation type")
+			}
+			if event.TargetPlace != "" {
+				return refusal("remainder_zero_attribution", n, event.Invocation, "", occ.functionID, "remainder defect must not name a target place")
+			}
+			if n != len(document.Events)-1 || document.Outcome.Kind != execution.OutcomeDefect || document.Outcome.Value != "" {
+				return refusal("remainder_zero_terminal", n, event.Invocation, "", occ.functionID, "remainder by zero must be the final event and carry an empty defect outcome")
+			}
+			checkedRemainderDefect = n
 		} else if checkedAddDefect >= 0 {
 			return refusal("checked_add_terminal", n, event.Invocation, "", occ.functionID, "event follows checked-add overflow terminal")
+		} else if checkedRemainderDefect >= 0 {
+			return refusal("remainder_zero_terminal", n, event.Invocation, "", occ.functionID, "event follows remainder-by-zero terminal")
 		}
 		pair := event.Invocation + "\x00" + event.ID
 		if event.Occurrence < nextOccurrence[pair] || (exhaustedOccurrence[pair] && event.Occurrence == ^uint64(0)) {
@@ -470,7 +491,7 @@ func (i *index) classify(event execution.Event) (operation, error) {
 		if event.ID == id+":event:failed" && op.value.Kind == core.OpFail && event.Kind == "function.failed" {
 			return op, nil
 		}
-		if event.ID == id+":event:defected" && event.Kind == "function.defected" && (op.value.Kind == core.OpDefect || op.value.Kind == core.OpAddChecked) {
+		if event.ID == id+":event:defected" && event.Kind == "function.defected" && (op.value.Kind == core.OpDefect || op.value.Kind == core.OpAddChecked || op.value.Kind == core.OpRemainderU64) {
 			return op, nil
 		}
 	}

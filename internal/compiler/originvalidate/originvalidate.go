@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 
 	"github.com/szTheory/schway/internal/compiler/callgraph"
 	"github.com/szTheory/schway/internal/compiler/core"
@@ -266,7 +267,15 @@ func RecomputeOriginPerReturn(function core.Function, calleeContracts map[string
 	return results
 }
 
-type originScalarState map[string]bool
+type originScalarValue struct {
+	initialized bool
+	known       bool
+	isBool      bool
+	u64         uint64
+	boolean     bool
+}
+
+type originScalarState map[string]originScalarValue
 
 // originScalarTransferBudgetForTest keeps the independent origin peer's
 // exhaustion boundary directly testable without a large input fixture.
@@ -283,7 +292,7 @@ func SetOriginScalarTransferBudgetForTest(budget int) func() {
 
 func originHasScalarCFG(function core.Function) bool {
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline {
 			return true
 		}
 	}
@@ -291,6 +300,11 @@ func originHasScalarCFG(function core.Function) bool {
 }
 
 func originScalarFixedPoint(function core.Function) bool {
+	valid, _ := originScalarFixedPointWithFailure(function)
+	return valid
+}
+
+func originScalarFixedPointWithFailure(function core.Function) (bool, string) {
 	linear := function.Linear
 	types := make(map[string]string, len(linear.Types))
 	placeTypes := make(map[string]string, len(linear.Places))
@@ -299,7 +313,7 @@ func originScalarFixedPoint(function core.Function) bool {
 	}
 	for _, place := range linear.Places {
 		if types[place.TypeID] != "U64" && types[place.TypeID] != "Bool" {
-			return false
+			return false, ""
 		}
 		placeTypes[place.ID] = types[place.TypeID]
 	}
@@ -326,7 +340,7 @@ func originScalarFixedPoint(function core.Function) bool {
 		trueEdge, hasTrue := edges[operation.TrueEdgeID]
 		falseEdge, hasFalse := edges[operation.FalseEdgeID]
 		if !hasTrue || !hasFalse || trueEdge.FromBlockID != blockForOperation[operation.ID] || falseEdge.FromBlockID != blockForOperation[operation.ID] || trueEdge.Pattern != "true" || falseEdge.Pattern != "false" {
-			return false
+			return false, ""
 		}
 	}
 	outputs := map[string]originScalarState{}
@@ -336,13 +350,27 @@ func originScalarFixedPoint(function core.Function) bool {
 	if budget <= 0 {
 		budget = 65536
 	}
+	if len(blocks) == 0 {
+		state := originScalarState{function.Parameter.ID: {initialized: true, isBool: placeTypes[function.Parameter.ID] == "Bool"}}
+		for _, operation := range linear.Operations {
+			work++
+			zeroOperationID := ""
+			if work > budget {
+				return false, ""
+			}
+			if !originTransferScalarOperation(operation, state, placeTypes, false, &zeroOperationID) {
+				return false, zeroOperationID
+			}
+		}
+		return true, ""
+	}
 	for sweep := 0; ; sweep++ {
 		changed := false
 		for _, block := range blocks {
 			incoming := originScalarState{}
 			hasIncoming := false
 			if block.PointID == function.EntryPointID {
-				incoming[function.Parameter.ID] = true
+				incoming[function.Parameter.ID] = originScalarValue{initialized: true, isBool: placeTypes[function.Parameter.ID] == "Bool"}
 				hasIncoming = true
 			}
 			for _, edge := range linear.Edges {
@@ -354,9 +382,7 @@ func originScalarFixedPoint(function core.Function) bool {
 					hasIncoming = true
 					continue
 				}
-				for _, place := range linear.Places {
-					incoming[place.ID] = incoming[place.ID] && outputs[edge.FromBlockID][place.ID]
-				}
+				incoming = mergeOriginScalarState(incoming, outputs[edge.FromBlockID], placeTypes)
 			}
 			if !hasIncoming {
 				continue
@@ -365,47 +391,12 @@ func originScalarFixedPoint(function core.Function) bool {
 			for _, id := range block.OperationIDs {
 				work++
 				if work > budget {
-					return false
+					return false, ""
 				}
 				op := operations[id]
-				switch op.Kind {
-				case core.OpConst:
-					state[op.TargetID] = true
-				case core.OpAddChecked, core.OpLessU64:
-					if !state[op.SourceID] || !state[op.RightID] {
-						return false
-					}
-					state[op.TargetID] = true
-				case core.OpScalarStore:
-					if !state[op.SourceID] {
-						return false
-					}
-					state[op.StoreTargetID] = true
-				case core.OpWriteU64:
-					if !state[op.SourceID] {
-						return false
-					}
-				case core.OpWriteNewline:
-					// This output event has no scalar dataflow effect.
-				case core.OpCopy:
-					if !state[op.SourceID] || placeTypes[op.SourceID] == "" || placeTypes[op.TargetID] == "" || placeTypes[op.SourceID] != placeTypes[op.TargetID] {
-						return false
-					}
-					state[op.TargetID] = true
-				case core.OpReturn:
-					if function.ReturnType == "Unit" {
-						if op.SourceID != "" {
-							return false
-						}
-					} else if !state[op.SourceID] {
-						return false
-					}
-				case core.OpBranch, core.OpDefect:
-					if !state[op.SourceID] {
-						return false
-					}
-				default:
-					return false
+				zeroOperationID := ""
+				if !originTransferScalarOperation(op, state, placeTypes, true, &zeroOperationID) {
+					return false, zeroOperationID
 				}
 			}
 			if !reachable[block.ID] || !sameOriginScalarState(outputs[block.ID], state) {
@@ -415,18 +406,114 @@ func originScalarFixedPoint(function core.Function) bool {
 			}
 		}
 		if !changed {
-			return true
+			return true, ""
 		}
 		if sweep >= budget {
-			return false
+			return false, ""
 		}
 	}
 }
 
+func originTransferScalarOperation(operation core.LinearOperation, state originScalarState, placeTypes map[string]string, strict bool, zeroOperationID *string) bool {
+	source := state[operation.SourceID]
+	switch operation.Kind {
+	case core.OpConst:
+		value, err := strconv.ParseUint(operation.ConstU64, 10, 64)
+		if err != nil || strconv.FormatUint(value, 10) != operation.ConstU64 {
+			return false
+		}
+		state[operation.TargetID] = originScalarValue{initialized: true, known: true, u64: value}
+	case core.OpCopy:
+		if !source.initialized || placeTypes[operation.SourceID] == "" || placeTypes[operation.TargetID] == "" || placeTypes[operation.SourceID] != placeTypes[operation.TargetID] {
+			return false
+		}
+		state[operation.TargetID] = source
+	case core.OpAddChecked:
+		right := state[operation.RightID]
+		if !source.initialized || !right.initialized {
+			return false
+		}
+		value := originScalarValue{initialized: true}
+		if source.known && right.known && ^uint64(0)-source.u64 >= right.u64 {
+			value.known, value.u64 = true, source.u64+right.u64
+		}
+		state[operation.TargetID] = value
+	case core.OpLessU64, core.OpEqualU64:
+		right := state[operation.RightID]
+		if !source.initialized || !right.initialized {
+			return false
+		}
+		value := originScalarValue{initialized: true, isBool: true}
+		if source.known && right.known {
+			value.known = true
+			if operation.Kind == core.OpEqualU64 {
+				value.boolean = source.u64 == right.u64
+			} else {
+				value.boolean = source.u64 < right.u64
+			}
+		}
+		state[operation.TargetID] = value
+	case core.OpRemainderU64:
+		right := state[operation.RightID]
+		if right.initialized && right.known && right.u64 == 0 {
+			*zeroOperationID = operation.ID
+			return false
+		}
+		if !source.initialized || !right.initialized {
+			return false
+		}
+		value := originScalarValue{initialized: true}
+		if source.known && right.known {
+			value.known, value.u64 = true, source.u64%right.u64
+		}
+		state[operation.TargetID] = value
+	case core.OpScalarStore:
+		if !source.initialized || placeTypes[operation.SourceID] != placeTypes[operation.StoreTargetID] {
+			return false
+		}
+		state[operation.StoreTargetID] = source
+	case core.OpWriteU64:
+		return source.initialized
+	case core.OpWriteNewline:
+		// This output event has no scalar dataflow effect.
+	case core.OpReturn:
+		if operation.SourceID == "" {
+			return operation.TypeID != "" // Return mode is checked independently by corevalidate.
+		}
+		return source.initialized
+	case core.OpBranch, core.OpDefect:
+		return source.initialized
+	default:
+		if strict {
+			return false
+		}
+		if operation.TargetID != "" {
+			constructor := placeTypes[operation.TargetID]
+			if constructor == "U64" || constructor == "Bool" {
+				state[operation.TargetID] = originScalarValue{initialized: true, isBool: constructor == "Bool"}
+			}
+		}
+	}
+	return true
+}
+
+func mergeOriginScalarState(left, right originScalarState, placeTypes map[string]string) originScalarState {
+	merged := make(originScalarState, len(placeTypes))
+	for id, constructor := range placeTypes {
+		a, b := left[id], right[id]
+		value := originScalarValue{initialized: a.initialized && b.initialized, isBool: constructor == "Bool"}
+		if value.initialized && a.known && b.known && a.isBool == b.isBool && a.u64 == b.u64 && a.boolean == b.boolean {
+			value.known, value.u64, value.boolean = true, a.u64, a.boolean
+		}
+		merged[id] = value
+	}
+	return merged
+}
+
 func cloneOriginScalarState(input originScalarState) originScalarState {
 	clone := make(originScalarState, len(input))
-	for id, initialized := range input {
-		clone[id] = initialized
+	for id, value := range input {
+		clone[id] = value
 	}
 	return clone
 }
@@ -435,8 +522,8 @@ func sameOriginScalarState(left, right originScalarState) bool {
 	if len(left) != len(right) {
 		return false
 	}
-	for id, initialized := range left {
-		if right[id] != initialized {
+	for id, value := range left {
+		if right[id] != value {
 			return false
 		}
 	}
@@ -1229,6 +1316,18 @@ func checkForeignOriginOmitted(function core.Function) *Problem {
 // list: the word "export" does not appear on this path, because publication
 // safety and export membership are different rules (D-07-31).
 func PublishProblemsFor(function core.Function, calleeContracts map[string]calleeOriginFact) []Problem {
+	if problem := phase27ArithmeticProblem(function); problem != nil {
+		return []Problem{*problem}
+	}
+	if hasRemainderOperation(function) {
+		valid, zeroOperationID := originScalarFixedPointWithFailure(function)
+		if zeroOperationID != "" {
+			return []Problem{{Code: "core.scalar_remainder_zero", Detail: zeroOperationID}}
+		}
+		if !valid {
+			return []Problem{{Code: "core.scalar_analysis_invalid", Detail: function.ID}}
+		}
+	}
 	if problem := phase27WriteProblem(function); problem != nil {
 		return []Problem{*problem}
 	}
@@ -1280,6 +1379,48 @@ func PublishProblemsFor(function core.Function, calleeContracts map[string]calle
 			Code:   "core.origin_access_mismatch",
 			Detail: fmt.Sprintf("%s: declared access %q, body derives %q", function.ID, function.PublicOrigin.Access, recomputedAccess),
 		}}
+	}
+	return nil
+}
+
+func hasRemainderOperation(function core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpRemainderU64 {
+			return true
+		}
+	}
+	return false
+}
+
+// phase27ArithmeticProblem independently derives the operand and result
+// shapes for the narrow U64 equality/remainder operations. The origin peer
+// must not depend on corevalidate to reject a forged operator contract.
+func phase27ArithmeticProblem(function core.Function) *Problem {
+	if function.Linear == nil {
+		return nil
+	}
+	types := make(map[string]string, len(function.Linear.Types))
+	for _, fact := range function.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	places := make(map[string]string, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = types[place.TypeID]
+	}
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind != core.OpEqualU64 && operation.Kind != core.OpRemainderU64 {
+			continue
+		}
+		want := "U64"
+		if operation.Kind == core.OpEqualU64 {
+			want = "Bool"
+		}
+		if places[operation.SourceID] != "U64" || places[operation.RightID] != "U64" || operation.RightID == "" || operation.TargetID == "" || types[operation.TypeID] != want || places[operation.TargetID] != want || operation.StoreTargetID != "" || operation.TrueEdgeID != "" || operation.FalseEdgeID != "" {
+			return &Problem{Code: "core.scalar_operation_invalid", Detail: fmt.Sprintf("%s: invalid %s operation %q", function.ID, operation.Kind, operation.ID)}
+		}
 	}
 	return nil
 }

@@ -1332,6 +1332,29 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			}
 			top.values[operation.TargetID] = value{boolean: sourceValue.u64 < right.u64, isBool: true}
 			top.idx++
+		case core.OpEqualU64:
+			right, initialized := top.values[operation.RightID]
+			if !initialized || !sourceValue.isU64 || !right.isU64 {
+				return Execution{}, fmt.Errorf("operation %q has invalid equality operands", operation.ID)
+			}
+			top.values[operation.TargetID] = value{boolean: sourceValue.u64 == right.u64, isBool: true}
+			top.idx++
+		case core.OpRemainderU64:
+			right, initialized := top.values[operation.RightID]
+			if !initialized || !sourceValue.isU64 || !right.isU64 {
+				return Execution{}, fmt.Errorf("operation %q has invalid remainder operands", operation.ID)
+			}
+			if right.u64 == 0 {
+				const reason = "U64 remainder by zero"
+				events = append(events, Event{
+					Schema: top.eventSchema(), ID: operation.ID + ":event:defected", Kind: "function.defected",
+					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
+					TypeID: operation.TypeID, Output: reason,
+				})
+				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourceList(top.live, top.liveOrder)}, nil
+			}
+			top.values[operation.TargetID] = value{u64: sourceValue.u64 % right.u64, isU64: true}
+			top.idx++
 		case core.OpScalarStore:
 			top.values[operation.StoreTargetID] = sourceValue
 			top.idx++

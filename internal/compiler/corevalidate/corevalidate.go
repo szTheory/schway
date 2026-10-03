@@ -1230,10 +1230,10 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 			if !v.check(types[operation.TypeID].Shape.Constructor == "Unit" && operation.TargetID == "" && operation.RightID == "" && operation.StoreTargetID == "" && operation.TrueEdgeID == "" && operation.FalseEdgeID == "", "core.write_operation_invalid", operation.ID) {
 				return nil, nil, false
 			}
-		case core.OpAddChecked, core.OpLessU64:
+		case core.OpAddChecked, core.OpLessU64, core.OpEqualU64, core.OpRemainderU64:
 			right, known := places[operation.RightID]
 			want := "U64"
-			if operation.Kind == core.OpLessU64 {
+			if operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 {
 				want = "Bool"
 			}
 			if !v.check(known && types[places[operation.SourceID].TypeID].Shape.Constructor == "U64" && types[right.TypeID].Shape.Constructor == "U64" && types[operation.TypeID].Shape.Constructor == want && operation.StoreTargetID == "" && operation.TrueEdgeID == "" && operation.FalseEdgeID == "", "core.scalar_operation_invalid", operation.ID) {
@@ -1379,7 +1379,7 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 				return nil, nil, false
 			}
 		}
-		if operation.Kind != core.OpAddChecked && operation.Kind != core.OpLessU64 && operation.RightID != "" || operation.Kind != core.OpScalarStore && operation.StoreTargetID != "" || operation.Kind != core.OpBranch && (operation.TrueEdgeID != "" || operation.FalseEdgeID != "") {
+		if operation.Kind != core.OpAddChecked && operation.Kind != core.OpLessU64 && operation.Kind != core.OpEqualU64 && operation.Kind != core.OpRemainderU64 && operation.RightID != "" || operation.Kind != core.OpScalarStore && operation.StoreTargetID != "" || operation.Kind != core.OpBranch && (operation.TrueEdgeID != "" || operation.FalseEdgeID != "") {
 			if !v.check(false, "core.scalar_field_kind_exclusive", operation.ID) {
 				return nil, nil, false
 			}
@@ -2581,10 +2581,10 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			}
 			initialized[operation.TargetID] = true
 			produced[operation.TargetID] = true
-		case core.OpAddChecked, core.OpLessU64:
+		case core.OpAddChecked, core.OpLessU64, core.OpEqualU64, core.OpRemainderU64:
 			right, known := places[operation.RightID]
 			want := "U64"
-			if operation.Kind == core.OpLessU64 {
+			if operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 {
 				want = "Bool"
 			}
 			if !v.check(known && initialized[operation.RightID] && types[right.TypeID].Shape.Constructor == "U64" && types[operation.TypeID].Shape.Constructor == want, "core.scalar_operation_invalid", operation.ID) {
@@ -2908,10 +2908,10 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			}
 			initialized[operation.TargetID] = true
 			produced[operation.TargetID] = true
-		case core.OpAddChecked, core.OpLessU64:
+		case core.OpAddChecked, core.OpLessU64, core.OpEqualU64, core.OpRemainderU64:
 			right, known := places[operation.RightID]
 			want := "U64"
-			if operation.Kind == core.OpLessU64 {
+			if operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 {
 				want = "Bool"
 			}
 			if !v.check(known && initialized[operation.RightID] && types[source.TypeID].Shape.Constructor == "U64" && types[right.TypeID].Shape.Constructor == "U64" && types[operation.TypeID].Shape.Constructor == want, "core.scalar_operation_invalid", operation.ID) {
@@ -4283,7 +4283,7 @@ func hasScalarCFG(function *core.Function) bool {
 		return false
 	}
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline {
 			return true
 		}
 	}
@@ -4316,6 +4316,9 @@ func (v *validator) validateScalarFixedPoint(function *core.Function, types map[
 		if !v.check(constructor == "U64" || constructor == "Bool", "core.scalar_backedge_authority", place.ID) {
 			return false
 		}
+	}
+	if len(linear.Blocks) == 0 {
+		return v.validateStraightLineScalarFacts(function, types, places)
 	}
 	blocks := append([]core.Block(nil), linear.Blocks...)
 	sort.Slice(blocks, func(i, j int) bool { return blocks[i].ID < blocks[j].ID })
@@ -4388,6 +4391,29 @@ func (v *validator) validateScalarFixedPoint(function *core.Function, types map[
 						value.known, value.boolean = true, source.u64 < right.u64
 					}
 					state[operation.TargetID] = value
+				case core.OpEqualU64:
+					right := state[operation.RightID]
+					if !v.check(source.initialized && right.initialized, "core.place_uninitialized", operation.ID) {
+						return false
+					}
+					value := scalarAbstractValue{initialized: true, isBool: true}
+					if source.known && right.known {
+						value.known, value.boolean = true, source.u64 == right.u64
+					}
+					state[operation.TargetID] = value
+				case core.OpRemainderU64:
+					right := state[operation.RightID]
+					if !v.check(source.initialized && right.initialized, "core.place_uninitialized", operation.ID) {
+						return false
+					}
+					if right.known && right.u64 == 0 {
+						return v.check(false, "core.scalar_remainder_zero", operation.ID)
+					}
+					value := scalarAbstractValue{initialized: true}
+					if source.known && right.known {
+						value.known, value.u64 = true, source.u64%right.u64
+					}
+					state[operation.TargetID] = value
 				case core.OpScalarStore:
 					if !v.check(source.initialized, "core.place_uninitialized", operation.ID) {
 						return false
@@ -4439,6 +4465,64 @@ func (v *validator) validateScalarFixedPoint(function *core.Function, types map[
 			return v.check(false, "core.scalar_analysis_limit", function.ID)
 		}
 	}
+}
+
+func (v *validator) validateStraightLineScalarFacts(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) bool {
+	state := map[string]scalarAbstractValue{function.Parameter.ID: {initialized: true}}
+	for _, operation := range function.Linear.Operations {
+		source := state[operation.SourceID]
+		switch operation.Kind {
+		case core.OpConst:
+			value, err := strconv.ParseUint(operation.ConstU64, 10, 64)
+			if err != nil {
+				return v.check(false, "core.scalar_constant_invalid", operation.ID)
+			}
+			state[operation.TargetID] = scalarAbstractValue{initialized: true, known: true, u64: value}
+		case core.OpCopy:
+			state[operation.TargetID] = source
+		case core.OpAddChecked:
+			right := state[operation.RightID]
+			value := scalarAbstractValue{initialized: source.initialized && right.initialized}
+			if source.known && right.known && ^uint64(0)-source.u64 >= right.u64 {
+				value.known, value.u64 = true, source.u64+right.u64
+			}
+			state[operation.TargetID] = value
+		case core.OpLessU64, core.OpEqualU64:
+			right := state[operation.RightID]
+			value := scalarAbstractValue{initialized: source.initialized && right.initialized, isBool: true}
+			if source.known && right.known {
+				value.known = true
+				if operation.Kind == core.OpEqualU64 {
+					value.boolean = source.u64 == right.u64
+				} else {
+					value.boolean = source.u64 < right.u64
+				}
+			}
+			state[operation.TargetID] = value
+		case core.OpRemainderU64:
+			right := state[operation.RightID]
+			if right.initialized && right.known && right.u64 == 0 {
+				return v.check(false, "core.scalar_remainder_zero", operation.ID)
+			}
+			value := scalarAbstractValue{initialized: source.initialized && right.initialized}
+			if source.known && right.known {
+				value.known, value.u64 = true, source.u64%right.u64
+			}
+			state[operation.TargetID] = value
+		case core.OpScalarStore:
+			state[operation.StoreTargetID] = source
+		case core.OpWriteU64:
+		case core.OpWriteNewline, core.OpReturn, core.OpBranch, core.OpDefect:
+		default:
+			if operation.TargetID != "" {
+				constructor := types[places[operation.TargetID].TypeID].Shape.Constructor
+				if constructor == "U64" || constructor == "Bool" {
+					state[operation.TargetID] = scalarAbstractValue{initialized: true, isBool: constructor == "Bool"}
+				}
+			}
+		}
+	}
+	return true
 }
 
 func cloneScalarState(state map[string]scalarAbstractValue) map[string]scalarAbstractValue {

@@ -530,6 +530,8 @@ func ProjectExecutionSchema2(program core.Program, document execution.Execution)
 				}
 			case core.OpAddChecked:
 				defectReasons[operation.ID+":event:defected"] = "U64 addition overflow"
+			case core.OpRemainderU64:
+				defectReasons[operation.ID+":event:defected"] = "U64 remainder by zero"
 			}
 		}
 	}

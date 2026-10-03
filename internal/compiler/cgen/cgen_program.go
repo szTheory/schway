@@ -205,7 +205,12 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 				// Reserve its full representation before C serialization.
 				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", "U64 addition overflow"
 				event.TargetPlace = ""
-			case core.OpLessU64, core.OpScalarStore, core.OpBranch, core.OpWriteU64, core.OpWriteNewline:
+			case core.OpRemainderU64:
+				// A dynamic zero divisor emits this terminal defect before any C
+				// remainder expression is evaluated; reserve it in the evidence bound.
+				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", "U64 remainder by zero"
+				event.TargetPlace = ""
+			case core.OpLessU64, core.OpEqualU64, core.OpScalarStore, core.OpBranch, core.OpWriteU64, core.OpWriteNewline:
 				// Comparisons, stores, CFG control, and application writes are
 				// event-free. Application bytes are tracked by the bounded writer.
 				continue
@@ -2470,7 +2475,7 @@ func hasScalarOperations(function core.Function) bool {
 		return false
 	}
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
 			return true
 		}
 	}
@@ -2615,6 +2620,20 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 				fmt.Fprintf(out, "  %s = %s + %s;\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
 			case core.OpLessU64:
 				fmt.Fprintf(out, "  %s = (%s < %s);\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
+			case core.OpEqualU64:
+				fmt.Fprintf(out, "  %s = (%s == %s);\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
+			case core.OpRemainderU64:
+				fmt.Fprintf(out, "  if (%s == UINT64_C(0)) {\n", locals[op.RightID])
+				if shell == programApplicationShell {
+					out.WriteString("    fputs(\"schway: U64 remainder by zero\\n\", stderr);\n    exit(65);\n")
+				} else {
+					defect := op
+					defect.Reason = "U64 remainder by zero"
+					emitProgramDefectTerminal(out, function, defect)
+					out.WriteString("    exit(0);\n")
+				}
+				out.WriteString("  }\n")
+				fmt.Fprintf(out, "  %s = (%s %% %s);\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
 			case core.OpScalarStore:
 				fmt.Fprintf(out, "  %s = %s;\n", locals[op.StoreTargetID], locals[op.SourceID])
 			case core.OpBranch:
