@@ -6,10 +6,10 @@ current_phase: 27
 current_phase_name: Exact FizzBuzz and Cross-Host Evidence
 status: planning
 stopped_at: Phase 27 context gathered
-last_updated: "2026-10-03T13:39:02.431Z"
+last_updated: "2026-10-03T13:41:00.506Z"
 last_activity: 2026-10-03
 last_activity_desc: Phase 26 complete, transitioned to Phase 27
-state_head: db258c6c6a6e7afd5f002b38dde65f738848dcd7
+state_head: 608f2bc91e29c9cfba6807d0abb82d3f63f2b75b
 progress:
   total_phases: 2
   completed_phases: 1
@@ -766,7 +766,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 Last session: 2026-10-03T13:39:02.335Z
 Stopped at: Phase 27 context gathered
 Resume file: .planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/27-CONTEXT.md
-Next action: After clearing context, run `$gsd-discuss-phase 27`. Phase 26 is complete; do not replay its five plans or completed verification.
+Next action: After clearing context, run $gsd-plan-phase 27. Phase 26 is complete; Phase 27 discussion/context is complete, so continue directly to planning.
 Routing resolution — 2026-10-03 (current): Phase 26 has five summaries and a
 passed 5/5 independent goal report. The completion command returned no
 warnings and advanced to Phase 27. No Phase 27 CONTEXT.md or plans exist;
