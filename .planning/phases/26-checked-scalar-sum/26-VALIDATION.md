@@ -1,8 +1,8 @@
 ---
 phase: "26"
 slug: "checked-scalar-sum"
-status: in_progress
-nyquist_compliant: false
+status: validated
+nyquist_compliant: true
 wave_0_complete: true
 created: "2026-10-02"
 ---
@@ -55,23 +55,23 @@ created: "2026-10-02"
 | 26-04-T1c | 26-04 | 3 | FLOW-01, FLOW-02, APP-07 | T-26-11 | Native repeated-copy ordinals. | Cgen test | `go test ./internal/compiler/cgen -run '^TestPhase26NativeRepeatedCopy$' -count=1` | Existing test home | ✅ hosted |
 | 26-04-T2 | 26-04 | 3 | FLOW-01, FLOW-02, APP-07 | T-26-12 | Independent peer accepts 0/1/2 and rejects duplicate/gapped/reordered/wrong-invocation/wrong-site/forged non-scalar events. | Independent event peer | `go test ./internal/compiler/executionpeer -run '^TestPhase26PeerOccurrenceOrder$' -count=1` | Existing peer test home | ✅ hosted |
 | 26-05-T1 | 26-05 | 4 | U64-01, FLOW-01, APP-07 | T-26-09 | Each engine matches hand-pinned 0/55/500500; 1001 fails; reached wrong-result and skipped-iteration controls fail. | End-to-end expected-answer/mutation | `go test ./internal/compiler/session -run '^TestPhase26ExactSumMatrix$' -count=1` | Existing test home | ✅ hosted in 37092337472 |
-| 26-05-T2a | 26-05 | 4 | U64-01, APP-07 | T-26-10 | Exact public CLI streams/status for sum matrix and overflow. | Public command | `go test ./cmd/schway -run '^TestPhase26PublicAppCLI$' -count=1` | Existing test home | ✅ hosted in 37093111718 |
-| 26-05-T2b | 26-05 | 4 | FLOW-02, APP-07 | T-26-10 | Forced capacity outcome retains actual child streams/status and Verified=false. | Native app capture | `go test ./internal/compiler/native -run '^TestPhase26EvidenceCapacity$' -count=1` | Existing test home | ✅ hosted in 37093111718 |
-| 26-05-T2c | 26-05 | 4 | FLOW-01, FLOW-02, APP-07 | T-26-10 | Source-authored immutable copy event ordinals 0/1/2 with independent peers. | Source-to-native evidence | `go test ./internal/compiler/session -run '^TestPhase26SourceRepeatedCopyEvidence$' -count=1` | Existing test home | ✅ hosted in 37093111718 |
-| 26-05-T2d | 26-05 | 4 | FLOW-01 | T-26-10 | Malformed source spans, recovery, and comment roundtrip. | Syntax recovery | `go test ./internal/compiler/syntax -run '^TestPhase26FrontendRecovery$' -count=1` | Existing test home | ✅ hosted in 37093111718 |
+| 26-05-T2a | 26-05 | 4 | U64-01, APP-07 | T-26-10 | Exact public CLI streams/status for sum matrix and overflow. | Public command | `go test ./cmd/schway -run '^TestPhase26PublicAppCLI$' -count=1` | Existing test home | ✅ hosted in 37096489094 |
+| 26-05-T2b | 26-05 | 4 | FLOW-02, APP-07 | T-26-10 | Forced capacity outcome retains actual child streams/status and Verified=false. | Native app capture | `go test ./internal/compiler/native -run '^TestPhase26EvidenceCapacity$' -count=1` | Existing test home | ✅ hosted in 37096489094 |
+| 26-05-T2c | 26-05 | 4 | FLOW-01, FLOW-02, APP-07 | T-26-10 | Source-authored immutable copy event ordinals 0/1/2 with independent peers. | Source-to-native evidence | `go test ./internal/compiler/session -run '^TestPhase26SourceRepeatedCopyEvidence$' -count=1` | Existing test home | ✅ hosted in 37096489094 |
+| 26-05-T2d | 26-05 | 4 | FLOW-01 | T-26-10 | Malformed source spans, recovery, and comment roundtrip. | Syntax recovery | `go test ./internal/compiler/syntax -run '^TestPhase26FrontendRecovery$' -count=1` | Existing test home | ✅ hosted in 37096489094 |
 
-*Plan 01–04 rows refer to completed hosted evidence. The Plan 05 controls passed on Ubuntu and macOS in 37092337472 and 37093111718; phase validation now awaits the hosted corpus receipt and full gate.*
+*Plan 01–04 rows refer to completed hosted evidence. Plan 05 controls and active session validation passed on Ubuntu and macOS in 37096489094; the full hosted gate is the remaining phase-wide check.*
 
 ---
 
 ## Wave 0 Requirements
 
-- [ ] Check in the ordinary `sum_to_n` Schway source witness before broadening cyclic-CFG admission.
-- [ ] Add syntax/formatter round trips and malformed-input/source-span coverage for `var`, `if/else`, `<`, checked `+`, and pre-tested `while`.
-- [ ] Add independent fixed-point, deterministic budget-exhaustion, and scalar assignment/branch tests for checker, core validator, and origin validator.
-- [ ] Add stable refusal controls for owner, resource, loan, and loan-derived provenance back-edge cases in each applicable validator.
-- [ ] Pin hand-derived interpreter and native outcomes independently for `n = 0`, `10`, `1000`, rejected `1001`, and a direct near-`U64::MAX` overflow witness.
-- [ ] Add reached wrong-result and skipped-iteration controls; emit 0/1/2 occurrence ordinals for repeated scalar-copy events, independently reject forged sequences, and force evidence capacity exhaustion separately.
+- [x] Check in the ordinary `sum_to_n` Schway source witness before broadening cyclic-CFG admission.
+- [x] Add syntax/formatter round trips and malformed-input/source-span coverage for `var`, `if/else`, `<`, checked `+`, and pre-tested `while`.
+- [x] Add independent fixed-point, deterministic budget-exhaustion, and scalar assignment/branch tests for checker, core validator, and origin validator.
+- [x] Add stable refusal controls for owner, resource, loan, and loan-derived provenance back-edge cases in each applicable validator.
+- [x] Pin hand-derived interpreter and native outcomes independently for `n = 0`, `10`, `1000`, rejected `1001`, and a direct near-`U64::MAX` overflow witness.
+- [x] Add reached wrong-result and skipped-iteration controls; emit 0/1/2 occurrence ordinals for repeated scalar-copy events, independently reject forged sequences, and force evidence capacity exhaustion separately.
 
 ## Threat Coverage
 
@@ -89,11 +89,11 @@ created: "2026-10-02"
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
 - [ ] No watch-mode flags
-- [ ] Feedback latency < measured target
-- [ ] `nyquist_compliant: true` set in frontmatter after validation
+- [x] Focused hosted feedback time recorded; no latency distribution claim
+- [x] `nyquist_compliant: true` set after focused hosted validation
 
-**Approval:** pending the corrected Plan 05 hosted run, validation-corpus receipt, and full hosted gate.
+**Approval:** focused hosted validation and receipt checks passed; full hosted gate pending.

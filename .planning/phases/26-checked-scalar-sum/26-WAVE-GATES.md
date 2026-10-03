@@ -100,5 +100,7 @@ The hosted receipt job 37095533226 completed successfully at revision
 privacy scan and was downloaded and installed verbatim. The checked-in record
 digest is `4d81704e730f27fe708f1288cc1bf7e196fa9b674f45bb86ad56a3763c20ec65`,
 the pair digest is `af2dafc4f3f15ecb2087e41b8fddc4ca08fff37232f55bc1ed7904c58499da4d`,
-and hosted sequential recording took `147.286s`. Focused/full validation after
-installation remains pending.
+and hosted sequential recording took `147.286s`. Focused run 37096489094 then
+passed on Ubuntu and macOS, including validation digest/groundedness checks and
+the Plan 05 CLI, syntax, source event, capacity, and sum controls. The full
+hosted gate remains pending.
