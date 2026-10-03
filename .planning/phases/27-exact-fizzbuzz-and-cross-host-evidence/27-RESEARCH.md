@@ -2,7 +2,7 @@
 
 **Researched:** 2026-10-03  
 **Domain:** Schway source output, U64 remainder semantics, native applications, independent evidence  
-**Confidence:** HIGH for locked scope and current repository boundaries; MEDIUM for external C/ASVS guidance and syntax details still at the agent's discretion.
+**Confidence:** HIGH for locked scope and current repository boundaries; MEDIUM for external C/ASVS guidance. Plan-time syntax choices below are unexecuted decisions.
 
 <user_constraints>
 ## User Constraints (from CONTEXT.md)
@@ -266,18 +266,14 @@ This is not necessarily executable as written: equality token, chained condition
 
 ## Open Questions
 
-1. **What syntax represents text literals and Unit entries?**
-   - What we know: Operation names/behavior are locked; current app validation requires U64 return.
-   - What's unclear: Literal call parsing, equality spelling, Unit representation, and whether Unit is an annotation or no-result form.
-   - Recommendation: Choose the smallest formatter-stable syntax; demonstrate it in fizzbuzz.schway and reject nonliteral write_text operands. [VERIFIED: D-27-01/D-27-02; session.go:1360-1367; detail is ASSUMED]
-2. **What non-success mapping does output-limit crossing use?**
-   - What we know: It cannot return success, and previously written bytes may remain.
-   - What's unclear: Status/stderr are not pinned in CONTEXT.md.
-   - Recommendation: Reuse an existing program-level failure convention if unambiguous; pin status, stderr and prefix behavior in tests and guide. [VERIFIED: D-27-03; recommendation is ASSUMED]
-3. **How are dual-host receipts triggered for the final revision?**
-   - What we know: CI matrices Ubuntu/macOS; Phase 25 script captures revision, host/compiler/target and input hashes.
-   - What's unclear: Dedicated phase script/job versus extending current aggregate.
-   - Recommendation: Add a focused phase script patterned on verify-phase25.sh and wire it into aggregate; incomplete rows must fail. [VERIFIED: ci.yml; verify-phase25.sh; recommendation is ASSUMED]
+1. **RESOLVED — source syntax for literal text and Unit entries.**
+   - Choice: Plans 27-01/02 admit write_u64(expr), write_newline(), and an explicit Unit return annotation with no result expression; Plan 27-05 admits only write_text("literal") with compile-time decoding, and Plan 27-06 emits its exact bytes. == and % are the U64 operator spellings in Plans 27-03/04. A Unit app does not auto-print; a U64-returning sum_to_n still auto-prints decimal value plus LF. [PLANNED: D-27-01/D-27-02; 27-01 through 27-06-PLAN.md]
+2. **RESOLVED — output-limit crossing process outcome.**
+   - Choice: Plan 27-07 chooses public exit status 65 and exact stderr schway: application output limit exceeded followed by LF. The crossing chunk is not written; already completed chunks remain streamed and no rollback is promised. A lowered test-only limit exercises this, while production remains 65,536 bytes. [PLANNED: D-27-03; 27-07-PLAN.md Tasks 1-2]
+3. **RESOLVED — dual-host receipt acquisition.**
+   - Choice: Plan 27-09 adds scripts/verify-phase27.sh to the existing Ubuntu/macOS CI matrix, uploads per-host artifacts and applies a same-revision/input-hash receipt gate; Plan 27-10 acquires the completed hosted job artifacts and records both actual receipts. Missing or unavailable hosts remain unavailable, never passing. [PLANNED: D-27-05; 27-09-PLAN.md Tasks 1-2; 27-10-PLAN.md Task 2]
+
+These are plan-time choices, not claims that Phase 27 implementation tests or hosted jobs have run.
 
 ## Environment Availability
 

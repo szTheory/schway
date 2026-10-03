@@ -117,35 +117,49 @@ M004 receipts do not prove this phase's new semantics.
    and run both programs and find the exact expected output, accepted input
    range, checked failure behavior, and output limit.
 
-**Plans**: 7 plans in 6 waves
+**Plans**: 10 plans in 9 waves
 
-The seventh plan isolates D-27-04's guarded native remainder and independent
-checker/peer admission as a safety obligation before literal-output composition.
+The safety slices enforce three named obligations before composition:
+source write-operation admission before byte emission, D-27-04's checked zero
+guard before native C remainder, and literal-only text admission before literal
+byte emission. Plan 27-02 delivers the runnable end-to-end FizzBuzz tracer.
 
 **Wave 1**
 
-- [ ] 27-01-PLAN.md — Unit FizzBuzz source-to-app tracer with decimal/LF writes
+- [ ] 27-01-PLAN.md — source/core/independent-peer admission for Unit decimal/LF writes
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 27-02-PLAN.md — equality, guarded remainder, and independent semantic admission
+- [ ] 27-02-PLAN.md — runnable interpreter/native Unit FizzBuzz tracer
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 27-03-PLAN.md — literal text output and complete exact FizzBuzz
+- [ ] 27-03-PLAN.md — equality/remainder source, typed core and static-zero checking
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 27-04-PLAN.md — shared incremental output limit and public failure channels
+- [ ] 27-04-PLAN.md — independent arithmetic peers and guarded runtime remainder
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 27-05-PLAN.md — independent answers, reached controls, event and capacity evidence
-- [ ] 27-06-PLAN.md — native host driver, two-host receipt gate, CI matrix
+- [ ] 27-05-PLAN.md — literal-only text source and independent admission
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 27-07-PLAN.md — clean-checkout guide and actual macOS/Linux receipts
+- [ ] 27-06-PLAN.md — literal byte emission and complete exact FizzBuzz
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 27-07-PLAN.md — shared incremental output limit and public failure channels
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 27-08-PLAN.md — independent answers, reached controls, event and capacity evidence
+- [ ] 27-09-PLAN.md — native host driver, two-host receipt gate, CI matrix
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 27-10-PLAN.md — clean-checkout guide and actual macOS/Linux receipts
 
 **Runnable witness**: Check in `fizzbuzz.schway` with independently authored
 golden outputs for `n = 0`, `1`, `15`, and `1,000`; include a rejected
