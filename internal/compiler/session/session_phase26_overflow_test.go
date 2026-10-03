@@ -6,8 +6,10 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/szTheory/schway/internal/compiler/cgen"
 	"github.com/szTheory/schway/internal/compiler/execution"
 	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/native"
@@ -58,5 +60,44 @@ func TestPhase26OverflowProcessOutcome(t *testing.T) {
 	}
 	if outcome.Kind == native.RunExited && outcome.ExitCode == 65 {
 		t.Fatalf("missing artifact was misclassified as a child overflow: %+v", outcome)
+	}
+}
+
+func TestPhase26WrongResultMutationKilled(t *testing.T) {
+	const expected = "18446744073709551615\n"
+	sourcePath := testsupport.ProjectPath("examples", "phase26", "checked_add_overflow.schway")
+	source, err := os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("overflow witness check diagnostics: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.EmitApplication(checked.Program)
+	if err != nil {
+		t.Fatalf("EmitApplication: %v", err)
+	}
+	addition := strings.Index(generated, " + schway_scalar_")
+	if addition < 0 {
+		t.Fatal("generated app has no reached scalar addition to mutate")
+	}
+	semicolon := strings.IndexByte(generated[addition:], ';')
+	if semicolon < 0 {
+		t.Fatal("generated scalar addition has no statement boundary")
+	}
+	end := addition + semicolon
+	mutated := generated[:end] + " + UINT64_C(1)" + generated[end:]
+	artifact := filepath.Join(t.TempDir(), "wrong-result-mutant")
+	if _, err := native.BuildApplication(context.Background(), source, mutated, artifact); err != nil {
+		t.Fatalf("BuildApplication mutated C: %v", err)
+	}
+	var stdout, stderr bytes.Buffer
+	outcome, err := native.RunApplication(context.Background(), artifact, "0", &stdout, &stderr)
+	if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 0 || stderr.Len() != 0 {
+		t.Fatalf("mutant outcome=%+v stdout=%q stderr=%q err=%v", outcome, stdout.String(), stderr.String(), err)
+	}
+	if stdout.String() == expected {
+		t.Fatalf("reached wrong-result native mutation survived independent expected answer %q", expected)
 	}
 }
