@@ -58,9 +58,9 @@ from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
 **Current focus:** Phase 27 — Exact FizzBuzz and Cross-Host Evidence
 
-**Checkout location (2026-10-01):** This is the current, canonical `schway`
-checkout, renamed from `schway-public`. Its branch remains
-`worktree-agent-p24-01-retry`. The original pre-publication checkout, including
+**Checkout location (2026-10-03):** This is the current, canonical `schway`
+checkout, renamed from `schway-public`. The active branch is
+`phase26-validation`. The original pre-publication checkout, including
 its uncommitted planning material and private audit records, is preserved in
 the sibling `schway-archive` directory. Keep those private files outside this
 Git tree. The directory move does not change source or phase completion. PR #1
