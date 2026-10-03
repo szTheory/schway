@@ -283,7 +283,7 @@ func SetOriginScalarTransferBudgetForTest(budget int) func() {
 
 func originHasScalarCFG(function core.Function) bool {
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpCopy {
 			return true
 		}
 	}
@@ -381,6 +381,11 @@ func originScalarFixedPoint(function core.Function) bool {
 						return false
 					}
 					state[op.StoreTargetID] = true
+				case core.OpCopy:
+					if !state[op.SourceID] || placeTypes[op.SourceID] == "" || placeTypes[op.TargetID] == "" || placeTypes[op.SourceID] != placeTypes[op.TargetID] {
+						return false
+					}
+					state[op.TargetID] = true
 				case core.OpBranch, core.OpReturn, core.OpDefect:
 					if !state[op.SourceID] {
 						return false

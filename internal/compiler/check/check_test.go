@@ -5845,6 +5845,20 @@ func TestPhase26ScalarCopyCycleBoundary(t *testing.T) {
 			if _, code := checkScalarFixedPoint(mutated); code != "" {
 				t.Fatalf("scalar-copy cycle refused with %s", code)
 			}
+			copyProgram := program
+			copyProgram.Functions = append([]core.Function(nil), program.Functions...)
+			for functionIndex := range copyProgram.Functions {
+				if copyProgram.Functions[functionIndex].ID == mutated.ID {
+					copyProgram.Functions[functionIndex] = mutated
+				}
+			}
+			if result := corevalidate.Validate(copyProgram); !result.Valid {
+				t.Fatalf("core peer rejected scalar-copy cycle: %+v", result.Problems)
+			}
+			contracts := originvalidate.BuildCalleeOriginFacts(copyProgram)
+			if got := originvalidate.RecomputeOriginPerReturn(mutated, contracts); len(got) == 0 {
+				t.Fatal("origin peer rejected scalar-copy cycle")
+			}
 			bad := mutated
 			badLinear := linear
 			badLinear.Places = append([]core.Place(nil), linear.Places...)
@@ -5856,6 +5870,20 @@ func TestPhase26ScalarCopyCycleBoundary(t *testing.T) {
 			bad.Linear = &badLinear
 			if _, code := checkScalarFixedPoint(bad); code != "check.scalar_backedge_authority" {
 				t.Fatalf("forged non-scalar copy result = %q", code)
+			}
+			badProgram := copyProgram
+			badProgram.Functions = append([]core.Function(nil), copyProgram.Functions...)
+			for functionIndex := range badProgram.Functions {
+				if badProgram.Functions[functionIndex].ID == bad.ID {
+					badProgram.Functions[functionIndex] = bad
+				}
+			}
+			if result := corevalidate.Validate(badProgram); result.Valid || len(result.Problems) == 0 {
+				t.Fatal("core peer accepted a forged non-scalar copy")
+			}
+			badContracts := originvalidate.BuildCalleeOriginFacts(badProgram)
+			if got := originvalidate.RecomputeOriginPerReturn(bad, badContracts); len(got) != 0 {
+				t.Fatal("origin peer accepted a forged non-scalar copy")
 			}
 			return
 		}

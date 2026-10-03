@@ -1,0 +1,8 @@
+{
+  "command": "GitHub Actions workflow_dispatch phase26_focused at 4abb770 (run 37084053751), normalized single-test result from both Ubuntu and macOS jobs",
+  "exitCode": 1,
+  "targetTest": "TestPhase26ScalarCopyCycleBoundary",
+  "expected": "The checker admits a U64/Bool OpCopy in a loop and separately rejects a forged non-scalar carry.",
+  "actual": "Both hosted jobs failed this assertion because checkScalarFixedPoint returned check.scalar_backedge_authority for the scalar OpCopy.",
+  "output": "TAP version 13\nnot ok 1 - TestPhase26ScalarCopyCycleBoundary\n# tests 1\n# pass 0\n# fail 1\n# cancelled 0\n"
+}

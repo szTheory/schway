@@ -178,6 +178,11 @@ func checkScalarFixedPoint(function core.Function) (int, string) {
 						return work, "check.scalar_uninitialized"
 					}
 					state[op.StoreTargetID] = checkerScalarFact{initialized: true, known: source.known, boolType: types[places[op.StoreTargetID].TypeID] == "Bool", u64: source.u64, boolean: source.boolean}
+				case core.OpCopy:
+					if !source.initialized || (types[places[op.SourceID].TypeID] != "U64" && types[places[op.SourceID].TypeID] != "Bool") || (types[places[op.TargetID].TypeID] != "U64" && types[places[op.TargetID].TypeID] != "Bool") || places[op.SourceID].TypeID != places[op.TargetID].TypeID {
+						return work, "check.scalar_backedge_authority"
+					}
+					state[op.TargetID] = source
 				case core.OpBranch, core.OpReturn, core.OpDefect:
 					if !source.initialized {
 						return work, "check.scalar_uninitialized"

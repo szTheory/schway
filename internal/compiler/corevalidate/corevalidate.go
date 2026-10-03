@@ -4234,7 +4234,7 @@ func hasScalarCFG(function *core.Function) bool {
 		return false
 	}
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpCopy {
 			return true
 		}
 	}
@@ -4340,6 +4340,16 @@ func (v *validator) validateScalarFixedPoint(function *core.Function, types map[
 						return false
 					}
 					state[operation.StoreTargetID] = scalarAbstractValue{initialized: true, known: source.known, isBool: types[places[operation.StoreTargetID].TypeID].Shape.Constructor == "Bool", u64: source.u64, boolean: source.boolean}
+				case core.OpCopy:
+					if !v.check(source.initialized, "core.place_uninitialized", operation.ID) {
+						return false
+					}
+					sourceType := types[places[operation.SourceID].TypeID].Shape.Constructor
+					targetType := types[places[operation.TargetID].TypeID].Shape.Constructor
+					if !v.check((sourceType == "U64" || sourceType == "Bool") && sourceType == targetType, "core.scalar_backedge_authority", operation.ID) {
+						return false
+					}
+					state[operation.TargetID] = source
 				case core.OpBranch, core.OpReturn, core.OpDefect:
 					if !v.check(source.initialized, "core.place_uninitialized", operation.ID) {
 						return false
