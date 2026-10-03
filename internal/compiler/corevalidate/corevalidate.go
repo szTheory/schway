@@ -4246,7 +4246,7 @@ func hasScalarCFG(function *core.Function) bool {
 		return false
 	}
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpCopy {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
 			return true
 		}
 	}
