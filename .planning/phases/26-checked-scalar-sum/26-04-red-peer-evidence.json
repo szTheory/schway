@@ -1,0 +1,9 @@
+{
+  "command": "go test ./internal/compiler/executionpeer -run '^TestPhase26PeerOccurrenceOrder$' -count=1 -v (GitHub Actions workflow_dispatch phase26_focused, run 37088704306 at 0f08696; normalized result from Ubuntu and macOS)",
+  "exitCode": 1,
+  "targetTest": "TestPhase26PeerOccurrenceOrder",
+  "expected": "The independent execution peer accepts contiguous 0/1/2 scalar copy occurrences and rejects forged order, site, invocation, or loop authority.",
+  "actual": "Both hosted jobs failed the valid-trace assertion because executionpeer still rejected the second visit as duplicate_pair.",
+  "output": "TAP version 13\nnot ok 1 - TestPhase26PeerOccurrenceOrder\n# tests 1\n# pass 0\n# fail 1\n",
+  "hostedTranscript": "https://github.com/szTheory/schway/actions/runs/37088704306"
+}

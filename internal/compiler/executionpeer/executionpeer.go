@@ -58,11 +58,13 @@ type operation struct {
 }
 
 type index struct {
-	functions    map[string]core.Function
-	operations   map[string]operation
-	matchReturns map[string]string
-	entry        string
-	occurrences  map[string]occurrence
+	functions        map[string]core.Function
+	operations       map[string]operation
+	matchReturns     map[string]string
+	entry            string
+	occurrences      map[string]occurrence
+	loopOperations   map[string]bool
+	scalarLoopCopies map[string]bool
 }
 
 // Validate checks only observed causal structure. It intentionally does not
@@ -101,7 +103,11 @@ func ValidateFullCoverage(program core.Program, document execution.Execution) er
 }
 
 func buildIndex(program core.Program) (*index, error) {
-	i := &index{functions: make(map[string]core.Function), operations: make(map[string]operation), matchReturns: make(map[string]string), occurrences: make(map[string]occurrence)}
+	i := &index{
+		functions: make(map[string]core.Function), operations: make(map[string]operation),
+		matchReturns: make(map[string]string), occurrences: make(map[string]occurrence),
+		loopOperations: make(map[string]bool), scalarLoopCopies: make(map[string]bool),
+	}
 	for _, function := range program.Functions {
 		if function.ID == "" {
 			return nil, refusal("program", -1, "", "", "", "function ID is missing")
@@ -136,6 +142,7 @@ func buildIndex(program core.Program) (*index, error) {
 			}
 		}
 	}
+	i.indexLoopOperations(program)
 	entry, err := resolveEntry(i.functions, i.operations)
 	if err != nil {
 		return nil, err
@@ -170,6 +177,93 @@ func buildIndex(program core.Program) (*index, error) {
 		}
 	}
 	return i, nil
+}
+
+func (i *index) indexLoopOperations(program core.Program) {
+	for _, function := range program.Functions {
+		if function.Linear == nil || len(function.Linear.Blocks) == 0 || len(function.Linear.Edges) == 0 {
+			continue
+		}
+		adjacency := make(map[string][]string, len(function.Linear.Blocks))
+		for _, edge := range function.Linear.Edges {
+			adjacency[edge.FromBlockID] = append(adjacency[edge.FromBlockID], edge.ToBlockID)
+		}
+		cyclic := make(map[string]bool)
+		for _, block := range function.Linear.Blocks {
+			for _, successor := range adjacency[block.ID] {
+				if reachableBlock(adjacency, successor, block.ID) {
+					cyclic[block.ID] = true
+					break
+				}
+			}
+		}
+		places := make(map[string]core.Place, len(function.Linear.Places))
+		for _, place := range function.Linear.Places {
+			places[place.ID] = place
+		}
+		types := make(map[string]string, len(function.Linear.Types))
+		for _, fact := range function.Linear.Types {
+			types[fact.ID] = fact.Shape.Constructor
+		}
+		operations := make(map[string]core.LinearOperation, len(function.Linear.Operations))
+		for _, op := range function.Linear.Operations {
+			operations[op.ID] = op
+		}
+		for _, block := range function.Linear.Blocks {
+			if !cyclic[block.ID] {
+				continue
+			}
+			for _, operationID := range block.OperationIDs {
+				op, known := operations[operationID]
+				if !known {
+					continue
+				}
+				i.loopOperations[operationID] = true
+				if scalarCycleCopy(function.Linear, op, places, types) {
+					i.scalarLoopCopies[operationID] = true
+				}
+			}
+		}
+	}
+}
+
+func reachableBlock(adjacency map[string][]string, from, target string) bool {
+	queue := []string{from}
+	seen := make(map[string]bool)
+	for len(queue) > 0 {
+		block := queue[0]
+		queue = queue[1:]
+		if block == target {
+			return true
+		}
+		if seen[block] {
+			continue
+		}
+		seen[block] = true
+		queue = append(queue, adjacency[block]...)
+	}
+	return false
+}
+
+func scalarCycleCopy(linear *core.LinearBody, op core.LinearOperation, places map[string]core.Place, types map[string]string) bool {
+	if op.Kind != core.OpCopy || op.LoanID != "" {
+		return false
+	}
+	source, sourceExists := places[op.SourceID]
+	target, targetExists := places[op.TargetID]
+	if !sourceExists || !targetExists || source.TypeID == "" || source.TypeID != target.TypeID || op.TypeID != source.TypeID {
+		return false
+	}
+	shape := types[source.TypeID]
+	if shape != "U64" && shape != "Bool" {
+		return false
+	}
+	for _, endpoint := range linear.LoanEndpoints {
+		if endpoint.AfterOperationID == op.ID {
+			return false
+		}
+	}
+	return true
 }
 
 func resolveEntry(functions map[string]core.Function, operations map[string]operation) (string, error) {
@@ -236,7 +330,8 @@ func (i *index) validate(document execution.Execution) error {
 	if len(document.Events) == 0 {
 		return refusal("missing_event", -1, "", "", "", "document has no events")
 	}
-	seenPairs := make(map[string]bool)
+	nextOccurrence := make(map[string]uint64)
+	exhaustedOccurrence := make(map[string]bool)
 	stack := make([]string, 0)
 	pending := ""
 	for n, event := range document.Events {
@@ -260,11 +355,22 @@ func (i *index) validate(document execution.Execution) error {
 		if event.FunctionID != occ.functionID {
 			return refusal("function", n, event.Invocation, "", occ.functionID, "event function disagrees with invocation")
 		}
-		pair := event.Invocation + "\x00" + event.ID
-		if seenPairs[pair] {
-			return refusal("duplicate_pair", n, event.Invocation, "", occ.functionID, "duplicate invocation and event ID")
+		op, err := i.classify(event)
+		if err != nil {
+			return refusal("unknown_kind", n, event.Invocation, "", occ.functionID, err.Error())
 		}
-		seenPairs[pair] = true
+		if (i.loopOperations[op.value.ID] || event.Occurrence > 0) && !i.scalarLoopCopies[op.value.ID] {
+			return refusal("loop_event", n, event.Invocation, "", occ.functionID, "cyclic or repeated event is not an admitted scalar copy")
+		}
+		pair := event.Invocation + "\x00" + event.ID
+		if exhaustedOccurrence[pair] || event.Occurrence != nextOccurrence[pair] {
+			return refusal("occurrence", n, event.Invocation, "", occ.functionID, fmt.Sprintf("expected occurrence %d", nextOccurrence[pair]))
+		}
+		if event.Occurrence == ^uint64(0) {
+			exhaustedOccurrence[pair] = true
+		} else {
+			nextOccurrence[pair] = event.Occurrence + 1
+		}
 		if len(stack) == 0 {
 			stack = append(stack, event.Invocation)
 			if event.Invocation != rootInvocation(i.entry) {
@@ -277,10 +383,6 @@ func (i *index) validate(document execution.Execution) error {
 			} else {
 				return refusal("preorder", n, event.Invocation, stack[len(stack)-1], occ.functionID, "activation does not follow its caller-owned edge")
 			}
-		}
-		op, err := i.classify(event)
-		if err != nil {
-			return refusal("unknown_kind", n, event.Invocation, "", occ.functionID, err.Error())
 		}
 		if op.functionID != event.FunctionID {
 			return refusal("ownership", n, event.Invocation, "", event.FunctionID, "event ID belongs to another function")
