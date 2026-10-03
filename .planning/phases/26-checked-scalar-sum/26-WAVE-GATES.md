@@ -111,3 +111,11 @@ installed verbatim. It took `128.465s`; record digest is
 `ef9f77a042572a490b88b5c5fd604603769cf61216322f420911504dd6b8d399`. The next
 full hosted gate must validate this 35-pair receipt and run both race suites
 and phase aggregates.
+
+The subsequent full gate 37100432032 found one remaining validation contract
+gap: the Phase 26 primary task table lacked required `Grade` and
+`Non-inertness` columns, so row 26-01-T1 could not be graded. Both host full
+suites reported only this session assertion; race and dependent aggregate
+checks were skipped. The columns are now present, with each exercised row tied
+to the hosted receipt. Focused CI will recheck the grade derivation before the
+next full gate.
