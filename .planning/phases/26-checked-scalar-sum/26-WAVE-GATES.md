@@ -63,3 +63,21 @@ Metadata corrections have source/diff checks pending the next hosted run.
 No broad-suite or race pass is claimed. Full-gate failures remain visible
 while the remaining owning plans execute; the final phase gate must pass.
 Wave 2 full-gate failure count: 1.
+
+## Wave 3 Plan 04 integration correction — 2026-10-03
+
+Plan 26-04's initial full gate, run 37089290645 at `8894da69d816aeca566197a109a9a66d6cdf8330`, failed on Ubuntu and macOS. It exposed an unconditional schema-2 writer extension that changed legacy generated C and required `uint64_t` declarations in programs that do not use U64, along with missing identifier reservations, comparison routing for `Execution.Events.Occurrence`, a changed stable `duplicate_pair` diagnostic, and stale public-emitter consumer line references. The original and full failure evidence is retained in `26-04-integration-red-evidence.json`.
+
+Commits `fa85fac` and `9784f76` gate occurrence support on an eligible cyclic scalar-copy site, preserve previous writer output otherwise, restore the peer's stable duplicate-pair diagnostic, add occurrence to semantic comparison routing, classify generated identifiers, align every affected emitter callsite, and expand focused CI to include the affected cgen, executionpeer, and session packages. Compile-only build and source checks passed locally. Focused hosted run 37090502900 passed cgen and executionpeer full packages plus the Phase 26 event, interpreter/native repetition, authority, ordering, comparison, and public-emitter inventory controls on both hosts. Its full session package still fails on the active receipt/frontier/reconciliation/lifecycle rows; Ubuntu's focused session job also reports existing Phase 5 verification failures because its Clang invocation cannot find `-lc++`.
+
+The final full hosted gate 37090678253 passes vet and build on both hosts. Full `go test ./...` fails on the same active Phase 26 validation blockers on Ubuntu and macOS:
+
+- `TestValidationRowGradesAreEarnedOverArchivedCorpus`: checked-in digest `14f14924a5cb4f30c3f84db5a3dbf9b47c3265bd6bd5dbafecd50ccc926a3b93` differs from current digest `af2dafc4f3f15ecb2087e41b8fddc4ca08fff37232f55bc1ed7904c58499da4d` across 34 pairs.
+- `TestReconciliationVerdictsCarryTheirObligations`: an unreconciled R2 finding remains at `26-VALIDATION.md:49`.
+- `TestVerificationGroundednessFrontierIsPinned`: active R2b findings remain at lines 42–47 and 50 of `26-VALIDATION.md`.
+- `TestPhase20ValidationLifecycle`: `26-VALIDATION.md` remains draft.
+- `TestVerificationGroundednessThreeClassesAreEmpty`: reports R1=0, R2=1, R3=0, and R2b=52.
+
+The Phase 23, 24, and 25 evidence aggregates pass. Phase 6 aggregates fail on the active Phase 26 findings. Race checks and dependent Phase 15 aggregate checks were skipped after test failures; the validation corpus receipt and Phase 26 workflow jobs were skipped in the full workflow. No full-suite or race pass is claimed, and none of these active findings were suppressed. Plan 05 and phase closeout own the validation rows, lifecycle transition, and hosted receipt refresh.
+
+Plan 04's loop tests inject `OpCopy` into checked core. They verify core/backend occurrence behavior and do not establish the requested public source witness `let snapshot = i`; Plan 05 owns that source-level consumer and must add it before claiming the source witness.

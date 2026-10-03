@@ -63,5 +63,38 @@
       "output": "missing registry entries for every shifted cgen_program_test.go Emit/EmitNative callsite; stale entries remained at the previous line numbers"
     }
   ],
-  "hostedTranscript": "https://github.com/szTheory/schway/actions/runs/37089290645"
+  "hostedTranscript": "https://github.com/szTheory/schway/actions/runs/37089290645",
+  "correctionCommit": "fa85fac",
+  "inventoryCorrectionCommit": "9784f76",
+  "focusedCorrectionRun": {
+    "workflowRun": 37090502900,
+    "headSha": "9784f7643a7d81b156517477556a55607d8361e3",
+    "hosts": ["ubuntu-latest", "macos-latest"],
+    "status": "partial-pass",
+    "passed": [
+      "Phase 26 occurrence encoding, interpreter/native repeated-copy, authority, and peer order selectors",
+      "all tests in internal/compiler/cgen",
+      "all tests in internal/compiler/executionpeer",
+      "TestPhase16PublicEmitterConsumerInventory after registry line correction"
+    ],
+    "remainingFailures": [
+      "internal/compiler/session: TestValidationRowGradesAreEarnedOverArchivedCorpus (known stale digest)",
+      "internal/compiler/session: TestReconciliationVerdictsCarryTheirObligations (known active R2 row)",
+      "internal/compiler/session: TestVerificationGroundednessFrontierIsPinned (known active R2b rows)",
+      "internal/compiler/session: TestPhase20ValidationLifecycle (validation document remains draft)",
+      "internal/compiler/session: TestVerificationGroundednessThreeClassesAreEmpty (known active R2/R2b rows)",
+      "Ubuntu focused full-session environment: Phase 5 sanitizer/verification controls cannot link because Clang cannot find -lc++"
+    ]
+  },
+  "fullCorrectionRun": {
+    "workflowRun": 37090678253,
+    "headSha": "9784f7643a7d81b156517477556a55607d8361e3",
+    "hosts": ["ubuntu-latest", "macos-latest"],
+    "buildAndVet": "pass",
+    "fullTests": "fail-only-on-listed-active-phase-26-validation-findings",
+    "race": "skipped-after-go-test-failure",
+    "passingAggregates": ["Phase 23", "Phase 24", "Phase 25"],
+    "failingAggregate": "Phase 6 current-evidence aggregate with the same Phase 26 digest, reconciliation, frontier, and draft lifecycle failures",
+    "skippedJobs": ["validation corpus receipt", "Phase 26 focused job", "dependent Phase 15 aggregate checks"]
+  }
 }
