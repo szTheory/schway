@@ -2839,6 +2839,11 @@ func cfgBackEdgeCategory(operations []core.LinearOperation) string {
 		}
 	}
 	for _, operation := range operations {
+		if operation.Kind == core.OpCopy && loanPlaces[operation.SourceID] {
+			return "loan_derived_provenance"
+		}
+	}
+	for _, operation := range operations {
 		switch operation.Kind {
 		case core.OpMove:
 			return "owner"
@@ -2847,9 +2852,6 @@ func cfgBackEdgeCategory(operations []core.LinearOperation) string {
 		case core.OpBorrowShared, core.OpBorrowExclusive:
 			return "loan"
 		case core.OpCopy:
-			if loanPlaces[operation.SourceID] {
-				return "loan_derived_provenance"
-			}
 			return "unsupported_event_kind"
 		case core.OpCall, core.OpFail:
 			return "unsupported_event_kind"
