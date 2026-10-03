@@ -5840,7 +5840,7 @@ func TestPhase26ScalarCopyCycleBoundary(t *testing.T) {
 				t.Fatalf("scalar-copy cycle refused with %s", code)
 			}
 			bad := mutated
-			badLinear := *linear
+			badLinear := linear
 			badLinear.Places = append([]core.Place(nil), linear.Places...)
 			badLinear.Places[0].TypeID = "forged-owner-type"
 			bad.Linear = &badLinear
