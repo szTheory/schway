@@ -570,7 +570,10 @@ func decodeApplicationCapture(data []byte, limit int) (struct {
 	if envelope.Status != string(EvidenceStatusComplete) || len(envelope.Execution) == 0 {
 		return result, errors.New("application capture is not complete")
 	}
-	executionValue, err := decodeExecution(envelope.Execution, ExpectValue)
+	// Retained application entries may return Unit. Their semantic execution
+	// still has a valid returned outcome with an empty value; the ordinary
+	// conformance ExpectValue contract intentionally keeps requiring a U64.
+	executionValue, err := decodeExecution(envelope.Execution, expectApplication)
 	if err != nil {
 		return result, err
 	}

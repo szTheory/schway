@@ -1067,7 +1067,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		out.WriteString("        (void)schway_write_literal(\"],\\\"live_resources\\\":\");\n        (void)schway_write_live_resources();\n")
 		out.WriteString("        (void)schway_write_literal(\"}}\\n\");\n      }\n      (void)fclose(schway_evidence_file);\n")
 		out.WriteString("      if (schway_evidence_output_overflow) {\n        FILE *schway_overflow_file = fopen(schway_evidence_path, \"wb\");\n        if (schway_overflow_file != NULL) {\n          static const char schway_capacity_capture[] = \"{\\\"schema\\\":\\\"lang.app-capture/1\\\",\\\"status\\\":\\\"capacity_exhausted\\\"}\\n\";\n          (void)fwrite(schway_capacity_capture, 1u, sizeof schway_capacity_capture - 1u, schway_overflow_file);\n          (void)fclose(schway_overflow_file);\n        }\n      }\n    }\n  }\n")
-		out.WriteString("  return 0;\n}\n")
+		out.WriteString("  return schway_application_output_failed ? 65 : 0;\n}\n")
 		return out.String(), nil
 	}
 	if entryIsBranch {

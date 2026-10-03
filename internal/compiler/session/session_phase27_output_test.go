@@ -20,17 +20,35 @@ func TestPhase27OutputEvidenceSeparation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	artifact := filepath.Join(t.TempDir(), "fizzbuzz")
-	restoreEvidenceLimit := cgen.SetApplicationEvidenceOutputLimitForTest(4)
-	defer restoreEvidenceLimit()
-	_, diagnostics, err := session.BuildApplicationFile(context.Background(), sourcePath, artifact, native.DefaultRunner())
-	if err != nil || len(diagnostics) != 0 {
-		t.Fatalf("BuildApplicationFile diagnostics=%+v err=%v", diagnostics, err)
+	outputLimitedArtifact := filepath.Join(t.TempDir(), "fizzbuzz-output-limited")
+	func() {
+		restoreOutputLimit := cgen.SetApplicationOutputLimitForTest(4)
+		defer restoreOutputLimit()
+		_, diagnostics, buildErr := session.BuildApplicationFile(context.Background(), sourcePath, outputLimitedArtifact, native.DefaultRunner())
+		if buildErr != nil || len(diagnostics) != 0 {
+			t.Fatalf("BuildApplicationFile with lowered output limit diagnostics=%+v err=%v", diagnostics, buildErr)
+		}
+	}()
+	outputReportPath := filepath.Join(t.TempDir(), "fizzbuzz-output-failure-evidence.json")
+	var outputStdout, outputStderr bytes.Buffer
+	outputOutcome, outputReport, err := native.RunApplicationWithEvidence(context.Background(), outputLimitedArtifact, "3", outputReportPath, native.EvidenceEvents, &outputStdout, &outputStderr)
+	if err != nil || outputOutcome.Kind != native.RunExited || outputOutcome.ExitCode != 65 || outputReport.ProcessOutcome != outputOutcome || outputReport.CaptureStatus != native.EvidenceStatusComplete || outputReport.Execution == nil || outputReport.Execution.Outcome.Kind != "returned" || !bytes.Equal(outputStdout.Bytes(), []byte("1\n2\n")) || outputStderr.String() != "schway: application output limit exceeded\n" {
+		t.Fatalf("output-limited app evidence did not remain independently complete: outcome=%+v report=%+v stdout=%q stderr=%q err=%v", outputOutcome, outputReport, outputStdout.Bytes(), outputStderr.String(), err)
 	}
+
+	evidenceLimitedArtifact := filepath.Join(t.TempDir(), "fizzbuzz-evidence-limited")
+	func() {
+		restoreEvidenceLimit := cgen.SetApplicationEvidenceOutputLimitForTest(4)
+		defer restoreEvidenceLimit()
+		_, diagnostics, buildErr := session.BuildApplicationFile(context.Background(), sourcePath, evidenceLimitedArtifact, native.DefaultRunner())
+		if buildErr != nil || len(diagnostics) != 0 {
+			t.Fatalf("BuildApplicationFile with lowered evidence limit diagnostics=%+v err=%v", diagnostics, buildErr)
+		}
+	}()
 
 	reportPath := filepath.Join(t.TempDir(), "fizzbuzz-evidence.json")
 	var stdout, stderr bytes.Buffer
-	outcome, report, err := native.RunApplicationWithEvidence(context.Background(), artifact, "15", reportPath, native.EvidenceEvents, &stdout, &stderr)
+	outcome, report, err := native.RunApplicationWithEvidence(context.Background(), evidenceLimitedArtifact, "15", reportPath, native.EvidenceEvents, &stdout, &stderr)
 	var toolError *native.ToolError
 	if !errors.As(err, &toolError) || toolError.Code != "native.evidence_capacity_exhausted" {
 		t.Fatalf("evidence result report=%+v err=%v, want separate evidence-capacity verdict", report, err)

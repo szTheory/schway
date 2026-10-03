@@ -193,6 +193,93 @@ func TestPhase27OutputPublicStatus(t *testing.T) {
 	}
 }
 
+func TestPhase27PublicAppCLI(t *testing.T) {
+	fizzSource := testsupport.ProjectPath("examples", "fizzbuzz.schway")
+	fifteen, err := os.ReadFile(testsupport.ProjectPath("examples", "phase27", "fizzbuzz-15.out"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	thousand, err := os.ReadFile(testsupport.ProjectPath("examples", "phase27", "fizzbuzz-1000.out"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fizzArtifact := filepath.Join(t.TempDir(), "fizzbuzz")
+	code, stdout, stderr := captureLangRun(t, []string{"build", fizzSource, "--output", fizzArtifact})
+	if code != 0 || stdout != "built "+fizzArtifact+"\n" || stderr != "" {
+		t.Fatalf("FizzBuzz public build code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	for _, test := range []struct {
+		input, want string
+		code        int
+		stderr      string
+	}{{"0", "", 0, ""}, {"1", "1\n", 0, ""}, {"15", string(fifteen), 0, ""}, {"1000", string(thousand), 0, ""}, {"1001", "", 65, "schway app: input exceeds 1000\n"}} {
+		t.Run("fizzbuzz-"+test.input, func(t *testing.T) {
+			code, stdout, stderr := captureLangRun(t, []string{"app", "run", fizzArtifact, "--", test.input})
+			if code != test.code || stdout != test.want || stderr != test.stderr {
+				t.Fatalf("FizzBuzz input=%s code=%d stdout length=%d stderr=%q; want code=%d stdout length=%d stderr=%q", test.input, code, len(stdout), stderr, test.code, len(test.want), test.stderr)
+			}
+		})
+	}
+
+	sumSource := testsupport.ProjectPath("examples", "sum_to_n.schway")
+	sumArtifact := filepath.Join(t.TempDir(), "sum_to_n")
+	code, stdout, stderr = captureLangRun(t, []string{"build", sumSource, "--output", sumArtifact})
+	if code != 0 || stdout != "built "+sumArtifact+"\n" || stderr != "" {
+		t.Fatalf("sum public build code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	for _, test := range []struct {
+		input, want string
+		code        int
+		stderr      string
+	}{{"0", "0\n", 0, ""}, {"10", "55\n", 0, ""}, {"1000", "500500\n", 0, ""}, {"1001", "", 65, "schway app: input exceeds 1000\n"}} {
+		t.Run("sum-"+test.input, func(t *testing.T) {
+			code, stdout, stderr := captureLangRun(t, []string{"app", "run", sumArtifact, "--", test.input})
+			if code != test.code || stdout != test.want || stderr != test.stderr {
+				t.Fatalf("sum input=%s code=%d stdout=%q stderr=%q; want code=%d stdout=%q stderr=%q", test.input, code, stdout, stderr, test.code, test.want, test.stderr)
+			}
+		})
+	}
+
+	buildWithOutputLimit := func(source, artifact string, limit int) {
+		t.Helper()
+		func() {
+			restore := cgen.SetApplicationOutputLimitForTest(limit)
+			defer restore()
+			buildCode, buildStdout, buildStderr := captureLangRun(t, []string{"build", source, "--output", artifact})
+			if buildCode != 0 || buildStdout != "built "+artifact+"\n" || buildStderr != "" {
+				t.Fatalf("limited public build code=%d stdout=%q stderr=%q", buildCode, buildStdout, buildStderr)
+			}
+		}()
+	}
+	fizzLimitedArtifact := filepath.Join(t.TempDir(), "fizzbuzz-output-limited")
+	buildWithOutputLimit(fizzSource, fizzLimitedArtifact, 4)
+	code, stdout, stderr = captureLangRun(t, []string{"app", "run", fizzLimitedArtifact, "--", "3"})
+	if code != 65 || stdout != "1\n2\n" || stderr != "schway: application output limit exceeded\n" {
+		t.Fatalf("FizzBuzz output-limit code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	sumLimitedArtifact := filepath.Join(t.TempDir(), "sum-output-limited")
+	buildWithOutputLimit(sumSource, sumLimitedArtifact, 2)
+	code, stdout, stderr = captureLangRun(t, []string{"app", "run", sumLimitedArtifact, "--", "10"})
+	if code != 65 || stdout != "55" || stderr != "schway: application output limit exceeded\n" {
+		t.Fatalf("sum output-limit code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+
+	zeroSource := []byte("module phase27_dynamic_zero_cli\nexport { fn main }\nfn main(divisor: U64) -> U64 {\n  let dividend = 17\n  var result = 0\n  if divisor == 0 {\n    let remainder = dividend % divisor\n    result = remainder\n  } else {\n    result = 0\n  }\n  result\n}\n")
+	zeroSourcePath := filepath.Join(t.TempDir(), "dynamic_zero.schway")
+	if err := os.WriteFile(zeroSourcePath, zeroSource, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	zeroArtifact := filepath.Join(t.TempDir(), "dynamic-zero")
+	code, stdout, stderr = captureLangRun(t, []string{"build", zeroSourcePath, "--output", zeroArtifact})
+	if code != 0 || stdout != "built "+zeroArtifact+"\n" || stderr != "" {
+		t.Fatalf("dynamic-zero public build code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	code, stdout, stderr = captureLangRun(t, []string{"app", "run", zeroArtifact, "--", "0"})
+	if code != 65 || stdout != "" || stderr != "schway: U64 remainder by zero\n" {
+		t.Fatalf("dynamic-zero public run code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+}
+
 func TestPhase23PublicFileByte(t *testing.T) {
 	source := testsupport.ProjectPath("examples", "phase23", "file_byte.schway")
 	manifest := testsupport.ProjectPath("examples", "phase23", "file_byte.bindings.json")

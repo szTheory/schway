@@ -849,6 +849,7 @@ type TerminalOutcome string
 const (
 	ExpectValue        TerminalOutcome = "value"
 	ExpectTypedFailure TerminalOutcome = "typed_failure"
+	expectApplication  TerminalOutcome = "application"
 	// ExpectDefect is Phase 4 plan 04's addition (D-04-15): a defect-
 	// expecting call's process is expected to terminate via SIGABRT, and its
 	// terminal record carries outcome kind "defect", no value, and every
@@ -928,6 +929,10 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 		if value.Outcome.Kind != "returned" || value.Outcome.Value == "" || value.Events == nil || value.LiveResources == nil || len(value.Events) == 0 || len(value.LiveResources) != 0 {
 			return errors.New("execution document violates required contract")
 		}
+	case expectApplication:
+		if value.Outcome.Kind != "returned" || value.Events == nil || value.LiveResources == nil || len(value.Events) == 0 || len(value.LiveResources) != 0 {
+			return errors.New("application execution document violates required contract")
+		}
 	case ExpectTypedFailure:
 		if value.Outcome.Kind != "typed_failure" || value.Outcome.Value == "" || value.Events == nil || value.LiveResources == nil || len(value.Events) == 0 {
 			return errors.New("execution document violates required contract")
@@ -999,6 +1004,10 @@ func validateExecution(value execution.Execution, expect TerminalOutcome) error 
 			if value.Schema == execution.Schema0 {
 				if event.Input == "" || event.Output == "" || event.SourcePlace != "" || event.TypeID != "" {
 					return errors.New("match return event fields are invalid")
+				}
+			} else if expect == expectApplication && value.Outcome.Value == "" {
+				if event.SourcePlace != "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
+					return errors.New("Unit application return event fields are invalid")
 				}
 			} else if event.SourcePlace == "" || event.TypeID == "" || event.Input != "" || event.Output != "" {
 				return errors.New("linear return event fields are invalid")

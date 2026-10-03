@@ -601,6 +601,21 @@ func TestPhase27OutputEvidenceExactLimit(t *testing.T) {
 	}
 }
 
+func TestPhase27EvidenceCapacity(t *testing.T) {
+	capture := phase22CompleteCapture(t)
+	body := fmt.Sprintf("printf '1\\n2\\n'\nprintf 'schway: application output limit exceeded\\n' >&2\nprintf %%s %s > \"$SCHWAY_APP_EVIDENCE_PATH\"\nexit 65\n", shellQuote(capture))
+	artifact := writePhase22EvidenceScript(t, body)
+	reportPath := filepath.Join(t.TempDir(), "failed-child-complete-evidence.json")
+	var stdout, stderr bytes.Buffer
+	outcome, report, err := DefaultRunner().RunApplicationWithEvidence(context.Background(), artifact, "3", reportPath, EvidenceEvents, &stdout, &stderr)
+	if err != nil || outcome.Kind != RunExited || outcome.ExitCode != 65 || report.ProcessOutcome != outcome || report.CaptureStatus != EvidenceStatusComplete || report.Execution == nil || report.Execution.Outcome.Kind != "returned" {
+		t.Fatalf("completed evidence overwrote child failure: outcome=%+v report=%+v err=%v", outcome, report, err)
+	}
+	if stdout.String() != "1\n2\n" || stderr.String() != "schway: application output limit exceeded\n" {
+		t.Fatalf("failed child streams stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+}
+
 func TestPhase22EvidenceReportWriteFailurePreservesAppOutcome(t *testing.T) {
 	root := t.TempDir()
 	marker := filepath.Join(root, "launches.txt")
