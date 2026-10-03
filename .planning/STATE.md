@@ -5,16 +5,16 @@ milestone_name: Practical Computation
 current_phase: 27
 current_phase_name: Exact FizzBuzz and Cross-Host Evidence
 status: executing
-stopped_at: Phase 27 context gathered
-last_updated: "2026-10-03T16:12:50.687Z"
+stopped_at: Completed 27-01-PLAN.md; ready for 27-02
+last_updated: "2026-10-03T17:00:48.899Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 26 complete, transitioned to Phase 27
-state_head: 8252542c97caf84cf0b2cb6fd2997df17087e117
+last_activity_desc: Phase 27 execution started
+state_head: d5aa8833bb3ae61586438409310c83c3bc6a607b
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 15
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 <!-- schway-current:start -->
@@ -118,10 +118,10 @@ plans.
 
 ## Current Position
 
-Phase: 27 (Exact FizzBuzz and Cross-Host Evidence) — READY TO EXECUTE
-Plan: Not started
+Phase: 27 (Exact FizzBuzz and Cross-Host Evidence) — EXECUTING
+Plan: 2 of 10
 Status: Ready to execute
-Last activity: 2026-10-03 — Phase 26 complete, transitioned to Phase 27
+Last activity: 2026-10-03 — Phase 27 execution started
 Progress: 1/2 phases complete; 5/5 defined plans complete; Phase 27 unplanned
 
 ## M005 Planning
@@ -451,6 +451,7 @@ subset alone.
 | Phase 26 P03 | 31min | 2 tasks | 9 files |
 | Phase 26 P04 | 90min | 2 tasks | 24 files |
 | Phase 26 P5 | 217 | 2 tasks | 14 files |
+| Phase 27 P01 | 40 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -555,6 +556,8 @@ decision history; they no longer describe current status.
 - [Phase 26]: Keep child outcome, ToolError, capture status, and independent verification separate; capture never self-claims verification. The dated 26-PLANNING-AMENDMENTS.md corrects Plan 05 wording.
 - [Phase 26]: Checked-add terminal evidence requires fixed reason/source/type, final position and empty defect outcome; C size preflight includes the possible terminal record. Peer structural attribution does not prove operand arithmetic.
 - [Phase 26]: Focused/full hosted runs 37118144404/37118315516 pass on Ubuntu/macOS at 46bee44; no local tests/native runs. Independent goal verification passes 5/5, review is clean, and all 12 declared security mitigations are closed.
+- [Phase 27]: Unit is an explicit scalar return mode recorded in the declared function signature; it is not inferred from write events. — This keeps the legacy U64-returning application behavior independent from explicitly-writing applications.
+- [Phase 27]: Write operations produce no place: write_u64 consumes a typed U64 operand and write_newline consumes no operand. — Separate operation identities let later interpreter/native evidence distinguish output events without granting general formatting or string values.
 
 ### Pending Todos
 
@@ -763,9 +766,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-03T13:39:02.335Z
-Stopped at: Phase 27 context gathered
-Resume file: .planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/27-CONTEXT.md
+Last session: 2026-10-03T17:00:48.867Z
+Stopped at: Completed 27-01-PLAN.md; ready for 27-02
+Resume file: .planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/27-02-PLAN.md
 Next action: After clearing context, run $gsd-plan-phase 27. Phase 26 is complete; Phase 27 discussion/context is complete, so continue directly to planning.
 Routing resolution — 2026-10-03 (current): Phase 26 has five summaries and a
 passed 5/5 independent goal report. The completion command returned no
