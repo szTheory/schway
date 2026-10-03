@@ -50,8 +50,12 @@ and hosted dual-host evidence.
 Hosted run 36971855722 passes all 18 family/host/lane rows and closes EVD-10;
 see the dated provenance amendment below. App build receipts remain
 incomplete/non-cacheable when runtime closure is unknown. M004 is complete;
-M005 has delivered checked scalar computation in Phase 26; Phase 27 now owns
-exact FizzBuzz and the remaining cross-program contract.
+M005 has delivered checked scalar computation in Phase 26. Phase 27 is in
+progress: exact FizzBuzz, checked U64 equality/remainder, fixed literal writes,
+and the shared application-output ceiling are implemented. Focused local
+semantic, output-boundary, evidence, and public-CLI checks pass. The remaining
+Phase 27 work is the fail-closed macOS/Linux receipt route, actual same-revision
+hosted receipts, and the clean-checkout guide.
 
 ### Phase 26 completion amendment — 2026-10-03
 
@@ -85,6 +89,30 @@ not measured. Capture remains separate from independent verification, and the
 event peer checks structural attribution rather than proving overflow operands.
 Equality, remainder, fixed text, shared output limits, and the complete M005
 cross-program evidence/documentation contract remain Phase 27-owned.
+
+### Phase 27 progress amendment — 2026-10-03
+
+**Source inspection:** `examples/fizzbuzz.schway` and
+`examples/sum_to_n.schway` are ordinary-source witnesses. The checker and both
+independent validators admit U64 equality/remainder, reject a constant zero
+divisor, and retain the dynamic zero failure path. Fixed literal writes are
+bounded by the shared 65,536-byte application-output limit; application output
+and evidence capacity remain separate. Ownership, resource, loan, and
+loan-derived loop-carried state remain refused. The native host receipt driver,
+two-host gate, CI wiring, and clean-checkout guide are still the next plans.
+
+**Newly executed local evidence:** focused Go selectors for exact answers,
+reached wrong-remainder/wrong-arithmetic/skipped-iteration controls, overflow
+and zero cases, repeated event identity/order, evidence capacity, output-limit
+separation, legacy document compatibility, and the public app CLI passed on
+macOS/arm64 in Phase 27 Plans 27-07/27-08 at implementation commit `21fb123`.
+The checks exercised interpreter and native builds. They were focused checks;
+no full project suite, hosted Phase 27 run, or Linux native execution is claimed.
+
+**Remaining boundary:** the local macOS results do not close EVD-12. Both
+actual hosted hosts must pass the new Phase 27 driver at one source/fixture
+revision, and DX-16 still needs its linked clean-checkout guide. Phase 25/26
+receipts remain historical and cannot substitute for those runs.
 
 ### Phase 26 discussion — 2026-10-02 (historical planning snapshot)
 
@@ -154,7 +182,7 @@ engine agreement alone cannot prove correctness.
 | Live owned allocation | Acquisition-based obligation conservation; per-operation ABI/destructor; noncopyability | Omitted physical destructor with unchanged events must fail; discard must not erase obligation | M004 acquisition/discharge phase |
 | Transfer/calls/errors | Owner and resource identity across frames; reverse completion order; failed acquisition | Phase 24's ordinary success and typed-error apps, distinct activations, acquisition-derived peers, and physical observer passed on both hosted hosts; general cleanup shapes remain refused | Phase 24 complete; extend only for a selected broader cleanup consumer |
 | Shared/exclusive pointer access | Borrow endpoints, independent straight-line overlap/escape refusal, source-attributed escape diagnostics, actual C ABI and emitted attributes | `TestPhase25PointerPathLiveOverlap`, `TestPhase25PointerPathBorrowedResultEscape`, `TestPhase25IndependentPeerMutations`, and command/diagnostic attribution checks pass locally; hosted run 36971855722 passes 18/18 rows. No unsupported alias/alignment/capture promises | Phase 25 complete; preserve the existing refusal frontier and use hosted evidence aggregate for regression |
-| Arithmetic and Bool | Checked U64 addition and `<`/Bool run; equality/remainder remain next | Phase 26 literal answers, reached wrong-result controls, and MAX+1 failure pass independently in both engines; no wrapped success | Phase 26 complete; U64-02 closes in Phase 27 |
+| Arithmetic and Bool | Checked U64 addition, `<`, `==`, and `%` run in the scalar path; constant zero remainder is refused and dynamic zero fails consistently | Phase 26 literal answers plus Phase 27 independent peers, zero-divisor cases, and reached arithmetic/remainder mutations; native/interpreter behavior is compared with fixed answers | Phase 27 retains the refusal/evidence contract; U64-02 closes with phase verification |
 | Scalar CFG back edges | Independent finite scalar fixed points and dynamic occurrence identity | Phase 26 admits U64/Bool state, pins 0/1/2 events and forged controls, and fails closed at analysis/evidence bounds; resource/loan carries stay refused; path oracle stays acyclic | Phase 26 complete; preserve refusal controls in Phase 27 |
 | Byte views/indexing/aggregates | Bounds, initialization, subobject layout/ownership and error paths | Empty/one/max/truncated cases; out-of-bounds controls; only admitted moves/copies | Byte-library capability |
 | JSON/HTTP input | Untrusted bytes, limits, framing/encoding, allocation/error cleanup | Malformed input, depth/size budget, split/truncated messages; adversarial cases from selected protocol | Respective library consumer |
@@ -168,22 +196,22 @@ roadmap does not promise to prove arbitrary foreign C correct.
 
 ## Current three recommendations
 
-1. **Complete Phase 27 with exact FizzBuzz.** User-visible program: ordinary
-   `fizzbuzz.schway` prints the exact lines for inputs 0–1,000. Current blocker:
-   equality, remainder with defined zero-divisor behavior, fixed text, and the
-   shared output-limit contract are not admitted. Smallest complete slice:
-   reuse Phase 26 scalar loops and decimal output, add only the operators and
-   fixed writes needed by FizzBuzz, and pin both programs' 65,536-byte ceiling.
-   Checker/guarantee changes: typed equality/remainder, static zero-divisor
-   refusal, dynamic checked failure, and bounded output effects; keep resource
-   and loan back-edge refusals. Evidence/debt: Phase 26 U64-01/FLOW-01/FLOW-02/
-   APP-07 are verified; Phase 27 owns U64-02, APP-08, APP-09, EVD-12, and DX-16,
-   including independent literal answers, reached mutations, and both-host
-   evidence. Owner/next action: Phase 27 planning from the approved
-   `27-CONTEXT.md`, then execute the resulting runnable slice. The discussion is
-   complete; do not repeat it. Reprioritize only if a named consumer exposes a
-   smaller safe slice with greater runnable value or a Phase 26 safety
-   regression blocks reuse.
+1. **Finish Phase 27's exact FizzBuzz and cross-host evidence.** User-visible
+   programs: ordinary `fizzbuzz.schway` and `sum_to_n.schway` produce exact
+   bounded output. Current blocker: actual macOS and Linux native receipts at
+   the same final revision, plus the linked clean-checkout guide. Smallest
+   complete slice: implement the 27-09 host driver, receipt gate, and existing
+   CI matrix wiring; then complete 27-10's guide and collect the actual hosted
+   artifacts. Checker/guarantee changes: require both distinct hosts, exact
+   source/fixture hashes, declared inputs, and successful jobs; unavailable or
+   stale evidence stays open. Preserve the implemented static-zero refusal,
+   dynamic checked failure, shared output ceiling, and resource/loan loop
+   refusals. Evidence/debt: Phase 26 U64-01/FLOW-01/FLOW-02/APP-07 and the
+   Phase 27 focused local answer, mutation, output, and CLI checks are current;
+   Phase 27 EVD-12 and DX-16 remain open. Owner/next action: execute Plans
+   27-09 and 27-10; historical Phase 25/26 receipts do not count. Reprioritize
+   by reacquiring both hosts if code, compiler, fixture, or CI inputs change
+   after the claimed SHA, or leave EVD-12 open if either host is unavailable.
 2. **Build a bounded byte utility and reusable local module boundary.**
    User-visible program: a `checksum` command reads a size-limited file and
    computes one specified checksum with exact success/error results. Current
@@ -218,11 +246,12 @@ For each candidate, the smallest complete slice, checker changes, evidence,
 owner/next action, and reprioritize observation determine whether its ranking
 should change.
 
-M005 has delivered `sum_to_n`; FizzBuzz remains. Reuse checked addition, `<`,
-Bool branches, scalar fixed points, and decimal output. Phase 27 closes
-equality/remainder, fixed text, shared output limits, and the cross-program
-evidence contract. Broaden loop-carried state only for a named runnable
-witness with independent safety evidence.
+M005 has delivered `sum_to_n` and the Phase 27 source path for exact FizzBuzz.
+Checked addition, `<`, Bool branches, scalar fixed points, equality/remainder,
+fixed text, and shared output limits are implemented. Phase 27 still closes the
+cross-program evidence/documentation contract with its native host driver,
+same-revision hosted receipts, and clean-checkout guide. Broaden loop-carried
+state only for a named runnable witness with independent safety evidence.
 
 ## Maintaining pace and truth
 

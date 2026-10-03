@@ -40,6 +40,28 @@ event peer checks structural attribution rather than proving overflow operands.
 Equality, remainder, fixed text, shared output limits, and the complete M005
 cross-program evidence/documentation contract remain Phase 27-owned.
 
+### Phase 27 progress amendment — 2026-10-03
+
+**Source inspection:** `examples/fizzbuzz.schway` composes the Phase 26 scalar
+loop with U64 equality/remainder and literal-only text writes. The checker,
+core validator, and origin validator derive the remainder and write facts
+independently. Constant zero divisors are refused; dynamic zero divisors fail
+in the interpreter and native app. Both `fizzbuzz.schway` and
+`sum_to_n.schway` use the shared 65,536-byte whole-write output bound. Resource,
+loan, loan-derived, and unsupported cyclic event carries remain refused.
+
+**Newly executed local evidence:** focused Plan 27-07/27-08 selectors passed
+on macOS/arm64 at implementation commit `21fb123`, covering exact answer
+matrices, reached arithmetic/remainder/iteration mutations, overflow and zero
+controls, repeated event identity and order, output/evidence capacity, and the
+public app CLI. Interpreter and native builds were exercised. These focused
+checks are not full-suite or hosted Phase 27 receipts.
+
+**Still open:** Plan 27-09 owns the native host driver, same-revision receipt
+gate, and CI matrix wiring; Plan 27-10 owns the clean-checkout guide and actual
+macOS/Linux hosted receipts. EVD-12 and DX-16 remain open until those artifacts
+and hosted runs are complete. Phase 25/26 receipts remain historical.
+
 ### Phase 25 closeout amendment — 2026-10-01
 
 **Source inspection:** the emitter admits only the integrated shared and
@@ -213,7 +235,8 @@ thresholds below reflect the later Phase 23 closeout.
 | Calls between Schway functions | Multi-function programs run; call-graph cycles remain refused | Phase 11 archive; `testdata/phase07/call_basic.schway`; `session.RunInterpreter` / native path |
 | Returns independent of parameter type | Admitted through the production pipeline | Phase 17 archive and `session_phase17_test.go` |
 | Computed `Result` matches and payload returns | Admitted; this is not unrestricted statement control flow | `session_phase18_payload_test.go`, Phase 18 archive |
-| U64 constants and checked scalar computation | Constants, checked addition, `<`, Bool branches, mutable U64/Bool state, and pre-tested scalar loops run; equality/remainder are not yet admitted | `examples/sum_to_n.schway`, `examples/phase26/checked_add_overflow.schway`, `TestPhase26ExactSumMatrix`, `TestPhase26CheckedAddInterpreter`, `TestPhase26CheckedAddC17` |
+| U64 arithmetic and scalar computation | Constants, checked addition, `<`, `==`, `%`, Bool branches, mutable U64/Bool state, and pre-tested scalar loops run; constant zero remainder is refused and dynamic zero fails with a checked app outcome | `examples/sum_to_n.schway`, `examples/fizzbuzz.schway`, `check/scalar.go`, `TestPhase26ExactSumMatrix`, `TestPhase27EqualityRemainder`, `TestPhase27StaticZero`, `TestPhase27DynamicZero` |
+| Fixed text and bounded application output | Literal-only text writes combine with U64 decimal/LF writes; a 65,536-byte shared whole-write ceiling fails closed while evidence capacity stays separate | `internal/compiler/execution/execution.go`, `interp_phase27_output_test.go`, `cgen_phase27_output_test.go`, `TestPhase27OutputEvidenceSeparation`, `TestPhase27OutputEvidenceExactLimit` |
 | Bounded scalar CFG and repeated events | Three independent analyses admit scalar state with deterministic bounds; repeated copies have per-invocation/site occurrence identity | `check/scalar.go`, `corevalidate`, `originvalidate`, `TestPhase26AnalysisExhaustion`, `TestPhase26PeerOccurrenceOrder`, `TestPhase26SourceRepeatedCopyEvidence`; authority-bearing carries remain refused |
 | Ownership/borrow checking | Affine ownership, interprocedural loans, independent core/origin validation, bounded path oracle | `check`, `corevalidate`, `originvalidate`, `pathoracle` |
 | Evidence | Interpreter/native comparison, mutation controls, manifests, scoped optimizer/sanitizer lanes, structured diagnostics/repair | Phase 14–20 records; each claim retains its scope/grade |
@@ -232,7 +255,7 @@ The available compiler is not a general application runtime yet.
 | Schway foreign operations and pointer parameters | Phases 23–24 admit only the exact file-byte acquire/use/release and bounded transfer/error shapes. Phase 25 admits shared/exclusive U64 read-copy helpers only in its exact utility chain; other foreign-call shapes and broader pointer bodies remain structurally refused | `internal/compiler/cgen/cgen_program.go`, `TestPhase23OperationContract`, `TestPhase25ExclusivePointerRefusal`, `TestPhase25PointerPathLiveOverlap`, `TestPhase25PointerPathBorrowedResultEscape`, `TestPhase25EscapeDiagnosticSourceAttribution`, and peer mutation controls; hosted run 36971855722 passes all 18 family/host/lane rows |
 | Host build closure | Known source/header/compiler/target inputs are identity-bound, but the SDK/linker/runtime closure is incomplete; app artifacts are not cacheable | `native/bindings.go`, `examples/phase22/BINDINGS.md`, Phase 22 build receipts |
 | Schway-owned physical cleanup | A bounded owner stays live through helper use and is released exactly once on normal and typed-error paths; general cleanup shapes, fallible destructors, and nonlocal exits remain unadmitted. The C adapter owns file descriptors and frees partial buffers on acquisition failures | `examples/phase24/error.schway`, `examples/phase24/README.md`, `internal/compiler/native/phase24_observer_test.go`, `scripts/verify-phase24.sh`; hosted CI 36856048690 |
-| Remaining computation/output surface | Checked addition, `<`, Bool branches, and scalar loops run; equality, remainder, fixed text, and the shared M005 output contract still block FizzBuzz | Phase 26 source/tests and 26-VERIFICATION.md; Phase 27 owns U64-02/APP-08/APP-09/EVD-12/DX-16 |
+| Bounded M005 applications | `sum_to_n` and exact FizzBuzz run from ordinary source with checked equality/remainder, literal writes, and bounded output; general strings and byte/file IO remain unavailable | `examples/sum_to_n.schway`, `examples/fizzbuzz.schway`, Phase 26/27 focused controls; Phase 27's actual hosted macOS/Linux receipts and clean-checkout guide remain open |
 | Resource/loan loop carries and cyclic path enumeration | Scalar-loop admission does not authorize ownership, resources, loans, or loan-derived provenance across back edges; the path oracle remains acyclic | Phase 26 category/peer mutation controls and `TestCompositionCycleGuardFailsClosed` |
 | General strings, arrays, collections, usable library modules | Ordinary JSON/HTTP libraries are not yet writable | current syntax/checker frontier; design wiki is prospective |
 | Recursion and broader resource control | Call cycles, nonlocal exits, cancellation, general fallible cleanup and escaped pointers require further contracts | callgraph and current foreign refusal boundaries |
@@ -290,20 +313,22 @@ Machine check: `GOCACHE=/tmp/schway-verification-gocache go test ./internal/comp
 
 ## Next useful thresholds
 
-1. **Complete Phase 27 with exact FizzBuzz.** User-visible program: ordinary
-   `fizzbuzz.schway` prints the exact lines for inputs 0–1,000. Current blocker:
-   equality, remainder with defined zero-divisor behavior, fixed text, and the
-   shared output-limit contract are not admitted. Smallest complete slice:
-   reuse Phase 26 scalar loops and decimal output, add only the operators and
-   fixed writes needed by FizzBuzz, and pin both programs' 65,536-byte ceiling.
-   Checker/guarantee changes: typed equality/remainder, static zero-divisor
-   refusal, dynamic checked failure, and bounded output effects; keep resource
-   and loan back-edge refusals. Evidence/debt: Phase 26 U64-01/FLOW-01/FLOW-02/
-   APP-07 are verified; Phase 27 owns U64-02, APP-08, APP-09, EVD-12, and DX-16,
-   including independent literal answers, reached mutations, and both-host
-   evidence. Owner/next action: Phase 27 discussion and planning. Reprioritize
-   only if a named consumer exposes a smaller safe slice with greater runnable
-   value or a Phase 26 safety regression blocks reuse.
+1. **Finish Phase 27's exact FizzBuzz and cross-host evidence.** User-visible
+   programs: ordinary `fizzbuzz.schway` and `sum_to_n.schway` produce exact
+   bounded output. Current blocker: actual macOS and Linux native receipts at
+   the same final revision, plus the linked clean-checkout guide. Smallest
+   complete slice: implement the 27-09 host driver, receipt gate, and existing
+   CI matrix wiring; then complete 27-10's guide and collect the actual hosted
+   artifacts. Checker/guarantee changes: require two distinct hosts, matching
+   source/fixture hashes, declared inputs, and successful jobs; unavailable or
+   stale evidence stays open. The language checks already enforce static-zero
+   refusal, dynamic checked failure, the shared output ceiling, and resource/
+   loan loop refusals. Evidence/debt: Phase 26 U64-01/FLOW-01/FLOW-02/APP-07
+   and Phase 27's focused local answer, mutation, output, and CLI checks are
+   current; EVD-12 and DX-16 remain open. Owner/next action: execute Plans
+   27-09 and 27-10; historical Phase 25/26 receipts do not count. Reprioritize
+   by reacquiring both hosts if code, compiler, fixture, or CI inputs change
+   after the claimed SHA, or leave EVD-12 open if either host is unavailable.
 2. **Build a bounded byte utility and reusable local module boundary.**
    User-visible program: a `checksum` command reads a size-limited file and
    computes one specified checksum with exact success/error results. Current
