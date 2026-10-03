@@ -10,19 +10,19 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_names_test.go:Emit:110",
+      "call": "internal/compiler/cgen/cgen_names_test.go:Emit:111",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_names_test.go:EmitNative:114",
+      "call": "internal/compiler/cgen/cgen_names_test.go:EmitNative:115",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_names_test.go:EmitNative:354",
+      "call": "internal/compiler/cgen/cgen_names_test.go:EmitNative:355",
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/cgen/cgen_names_test.go:EmitNative:358",
+      "call": "internal/compiler/cgen/cgen_names_test.go:EmitNative:359",
       "classification": "admitted-dynamic-schema2"
     },
     {
