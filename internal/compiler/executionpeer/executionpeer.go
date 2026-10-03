@@ -334,6 +334,7 @@ func (i *index) validate(document execution.Execution) error {
 	exhaustedOccurrence := make(map[string]bool)
 	stack := make([]string, 0)
 	pending := ""
+	checkedAddDefect := -1
 	for n, event := range document.Events {
 		parsed, parseErr := execution.ParseInvocation(event.Invocation)
 		if parseErr != nil {
@@ -359,8 +360,20 @@ func (i *index) validate(document execution.Execution) error {
 		if err != nil {
 			return refusal("unknown_kind", n, event.Invocation, "", occ.functionID, err.Error())
 		}
-		if (i.loopOperations[op.value.ID] || event.Occurrence > 0) && !i.scalarLoopCopies[op.value.ID] {
+		checkedOverflow := op.value.Kind == core.OpAddChecked && event.Kind == "function.defected"
+		if (i.loopOperations[op.value.ID] || event.Occurrence > 0) && !i.scalarLoopCopies[op.value.ID] && !checkedOverflow {
 			return refusal("loop_event", n, event.Invocation, "", occ.functionID, "cyclic or repeated event is not an admitted scalar copy")
+		}
+		if checkedOverflow {
+			if event.Output != "U64 addition overflow" || event.SourcePlace != op.value.SourceID || event.TypeID != op.value.TypeID || event.TargetPlace != "" {
+				return refusal("checked_add_attribution", n, event.Invocation, "", occ.functionID, "checked-add defect reason or source/type attribution disagrees with operation")
+			}
+			if n != len(document.Events)-1 || document.Outcome.Kind != execution.OutcomeDefect || document.Outcome.Value != "" {
+				return refusal("checked_add_terminal", n, event.Invocation, "", occ.functionID, "checked-add overflow must be the final event and carry an empty defect outcome")
+			}
+			checkedAddDefect = n
+		} else if checkedAddDefect >= 0 {
+			return refusal("checked_add_terminal", n, event.Invocation, "", occ.functionID, "event follows checked-add overflow terminal")
 		}
 		pair := event.Invocation + "\x00" + event.ID
 		if event.Occurrence < nextOccurrence[pair] || (exhaustedOccurrence[pair] && event.Occurrence == ^uint64(0)) {
@@ -448,7 +461,7 @@ func (i *index) classify(event execution.Event) (operation, error) {
 		if event.ID == id+":event:failed" && op.value.Kind == core.OpFail && event.Kind == "function.failed" {
 			return op, nil
 		}
-		if event.ID == id+":event:defected" && op.value.Kind == core.OpDefect && event.Kind == "function.defected" {
+		if event.ID == id+":event:defected" && event.Kind == "function.defected" && (op.value.Kind == core.OpDefect || op.value.Kind == core.OpAddChecked) {
 			return op, nil
 		}
 	}

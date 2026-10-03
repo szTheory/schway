@@ -80,6 +80,59 @@ func ret(invocation, id, functionID string) execution.Event {
 	return event(invocation, id+":event:returned", "function.returned", functionID)
 }
 
+func checkedAddOverflowFixture(t *testing.T) (core.Program, execution.Execution) {
+	t.Helper()
+	const functionID, operationID = "entry", "entry:add"
+	invocation := inv(t, functionID)
+	program := core.Program{Functions: []core.Function{{
+		ID: functionID, Name: functionID, Parameter: core.Parameter{ID: "entry:arg", Type: "U64"}, ReturnType: "U64",
+		Linear: &core.LinearBody{
+			Types:      []core.TypeFact{{ID: "u64", Shape: core.TypeRef{Constructor: "U64"}}},
+			Places:     []core.Place{{ID: "entry:left", TypeID: "u64"}, {ID: "entry:right", TypeID: "u64"}, {ID: "entry:sum", TypeID: "u64"}},
+			Operations: []core.LinearOperation{{ID: operationID, Kind: core.OpAddChecked, SourceID: "entry:left", RightID: "entry:right", TargetID: "entry:sum", TypeID: "u64"}, returned("entry:return")},
+		},
+	}}}
+	defect := event(invocation, operationID+":event:defected", "function.defected", functionID)
+	defect.SourcePlace, defect.TypeID, defect.Output = "entry:left", "u64", "U64 addition overflow"
+	document := execution.Execution{Schema: execution.Schema2, Outcome: execution.Outcome{Kind: execution.OutcomeDefect}, Events: []execution.Event{defect}}
+	return program, document
+}
+
+func TestCheckedAddOverflowEventIsStructurallyAccepted(t *testing.T) {
+	program, document := checkedAddOverflowFixture(t)
+	if err := executionpeer.Validate(program, document); err != nil {
+		t.Fatalf("source-attributed checked-add defect rejected: %v", err)
+	}
+
+	// The peer validates that this terminal event is structurally attributable
+	// to a checked-add operation. It has no operand values, so this fixture does
+	// not claim the independent peer proved that arithmetic actually overflowed.
+	tests := []struct {
+		name   string
+		mutate func(*execution.Execution)
+	}{
+		{"wrong kind", func(doc *execution.Execution) { doc.Events[0].Kind = "function.failed" }},
+		{"wrong reason", func(doc *execution.Execution) { doc.Events[0].Output = "forged reason" }},
+		{"wrong source", func(doc *execution.Execution) { doc.Events[0].SourcePlace = "entry:right" }},
+		{"wrong type", func(doc *execution.Execution) { doc.Events[0].TypeID = "bool" }},
+		{"wrong outcome", func(doc *execution.Execution) { doc.Outcome.Kind = execution.OutcomeReturned }},
+		{"nonempty defect value", func(doc *execution.Execution) { doc.Outcome.Value = "forged" }},
+		{"event after terminal", func(doc *execution.Execution) {
+			doc.Events = append(doc.Events, ret(inv(t, "entry"), "entry:return", "entry"))
+		}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mutated := document
+			mutated.Events = append([]execution.Event(nil), document.Events...)
+			test.mutate(&mutated)
+			if err := executionpeer.Validate(program, mutated); err == nil {
+				t.Fatal("forged checked-add overflow trace was accepted")
+			}
+		})
+	}
+}
+
 func phase26OccurrenceFixture(t *testing.T) (core.Program, execution.Execution) {
 	t.Helper()
 	const functionID = "entry"

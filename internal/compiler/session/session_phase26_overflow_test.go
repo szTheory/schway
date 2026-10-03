@@ -11,6 +11,7 @@ import (
 
 	"github.com/szTheory/schway/internal/compiler/cgen"
 	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/executionpeer"
 	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/session"
@@ -37,6 +38,30 @@ func TestPhase26OverflowProcessOutcome(t *testing.T) {
 	event := interpreted.Events[len(interpreted.Events)-1]
 	if event.Kind != "function.defected" || event.Output != "U64 addition overflow" || event.SourcePlace == "" {
 		t.Fatalf("interpreter overflow event=%+v, want source-attributed overflow reason", event)
+	}
+	interpretedEvidence, err := session.ProjectExecutionSchema2(checked.Program, interpreted)
+	if err != nil {
+		t.Fatalf("project interpreter overflow evidence: %v", err)
+	}
+	if err := executionpeer.Validate(checked.Program, interpretedEvidence); err != nil {
+		t.Fatalf("peer rejected reached interpreter overflow: %v", err)
+	}
+
+	// The conformance emitter records the same terminal schema-2 event before
+	// aborting. The peer checks structural attribution and terminal shape; it
+	// does not independently evaluate the operands or prove the overflow.
+	cSource, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatalf("EmitNative overflow witness: %v", err)
+	}
+	runner := native.DefaultRunner()
+	runner.Expect = native.ExpectDefect
+	nativeResult, err := runner.Run(context.Background(), cSource, "-O0", []string{"1"})
+	if err != nil || len(nativeResult.Pairs) != 1 {
+		t.Fatalf("native conformance overflow pairs=%d err=%v", len(nativeResult.Pairs), err)
+	}
+	if err := executionpeer.Validate(checked.Program, nativeResult.Pairs[0].Execution); err != nil {
+		t.Fatalf("peer rejected reached native overflow: %v", err)
 	}
 
 	artifact := filepath.Join(t.TempDir(), "checked_add_overflow")

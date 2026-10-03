@@ -199,8 +199,14 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 			case core.OpConst:
 				// Constants change local state but intentionally add no public event.
 				continue
-			case core.OpAddChecked, core.OpLessU64, core.OpScalarStore, core.OpBranch:
-				// Phase 26 scalar computation and CFG control are event-free.
+			case core.OpAddChecked:
+				// Successful checked addition is event-free, but overflow emits a
+				// terminal defect with a fixed reason and operation attribution.
+				// Reserve its full representation before C serialization.
+				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", "U64 addition overflow"
+				event.TargetPlace = ""
+			case core.OpLessU64, core.OpScalarStore, core.OpBranch:
+				// Phase 26 comparisons, stores, and CFG control are event-free.
 				continue
 			case core.OpCopy:
 				event.ID, event.Kind = operation.ID+":event", "value.copied"

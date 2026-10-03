@@ -593,6 +593,63 @@ func TestSchema2ExecutionOutputBoundIsPreflighted(t *testing.T) {
 	}
 }
 
+func TestSchema2OverflowEventIsIncludedInPreflight(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase26", "checked_add_overflow.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("overflow witness: unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	observed, err := cgen.ExecutionOutputSizeForTest(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	withoutAddEvent := checked.Program
+	withoutAddEvent.Functions = append([]core.Function(nil), checked.Program.Functions...)
+	for index := range withoutAddEvent.Functions {
+		if withoutAddEvent.Functions[index].Linear == nil {
+			continue
+		}
+		linear := *withoutAddEvent.Functions[index].Linear
+		linear.Operations = append([]core.LinearOperation(nil), linear.Operations...)
+		for operationIndex := range linear.Operations {
+			if linear.Operations[operationIndex].Kind == core.OpAddChecked {
+				linear.Operations[operationIndex].Kind = core.OpLessU64
+			}
+		}
+		withoutAddEvent.Functions[index].Linear = &linear
+	}
+	oldEventFreeBound, err := cgen.ExecutionOutputSizeForTest(withoutAddEvent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if observed <= oldEventFreeBound {
+		t.Fatalf("overflow-capable size bound %d did not reserve more bytes than event-free bound %d", observed, oldEventFreeBound)
+	}
+
+	restore := cgen.SetExecutionOutputLimitForTest(observed - 1)
+	_, err = cgen.EmitNative(checked.Program)
+	restore()
+	bound, ok := cgen.ExecutionOutputExceededError(err)
+	if !ok || bound.Limit() != observed-1 || bound.Observed() != observed {
+		t.Fatalf("want overflow-event size refusal at N-1, got %v", err)
+	}
+	if cgen.InvocationSerializationReachedForTest() {
+		t.Fatal("overflow-event output-bound refusal reached C serialization")
+	}
+	restore = cgen.SetExecutionOutputLimitForTest(observed)
+	generated, err := cgen.EmitNative(checked.Program)
+	restore()
+	if err != nil {
+		t.Fatalf("exact overflow-event bound refused: %v", err)
+	}
+	if !strings.Contains(generated, fmt.Sprintf("#define SCHWAY_OUTPUT_LIMIT %du", observed)) {
+		t.Fatalf("generated writer does not carry overflow-event bound %d", observed)
+	}
+}
+
 // TestSchema2PayloadOutcomeBoundIsPreflighted keeps the terminal payload
 // writer's maximum representation inside the size preflight contract. With a
 // limit one byte below that conservative document size, emission must refuse
