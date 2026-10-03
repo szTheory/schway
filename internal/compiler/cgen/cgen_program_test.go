@@ -2206,10 +2206,10 @@ func TestPhase26NativeRepeatedCopy(t *testing.T) {
 	if sourcePlace.ID == "" {
 		t.Fatal("checked sum_to_n has no loop counter place")
 	}
-	targetID := main.ID + ":place:phase26snapshot"
-	copyID := main.ID + ":op:phase26snapshot"
+	targetID := fmt.Sprintf("%s:place:%d", main.ID, len(main.Linear.Places))
+	copyID := fmt.Sprintf("%s:op:%d", main.ID, len(main.Linear.Operations))
 	main.Linear.Places = append(main.Linear.Places, core.Place{ID: targetID, Name: "snapshot", TypeID: sourcePlace.TypeID})
-	main.Linear.Operations = append(main.Linear.Operations, core.LinearOperation{ID: copyID, PointID: copyID + ":point", Kind: core.OpCopy, SourceID: sourcePlace.ID, TargetID: targetID, TypeID: sourcePlace.TypeID})
+	main.Linear.Operations = append(main.Linear.Operations, core.LinearOperation{ID: copyID, PointID: fmt.Sprintf("%s:point:linear:%d", main.ID, len(main.Linear.Operations)), Kind: core.OpCopy, SourceID: sourcePlace.ID, TargetID: targetID, TypeID: sourcePlace.TypeID})
 	inserted := false
 	for index := range main.Linear.Blocks {
 		block := &main.Linear.Blocks[index]
