@@ -255,6 +255,13 @@ state only for a named runnable witness with independent safety evidence.
 
 ## Maintaining pace and truth
 
+**2026-10-08 source-review amendment.** Relevant dormant research hypotheses are indexed in
+[`seeds/`](seeds/) and the [Dashbit AI-era appraisal](sources/DASHBIT-AI-ERA.md).
+At the existing transition checks, revisit only seeds matching a named
+consumer and current source witness; record their disposition in the active
+planning artifact. The appraisal does not change the ranked recommendations
+above.
+
 - At kickoff, before phase discussion/planning, and after phase completion,
   inspect source witnesses and refusal boundaries, then refresh this document
   and LANGUAGE-MATURITY only where facts changed. Surface three ranked next

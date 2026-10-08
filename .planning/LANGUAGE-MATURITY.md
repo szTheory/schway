@@ -373,6 +373,13 @@ to wait for arithmetic or aggregates.
 
 ## Refresh triggers
 
+**2026-10-08 source-review amendment.** The [Dashbit AI-era source appraisal](sources/DASHBIT-AI-ERA.md) and relevant
+[dormant seeds](seeds/) are conditional research inputs, not capability
+receipts. At existing planning transitions, compare a triggered seed with a
+named consumer, present source witness, and refusal boundary; record a scoped
+disposition in the active planning artifact. No recurring article study or
+background scheduler is implied.
+
 Refresh after a capability lands, a refusal changes, a milestone closes, or a
 selected user program exposes an incorrect claim. At each planning transition,
 review the current three recommendations in PRODUCT-ROADMAP and connect changed

@@ -105,6 +105,15 @@ completion, read `.planning/PRODUCT-ROADMAP.md` and
 `.planning/LANGUAGE-MATURITY.md`. Compare their claims with current source
 witnesses, implementation refusal boundaries, and named evidence tests.
 
+At those same transitions, scan trigger metadata in `.planning/seeds/`, then
+consult relevant dormant seeds and the source appraisal at
+`.planning/sources/DASHBIT-AI-ERA.md`. Match each seed to a current source
+witness and named consumer, then record a scoped disposition in the active
+planning artifact: retain dormant, run the experiment, promote through normal
+roadmap/requirements ownership, supersede, or reject. Review only relevant
+seeds; this is an agent-executed transition check, not a scheduler or a
+recurring full-source study.
+
 Surface the three most useful next capabilities without waiting for another
 user request. For each, name the user-visible program, current blocker,
 smallest complete slice, checker/guarantee changes triggered, evidence/debt
