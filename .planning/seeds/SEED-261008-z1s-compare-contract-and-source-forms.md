@@ -27,7 +27,8 @@ Use literal expected program behavior and independently derived guarantee result
 
 ## Cost, Owner, and Next Action
 
-**Cost:** A paired source and reviewer experiment plus only the checker work required by the selected guarantee.  
+**Cost:** A paired source and reviewer experiment plus only the checker work required by the selected guarantee.
+
 **Owner/next action:** The language/checker owner for the selected consumer, with actual reviewers for human claims, should at a relevant planning transition, identify the program, real review task, and expected guarantee before promoting through roadmap/requirements ownership.
 
 ## Supersession and Breadcrumbs

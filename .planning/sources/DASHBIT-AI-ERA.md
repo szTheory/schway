@@ -1,9 +1,13 @@
 # José Valim, “Evolving programming languages in the AI era”
 
-**Source:** [Dashbit Blog, September 24, 2026](https://dashbit.co/blog/evolving-ai-era)  
-**Author:** José Valim  
-**Accessed:** 2026-10-08  
-**Inspection baseline:** `c9656f0d74e4222b58e9b1041eb28195c84a0aca`  
+**Source:** [Dashbit Blog, September 24, 2026](https://dashbit.co/blog/evolving-ai-era)
+
+**Author:** José Valim
+
+**Accessed:** 2026-10-08
+
+**Inspection baseline:** `c9656f0d74e4222b58e9b1041eb28195c84a0aca`
+
 **Evidence labels:** “Source inspection” means code or planning text was read at the named path; it does not establish runtime behavior. “Historical receipt” means an existing recorded execution result at its stated revision and hosts. A named test found in source is an evidence anchor, not a receipt or a newly passing check. “Newly executed” below refers only to documentation/link/frontmatter checks described in the quick summary; no Go/native behavior checks were run for this note.
 
 ## Brief précis

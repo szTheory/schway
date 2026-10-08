@@ -27,7 +27,8 @@ Compare literal expected results from independently inspected source against que
 
 ## Cost, Owner, and Next Action
 
-**Cost:** A source-only, bounded query experiment with explicit recheck and pagination cost; no persistent database, schema, or general query language.  
+**Cost:** A source-only, bounded query experiment with explicit recheck and pagination cost; no persistent database, schema, or general query language.
+
 **Owner/next action:** The compiler/query maintainer for the selected consumer phase should, at a relevant planning transition, name the consumer and capture a current failure or measured task before promoting through roadmap/requirements ownership.
 
 ## Supersession and Breadcrumbs

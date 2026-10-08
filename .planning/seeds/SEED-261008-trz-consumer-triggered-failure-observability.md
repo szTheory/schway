@@ -27,7 +27,8 @@ Use an independently specified expected diagnosis. Control wrong-build attributi
 
 ## Cost, Owner, and Next Action
 
-**Cost:** One opt-in diagnostic and bounded evidence path for one consumer, with allocation, retention, privacy, and performance review.  
+**Cost:** One opt-in diagnostic and bounded evidence path for one consumer, with allocation, retention, privacy, and performance review.
+
 **Owner/next action:** The selected consumer phase owner, with native/evidence and security review, should at a relevant phase transition, name the failure and demonstrate the current evidence gap before promoting through normal roadmap/requirements ownership.
 
 ## Supersession and Breadcrumbs

@@ -33,7 +33,7 @@ patterns-established:
 requirements-completed: []
 actuals:
   tasks: 3
-  commits: 1 # substantive documentation commit; final GSD metadata commit follows
+  commits: 3 # content, GSD metadata, and final documentation whitespace repair
 duration: not measured
 completed: 2026-10-08
 status: complete
@@ -76,7 +76,8 @@ status: complete
 ## Commits
 
 - `13c03ad` — source appraisal, three dormant seeds, and workflow pointers.
-- The final GSD metadata commit records this plan/summary and the STATE completion row.
+- `3bbb1f9` — GSD plan/summary and STATE completion row.
+- A final documentation repair commit removes Markdown hard-break whitespace and records the complete-diff verification.
 
 ## Verification
 
@@ -96,7 +97,7 @@ The documented GSD single-agent isolation fallback used sequential execution in 
 
 ## Issues Encountered
 
-None.
+The final committed-range whitespace check caught Markdown hard-break spaces in newly created files that the earlier unstaged diff check did not include. Those spaces were replaced with blank paragraphs, and verification was repeated over the complete baseline-to-working-tree change.
 
 ## Next Phase Readiness
 
