@@ -238,7 +238,7 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/core/core_test.go:Emit:1006",
+      "call": "internal/compiler/core/core_test.go:Emit:1022",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -269,7 +269,7 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/session/session.go:EmitNative:2983",
+      "call": "internal/compiler/session/session.go:EmitNative:3019",
       "classification": "admitted-dynamic-schema2"
     },
     {
@@ -326,6 +326,10 @@
     },
     {
       "call": "internal/compiler/session/session_phase26_overflow_test.go:EmitNative:53",
+      "classification": "admitted-dynamic-schema2"
+    },
+    {
+      "call": "internal/compiler/session/session_phase27_remainder_test.go:EmitNative:262",
       "classification": "admitted-dynamic-schema2"
     },
     {

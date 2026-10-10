@@ -288,11 +288,11 @@ design exploration, not a supported language specification.
 
 ## Corpus and guard census
 
-Corpus: **153 `.schway` programs, 4,964 lines total** (~32 lines average,
+Corpus: **154 `.schway` programs, 4,999 lines total** (~32 lines average,
 193-line maximum). These counts match the current machine-checked tree; the
 corpus predominantly contains focused semantic fixtures, not applications.
 
-A non-test AST census finds **19 `len(Functions) != 1` guards across 6 files in 1 packages** (52 including tests):
+A non-test AST census finds **19 `len(Functions) != 1` guards across 6 files in 1 packages** (55 including tests):
 
 | Package | Guards | Notable sites |
 |---|---|---|

@@ -1,8 +1,9 @@
 package session_test
 
 import (
+	"context"
+	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -15,11 +16,11 @@ const phase27GateRevision = "0123456789abcdef0123456789abcdef01234567"
 func phase27GitHash(t *testing.T, relative string) string {
 	t.Helper()
 	path := testsupport.ProjectPath(strings.Split(relative, "/")...)
-	output, err := exec.Command("git", "hash-object", path).Output()
-	if err != nil {
-		t.Fatalf("git hash-object %s: %v", relative, err)
+	result, err := testsupport.RunCLIErr(context.Background(), "git", nil, "hash-object", path)
+	if err != nil || result.Exit != 0 {
+		t.Fatalf("git hash-object %s: exit=%d err=%v", relative, result.Exit, err)
 	}
-	return relative + "=" + strings.TrimSpace(string(output))
+	return relative + "=" + strings.TrimSpace(string(result.Stdout))
 }
 
 // phase27ReceiptLog builds a literal known-good receipt for one host. The
@@ -62,10 +63,16 @@ func runPhase27Gate(t *testing.T, first, second string) (string, error) {
 			t.Fatal(err)
 		}
 	}
-	command := exec.Command("sh", testsupport.ProjectPath("scripts", "check-phase27-receipts.sh"), paths[0], paths[1])
-	command.Env = append(os.Environ(), "PHASE27_EXPECTED_REVISION="+phase27GateRevision)
-	output, err := command.CombinedOutput()
-	return string(output), err
+	environment := append(os.Environ(), "PHASE27_EXPECTED_REVISION="+phase27GateRevision)
+	result, err := testsupport.RunCLIErr(context.Background(), "sh", environment, testsupport.ProjectPath("scripts", "check-phase27-receipts.sh"), paths[0], paths[1])
+	if err != nil {
+		return "", err
+	}
+	output := string(result.Stdout) + string(result.Stderr)
+	if result.Exit != 0 {
+		return output, errors.New("gate rejected the receipt pair")
+	}
+	return output, nil
 }
 
 func TestPhase27HostReceiptGate(t *testing.T) {

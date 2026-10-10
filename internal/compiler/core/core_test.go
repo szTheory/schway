@@ -910,6 +910,7 @@ var exhaustiveDispatchFixtures = []string{
 	"testdata/phase12/payload_borrow_interaction.schway",
 	"testdata/phase19/literal_tracer.schway",
 	"examples/sum_to_n.schway",
+	"examples/fizzbuzz.schway",
 }
 
 // runExhaustiveDispatchControl is control:kind.exhaustive_dispatch.phase07_in_process's
@@ -1020,7 +1021,7 @@ func runExhaustiveDispatchControl(fixtures []string, requiredKinds []core.Operat
 		if len(program.Functions) == 1 {
 			generated, err := cgen.Emit(program)
 			if err != nil {
-				if strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") || strings.Contains(err.Error(), "by-pointer bodies are not supported") {
+				if strings.Contains(err.Error(), "multi-function foreign-call bodies are not supported") || strings.Contains(err.Error(), "by-pointer bodies are not supported") || strings.Contains(err.Error(), "Unit C return is supported only by the application shell") {
 					continue
 				}
 				return fmt.Errorf("%s: cgen error: %w", path, err)

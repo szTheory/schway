@@ -204,7 +204,10 @@ func (f *formatter) token(token Token, next Kind) {
 			// on this line, so (unlike the branch below) this must NOT end
 			// the line here. See callBinding's doc comment.
 			f.callBinding = true
-		} else if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || f.previous == TokenTake || f.previous == TokenBorrow || f.previous == TokenMut) {
+		} else if f.insideFunctionBody() && f.linearBinding && f.previous == TokenEqual && next == TokenPercent {
+			// A remainder expression continues on this line; the divisor
+			// operand ends the binding instead.
+		} else if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || f.previous == TokenPercent || f.previous == TokenTake || f.previous == TokenBorrow || f.previous == TokenMut) {
 			f.newline()
 			f.linearBinding = false
 		} else if f.context() == "foreign_fn" && f.previous == TokenColon {
@@ -230,7 +233,7 @@ func (f *formatter) token(token Token, next Kind) {
 		f.ensureLine()
 		f.out.WriteString(token.Text)
 		f.lineOpen = true
-		if f.insideFunctionBody() && f.linearBinding && f.previous == TokenEqual {
+		if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || f.previous == TokenPercent) {
 			f.newline()
 			f.linearBinding = false
 		}

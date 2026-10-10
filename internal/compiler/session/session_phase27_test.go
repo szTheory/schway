@@ -219,7 +219,10 @@ func TestPhase27TracerBoundaries(t *testing.T) {
 		t.Fatalf("U64 write native outcome=%+v stdout=%q stderr=%q err=%v, want explicit and automatic lines", u64Outcome, u64Stdout.String(), u64Stderr.String(), err)
 	}
 
-	first := session.Format(source)
+	// The committed example is formatted by TestPhase27FormatterRemainder; this
+	// source isolates comment placement around typed write statements.
+	formatSource := []byte("module examples.write_format\n\nexport {\n  fn main\n}\n\nfn main(n: U64) -> Unit {\n  var i = 0\n  // bound before output\n  if n < 1001 {\n    while i < n {\n      i = i + 1\n      // emit current value\n      write_u64(i)\n      write_newline()\n    }\n  } else {\n    defect \"input exceeds 1000\"\n  }\n}\n")
+	first := session.Format(formatSource)
 	second := session.Format(first.Canonical)
 	if len(first.Diagnostics) != 0 || len(second.Diagnostics) != 0 || !bytes.Equal(first.Canonical, second.Canonical) || !bytes.Contains(first.Canonical, []byte("// bound before output")) || !bytes.Contains(first.Canonical, []byte("// emit current value")) {
 		t.Fatalf("Unit/write formatting did not preserve comments and stabilize: first=%q second=%q diagnostics=%+v/%+v", first.Canonical, second.Canonical, first.Diagnostics, second.Diagnostics)
@@ -229,7 +232,7 @@ func TestPhase27TracerBoundaries(t *testing.T) {
 			t.Errorf("write token lost its exact source span: %+v", token)
 		}
 	}
-	malformed := []byte(strings.Replace(string(source), "write_u64(i)", "write_u64(,)", 1))
+	malformed := []byte(strings.Replace(string(formatSource), "write_u64(i)", "write_u64(,)", 1))
 	parsed := syntax.Parse(malformed)
 	if len(parsed.Diagnostics) == 0 || parsed.Diagnostics[0].Primary.End <= parsed.Diagnostics[0].Primary.Start {
 		t.Fatalf("malformed write did not recover with a stable span: %+v", parsed.Diagnostics)
@@ -566,4 +569,21 @@ func clonePhase27Linear(linear *core.LinearBody) *core.LinearBody {
 	clone.Blocks = append([]core.Block(nil), linear.Blocks...)
 	clone.Edges = append([]core.Edge(nil), linear.Edges...)
 	return &clone
+}
+
+func TestPhase27FormatterRemainder(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "fizzbuzz.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := session.Format(source)
+	second := session.Format(first.Canonical)
+	if len(first.Diagnostics) != 0 || len(second.Diagnostics) != 0 || !bytes.Equal(first.Canonical, second.Canonical) {
+		t.Fatalf("FizzBuzz formatting is not stable: first=%q second=%q", first.Canonical, second.Canonical)
+	}
+	for _, want := range []string{"let by_fifteen = snapshot % 15\n", "let by_three = snapshot % 3\n", "let by_five = snapshot % 5\n"} {
+		if !bytes.Contains(first.Canonical, []byte(want)) {
+			t.Errorf("canonical FizzBuzz omits %q: %q", want, first.Canonical)
+		}
+	}
 }

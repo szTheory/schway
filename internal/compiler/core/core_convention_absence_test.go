@@ -44,6 +44,9 @@ var linearOperationExpectedFields = []string{
 	"ID", "PointID", "Kind", "SourceID", "TargetID", "LoanID", "TypeID",
 	"Foreign", "OkEdgeID", "ErrEdgeID", "ErrTargetID", "ReleasesOperationID",
 	"Allocator", "Reason", "CalleeID", "PayloadType", "PayloadTargetID", "ConstU64",
+	// Phase 27 literal text-write provenance: source token, decoded bytes and
+	// length carry no per-call convention or ownership override.
+	"TextSource", "TextBytes", "TextLength",
 	// Phase 26 operands, scalar store identity, and Bool successors carry no
 	// per-call convention or ownership override.
 	"RightID", "StoreTargetID", "TrueEdgeID", "FalseEdgeID",

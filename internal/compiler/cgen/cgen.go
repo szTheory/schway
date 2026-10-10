@@ -734,7 +734,7 @@ func emitEventSupportSchema2(out *strings.Builder, capacity, outputLimit int, ne
 		out.WriteString("static int schway_write_bytes(const char *data, size_t length) {\n  FILE *stream = schway_output_stream != NULL ? schway_output_stream : stdout;\n  if (schway_output_stream == NULL && schway_application_output_failed) return 0;\n  if (schway_output_count > schway_output_limit || length > schway_output_limit - schway_output_count) {\n    if (schway_output_stream != NULL) schway_evidence_output_overflow = 1;\n    return 0;\n  }\n  if (length != 0u && fwrite(data, 1u, length, stream) != length) return 0;\n  schway_output_count += length;\n  return 1;\n}\n\n")
 		out.WriteString("static void schway_application_output_failure(void) {\n  if (!schway_application_output_failed) {\n    schway_application_output_failed = 1;\n    fputs(\"schway: application output limit exceeded\\n\", stderr);\n  }\n}\n\n")
 	} else {
-		out.WriteString("static int schway_write_bytes(const char *data, size_t length) {\n  if (schway_output_count > SCHWAY_OUTPUT_LIMIT || length > SCHWAY_OUTPUT_LIMIT - schway_output_count) return 0;\n  if (length != 0u && fwrite(data, 1u, length, stdout) != length) return 0;\n  schway_output_count += length;\n  return 1;\n}\n\n")
+		out.WriteString("static int schway_write_bytes(const char *data, size_t length) {\n  if (length > SCHWAY_OUTPUT_LIMIT - schway_output_count) return 0;\n  if (length != 0u && fwrite(data, 1u, length, stdout) != length) return 0;\n  schway_output_count += length;\n  return 1;\n}\n\n")
 	}
 	out.WriteString("static int schway_write_literal(const char *value) {\n  return schway_write_bytes(value, strlen(value));\n}\n\n")
 	if needsJSONContent {

@@ -2,9 +2,9 @@
 phase: "27"
 slug: "exact-fizzbuzz-and-cross-host-evidence"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: "2026-10-03"
 ---
 
@@ -20,8 +20,8 @@ created: "2026-10-03"
 |----------|-------|
 | **Framework** | Go standard testing package (Go 1.24) |
 | **Config file** | Go module defaults; no separate test configuration identified |
-| **Quick run command** | Focused `go test` selectors in the plan for the touched packages and `TestPhase27` cases |
-| **Full suite command** | `go test ./...`; hosted CI also runs `go test -race ./...` |
+| **Quick run command** | Focused Go test selectors named in each plan for the touched packages and the Phase 27 cases |
+| **Full suite command** | The hosted CI full and race lanes on Linux and macOS; no full suite is run locally |
 | **Estimated runtime** | Not measured for Phase 27; keep per-task selectors focused and record observed latency during execution |
 
 ---
