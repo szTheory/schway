@@ -483,6 +483,15 @@ func eventCapacityDiagnostic(level string) string {
 // runAppVerifyLevel runs one batch per level. Only when the batch fails with
 // the named capacity code does it re-run each input alone to recover per-input
 // results; any other error stays a whole-set operational error.
+//
+// Cost of the recovery path: runner.BuildCache is nil in app verify, and
+// native.Runner.Run compiles its C source on every call. After a batch capacity
+// failure, each input therefore costs one extra clang compile and one extra
+// subprocess timeout budget at this level. For n inputs that is n+1 compiles
+// instead of 1. The cost is paid only after the named capacity code, and app
+// verify caps cases at MaxReplayCaseCount (16), so the path stays a fresh
+// compile on purpose. Reusing one binary would need a new native.Runner API.
+// Revisit if app verify gains larger case sets.
 func runAppVerifyLevel(ctx context.Context, runner native.Runner, cSource, level string, inputs []string) (appVerifyLevel, error) {
 	if len(inputs) == 0 {
 		return appVerifyLevel{}, nil
