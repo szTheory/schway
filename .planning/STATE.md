@@ -1,19 +1,16 @@
 ---
 gsd_state_version: "1.0"
-milestone: M005
-milestone_name: Practical Computation
-status: Awaiting next milestone
-stopped_at: M005 archived (tag M005) — awaiting next milestone
-last_updated: "2026-10-10T23:39:21.358Z"
+milestone: M006
+milestone_name: Bounded Byte Utility and Local Modules
+status: planning
+last_updated: "2026-10-10T23:56:11.761Z"
 last_activity: 2026-10-10
-last_activity_desc: Milestone M005 completed and archived
-state_head: 275582be656e93efbd3a044a1cfe7891765ebd6a
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 25
-  completed_plans: 25
-current_phase: "27.3"
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 <!-- schway-current:start -->
@@ -120,10 +117,10 @@ plans.
 
 ## Current Position
 
-Phase: Milestone M005 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-10-10 — Milestone M005 completed and archived
+Status: Defining requirements
+Last activity: 2026-10-10 — Milestone M006 started
 
 ## M005 Planning
 

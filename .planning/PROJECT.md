@@ -69,6 +69,33 @@ blocker: do not create an implementation gap plan or human UAT. Record the
 existing CI job as the next action, keep the phase incomplete, and resume its
 verifier after the receipt arrives without replaying completed plans.
 
+## Current Milestone: M006 Bounded Byte Utility and Local Modules
+
+**Goal:** A developer can run an ordinary Schway `checksum` program that reads a
+size-limited file and prints one specified checksum with exact success and
+error results, built from a reusable local module that a second consumer
+imports without copying.
+
+**Target features:**
+- Admit only the byte operations the checksum consumer needs: byte views,
+  lengths, bounds-checked indexing, and borrowing a buffer across a scalar loop.
+  Every operation gets independent interpreter and native evidence, plus
+  out-of-bounds and wrong-result controls.
+- Specify the checksum program's results exactly for empty, one-byte, maximum
+  and oversized input, a missing or unreadable file, and the error-path cleanup
+  of the owned buffer.
+- Add a local module boundary with explicit visibility, where a second consumer
+  imports the checksum library without copying it.
+- Carry over M005 debt:
+  - N2: re-acquire two-host hosted receipts at the current revision.
+  - N1: keep the named capacity reason when the app verify report would exceed
+    its size limit.
+  - W2/W3: split the conflated exit classes in `build` and `run --engine=native`.
+
+**Decision method:** design decisions are researched with multiple lenses,
+including an adversarial pass. Each gets one synthesized recommendation, which
+is auto-followed. Copy-local code is preferred over new dependencies.
+
 ## Current State
 
 **2026-10-10 M005 Practical Computation shipped** (5 phases, 25 plans; archive
@@ -85,7 +112,8 @@ straight-line scalar `let` admission (R1), a named
 instead of a signal (W1), and guide outputs under ignored `.schway/` (W4).
 Known limits: `app verify` on `sum_to_n` verifies only n ≤ 14 and loses the named
 reason above n ≈ 172 (report size limit, N1); hosted evidence (run 38091738463 at
-d7ffbcd) predates the final review fixes (N2). Next: `/gsd-new-milestone`.
+d7ffbcd) predates the final review fixes (N2). M006 started 2026-10-10 (see
+Current Milestone above).
 
 ### Historical state records (superseded by dated closeouts)
 
@@ -421,9 +449,11 @@ milestone number.
 
 ### Active
 
-- [ ] Next milestone requirements — define with `/gsd-new-milestone`. Carry-over
-  candidates: M005 audit debt N1 (app verify report size above n ≈ 172), N2
-  (hosted re-run at final SHA), W2/W3 exit-class splits, R1b.
+M006 requirements live in [REQUIREMENTS.md](REQUIREMENTS.md) (IDs are assigned
+at milestone kickoff). In scope: the bounded checksum byte utility, the local
+module boundary with a second consumer, and M005 carry-over N1, N2 and W2/W3.
+Tracked but not scheduled: N3 (duplicated capacity literal), N4 (guide n ≤ 14
+note), R1b, and the D-27.1-10 dispositions.
 
 Atomic IDs and acceptance for M005 are archived in
 [milestones/M005-REQUIREMENTS.md](milestones/M005-REQUIREMENTS.md).
@@ -617,4 +647,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-10 after M005 milestone*
+*Last updated: 2026-10-10 after M006 milestone start*

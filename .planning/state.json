@@ -1,23 +1,12 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "M005 — Practical Computation",
-  "phases": [
-    {
-      "number": "26",
-      "name": "Checked Scalar Sum",
-      "status": "complete"
-    },
-    {
-      "number": "27",
-      "name": "Exact FizzBuzz and Cross-Host Evidence",
-      "status": "complete"
-    }
-  ],
+  "milestone": "M006",
+  "phases": [],
   "next": {
-    "command": "/gsd:progress",
-    "label": "Show progress",
-    "reason": "Unsure of state — showing progress"
+    "command": "/gsd:discuss-phase",
+    "label": "Discuss the first phase",
+    "reason": "Project initialized — plan your first phase"
   },
-  "updated_at": "2026-10-10T23:39:21.369Z"
+  "updated_at": "2026-10-10T23:56:11.763Z"
 }
