@@ -8,6 +8,11 @@
 # malformed receipt) exits non-zero with a named reason. The expected revision
 # defaults to this checkout's HEAD (override: PHASE27_EXPECTED_REVISION) and the
 # expected hashes are recomputed from this checkout, never copied from a log.
+#
+# This gate checks consistency, not authenticity: it validates the shape and
+# recomputed hashes of the logs, but nothing here binds a log to a particular
+# hosted CI run, runner, or artifact. Authenticity must come from the hosted
+# run record itself (see the recorded run ID in 27-HOST-EVIDENCE.md).
 set -eu
 
 reject() {
@@ -52,6 +57,13 @@ check_log() { # check_log LOG -> prints host name on success
 	[ "$result_count" = 1 ] || reject "result_row_count_${result_count}_$log"
 	[ "$(grep '^phase27 ' "$log" | sed -n '1p' | cut -c1-20)" = "phase27 host identit" ] || reject "identity_not_first_$log"
 	[ "$(grep '^phase27 ' "$log" | tail -n 1 | cut -c1-19)" = "phase27 host result" ] || reject "result_not_last_$log"
+
+	# Every phase27 row must be one of the five known kinds, and the toolchain
+	# row must exist exactly once with non-empty go and clang versions.
+	unknown_rows=$(grep '^phase27 ' "$log" | grep -Ev '^phase27 (host identity|toolchain|case|control|host result) ' || true)
+	[ -z "$unknown_rows" ] || reject "unknown_phase27_row_$log"
+	[ "$(grep -c '^phase27 toolchain ' "$log" || true)" = 1 ] || reject "toolchain_row_count_$log"
+	[ "$(grep -Ec '^phase27 toolchain go="[^"]+" clang="[^"]+"$' "$log" || true)" = 1 ] || reject "toolchain_row_malformed_$log"
 
 	identity=$(grep '^phase27 host identity ' "$log")
 	result=$(grep '^phase27 host result ' "$log")
