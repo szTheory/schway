@@ -1,0 +1,10 @@
+module examples.phase272.straight_line_copy
+
+export {
+  fn main
+}
+
+fn main(n: U64) -> U64 {
+  let total = n
+  total
+}
