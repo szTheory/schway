@@ -17,6 +17,7 @@ candidate syntax and mechanisms, not settled specifications.
 
 ## Start here
 
+- [Exact FizzBuzz and sum applications: clean-checkout commands and evidence](examples/phase27/README.md)
 - [Wiki conventions](wiki/README.md)
 - [Vision and design principles](wiki/vision.md)
 - [Converging design baseline](wiki/design-baseline.md)
