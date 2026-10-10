@@ -204,7 +204,7 @@ own bounded sum witness on the way.
 4. `examples/phase27/README.md` documents the fresh-artifact use and the pinned re-check of the committed 6224f8b receipts; `TestPhase27GuideContract` executes the pinned command and requires `status=pass`; the gate prints a stderr hint on revision mismatch without changing reason names or exit status.
 5. Behavior-neutral audit records are closed: `ValidateFullCoverage` marked test-only, 27-09/27-10 SUMMARY `requirements-completed`, 26-05 amendment confirmed, dated addenda in 26/27 VERIFICATION citing the new run.
 
-**Plans:** 2/3 plans executed in 2 waves
+**Plans:** 3/3 plans complete in 2 waves
 
 **Wave 1**
 
@@ -213,4 +213,4 @@ own bounded sum witness on the way.
 
 **Wave 2** *(blocked on Wave 1 completion; contains a human push/dispatch checkpoint)*
 
-- [ ] 27.1-03-PLAN.md — transition records and deferred dispositions, then one authorized hosted two-host run with fresh gated receipts and 26/27 addenda
+- [x] 27.1-03-PLAN.md — transition records and deferred dispositions, then one authorized hosted two-host run with fresh gated receipts and 26/27 addenda
