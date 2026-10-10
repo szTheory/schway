@@ -4,17 +4,17 @@ milestone: M005
 milestone_name: Practical Computation
 current_phase: "27.2"
 current_phase_name: "Address tech debt: straight-line scalar let admission (R1)"
-status: executing
+status: verifying
 stopped_at: Completed 27.2-02-PLAN.md
-last_updated: "2026-10-10T19:05:42.379Z"
+last_updated: "2026-10-10T19:51:49.202Z"
 last_activity: 2026-10-10
 last_activity_desc: Phase 27.2 execution started
-state_head: 28d7e8f52af57d334f29fcb138d0e4ef37f053a5
+state_head: f35bbdd2324b74329e52b7642673f18a44802962
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 21
-  completed_plans: 20
+  completed_plans: 21
 ---
 
 <!-- schway-current:start -->
@@ -123,7 +123,7 @@ plans.
 
 Phase: 27.2 (Address tech debt: straight-line scalar let admission (R1)) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-10 — Phase 27.2 execution started
 Progress: [██████████] 100%
 
