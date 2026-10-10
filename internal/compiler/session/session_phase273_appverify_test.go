@@ -229,35 +229,56 @@ func TestPhase273RunNativeSurfacesNamedCode(t *testing.T) {
 	}
 }
 
-// TestPhase273AppVerifyOneLevelExhaustionFails pins WR-01: capacity is static
-// and level-independent, so exhaustion at exactly one optimization level is a
-// divergence and must be reported as fail, never as benign unsupported.
+// TestPhase273AppVerifyOneLevelExhaustionFails pins the full WR-01 contract
+// in both directions: when exactly one optimization level exhausts the event
+// recorder, the case is fail (never unsupported), carries only interpreter
+// evidence, names the exhausting level exactly, and the report is unverified.
+// A clang wrapper shrinks SCHWAY_EVENT_CAPACITY to 1 at one level only.
 func TestPhase273AppVerifyOneLevelExhaustionFails(t *testing.T) {
 	realClang, err := exec.LookPath("clang")
 	if err != nil {
-		t.Skip("env:clang toolchain unavailable, skipping one-level exhaustion exercise")
+		t.Skip("env:clang toolchain unavailable, skipping asymmetric exhaustion exercise")
 	}
-	wrapper := filepath.Join(t.TempDir(), "clang-shrink-o3")
-	script := "#!/bin/sh\n" +
-		"o3=0; src=\n" +
-		"for a in \"$@\"; do case \"$a\" in -O3) o3=1;; *.c) src=\"$a\";; esac; done\n" +
-		"if [ \"$o3\" = 1 ] && [ -n \"$src\" ]; then sed -i.bak 's/#define SCHWAY_EVENT_CAPACITY [0-9]*u/#define SCHWAY_EVENT_CAPACITY 1u/' \"$src\"; fi\n" +
-		"exec " + realClang + " \"$@\"\n"
-	if err := os.WriteFile(wrapper, []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	runner := native.DefaultRunner()
-	runner.ClangPath = wrapper
-	report, err := session.VerifyApplicationCases(context.Background(), phase273SumToNSource(t),
-		phase273Cases(phase273Case{"n14", "14", "105"}), runner)
-	if err != nil {
-		t.Fatalf("one-level exhaustion returned error: %v", err)
-	}
-	if report.Verified || len(report.Cases) != 1 {
-		t.Fatalf("report=%+v, want unverified single case", report)
-	}
-	got := report.Cases[0]
-	if got.Status != session.ReplayStatusFail || !strings.Contains(got.Diagnostic, "exhausted at -O3 only") {
-		t.Fatalf("case status=%q diagnostic=%q, want fail naming -O3 only", got.Status, got.Diagnostic)
+	for _, level := range []string{"-O0", "-O3"} {
+		t.Run(level+"-only", func(t *testing.T) {
+			wrapper := filepath.Join(t.TempDir(), "clang-shrink")
+			script := "#!/bin/sh\n" +
+				"hit=0; src=\n" +
+				"for a in \"$@\"; do case \"$a\" in " + level + ") hit=1;; *.c) src=\"$a\";; esac; done\n" +
+				"if [ \"$hit\" = 1 ] && [ -n \"$src\" ]; then sed -i.bak 's/#define SCHWAY_EVENT_CAPACITY [0-9]*u/#define SCHWAY_EVENT_CAPACITY 1u/' \"$src\"; fi\n" +
+				"exec " + realClang + " \"$@\"\n"
+			if err := os.WriteFile(wrapper, []byte(script), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			runner := native.DefaultRunner()
+			runner.ClangPath = wrapper
+			report, err := session.VerifyApplicationCases(context.Background(), phase273SumToNSource(t),
+				phase273Cases(phase273Case{"n14", "14", "105"}), runner)
+			if err != nil {
+				t.Fatalf("asymmetric exhaustion at %s must be a per-case result, got error: %v", level, err)
+			}
+			if report.Verified {
+				t.Fatalf("report verified with asymmetric exhaustion at %s: %+v", level, report)
+			}
+			if len(report.Cases) != 1 {
+				t.Fatalf("report cases=%d, want 1", len(report.Cases))
+			}
+			got := report.Cases[0]
+			if got.Status != session.ReplayStatusFail {
+				t.Fatalf("status=%q diagnostic=%q, want fail (never unsupported)", got.Status, got.Diagnostic)
+			}
+			want := "event capacity exhausted at " + level + " only; the other optimization level completed, so the levels diverge"
+			if got.Diagnostic != want {
+				t.Fatalf("diagnostic=%q, want %q", got.Diagnostic, want)
+			}
+			if len(got.Engines) != 1 {
+				t.Fatalf("engines=%v, want only the interpreter", got.Engines)
+			}
+			interpreter, ok := got.Engines["interpreter"]
+			if !ok || interpreter.Outcome.Kind != "returned" || interpreter.Outcome.Value != "105" {
+				t.Fatalf("engines=%+v, want interpreter returned 105", got.Engines)
+			}
+			phase273RequireNoSignalText(t, report)
+		})
 	}
 }
