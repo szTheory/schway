@@ -6,15 +6,21 @@ Status: EVD-12 satisfied by one hosted run at one declared revision.
 
 | Field | Value |
 |---|---|
-| Claimed source revision | `fa5a169216b60cce94929c881001b1ff02fbf09a` (branch `phase26-validation`) |
-| Hosted run | 38052601527, `workflow_dispatch` of `ci.yml`, default inputs |
-| URL | https://github.com/szTheory/schway/actions/runs/38052601527 |
-| Run conclusion | success |
-| `current evidence aggregate (macos-latest)` | success (job 114214599385) |
-| `current evidence aggregate (ubuntu-latest)` | success (job 114214599442) |
-| `checks (macos-latest)` (full and race lanes) | success (job 114214599270) |
-| `checks (ubuntu-latest)` (full and race lanes) | success (job 114214599562) |
+| Claimed source revision | `6224f8b2c9c15f54270a232fab2bce12628c7f19` (branch `phase26-validation`) |
+| Hosted run | 38054848320, `workflow_dispatch` of `ci.yml`, default inputs |
+| URL | https://github.com/szTheory/schway/actions/runs/38054848320 |
+| Run conclusion | success (attempt 2; see note below) |
+| `current evidence aggregate (macos-latest)` | success (job 114221084790) |
+| `current evidence aggregate (ubuntu-latest)` | success (job 114221084805) |
+| `checks (macos-latest)` (full and race lanes) | success on attempt 2 (job 114230000571) |
+| `checks (ubuntu-latest)` (full and race lanes) | success (job 114221084843) |
 | Skipped by design | Phase 26 checked scalar sum, validation corpus receipt (input flags off) |
+
+Attempt 1 of this run lost only `checks (macos-latest)` (job 114221084641):
+GitHub reported "The hosted runner lost communication with the server" during
+`go test ./...`, no test failure was logged, and the job log was not retained.
+That single job was re-run (`gh run rerun --failed`) on the same revision and
+passed. The receipts below come from the attempt-1 evidence jobs, which passed.
 
 ## Per-host receipts
 
@@ -37,20 +43,29 @@ Both rows declare these inputs and hashes (git blob hashes):
 ## Gate result
 
 ```sh
-PHASE27_EXPECTED_REVISION=fa5a169216b60cce94929c881001b1ff02fbf09a \
+PHASE27_EXPECTED_REVISION=6224f8b2c9c15f54270a232fab2bce12628c7f19 \
   sh scripts/check-phase27-receipts.sh \
   .planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/host-macos.receipt \
   .planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/host-linux.receipt
 ```
 
-Output: `phase27 receipt gate: status=pass hosts=macOS,Linux revision=fa5a169216b60cce94929c881001b1ff02fbf09a` with the source and fixture hashes above.
+Output: `phase27 receipt gate: status=pass hosts=macOS,Linux revision=6224f8b2c9c15f54270a232fab2bce12628c7f19` with the source and fixture hashes above.
 
 The gate recomputes expected hashes from its own checkout. Commits made after
 the claimed revision touch only `.planning/` evidence files, so the source and
 fixture hashes are unchanged; the expected revision is therefore pinned with
-`PHASE27_EXPECTED_REVISION` rather than the checkout HEAD.
+`PHASE27_EXPECTED_REVISION` rather than the checkout HEAD. The gate used here
+is the WR-05-hardened version (exactly one well-formed toolchain row, no
+unknown `phase27 ` rows); it checks consistency, not authenticity, so the
+hosted run record above is the authenticity anchor.
 
-## Superseded run
+## Superseded runs
+
+Run 38052601527 at `fa5a169216b60cce94929c881001b1ff02fbf09a` passed on both
+hosts (full and race lanes included) and was the original EVD-12 claim. It was
+superseded when the Phase 27 code review fixes (WR-01..WR-05, commits
+`b96f1b7`..`9214bf9`) changed source after that revision; the receipts above
+are from a fresh run at the post-fix revision.
 
 Run 38052011600 at `c7bf17c54591241392d15a4b2f0e4a64694ac212` passed the Phase 27
 driver steps on both hosts but FAILED the hosted full-suite lanes on both hosts
@@ -62,7 +77,7 @@ was dispatched; every receipt above is from that fresh run.
 ## Clean-checkout guide execution (current execution)
 
 Executed in fresh clones of this repository (not the working checkout), at
-`c7bf17c` and again at `fa5a169`, following `examples/phase27/README.md`:
+`c7bf17c`, at `fa5a169`, and again at `6224f8b`, following `examples/phase27/README.md`:
 `go build -o ./schway ./cmd/schway`; `./schway build` of both examples;
 `./schway app run` for FizzBuzz 15 and 1000 (byte-identical via `cmp` to the
 committed fixtures) and sum_to_n 10 (`55`), 1000 (`500500`); and input 1001

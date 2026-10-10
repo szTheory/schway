@@ -1,4 +1,4 @@
-phase27 host identity host=macOS arch=arm64 go=darwin/arm64 clang_target=arm64-apple-darwin25.6.0 revision=fa5a169216b60cce94929c881001b1ff02fbf09a tree=clean sources=examples/fizzbuzz.schway=a274e64850b1727a85a34ee2cf0b5545b0b052ba,examples/sum_to_n.schway=958739bc74fb3cb3da00c5e5cf285172fce82aa9 fixtures=examples/phase27/fizzbuzz-15.out=0a934f213a5145cb1ee6f760fda496bcde6d7130,examples/phase27/fizzbuzz-1000.out=917dcf12665f09c11d98fe21f893522a516d799b inputs=fizzbuzz:0,1,15,1000,1001;sum_to_n:0,1,15,1000,1001
+phase27 host identity host=macOS arch=arm64 go=darwin/arm64 clang_target=arm64-apple-darwin25.6.0 revision=6224f8b2c9c15f54270a232fab2bce12628c7f19 tree=clean sources=examples/fizzbuzz.schway=a274e64850b1727a85a34ee2cf0b5545b0b052ba,examples/sum_to_n.schway=958739bc74fb3cb3da00c5e5cf285172fce82aa9 fixtures=examples/phase27/fizzbuzz-15.out=0a934f213a5145cb1ee6f760fda496bcde6d7130,examples/phase27/fizzbuzz-1000.out=917dcf12665f09c11d98fe21f893522a516d799b inputs=fizzbuzz:0,1,15,1000,1001;sum_to_n:0,1,15,1000,1001
 phase27 toolchain go="go version go1.24.13 darwin/arm64" clang="Apple clang version 21.0.0 (clang-2100.1.1.101)"
 phase27 case program=fizzbuzz input=0 expected_exit=0 actual_exit=0 stdout=exact stderr=exact status=pass
 phase27 case program=fizzbuzz input=1 expected_exit=0 actual_exit=0 stdout=exact stderr=exact status=pass
@@ -13,4 +13,4 @@ phase27 case program=sum_to_n input=1001 expected_exit=65 actual_exit=65 stdout=
 phase27 control name=dynamic-zero package=./internal/compiler/session tests=TestPhase27DynamicZero status=pass
 phase27 control name=output-limit package=./internal/compiler/cgen tests=TestPhase27OutputExactLimit TestPhase27OutputCrossingWrite status=pass
 phase27 control name=output-limit-public package=./cmd/schway tests=TestPhase27OutputPublicStatus status=pass
-phase27 host result host=macOS revision=fa5a169216b60cce94929c881001b1ff02fbf09a tree=clean cases=10 controls=3 status=pass
+phase27 host result host=macOS revision=6224f8b2c9c15f54270a232fab2bce12628c7f19 tree=clean cases=10 controls=3 status=pass
