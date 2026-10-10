@@ -32,8 +32,12 @@ func TestPhase27OutputEvidenceSeparation(t *testing.T) {
 	outputReportPath := filepath.Join(t.TempDir(), "fizzbuzz-output-failure-evidence.json")
 	var outputStdout, outputStderr bytes.Buffer
 	outputOutcome, outputReport, err := native.RunApplicationWithEvidence(context.Background(), outputLimitedArtifact, "3", outputReportPath, native.EvidenceEvents, &outputStdout, &outputStderr)
-	if err != nil || outputOutcome.Kind != native.RunExited || outputOutcome.ExitCode != 65 || outputReport.ProcessOutcome != outputOutcome || outputReport.CaptureStatus != native.EvidenceStatusComplete || outputReport.Execution == nil || outputReport.Execution.Outcome.Kind != "returned" || !bytes.Equal(outputStdout.Bytes(), []byte("1\n2\n")) || outputStderr.String() != "schway: application output limit exceeded\n" {
-		t.Fatalf("output-limited app evidence did not remain independently complete: outcome=%+v report=%+v stdout=%q stderr=%q err=%v", outputOutcome, outputReport, outputStdout.Bytes(), outputStderr.String(), err)
+	// The native app stops at the first failed write (like the interpreter's
+	// terminal defect), so it must not publish a success-shaped capture: the
+	// evidence is honestly incomplete while the process outcome stays exit 65.
+	var outputToolError *native.ToolError
+	if !errors.As(err, &outputToolError) || outputToolError.Code != "native.evidence_incomplete" || outputOutcome.Kind != native.RunExited || outputOutcome.ExitCode != 65 || outputReport.ProcessOutcome != outputOutcome || outputReport.CaptureStatus != native.EvidenceStatusIncomplete || outputReport.Execution != nil || outputReport.Verified || !bytes.Equal(outputStdout.Bytes(), []byte("1\n2\n")) || outputStderr.String() != "schway: application output limit exceeded\n" {
+		t.Fatalf("output-limited app reported success-shaped evidence: outcome=%+v report=%+v stdout=%q stderr=%q err=%v", outputOutcome, outputReport, outputStdout.Bytes(), outputStderr.String(), err)
 	}
 
 	evidenceLimitedArtifact := filepath.Join(t.TempDir(), "fizzbuzz-evidence-limited")
