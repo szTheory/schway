@@ -109,3 +109,13 @@ created: "2026-10-02"
 | Latest full receipt | [37118315516](https://github.com/szTheory/schway/actions/runs/37118315516), revision 46bee44ad87891d8a8547b2489f029d0fe237899 |
 
 The audit cross-referenced the four requirements with the source witness, literal per-engine answer tests, public CLI matrix, deterministic independent fixed-point/refusal controls, occurrence mutations, and capacity controls. The review repair adds checked-add terminal attribution, final-position/outcome controls, and native N−1/N evidence-size admission. The peer validates structural event attribution; actual arithmetic overflow is established separately by engine tests. Existing command rows are unchanged, preserving the 35-pair hosted corpus receipt from run 37098702559. No missing test required a Nyquist auditor dispatch. UI review is not applicable: the phase changes no frontend or UI files and has no UI specification.
+
+## Validation Audit 2026-10-10
+
+| Metric | Count |
+|---|---|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+
+Re-audit after Phase 27 changed covered source. All 21 mapped test functions still exist under their recorded names and packages. Full hosted run [38054848320](https://github.com/szTheory/schway/actions/runs/38054848320) at 6224f8b2c9c15f54270a232fab2bce12628c7f19 passed `go vet`, `go test ./...`, and the race suite on Ubuntu and macOS; non-planning source is unchanged between that revision and this audit. The focused Phase 26 job was skipped in that run because it is dispatch-gated; the full suite executes every mapped row.
