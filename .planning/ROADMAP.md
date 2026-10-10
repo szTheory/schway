@@ -189,3 +189,28 @@ comparison/Bool subset enables the first runnable program; its complete
 remainder and zero-divisor guarantee closes in Phase 27. APP-09 and EVD-12 cover
 both programs and therefore close with Phase 27, while Phase 26 verifies its
 own bounded sum witness on the way.
+
+### Phase 27.1: Address tech debt: build-route origin validation and receipt-gate docs (INSERTED)
+
+**Goal:** Every public application admission route (`schway build`, `schway app verify`, the interpreter application route) applies checker, then `corevalidate`, then the origin peer before entry analysis or emission, so an origin-unpublishable program is refused with its origin code before any build or execution (`schway build` leaves no artifact or sidecar; `schway app verify` writes only its declared fail report, never an executable or other evidence file); and the Phase 27 guide's receipt-gate commands are correct, labeled, and execution-tested.
+**Requirements**: None newly mapped; strengthens assurance depth for U64-01, U64-02, FLOW-01, FLOW-02, APP-07, APP-08, APP-09, EVD-12, DX-16.
+**Depends on:** Phase 27
+
+**Success Criteria** (what must be TRUE):
+
+1. `schway build testdata/phase25/shared_copy_accept.schway --output X` exits 2 with `status:invalid` and `core.origin_omitted` (same diagnostic as `schway check`), and neither `X` nor `X.schway-build.json` exists; red/green evidence recorded.
+2. `BuildApplication`, `RunInterpreterApplication` and `VerifyApplicationCases` refuse checker, corevalidate and origin rejects through one shared helper, with every pre-existing error string unchanged, shown by a behavior-level parity test; the `app verify` file route on the origin reject writes only its fail report (verified false, no cases) and nothing else. Routes are not claimed uniform in CLI status (`build` exits 2 invalid, `app verify` exits 3).
+3. All shipped examples that built before still build and match their pinned answers; one fresh hosted two-host `ci.yml` run at the final SHA is green and its fresh Phase 27 receipts pass the gate pinned to that SHA.
+4. `examples/phase27/README.md` documents the fresh-artifact use and the pinned re-check of the committed 6224f8b receipts; `TestPhase27GuideContract` executes the pinned command and requires `status=pass`; the gate prints a stderr hint on revision mismatch without changing reason names or exit status.
+5. Behavior-neutral audit records are closed: `ValidateFullCoverage` marked test-only, 27-09/27-10 SUMMARY `requirements-completed`, 26-05 amendment confirmed, dated addenda in 26/27 VERIFICATION citing the new run.
+
+**Plans:** 3 plans in 2 waves
+
+**Wave 1**
+
+- [ ] 27.1-01-PLAN.md — shared application admission helper; build/interp/verify routes apply the origin peer (red/green, parity, positive controls)
+- [ ] 27.1-02-PLAN.md — receipt-gate guide uses, stderr revision hint, executed guide contract, audit record fixes
+
+**Wave 2** *(blocked on Wave 1 completion; contains a human push/dispatch checkpoint)*
+
+- [ ] 27.1-03-PLAN.md — transition records and deferred dispositions, then one authorized hosted two-host run with fresh gated receipts and 26/27 addenda
