@@ -11,6 +11,16 @@
       "actual": "guide subtest fails naming ./phase27-fizzbuzz, ./phase27-sum, their sidecars, ./fizzbuzz-15.actual, ./fizzbuzz-1000.actual and the missing mkdir; negative control passes",
       "semanticAssessment": "Target test executed and failed on the planned violation assertion for the intended reason (README outputs outside the ignored tree); not a build, load or fixture fault; negative control green proves the checker is live.",
       "output": "=== RUN   TestPhase273GuideCleanCheckoutOutputsIgnored\n=== RUN   TestPhase273GuideCleanCheckoutOutputsIgnored/guide\n    session_phase273_docs_test.go:121: clean-checkout block writes outside the ignored .schway/ tree: ./phase27-fizzbuzz, ./phase27-fizzbuzz.schway-build.json, ./phase27-sum, ./phase27-sum.schway-build.json, ./fizzbuzz-15.actual, ./fizzbuzz-1000.actual, missing mkdir -p .schway/phase27 before first ./schway build\n=== RUN   TestPhase273GuideCleanCheckoutOutputsIgnored/pre-fix-negative-control\n--- FAIL: TestPhase273GuideCleanCheckoutOutputsIgnored (0.00s)\n    --- FAIL: TestPhase273GuideCleanCheckoutOutputsIgnored/guide (0.00s)\n    --- PASS: TestPhase273GuideCleanCheckoutOutputsIgnored/pre-fix-negative-control (0.00s)\nFAIL\nFAIL\tgithub.com/szTheory/schway/internal/compiler/session\t0.007s\nFAIL\n"
+    },
+    {
+      "stage": "green",
+      "revision": "7c188ff (README fix applied on top, uncommitted at run time)",
+      "command": "go test ./internal/compiler/session -run '^TestPhase273GuideCleanCheckoutOutputsIgnored$' -count=1 -v",
+      "exitCode": 0,
+      "targetTests": "TestPhase273GuideCleanCheckoutOutputsIgnored (guide, pre-fix-negative-control) with TestPhase27GuideContract",
+      "expected": "After the README fix: no output target outside ./.schway/ (or ./schway), mkdir -p .schway/phase27 precedes the first build, every target and sidecar is git-ignored; negative control reports the four pre-fix outputs and the missing mkdir",
+      "actual": "all subtests pass; every guide output and sidecar is git-ignored; Phase 27 guide contract green",
+      "output": "=== RUN   TestPhase273GuideCleanCheckoutOutputsIgnored\n=== RUN   TestPhase273GuideCleanCheckoutOutputsIgnored/guide\n=== RUN   TestPhase273GuideCleanCheckoutOutputsIgnored/pre-fix-negative-control\n--- PASS: TestPhase273GuideCleanCheckoutOutputsIgnored (0.05s)\n    --- PASS: TestPhase273GuideCleanCheckoutOutputsIgnored/guide (0.05s)\n    --- PASS: TestPhase273GuideCleanCheckoutOutputsIgnored/pre-fix-negative-control (0.00s)\n=== RUN   TestPhase27GuideContract\n--- PASS: TestPhase27GuideContract (0.36s)\nPASS\nok  \tgithub.com/szTheory/schway/internal/compiler/session\t0.424s\n"
     }
   ]
 }

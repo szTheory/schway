@@ -13,14 +13,20 @@ From the repository root, with Go 1.24 and Clang installed:
 
 ```sh
 go build -o ./schway ./cmd/schway
-./schway build examples/fizzbuzz.schway --output ./phase27-fizzbuzz
-./schway build examples/sum_to_n.schway --output ./phase27-sum
-./schway app run ./phase27-fizzbuzz -- 15 > ./fizzbuzz-15.actual
-cmp ./fizzbuzz-15.actual examples/phase27/fizzbuzz-15.out
-./schway app run ./phase27-fizzbuzz -- 1000 > ./fizzbuzz-1000.actual
-cmp ./fizzbuzz-1000.actual examples/phase27/fizzbuzz-1000.out
-./schway app run ./phase27-sum -- 10
+mkdir -p .schway/phase27
+./schway build examples/fizzbuzz.schway --output ./.schway/phase27/phase27-fizzbuzz
+./schway build examples/sum_to_n.schway --output ./.schway/phase27/phase27-sum
+./schway app run ./.schway/phase27/phase27-fizzbuzz -- 15 > ./.schway/phase27/fizzbuzz-15.actual
+cmp ./.schway/phase27/fizzbuzz-15.actual examples/phase27/fizzbuzz-15.out
+./schway app run ./.schway/phase27/phase27-fizzbuzz -- 1000 > ./.schway/phase27/fizzbuzz-1000.actual
+cmp ./.schway/phase27/fizzbuzz-1000.actual examples/phase27/fizzbuzz-1000.out
+./schway app run ./.schway/phase27/phase27-sum -- 10
 ```
+
+Every build artifact, its `.schway-build.json` sidecar and every `.actual` file
+land under the ignored `.schway/phase27/`, so a later
+`scripts/verify-phase27.sh` receipt run sees a clean tree; `mkdir -p` ensures
+the redirect target directory exists.
 
 ## Exact answers
 
