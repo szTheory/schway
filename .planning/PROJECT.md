@@ -72,7 +72,7 @@ verifier after the receipt arrives without replaying completed plans.
 ## Current State
 
 **2026-10-10 M005 Practical Computation shipped** (5 phases, 25 plans; archive
-`.planning/milestones/M005-*`, tag `M005`). Ordinary Schway source now sums
+`.planning/milestones/M005-*`, tag `vM005`). Ordinary Schway source now sums
 bounded U64 input (`examples/sum_to_n.schway`: 0/55/500500, 1,001 refused, checked
 overflow exits 65) and prints exact FizzBuzz through 1,000
 (`examples/fizzbuzz.schway`, byte-identical to pinned fixtures) with U64

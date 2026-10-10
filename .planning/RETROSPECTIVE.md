@@ -273,6 +273,65 @@ intraprocedurally still holds across a function boundary.
 
 ---
 
+## Milestone: M005 — Practical Computation
+
+**Shipped:** 2026-10-10
+**Phases:** 5 (26, 27, 27.1–27.3 inserted) | **Plans:** 25 | **Tasks:** 29 | **Commits:** ~252 | **Timeline:** 9 days (2026-10-02 → 2026-10-10)
+**Close:** `override_closeout` — 9/9 requirements satisfied; audit `tech_debt`; 6 artifact items (3 quick tasks, 3 dormant seeds) acknowledged
+
+### What Was Built
+
+- **Phase 26** made `examples/sum_to_n.schway` run from ordinary source: checked
+  U64 addition, `<`/Bool, and scalar loops admitted by an independently derived
+  fixed point, with per-invocation event occurrence identity.
+- **Phase 27** added U64 equality/remainder with static zero-divisor refusal,
+  Unit entries with typed text writes, exact FizzBuzz through 1,000, a shared
+  65,536-byte output ceiling, and dual-host receipts with a pinned gate.
+- **Phases 27.1–27.3** (inserted from audits) put origin validation on the build
+  route, restored straight-line scalar `let` bodies (R1), named generated-C event
+  capacity exhaustion instead of aborting (W1), and made the guide clean-tree
+  safe (W4).
+
+### What Worked
+
+- **Auditing before closing, then inserting decimal phases.** Each re-audit found
+  concrete user-facing defects (R1, W1, W4) that a green requirement table hid.
+- **Byte-identity goldens generated at the pre-fix revision.** 27.2 and 27.3
+  changed emitters with proof that every untouched program kept its bytes.
+- **Review-then-validate ordering.** Nyquist validation after the code-review
+  fix caught a behavior (WR-01) that had no test of its own.
+
+### What Was Inefficient
+
+- **The milestone closed three times.** Each audit raised debt that became a new
+  phase; a stricter Phase 27 verification of the public routes (app verify on the
+  headline input, guide in a clean clone) would have found W1/W4 earlier.
+- **Hosted evidence lags review fixes.** The 27.3 hosted run predates WR-01/WR-02
+  (N2); review fixes after a hosted run need either a re-dispatch or an explicit
+  local-only note.
+
+### Patterns Established
+
+- Named, exit-code-plus-exact-stderr outcomes for bounded native limits, so the
+  runner never infers meaning from a signal.
+- Guide commands write only under ignored `.schway/`, enforced by a static test
+  with `git check-ignore`.
+
+### Key Lessons
+
+1. **Run the public route on the headline input.** `app verify` on
+   `sum_to_n 1000` still fails closed with a size error (N1); the fix was tested
+   at the 14/15 boundary only.
+2. **Archival is a code change** (M001 Lesson 6, reconfirmed): moving phase
+   directories broke the guide's receipt path and the groundedness lint until the
+   references were rewritten.
+
+### Cost Observations
+
+- Model mix: predominantly Opus.
+- Notable: three audit/insert cycles roughly doubled the milestone's planning-doc
+  churn relative to its code change.
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -281,6 +340,7 @@ intraprocedurally still holds across a function boundary.
 |-----------|---------|--------|-------|------------|
 | M001 | 335 | 6 | 62 | Established vertical slicing, independent re-derivation at trust crossings, and mutation-killed controls as standing rules |
 | M002 | 386 | 7 | 61 | Added gate-driven phase cuts, requirement splitting against overclaim, and "escalate a defect in the criterion" over downgrading an assertion |
+| M005 | ~252 | 5 | 25 | Audit-driven decimal phases before close; pre-fix byte-identity goldens for emitter changes |
 
 ### Cumulative Quality
 
@@ -288,6 +348,7 @@ intraprocedurally still holds across a function boundary.
 |-----------|--------------|-----------------|---------|---------------|
 | M001 | 28/28 | 6/6 | 3/6 (partial) | 0 |
 | M002 | 29/31 (2 ratified partial) | 7/7 | 2/7 (partial) | 0 |
+| M005 | 9/9 | 5/5 | 5/5 (compliant) | 0 |
 
 ### Top Lessons (Verified Across Milestones)
 
