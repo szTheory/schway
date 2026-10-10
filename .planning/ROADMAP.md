@@ -204,7 +204,7 @@ own bounded sum witness on the way.
 4. Every output and redirect in the `examples/phase27/README.md` clean-checkout block lands under the ignored `.schway/phase27/`, enforced by a static test. Validators, go.mod and go.sum are unchanged.
 5. One hosted two-host `ci.yml` run (full and race suites) at the final SHA is green, after explicit user approval for push and dispatch.
 
-**Plans:** 4/4 plans executed in 3 waves
+**Plans:** 4/4 plans complete in 3 waves
 
 **Wave 1**
 
