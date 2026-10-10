@@ -142,3 +142,45 @@ func TestPhase27HostReceiptGate(t *testing.T) {
 		t.Fatalf("one real host plus empty log passed: %s", output)
 	}
 }
+
+func TestPhase27CIHostMatrix(t *testing.T) {
+	data, err := os.ReadFile(testsupport.ProjectPath(".github", "workflows", "ci.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	workflow := string(data)
+	start := strings.Index(workflow, "\n  evidence-aggregate:\n")
+	end := strings.Index(workflow, "\n  phase26-focused:\n")
+	if start < 0 || end < start {
+		t.Fatal("evidence-aggregate job boundaries not found")
+	}
+	job := workflow[start:end]
+	for _, want := range []string{
+		"os: [ubuntu-latest, macos-latest]",
+		"runs-on: ${{ matrix.os }}",
+		"fail-fast: false",
+		"- name: scripts/verify-phase27.sh",
+		"sh scripts/verify-phase27.sh 2>&1 | tee",
+		"shell: bash",
+		"if: ${{ always() }}",
+		"uses: actions/upload-artifact@v4",
+		"name: phase27-receipt-${{ matrix.os }}-${{ github.sha }}",
+		"if-no-files-found: error",
+		// The existing evidence aggregate stays intact.
+		"sh scripts/verify-phase25.sh",
+		"sh scripts/verify-phase6.sh",
+	} {
+		if !strings.Contains(job, want) {
+			t.Errorf("evidence-aggregate job lacks %q", want)
+		}
+	}
+	// The driver step must not swallow failure and the full/race lanes remain.
+	if strings.Contains(job, "continue-on-error") {
+		t.Error("evidence-aggregate job must not hide a failing step with continue-on-error")
+	}
+	for _, want := range []string{"- run: go test ./...", "- run: go test -race -timeout=20m ./..."} {
+		if !strings.Contains(workflow, want) {
+			t.Errorf("workflow lost %q", want)
+		}
+	}
+}

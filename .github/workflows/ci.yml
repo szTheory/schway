@@ -98,6 +98,22 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libc++-dev libc++abi-dev
+      # Phase 27 native host receipt: runs on this actual runner, keeps the
+      # full log (also on failure) as a per-host artifact. The two-host gate
+      # scripts/check-phase27-receipts.sh consumes one macOS and one Linux log.
+      - name: scripts/verify-phase27.sh
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/phase27"
+          sh scripts/verify-phase27.sh 2>&1 | tee "$RUNNER_TEMP/phase27/receipt-${{ matrix.os }}.log"
+      - name: Upload Phase 27 host receipt
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase27-receipt-${{ matrix.os }}-${{ github.sha }}
+          path: ${{ runner.temp }}/phase27/receipt-${{ matrix.os }}.log
+          if-no-files-found: error
+          retention-days: 14
       - name: scripts/verify-phase24.sh
         run: sh scripts/verify-phase24.sh
       - name: scripts/verify-phase25.sh
