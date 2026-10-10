@@ -229,7 +229,7 @@ own bounded sum witness on the way.
 4. Already-accepted programs (examples and phase controls) produce byte-identical core and emitted C, pinned by a test; example source and fixture hashes are unchanged.
 5. One hosted two-host `ci.yml` run (full and race suites) at the final SHA is green, after explicit user approval for push and dispatch.
 
-**Plans:** 3/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**
