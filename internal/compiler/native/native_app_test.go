@@ -1203,3 +1203,36 @@ func TestPhase24NativeErrorApplication(t *testing.T) {
 		})
 	}
 }
+
+// The application decoder does not know the entry return type, so it must at
+// least keep the outcome value and the return-event shape coupled: an empty
+// value is only valid with a Unit-form return event, and a non-empty value only
+// with a linear (source place carrying) return event.
+func TestPhase27ApplicationReturnShapeCoupling(t *testing.T) {
+	build := func(value, sourcePlace string) execution.Execution {
+		return execution.Execution{
+			Schema:  execution.Schema2,
+			Outcome: execution.Outcome{Kind: execution.OutcomeReturned, Value: value},
+			Events: []execution.Event{{
+				Schema: execution.Schema2, ID: "return:event:returned", Kind: "function.returned",
+				FunctionID: "main", SourcePlace: sourcePlace, TypeID: "T", Invocation: "inv:entry:main",
+			}},
+			LiveResources: []string{},
+		}
+	}
+	for _, test := range []struct {
+		name         string
+		value, place string
+		wantOK       bool
+	}{
+		{"unit", "", "", true},
+		{"u64", "7", "place:input", true},
+		{"forged empty value with u64 event", "", "place:input", false},
+		{"forged unit event with value", "7", "", false},
+	} {
+		err := validateExecution(build(test.value, test.place), expectApplication)
+		if (err == nil) != test.wantOK {
+			t.Errorf("%s: validateExecution err=%v, wantOK=%v", test.name, err, test.wantOK)
+		}
+	}
+}
