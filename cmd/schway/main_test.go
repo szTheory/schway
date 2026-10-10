@@ -837,6 +837,13 @@ func runCLIReplayCasesSource(t *testing.T, source string, cases session.ReplayCa
 	return code, stderr, reportPath, readCLIReplayReport(t, reportPath)
 }
 
+// TestPhase273AppVerifyCapacityCLI pins the capacity edge of
+// examples/sum_to_n.schway: n = 14 completes and n = 15 exhausts the static
+// event capacity. The edge is coupled to the example source and to
+// invocationEventCapacity in internal/compiler/cgen/cgen_program.go, whose
+// arithmetic is frozen by testdata/phase273/conformance-corpus-hashes.json. If
+// this test fails, check whether the example or that arithmetic changed (and
+// whether the golden moved) before adjusting the boundary inputs.
 func TestPhase273AppVerifyCapacityCLI(t *testing.T) {
 	source, err := os.ReadFile(testsupport.ProjectPath("examples", "sum_to_n.schway"))
 	if err != nil {
@@ -857,9 +864,9 @@ func TestPhase273AppVerifyCapacityCLI(t *testing.T) {
 		t.Fatalf("report verified=%v cases=%d, want unverified with two cases: %+v", report.Verified, len(report.Cases), report)
 	}
 	if report.Cases[0].Status != session.ReplayStatusPass {
-		t.Fatalf("n = 14 case=%+v, want pass", report.Cases[0])
+		t.Fatalf("n = 14 case=%+v, want pass; capacity edge may have moved (see the coupling note above this test)", report.Cases[0])
 	}
 	if report.Cases[1].Status != session.ReplayStatusUnsupported || !strings.HasPrefix(report.Cases[1].Diagnostic, "native.event_capacity_exhausted: ") {
-		t.Fatalf("n = 15 case=%+v, want unsupported with the named capacity prefix", report.Cases[1])
+		t.Fatalf("n = 15 case=%+v, want unsupported with the named capacity prefix; capacity edge may have moved (see the coupling note above this test)", report.Cases[1])
 	}
 }
