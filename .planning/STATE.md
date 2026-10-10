@@ -5,16 +5,16 @@ milestone_name: Practical Computation
 current_phase: "27.3"
 current_phase_name: address-tech-debt-app-verify-capacity-abort-and-guide-clean
 status: executing
-stopped_at: Completed 27.3-01-PLAN.md
-last_updated: "2026-10-10T21:33:01.873Z"
+stopped_at: Completed 27.3-02-PLAN.md
+last_updated: "2026-10-10T21:35:32.280Z"
 last_activity: 2026-10-10
 last_activity_desc: Phase 27.3 execution started
-state_head: 5f5e8df0c154f3f9286d26db584f4f156f21e587
+state_head: 11d0078a5741aafb288e1d4ca687ef49cae6bc2a
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 25
-  completed_plans: 22
+  completed_plans: 23
 ---
 
 <!-- schway-current:start -->
@@ -122,7 +122,7 @@ plans.
 ## Current Position
 
 Phase: 27.3 (address-tech-debt-app-verify-capacity-abort-and-guide-clean) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-10-10 — Phase 27.3 execution started
 Progress: [██████████] 100%
@@ -472,6 +472,7 @@ subset alone.
 | Phase 27.2 P01 | 25 min | 3 tasks | 8 files |
 | Phase 27.2 P02 | 20 min | 2 tasks | 3 files |
 | Phase 27.3 P01 | 25 min | 3 tasks | 7 files |
+| Phase 27.3 P02 | 15 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -595,6 +596,7 @@ decision history; they no longer describe current status.
 - [Phase 27.2]: 27.2-01: accepted-corpus golden pinned at 9459f37 (92 sources, 83 EmitApplication refusals recorded verbatim); sum_to_n main pinned at 7 blocks/7 edges
 - [Phase 27.2]: 27.2-02: return-block split fires only when no if/while ran; cgen structural scalar clause plus conditional (void)param keep accepted corpus byte-identical
 - [Phase 27.3]: 27.3-01: corpus floor set to observed 93; run-native loop proof split between real-C runner test and RunNativeCommandFile surfacing test (D-27.3-10 amendment)
+- [Phase 27.3]: 27.3-02: capacity contract is exit 69 plus exact stderr line, adjudicated only on wait-status Exited; app verify recovers per-case via failure-path per-input re-run (Run signature unchanged)
 
 ### Pending Todos
 
@@ -819,8 +821,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-10T21:33:01.829Z
-Stopped at: Completed 27.3-01-PLAN.md
+Last session: 2026-10-10T21:35:32.238Z
+Stopped at: Completed 27.3-02-PLAN.md
 Resume file: None
 Next action: After clearing context, run $gsd-execute-phase 27; plan 27-09 is next.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
