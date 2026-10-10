@@ -5,11 +5,11 @@ milestone_name: Practical Computation
 current_phase: "27.1"
 current_phase_name: address-tech-debt-build-route-origin-validation-and-receipt
 status: executing
-stopped_at: Completed 27.1-02-PLAN.md
-last_updated: "2026-10-10T16:05:05.253Z"
+stopped_at: "27.1-03 Task 3 blocked: hosted run failed"
+last_updated: "2026-10-10T16:22:41.402Z"
 last_activity: 2026-10-10
 last_activity_desc: Phase 27.1 execution started
-state_head: a05166cff5fdb6a1098f94f53f1d41e177e42349
+state_head: a3c5aa18aee530dea26c054072ca25624b89dc4c
 progress:
   total_phases: 3
   completed_phases: 2
@@ -715,6 +715,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 - The Phase 16 gate's earlier full-suite and Phase 18 pathoracle findings were
   resolved by later M003 work. Treat those old blocker notes as historical; the
   M003 phase artifacts and audit are the current record.
+- 27.1 hosted run 38066884218 at e6ec151 failed on both hosts (session tests: emitter inventory EmitNative:3071, 27.1-RESEARCH.md groundedness lines 365/390, 27.1-VALIDATION.md draft); fix then re-push/re-dispatch needs user authorization
 
 ### Roadmap Evolution
 
@@ -808,8 +809,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-10T16:05:05.199Z
-Stopped at: Completed 27.1-02-PLAN.md
+Last session: 2026-10-10T16:22:41.312Z
+Stopped at: 27.1-03 Task 3 blocked: hosted run failed
 Resume file: None
 Next action: After clearing context, run $gsd-execute-phase 27; plan 27-09 is next.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
