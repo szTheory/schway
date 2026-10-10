@@ -4,17 +4,17 @@ milestone: M005
 milestone_name: Practical Computation
 current_phase: "27.3"
 current_phase_name: address-tech-debt-app-verify-capacity-abort-and-guide-clean
-status: Ready to discuss
-stopped_at: Phase 27.3 context gathered
-last_updated: "2026-10-10T21:27:37.677Z"
+status: executing
+stopped_at: Completed 27.3-01-PLAN.md
+last_updated: "2026-10-10T21:33:01.873Z"
 last_activity: 2026-10-10
-last_activity_desc: Phase 27.3 inserted after Phase 27
-state_head: ab3b3ef17e8650ed61c7a7f2d121175ff52020da
+last_activity_desc: Phase 27.3 execution started
+state_head: 5f5e8df0c154f3f9286d26db584f4f156f21e587
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 25
-  completed_plans: 21
+  completed_plans: 22
 ---
 
 <!-- schway-current:start -->
@@ -55,7 +55,7 @@ See: .planning/PROJECT.md (updated 2026-10-03)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 27.3 — Address tech debt: app verify capacity abort and guide clean-tree outputs (W1, W4)
+**Current focus:** Phase 27.3 — address-tech-debt-app-verify-capacity-abort-and-guide-clean
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -121,10 +121,10 @@ plans.
 
 ## Current Position
 
-Phase: 27.3 (address-tech-debt-app-verify-capacity-abort-and-guide-clean) — READY TO EXECUTE
-Plan: Not started
-Status: Ready to discuss
-Last activity: 2026-10-10 — Phase 27.3 inserted after Phase 27
+Phase: 27.3 (address-tech-debt-app-verify-capacity-abort-and-guide-clean) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-10-10 — Phase 27.3 execution started
 Progress: [██████████] 100%
 
 ## M005 Planning
@@ -471,6 +471,7 @@ subset alone.
 | Phase 27.1 P02 | 15 min | 3 tasks | 8 files |
 | Phase 27.2 P01 | 25 min | 3 tasks | 8 files |
 | Phase 27.2 P02 | 20 min | 2 tasks | 3 files |
+| Phase 27.3 P01 | 25 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -593,6 +594,7 @@ decision history; they no longer describe current status.
 - [Phase 27.1]: 27.1-02: receipt gate hint is stderr-only; guide documents fresh-artifact and pinned re-check uses, pinned command executed by test
 - [Phase 27.2]: 27.2-01: accepted-corpus golden pinned at 9459f37 (92 sources, 83 EmitApplication refusals recorded verbatim); sum_to_n main pinned at 7 blocks/7 edges
 - [Phase 27.2]: 27.2-02: return-block split fires only when no if/while ran; cgen structural scalar clause plus conditional (void)param keep accepted corpus byte-identical
+- [Phase 27.3]: 27.3-01: corpus floor set to observed 93; run-native loop proof split between real-C runner test and RunNativeCommandFile surfacing test (D-27.3-10 amendment)
 
 ### Pending Todos
 
@@ -817,9 +819,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-10T20:34:47.348Z
-Stopped at: Phase 27.3 context gathered
-Resume file: .planning/phases/27.3-address-tech-debt-app-verify-capacity-abort-and-guide-clean/27.3-CONTEXT.md
+Last session: 2026-10-10T21:33:01.829Z
+Stopped at: Completed 27.3-01-PLAN.md
+Resume file: None
 Next action: After clearing context, run $gsd-execute-phase 27; plan 27-09 is next.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
