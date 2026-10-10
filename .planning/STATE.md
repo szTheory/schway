@@ -2,19 +2,18 @@
 gsd_state_version: "1.0"
 milestone: M005
 milestone_name: Practical Computation
-current_phase: "27.2"
-status: completed
-stopped_at: Phase 27.2 complete — all phases complete
-last_updated: "2026-10-10T19:55:20.926Z"
+current_phase: "27.3"
+status: Ready to discuss
+stopped_at: Phase 27.3 context gathered
+last_updated: "2026-10-10T20:34:47.393Z"
 last_activity: 2026-10-10
-last_activity_desc: Phase 27.2 complete
-state_head: 6da77f863b43588027a882fd694b509fe4606123
+last_activity_desc: Phase 27.3 inserted after Phase 27
+state_head: 6854e4de851e970b6fcc47d66cb1d5f5317e9c7c
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 2
   total_plans: 21
   completed_plans: 21
-  percent: 100
 ---
 
 <!-- schway-current:start -->
@@ -55,7 +54,7 @@ See: .planning/PROJECT.md (updated 2026-10-03)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 27.2 — Address tech debt: straight-line scalar let admission (R1)
+**Current focus:** Phase 27.3 — Address tech debt: app verify capacity abort and guide clean-tree outputs (W1, W4)
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -121,10 +120,10 @@ plans.
 
 ## Current Position
 
-Phase: 27.2
+Phase: 27.3
 Plan: Not started
-Status: All phases complete
-Last activity: 2026-10-10 — Phase 27.2 complete
+Status: Ready to discuss
+Last activity: 2026-10-10 — Phase 27.3 inserted after Phase 27
 Progress: [██████████] 100%
 
 ## M005 Planning
@@ -759,6 +758,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
   `.planning/milestones/M002-ROADMAP.md`.
 - Phase 27.1 inserted after Phase 27: Address tech debt: build-route origin validation and receipt-gate docs (URGENT)
 - Phase 27.2 inserted after Phase 27.1: Address tech debt: straight-line scalar let admission (R1) (URGENT)
+- Phase 27.3 inserted after Phase 27: Address tech debt: app verify capacity abort and guide clean-tree outputs (W1, W4) (URGENT)
 
 ### Quick Tasks Completed
 
@@ -816,9 +816,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-10T19:05:42.335Z
-Stopped at: Phase 27.2 complete — all phases complete
-Resume file: None
+Last session: 2026-10-10T20:34:47.348Z
+Stopped at: Phase 27.3 context gathered
+Resume file: .planning/phases/27.3-address-tech-debt-app-verify-capacity-abort-and-guide-clean/27.3-CONTEXT.md
 Next action: After clearing context, run $gsd-execute-phase 27; plan 27-09 is next.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,

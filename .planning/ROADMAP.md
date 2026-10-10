@@ -190,6 +190,16 @@ remainder and zero-divisor guarantee closes in Phase 27. APP-09 and EVD-12 cover
 both programs and therefore close with Phase 27, while Phase 26 verifies its
 own bounded sum witness on the way.
 
+### Phase 27.3: Address tech debt: app verify capacity abort and guide clean-tree outputs (W1, W4) (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 27
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 27.3 to break down)
+
 ### Phase 27.1: Address tech debt: build-route origin validation and receipt-gate docs (INSERTED)
 
 **Goal:** Every public application admission route (`schway build`, `schway app verify`, the interpreter application route) applies checker, then `corevalidate`, then the origin peer before entry analysis or emission, so an origin-unpublishable program is refused with its origin code before any build or execution (`schway build` leaves no artifact or sidecar; `schway app verify` writes only its declared fail report, never an executable or other evidence file); and the Phase 27 guide's receipt-gate commands are correct, labeled, and execution-tested.
