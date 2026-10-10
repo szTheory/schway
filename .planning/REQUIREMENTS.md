@@ -11,7 +11,7 @@ Research: [M005 synthesis](research/SUMMARY.md). These requirements follow the a
 ### U64 semantics
 
 - [x] **U64-01**: A Schway program can add U64 values; an in-range result is exact, and overflow produces a defined checked failure with matching interpreter and native behavior.
-- [ ] **U64-02**: U64 comparison, equality, Bool conditions, and remainder have one defined meaning across checking, independent validation, interpretation, and C17 emission; a constant zero remainder divisor is rejected and a dynamic zero divisor produces a defined checked failure.
+- [x] **U64-02**: U64 comparison, equality, Bool conditions, and remainder have one defined meaning across checking, independent validation, interpretation, and C17 emission; a constant zero remainder divisor is rejected and a dynamic zero divisor produces a defined checked failure.
 
 ### Scalar control flow
 
@@ -26,8 +26,8 @@ Research: [M005 synthesis](research/SUMMARY.md). These requirements follow the a
 
 ### Independent evidence and usability
 
-- [ ] **EVD-12**: Interpreter and native results are each compared with independently pinned expected answers, including boundary cases and reached controls for wrong arithmetic, skipped loop iterations, overflow, zero remainder divisors, and repeated loop-event identity; incomplete or capacity-exhausted evidence cannot count as success, and native evidence covers macOS and Linux.
-- [ ] **DX-16**: From a clean checkout, a developer can follow documented commands to build and run both M005 programs and locate their expected results and limits.
+- [x] **EVD-12**: Interpreter and native results are each compared with independently pinned expected answers, including boundary cases and reached controls for wrong arithmetic, skipped loop iterations, overflow, zero remainder divisors, and repeated loop-event identity; incomplete or capacity-exhausted evidence cannot count as success, and native evidence covers macOS and Linux.
+- [x] **DX-16**: From a clean checkout, a developer can follow documented commands to build and run both M005 programs and locate their expected results and limits.
 
 ## Future Requirements
 
@@ -58,14 +58,14 @@ APP-09 and EVD-12 span both programs and close with Phase 27.
 | Requirement | Phase | Status |
 |---|---|---|
 | U64-01 | Phase 26 | Complete |
-| U64-02 | Phase 27 | Pending |
+| U64-02 | Phase 27 | Complete |
 | FLOW-01 | Phase 26 | Complete |
 | FLOW-02 | Phase 26 | Complete |
 | APP-07 | Phase 26 | Complete |
 | APP-08 | Phase 27 | Complete |
 | APP-09 | Phase 27 | Complete |
-| EVD-12 | Phase 27 | Pending |
-| DX-16 | Phase 27 | Pending |
+| EVD-12 | Phase 27 | Complete |
+| DX-16 | Phase 27 | Complete |
 
 **Coverage:** 9/9 requirements assigned to exactly one phase.
 

@@ -4,17 +4,17 @@ milestone: M005
 milestone_name: Practical Computation
 current_phase: 27
 current_phase_name: Exact FizzBuzz and Cross-Host Evidence
-status: executing
-stopped_at: Completed 27-09-PLAN.md
-last_updated: "2026-10-10T12:23:01.914Z"
+status: verifying
+stopped_at: Completed 27-10-PLAN.md
+last_updated: "2026-10-10T12:53:27.644Z"
 last_activity: 2026-10-08
 last_activity_desc: Quick task 261008-lfw completed; Phase 27 remains ready for plan 27-09
-state_head: 433666ef2ad3725cf12ec2efee579dba89dd5bd1
+state_head: 73d92909f210a463c07c9892680aca59fe679837
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 15
-  completed_plans: 14
+  completed_plans: 15
 ---
 
 <!-- schway-current:start -->
@@ -123,7 +123,7 @@ plans.
 
 Phase: 27 (Exact FizzBuzz and Cross-Host Evidence) — EXECUTING
 Plan: 10 of 10
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-08 — Completed quick task 261008-lfw (Dashbit appraisal and dormant seeds); Phase 27 remains ready for plan 27-09
 Progress: 1/2 phases complete; 13/15 defined plans complete; Phase 27 has 8/10 plans complete
 
@@ -463,6 +463,7 @@ subset alone.
 | Phase 27 P07 | 43m | 2 tasks | 10 files |
 | Phase 27 P08 | 34m | 2 tasks | 11 files |
 | Phase 27 P09 | 25min | 2 tasks | 4 files |
+| Phase 27 P10 | 95min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -580,6 +581,7 @@ decision history; they no longer describe current status.
 - [Phase 27]: Native output-limit failures stop further app writes, allow normal cleanup and requested evidence serialization, then return exit 65. — Plan 27-08 requires the child failure and evidence verdict to remain independently observable in one run. Immediate exit from the output writer prevented that evidence capture.
 - [Phase 27]: Validate retained application captures under a private returned-application contract that permits a Unit empty result while preserving strict U64 conformance validation. — FizzBuzz has a Unit entry and writes bytes on the application output channel. The previous native capture decoder reused a U64-only non-empty result contract, which incorrectly marked valid Unit evidence incomplete.
 - [Phase 27]: 27-09: receipt gate recomputes expected hashes from its checkout and requires tree=clean; local dirty-tree runs are development receipts only
+- [Phase 27]: 27-10: EVD-12 claimed only from hosted run 38052601527 at fa5a169; earlier failing run at c7bf17c superseded
 
 ### Pending Todos
 
@@ -789,8 +791,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-10T12:23:01.882Z
-Stopped at: Completed 27-09-PLAN.md
+Last session: 2026-10-10T12:53:27.611Z
+Stopped at: Completed 27-10-PLAN.md
 Resume file: None
 Next action: After clearing context, run $gsd-execute-phase 27; plan 27-09 is next.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
