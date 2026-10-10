@@ -225,11 +225,18 @@ own bounded sum witness on the way.
 
 1. `fn main(n: U64) -> U64 { let total = n  total }` passes `schway check`, and `schway build` plus `schway app run -- 41` prints `41`; red/green evidence recorded (red: `core.release_order_indeterminate`).
 2. Every in-scope branch-free shape (let, var, var plus assignment, mixed with `+`, pure copy, pure constant, Unit write-only) checks, builds and runs with the expected stdout, and the interpreter application API and native agree.
-3. corevalidate, originvalidate, executionpeer and interp acceptance rules are unchanged; negative controls (uninitialized read, type mismatch, overflow, constant zero divisor, unreachable trailing result) still refuse with their current codes.
+3. corevalidate, originvalidate, executionpeer and interp acceptance rules are unchanged; static negative controls (uninitialized read, type mismatch, constant zero divisor, unreachable trailing result `core.terminal_block_unreachable`) still refuse with their current codes; a straight-line overflowing `+` now checks and builds and fails at runtime (native exit 65, stderr `schway: U64 addition overflow`, interpreter defect outcome) per D-27.2-07.
 4. Already-accepted programs (examples and phase controls) produce byte-identical core and emitted C, pinned by a test; example source and fixture hashes are unchanged.
 5. One hosted two-host `ci.yml` run (full and race suites) at the final SHA is green, after explicit user approval for push and dispatch.
 
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 27.2 to break down)
+**Wave 1**
+- [ ] 27.2-01-PLAN.md — Wave 0 baseline: accepted-corpus golden at pre-fix HEAD, headline fixture, witness matrix, controls, R1b characterization, cgen ownership guard (red recorded)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 27.2-02-PLAN.md — Producer fix: checker return-block split, cgen structural scalar classifier, conditional unused-parameter marker (green)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 27.2-03-PLAN.md — Records (26-VERIFICATION addendum with R1b, VALIDATION, transition check) and user-authorized hosted two-host run
