@@ -3,18 +3,17 @@ gsd_state_version: "1.0"
 milestone: M005
 milestone_name: Practical Computation
 current_phase: 27
-status: completed
-stopped_at: Phase 27 complete — all phases complete
-last_updated: "2026-10-10T12:57:46.435Z"
+status: planning
+stopped_at: Phase 27.1 context gathered
+last_updated: "2026-10-10T15:14:28.041Z"
 last_activity: 2026-10-10
 last_activity_desc: Phase 27 complete
-state_head: 9e76d49fb8528e611029f55f641bdac59b99ac4e
+state_head: 76e0fd1dd2d1b8a64c1cc936c376580150d66d05
 progress:
-  total_phases: 2
+  total_phases: 3
   completed_phases: 2
   total_plans: 15
   completed_plans: 15
-  percent: 100
 ---
 
 <!-- schway-current:start -->
@@ -55,7 +54,7 @@ See: .planning/PROJECT.md (updated 2026-10-03)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 27 — Exact FizzBuzz and Cross-Host Evidence
+**Current focus:** Phase 27.1 — Address tech debt: build-route origin validation and receipt-gate docs
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -123,7 +122,7 @@ plans.
 
 Phase: 27
 Plan: Not started
-Status: All phases complete
+Status: planning
 Last activity: 2026-10-10 — Phase 27 complete
 Progress: [██████████] 100%
 
@@ -744,6 +743,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
   mandatory mid-phase gates ran and were ratified in writing. ROADMAP.md is now
   a milestone index; M002's full phase detail lives in
   `.planning/milestones/M002-ROADMAP.md`.
+- Phase 27.1 inserted after Phase 27: Address tech debt: build-route origin validation and receipt-gate docs (URGENT)
 
 ### Quick Tasks Completed
 
@@ -792,9 +792,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-10T12:53:27.611Z
-Stopped at: Phase 27 complete — all phases complete
-Resume file: None
+Last session: 2026-10-10T15:14:27.962Z
+Stopped at: Phase 27.1 context gathered
+Resume file: .planning/phases/27.1-address-tech-debt-build-route-origin-validation-and-receipt/27.1-CONTEXT.md
 Next action: After clearing context, run $gsd-execute-phase 27; plan 27-09 is next.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
