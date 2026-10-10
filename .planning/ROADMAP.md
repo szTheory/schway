@@ -204,7 +204,7 @@ own bounded sum witness on the way.
 4. Every output and redirect in the `examples/phase27/README.md` clean-checkout block lands under the ignored `.schway/phase27/`, enforced by a static test. Validators, go.mod and go.sum are unchanged.
 5. One hosted two-host `ci.yml` run (full and race suites) at the final SHA is green, after explicit user approval for push and dispatch.
 
-**Plans:** 2/4 plans executed in 3 waves
+**Plans:** 3/4 plans executed in 3 waves
 
 **Wave 1**
 
@@ -213,7 +213,7 @@ own bounded sum witness on the way.
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 27.3-02-PLAN.md — named capacity exit in conformance C (exit 69 plus stderr line), runner code native.event_capacity_exhausted, per-case unsupported in app verify; green evidence
-- [ ] 27.3-03-PLAN.md — static guide-output test (red), Phase 27 guide outputs under ignored .schway/phase27 (green)
+- [x] 27.3-03-PLAN.md — static guide-output test (red), Phase 27 guide outputs under ignored .schway/phase27 (green)
 
 **Wave 3** *(blocked on Wave 2 completion; contains a human push/dispatch checkpoint)*
 
