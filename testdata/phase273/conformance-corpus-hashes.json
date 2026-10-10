@@ -1,0 +1,378 @@
+{
+  "schema": "phase273.conformance-corpus-hashes/1",
+  "revision": "578c7dc97bfd4973cc012fa46d9fda8cea901bc7",
+  "entries": [
+    {
+      "path": "examples/fizzbuzz.schway",
+      "emitNativeError": "function \"s1:examples.fizzbuzz:fn:main\": Unit C return is supported only by the application shell"
+    },
+    {
+      "path": "examples/phase22/identity.schway",
+      "emitNativeSHA256": "7cb7de472e0e2dd0ed4558fba7a7b94207cace971c13d61506ac69e70ddbd133"
+    },
+    {
+      "path": "examples/phase23/file_byte.schway",
+      "emitNativeSHA256": "2230b75ed1881e648a441fe0ae448fd77a19fd71451f38851ce199cb28d68dd0"
+    },
+    {
+      "path": "examples/phase24/error.schway",
+      "emitNativeError": "cgen.phase24_error_application_shell_unsupported"
+    },
+    {
+      "path": "examples/phase24/transfer.schway",
+      "emitNativeSHA256": "535eed9a5be5f3e2bfd520768f37163f9a97b278b12b89e7fb5ea30137a797d5"
+    },
+    {
+      "path": "examples/phase26/checked_add_overflow.schway",
+      "emitNativeSHA256": "e1b610fe1d89d410152b916793efe0b084263fb27961f95dbeeb6ee0491c7dbd"
+    },
+    {
+      "path": "examples/phase272/straight_line_copy.schway",
+      "emitNativeSHA256": "83bb66c858a1e975dbf504ff780ef2ee5fc6d90f43a086a79f7724702c0b831a"
+    },
+    {
+      "path": "examples/sum_to_n.schway",
+      "emitNativeSHA256": "847c72c45f5338ea1ea476eaf5ccab50aef88eb169c449268d8df2e93d766e83"
+    },
+    {
+      "path": "testdata/phase07/call_argument_used_once.schway",
+      "emitNativeSHA256": "ffbf1ef9b39bb37b2d8ebea300604f481b7b5d007448a8d5a5a4f6f8cb931c38"
+    },
+    {
+      "path": "testdata/phase07/call_basic.schway",
+      "emitNativeSHA256": "ec7b671152f58bc799c8c8265b5a1eb6f705988376f8eae2bd984604c206d174"
+    },
+    {
+      "path": "testdata/phase07/call_fallible_foreign_reach.schway",
+      "emitNativeError": "function \"s1:phase07.call_fallible_foreign_reach:fn:tracer\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase07/call_from_both_match_arms.schway",
+      "emitNativeSHA256": "b6ee333d057cea8b5ffa452b1d1bd10f25a0c65b383db3c63d2d8ae271e89c23"
+    },
+    {
+      "path": "testdata/phase07/call_two_fallible_callees_disagree.schway",
+      "emitNativeError": "function \"s1:phase07.call_two_fallible_callees_disagree:fn:tracer_b\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase07/clean_but_unpublishable.schway",
+      "emitNativeSHA256": "5836b50aa04f2bd013e1e4da213b829c944d35df6d290078925e1bc073c1c221"
+    },
+    {
+      "path": "testdata/phase07/deep_diamond_acyclic.schway",
+      "emitNativeSHA256": "adbde6b19126550d8a9837f2fe8b637df7c49d71d87c1e3f9a2241ee8fdcf85f"
+    },
+    {
+      "path": "testdata/phase07/duplicate_function_name.schway",
+      "emitNativeError": "core validation failed: core.duplicate_function_id"
+    },
+    {
+      "path": "testdata/phase08/match_arm_call.schway",
+      "emitNativeSHA256": "8f7f9b71fee4e4c726fc668aba7b746554881fece01e9b630103aadc9f7976db"
+    },
+    {
+      "path": "testdata/phase08/relay_depth2_accept.schway",
+      "emitNativeSHA256": "9d18ed6610fa8d620b2429ed3835c41e44286b19f787466d7e09cce0f86a263c"
+    },
+    {
+      "path": "testdata/phase08/twin_a_accept.schway",
+      "emitNativeSHA256": "279873b2fe144e0ff630a40ea7531ae243c133772f48ff4752682d22e8ab585b"
+    },
+    {
+      "path": "testdata/phase1/comments.schway",
+      "emitNativeSHA256": "303a48995217b96495505d2bf90d3ed26d0ce723f42a794748dc64b1ac9412df"
+    },
+    {
+      "path": "testdata/phase1/toggle.schway",
+      "emitNativeSHA256": "303a48995217b96495505d2bf90d3ed26d0ce723f42a794748dc64b1ac9412df"
+    },
+    {
+      "path": "testdata/phase10/compose_per_path_borrow_callee_accept.schway",
+      "emitNativeSHA256": "813cc6ca1a1b00af2d645e2e875ce1349391d766371cde06539812b9bce5c8e6"
+    },
+    {
+      "path": "testdata/phase10/compose_per_path_borrow_caller_accept.schway",
+      "emitNativeSHA256": "c5ee904bc5fba54cca61a5e35077a7c14ae7e9beb06fdb510b639437c5bbf779"
+    },
+    {
+      "path": "testdata/phase10/relay_depth3_accept.schway",
+      "emitNativeSHA256": "80f26b14e5476e6ad582caf7a5daece1f40da8ec452319a2d7f904d6e3836693"
+    },
+    {
+      "path": "testdata/phase11/multi_function_diamond_call.schway",
+      "emitNativeSHA256": "2c542a9d63e46dc92886efeb3b813d22504093b0e721b0c0914790684e5cc228"
+    },
+    {
+      "path": "testdata/phase11/multi_function_entry_basic.schway",
+      "emitNativeSHA256": "f1c1a861f1d20e57ae6067fb4db28829e0ac3ba4942fe4f52b60e2cda0c28756"
+    },
+    {
+      "path": "testdata/phase11/multi_function_forward_callee.schway",
+      "emitNativeSHA256": "cf9c7023bd2fdac141192b8e6a505ec4cf1d9c678aed7a53f44351dd35a61aa5"
+    },
+    {
+      "path": "testdata/phase11/multi_function_gate_corpus.schway",
+      "emitNativeError": "function \"s1:phase11.multi_function_gate_corpus:fn:touch\": by-pointer bodies are not supported by whole-program native emission this phase"
+    },
+    {
+      "path": "testdata/phase11/multi_function_reduce_gate.schway",
+      "emitNativeSHA256": "8ad5dc34f332d810d2873816d248e5004fd3036289ae659469576706bed25f10"
+    },
+    {
+      "path": "testdata/phase11/multi_function_relay_depth2.schway",
+      "emitNativeSHA256": "bcf94aa9e7e80e83d7886ca52a23fa006beff226fd8bf8525254c873111da56d"
+    },
+    {
+      "path": "testdata/phase11/multi_function_unreachable.schway",
+      "emitNativeSHA256": "48340b5b006b9b87214601ec6873275d7b31354e16c82ca72597ef94ecda4c97"
+    },
+    {
+      "path": "testdata/phase11/multi_function_zero_call.schway",
+      "emitNativeError": "callgraph.entry_ambiguous: program has 2 in-degree-zero root(s), expected exactly one: [s1:phase11.multi_function_zero_call:fn:main s1:phase11.multi_function_zero_call:fn:unused]"
+    },
+    {
+      "path": "testdata/phase12/payload_borrow_interaction.schway",
+      "emitNativeError": "callgraph.entry_ambiguous: program has 2 in-degree-zero root(s), expected exactly one: [s1:result.payload_borrow_interaction:fn:choose s1:result.payload_borrow_interaction:fn:identity]"
+    },
+    {
+      "path": "testdata/phase12/payload_drop_obligation.schway",
+      "emitNativeSHA256": "8a07c511454f9fda73d9a6488d4f55aedc865820b75032083fac09f04c8e39ec"
+    },
+    {
+      "path": "testdata/phase12/payload_tracer.schway",
+      "emitNativeSHA256": "6b61d0805ed4f1200dfe0fd57837fe4f5174f0c272243c225fe8e7196207bf6b"
+    },
+    {
+      "path": "testdata/phase13/derivation_call_argument_mismatch.schway",
+      "emitNativeSHA256": "181650c7a8d7aa9cca646c4d0e9296adc6a112f9a43da4563e477ef8dceef147"
+    },
+    {
+      "path": "testdata/phase13/derivation_fallible_call_unconsumed.schway",
+      "emitNativeError": "function \"s1:phase13.derivation_fallible_call_unconsumed:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase13/heldout_call_argument_ambiguous.schway",
+      "emitNativeSHA256": "0df4fcf3c8ca23fb283a3564a634ed4312adca3807b6052888675b60c7d2a269"
+    },
+    {
+      "path": "testdata/phase13/heldout_call_argument_mismatch.schway",
+      "emitNativeSHA256": "7389fc6cfea9778edd6cd2f708a6903fc0f3af5e64e76b755f6cc4da7cad5b9f"
+    },
+    {
+      "path": "testdata/phase13/heldout_fallible_call_unconsumed.schway",
+      "emitNativeError": "function \"s1:phase13.heldout_fallible_call_unconsumed:fn:acquire\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase13/heldout_shared_callee_twin_alpha.schway",
+      "emitNativeSHA256": "1ca4a9d7b555ef9a827c9fbce57608e06561640a3689c698e03e9c7ae0e8a227"
+    },
+    {
+      "path": "testdata/phase13/heldout_shared_callee_twin_mirror.schway",
+      "emitNativeSHA256": "950627f8494123010337307e611c25ddb92d102022753c84a9d881d1155b8028"
+    },
+    {
+      "path": "testdata/phase14/multi_function_match_refusal.schway",
+      "emitNativeSHA256": "5755b3951b46676aea0843189015b220d40c0b0446fa9d8450a06c5871eca10c"
+    },
+    {
+      "path": "testdata/phase17/return_type_tracer.schway",
+      "emitNativeSHA256": "c88511d463c1e2b645fcd4d1d615fea2d87789bb79c7bd4e1193f3adb30ec81c"
+    },
+    {
+      "path": "testdata/phase18/computed_match.schway",
+      "emitNativeSHA256": "ef9f82f44857a68a07c5c69929bbe66bb08d6120caae3a84dea9634d4ee0f6a3"
+    },
+    {
+      "path": "testdata/phase18/loan_across_branch.schway",
+      "emitNativeSHA256": "8200b045fc031e430fcbcaf692e68c7dd0672c914a3241ae6dbd30f6d9735477"
+    },
+    {
+      "path": "testdata/phase18/long_payload_return.schway",
+      "emitNativeSHA256": "23ac6abe8dc358707d34f0bcc7d57efbb179ecb1a562c42daf9771e0e2793cb2"
+    },
+    {
+      "path": "testdata/phase18/payload_return.schway",
+      "emitNativeSHA256": "29b9f49c3963b7488535ec6c06c904b5ad9726500cc543a84cc1fdf478a7b295"
+    },
+    {
+      "path": "testdata/phase18/result_computed_match.schway",
+      "emitNativeSHA256": "ef44106628e361f80fafc24ba438eac40b5afa367d1124d6cb4f3819ab675116"
+    },
+    {
+      "path": "testdata/phase19/literal_tracer.schway",
+      "emitNativeSHA256": "f1e834dc34596d24d33f37be7e6e54312163a06506c984f33fbeb5df8e5af695"
+    },
+    {
+      "path": "testdata/phase2/implicit_copy.schway",
+      "emitNativeSHA256": "9f79754cdd4f4bbd8f42d4be2ab519fca37910efa972387079b4250599a75170"
+    },
+    {
+      "path": "testdata/phase2/owned_transfer.schway",
+      "emitNativeSHA256": "332d7f6336c78feec2d8912a8b88c768351df201162864a3a89c6227dd847740"
+    },
+    {
+      "path": "testdata/phase25/exclusive_copy_accept.schway",
+      "emitNativeSHA256": "e9473391c52c7f2176241bcba20743e8decdf8712b6cfe5eb362cc12839a36ed"
+    },
+    {
+      "path": "testdata/phase25/exclusive_escape_reject.schway",
+      "emitNativeError": "function \"s1:phase25.exclusive_escape_reject:fn:relay\": by-pointer bodies are not supported by whole-program native emission this phase"
+    },
+    {
+      "path": "testdata/phase25/shared_copy_accept.schway",
+      "emitNativeSHA256": "2858b0136ad29d29c606c5d03aec1e049b500cac7ec091dab6f0402925433a0c"
+    },
+    {
+      "path": "testdata/phase3/borrowed_view.schway",
+      "emitNativeSHA256": "7e6fc8f8ff178579d9412521beef13f2114563381822682349563d5c3cf7a0b3"
+    },
+    {
+      "path": "testdata/phase3/branch_one_arm_shared_accept.schway",
+      "emitNativeSHA256": "5f12ef8426fbf1e4b28dac10f2c1ceb37f63ab72e240bf8f6150e01ef7dc46f4"
+    },
+    {
+      "path": "testdata/phase3/branch_view.schway",
+      "emitNativeSHA256": "260709dab83b9cd39bceb19d451a98d3989d6803318cfeefc09dfd53ae4e2312"
+    },
+    {
+      "path": "testdata/phase3/public_view.schway",
+      "emitNativeSHA256": "1d02cccb284738f5f3d911aea3b1789f49085d1a58951c7b56806d91bc1e9adb"
+    },
+    {
+      "path": "testdata/phase3/public_view_impossible.schway",
+      "emitNativeSHA256": "0ac763ab8aabb079d8982925140530d79e4f898b357241943762699c121bab6e"
+    },
+    {
+      "path": "testdata/phase3/public_view_mixed_access.schway",
+      "emitNativeSHA256": "d0fb589b04cc7bef42459a6fbe9919ca127476b5af7f9b835503bcebe2472551"
+    },
+    {
+      "path": "testdata/phase3/public_view_multi_arm_access_conflict.schway",
+      "emitNativeSHA256": "9e2dc8ecf453c9cba2f655b21ec8b4b135663fde7330895827bf212869e19224"
+    },
+    {
+      "path": "testdata/phase3/public_view_multi_arm_omitted.schway",
+      "emitNativeSHA256": "dc9ae5ae5d8c81f280de503d3fa4a8fb999fd687f1438d7905144f17d5ae3bb3"
+    },
+    {
+      "path": "testdata/phase3/public_view_omitted.schway",
+      "emitNativeSHA256": "9ae2a2b35c8051c1717dcac569158584fa93632ba57dc634a26243d8614a102b"
+    },
+    {
+      "path": "testdata/phase3/public_view_understated.schway",
+      "emitNativeSHA256": "994f55821fa0ec168033a54205adaabbea8b038dc62a93ba6f5c1ee4b6b0df48"
+    },
+    {
+      "path": "testdata/phase3/sequential_shared_then_exclusive_accept.schway",
+      "emitNativeSHA256": "69ca5b55a71b1e1994a20a5af0753f153c1c6acc21867ab82ce0a092f1ced200"
+    },
+    {
+      "path": "testdata/phase3/shared_shared_accept.schway",
+      "emitNativeSHA256": "b2226c53b5622d503aa647a14782e8932e5a5d3c76b3f0cd77ac0c254e145f23"
+    },
+    {
+      "path": "testdata/phase4/acquire_three_fail_second.schway",
+      "emitNativeError": "function \"s1:phase4.acquire_three_fail_second:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase4/acquire_three_fail_third.schway",
+      "emitNativeError": "function \"s1:phase4.acquire_three_fail_third:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase4/acquire_three_success.schway",
+      "emitNativeError": "function \"s1:phase4.acquire_three_success:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase4/defect_terminal.schway",
+      "emitNativeSHA256": "ed69f37a30096850c1fd6fda801343dcd424f2f9ae215f32ce72e1e200e975df"
+    },
+    {
+      "path": "testdata/phase4/discard_because.schway",
+      "emitNativeError": "function \"s1:phase4.discard_because:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase4/foreign_acquire_one.schway",
+      "emitNativeError": "function \"s1:phase4.foreign_acquire_one:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase4/foreign_origin_omitted.schway",
+      "emitNativeError": "function \"s1:phase4.foreign_origin_omitted:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase4/nonlocal_exit_probe.schway",
+      "emitNativeError": "function \"s1:phase4.nonlocal_exit_probe:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase5/allocator_mismatch.schway",
+      "emitNativeError": "function \"s1:phase5.allocator_mismatch:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase5/coordinated_lie.schway",
+      "emitNativeSHA256": "26098921244e9433f12c0664e0e67730c02df12122161c87132abf4d9e3b1b55"
+    },
+    {
+      "path": "testdata/phase5/dead_store_unused_acquire.schway",
+      "emitNativeError": "function \"s1:phase5.dead_store_unused_acquire:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase5/defect_dies_by_signal.schway",
+      "emitNativeSHA256": "934cd031b3bfbc5ebfb391ecc25a62def8961f9e0b9ac638b39357ded1f1b27b"
+    },
+    {
+      "path": "testdata/phase5/false_restrict_hoist.schway",
+      "emitNativeError": "function \"s1:phase5.false_restrict_hoist:fn:touch\": by-pointer bodies are not supported by whole-program native emission this phase"
+    },
+    {
+      "path": "testdata/phase5/inline_across_foreign.schway",
+      "emitNativeError": "function \"s1:phase5.inline_across_foreign:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase5/reorder_two_events.schway",
+      "emitNativeError": "function \"s1:phase5.reorder_two_events:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase5/restrict_borrow.schway",
+      "emitNativeError": "function \"s1:phase5.restrict_borrow:fn:touch\": by-pointer bodies are not supported by whole-program native emission this phase"
+    },
+    {
+      "path": "testdata/phase5/retained_pointer.schway",
+      "emitNativeError": "function \"s1:phase5.retained_pointer:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase5/tail_collapse_release_ladder.schway",
+      "emitNativeError": "function \"s1:phase5.tail_collapse_release_ladder:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase5/typed_failure_truncated_stdout.schway",
+      "emitNativeError": "function \"s1:phase5.typed_failure_truncated_stdout:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase"
+    },
+    {
+      "path": "testdata/phase6/derivation_borrow_defect.schway",
+      "emitNativeSHA256": "0485885e749371b652ca7ef17644555843f45ed743c05dd8af07d6e388678bbd"
+    },
+    {
+      "path": "testdata/phase6/derivation_match_defect.schway",
+      "emitNativeSHA256": "0c7962038abe4d3c3dd6cde166fafbaab3253ae294294b1e3699f50f599b978b"
+    },
+    {
+      "path": "testdata/phase6/derivation_move_defect.schway",
+      "emitNativeSHA256": "bc1664383dfc7fa32824c5b1e9f085bcbecbf653699f8c2a47943f543727b732"
+    },
+    {
+      "path": "testdata/phase6/heldout_borrow_defect.schway",
+      "emitNativeSHA256": "457c079724abf41fecd0e156a03de400c1cdee6f789d7625c2f7402f6155cfb7"
+    },
+    {
+      "path": "testdata/phase6/heldout_match_defect.schway",
+      "emitNativeSHA256": "aa0a9cc5ec937e1b9a7f86466becca286d9a55fef641815dc2b08c4848991ff1"
+    },
+    {
+      "path": "testdata/phase6/heldout_move_defect.schway",
+      "emitNativeSHA256": "d659d86422ac64a7ca9afd4cb4d34c94d2d2b485d21ba3baeac5377c1c4a11f4"
+    },
+    {
+      "path": "testdata/phase6/stale_evidence_subject.schway",
+      "emitNativeSHA256": "2e5ad75ac2704812fb09be202733679d9ccaca99a9e97cbfde54546fa5beafbc"
+    }
+  ]
+}
