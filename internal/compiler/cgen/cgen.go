@@ -749,6 +749,25 @@ func emitEventSupportSchema2(out *strings.Builder, capacity, outputLimit int, ne
 		out.WriteString("    if (byte == '\"') escape = \"\\\\\\\"\";\n    else if (byte == '\\\\') escape = \"\\\\\\\\\";\n    else if (byte == '\\b') escape = \"\\\\b\";\n    else if (byte == '\\f') escape = \"\\\\f\";\n    else if (byte == '\\n') escape = \"\\\\n\";\n    else if (byte == '\\r') escape = \"\\\\r\";\n    else if (byte == '\\t') escape = \"\\\\t\";\n")
 		out.WriteString("    if (escape != NULL) { if (!schway_write_literal(escape)) return 0; }\n    else if (byte < 0x20u) {\n      char encoded[6] = {'\\\\', 'u', '0', '0', hex[byte >> 4u], hex[byte & 0x0fu]};\n      if (!schway_write_bytes(encoded, sizeof encoded)) return 0;\n    } else if (!schway_write_bytes(value, 1u)) return 0;\n  }\n  return schway_write_bytes(\"\\\"\", 1u);\n}\n\n")
 	}
+	// Recorder variants and capacity exhaustion (phase 27.3). Only the
+	// trackOccurrences && !applicationEvidence recorder exits with the named
+	// capacity status (exit 69). The other variants are deliberately not
+	// converted; converting them would move emitted C and accepted-corpus
+	// hashes (testdata/phase273/conformance-corpus-hashes.json):
+	//   - Application shell (either applicationEvidence variant): overflow sets
+	//     schway_event_overflow, and the shell reports it as the
+	//     lang.app-capture/1 "capacity_exhausted" status.
+	//   - Non-tracked execution/conformance shell: trackOccurrences is
+	//     hasCyclicScalarCopy(program). Without a cyclic scalar copy, every
+	//     activation records at most its static operation count, and
+	//     invocationEventCapacity sums exactly that over the bounded unfolding.
+	//     The capacity check is therefore unreachable for admitted programs. If
+	//     it were ever reached, `return 0` makes every call site `abort()`
+	//     (SIGABRT). That is a fail-closed operational error, never a pass, and
+	//     never confused with the capacity code.
+	//   - `occurrence == UINT64_MAX`: occurrence is at most schway_event_count,
+	//     which is below SCHWAY_EVENT_CAPACITY (a small static Go int), so the
+	//     guard is unreachable. It also fails closed through the same abort().
 	if trackOccurrences && applicationEvidence {
 		out.WriteString("static int schway_record_event(const char *kind, const char *id, const char *function_id, const char *source_place, const char *target_place, const char *type_id, const char *invocation, const char *callee_function_id) {\n  size_t index;\n  uint64_t occurrence = 0u;\n  if (schway_event_count >= SCHWAY_EVENT_CAPACITY) { schway_event_overflow = 1; return 1; }\n  for (index = 0u; index < schway_event_count; index++) {\n    const SCHWAY_EVENT *prior = &schway_events[index];\n    if (strcmp(prior->id, id) == 0 && strcmp(prior->invocation, invocation) == 0) {\n      if (occurrence == UINT64_MAX) return 0;\n      occurrence++;\n    }\n  }\n  schway_events[schway_event_count++] = (SCHWAY_EVENT){kind, id, function_id, source_place, target_place, type_id, invocation, callee_function_id, occurrence};\n  return 1;\n}\n\n")
 	} else if trackOccurrences {
