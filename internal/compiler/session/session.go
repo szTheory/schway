@@ -1138,6 +1138,55 @@ func RunInterpreter(source []byte) ([]interp.Execution, []diagnostic.Diagnostic,
 	return executions, nil, nil
 }
 
+// applicationRefusalLayer names which admission layer refused an application
+// source after the checker accepted it.
+type applicationRefusalLayer uint8
+
+const (
+	applicationAdmitted applicationRefusalLayer = iota
+	applicationRefusedCore
+	applicationRefusedOrigin
+)
+
+// applicationAdmission is the outcome of admitPublishedApplication. program is
+// the peer-normalized program and is meaningful only when layer is
+// applicationAdmitted.
+type applicationAdmission struct {
+	layer      applicationRefusalLayer
+	code       string
+	diagnostic diagnostic.Diagnostic
+	program    core.Program
+}
+
+// admitPublishedApplication is the application/publication admission gate for
+// BuildApplication, RunInterpreterApplication and VerifyApplicationCases: after
+// a clean checker it runs corevalidate.Validate and then
+// originvalidate.ValidatePublished on the validated program. Internal execution
+// lanes (runNative, RunInterpreter, RunNativeCommandFile) deliberately do not
+// call it, because differential and verify-corpus lanes run undeclared-borrow
+// fixtures (TestExclusiveBorrowInterpreterNative). The run command gates at the
+// command-file layer; see publishedOriginProblemFile. Do not widen this gate
+// without a new decision (D-27.1-02).
+func admitPublishedApplication(checked CheckResult) applicationAdmission {
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		code := ""
+		if len(validated.Problems) > 0 {
+			code = validated.Problems[0].Code
+		}
+		return applicationAdmission{layer: applicationRefusedCore, code: code}
+	}
+	program := validated.Program()
+	if problems := originvalidate.ValidatePublished(program); len(problems) > 0 {
+		return applicationAdmission{
+			layer:      applicationRefusedOrigin,
+			code:       problems[0].Code,
+			diagnostic: originPeerRefusalDiagnostic(problems[0], program, checked.Tree),
+		}
+	}
+	return applicationAdmission{layer: applicationAdmitted, program: program}
+}
+
 // RunInterpreterApplication runs one checked U64 application input. Its
 // execution document and application bytes remain separate in the result,
 // matching the retained native application boundary.
@@ -1384,14 +1433,17 @@ func BuildApplication(ctx context.Context, source []byte, outputPath string, run
 	if len(checked.Diagnostics) > 0 {
 		return native.BuildReceipt{}, checked.Diagnostics, nil
 	}
-	validated := corevalidate.Validate(checked.Program)
-	if !validated.Valid {
-		if len(validated.Problems) == 0 {
+	adm := admitPublishedApplication(checked)
+	switch adm.layer {
+	case applicationRefusedCore:
+		if adm.code == "" {
 			return native.BuildReceipt{}, nil, errors.New("core validation failed without a named problem")
 		}
-		return native.BuildReceipt{}, nil, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+		return native.BuildReceipt{}, nil, fmt.Errorf("core validation failed: %s", adm.code)
+	case applicationRefusedOrigin:
+		return native.BuildReceipt{}, []diagnostic.Diagnostic{adm.diagnostic}, nil
 	}
-	program := validated.Program()
+	program := adm.program
 	entry, err := callgraph.EntryFunction(program)
 	if err != nil {
 		return native.BuildReceipt{}, nil, err
