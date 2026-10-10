@@ -40,6 +40,37 @@
       "expected": "all pass",
       "actual": "all pass (9 parity subtests, 7 positive controls, file route fail-report-only)",
       "output": "=== RUN   TestPhase271BuildApplicationRefusesOriginUnpublishable\n--- PASS: TestPhase271BuildApplicationRefusesOriginUnpublishable (0.00s)\n=== RUN   TestApplicationRoutesApplySameAdmissionLayers\n=== RUN   TestApplicationRoutesApplySameAdmissionLayers/checker/build\n=== RUN   TestApplicationRoutesApplySameAdmissionLayers/checker/interp\n=== RUN   TestApplicationRoutesApplySameAdmissionLayers/checker/verify\n=== RUN   TestApplicationRoutesApplySameAdmissionLayers/corevalidate/build\n=== RUN   TestApplicationRoutesApplySameAdmissionLayers/corevalidate/interp\n=== RUN   TestApplicationRoutesApplySameAdmissionLayers/corevalidate/verify\n=== RUN   TestApplicationRoutesApplySameAdmissionLayers/origin/build\n=== RUN   TestApplicationRoutesApplySameAdmissionLayers/origin/interp\n=== RUN   TestApplicationRoutesApplySameAdmissionLayers/origin/verify\n--- PASS: TestApplicationRoutesApplySameAdmissionLayers (0.00s)\n    --- PASS: TestApplicationRoutesApplySameAdmissionLayers/checker/build (0.00s)\n    --- PASS: TestApplicationRoutesApplySameAdmissionLayers/checker/interp (0.00s)\n    --- PASS: TestApplicationRoutesApplySameAdmissionLayers/checker/verify (0.00s)\n    --- PASS: TestApplicationRoutesApplySameAdmissionLayers/corevalidate/build (0.00s)\n    --- PASS: TestApplicationRoutesApplySameAdmissionLayers/corevalidate/interp (0.00s)\n    --- PASS: TestApplicationRoutesApplySameAdmissionLayers/corevalidate/verify (0.00s)\n    --- PASS: TestApplicationRoutesApplySameAdmissionLayers/origin/build (0.00s)\n    --- PASS: TestApplicationRoutesApplySameAdmissionLayers/origin/interp (0.00s)\n    --- PASS: TestApplicationRoutesApplySameAdmissionLayers/origin/verify (0.00s)\n=== RUN   TestPhase271PositiveControlsReachRunner\n=== RUN   TestPhase271PositiveControlsReachRunner/examples/sum_to_n.schway\n=== RUN   TestPhase271PositiveControlsReachRunner/examples/fizzbuzz.schway\n=== RUN   TestPhase271PositiveControlsReachRunner/examples/phase24/error.schway\n=== RUN   TestPhase271PositiveControlsReachRunner/examples/phase24/transfer.schway\n=== RUN   TestPhase271PositiveControlsReachRunner/examples/phase26/checked_add_overflow.schway\n=== RUN   TestPhase271PositiveControlsReachRunner/examples/phase22/identity.schway\n=== RUN   TestPhase271PositiveControlsReachRunner/examples/phase23/file_byte.schway\n--- PASS: TestPhase271PositiveControlsReachRunner (0.02s)\n    --- PASS: TestPhase271PositiveControlsReachRunner/examples/sum_to_n.schway (0.00s)\n    --- PASS: TestPhase271PositiveControlsReachRunner/examples/fizzbuzz.schway (0.01s)\n    --- PASS: TestPhase271PositiveControlsReachRunner/examples/phase24/error.schway (0.00s)\n    --- PASS: TestPhase271PositiveControlsReachRunner/examples/phase24/transfer.schway (0.00s)\n    --- PASS: TestPhase271PositiveControlsReachRunner/examples/phase26/checked_add_overflow.schway (0.00s)\n    --- PASS: TestPhase271PositiveControlsReachRunner/examples/phase22/identity.schway (0.00s)\n    --- PASS: TestPhase271PositiveControlsReachRunner/examples/phase23/file_byte.schway (0.00s)\n=== RUN   TestPhase271VerifyFileRouteWritesOnlyFailReport\n--- PASS: TestPhase271VerifyFileRouteWritesOnlyFailReport (0.01s)\nPASS\nok  \tgithub.com/szTheory/schway/internal/compiler/session\t0.047s"
+    },
+    {
+      "stage": "green",
+      "revision": "999ef27872b75b0bdac7099ac05095a81d42cb43",
+      "command": "go test ./internal/compiler/session ./cmd/schway -run 'Build|Phase22|Phase24|Phase25|Phase26|Phase27|Phase271' -count=1",
+      "exitCode": 0,
+      "targetTests": "Build|Phase22|Phase24|Phase25|Phase26|Phase27|Phase271",
+      "expected": "green",
+      "actual": "both packages ok",
+      "output": "ok  \tgithub.com/szTheory/schway/internal/compiler/session\t11.656s\nok  \tgithub.com/szTheory/schway/cmd/schway\t2.182s"
+    },
+    {
+      "stage": "green",
+      "revision": "999ef27872b75b0bdac7099ac05095a81d42cb43",
+      "command": "go test ./internal/compiler/session -run '^(TestExclusiveBorrowInterpreterNative|TestCLICheckAdmissionDivergenceIsExactlyKnown|TestKnownAdmissionDivergencesIsSortedAndComplete)$' -count=1 -v",
+      "exitCode": 0,
+      "targetTests": "TestExclusiveBorrowInterpreterNative, divergence table tests",
+      "expected": "internal lanes ungated; divergence table unchanged",
+      "actual": "3 PASS",
+      "output": "=== RUN   TestCLICheckAdmissionDivergenceIsExactlyKnown\n--- PASS: TestCLICheckAdmissionDivergenceIsExactlyKnown (0.29s)\n=== RUN   TestKnownAdmissionDivergencesIsSortedAndComplete\n--- PASS: TestKnownAdmissionDivergencesIsSortedAndComplete (0.00s)\n=== RUN   TestExclusiveBorrowInterpreterNative\n--- PASS: TestExclusiveBorrowInterpreterNative (0.19s)\nPASS\nok  \tgithub.com/szTheory/schway/internal/compiler/session\t0.487s"
+    },
+    {
+      "stage": "green",
+      "revision": "999ef27872b75b0bdac7099ac05095a81d42cb43",
+      "command": "go test ./internal/compiler/cgen ./internal/compiler/executionpeer -run 'Phase22|Phase24|Phase25|Phase26|Phase27' -count=1",
+      "exitCode": 0,
+      "targetTests": "Phase22|Phase24|Phase25|Phase26|Phase27",
+      "expected": "green",
+      "actual": "both packages ok",
+      "output": "ok  \tgithub.com/szTheory/schway/internal/compiler/cgen\t1.587s\nok  \tgithub.com/szTheory/schway/internal/compiler/executionpeer\t0.223s"
     }
-  ]
+  ],
+  "claims": "Focused local tests only; hosted full and race suites are recorded by plan 27.1-03; this is not mutation testing beyond the single red/green; artifacts built earlier are not retroactively checked (D-27.1-16)."
 }
