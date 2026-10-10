@@ -318,23 +318,57 @@ func VerifyApplicationCases(ctx context.Context, source []byte, cases ReplayCase
 		runner.ForeignSources = nil
 		runner.BuildCache = nil
 		runner.Expect = native.ExpectValue
-		o0, err := runner.Run(ctx, cSource, "-O0", validInputs)
-		if err != nil || len(o0.Pairs) != len(validInputs) {
+		o0, err := runAppVerifyLevel(ctx, runner, cSource, "-O0", validInputs)
+		if err != nil {
 			markReplayFailures(&report, validIndices, "-O0 generated-C execution failed")
-			return finalizeReplayReport(report), fmt.Errorf("run generated C at -O0: %w", replayErr(err, len(o0.Pairs), len(validInputs)))
+			return finalizeReplayReport(report), fmt.Errorf("run generated C at -O0: %w", err)
 		}
-		o3, err := runner.Run(ctx, cSource, "-O3", validInputs)
-		if err != nil || len(o3.Pairs) != len(validInputs) {
+		exhaustedAt := make([]string, len(validIndices))
+		o3Positions := make([]int, 0, len(validIndices))
+		o3Inputs := make([]string, 0, len(validIndices))
+		for pairIndex := range validIndices {
+			if o0.Exhausted[pairIndex] {
+				exhaustedAt[pairIndex] = "-O0"
+				continue
+			}
+			o3Positions = append(o3Positions, pairIndex)
+			o3Inputs = append(o3Inputs, validInputs[pairIndex])
+		}
+		o3, err := runAppVerifyLevel(ctx, runner, cSource, "-O3", o3Inputs)
+		if err != nil {
 			markReplayFailures(&report, validIndices, "-O3 generated-C execution failed")
-			return finalizeReplayReport(report), fmt.Errorf("run generated C at -O3: %w", replayErr(err, len(o3.Pairs), len(validInputs)))
+			return finalizeReplayReport(report), fmt.Errorf("run generated C at -O3: %w", err)
+		}
+		o3Slot := make(map[int]int, len(o3Positions))
+		for slot, pairIndex := range o3Positions {
+			o3Slot[pairIndex] = slot
+			if o3.Exhausted[slot] {
+				exhaustedAt[pairIndex] = "-O3"
+			}
 		}
 		for pairIndex, reportIndex := range validIndices {
+			if level := exhaustedAt[pairIndex]; level != "" {
+				// An exhausted case has no native evidence: only the interpreter
+				// engine is reported, and unsupported is claimed only when the
+				// interpreter outcome already equals the expected outcome.
+				actual := interpreted[reportIndex].Outcome
+				expected := report.Cases[reportIndex].Expected
+				report.Cases[reportIndex].Engines = map[string]execution.Execution{"interpreter": interpreted[reportIndex]}
+				if actual.Kind == expected.Kind && actual.Value == expected.Value {
+					report.Cases[reportIndex].Status = ReplayStatusUnsupported
+					report.Cases[reportIndex].Diagnostic = eventCapacityDiagnostic(level)
+				} else {
+					report.Cases[reportIndex].Status = ReplayStatusFail
+					report.Cases[reportIndex].Diagnostic = fmt.Sprintf("interpreter produced %s:%s, expected %s:%s", actual.Kind, actual.Value, expected.Kind, expected.Value)
+				}
+				continue
+			}
 			o0Execution, projectionErr := ProjectExecutionSchema2(program, o0.Pairs[pairIndex].Execution)
 			if projectionErr != nil {
 				report.Cases[reportIndex].Diagnostic = "-O0 evidence could not be projected to execution schema 2"
 				continue
 			}
-			o3Execution, projectionErr := ProjectExecutionSchema2(program, o3.Pairs[pairIndex].Execution)
+			o3Execution, projectionErr := ProjectExecutionSchema2(program, o3.Pairs[o3Slot[pairIndex]].Execution)
 			if projectionErr != nil {
 				report.Cases[reportIndex].Diagnostic = "-O3 evidence could not be projected to execution schema 2"
 				continue
@@ -432,6 +466,52 @@ func effectiveClangPath(runner native.Runner) string {
 		return "clang"
 	}
 	return runner.ClangPath
+}
+
+// appVerifyLevel holds one optimization level's per-input results. A Pair is
+// the zero value where the matching Exhausted entry is true.
+type appVerifyLevel struct {
+	Pairs     []native.Pair
+	Exhausted []bool
+}
+
+func isEventCapacityExhausted(err error) bool {
+	var toolErr *native.ToolError
+	return errors.As(err, &toolErr) && toolErr.Code == native.CodeEventCapacityExhausted
+}
+
+func eventCapacityDiagnostic(level string) string {
+	return native.CodeEventCapacityExhausted + ": generated C exceeded its static event capacity at " + level + "; outcome not established, not a mismatch"
+}
+
+// runAppVerifyLevel runs one batch per level. Only when the batch fails with
+// the named capacity code does it re-run each input alone to recover per-input
+// results; any other error stays a whole-set operational error.
+func runAppVerifyLevel(ctx context.Context, runner native.Runner, cSource, level string, inputs []string) (appVerifyLevel, error) {
+	if len(inputs) == 0 {
+		return appVerifyLevel{}, nil
+	}
+	result, err := runner.Run(ctx, cSource, level, inputs)
+	if err == nil && len(result.Pairs) == len(inputs) {
+		return appVerifyLevel{Pairs: result.Pairs, Exhausted: make([]bool, len(inputs))}, nil
+	}
+	if !isEventCapacityExhausted(err) {
+		return appVerifyLevel{}, replayErr(err, len(result.Pairs), len(inputs))
+	}
+	recovered := appVerifyLevel{Pairs: make([]native.Pair, len(inputs)), Exhausted: make([]bool, len(inputs))}
+	for index, input := range inputs {
+		single, singleErr := runner.Run(ctx, cSource, level, []string{input})
+		if singleErr == nil && len(single.Pairs) == 1 {
+			recovered.Pairs[index] = single.Pairs[0]
+			continue
+		}
+		if isEventCapacityExhausted(singleErr) {
+			recovered.Exhausted[index] = true
+			continue
+		}
+		return appVerifyLevel{}, replayErr(singleErr, len(single.Pairs), 1)
+	}
+	return recovered, nil
 }
 
 func replayErr(err error, got, want int) error {
