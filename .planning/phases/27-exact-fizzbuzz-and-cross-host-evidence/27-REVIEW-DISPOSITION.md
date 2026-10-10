@@ -5,19 +5,19 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "C application keeps executing after an output-limit failure; the interpreter stops"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "Evidence capture reports `returned/complete` when the app already failed on output limit"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`expectApplication` loosens U64 application validation"
   - id: WR-04
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "Formatter splits multi-operator `let` bindings across lines"
   - id: WR-05
     severity: warning
@@ -31,19 +31,19 @@ findings:
     severity: info
     disposition: open
     title: "Duplicated \"reason\" literals across layers"
-open: 6
+open: 2
 total: 7
-recorded: 2026-10-10T13:06:43.385Z
+recorded: 2026-10-10T13:06:56.481Z
 ---
 
 # Phase 27: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
-| WR-04 | warning | open | - |
+| WR-01 | warning | fixed | 27-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 27-REVIEW-FIX.md |
+| WR-03 | warning | fixed | 27-REVIEW-FIX.md |
+| WR-04 | warning | fixed | 27-REVIEW-FIX.md |
 | WR-05 | warning | fixed | 27-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
