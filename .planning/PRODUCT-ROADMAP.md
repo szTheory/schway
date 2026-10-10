@@ -142,6 +142,24 @@ receipts remain historical and cannot substitute for those runs.
 
 **Current three recommendations re-checked:** unchanged. Next action after the hosted run is the milestone audit re-run.
 
+### Phase 27.3 transition amendment — 2026-10-10
+
+**What 27.3 changed:** milestone-audit warnings W1 and W4 are closed without new capability. `schway app verify` on a loop program now names event-capacity exhaustion per case (native.event_capacity_exhausted, reported unsupported) instead of aborting the whole set, through a producer-side named exit in the loop-bearing conformance C and a runner mapping; loop-free conformance C and all application C stay byte-identical. The Phase 27 guide writes its outputs under ignored `.schway/phase27`, so the clean-checkout block no longer dirties the tree. Validators are unchanged. Loop-aware event capacity (full-domain app verify of `sum_to_n`) remains deferred backlog per D-27.3-03.
+
+**Seed transition check:**
+
+| Seed | Disposition | Reason |
+|------|-------------|--------|
+| SEED-261008-trz | retain dormant | W1 did not meet its trigger: the failure was diagnosed from source and existing capture during discuss-phase research, so current capture, observers, debug map and source replay evidence were sufficient. |
+| SEED-261008-z1g | retain dormant | No reviewer query gap for a bounded symbol or caller query surfaced during 27.3. |
+| SEED-261008-z1s | retain dormant | No contested contract or source form arose in 27.3. |
+
+**Runnable gain check (AGENTS.md: a second consecutive enabling phase without one triggers scope review):** 27.1, 27.2 and 27.3 are consecutive tech-debt closures, so the check is applied explicitly. Result: 27.3 has a runnable gain. `schway app verify` on `sum_to_n` now completes with per-case results (n <= 14 pass, larger n reported unsupported with native.event_capacity_exhausted) where it previously aborted the whole set, and the Phase 27 guide's clean-checkout block now runs without dirtying the tree. No scope review is triggered.
+
+**Plan count justification (four plans):** the safety obligations are milestone-audit warnings W1 (fail-closed naming of capacity exhaustion) and W4 (clean-tree receipts). The W4 guide work stays separate in plan 03, and plan 04 holds only evidence and the gated hosted run.
+
+**Current three recommendations re-checked:** unchanged. Next action after the hosted run is the milestone audit re-run.
+
 ### Phase 26 discussion — 2026-10-02 (historical planning snapshot)
 
 The user adopted the specialist fan-out recommendations for Phase 26: use
