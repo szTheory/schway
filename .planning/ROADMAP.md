@@ -192,9 +192,18 @@ own bounded sum witness on the way.
 
 ### Phase 27.3: Address tech debt: app verify capacity abort and guide clean-tree outputs (W1, W4) (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Close milestone-audit warnings W1 and W4 without adding capability. When a loop program exceeds its static event capacity in the execution/conformance shell, the generated C reports a named outcome (`native.event_capacity_exhausted`) instead of aborting, and `schway app verify` reports that case as `unsupported` while the other cases run normally. Loop-free conformance C and all application C stay byte-identical. The Phase 27 guide's clean-checkout block writes every output under the ignored `.schway/phase27/`, so a later receipt run sees a clean tree.
+**Requirements**: None newly mapped; restores assurance for EVD-12 and DX-16 (milestone audit findings W1, W4).
 **Depends on:** Phase 27
+
+**Success Criteria** (what must be TRUE):
+
+1. `schway app verify examples/sum_to_n.schway` passes n = 14 on all three engines; n = 15 is reported `unsupported` with a diagnostic starting `native.event_capacity_exhausted`, with no signal text anywhere in the report and `Verified=false`; a mixed {14, 15} set reports 14 `pass` and 15 `unsupported`; the CLI still exits 3. Red/green evidence recorded (red: `native.run_signaled ... abort trap`).
+2. A case whose interpreter outcome disagrees with the expected value stays `fail`, and non-capacity runner errors stay operational errors.
+3. Conformance C for every loop-free accepted program, and all application C, is byte-identical to the pre-fix revision. This is pinned by a golden committed before the fix, whose only allow-listed change is `examples/sum_to_n.schway`. `TestPhase272AcceptedCorpusByteIdentity` passes unchanged.
+4. Every output and redirect in the `examples/phase27/README.md` clean-checkout block lands under the ignored `.schway/phase27/`, enforced by a static test. Validators, go.mod and go.sum are unchanged.
+5. One hosted two-host `ci.yml` run (full and race suites) at the final SHA is green, after explicit user approval for push and dispatch.
+
 **Plans:** 0 plans
 
 Plans:
