@@ -36,6 +36,7 @@ key-files:
 key-decisions:
   - "The hosted receipts are claimed only from run 38052601527 at fa5a169; the earlier failing run at c7bf17c is recorded as superseded."
   - "Receipt files are the verbatim phase27 log rows from the downloaded per-host artifacts."
+requirements-completed: [DX-16, EVD-12, APP-08, APP-09, U64-02]
 duration: 95min
 completed: 2026-10-10
 ---

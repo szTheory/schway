@@ -36,6 +36,7 @@ key-decisions:
   - "The gate recomputes expected source/fixture hashes from its own checkout and takes the revision from HEAD (or PHASE27_EXPECTED_REVISION), so a log can never vouch for its own inputs."
   - "The gate requires tree=clean; a local dirty-tree run is a development receipt only and cannot satisfy acceptance."
   - "The driver step runs first in evidence-aggregate with an always() artifact upload, so its log survives failures of later steps."
+requirements-completed: [EVD-12, APP-08, APP-09, DX-16]
 duration: 25min
 completed: 2026-10-10
 ---

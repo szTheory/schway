@@ -22,3 +22,5 @@ native-captured events independently. `TestPhase26EvidenceCapacity` pins the
 incomplete-capture boundary. Both are exercised by the passing hosted receipts
 in `26-VERIFICATION.md`; that independent report passes all five roadmap truths
 with no unverified behavior. No implementation change is required.
+
+2026-10-10 — M005 audit disposition (Phase 27.1): the 2026-10-03 amendment above already closes the audit's 26-05 capture/Verified item; no further change.
