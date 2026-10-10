@@ -141,3 +141,7 @@ No gaps. Note for provenance: the hosted evidence is pinned to `6224f8b`; later 
 
 _Verified: 2026-10-10_
 _Verifier: Claude (gsd-verifier)_
+
+## Addendum — 2026-10-10 (Phase 27.1)
+
+Phase 27.1 changed `internal/compiler/session/session.go` and `internal/compiler/session/session_app_verify.go` after 6224f8b: application admission now applies the origin peer after corevalidate on `schway build` and `schway app verify`, through the shared helper also used by the interpreter application route. This supersedes the earlier note that commits after 6224f8b are planning-only. Current-source hosted evidence is run 38068888687 at 7936dac39a6215091d4dbd02a6acec20f2601386 (both hosts green, fresh receipts pass the pinned gate); see `.planning/phases/27.1-address-tech-debt-build-route-origin-validation-and-receipt/27.1-HOST-EVIDENCE.md`. The Phase 26 and Phase 27 verifier agents were not re-run (proportionate validation, D-27.1-15); the findings above stand as written.

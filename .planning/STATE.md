@@ -5,7 +5,7 @@ milestone_name: Practical Computation
 current_phase: "27.1"
 current_phase_name: address-tech-debt-build-route-origin-validation-and-receipt
 status: executing
-stopped_at: "27.1-03 Task 3 blocked: hosted run failed"
+stopped_at: "27.1-03 complete: hosted run 38068888687 green at 7936dac"
 last_updated: "2026-10-10T16:22:41.402Z"
 last_activity: 2026-10-10
 last_activity_desc: Phase 27.1 execution started
@@ -715,7 +715,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 - The Phase 16 gate's earlier full-suite and Phase 18 pathoracle findings were
   resolved by later M003 work. Treat those old blocker notes as historical; the
   M003 phase artifacts and audit are the current record.
-- 27.1 hosted run 38066884218 at e6ec151 failed on both hosts (session tests: emitter inventory EmitNative:3071, 27.1-RESEARCH.md groundedness lines 365/390, 27.1-VALIDATION.md draft); fix then re-push/re-dispatch needs user authorization
+- Resolved 2026-10-10: 27.1 hosted run 38066884218 at e6ec151 failed on session meta-tests; fixed in 7936dac and run 38068888687 at 7936dac passed on both hosts (27.1-HOST-EVIDENCE.md).
 
 ### Roadmap Evolution
 

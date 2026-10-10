@@ -101,7 +101,7 @@ function and return operation structurally; command diagnostics project those
 facts to the actual result and borrow source tokens. The wire schema remains
 `lang.diagnostic/0`, and the escape refusal has no repair suggestion.
 
-2026-10-10 (Phase 27.1): schway build and schway app verify now apply the origin peer after corevalidate through the shared application admission helper, in the same order as schway check (CheckCommandFile: checker, corevalidate, origin peer); the interpreter application route is API-only; source inspection plus focused local tests (27.1-01); hosted run 38066884218 at e6ec151 FAILED on both hosts (session package test failures); see 27.1-HOST-EVIDENCE.md, hosted evidence not yet satisfied.
+2026-10-10 (Phase 27.1): schway build and schway app verify now apply the origin peer after corevalidate through the shared application admission helper, in the same order as schway check (CheckCommandFile: checker, corevalidate, origin peer); the interpreter application route is API-only; source inspection plus focused local tests (27.1-01); hosted run 38066884218 at e6ec151 failed on session meta-tests (fixed in 7936dac, no behavior change); hosted run 38068888687 at 7936dac passed on macOS and Linux with fresh receipts passing the pinned gate; see 27.1-HOST-EVIDENCE.md.
 
 **Newly executed checks:** the exact task commands passed locally with the Go
 cache redirected to `/private/tmp/schway-gocache`. Named controls include
