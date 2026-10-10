@@ -204,12 +204,12 @@ own bounded sum witness on the way.
 4. `examples/phase27/README.md` documents the fresh-artifact use and the pinned re-check of the committed 6224f8b receipts; `TestPhase27GuideContract` executes the pinned command and requires `status=pass`; the gate prints a stderr hint on revision mismatch without changing reason names or exit status.
 5. Behavior-neutral audit records are closed: `ValidateFullCoverage` marked test-only, 27-09/27-10 SUMMARY `requirements-completed`, 26-05 amendment confirmed, dated addenda in 26/27 VERIFICATION citing the new run.
 
-**Plans:** 1/3 plans executed in 2 waves
+**Plans:** 2/3 plans executed in 2 waves
 
 **Wave 1**
 
 - [x] 27.1-01-PLAN.md — shared application admission helper; build/interp/verify routes apply the origin peer (red/green, parity, positive controls)
-- [ ] 27.1-02-PLAN.md — receipt-gate guide uses, stderr revision hint, executed guide contract, audit record fixes
+- [x] 27.1-02-PLAN.md — receipt-gate guide uses, stderr revision hint, executed guide contract, audit record fixes
 
 **Wave 2** *(blocked on Wave 1 completion; contains a human push/dispatch checkpoint)*
 
