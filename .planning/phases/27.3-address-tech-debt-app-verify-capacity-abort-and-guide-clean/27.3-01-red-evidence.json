@@ -44,6 +44,46 @@
       "actual": "CLI stderr is 'schway app verify: run generated C at -O0: native.run_signaled: process terminated by signal abort trap: signal: abort trap'; wrong-expected subtest diagnostic is '-O0 generated-C execution failed'; the Phase 22 control's pre-existing identity assertions pass",
       "semanticAssessment": "Targets executed and failed on the planned assertions for the intended reason (whole-batch abort instead of per-case reporting).",
       "output": "=== RUN   TestPhase22AppVerifyWrongExpectedAnswerControl\n=== RUN   TestPhase22AppVerifyWrongExpectedAnswerControl/capacity-exhausted\n    main_test.go:601: capacity wrong-expected diagnostic=\"-O0 generated-C execution failed\", want the comparison text\n--- FAIL: TestPhase22AppVerifyWrongExpectedAnswerControl (0.18s)\n    --- FAIL: TestPhase22AppVerifyWrongExpectedAnswerControl/capacity-exhausted (0.06s)\n=== RUN   TestPhase273AppVerifyCapacityCLI\n    main_test.go:854: stderr=\"schway app verify: run generated C at -O0: native.run_signaled: process terminated by signal abort trap: signal: abort trap\\n\" want \"schway app verify: verification failed; see /var/folders/f3/f0clj9rd2zb85n2c849wcsrc0000gn/T/TestPhase273AppVerifyCapacityCLI457991311/002/report.json\\n\"\n--- FAIL: TestPhase273AppVerifyCapacityCLI (0.06s)\nFAIL\nFAIL\tgithub.com/szTheory/schway/cmd/schway\t0.249s\nFAIL\n"
+    },
+    {
+      "stage": "green",
+      "revision": "4c217de6e335a124c36167d465abfd41e4996c6b",
+      "command": "go test ./internal/compiler/cgen -run '^TestPhase273NamedCapacityExitGate$' -count=1 -v",
+      "exitCode": 0,
+      "targetTests": "TestPhase273NamedCapacityExitGate (loop-conformance, loop-free-conformance, application-shell)",
+      "expected": "all target tests pass",
+      "actual": "observed pass: TestPhase273NamedCapacityExitGate",
+      "output": "=== RUN   TestPhase273NamedCapacityExitGate\n=== RUN   TestPhase273NamedCapacityExitGate/loop-conformance\n=== RUN   TestPhase273NamedCapacityExitGate/loop-free-conformance\n=== RUN   TestPhase273NamedCapacityExitGate/application-shell\n--- PASS: TestPhase273NamedCapacityExitGate (0.00s)\n    --- PASS: TestPhase273NamedCapacityExitGate/loop-conformance (0.00s)\n    --- PASS: TestPhase273NamedCapacityExitGate/loop-free-conformance (0.00s)\n    --- PASS: TestPhase273NamedCapacityExitGate/application-shell (0.00s)\nPASS\nok  \tgithub.com/szTheory/schway/internal/compiler/cgen\t0.009s\n"
+    },
+    {
+      "stage": "green",
+      "revision": "4c217de6e335a124c36167d465abfd41e4996c6b",
+      "command": "go test ./internal/compiler/native -run '^TestPhase273RunnerEventCapacityAdjudication$' -count=1 -v",
+      "exitCode": 0,
+      "targetTests": "TestPhase273RunnerEventCapacityAdjudication",
+      "expected": "all target tests pass",
+      "actual": "observed pass: TestPhase273RunnerEventCapacityAdjudication",
+      "output": "=== RUN   TestPhase273RunnerEventCapacityAdjudication\n--- PASS: TestPhase273RunnerEventCapacityAdjudication (0.05s)\nPASS\nok  \tgithub.com/szTheory/schway/internal/compiler/native\t0.051s\n"
+    },
+    {
+      "stage": "green",
+      "revision": "4c217de6e335a124c36167d465abfd41e4996c6b",
+      "command": "go test ./internal/compiler/session -run '^TestPhase273(RealCapacityExit|AppVerifySumToNExhausted|AppVerifyMixedCases|AppVerifyExhaustedWrongExpected)$' -count=1 -v",
+      "exitCode": 0,
+      "targetTests": "TestPhase273RealCapacityExit (-O0, -O3), TestPhase273AppVerifySumToNExhausted, TestPhase273AppVerifyMixedCases, TestPhase273AppVerifyExhaustedWrongExpected",
+      "expected": "all target tests pass",
+      "actual": "observed pass: TestPhase273RealCapacityExit, TestPhase273AppVerifySumToNExhausted, TestPhase273AppVerifyMixedCases, TestPhase273AppVerifyExhaustedWrongExpected; unsupported diagnostic: native.event_capacity_exhausted: generated C exceeded its static event capacity at -O0; outcome not established, not a mismatch",
+      "output": "=== RUN   TestPhase273RealCapacityExit\n=== RUN   TestPhase273RealCapacityExit/-O0\n=== RUN   TestPhase273RealCapacityExit/-O3\n--- PASS: TestPhase273RealCapacityExit (0.26s)\n    --- PASS: TestPhase273RealCapacityExit/-O0 (0.11s)\n    --- PASS: TestPhase273RealCapacityExit/-O3 (0.15s)\n=== RUN   TestPhase273AppVerifySumToNExhausted\n--- PASS: TestPhase273AppVerifySumToNExhausted (0.11s)\n=== RUN   TestPhase273AppVerifyMixedCases\n--- PASS: TestPhase273AppVerifyMixedCases (0.25s)\n=== RUN   TestPhase273AppVerifyExhaustedWrongExpected\n--- PASS: TestPhase273AppVerifyExhaustedWrongExpected (0.10s)\nPASS\nok  \tgithub.com/szTheory/schway/internal/compiler/session\t0.730s\n"
+    },
+    {
+      "stage": "green",
+      "revision": "4c217de6e335a124c36167d465abfd41e4996c6b",
+      "command": "go test ./cmd/schway -run '^(TestPhase273AppVerifyCapacityCLI|TestPhase22AppVerifyWrongExpectedAnswerControl)$' -count=1 -v",
+      "exitCode": 0,
+      "targetTests": "TestPhase273AppVerifyCapacityCLI, TestPhase22AppVerifyWrongExpectedAnswerControl/capacity-exhausted",
+      "expected": "all target tests pass",
+      "actual": "observed pass: TestPhase22AppVerifyWrongExpectedAnswerControl, TestPhase273AppVerifyCapacityCLI",
+      "output": "=== RUN   TestPhase22AppVerifyWrongExpectedAnswerControl\n=== RUN   TestPhase22AppVerifyWrongExpectedAnswerControl/capacity-exhausted\n--- PASS: TestPhase22AppVerifyWrongExpectedAnswerControl (0.23s)\n    --- PASS: TestPhase22AppVerifyWrongExpectedAnswerControl/capacity-exhausted (0.11s)\n=== RUN   TestPhase273AppVerifyCapacityCLI\n--- PASS: TestPhase273AppVerifyCapacityCLI (0.24s)\nPASS\nok  \tgithub.com/szTheory/schway/cmd/schway\t0.473s\n"
     }
   ]
 }
