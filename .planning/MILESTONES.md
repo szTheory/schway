@@ -1,5 +1,40 @@
 # Milestones
 
+## M005 Practical Computation (Shipped: 2026-10-10)
+
+**Phases completed:** 5 phases, 25 plans, 29 tasks
+
+**Closeout:** override closeout; audit status `tech_debt` (9/9 requirements, 18/18
+links, 8/9 flows with F3 partial by design) with no requirement, integration, or
+flow gaps. Phases 27.1–27.3 were inserted to close audit debt (origin validation
+on the build route, straight-line scalar `let` admission R1, app verify capacity
+abort W1 and guide clean-tree outputs W4). Remaining debt: N1–N4, W2, W3, R1b and
+the D-27.1-10 dispositions (see `milestones/M005-MILESTONE-AUDIT.md`). Hosted
+evidence: run 38091738463 at d7ffbcd; later review fixes have local evidence only
+(N2). Quick-task archival skipped.
+
+Known verification overrides: 6 newly acknowledged, 0 carried forward from a prior close (see STATE.md Deferred Items)
+
+**Git range:** a816279 (M004) → M005 tag
+
+**Key accomplishments:**
+- A source-authored checked sum now flows through scalar CFG validation, interpretation, C17 generation, Clang, and the public app runner.
+- U64 addition now rejects reached overflow before producing a wrapped result, with matching interpreter and native app evidence.
+- Independent finite scalar analysis now admits U64/Bool copy events in cycles while retaining fail-closed authority and event refusals.
+- Core-level repeated scalar-copy events carry canonical per-invocation occurrence identity from both engines, and an independent peer validates each ordinal and cycle site.
+- The source-authored scalar sum now passes through immutable loop snapshots, independent event peers, exact public app oracles, and hosted validation on Linux and macOS.
+- Unit application entries now admit typed decimal and LF writes through source checking and independent core/origin validation.
+- The Unit FizzBuzz tracer now writes exact application bytes through both the interpreter and retained native path, with U64 return printing preserved.
+- U64 equality and remainder now have canonical typed source forms, with source-spanned refusal for every statically known zero divisor.
+- `write_text` now preserves quoted source spelling and lowers only validated literals to exact typed bytes, with independent peer rejection of forged payload facts.
+- Admitted literal bytes now reach the application output in both engines, and the FizzBuzz example prints exact fixed answers through 1000 while rejecting 1001 before output.
+- FizzBuzz and sum output now share a 65,536-byte per-write ceiling, with evidence-capacity failures kept separate from child process results.
+- Interpreter and native answers are now pinned independently for both apps, with reached semantic mutations and incomplete event or capture controls rejected.
+- Conformance-C byte-identity golden (93 entries, generated at 578c7dc) plus red tests that pin the named capacity exit (exit 69 with an exact stderr line) and per-case `unsupported` reporting for app verify and the CLI.
+- Loop conformance C now exits 69 with a named stderr line at event capacity, the runner reports `native.event_capacity_exhausted`, and app verify reports exhausted cases as `unsupported` (or `fail` on a true interpreter mismatch) while other cases still complete.
+
+---
+
 ## M003 Computation and Honest Instruments (Shipped: 2026-09-26)
 
 **Phases completed:** 7 phases, 85 plans, 114 tasks

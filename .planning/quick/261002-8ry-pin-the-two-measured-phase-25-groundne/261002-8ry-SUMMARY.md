@@ -1,4 +1,11 @@
 ---
+audit_acknowledged:
+  milestone: M005
+  at: 2026-10-10
+  status: unknown
+---
+
+---
 phase: quick
 plan: 261002-8ry
 subsystem: verification
@@ -15,6 +22,7 @@ key_files:
   modified: [internal/compiler/session/verification_groundedness_test.go]
 decisions:
   - Preserve the classifier, reconciliation policy, and all existing frontier records.
+
 metrics:
   duration: 3 minutes
   completed: 2026-10-02

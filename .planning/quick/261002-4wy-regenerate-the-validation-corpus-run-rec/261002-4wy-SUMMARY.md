@@ -27,6 +27,10 @@ metrics:
 actuals:
   tasks: 3
   commits: 0
+audit_acknowledged:
+  milestone: M005
+  at: 2026-10-10
+  status: unknown
 ---
 
 # Quick 261002-4wy Summary

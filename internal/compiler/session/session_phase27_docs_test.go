@@ -49,8 +49,8 @@ func TestPhase27GuideContract(t *testing.T) {
 		"scripts/verify-phase27.sh", "scripts/check-phase27-receipts.sh",
 		"unavailable", "27-HOST-EVIDENCE.md", "Historical Phase 25 and Phase 26",
 		"PHASE27_EXPECTED_REVISION", "wrong_revision", phase27EvidenceRevision,
-		".planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/host-macos.receipt",
-		".planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/host-linux.receipt",
+		".planning/milestones/M005-phases/27-exact-fizzbuzz-and-cross-host-evidence/host-macos.receipt",
+		".planning/milestones/M005-phases/27-exact-fizzbuzz-and-cross-host-evidence/host-linux.receipt",
 		"source_hash_mismatch", "fixture_hash_mismatch", "consistency", "authenticity",
 		"host-macos.receipt", "host-linux.receipt", "phase27-receipt-macos-latest-", "14 days",
 	} {

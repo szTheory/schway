@@ -92,7 +92,7 @@ At a checkout of a different commit the bare command fails with
 ### Re-checking the committed Phase 27 receipts from a later checkout
 
 ```sh
-PHASE27_EXPECTED_REVISION=6224f8b2c9c15f54270a232fab2bce12628c7f19 sh scripts/check-phase27-receipts.sh .planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/host-macos.receipt .planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/host-linux.receipt
+PHASE27_EXPECTED_REVISION=6224f8b2c9c15f54270a232fab2bce12628c7f19 sh scripts/check-phase27-receipts.sh .planning/milestones/M005-phases/27-exact-fizzbuzz-and-cross-host-evidence/host-macos.receipt .planning/milestones/M005-phases/27-exact-fizzbuzz-and-cross-host-evidence/host-linux.receipt
 ```
 
 This attests the historical revision 6224f8b, not the current HEAD. It passes
@@ -107,7 +107,7 @@ The gate requires a clean tree, the same revision, and the same source/fixture
 hashes and inputs on both hosts. A missing, failed, stale, different-input or
 unavailable host is recorded as unavailable or failing, never as a pass. The
 recorded run, revisions and conclusions are in
-[`27-HOST-EVIDENCE.md`](../../.planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/27-HOST-EVIDENCE.md).
+[`27-HOST-EVIDENCE.md`](../../.planning/milestones/M005-phases/27-exact-fizzbuzz-and-cross-host-evidence/27-HOST-EVIDENCE.md).
 
 Historical Phase 25 and Phase 26 receipts are identified by their own revisions;
 they are not Phase 27 execution evidence.

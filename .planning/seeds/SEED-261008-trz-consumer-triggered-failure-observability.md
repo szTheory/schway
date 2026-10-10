@@ -5,6 +5,10 @@ planted: 2026-10-08
 planted_during: M005/Phase 27 quick task
 trigger_when: A named program failure cannot be diagnosed from current capture, observers, debug map, and source replay evidence.
 scope: One optional local read-only diagnostic bound to a named build and consumer failure.
+audit_acknowledged:
+  milestone: M005
+  at: 2026-10-10
+  status: dormant
 ---
 
 # SEED-261008-trz: Consumer-triggered failure observability

@@ -5,6 +5,10 @@ planted: 2026-10-08
 planted_during: M005/Phase 27 quick task
 trigger_when: A named consumer or reviewer contests a concrete language design choice involving explicit contracts, inference, or canonical source form.
 scope: Compare two forms of one real program under the same semantic obligations and bounded evidence plan.
+audit_acknowledged:
+  milestone: M005
+  at: 2026-10-10
+  status: dormant
 ---
 
 # SEED-261008-z1s: Compare contract and source forms

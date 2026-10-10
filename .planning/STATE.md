@@ -2,19 +2,18 @@
 gsd_state_version: "1.0"
 milestone: M005
 milestone_name: Practical Computation
-current_phase: "27.3"
-status: completed
-stopped_at: Phase 27.3 complete — all phases complete
-last_updated: "2026-10-10T22:51:49.736Z"
+status: Awaiting next milestone
+stopped_at: M005 archived (tag M005) — awaiting next milestone
+last_updated: "2026-10-10T23:39:21.358Z"
 last_activity: 2026-10-10
-last_activity_desc: Phase 27.3 complete
-state_head: 740ebdb81e08045d6f1a6a97a82521cded4add76
+last_activity_desc: Milestone M005 completed and archived
+state_head: 275582be656e93efbd3a044a1cfe7891765ebd6a
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 5
   total_plans: 25
   completed_plans: 25
-  percent: 100
+current_phase: "27.3"
 ---
 
 <!-- schway-current:start -->
@@ -50,12 +49,12 @@ control list is parsed. Do not run project suites locally.
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-03)
+See: .planning/PROJECT.md (updated 2026-10-10)
 
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 27.3 — address-tech-debt-app-verify-capacity-abort-and-guide-clean
+**Current focus:** Planning next milestone (M005 shipped 2026-10-10; archive `.planning/milestones/M005-*`)
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -121,11 +120,10 @@ plans.
 
 ## Current Position
 
-Phase: 27.3
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-10-10 — Phase 27.3 complete
-Progress: [██████████] 100%
+Phase: Milestone M005 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-10-10 — Milestone M005 completed and archived
 
 ## M005 Planning
 
@@ -807,6 +805,12 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
+| quick_tasks | 260928-tzu-prepare-a-public-ready-schway-repository | missing (acknowledged) | 2026-10-10 | M005 |
+| quick_tasks | 261002-4wy-regenerate-the-validation-corpus-run-rec | unknown (acknowledged) | 2026-10-10 | M005 |
+| quick_tasks | 261002-8ry-pin-the-two-measured-phase-25-groundne | unknown (acknowledged) | 2026-10-10 | M005 |
+| seeds | SEED-261008-trz | dormant | 2026-10-10 | M005 |
+| seeds | SEED-261008-z1g | dormant | 2026-10-10 | M005 |
+| seeds | SEED-261008-z1s | dormant | 2026-10-10 | M005 |
 | deferred_items | Phase 10/deferred-items.md: originvalidate_test.go transitiveImportsViolation spawns `go list -deps` via bare exec.Command with unbounded .Output() — violates TestSourceNeverSpawnsUnboundedProcesses (D-02-01) | acknowledged | 2026-09-14 | M002 |
 | deferred_items | Phase 10/deferred-items.md: corevalidate.peerDeriveOriginFacts has no core.OpCall case — borrow-returning PublicOrigin forwarded from a callee is always reported NOT Callable by the origin peer | acknowledged | 2026-09-14 | M002 |
 | deferred_items | Phase 10/deferred-items.md: corevalidate.Result.LoanEndpoints() is incomplete for a branched function when Validate fail-fasts on an unrelated problem — three-way endpoint comparator scopes around it | acknowledged | 2026-09-14 | M002 |
@@ -1003,3 +1007,7 @@ was the last M004 implementation phase. After `/clear`, run the exact next GSD
 command `$gsd-new-milestone` to shape the practical-computation milestone,
 starting with `sum_to_n` and then FizzBuzz. Do not run `$gsd-next`, replay phase
 plans, or reopen Phase 25 implementation.
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

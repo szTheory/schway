@@ -71,18 +71,21 @@ verifier after the receipt arrives without replaying completed plans.
 
 ## Current State
 
-**2026-10-03 Phase 26 closeout.** M004 is complete and M005 has delivered
-`examples/sum_to_n.schway`: exact results 0/55/500500 for inputs 0/10/1,000,
-no stdout for rejected 1,001, and defined checked U64 overflow. Independent
-verification passes 5/5 roadmap truths; code review is clean, Nyquist coverage
-is complete for all four phase requirements, and all twelve declared security
-mitigations are closed at ASVS L1. Hosted focused run 37118144404 and full run
-37118315516 pass on Ubuntu and macOS at implementation revision
-`46bee44ad87891d8a8547b2489f029d0fe237899`. No local tests or native runs were
-performed for this phase. Scalar loop admission preserves resource/loan
-back-edge refusals, independent peer derivation, and explicit capture versus
-verification boundaries. Phase 27 is next: exact FizzBuzz, remainder/equality,
-bounded text output, and the remaining M005 evidence/documentation contract.
+**2026-10-10 M005 Practical Computation shipped** (5 phases, 25 plans; archive
+`.planning/milestones/M005-*`, tag `M005`). Ordinary Schway source now sums
+bounded U64 input (`examples/sum_to_n.schway`: 0/55/500500, 1,001 refused, checked
+overflow exits 65) and prints exact FizzBuzz through 1,000
+(`examples/fizzbuzz.schway`, byte-identical to pinned fixtures) with U64
+equality/remainder, static zero-divisor refusal, dynamic checked remainder failure,
+and a shared 65,536-byte output ceiling. Both programs have independently pinned
+interpreter/native answers and dual-host receipts (gate at 6224f8b). Inserted
+phases 27.1–27.3 closed audit debt: origin validation on the build route,
+straight-line scalar `let` admission (R1), a named
+`native.event_capacity_exhausted` outcome so `app verify` reports `unsupported`
+instead of a signal (W1), and guide outputs under ignored `.schway/` (W4).
+Known limits: `app verify` on `sum_to_n` verifies only n ≤ 14 and loses the named
+reason above n ≈ 172 (report size limit, N1); hosted evidence (run 38091738463 at
+d7ffbcd) predates the final review fixes (N2). Next: `/gsd-new-milestone`.
 
 ### Historical state records (superseded by dated closeouts)
 
@@ -269,7 +272,7 @@ specific changing assumption, executable witness, and decision gate instead.
 **WIP limits.** M003 may not close with more than 5 unowned debt items. Every
 debt item names an owning phase when it is recorded.
 
-## Current Milestone: M005 Practical Computation
+## Shipped Milestone: M005 Practical Computation (2026-10-10)
 
 **Goal:** A developer can run ordinary Schway source that sums bounded U64
 input and prints FizzBuzz with defined arithmetic, loop, and output behavior.
@@ -297,7 +300,7 @@ capability order. The M003-era M004–M006 forecast is superseded prospectively:
 
 | Horizon | Capability | Promotion gate |
 |---|---|---|
-| Current M005 | Defined scalar computation and loops; `sum_to_n` followed by FizzBuzz | Admit defined arithmetic and scalar loop state with independent interpreter/native evidence; keep resource and loan carries refused |
+| Shipped M005 | Defined scalar computation and loops; `sum_to_n` followed by FizzBuzz | Admit defined arithmetic and scalar loop state with independent interpreter/native evidence; keep resource and loan carries refused |
 | Mid term | Reusable byte-oriented libraries, arity-N/aggregates as needed, local modules, bounded JSON; HTTP as a separate branch | A consumer needs each abstraction; untrusted byte/error/resource behavior is specified |
 | Long term | Separate compilation/contracts, ecosystem, richer generics/effects/concurrency | Concrete clients and measured limits justify the added semantic surface |
 
@@ -408,18 +411,22 @@ milestone number.
   macOS-only; host dependency closure remains incomplete/non-cacheable, and local
   C behavior is still trusted input rather than a Schway foreign call.
 
+- ✓ U64 equality/remainder with static zero-divisor refusal and defined dynamic
+  checked failure — M005 Phase 27 (U64-02).
+- ✓ Exact bounded FizzBuzz through ordinary source, with the shared 65,536-byte
+  output limit for both M005 programs — M005 Phase 27 (APP-08, APP-09).
+- ✓ Independently pinned cross-program and dual-host evidence, reached negative
+  controls, and clean-checkout documentation — M005 Phase 27 (EVD-12, DX-16);
+  guide outputs made clean-tree safe in Phase 27.3.
+
 ### Active
 
-- [ ] Complete U64 equality/remainder with static zero-divisor refusal and
-  defined dynamic checked failure — Phase 27 (U64-02).
-- [ ] Run exact bounded FizzBuzz through ordinary source, and close the shared
-  65,536-byte output limit for both M005 programs — Phase 27 (APP-08, APP-09).
-- [ ] Close independently pinned cross-program and dual-host evidence,
-  reached negative controls, and clean-checkout documentation — Phase 27
-  (EVD-12, DX-16).
+- [ ] Next milestone requirements — define with `/gsd-new-milestone`. Carry-over
+  candidates: M005 audit debt N1 (app verify report size above n ≈ 172), N2
+  (hosted re-run at final SHA), W2/W3 exit-class splits, R1b.
 
-Atomic IDs and acceptance live in [REQUIREMENTS.md](REQUIREMENTS.md); phase
-ownership lives in [ROADMAP.md](ROADMAP.md). M004 is archived completed work.
+Atomic IDs and acceptance for M005 are archived in
+[milestones/M005-REQUIREMENTS.md](milestones/M005-REQUIREMENTS.md).
 
 ### Deferred — Named Landing, Not Dropped
 
@@ -587,6 +594,8 @@ Canonical planning inputs:
 | Start loop admission with independently derived U64/Bool scalar fixed points | A runnable sum proves useful iteration without widening resource/loan authority | ✓ Phase 26 — exact source-to-app answers and independent refusals pass on both hosts |
 | Distinguish repeated events by invocation/site occurrence while preserving legacy bytes | Static event IDs alone alias loop iterations; zero omission preserves existing documents | ✓ Phase 26 — source-authored copies emit 0/1/2 and independent mutations reject forged sequences |
 | Validate checked-add terminal evidence separately from arithmetic semantics | Structural event membership cannot prove operand arithmetic; native size admission must include possible failure records | ✓ Phase 26 CR-01 — peer attribution/outcome and N−1/N capture-bound controls pass; actual overflow is exercised in each engine |
+| Name generated-C event-capacity exhaustion (exit 69 + exact stderr) instead of aborting | A signal hid a bounded-evidence limit as a crash; a named outcome lets app verify report `unsupported` without masking a mismatch | ✓ Phase 27.3 — n=14 passes, n=15 unsupported, wrong expected stays fail; one-level exhaustion fails as divergence (WR-01) |
+| Insert decimal tech-debt phases from the milestone audit before closing | Audit warnings W1/W4 and R1 were concrete user-facing defects, not cosmetic | ✓ Good — 27.1–27.3 closed R1, W1, W4 with hosted evidence; residual N1–N4 tracked |
 
 ## Evolution
 
@@ -608,4 +617,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-03 after Phase 26 verification*
+*Last updated: 2026-10-10 after M005 milestone*

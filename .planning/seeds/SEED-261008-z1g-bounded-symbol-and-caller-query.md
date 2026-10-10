@@ -5,6 +5,10 @@ planted: 2026-10-08
 planted_during: M005/Phase 27 quick task
 trigger_when: A named reviewer or agent task shows an accuracy or material cost gap with current bounded schway query and ordinary search.
 scope: Extend the current source-bound query seam only for one named consumer; do not begin with a general program database.
+audit_acknowledged:
+  milestone: M005
+  at: 2026-10-10
+  status: dormant
 ---
 
 # SEED-261008-z1g: Bounded symbol and caller query
