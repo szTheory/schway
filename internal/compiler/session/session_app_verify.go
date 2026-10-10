@@ -17,7 +17,6 @@ import (
 
 	"github.com/szTheory/schway/internal/compiler/callgraph"
 	"github.com/szTheory/schway/internal/compiler/core"
-	"github.com/szTheory/schway/internal/compiler/corevalidate"
 	"github.com/szTheory/schway/internal/compiler/execution"
 	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/native"
@@ -218,11 +217,14 @@ func VerifyApplicationCases(ctx context.Context, source []byte, cases ReplayCase
 	if len(checked.Diagnostics) > 0 {
 		return report, fmt.Errorf("source is not accepted by the checker: %s", checked.Diagnostics[0].Code)
 	}
-	validated := corevalidate.Validate(checked.Program)
-	if !validated.Valid {
+	adm := admitPublishedApplication(checked)
+	switch adm.layer {
+	case applicationRefusedCore:
 		return report, errors.New("source core validation failed")
+	case applicationRefusedOrigin:
+		return report, fmt.Errorf("source origin validation failed: %s", adm.code)
 	}
-	program := validated.Program()
+	program := adm.program
 	inputSet := make([]string, 0, len(cases.Cases))
 	indices := make([]int, 0, len(cases.Cases))
 	interpreted := make(map[int]execution.Execution)

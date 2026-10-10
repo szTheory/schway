@@ -1195,17 +1195,17 @@ func RunInterpreterApplication(source []byte, input string) (interp.ApplicationR
 	if len(checked.Diagnostics) > 0 {
 		return interp.ApplicationResult{}, checked.Diagnostics, nil
 	}
-	validated := corevalidate.Validate(checked.Program)
-	if !validated.Valid {
-		if len(validated.Problems) == 0 {
+	adm := admitPublishedApplication(checked)
+	switch adm.layer {
+	case applicationRefusedCore:
+		if adm.code == "" {
 			return interp.ApplicationResult{}, nil, errors.New("core validation failed without a named problem")
 		}
-		return interp.ApplicationResult{}, nil, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+		return interp.ApplicationResult{}, nil, fmt.Errorf("core validation failed: %s", adm.code)
+	case applicationRefusedOrigin:
+		return interp.ApplicationResult{}, nil, fmt.Errorf("origin validation failed: %s", adm.code)
 	}
-	program := validated.Program()
-	if problems := originvalidate.ValidatePublished(program); len(problems) > 0 {
-		return interp.ApplicationResult{}, nil, fmt.Errorf("origin validation failed: %s", problems[0].Code)
-	}
+	program := adm.program
 	entry, err := callgraph.EntryFunction(program)
 	if err != nil {
 		return interp.ApplicationResult{}, nil, err
