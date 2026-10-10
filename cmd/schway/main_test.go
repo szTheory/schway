@@ -756,3 +756,30 @@ func writeCLIPhase22Script(t *testing.T, body string) string {
 	}
 	return artifact
 }
+
+func TestPhase271BuildCLIRefusesOriginUnpublishable(t *testing.T) {
+	fixture := testsupport.ProjectPath("testdata", "phase25", "shared_copy_accept.schway")
+	artifact := filepath.Join(t.TempDir(), "app")
+	code, stdout, stderr := captureLangRun(t, []string{"--json", "build", fixture, "--output", artifact})
+	if code != 2 {
+		t.Fatalf("build --json exit = %d, want 2; stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	for _, want := range []string{`"command":"build"`, `"status":"invalid"`, `"code":"core.origin_omitted"`} {
+		if !strings.Contains(stdout, want) {
+			t.Fatalf("build --json stdout missing %s: %q", want, stdout)
+		}
+	}
+	for _, path := range []string{artifact, artifact + ".schway-build.json"} {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Fatalf("%s exists after refusal (stat err=%v)", path, err)
+		}
+	}
+	artifact2 := filepath.Join(t.TempDir(), "app2")
+	code, stdout, stderr = captureLangRun(t, []string{"build", fixture, "--output", artifact2})
+	if code != 2 || !strings.Contains(stdout+stderr, "core.origin_omitted") {
+		t.Fatalf("human build exit=%d stdout=%q stderr=%q; want exit 2 naming core.origin_omitted", code, stdout, stderr)
+	}
+	if _, err := os.Stat(artifact2); !os.IsNotExist(err) {
+		t.Fatalf("%s exists after human-mode refusal (stat err=%v)", artifact2, err)
+	}
+}

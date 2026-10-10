@@ -1,0 +1,15 @@
+{
+  "plan": "27.1-01",
+  "runs": [
+    {
+      "stage": "red",
+      "revision": "5d4aaf541a2a85aa3a16f25e55563eb28ade0d2f",
+      "command": "go test ./internal/compiler/session ./cmd/schway -run '^TestPhase271Build(ApplicationRefusesOriginUnpublishable|CLIRefusesOriginUnpublishable)$' -count=1 -v",
+      "exitCode": 1,
+      "targetTests": "TestPhase271BuildApplicationRefusesOriginUnpublishable, TestPhase271BuildCLIRefusesOriginUnpublishable",
+      "expected": "BuildApplication returns one core.origin_omitted diagnostic with nil error before clang lookup; schway build exits 2 status invalid with no artifact or sidecar",
+      "actual": "API: err is *native.ToolError native.tool_missing, no diagnostics; CLI: exit 0, artifact and sidecar written",
+      "output": "=== RUN   TestPhase271BuildApplicationRefusesOriginUnpublishable\n    session_phase271_admission_test.go:62: BuildApplication returned err=native.tool_missing: exec: \"/var/folders/f3/f0clj9rd2zb85n2c849wcsrc0000gn/T/TestPhase271BuildApplicationRefusesOriginUnpublishable1303328046/002/missing-clang\": stat /var/folders/f3/f0clj9rd2zb85n2c849wcsrc0000gn/T/TestPhase271BuildApplicationRefusesOriginUnpublishable1303328046/002/missing-clang: no such file or directory (*native.ToolError=true); want diagnostic refusal with nil error\n--- FAIL: TestPhase271BuildApplicationRefusesOriginUnpublishable (0.00s)\nFAIL\nFAIL\tgithub.com/szTheory/schway/internal/compiler/session\t0.010s\n=== RUN   TestPhase271BuildCLIRefusesOriginUnpublishable\n    main_test.go:765: build --json exit = 0, want 2; stdout=\"<build receipt JSON elided>\"\n--- FAIL: TestPhase271BuildCLIRefusesOriginUnpublishable (0.13s)\nFAIL\nFAIL\tgithub.com/szTheory/schway/cmd/schway\t0.139s\nFAIL"
+    }
+  ]
+}
