@@ -151,19 +151,29 @@ func TestPhase273GuideCleanCheckoutOutputsIgnored(t *testing.T) {
 			names = append(names, name)
 		}
 		sort.Strings(names)
+		gitignoreRaw, err := os.ReadFile(testsupport.ProjectPath(".gitignore"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		gitignore := "\n" + string(gitignoreRaw)
 		for _, name := range names {
 			result, err := testsupport.RunCLIErr(context.Background(), "git", os.Environ(),
 				"-C", testsupport.ProjectPath(), "check-ignore", "-q", "--", name)
-			if err != nil {
-				t.Skipf("env:git unavailable, skipping check-ignore exercise: %v", err)
-			}
-			switch result.Exit {
-			case 0:
-			case 1:
+			switch {
+			case err == nil && result.Exit == 0:
+			case err == nil && result.Exit == 1:
 				t.Errorf("guide output %s is not ignored by git", name)
 			default:
-				// Exit 128 means not a git checkout (source archive) or git error.
-				t.Skipf("env:git check-ignore unavailable (exit %d), skipping: %s", result.Exit, result.Stderr)
+				// git is missing or this is not a git checkout (exit 128, e.g. a
+				// source archive): fall back to the .gitignore text, which is
+				// what git check-ignore would have consulted.
+				rule := "\n/.schway/"
+				if name == "schway" {
+					rule = "\n/schway"
+				}
+				if !strings.Contains(gitignore, rule) {
+					t.Errorf("guide output %s: git unavailable and .gitignore lacks %q", name, strings.TrimPrefix(rule, "\n"))
+				}
 			}
 		}
 	})
