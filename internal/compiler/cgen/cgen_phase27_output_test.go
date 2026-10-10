@@ -49,6 +49,14 @@ func TestPhase27OutputProductionLimit(t *testing.T) {
 	}
 }
 
+// A failed application write must stop the native program exactly as the
+// interpreter's terminal defect does: no later user code may run or report.
+func TestPhase27OutputFailureStopsExecution(t *testing.T) {
+	source := []byte("module examples.stop\n\nexport {\n  fn main\n}\n\nfn main(n: U64) -> Unit {\n  write_u64(n)\n  if n < 1001 {\n    defect \"later defect\"\n  } else {\n    write_newline()\n  }\n}\n")
+	artifact := buildPhase27OutputArtifactFromSource(t, "stop.schway", source, 1)
+	assertPhase27NativeApp(t, artifact, "12", 65, nil, "schway: application output limit exceeded\n")
+}
+
 func buildPhase27OutputArtifact(t *testing.T, sourceRelativePath string, outputLimit int) string {
 	t.Helper()
 	sourcePath := testsupport.ProjectPath(filepath.ToSlash(filepath.Clean(sourceRelativePath)))
@@ -56,6 +64,14 @@ func buildPhase27OutputArtifact(t *testing.T, sourceRelativePath string, outputL
 	if err != nil {
 		t.Fatal(err)
 	}
+	return buildPhase27OutputArtifactFromSource(t, filepath.Base(sourcePath), source, outputLimit)
+}
+
+func buildPhase27OutputArtifactFromSource(t *testing.T, name string, source []byte, outputLimit int) string {
+	t.Helper()
+	sourceRelativePath := name
+	sourcePath := name
+	var err error
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
 		t.Fatalf("%s check diagnostics: %+v", sourceRelativePath, checked.Diagnostics)

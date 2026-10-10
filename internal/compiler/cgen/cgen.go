@@ -732,7 +732,7 @@ func emitEventSupportSchema2(out *strings.Builder, capacity, outputLimit int, ne
 	if applicationEvidence {
 		out.WriteString("static FILE *schway_output_stream = NULL;\nstatic size_t schway_output_limit = SCHWAY_OUTPUT_LIMIT;\nstatic int schway_event_overflow = 0;\nstatic int schway_evidence_output_overflow = 0;\nstatic int schway_application_output_failed = 0;\n\n")
 		out.WriteString("static int schway_write_bytes(const char *data, size_t length) {\n  FILE *stream = schway_output_stream != NULL ? schway_output_stream : stdout;\n  if (schway_output_stream == NULL && schway_application_output_failed) return 0;\n  if (schway_output_count > schway_output_limit || length > schway_output_limit - schway_output_count) {\n    if (schway_output_stream != NULL) schway_evidence_output_overflow = 1;\n    return 0;\n  }\n  if (length != 0u && fwrite(data, 1u, length, stream) != length) return 0;\n  schway_output_count += length;\n  return 1;\n}\n\n")
-		out.WriteString("static void schway_application_output_failure(void) {\n  if (!schway_application_output_failed) {\n    schway_application_output_failed = 1;\n    fputs(\"schway: application output limit exceeded\\n\", stderr);\n  }\n}\n\n")
+		out.WriteString("static void schway_application_output_failure(void) {\n  schway_application_output_failed = 1;\n  (void)fflush(stdout);\n  fputs(\"schway: application output limit exceeded\\n\", stderr);\n  exit(65);\n}\n\n")
 	} else {
 		out.WriteString("static int schway_write_bytes(const char *data, size_t length) {\n  if (length > SCHWAY_OUTPUT_LIMIT - schway_output_count) return 0;\n  if (length != 0u && fwrite(data, 1u, length, stdout) != length) return 0;\n  schway_output_count += length;\n  return 1;\n}\n\n")
 	}
