@@ -22,6 +22,28 @@
       "actual": "first assertion fails: observed native.run_failed (exit status 69: schway: event capacity exhausted)",
       "semanticAssessment": "Target test executed and failed on the planned assertion: the runner has no named-code adjudication for exit 69.",
       "output": "=== RUN   TestPhase273RunnerEventCapacityAdjudication\n    native_test.go:1733: exit 69 with the exact stderr line: code=native.run_failed want=native.event_capacity_exhausted (error native.run_failed: exit status 69: schway: event capacity exhausted\n        )\n--- FAIL: TestPhase273RunnerEventCapacityAdjudication (0.01s)\nFAIL\nFAIL\tgithub.com/szTheory/schway/internal/compiler/native\t0.016s\nFAIL\n"
+    },
+    {
+      "stage": "red",
+      "revision": "a419ab1eaf200bc57ce37d1c6ea31f01724d34c0",
+      "command": "go test ./internal/compiler/session -run '^TestPhase273(RealCapacityExit|AppVerifySumToNExhausted|AppVerifyMixedCases|AppVerifyExhaustedWrongExpected)$' -count=1 -v",
+      "exitCode": 1,
+      "targetTests": "TestPhase273RealCapacityExit (-O0, -O3), TestPhase273AppVerifySumToNExhausted, TestPhase273AppVerifyMixedCases, TestPhase273AppVerifyExhaustedWrongExpected",
+      "expected": "sum_to_n n = 15 yields ToolError native.event_capacity_exhausted from the real runner; app verify reports n = 15 as unsupported (interpreter-only evidence, no signal text) with err nil; mixed batch passes n = 14; wrong expected at n = 15 stays fail with the comparison diagnostic",
+      "actual": "real generated C aborts: native.run_signaled: process terminated by signal abort trap; VerifyApplicationCases returns error 'run generated C at -O0: native.run_signaled: process terminated by signal abort trap: signal: abort trap' for all three batches; all four target tests FAIL",
+      "semanticAssessment": "Targets executed and failed on the planned assertions for the intended reason: the pre-fix conformance recorder returns 0 at capacity so the shell aborts, and the batch fails wholesale.",
+      "output": "=== RUN   TestPhase273RealCapacityExit\n=== RUN   TestPhase273RealCapacityExit/-O0\n    session_phase273_appverify_test.go:109: n = 15 at -O0 error=native.run_signaled: process terminated by signal abort trap: signal: abort trap, want ToolError native.event_capacity_exhausted\n=== RUN   TestPhase273RealCapacityExit/-O3\n    session_phase273_appverify_test.go:109: n = 15 at -O3 error=native.run_signaled: process terminated by signal abort trap: signal: abort trap, want ToolError native.event_capacity_exhausted\n--- FAIL: TestPhase273RealCapacityExit (0.27s)\n    --- FAIL: TestPhase273RealCapacityExit/-O0 (0.11s)\n    --- FAIL: TestPhase273RealCapacityExit/-O3 (0.16s)\n=== RUN   TestPhase273AppVerifySumToNExhausted\n    session_phase273_appverify_test.go:130: capacity exhaustion must be a per-case result, got error: run generated C at -O0: native.run_signaled: process terminated by signal abort trap: signal: abort trap\n--- FAIL: TestPhase273AppVerifySumToNExhausted (0.05s)\n=== RUN   TestPhase273AppVerifyMixedCases\n    session_phase273_appverify_test.go:143: mixed batch must report per case, got error: run generated C at -O0: native.run_signaled: process terminated by signal abort trap: signal: abort trap\n--- FAIL: TestPhase273AppVerifyMixedCases (0.05s)\n=== RUN   TestPhase273AppVerifyExhaustedWrongExpected\n    session_phase273_appverify_test.go:159: wrong expected at capacity must be a per-case result, got error: run generated C at -O0: native.run_signaled: process terminated by signal abort trap: signal: abort trap\n--- FAIL: TestPhase273AppVerifyExhaustedWrongExpected (0.05s)\nFAIL\nFAIL\tgithub.com/szTheory/schway/internal/compiler/session\t0.430s\nFAIL\n"
+    },
+    {
+      "stage": "red",
+      "revision": "a419ab1eaf200bc57ce37d1c6ea31f01724d34c0",
+      "command": "go test ./cmd/schway -run '^(TestPhase273AppVerifyCapacityCLI|TestPhase22AppVerifyWrongExpectedAnswerControl)$' -count=1 -v",
+      "exitCode": 1,
+      "targetTests": "TestPhase273AppVerifyCapacityCLI, TestPhase22AppVerifyWrongExpectedAnswerControl/capacity-exhausted",
+      "expected": "CLI exit 3 with stderr 'schway app verify: verification failed; see <report>'; report case 0 pass, case 1 unsupported with the named prefix; wrong expected at n = 15 reports fail with 'expected returned:121'",
+      "actual": "CLI stderr is 'schway app verify: run generated C at -O0: native.run_signaled: process terminated by signal abort trap: signal: abort trap'; wrong-expected subtest diagnostic is '-O0 generated-C execution failed'; the Phase 22 control's pre-existing identity assertions pass",
+      "semanticAssessment": "Targets executed and failed on the planned assertions for the intended reason (whole-batch abort instead of per-case reporting).",
+      "output": "=== RUN   TestPhase22AppVerifyWrongExpectedAnswerControl\n=== RUN   TestPhase22AppVerifyWrongExpectedAnswerControl/capacity-exhausted\n    main_test.go:601: capacity wrong-expected diagnostic=\"-O0 generated-C execution failed\", want the comparison text\n--- FAIL: TestPhase22AppVerifyWrongExpectedAnswerControl (0.18s)\n    --- FAIL: TestPhase22AppVerifyWrongExpectedAnswerControl/capacity-exhausted (0.06s)\n=== RUN   TestPhase273AppVerifyCapacityCLI\n    main_test.go:854: stderr=\"schway app verify: run generated C at -O0: native.run_signaled: process terminated by signal abort trap: signal: abort trap\\n\" want \"schway app verify: verification failed; see /var/folders/f3/f0clj9rd2zb85n2c849wcsrc0000gn/T/TestPhase273AppVerifyCapacityCLI457991311/002/report.json\\n\"\n--- FAIL: TestPhase273AppVerifyCapacityCLI (0.06s)\nFAIL\nFAIL\tgithub.com/szTheory/schway/cmd/schway\t0.249s\nFAIL\n"
     }
   ]
 }

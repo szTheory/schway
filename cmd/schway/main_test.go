@@ -582,6 +582,25 @@ func TestPhase22AppVerifyWrongExpectedAnswerControl(t *testing.T) {
 	if len(report.Cases[0].Engines) != 3 || !strings.Contains(report.Cases[0].Diagnostic, "expected returned:8") {
 		t.Fatalf("wrong-answer report omitted completed comparison evidence: %+v", report.Cases[0])
 	}
+	t.Run("capacity-exhausted", func(t *testing.T) {
+		// D-27.3-10: a wrong expected answer at the event capacity boundary
+		// stays a failure; it is never masked as unsupported.
+		source, err := os.ReadFile(testsupport.ProjectPath("examples", "sum_to_n.schway"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		exhausted := session.ReplayCases{Schema: session.ReplayCasesSchema, Cases: []session.ReplayCase{{
+			ID: "n15-wrong", Kind: session.ReplayCaseSource, Input: "15",
+			Expected: session.ReplayExpected{Kind: "returned", Value: "121"}, ForeignOutcomes: []session.ReplayForeignOutcome{},
+		}}}
+		code, stderr, _, report := runCLIReplayCasesSource(t, string(source), exhausted)
+		if code != exitOperational || report.Verified || len(report.Cases) != 1 || report.Cases[0].Status != session.ReplayStatusFail {
+			t.Fatalf("capacity wrong-expected control code=%d stderr=%q report=%+v", code, stderr, report)
+		}
+		if !strings.Contains(report.Cases[0].Diagnostic, "expected returned:121") {
+			t.Fatalf("capacity wrong-expected diagnostic=%q, want the comparison text", report.Cases[0].Diagnostic)
+		}
+	})
 }
 
 func TestPhase22AppVerifyModelOnlyOutcomes(t *testing.T) {
@@ -800,5 +819,47 @@ func TestPhase272StraightLineCopyCLI(t *testing.T) {
 	code, stdout, stderr = captureLangRun(t, []string{"app", "run", artifact, "--", "41"})
 	if code != 0 || stdout != "41\n" || stderr != "" {
 		t.Fatalf("app run code=%d stdout=%q stderr=%q, want exit 0 and 41", code, stdout, stderr)
+	}
+}
+
+// runCLIReplayCasesSource runs `app verify` over an arbitrary source text and
+// returns the exit code, stderr, report path and decoded report.
+func runCLIReplayCasesSource(t *testing.T, source string, cases session.ReplayCases) (int, string, string, session.ReplayReport) {
+	t.Helper()
+	casesPath := writeCLIReplayCases(t, cases)
+	dir := t.TempDir()
+	sourcePath := filepath.Join(dir, "program.schway")
+	if err := os.WriteFile(sourcePath, []byte(source), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	reportPath := filepath.Join(dir, "report.json")
+	code, _, stderr := captureLangRun(t, []string{"app", "verify", sourcePath, "--cases", casesPath, "--report", reportPath})
+	return code, stderr, reportPath, readCLIReplayReport(t, reportPath)
+}
+
+func TestPhase273AppVerifyCapacityCLI(t *testing.T) {
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "sum_to_n.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := session.ReplayCases{Schema: session.ReplayCasesSchema, Cases: []session.ReplayCase{
+		{ID: "n14", Kind: session.ReplayCaseSource, Input: "14", Expected: session.ReplayExpected{Kind: "returned", Value: "105"}, ForeignOutcomes: []session.ReplayForeignOutcome{}},
+		{ID: "n15", Kind: session.ReplayCaseSource, Input: "15", Expected: session.ReplayExpected{Kind: "returned", Value: "120"}, ForeignOutcomes: []session.ReplayForeignOutcome{}},
+	}}
+	code, stderr, reportPath, report := runCLIReplayCasesSource(t, string(source), cases)
+	if code != exitOperational {
+		t.Fatalf("exit code=%d want %d; stderr=%q report=%+v", code, exitOperational, stderr, report)
+	}
+	if want := "schway app verify: verification failed; see " + reportPath + "\n"; stderr != want {
+		t.Fatalf("stderr=%q want %q", stderr, want)
+	}
+	if report.Verified || len(report.Cases) != 2 {
+		t.Fatalf("report verified=%v cases=%d, want unverified with two cases: %+v", report.Verified, len(report.Cases), report)
+	}
+	if report.Cases[0].Status != session.ReplayStatusPass {
+		t.Fatalf("n = 14 case=%+v, want pass", report.Cases[0])
+	}
+	if report.Cases[1].Status != session.ReplayStatusUnsupported || !strings.HasPrefix(report.Cases[1].Diagnostic, "native.event_capacity_exhausted: ") {
+		t.Fatalf("n = 15 case=%+v, want unsupported with the named capacity prefix", report.Cases[1])
 	}
 }
