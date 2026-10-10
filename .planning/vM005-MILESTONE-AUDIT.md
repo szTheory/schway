@@ -1,42 +1,30 @@
 ---
 milestone: M005
 milestone_name: Practical Computation
-audited: 2026-10-10T22:00:00Z
-audited_head: d12200e
+audited: 2026-10-10T23:30:00Z
+audited_head: 3d4edce
 evidence_revision: 112eaf7bb5f7e2a60cd0dbcea5021f53d0c0cf0f
-supersedes: "audit at afb2509 (status tech_debt; R1 closed since by Phase 27.2)"
+supersedes: "audit at d12200e (91b53e0; status tech_debt, Nyquist partial, 5 process gaps; 4 closed since by secure-phase and validate-phase runs)"
 status: tech_debt
 scores:
   requirements: 9/9
   phases: 4/4
   integration: 15/15 cross-phase links connected (2 orphaned exports, both test-facing)
-  flows: 6/7 complete (R1 straight-line flow added and complete; 1 partial by design: F3)
+  flows: 6/7 complete (1 partial by design: F3)
 gaps:
   requirements: []
   integration: []
   flows: []
 process_gaps:
   - phase: 27.1-address-tech-debt-build-route-origin-validation-and-receipt
-    item: "27.1-SECURITY.md missing while workflow.security_enforcement=true; plans declare threats T-27.1-01..09"
-    action: "/gsd-secure-phase 27.1"
-  - phase: 27.1-address-tech-debt-build-route-origin-validation-and-receipt
-    item: "27.1-VALIDATION.md status in-progress; row 27.1-03-xx still pending although hosted run 38068888687 at 7936dac is green. Moving to validated enrols the table in the graded corpus (needs Grade/Non-inertness columns plus a regenerated corpus record)"
-    action: "/gsd-validate-phase 27.1"
-  - phase: 27.1-address-tech-debt-build-route-origin-validation-and-receipt
     item: "No 27.1-REVIEW.md while workflow.code_review=true"
     action: "/gsd-code-review 27.1 (optional before completion)"
-  - phase: 27.2-address-tech-debt-straight-line-scalar-let-admission-r1
-    item: "27.2-SECURITY.md missing while workflow.security_enforcement=true; plans declare threats T-27.2-01..12"
-    action: "/gsd-secure-phase 27.2"
-  - phase: 27.2-address-tech-debt-straight-line-scalar-let-admission-r1
-    item: "27.2-VALIDATION.md status in-progress, nyquist_compliant false; all five SC rows are green (SC5 = run 38080236918 at 112eaf7)"
-    action: "/gsd-validate-phase 27.2"
 nyquist:
-  compliant_phases: ["26", "27"]
+  compliant_phases: ["26", "27", "27.1", "27.2"]
   partial_phases: []
-  not_validated_phases: ["27.1", "27.2"]
+  not_validated_phases: []
   missing_phases: []
-  overall: partial
+  overall: compliant
 tech_debt:
   - phase: cross-phase (evidence route)
     items:
@@ -67,13 +55,14 @@ tech_debt:
 closed_since_prior_audit:
   - "R1: straight-line scalar let bodies admitted again by producer-side fix (Phase 27.2; check/scalar.go return-block split, cgen isStraightLineScalarBody, conditional (void)param). Live at d12200e: `fn main(n: U64) -> U64 { let total = n  total }` and examples/phase272/straight_line_copy.schway check, build and `app run -- 41` prints 41. Validators unchanged (empty diff from 9f6100a). Hosted run 38080236918 at 112eaf7 green on macOS and Linux (full and race)."
   - "W3 interpreter path now reports the origin refusal before execution (native path still does not)."
+  - "Process: 27.2-SECURITY.md (084c3dc, 13/13 closed), 27.1-SECURITY.md (af48608, 13/13 closed), 27.2-VALIDATION.md validated (fa20d34, 0 gaps), 27.1-VALIDATION.md validated (3d4edce, 0 gaps; row 27.1-03-xx green from run 38068888687; table kept outside the graded corpus by user decision)."
 ---
 
-# Milestone M005: Practical Computation (Re-audit after Phase 27.2)
+# Milestone M005: Practical Computation (Re-audit after 27.1/27.2 process closure)
 
-**Audited HEAD:** d12200e. Commits after 112eaf7 change only planning docs.
+**Audited HEAD:** 3d4edce. Commits after 112eaf7 change only planning docs (`git diff --name-only d12200e HEAD` lists only `.planning/` files).
 **Evidence revision:** 112eaf7, hosted run [38080236918](https://github.com/szTheory/schway/actions/runs/38080236918). Full and race suites plus the Phase 27 receipt lanes passed on macOS and Ubuntu.
-**Status:** tech_debt. All 9 requirements are satisfied and there are no critical blockers. Phase 27.2 closed R1. W1–W4 remain (W3 narrowed to the native path). Phases 27.1 and 27.2 have open process items (security, validation, and a 27.1 review).
+**Status:** tech_debt. All 9 requirements are satisfied and there are no critical blockers. W1–W4 remain (W3 narrowed to the native path). Security and Nyquist validation are now complete for all four phases. The only open process item is the optional 27.1 code review.
 
 ## Phases
 
@@ -81,8 +70,8 @@ closed_since_prior_audit:
 |---|---|---|---|---|---|
 | 26 Checked Scalar Sum | passed, with 27.1 and 27.2 addenda | 5/5 | validated, compliant | verified, 0 open | clean |
 | 27 Exact FizzBuzz and Cross-Host Evidence | passed, with 27.1 addendum | 5/5 | validated, compliant (5/5, 0 gaps) | verified, 26/26 closed | IN-01 and IN-02 deferred |
-| 27.1 Build-route origin validation and receipt-gate docs | passed | 25/25 | **in-progress** (hosted row pending) | **missing** | **none** |
-| 27.2 Straight-line scalar let admission (R1) | passed | 5/5 | **in-progress** (all rows green) | **missing** | WR-01 skipped, IN-01/IN-02 open |
+| 27.1 Build-route origin validation and receipt-gate docs | passed | 25/25 | validated, compliant (5/5, 0 gaps) | verified, 13/13 closed | **none** (optional) |
+| 27.2 Straight-line scalar let admission (R1) | passed | 5/5 | validated, compliant (5/5, 0 gaps) | verified, 13/13 closed | WR-01 skipped, IN-01/IN-02 open |
 
 ## Requirements (3-source cross-reference)
 
@@ -102,7 +91,7 @@ Phases 27.1 and 27.2 map no requirement IDs (their SUMMARY frontmatter lists non
 
 ## Integration
 
-The integration checker built `schway` into a scratch directory and ran the public routes live at d12200e. The repo tree stayed clean.
+The integration checker built `schway` into a scratch directory and re-ran the public routes live at 3d4edce. The repo tree stayed clean. No link or flow status changed from the d12200e audit.
 
 - R1 headline (inline and `examples/phase272/straight_line_copy.schway`): check passes, build succeeds, `app run -- 41` prints 41.
 - R1b is still refused with `syntax.expected_linear_result`, as deferred.
@@ -110,7 +99,8 @@ The integration checker built `schway` into a scratch directory and ran the publ
 - FizzBuzz 15 and 1000 are byte-identical to `examples/phase27/fizzbuzz-{15,1000}.out`. Input 0 gives empty stdout and 1001 exits 65.
 - Overflow and a dynamic zero divisor exit 65. A constant zero divisor is refused at build with `type.scalar_remainder_zero` and no artifact.
 - F1: `testdata/phase3/public_view_omitted.schway` build exits 2 `core.origin_omitted` with no artifact. The phase4 fixture gives `core.foreign_origin_omitted`, also exit 2.
-- F2: the guide's pinned gate command passes on the committed receipts.
+- F2: the guide's pinned gate command, re-run at 3d4edce, prints `status=pass hosts=macOS,Linux revision=6224f8b…`.
+- A dynamic zero divisor needs an input-derived divisor (`100 % n` with n=0). `var d = 0` then `n % d` is refused at check with `type.scalar_remainder_zero`, because the checker folds the constant through the initializer. Fail-closed; noted, not a gap.
 
 All 15 links are still connected. `admitPublishedApplication` still has exactly three callers. The 27.2 cgen classifier is reached only through `hasScalarOperations` and does not fire on `sum_to_n` (it has branches).
 
@@ -126,10 +116,10 @@ All 15 links are still connected. `admitPublishedApplication` still has exactly 
 
 ## Changes since the prior audit
 
-- **R1 closed.** See `closed_since_prior_audit`.
-- **W1 boundary moved.** `app verify` on `sum_to_n` now verifies n ≤ 14 and aborts at n ≥ 15. The prior audit said n ≥ 10. 27.2 does not touch this path. It is still fail-closed and still mislabelled as a signal.
-- **W3 narrowed.** The interpreter `run` path now reports the origin refusal. The native path still reports `operational_failure`.
-- **New note.** The cgen scalar classifier and the validator classifiers differ by design (D-27.2-04). This is fail-closed and is recorded as tech debt, not a gap.
+- **Process gaps closed.** Security reviews written for 27.1 and 27.2 (13/13 threats closed each). Validation records for 27.1 and 27.2 moved to `validated`, Nyquist-compliant, with zero gaps. See `closed_since_prior_audit`.
+- **Nyquist overall: compliant** (was partial).
+- **No code changes.** Integration and flow results are unchanged; the checker's re-run reproduced every live claim, and F2 was re-run by the orchestrator.
+- **Still open:** optional `/gsd-code-review 27.1`.
 
 ## Tech debt
 
@@ -145,5 +135,5 @@ See the `tech_debt` frontmatter:
 |---|---|---|---|
 | 26 | validated | true | — |
 | 27 | validated | true | — |
-| 27.1 | in-progress | not authoritative | `/gsd-validate-phase 27.1` |
-| 27.2 | in-progress | not authoritative | `/gsd-validate-phase 27.2` |
+| 27.1 | validated | true | — |
+| 27.2 | validated | true | — |
