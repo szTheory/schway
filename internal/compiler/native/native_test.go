@@ -1099,6 +1099,12 @@ func TestNativeHelperProcess(t *testing.T) {
 		time.Sleep(5 * time.Second) // should never be reached
 	case "exit-nonzero":
 		os.Exit(3)
+	case "capacity-exit":
+		_, _ = os.Stderr.WriteString("schway: event capacity exhausted\n")
+		os.Exit(69)
+	case "capacity-exit-wrong-stderr":
+		_, _ = os.Stderr.WriteString("schway: something else\n")
+		os.Exit(69)
 	default:
 		_, _ = os.Stdout.Write(valid)
 	}
@@ -1693,5 +1699,52 @@ func TestOutOfCorpusSourcesAreGenuinelyNovel(t *testing.T) {
 		if match, identical := corpus[strings.TrimSpace(testCase.source)]; identical {
 			t.Fatalf("out-of-corpus program %q is byte-identical to corpus fixture %s", testCase.behavior, match)
 		}
+	}
+}
+
+// TestPhase273RunnerEventCapacityAdjudication pins the strict name contract
+// for the generated-C event-capacity exit (D-27.3-01, D-27.3-02): only exit 69
+// with exactly the one stderr line is native.event_capacity_exhausted; every
+// other nonzero exit stays native.run_failed and SIGABRT stays
+// native.run_signaled.
+func TestPhase273RunnerEventCapacityAdjudication(t *testing.T) {
+	run := func(mode string, expect TerminalOutcome) *ToolError {
+		t.Helper()
+		calls := 0
+		runner := Runner{Expect: expect, command: func(ctx context.Context, _ string, _ ...string) *exec.Cmd {
+			calls++
+			stage := "compile"
+			if calls > 1 {
+				stage = "run"
+			}
+			command := exec.CommandContext(ctx, os.Args[0], "-test.run=TestNativeHelperProcess", "--", mode, stage)
+			command.Env = append(os.Environ(), "GO_WANT_NATIVE_HELPER=1", "GOTRACEBACK=crash")
+			return command
+		}}
+		_, err := runner.Run(context.Background(), "int main(void) { return 0; }", "-O0", []string{"input"})
+		var toolError *ToolError
+		if !errors.As(err, &toolError) {
+			t.Fatalf("%s: expected a ToolError, got %v", mode, err)
+		}
+		return toolError
+	}
+	named := run("capacity-exit", ExpectValue)
+	if named.Code != "native.event_capacity_exhausted" {
+		t.Fatalf("exit 69 with the exact stderr line: code=%s want=native.event_capacity_exhausted (error %v)", named.Code, named)
+	}
+	if !strings.Contains(named.Error(), "-O0") {
+		t.Fatalf("capacity error must name the optimization level, got %q", named.Error())
+	}
+	if wrong := run("capacity-exit-wrong-stderr", ExpectValue); wrong.Code != "native.run_failed" {
+		t.Fatalf("exit 69 with wrong stderr: code=%s want=native.run_failed", wrong.Code)
+	}
+	if other := run("exit-nonzero", ExpectValue); other.Code != "native.run_failed" {
+		t.Fatalf("exit 3: code=%s want=native.run_failed", other.Code)
+	}
+	if signaled := run("abort-clean", ExpectValue); signaled.Code != "native.run_signaled" {
+		t.Fatalf("SIGABRT with default expectation: code=%s want=native.run_signaled", signaled.Code)
+	}
+	if defect := run("capacity-exit", ExpectDefect); defect.Code != "native.event_capacity_exhausted" {
+		t.Fatalf("exit 69 under ExpectDefect: code=%s want=native.event_capacity_exhausted", defect.Code)
 	}
 }

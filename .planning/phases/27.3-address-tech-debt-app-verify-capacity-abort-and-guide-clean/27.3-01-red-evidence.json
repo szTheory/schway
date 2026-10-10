@@ -1,0 +1,27 @@
+{
+  "plan": "27.3-01",
+  "runs": [
+    {
+      "stage": "red",
+      "revision": "ddafbefac15e6af0d7233c2a5d6d07da06a4e770",
+      "command": "go test ./internal/compiler/cgen -run '^TestPhase273NamedCapacityExitGate$' -count=1 -v",
+      "exitCode": 1,
+      "targetTests": "TestPhase273NamedCapacityExitGate (loop-conformance, loop-free-conformance, application-shell)",
+      "expected": "sum_to_n conformance C contains the named-exit recorder line exactly once and exit(69) exactly once; loop-free conformance C keeps the prior guard with no exit(69); application shell keeps schway_event_overflow with no exit(69)",
+      "actual": "loop-conformance FAILS (named-exit recorder line 0 times, exit(69) 0 times); loop-free-conformance and application-shell PASS",
+      "semanticAssessment": "Target test executed and failed on the planned assertion for the intended reason: the pre-fix conformance recorder has no named exit. Controls subtests pass.",
+      "output": "=== RUN   TestPhase273NamedCapacityExitGate\n=== RUN   TestPhase273NamedCapacityExitGate/loop-conformance\n    cgen_phase273_test.go:43: sum_to_n conformance C has the named-exit recorder line 0 times, want 1\n    cgen_phase273_test.go:46: sum_to_n conformance C has exit(69) 0 times, want 1\n=== RUN   TestPhase273NamedCapacityExitGate/loop-free-conformance\n=== RUN   TestPhase273NamedCapacityExitGate/application-shell\n--- FAIL: TestPhase273NamedCapacityExitGate (0.00s)\n    --- FAIL: TestPhase273NamedCapacityExitGate/loop-conformance (0.00s)\n    --- PASS: TestPhase273NamedCapacityExitGate/loop-free-conformance (0.00s)\n    --- PASS: TestPhase273NamedCapacityExitGate/application-shell (0.00s)\nFAIL\nFAIL\tgithub.com/szTheory/schway/internal/compiler/cgen\t0.009s\nFAIL\n"
+    },
+    {
+      "stage": "red",
+      "revision": "ddafbefac15e6af0d7233c2a5d6d07da06a4e770",
+      "command": "go test ./internal/compiler/native -run '^TestPhase273RunnerEventCapacityAdjudication$' -count=1 -v",
+      "exitCode": 1,
+      "targetTests": "TestPhase273RunnerEventCapacityAdjudication",
+      "expected": "exit 69 with stderr exactly 'schway: event capacity exhausted\\n' yields ToolError code native.event_capacity_exhausted naming -O0; wrong stderr and exit 3 stay native.run_failed; SIGABRT stays native.run_signaled; ExpectDefect with the named exit still yields the named code",
+      "actual": "first assertion fails: observed native.run_failed (exit status 69: schway: event capacity exhausted)",
+      "semanticAssessment": "Target test executed and failed on the planned assertion: the runner has no named-code adjudication for exit 69.",
+      "output": "=== RUN   TestPhase273RunnerEventCapacityAdjudication\n    native_test.go:1733: exit 69 with the exact stderr line: code=native.run_failed want=native.event_capacity_exhausted (error native.run_failed: exit status 69: schway: event capacity exhausted\n        )\n--- FAIL: TestPhase273RunnerEventCapacityAdjudication (0.01s)\nFAIL\nFAIL\tgithub.com/szTheory/schway/internal/compiler/native\t0.016s\nFAIL\n"
+    }
+  ]
+}
