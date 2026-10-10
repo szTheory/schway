@@ -4,11 +4,11 @@ milestone: M005
 milestone_name: Practical Computation
 current_phase: "27.2"
 status: Phase 27.2 inserted, not planned
-stopped_at: Phase 27.1 complete — all phases complete
-last_updated: "2026-10-10T17:40:04.869Z"
+stopped_at: Phase 27.2 context gathered
+last_updated: "2026-10-10T18:13:54.888Z"
 last_activity: 2026-10-10
 last_activity_desc: Phase 27.1 complete
-state_head: 2be2430ca9f2b207feaf769e69070d535bb9926d
+state_head: cb127f6b89a4144dbc41a2c39e921bbeb6560368
 progress:
   total_phases: 4
   completed_phases: 2
@@ -810,9 +810,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-10T16:22:41.312Z
-Stopped at: Phase 27.1 complete — all phases complete
-Resume file: None
+Last session: 2026-10-10T18:13:54.813Z
+Stopped at: Phase 27.2 context gathered
+Resume file: .planning/phases/27.2-address-tech-debt-straight-line-scalar-let-admission-r1/27.2-CONTEXT.md
 Next action: After clearing context, run $gsd-execute-phase 27; plan 27-09 is next.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
