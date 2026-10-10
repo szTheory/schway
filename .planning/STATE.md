@@ -4,17 +4,17 @@ milestone: M005
 milestone_name: Practical Computation
 current_phase: "27.2"
 current_phase_name: "Address tech debt: straight-line scalar let admission (R1)"
-status: Phase 27.2 inserted, not planned
-stopped_at: Phase 27.2 context gathered
-last_updated: "2026-10-10T18:57:15.693Z"
+status: executing
+stopped_at: Completed 27.2-01-PLAN.md
+last_updated: "2026-10-10T19:02:32.206Z"
 last_activity: 2026-10-10
-last_activity_desc: Phase 27.1 complete
-state_head: 0c718429bcc31d013a9655a2eeb428d7cdc7e525
+last_activity_desc: Phase 27.2 execution started
+state_head: b18ce0ce69f58c8d6cf2a91739fa7e0267d06126
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 21
-  completed_plans: 18
+  completed_plans: 19
 ---
 
 <!-- schway-current:start -->
@@ -55,7 +55,7 @@ See: .planning/PROJECT.md (updated 2026-10-03)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 27.2 — address-tech-debt-straight-line-scalar-let-admission-r1
+**Current focus:** Phase 27.2 — Address tech debt: straight-line scalar let admission (R1)
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -121,10 +121,10 @@ plans.
 
 ## Current Position
 
-Phase: 27.2 (Address tech debt: straight-line scalar let admission (R1)) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 27.2 inserted, not planned
-Last activity: 2026-10-10 — Phase 27.1 complete
+Phase: 27.2 (Address tech debt: straight-line scalar let admission (R1)) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-10-10 — Phase 27.2 execution started
 Progress: [██████████] 100%
 
 ## M005 Planning
@@ -468,6 +468,7 @@ subset alone.
 | Phase 27 P10 | 95min | 2 tasks | 14 files |
 | Phase 27.1 P01 | 25 min | 3 tasks | 5 files |
 | Phase 27.1 P02 | 15 min | 3 tasks | 8 files |
+| Phase 27.2 P01 | 25 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -588,6 +589,7 @@ decision history; they no longer describe current status.
 - [Phase 27]: 27-10: EVD-12 claimed only from hosted run 38052601527 at fa5a169; earlier failing run at c7bf17c superseded
 - [Phase 27.1]: Application routes (build, app verify, interpreter application) share admitPublishedApplication; internal lanes stay ungated
 - [Phase 27.1]: 27.1-02: receipt gate hint is stderr-only; guide documents fresh-artifact and pinned re-check uses, pinned command executed by test
+- [Phase 27.2]: 27.2-01: accepted-corpus golden pinned at 9459f37 (92 sources, 83 EmitApplication refusals recorded verbatim); sum_to_n main pinned at 7 blocks/7 edges
 
 ### Pending Todos
 
@@ -811,9 +813,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-10T18:13:54.813Z
-Stopped at: Phase 27.2 context gathered
-Resume file: .planning/phases/27.2-address-tech-debt-straight-line-scalar-let-admission-r1/27.2-CONTEXT.md
+Last session: 2026-10-10T19:02:32.167Z
+Stopped at: Completed 27.2-01-PLAN.md
+Resume file: None
 Next action: After clearing context, run $gsd-execute-phase 27; plan 27-09 is next.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
