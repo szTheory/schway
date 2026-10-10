@@ -105,7 +105,7 @@ facts to the actual result and borrow source tokens. The wire schema remains
 
 2026-10-10 (Phase 27.2): branch-free scalar bodies (let, var, mixed, pure copy, pure constant, Unit write-only) are admitted again end to end; producer-side fix in the checker scalar builder and cgen; validators unchanged; focused local tests (27.2-01, 27.2-02); hosted run 38080236918 at 112eaf7 green on macOS and Linux, see 27.2-HOST-EVIDENCE.md.
 
-2026-10-10 (Phase 27.3): app verify of loop programs now names event-capacity exhaustion per case (native.event_capacity_exhausted, reported unsupported) instead of aborting the whole set; sum_to_n verifies n <= 14 through app verify; loop-free conformance C and all application C byte-identical; the Phase 27 guide writes outputs under ignored .schway/phase27; validators unchanged; focused local tests (27.3-01..03); hosted run pending, see 27.3-HOST-EVIDENCE.md.
+2026-10-10 (Phase 27.3): app verify of loop programs now names event-capacity exhaustion per case (native.event_capacity_exhausted, reported unsupported) instead of aborting the whole set; sum_to_n verifies n <= 14 through app verify; loop-free conformance C and all application C byte-identical; the Phase 27 guide writes outputs under ignored .schway/phase27; validators unchanged; focused local tests (27.3-01..03); hosted two-host run 38091738463 at d7ffbcd succeeded (workflow_dispatch), see 27.3-HOST-EVIDENCE.md.
 
 **Newly executed checks:** the exact task commands passed locally with the Go
 cache redirected to `/private/tmp/schway-gocache`. Named controls include
