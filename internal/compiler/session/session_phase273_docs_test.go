@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path"
 	"sort"
 	"strings"
 	"testing"
@@ -61,8 +62,13 @@ func phase273GuideOutputTargets(block string) []string {
 				targets = append(targets, next)
 			case field == "--output" && next != "":
 				targets = append(targets, next, next+".schway-build.json")
-			case field == ">" && next != "":
+			case (field == ">" || field == ">>") && next != "":
 				targets = append(targets, next)
+			case strings.HasPrefix(field, "--output=") && len(field) > len("--output="):
+				value := strings.TrimPrefix(field, "--output=")
+				targets = append(targets, value, value+".schway-build.json")
+			case strings.HasPrefix(field, "-o=") && len(field) > len("-o="):
+				targets = append(targets, strings.TrimPrefix(field, "-o="))
 			case field == "run" && i > 0 && fields[i-1] == "app" && next != "":
 				targets = append(targets, next)
 			}
@@ -72,7 +78,9 @@ func phase273GuideOutputTargets(block string) []string {
 }
 
 func phase273TargetAllowed(target string) bool {
-	return strings.HasPrefix(target, "./.schway/") || strings.HasPrefix(target, ".schway/") || target == "./schway"
+	// Clean first so ./.schway/../leak resolves to leak and is refused.
+	cleaned := path.Clean(target)
+	return strings.HasPrefix(cleaned, ".schway/") || cleaned == "schway"
 }
 
 // phase273GuideViolations lists every output target outside the ignored tree,
@@ -147,14 +155,15 @@ func TestPhase273GuideCleanCheckoutOutputsIgnored(t *testing.T) {
 			result, err := testsupport.RunCLIErr(context.Background(), "git", os.Environ(),
 				"-C", testsupport.ProjectPath(), "check-ignore", "-q", "--", name)
 			if err != nil {
-				t.Fatalf("git check-ignore %s: %v", name, err)
+				t.Skipf("env:git unavailable, skipping check-ignore exercise: %v", err)
 			}
 			switch result.Exit {
 			case 0:
 			case 1:
 				t.Errorf("guide output %s is not ignored by git", name)
 			default:
-				t.Fatalf("git check-ignore %s exit %d: %s", name, result.Exit, result.Stderr)
+				// Exit 128 means not a git checkout (source archive) or git error.
+				t.Skipf("env:git check-ignore unavailable (exit %d), skipping: %s", result.Exit, result.Stderr)
 			}
 		}
 	})
@@ -166,4 +175,22 @@ func TestPhase273GuideCleanCheckoutOutputsIgnored(t *testing.T) {
 			}
 		}
 	})
+}
+
+// TestPhase273GuideTargetCheckerRefusesBypasses pins WR-02: path traversal and
+// the append and equals-form output spellings must not slip past the checker.
+func TestPhase273GuideTargetCheckerRefusesBypasses(t *testing.T) {
+	for _, block := range []string{
+		"mkdir -p .schway/phase27\n./schway app run ./.schway/phase27/x -- 1 > ./.schway/../leak\n",
+		"mkdir -p .schway/phase27\n./schway app run ./.schway/phase27/x -- 1 >> leak\n",
+		"mkdir -p .schway/phase27\n./schway build a.schway --output=leak\n",
+	} {
+		if len(phase273GuideViolations(block)) == 0 {
+			t.Errorf("checker accepted bypass block %q", block)
+		}
+	}
+	ok := "mkdir -p .schway/phase27\n./schway app run ./.schway/phase27/x -- 1 > ./.schway/phase27/out\n"
+	if v := phase273GuideViolations(ok); len(v) != 0 {
+		t.Errorf("checker refused allowed block: %v", v)
+	}
 }
