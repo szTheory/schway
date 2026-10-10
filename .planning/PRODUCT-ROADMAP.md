@@ -114,6 +114,20 @@ actual hosted hosts must pass the new Phase 27 driver at one source/fixture
 revision, and DX-16 still needs its linked clean-checkout guide. Phase 25/26
 receipts remain historical and cannot substitute for those runs.
 
+### Phase 27.1 transition amendment — 2026-10-10
+
+**What 27.1 changed:** application admission routes (`schway build`, `schway app verify`, and the API-only interpreter application route now apply checker, corevalidate, then the origin peer through one shared admission helper) and the receipt-gate guide (pinned re-check command and revision hint). No new language capability was added.
+
+**Seed transition check:**
+
+| Seed | Disposition | Reason |
+|------|-------------|--------|
+| SEED-261008-trz | retain dormant | 27.1 produced no named failure that meets its trigger_when for consumer-triggered failure observability. |
+| SEED-261008-z1g | retain dormant | No reviewer query gap for a bounded symbol/caller query surfaced during 27.1. |
+| SEED-261008-z1s | retain dormant | No contested contract/source form arose in 27.1. |
+
+**Current three recommendations re-checked:** recommendation 1 (finish Phase 27) is complete once 27.1's hosted run lands; recommendations 2 and 3 are unchanged. Next action: the D-27.1-11 sequence (`/gsd-secure-phase 27`, `/gsd-validate-phase 27`, milestone audit re-run), then milestone completion. Nine audit/review items are recorded as deferred in STATE.md (D-27.1-10); none is implemented.
+
 ### Phase 26 discussion — 2026-10-02 (historical planning snapshot)
 
 The user adopted the specialist fan-out recommendations for Phase 26: use

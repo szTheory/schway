@@ -611,6 +611,8 @@ Carried into M003 as cheap, unowned cleanup:
   *shipped M001* evidence, found only because Phase 13 took the stricter
   retro-strengthening branch and reported what it found.
 
+- 2026-10-10 (D-27.1-11): after Phase 27.1 lands and before milestone completion, run `/gsd-secure-phase 27`, then `/gsd-validate-phase 27`, then re-run the milestone audit (`/gsd-audit-milestone`). Running them before 27.1 would be stale.
+
 ### Blockers/Concerns
 
 **Current — Phase 26 closeout (2026-10-03):** No Phase 26 blocker or human UAT
@@ -792,6 +794,15 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | deferred_items | Phase 10/deferred-items.md: originvalidate_test.go transitiveImportsViolation spawns `go list -deps` via bare exec.Command with unbounded .Output() — violates TestSourceNeverSpawnsUnboundedProcesses (D-02-01) | acknowledged | 2026-09-14 | M002 |
 | deferred_items | Phase 10/deferred-items.md: corevalidate.peerDeriveOriginFacts has no core.OpCall case — borrow-returning PublicOrigin forwarded from a callee is always reported NOT Callable by the origin peer | acknowledged | 2026-09-14 | M002 |
 | deferred_items | Phase 10/deferred-items.md: corevalidate.Result.LoanEndpoints() is incomplete for a branched function when Validate fail-fasts on an unrelated problem — three-way endpoint comparator scopes around it | acknowledged | 2026-09-14 | M002 |
+| deferred_items | Phase 27.1: F3 app-run --evidence=events in-route peer validation (by design today; not implemented in 27.1) | deferred (D-27.1-10) | 2026-10-10 | M005 |
+| deferred_items | Phase 27.1: F4 unified fixed-point budget counting across checker/corevalidate/originvalidate (semantic admission change; not implemented) | deferred (D-27.1-10) | 2026-10-10 | M005 |
+| deferred_items | Phase 27.1: F5 reachable output-ceiling input (keep defensive guard, seam-tested; not implemented) | deferred (D-27.1-10) | 2026-10-10 | M005 |
+| deferred_items | Phase 27.1: IN-01 distinguish fwrite failure from output-limit exhaustion (changes emitted C/status; not implemented) | deferred (D-27.1-10) | 2026-10-10 | M005 |
+| deferred_items | Phase 27.1: IN-02 dedupe reason literals (five-package refactor; not implemented) | deferred (D-27.1-10) | 2026-10-10 | M005 |
+| deferred_items | Phase 27.1: Canonical formatting of examples/fizzbuzz.schway and examples/sum_to_n.schway (changes pinned hashes; bundle with a deliberate re-evidence run) | deferred (D-27.1-10) | 2026-10-10 | M005 |
+| deferred_items | Phase 27.1: Build corevalidate failure as a diagnostic (not implemented) | deferred (D-27.1-10) | 2026-10-10 | M005 |
+| deferred_items | Phase 27.1: RunInterpreterCommandFile re-read in publishedOriginProblemFile (not implemented) | deferred (D-27.1-10) | 2026-10-10 | M005 |
+| deferred_items | Phase 27.1: Gate ancestor-revision acceptance (rejected for now, D-27.1-06) | deferred (D-27.1-10) | 2026-10-10 | M005 |
 | Runtime | Effects, async, actors, scheduling, managed heaps | Deferred | Initialization | Post-M001 |
 | Ecosystem | Packages and first-party application kits | Deferred | Initialization | Post-M001 |
 

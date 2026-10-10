@@ -101,6 +101,8 @@ function and return operation structurally; command diagnostics project those
 facts to the actual result and borrow source tokens. The wire schema remains
 `lang.diagnostic/0`, and the escape refusal has no repair suggestion.
 
+2026-10-10 (Phase 27.1): schway build and schway app verify now apply the origin peer after corevalidate through the shared application admission helper, in the same order as schway check (CheckCommandFile: checker, corevalidate, origin peer); the interpreter application route is API-only; source inspection plus focused local tests (27.1-01); hosted run recorded in 27.1-HOST-EVIDENCE.md.
+
 **Newly executed checks:** the exact task commands passed locally with the Go
 cache redirected to `/private/tmp/schway-gocache`. Named controls include
 `TestPhase25PointerPathLiveOverlap`,
