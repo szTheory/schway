@@ -5,16 +5,16 @@ milestone_name: Practical Computation
 current_phase: "27.1"
 current_phase_name: address-tech-debt-build-route-origin-validation-and-receipt
 status: executing
-stopped_at: Phase 27.1 context gathered
-last_updated: "2026-10-10T15:58:33.399Z"
+stopped_at: Completed 27.1-01-PLAN.md
+last_updated: "2026-10-10T16:03:07.574Z"
 last_activity: 2026-10-10
-last_activity_desc: Phase 27 complete
-state_head: 9670394acbafb670781ab0d7d41ab2d2f6396b36
+last_activity_desc: Phase 27.1 execution started
+state_head: e1ee032bb490a1262ed5782ff962db223cfea911
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 18
-  completed_plans: 15
+  completed_plans: 16
 ---
 
 <!-- schway-current:start -->
@@ -55,7 +55,7 @@ See: .planning/PROJECT.md (updated 2026-10-03)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 27.1 — Address tech debt: build-route origin validation and receipt-gate docs
+**Current focus:** Phase 27.1 — address-tech-debt-build-route-origin-validation-and-receipt
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -121,10 +121,10 @@ plans.
 
 ## Current Position
 
-Phase: 27.1 (address-tech-debt-build-route-origin-validation-and-receipt) — READY TO EXECUTE
-Plan: Not started
+Phase: 27.1 (address-tech-debt-build-route-origin-validation-and-receipt) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-10-10 — Phase 27 complete
+Last activity: 2026-10-10 — Phase 27.1 execution started
 Progress: [██████████] 100%
 
 ## M005 Planning
@@ -465,6 +465,7 @@ subset alone.
 | Phase 27 P08 | 34m | 2 tasks | 11 files |
 | Phase 27 P09 | 25min | 2 tasks | 4 files |
 | Phase 27 P10 | 95min | 2 tasks | 14 files |
+| Phase 27.1 P01 | 25 min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -583,6 +584,7 @@ decision history; they no longer describe current status.
 - [Phase 27]: Validate retained application captures under a private returned-application contract that permits a Unit empty result while preserving strict U64 conformance validation. — FizzBuzz has a Unit entry and writes bytes on the application output channel. The previous native capture decoder reused a U64-only non-empty result contract, which incorrectly marked valid Unit evidence incomplete.
 - [Phase 27]: 27-09: receipt gate recomputes expected hashes from its checkout and requires tree=clean; local dirty-tree runs are development receipts only
 - [Phase 27]: 27-10: EVD-12 claimed only from hosted run 38052601527 at fa5a169; earlier failing run at c7bf17c superseded
+- [Phase 27.1]: Application routes (build, app verify, interpreter application) share admitPublishedApplication; internal lanes stay ungated
 
 ### Pending Todos
 
@@ -793,9 +795,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-10T15:14:27.962Z
-Stopped at: Phase 27.1 context gathered
-Resume file: .planning/phases/27.1-address-tech-debt-build-route-origin-validation-and-receipt/27.1-CONTEXT.md
+Last session: 2026-10-10T16:03:07.516Z
+Stopped at: Completed 27.1-01-PLAN.md
+Resume file: None
 Next action: After clearing context, run $gsd-execute-phase 27; plan 27-09 is next.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
