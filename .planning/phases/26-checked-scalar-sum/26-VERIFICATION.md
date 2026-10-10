@@ -194,7 +194,7 @@ Phase 27.2 restores straight-line scalar bodies for FLOW-01 and U64-01. Mileston
 
 Three producer defects were fixed: the checker scalar builder now splits the return into its own block when no if or while ran (b2e43aa), the cgen scalar classifier gained a structural clause for branch-free copy, constant and Unit write-only bodies (b2e43aa), and the unused entry parameter is marked void only when no operation reads it (28d7e8f). Validators (corevalidate, originvalidate, executionpeer, interp) are unchanged. Accepted-corpus core and C bytes are pinned by TestPhase272AcceptedCorpusByteIdentity against a golden generated at 9459f37 before the fix. Example sources and fixtures remain pinned to the Phase 27 and 27.1 receipt hashes, re-verified by the receipt-pin check. Red and green stages are recorded in 27.2-01-red-evidence.json.
 
-Hosted evidence: pending, see `.planning/phases/27.2-address-tech-debt-straight-line-scalar-let-admission-r1/27.2-HOST-EVIDENCE.md`.
+Hosted evidence: run 38080236918 at 112eaf7bb5f7e2a60cd0dbcea5021f53d0c0cf0f, success on macOS and Linux (full and race suites); see `.planning/phases/27.2-address-tech-debt-straight-line-scalar-let-admission-r1/27.2-HOST-EVIDENCE.md`.
 
 R1b (deferred): the program `let a = n`, `let b = helper(a)`, `b` is refused with syntax.expected_linear_result because a671308 routes on the first `let` only; it passed at a671308~1. No repository program exercises it. It is pinned by TestPhase272R1bScalarFirstLetThenCallCharacterization and is out of 27.2 scope (parser routing). It is recorded here as prose only; no DEBT register is edited.
 
