@@ -13,11 +13,17 @@
 # recomputed hashes of the logs, but nothing here binds a log to a particular
 # hosted CI run, runner, or artifact. Authenticity must come from the hosted
 # run record itself (see the recorded run ID in 27-HOST-EVIDENCE.md).
+# On a revision mismatch a hint names both revisions and the override; it does
+# not change the verdict.
 set -eu
 
 reject() {
 	printf 'phase27 receipt gate: status=fail reason=%s\n' "$1" >&2
 	exit 1
+}
+
+revision_hint() { # revision_hint GOT -> one informative stderr line, no verdict
+	printf 'phase27 receipt gate: hint: log revision %s, expected %s; to check receipts recorded at another commit set PHASE27_EXPECTED_REVISION=<sha> (see examples/phase27/README.md)\n' "$1" "$expected_revision" >&2
 }
 
 [ "$#" -eq 2 ] || reject "usage_two_logs_required"
@@ -72,13 +78,15 @@ check_log() { # check_log LOG -> prints host name on success
 	[ -n "$(field "$identity" arch)" ] || reject "arch_missing_$log"
 	[ -n "$(field "$identity" clang_target)" ] || reject "target_missing_$log"
 	[ -n "$(field "$identity" go)" ] || reject "go_host_missing_$log"
-	[ "$(field "$identity" revision)" = "$expected_revision" ] || reject "wrong_revision_$log"
+	got_revision=$(field "$identity" revision || true)
+	[ "$got_revision" = "$expected_revision" ] || { revision_hint "$got_revision"; reject "wrong_revision_$log"; }
 	[ "$(field "$identity" tree)" = clean ] || reject "tree_not_clean_$log"
 	[ "$(field "$identity" sources)" = "$expected_sources" ] || reject "source_hash_mismatch_$log"
 	[ "$(field "$identity" fixtures)" = "$expected_fixtures" ] || reject "fixture_hash_mismatch_$log"
 	[ "$(field "$identity" inputs)" = "$expected_inputs" ] || reject "input_set_mismatch_$log"
 	[ "$(field "$result" host)" = "$host" ] || reject "result_host_mismatch_$log"
-	[ "$(field "$result" revision)" = "$expected_revision" ] || reject "result_revision_mismatch_$log"
+	got_revision=$(field "$result" revision || true)
+	[ "$got_revision" = "$expected_revision" ] || { revision_hint "$got_revision"; reject "result_revision_mismatch_$log"; }
 	[ "$(field "$result" tree)" = clean ] || reject "result_tree_not_clean_$log"
 	[ "$(field "$result" cases)" = 10 ] || reject "result_case_count_$log"
 	[ "$(field "$result" controls)" = 3 ] || reject "result_control_count_$log"

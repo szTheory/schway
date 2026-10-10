@@ -64,12 +64,38 @@ development receipt, not cross-host evidence.
 ## Two-host evidence
 
 CI runs the driver in both the Ubuntu and macOS `evidence-aggregate` lanes and
-uploads each host's log as `phase27-receipt-<os>-<sha>`. Download the two
-artifacts for one run, save one result row per host, and check them:
+uploads each host's log as `phase27-receipt-<os>-<sha>`. The gate binds receipts
+to one exact revision, so there are two labeled uses.
+
+### Fresh CI artifacts at their commit
+
+CI uploads `phase27-receipt-macos-latest-<sha>` and
+`phase27-receipt-ubuntu-latest-<sha>`; artifacts expire after 14 days. Check
+out that `<sha>`, download both with
+`gh run download <run-id> -n phase27-receipt-macos-latest-<sha>` (and the ubuntu
+one), save each host's whole downloaded log as `host-macos.receipt` and
+`host-linux.receipt`, and run the bare command:
 
 ```sh
 sh scripts/check-phase27-receipts.sh host-macos.receipt host-linux.receipt
 ```
+
+At a checkout of a different commit the bare command fails with
+`wrong_revision` and prints a hint naming both revisions.
+
+### Re-checking the committed Phase 27 receipts from a later checkout
+
+```sh
+PHASE27_EXPECTED_REVISION=6224f8b2c9c15f54270a232fab2bce12628c7f19 sh scripts/check-phase27-receipts.sh .planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/host-macos.receipt .planning/phases/27-exact-fizzbuzz-and-cross-host-evidence/host-linux.receipt
+```
+
+This attests the historical revision 6224f8b, not the current HEAD. It passes
+only while the four declared inputs (two sources, two fixtures) are unchanged;
+otherwise it fails with `source_hash_mismatch` or `fixture_hash_mismatch`,
+correctly. The gate checks consistency, not authenticity; the authenticity
+anchor is the hosted run record in 27-HOST-EVIDENCE.md. The script changes to
+the repository root, so relative log paths resolve from the root (run from the
+root or pass absolute paths).
 
 The gate requires a clean tree, the same revision, and the same source/fixture
 hashes and inputs on both hosts. A missing, failed, stale, different-input or
