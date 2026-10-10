@@ -52,6 +52,16 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 	b.initialized[parameter.ID] = true
 	b.newBlock("entry")
 	b.lower(function.Body.Linear.Statements)
+	// A branch-free body would otherwise leave OpReturn in the entry block,
+	// which the unchanged corevalidate release-order rule refuses. Split the
+	// return into its own block joined by the same next edge shape that if and
+	// while already emit. It fires only when no if/while ran, so accepted
+	// programs are byte-identical (D-27.2-05).
+	if len(b.diagnostics) == 0 && b.current == 0 && !b.terminated(0) {
+		entryID := b.blocks[0].ID
+		returnID := b.newBlock("return")
+		b.edge(entryID, returnID, "next")
+	}
 	if len(b.diagnostics) == 0 && function.ReturnType.Constructor == "Unit" {
 		if function.Body.Linear.Result != "" {
 			b.diagnostics = append(b.diagnostics, diagnostic.Error("type.unit_result", function.Body.Linear.Span, "Unit functions do not return a value"))

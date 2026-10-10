@@ -2501,9 +2501,19 @@ func emitProgramFunction(out *strings.Builder, function core.Function, parameter
 	return nil
 }
 
+// hasScalarOperations classifies a function as a scalar CFG body. Besides the
+// operation-kind loop below, a structural clause admits branch-free scalar
+// bodies (Const, Copy, Return and the write operations) that carry blocks and
+// no ownership, foreign or loan facts (D-27.2-04). The peer classifiers
+// corevalidate.hasScalarCFG and originvalidate.originHasScalarCFG keep their
+// own operation sets; the sets are deliberately copied, not shared (no shared
+// package, D-27-07 copy-over-dep), so drift stays visible.
 func hasScalarOperations(function core.Function) bool {
 	if function.Linear == nil {
 		return false
+	}
+	if isStraightLineScalarBody(function) {
+		return true
 	}
 	for _, operation := range function.Linear.Operations {
 		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
@@ -2511,6 +2521,29 @@ func hasScalarOperations(function core.Function) bool {
 		}
 	}
 	return false
+}
+
+func isStraightLineScalarBody(function core.Function) bool {
+	linear := function.Linear
+	if function.Match != nil || len(linear.Blocks) == 0 || function.ForeignContract != nil || len(linear.LoanEndpoints) != 0 {
+		return false
+	}
+	if function.Parameter.Type != "U64" || (function.ReturnType != "U64" && function.ReturnType != "Unit") {
+		return false
+	}
+	for _, place := range linear.Places {
+		if name := placesTypeName(linear, place.TypeID); name != "U64" && name != "Bool" {
+			return false
+		}
+	}
+	for _, operation := range linear.Operations {
+		switch operation.Kind {
+		case core.OpConst, core.OpCopy, core.OpReturn, core.OpWriteU64, core.OpWriteNewline, core.OpWriteText:
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 func hasCyclicScalarCopy(program core.Program) bool {
