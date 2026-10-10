@@ -32,7 +32,7 @@ source/input/output gain. Phase plans will choose the narrow source spelling and
 implementation details while preserving the acceptance behavior below.
 
 - [x] **Phase 26: Checked Scalar Sum** - A caller runs bounded `sum_to_n` from ordinary Schway source, with checked U64 addition and safe scalar loops. (completed 2026-10-03)
-- [ ] **Phase 27: Exact FizzBuzz and Cross-Host Evidence** - A caller runs exact FizzBuzz, and both M005 programs have bounded output and independent interpreter/native evidence.
+- [x] **Phase 27: Exact FizzBuzz and Cross-Host Evidence** - A caller runs exact FizzBuzz, and both M005 programs have bounded output and independent interpreter/native evidence. (completed 2026-10-10)
 
 ## Phase Details
 
@@ -117,7 +117,7 @@ M004 receipts do not prove this phase's new semantics.
    and run both programs and find the exact expected output, accepted input
    range, checked failure behavior, and output limit.
 
-**Plans**: 10/10 plans executed in 9 waves
+**Plans**: 10/10 plans complete in 9 waves
 
 The safety slices enforce three named obligations before composition:
 source write-operation admission before byte emission, D-27-04's checked zero
@@ -182,7 +182,7 @@ and new dependencies remain outside M005.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 26. Checked Scalar Sum | 5/5 | Complete    | 2026-10-03 |
-| 27. Exact FizzBuzz and Cross-Host Evidence | 10/10 | In Progress|  |
+| 27. Exact FizzBuzz and Cross-Host Evidence | 10/10 | Complete    | 2026-10-10 |
 
 **Coverage:** 9/9 M005 requirements have exactly one phase owner. U64-02's
 comparison/Bool subset enables the first runnable program; its complete
