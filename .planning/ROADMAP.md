@@ -217,9 +217,18 @@ own bounded sum witness on the way.
 
 ### Phase 27.2: Address tech debt: straight-line scalar let admission (R1) (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Branch-free scalar function bodies (`let`, `var`, mixed `let`/`var` with arithmetic, pure copy, pure constant, Unit write-only) are admitted end to end again: `check`, `corevalidate`, the origin peer, `build` and `app run`, agreeing across the interpreter application route and native. The fix is producer-side (checker scalar builder and cgen scalar classification), and every independent validator stays unchanged.
+**Requirements**: None newly mapped; restores assurance for FLOW-01 and U64-01 (milestone re-audit finding R1).
 **Depends on:** Phase 27.1
+
+**Success Criteria** (what must be TRUE):
+
+1. `fn main(n: U64) -> U64 { let total = n  total }` passes `schway check`, and `schway build` plus `schway app run -- 41` prints `41`; red/green evidence recorded (red: `core.release_order_indeterminate`).
+2. Every in-scope branch-free shape (let, var, var plus assignment, mixed with `+`, pure copy, pure constant, Unit write-only) checks, builds and runs with the expected stdout, and the interpreter application API and native agree.
+3. corevalidate, originvalidate, executionpeer and interp acceptance rules are unchanged; negative controls (uninitialized read, type mismatch, overflow, constant zero divisor, unreachable trailing result) still refuse with their current codes.
+4. Already-accepted programs (examples and phase controls) produce byte-identical core and emitted C, pinned by a test; example source and fixture hashes are unchanged.
+5. One hosted two-host `ci.yml` run (full and race suites) at the final SHA is green, after explicit user approval for push and dispatch.
+
 **Plans:** 0 plans
 
 Plans:
