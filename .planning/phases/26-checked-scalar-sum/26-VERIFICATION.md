@@ -187,3 +187,15 @@ _Verifier: the agent (gsd-verifier)_
 ## Addendum — 2026-10-10 (Phase 27.1)
 
 Phase 27.1 changed `internal/compiler/session/session.go` and `internal/compiler/session/session_app_verify.go` after 6224f8b: application admission now applies the origin peer after corevalidate on `schway build` and `schway app verify`, through the shared helper also used by the interpreter application route. This supersedes the earlier note that commits after 6224f8b are planning-only. Current-source hosted evidence is run 38068888687 at 7936dac39a6215091d4dbd02a6acec20f2601386 (both hosts green, fresh receipts pass the pinned gate); see `.planning/phases/27.1-address-tech-debt-build-route-origin-validation-and-receipt/27.1-HOST-EVIDENCE.md`. The Phase 26 and Phase 27 verifier agents were not re-run (proportionate validation, D-27.1-15); the findings above stand as written.
+
+## Addendum — 2026-10-10 (Phase 27.2)
+
+Phase 27.2 restores straight-line scalar bodies for FLOW-01 and U64-01. Milestone audit finding R1 (branch-free scalar bodies refused with core.release_order_indeterminate) is fixed producer-side. The root cause is the entry-block OpReturn that the corevalidate release-order rule refuses; it predates a671308 for `var` bodies, because a671308 only routed `let`-led bodies into the scalar builder and thereby exposed the same shape to `let`.
+
+Three producer defects were fixed: the checker scalar builder now splits the return into its own block when no if or while ran (b2e43aa), the cgen scalar classifier gained a structural clause for branch-free copy, constant and Unit write-only bodies (b2e43aa), and the unused entry parameter is marked void only when no operation reads it (28d7e8f). Validators (corevalidate, originvalidate, executionpeer, interp) are unchanged. Accepted-corpus core and C bytes are pinned by TestPhase272AcceptedCorpusByteIdentity against a golden generated at 9459f37 before the fix. Example sources and fixtures remain pinned to the Phase 27 and 27.1 receipt hashes, re-verified by the receipt-pin check. Red and green stages are recorded in 27.2-01-red-evidence.json.
+
+Hosted evidence: pending, see `.planning/phases/27.2-address-tech-debt-straight-line-scalar-let-admission-r1/27.2-HOST-EVIDENCE.md`.
+
+R1b (deferred): the program `let a = n`, `let b = helper(a)`, `b` is refused with syntax.expected_linear_result because a671308 routes on the first `let` only; it passed at a671308~1. No repository program exercises it. It is pinned by TestPhase272R1bScalarFirstLetThenCallCharacterization and is out of 27.2 scope (parser routing). It is recorded here as prose only; no DEBT register is edited.
+
+The milestone audit R1 row is updated by the next /gsd-audit-milestone, not in this phase. Earlier sections above are unchanged.

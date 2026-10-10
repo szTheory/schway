@@ -128,6 +128,20 @@ receipts remain historical and cannot substitute for those runs.
 
 **Current three recommendations re-checked:** recommendation 1 (finish Phase 27) is complete once 27.1's hosted run lands; recommendations 2 and 3 are unchanged. Next action: the D-27.1-11 sequence (`/gsd-secure-phase 27`, `/gsd-validate-phase 27`, milestone audit re-run), then milestone completion. Nine audit/review items are recorded as deferred in STATE.md (D-27.1-10); none is implemented.
 
+### Phase 27.2 transition amendment — 2026-10-10
+
+**What 27.2 changed:** audit finding R1 is restored. Branch-free scalar bodies (let, var, mixed, pure copy, pure constant, Unit write-only) are admitted end to end again through a checker return-block split and a structural cgen classifier clause; validators are unchanged. No new capability was added. R1b (a scalar-first `let` followed by a call `let`, refused with syntax.expected_linear_result by a671308 parser routing) is deferred and pinned by a characterization test.
+
+**Seed transition check:**
+
+| Seed | Disposition | Reason |
+|------|-------------|--------|
+| SEED-261008-trz | retain dormant | 27.2 produced no trigger for consumer-triggered failure observability. |
+| SEED-261008-z1g | retain dormant | 27.2 produced no bounded symbol or caller query gap. |
+| SEED-261008-z1s | retain dormant | 27.2 produced no contested contract or source form. |
+
+**Current three recommendations re-checked:** unchanged. Next action after the hosted run is the milestone audit re-run.
+
 ### Phase 26 discussion — 2026-10-02 (historical planning snapshot)
 
 The user adopted the specialist fan-out recommendations for Phase 26: use
