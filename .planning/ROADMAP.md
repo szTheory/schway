@@ -214,3 +214,13 @@ own bounded sum witness on the way.
 **Wave 2** *(blocked on Wave 1 completion; contains a human push/dispatch checkpoint)*
 
 - [x] 27.1-03-PLAN.md — transition records and deferred dispositions, then one authorized hosted two-host run with fresh gated receipts and 26/27 addenda
+
+### Phase 27.2: Address tech debt: straight-line scalar let admission (R1) (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 27.1
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 27.2 to break down)

@@ -2,19 +2,18 @@
 gsd_state_version: "1.0"
 milestone: M005
 milestone_name: Practical Computation
-current_phase: "27.1"
-status: completed
+current_phase: "27.2"
+status: Phase 27.2 inserted, not planned
 stopped_at: Phase 27.1 complete — all phases complete
-last_updated: "2026-10-10T17:05:12.400Z"
+last_updated: "2026-10-10T17:40:04.869Z"
 last_activity: 2026-10-10
 last_activity_desc: Phase 27.1 complete
-state_head: 79eaf401acac7d5e159b72042c15e6497991aed6
+state_head: 2be2430ca9f2b207feaf769e69070d535bb9926d
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 2
   total_plans: 18
   completed_plans: 18
-  percent: 100
 ---
 
 <!-- schway-current:start -->
@@ -55,7 +54,7 @@ See: .planning/PROJECT.md (updated 2026-10-03)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 27.1 — address-tech-debt-build-route-origin-validation-and-receipt
+**Current focus:** Phase 27.2 — address-tech-debt-straight-line-scalar-let-admission-r1
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -121,9 +120,9 @@ plans.
 
 ## Current Position
 
-Phase: 27.1
+Phase: 27.2
 Plan: Not started
-Status: All phases complete
+Status: Phase 27.2 inserted, not planned
 Last activity: 2026-10-10 — Phase 27.1 complete
 Progress: [██████████] 100%
 
@@ -753,6 +752,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
   a milestone index; M002's full phase detail lives in
   `.planning/milestones/M002-ROADMAP.md`.
 - Phase 27.1 inserted after Phase 27: Address tech debt: build-route origin validation and receipt-gate docs (URGENT)
+- Phase 27.2 inserted after Phase 27.1: Address tech debt: straight-line scalar let admission (R1) (URGENT)
 
 ### Quick Tasks Completed
 
