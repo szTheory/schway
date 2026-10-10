@@ -229,14 +229,14 @@ own bounded sum witness on the way.
 4. Already-accepted programs (examples and phase controls) produce byte-identical core and emitted C, pinned by a test; example source and fixture hashes are unchanged.
 5. One hosted two-host `ci.yml` run (full and race suites) at the final SHA is green, after explicit user approval for push and dispatch.
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 **Wave 1**
 - [x] 27.2-01-PLAN.md — Wave 0 baseline: accepted-corpus golden at pre-fix HEAD, headline fixture, witness matrix, controls, R1b characterization, cgen ownership guard (red recorded)
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 27.2-02-PLAN.md — Producer fix: checker return-block split, cgen structural scalar classifier, conditional unused-parameter marker (green)
+- [x] 27.2-02-PLAN.md — Producer fix: checker return-block split, cgen structural scalar classifier, conditional unused-parameter marker (green)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 27.2-03-PLAN.md — Records (26-VERIFICATION addendum with R1b, VALIDATION, transition check) and user-authorized hosted two-host run
