@@ -5963,3 +5963,80 @@ func TestPhase26BackEdgeCauseCategories(t *testing.T) {
 		})
 	}
 }
+
+// TestPhase272BranchFreeBodyReturnBlockSplit pins the D-27.2-10 CFG shape: a
+// branch-free scalar body keeps its operations in the entry block and gets a
+// separate return block joined by one "next" edge, so the independent
+// release-order rule sees an incoming edge. Bodies with if/while keep their
+// existing block and edge counts (the split never fires for them).
+func TestPhase272BranchFreeBodyReturnBlockSplit(t *testing.T) {
+	t.Run("branch-free", func(t *testing.T) {
+		source := []byte("module t.split\n\nexport {\n  fn main\n}\n\nfn main(n: U64) -> U64 {\n  let total = n\n  total\n}\n")
+		parsed := syntax.Parse(source)
+		if len(parsed.Diagnostics) != 0 {
+			t.Fatalf("parse diagnostics: %+v", parsed.Diagnostics)
+		}
+		checked := Program(parsed.Program)
+		if len(checked.Diagnostics) != 0 {
+			t.Fatalf("checker diagnostics: %+v", checked.Diagnostics)
+		}
+		var main core.Function
+		for _, function := range checked.Program.Functions {
+			if function.Name == "main" {
+				main = function
+			}
+		}
+		if main.Linear == nil {
+			t.Fatal("main has no linear body")
+		}
+		linear := main.Linear
+		entryID, returnID := main.ID+":block:entry", main.ID+":block:return:1"
+		if len(linear.Blocks) != 2 || linear.Blocks[0].ID != entryID || linear.Blocks[1].ID != returnID {
+			t.Fatalf("blocks = %+v, want exactly [%s %s]", linear.Blocks, entryID, returnID)
+		}
+		if len(linear.Edges) != 1 || linear.Edges[0].FromBlockID != entryID || linear.Edges[0].ToBlockID != returnID || linear.Edges[0].Pattern != "next" {
+			t.Fatalf("edges = %+v, want one next edge %s -> %s", linear.Edges, entryID, returnID)
+		}
+		if !reflect.DeepEqual(linear.Blocks[0].Successors, []string{returnID}) {
+			t.Fatalf("entry successors = %v, want [%s]", linear.Blocks[0].Successors, returnID)
+		}
+		returnOp := ""
+		for _, operation := range linear.Operations {
+			if operation.Kind == core.OpReturn {
+				returnOp = operation.ID
+			}
+		}
+		if returnOp == "" {
+			t.Fatal("no OpReturn operation")
+		}
+		contains := func(ids []string) bool {
+			for _, id := range ids {
+				if id == returnOp {
+					return true
+				}
+			}
+			return false
+		}
+		if contains(linear.Blocks[0].OperationIDs) || !contains(linear.Blocks[1].OperationIDs) {
+			t.Fatalf("OpReturn %s must sit in the return block only: entry=%v return=%v", returnOp, linear.Blocks[0].OperationIDs, linear.Blocks[1].OperationIDs)
+		}
+		if validated := corevalidate.Validate(checked.Program); !validated.Valid {
+			t.Fatalf("corevalidate refused the split shape: %+v", validated.Problems)
+		}
+	})
+	t.Run("if-while-unchanged", func(t *testing.T) {
+		program := phase26CheckedSum(t)
+		for _, function := range program.Functions {
+			if function.Name != "main" || function.Linear == nil {
+				continue
+			}
+			// Measured at PLAN_BASE 8fb8dcd (pre-fix producer, check/scalar.go unchanged).
+			const wantBlocks, wantEdges = 7, 7
+			if len(function.Linear.Blocks) != wantBlocks || len(function.Linear.Edges) != wantEdges {
+				t.Fatalf("sum_to_n main blocks=%d edges=%d, want %d and %d", len(function.Linear.Blocks), len(function.Linear.Edges), wantBlocks, wantEdges)
+			}
+			return
+		}
+		t.Fatal("sum_to_n has no main linear function")
+	})
+}

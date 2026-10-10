@@ -783,3 +783,22 @@ func TestPhase271BuildCLIRefusesOriginUnpublishable(t *testing.T) {
 		t.Fatalf("%s exists after human-mode refusal (stat err=%v)", artifact2, err)
 	}
 }
+
+// TestPhase272StraightLineCopyCLI is the ROADMAP SC1 headline: a branch-free
+// scalar `let` copy checks, builds and runs through the public CLI.
+func TestPhase272StraightLineCopyCLI(t *testing.T) {
+	fixture := testsupport.ProjectPath("examples", "phase272", "straight_line_copy.schway")
+	code, stdout, stderr := captureLangRun(t, []string{"--json", "check", fixture})
+	if code != 0 || !strings.Contains(stdout, `"status":"pass"`) {
+		t.Fatalf("check code=%d stdout=%q stderr=%q, want exit 0 and status pass", code, stdout, stderr)
+	}
+	artifact := filepath.Join(t.TempDir(), "straight_line_copy")
+	code, stdout, stderr = captureLangRun(t, []string{"build", fixture, "--output", artifact})
+	if code != 0 || stdout != "built "+artifact+"\n" || stderr != "" {
+		t.Fatalf("build code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	code, stdout, stderr = captureLangRun(t, []string{"app", "run", artifact, "--", "41"})
+	if code != 0 || stdout != "41\n" || stderr != "" {
+		t.Fatalf("app run code=%d stdout=%q stderr=%q, want exit 0 and 41", code, stdout, stderr)
+	}
+}
