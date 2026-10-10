@@ -21,7 +21,7 @@ findings:
     title: "Formatter splits multi-operator `let` bindings across lines"
   - id: WR-05
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "Receipt gate accepts forgeable plain-text logs"
   - id: IN-01
     severity: info
@@ -31,9 +31,9 @@ findings:
     severity: info
     disposition: open
     title: "Duplicated \"reason\" literals across layers"
-open: 7
+open: 6
 total: 7
-recorded: 2026-10-10T12:57:40.143Z
+recorded: 2026-10-10T13:06:43.385Z
 ---
 
 # Phase 27: Code Review Disposition
@@ -44,7 +44,7 @@ recorded: 2026-10-10T12:57:40.143Z
 | WR-02 | warning | open | - |
 | WR-03 | warning | open | - |
 | WR-04 | warning | open | - |
-| WR-05 | warning | open | - |
+| WR-05 | warning | fixed | 27-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 
