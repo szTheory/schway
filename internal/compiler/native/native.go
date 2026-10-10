@@ -28,6 +28,16 @@ const MaxStreamBytes = 64 * 1024
 
 const defaultSubprocessTimeout = 30 * time.Second
 
+// Event-capacity contract: generated execution/conformance C exits with
+// EventCapacityExitStatus and writes exactly EventCapacityStderr to stderr when
+// its static event array is full. Any other exit status or stderr is not this
+// outcome.
+const (
+	CodeEventCapacityExhausted = "native.event_capacity_exhausted"
+	EventCapacityExitStatus    = 69
+	EventCapacityStderr        = "schway: event capacity exhausted\n"
+)
+
 type ToolError struct {
 	Code string
 	Err  error
@@ -617,6 +627,9 @@ func (r Runner) Run(parent context.Context, cSource, optimization string, inputs
 			// expected abort-only shape, not a failure: fall through and
 			// decode whatever the aborting process wrote before it died.
 			adjudication, known := adjudicateExit(runErr)
+			if known && adjudication.Exited && adjudication.ExitCode == EventCapacityExitStatus && string(runStderr.bytes()) == EventCapacityStderr {
+				return Result{}, &ToolError{Code: CodeEventCapacityExhausted, Err: fmt.Errorf("generated C exceeded its static event capacity at %s", optimization)}
+			}
 			expectedAbort := known && adjudication.Signaled && adjudication.Signal == syscall.SIGABRT && expect == ExpectDefect
 			if !expectedAbort {
 				if known && adjudication.Signaled {
@@ -711,6 +724,8 @@ func (r Runner) CompileConformanceUnit(parent context.Context, source string) er
 type exitAdjudication struct {
 	Signaled bool
 	Signal   syscall.Signal
+	Exited   bool
+	ExitCode int
 }
 
 // adjudicateExit inspects a *exec.ExitError's real wait status. known is
@@ -729,6 +744,9 @@ func adjudicateExit(err error) (exitAdjudication, bool) {
 	}
 	if status.Signaled() {
 		return exitAdjudication{Signaled: true, Signal: status.Signal()}, true
+	}
+	if status.Exited() {
+		return exitAdjudication{Exited: true, ExitCode: status.ExitStatus()}, true
 	}
 	return exitAdjudication{}, true
 }

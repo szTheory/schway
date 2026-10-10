@@ -2,10 +2,12 @@ package cgen_test
 
 import (
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/session"
 	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
@@ -77,4 +79,23 @@ func TestPhase273NamedCapacityExitGate(t *testing.T) {
 			t.Error("application shell must not contain exit(69)")
 		}
 	})
+}
+
+// TestPhase273CapacityContractLiteralsAgree pins the cgen recorder literal
+// against the native runner constants it must agree with (D-27.3-02).
+func TestPhase273CapacityContractLiteralsAgree(t *testing.T) {
+	switch native.EventCapacityExitStatus {
+	case 64, 65, 70, 74:
+		t.Fatalf("EventCapacityExitStatus %d collides with another contract status", native.EventCapacityExitStatus)
+	}
+	checked := phase273Checked(t, "examples", "sum_to_n.schway")
+	c, err := session.Phase16ControlNativeC(checked.Program, "phase273-contract")
+	if err != nil {
+		t.Fatal(err)
+	}
+	escaped := strings.ReplaceAll(native.EventCapacityStderr, "\n", "\\n")
+	want := "fputs(\"" + escaped + "\", stderr); exit(" + strconv.Itoa(native.EventCapacityExitStatus) + ");"
+	if !strings.Contains(c, want) {
+		t.Errorf("sum_to_n conformance C does not contain %q", want)
+	}
 }

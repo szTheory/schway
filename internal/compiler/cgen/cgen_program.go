@@ -170,9 +170,13 @@ type invocationPreflightNode struct {
 }
 
 // invocationEventCapacity derives the shared event-array size from activation
-// occurrences, not unique function declarations. Every supported whole-program
-// body is straight-line and records exactly one event per operation, so this is
-// the exact runtime capacity required by the already-bounded unfolding.
+// occurrences, not unique function declarations. The capacity is the static
+// per-activation count of operations over the bounded unfolding; a scalar body
+// with a back edge may record more events at runtime, in which case the
+// execution/conformance shell exits with the named event-capacity status
+// (native.event_capacity_exhausted) and the application shell records overflow
+// in schway_event_overflow. The arithmetic is shared by both shells and must
+// not change without moving accepted-corpus hashes.
 func invocationEventCapacity(nodes []invocationPreflightNode, byID map[string]core.Function) (int, error) {
 	capacity := 0
 	for index, node := range nodes {
