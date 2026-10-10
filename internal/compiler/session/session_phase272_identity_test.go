@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -110,13 +109,15 @@ func TestPhase272AcceptedCorpusByteIdentity(t *testing.T) {
 	observed := phase272AcceptedCorpus(t)
 	goldenPath := phase272GoldenPath()
 	if os.Getenv("SCHWAY_PHASE272_WRITE_GOLDEN") == "1" {
-		revision, err := exec.Command("git", "-C", testsupport.ProjectPath("."), "rev-parse", "HEAD").Output()
-		if err != nil {
-			t.Fatalf("git rev-parse HEAD: %v", err)
+		// The revision is supplied by the caller (git rev-parse HEAD) rather
+		// than spawned here, so this test never starts a subprocess.
+		revision := strings.TrimSpace(os.Getenv("SCHWAY_PHASE272_GOLDEN_REVISION"))
+		if revision == "" {
+			t.Fatal("SCHWAY_PHASE272_GOLDEN_REVISION must name the commit the golden is generated at")
 		}
 		golden := phase272CorpusGolden{
 			Schema:   phase272GoldenSchema,
-			Revision: strings.TrimSpace(string(revision)),
+			Revision: revision,
 			Entries:  observed,
 		}
 		encoded, err := json.MarshalIndent(golden, "", "  ")
