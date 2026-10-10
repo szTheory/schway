@@ -1,0 +1,466 @@
+{
+  "schema": "phase272.accepted-corpus-hashes/1",
+  "revision": "9459f37eab4d87115db791556e91905c0671f4f8",
+  "entries": [
+    {
+      "path": "examples/fizzbuzz.schway",
+      "coreSHA256": "ef212ac184f70c389248405232f6342a71befe057008c8453f96e24abb0de564",
+      "emitApplicationSHA256": "536e5aed54093774a4e602a44c3bf44e680b77f36194362328195dd506d8b236"
+    },
+    {
+      "path": "examples/phase22/identity.schway",
+      "coreSHA256": "d36c4004cdf5a7624f96e50bc51b594fb553f0ef14efc34e448dbcf46265de51",
+      "emitApplicationSHA256": "5c5940e92d4e69841b241fa8b5a818a9ee7d268ccbd4667424024c1d51035a32"
+    },
+    {
+      "path": "examples/phase23/file_byte.schway",
+      "coreSHA256": "78ce7623e4c933bac285f4e7e3e7937790e8cfa884c054e093ed506596d2ea5b",
+      "emitApplicationSHA256": "d8cac138da43eb3c703c290961609a1e4dbe9c5a1568a1a9addef7c5de13ac09"
+    },
+    {
+      "path": "examples/phase24/error.schway",
+      "coreSHA256": "3797d6c37a868ef087239fd61bf1e94f7cea78b17f6c21f64cd82a21ae30880a",
+      "emitApplicationSHA256": "196db7c2a81c1f9f33945c69238b444dad6bd05bfdf3f518bf2f7904442a7565"
+    },
+    {
+      "path": "examples/phase24/transfer.schway",
+      "coreSHA256": "9aa08bc0bf48f42701f50951c6449279f40a03b9b6542962b9f0ff4b75d92dc5",
+      "emitApplicationSHA256": "fae577d9cd68c38b1235050623c7fcba79e092b36952467ac8e03f451788eb98"
+    },
+    {
+      "path": "examples/phase26/checked_add_overflow.schway",
+      "coreSHA256": "21d95c66288a2afb5d91c5ddb06bdaa42dab1fcbdfa9b45f2d79594ed08493dd",
+      "emitApplicationSHA256": "5e99aacf026ad3dff0d232d40b29842917dbd4089fa7ccd25830b79b9d430852"
+    },
+    {
+      "path": "examples/sum_to_n.schway",
+      "coreSHA256": "b149a1761f25983ae17d817bc034bc03da8a3f12e5a699c236deb929a0055b36",
+      "emitApplicationSHA256": "75887480ab27546acd3343c07235ced80221ee29414cbf50e12a34f58e47b7b6"
+    },
+    {
+      "path": "testdata/phase07/call_argument_used_once.schway",
+      "coreSHA256": "7046819e0236902d42f98c180859c9419f2ed6acbee8dc73c3ca5d755166bb8c",
+      "emitApplicationError": "application entry \"s1:phase07.call_argument_used_once:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase07/call_basic.schway",
+      "coreSHA256": "8fb76ed09ed1999e1291a90b1863a83dd70fb5b6ae5c62d4688c0c37fd888f8d",
+      "emitApplicationError": "application entry \"s1:phase07.call_basic:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase07/call_fallible_foreign_reach.schway",
+      "coreSHA256": "0bcfab609bdff91274756527f31ff80bfea43808cf30a935e42082d32bffdb3f",
+      "emitApplicationError": "application entry \"s1:phase07.call_fallible_foreign_reach:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase07/call_from_both_match_arms.schway",
+      "coreSHA256": "369bd8ee23c8697da9cb25731c841fd590dd6ed8d0401a22dd5469cedf2cc436",
+      "emitApplicationError": "application entry \"s1:phase07.call_from_both_match_arms:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase07/call_two_fallible_callees_disagree.schway",
+      "coreSHA256": "b398c2aef74a5412a6f2f5da07f6179f8ea85d08709be367fb2b105c22962089",
+      "emitApplicationError": "application entry \"s1:phase07.call_two_fallible_callees_disagree:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase07/clean_but_unpublishable.schway",
+      "coreSHA256": "9ad63e2a020033f118e2c13388f598af71e6343eaef57317af0621557b729cea",
+      "emitApplicationError": "application entry \"s1:phase07.clean_but_unpublishable:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase07/deep_diamond_acyclic.schway",
+      "coreSHA256": "a5a2f4ff8fea4c184d2b1dde5296012784e5603fa2f583c84d0cf8d4ee29b58f",
+      "emitApplicationError": "application entry \"s1:phase07.deep_diamond_acyclic:fn:top4\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase07/duplicate_function_name.schway",
+      "coreSHA256": "47804516df2329437a8a188f7431d4b0b7962b3356984b45172af8cbb6923705",
+      "emitApplicationError": "core validation failed: core.duplicate_function_id"
+    },
+    {
+      "path": "testdata/phase08/match_arm_call.schway",
+      "coreSHA256": "c127a65f0cccd106f5357610e5aa154240cb87dc8c8a4fc7d8925ddf0c803f87",
+      "emitApplicationError": "application entry \"s1:phase08.match_arm_call:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase08/relay_depth2_accept.schway",
+      "coreSHA256": "a6f6753b395fade4895fb9e3c5a26e70296977b16aee4d502b69f56271cfba11",
+      "emitApplicationError": "application entry \"s1:phase08.relay_depth2_accept:fn:caller\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase08/twin_a_accept.schway",
+      "coreSHA256": "2533a5adf137ae324dfe2f155858c4cf26ccd5ae7a7daa9b6cf668f768a6ba3b",
+      "emitApplicationError": "application entry \"s1:phase08.twin_a_accept:fn:escort\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase1/comments.schway",
+      "coreSHA256": "360ea735017fa302661e578be8d79512aa9aaeb85549958fa862deafdc02b4fb",
+      "emitApplicationError": "application entry \"s1:examples.switch:fn:toggle\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase1/toggle.schway",
+      "coreSHA256": "5fc207e1a572c3a9e6ef04aa85010e1b842782e92635ae3f09949a3fb1353658",
+      "emitApplicationError": "application entry \"s1:examples.switch:fn:toggle\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase10/compose_per_path_borrow_callee_accept.schway",
+      "coreSHA256": "0246f777188a26261b6979ab5cb65d6257442c97c4c19522c75d059d7e3a8253",
+      "emitApplicationError": "application entry \"s1:phase10.compose_per_path_borrow_callee:fn:callee\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase10/compose_per_path_borrow_caller_accept.schway",
+      "coreSHA256": "bbcc9bfb22c1d9a22fa4750534bcb6de25227411f8b5436221af8fb8040780cb",
+      "emitApplicationError": "application entry \"s1:phase10.compose_per_path_borrow_caller:fn:caller\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase10/relay_depth3_accept.schway",
+      "coreSHA256": "edcb2fc3dfceea7066026dba12d11c340fd157386a4c8c7094823cafed083ffd",
+      "emitApplicationError": "application entry \"s1:phase10.relay_depth3_accept:fn:caller\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase11/multi_function_diamond_call.schway",
+      "coreSHA256": "aecf57f5171339745a51d11e92abbcfe8438e344736b24a7b40ab788f78942ee",
+      "emitApplicationError": "application entry \"s1:phase11.multi_function_diamond_call:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase11/multi_function_entry_basic.schway",
+      "coreSHA256": "0b2aefc56efcae679d5df4e856a38c212c17c71fac0f1f7aa09d6b0651353f01",
+      "emitApplicationError": "application entry \"s1:phase11.multi_function_entry_basic:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase11/multi_function_forward_callee.schway",
+      "coreSHA256": "f5007c6b35ecd4b50e45172a5499cdf0a6896874c09b639ac2eb3f78db7d7afb",
+      "emitApplicationError": "application entry \"s1:phase11.multi_function_forward_callee:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase11/multi_function_gate_corpus.schway",
+      "coreSHA256": "fede66e6d64c3ec989c842ca8d4dc15be1ba824e4d6b2574ccb34af971b6fa2a",
+      "emitApplicationError": "application entry \"s1:phase11.multi_function_gate_corpus:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase11/multi_function_reduce_gate.schway",
+      "coreSHA256": "24b9036ef595c821db6c61552e3e593bae4f53fd3449b9b0a08592e8ff3247b4",
+      "emitApplicationError": "application entry \"s1:phase11.reduce_gate:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase11/multi_function_relay_depth2.schway",
+      "coreSHA256": "5521a95d6336f5ab602fb7fe7a8d5f28738f98e9ff0d9c5b0da1b249da39a99c",
+      "emitApplicationError": "application entry \"s1:phase11.multi_function_relay_depth2:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase11/multi_function_unreachable.schway",
+      "coreSHA256": "4d5f58f3a2969f0b2b4faf2097da410fdf954374c305913fe5345b6878c78dae",
+      "emitApplicationError": "application entry \"s1:phase11.multi_function_unreachable:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase11/multi_function_zero_call.schway",
+      "coreSHA256": "6d8425d66c7d8a65dffccb6564c94e2b113b12752a7011220b63714dbf03b8ae",
+      "emitApplicationError": "callgraph.entry_ambiguous: program has 2 in-degree-zero root(s), expected exactly one: [s1:phase11.multi_function_zero_call:fn:main s1:phase11.multi_function_zero_call:fn:unused]"
+    },
+    {
+      "path": "testdata/phase12/payload_borrow_interaction.schway",
+      "coreSHA256": "30943d91d182865353190905f46aca0bca8d6accbd318db438ef8ede4ac6e052",
+      "emitApplicationError": "callgraph.entry_ambiguous: program has 2 in-degree-zero root(s), expected exactly one: [s1:result.payload_borrow_interaction:fn:choose s1:result.payload_borrow_interaction:fn:identity]"
+    },
+    {
+      "path": "testdata/phase12/payload_drop_obligation.schway",
+      "coreSHA256": "17002fbece88c9d0220b242ada81a687e9a2196b7b50096721a79c475b8cbe29",
+      "emitApplicationError": "application entry \"s1:result.payload_drop_obligation:fn:identity\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase12/payload_tracer.schway",
+      "coreSHA256": "4eae037919699e42f33e0de5658c9a3d59c26f2790407b8cae22b5763bc8a7ad",
+      "emitApplicationError": "application entry \"s1:result.payload_tracer:fn:identity\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase13/derivation_call_argument_mismatch.schway",
+      "coreSHA256": "076be9aafde39ab7503f9684ebcde1deca243348a5ca35447ac4f78526a9cc7e",
+      "emitApplicationError": "application entry \"s1:phase13.derivation_call_argument_mismatch:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase13/derivation_fallible_call_unconsumed.schway",
+      "coreSHA256": "dd5d2ba038765a97fe4cf46089ebfc5334d57965d17b2994551f5b4b199c5fb4",
+      "emitApplicationError": "application entry \"s1:phase13.derivation_fallible_call_unconsumed:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase13/heldout_call_argument_ambiguous.schway",
+      "coreSHA256": "a0ba7ce5307b4c2c7f9125424fdf20f304b6f6fbaaedea24743d68ebe8a31979",
+      "emitApplicationError": "application entry \"s1:phase13.heldout_call_argument_ambiguous:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase13/heldout_call_argument_mismatch.schway",
+      "coreSHA256": "e7cf0c8116e659d7ac3a37e570dfeb2a3b77276dc8588ea2f25f326c1e952f69",
+      "emitApplicationError": "application entry \"s1:phase13.heldout_call_argument_mismatch:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase13/heldout_fallible_call_unconsumed.schway",
+      "coreSHA256": "c918c929e44589ab0b90471e7baaabd037a94acc18a787193231bcd00d134ab0",
+      "emitApplicationError": "application entry \"s1:phase13.heldout_fallible_call_unconsumed:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase13/heldout_shared_callee_twin_alpha.schway",
+      "coreSHA256": "2d7a6bdd498aa8fc71f951d2922da2a2e1568c34e500262b49cadd128d3bfd3b",
+      "emitApplicationError": "application entry \"s1:phase13.heldout_shared_callee_twin_alpha:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase13/heldout_shared_callee_twin_mirror.schway",
+      "coreSHA256": "f364ed0fb534fa2fa1e57db4f855a9c78b7897de46bee10fac0761576c74005e",
+      "emitApplicationError": "application entry \"s1:phase13.heldout_shared_callee_twin_mirror:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase14/multi_function_match_refusal.schway",
+      "coreSHA256": "795fe389032c039c1a1237708dff8793981da26bc4370aab1be576b0e5bdc51b",
+      "emitApplicationError": "application entry \"s1:phase14.multi_function_match_refusal:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase17/return_type_tracer.schway",
+      "coreSHA256": "988ac427d7bff420857dbe3b56509192808fc31b1ec215cc19036ee4c86d2deb",
+      "emitApplicationError": "application entry \"s1:phase17.return_type_tracer:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase18/computed_match.schway",
+      "coreSHA256": "7fddbd45a7eb393c52294c89fe75d734d555435fc9bcdebf2061cb49a791c099",
+      "emitApplicationError": "application entry \"s1:phase18.computed_match:fn:select\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase18/loan_across_branch.schway",
+      "coreSHA256": "8fcac06a6f238d64334cc20b45e79d0220bc8f51a1e4e76fbed15ec424130c15",
+      "emitApplicationError": "application entry \"s1:phase18.loan_across_branch:fn:select\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase18/long_payload_return.schway",
+      "coreSHA256": "49c3430750371c0ef6f9eb8129b9be2a534b1028741b61097b1ef42e42c3872f",
+      "emitApplicationError": "application entry \"s1:phase18.long_payload_return:fn:return_payload\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase18/payload_return.schway",
+      "coreSHA256": "154957ed514f7f164c71e10bf574d2008d29712fbf11074b0c1c9350b2de2f00",
+      "emitApplicationError": "application entry \"s1:phase18.payload_return:fn:return_payload\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase18/result_computed_match.schway",
+      "coreSHA256": "2ebe8cba1c82c9ea9d3b07f67b04e77dd1097739513b54ac8a33987cde9c4c74",
+      "emitApplicationError": "application entry \"s1:phase18.result_computed_match:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase19/literal_tracer.schway",
+      "coreSHA256": "61ef5336f5b3578b36d8984497782d7bc7ef575e1808f05b54ccbde31e60790b",
+      "emitApplicationError": "application entry \"s1:phase19.literal_tracer:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase2/implicit_copy.schway",
+      "coreSHA256": "5e2010f1331206d4610ca6a1b10ce686092a6884a8d4fc014cac3b44e4c36b2a",
+      "emitApplicationError": "application entry \"s1:owned.copy:fn:retain\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase2/owned_transfer.schway",
+      "coreSHA256": "e17fe549a50beb20c99e0172856d5df5c1736e97dce76d79c2d693c17d22fd20",
+      "emitApplicationError": "application entry \"s1:owned.transfer:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase25/exclusive_copy_accept.schway",
+      "coreSHA256": "6b21147944ea67f29f1ce612712f3bb363e541a02e760de90c185902234b7edf",
+      "emitApplicationSHA256": "4b27f45448b32576e804bf5a9a3ecdda8d8ec540bc48c3c4c73569447feb4cb5"
+    },
+    {
+      "path": "testdata/phase25/exclusive_escape_reject.schway",
+      "coreSHA256": "9e0964e3cf2da6dc457b01bd1de57418aa636b0bf8628b1050f2936ca6d12f76",
+      "emitApplicationError": "application entry \"s1:phase25.exclusive_escape_reject:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase25/shared_copy_accept.schway",
+      "coreSHA256": "c8b3fdbc8e472b3acf010c9d729a304afb23c97adcf908ead056b45b7968089f",
+      "emitApplicationSHA256": "444350078401ce25c32a5dd1ce8e9ca93f81bf87efbac886c614e0d59ba703a2"
+    },
+    {
+      "path": "testdata/phase3/borrowed_view.schway",
+      "coreSHA256": "696bf2e1c2ec73411ed8b091d753bef6e6504026cc43dc3b248ae62febba438f",
+      "emitApplicationError": "application entry \"s1:owned.borrowed_view:fn:choose\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase3/branch_one_arm_shared_accept.schway",
+      "coreSHA256": "c7ebef76cd22b510aec1a8509bcc89c78883f13dac4f1b94d0e217238a094118",
+      "emitApplicationError": "application entry \"s1:owned.branch_one_arm_shared_accept:fn:choose\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase3/branch_view.schway",
+      "coreSHA256": "3ec55ec5717e6760e5d3d006c2a5020f953a21fbf41e0adf406132e202365d9c",
+      "emitApplicationError": "application entry \"s1:owned.branch_view:fn:direction\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase3/public_view.schway",
+      "coreSHA256": "b2b6ba18f5fc89ccbf983e15767ed71d27a9c9cfae907edf2e6cf09dac15452f",
+      "emitApplicationError": "application entry \"s1:owned.public_view:fn:view\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase3/public_view_impossible.schway",
+      "coreSHA256": "331a5b2d81849cfbfc31ba9430ff988d060874386bc93ad574f9429a516c493b",
+      "emitApplicationError": "application entry \"s1:owned.public_view_impossible:fn:view\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase3/public_view_mixed_access.schway",
+      "coreSHA256": "b2665aa3d0cc9ed49d542a923878b4936e378c870c229638d0549b4feefa9e52",
+      "emitApplicationError": "application entry \"s1:owned.public_view_mixed_access:fn:view\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase3/public_view_multi_arm_access_conflict.schway",
+      "coreSHA256": "e35c719e6b1ef7c246cb9635c1a8f656dbde3c6df3ed19d8211ea70be3758a6f",
+      "emitApplicationError": "application entry \"s1:owned.public_view_multi_arm_access_conflict:fn:choose\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase3/public_view_multi_arm_omitted.schway",
+      "coreSHA256": "5c323c009c0d06132167fbe1c72be37cf3e6710a465159c6980544915a5a8ebd",
+      "emitApplicationError": "application entry \"s1:owned.public_view_multi_arm_omitted:fn:choose\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase3/public_view_omitted.schway",
+      "coreSHA256": "f09350cfab25d9e527c6feee9f8c2fc89b22e8eaf530d016cf8421151c0c2cfc",
+      "emitApplicationError": "application entry \"s1:owned.public_view_omitted:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase3/public_view_understated.schway",
+      "coreSHA256": "b45496eb4292454be7a919c1f63a7768060f383a1dc61f3f0a77f7aba65d8574",
+      "emitApplicationError": "application entry \"s1:owned.public_view_understated:fn:view\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase3/sequential_shared_then_exclusive_accept.schway",
+      "coreSHA256": "56d20794f8a43822f4483d2da39e870b4cb036c262f5e9289d32f5859bed20bd",
+      "emitApplicationError": "application entry \"s1:owned.sequential_shared_then_exclusive_accept:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase3/shared_shared_accept.schway",
+      "coreSHA256": "ecc14ac0c851b90546fb41502b8915ac325ba322d3a3a7d4887b86961ed231b4",
+      "emitApplicationError": "application entry \"s1:owned.shared_shared_accept:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase4/acquire_three_fail_second.schway",
+      "coreSHA256": "a4b13c10d60b35ff60251cb95b92a0064b783983d68e766969430876893da8fe",
+      "emitApplicationError": "application entry \"s1:phase4.acquire_three_fail_second:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase4/acquire_three_fail_third.schway",
+      "coreSHA256": "34313217e6de96c72506cb4c286fa96568493b19bf96a4a5efafb926cb23e0b4",
+      "emitApplicationError": "application entry \"s1:phase4.acquire_three_fail_third:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase4/acquire_three_success.schway",
+      "coreSHA256": "9c7d6282fb5364ac79538c3da4fbe6a966b2280a0c2cade09de393eb707b8ab2",
+      "emitApplicationError": "application entry \"s1:phase4.acquire_three_success:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase4/defect_terminal.schway",
+      "coreSHA256": "4f348119f72c9d8aa1b3dc1cb91942176d74727297142ca940d44c08737bab0f",
+      "emitApplicationError": "application entry \"s1:fallible.defect_terminal:fn:triage\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase4/discard_because.schway",
+      "coreSHA256": "fb206a1c820a26d8bc5628e9d2b902afb4df0170744cd63f41869d2d25a49599",
+      "emitApplicationError": "application entry \"s1:phase4.discard_because:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase4/foreign_acquire_one.schway",
+      "coreSHA256": "011e1d90e47628c6473cde1fdcde7e3948ce6170b7bb54f2e98f54f5464e5a84",
+      "emitApplicationError": "application entry \"s1:phase4.foreign_acquire_one:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase4/foreign_origin_omitted.schway",
+      "coreSHA256": "fa5ade93351937d1d7ccd923518ebb13e6ad56525eb4c18d8f973dddd6b22ca3",
+      "emitApplicationError": "application entry \"s1:phase4.foreign_origin_omitted:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase4/nonlocal_exit_probe.schway",
+      "coreSHA256": "448e34fe028ec35218b3207d57091d285badf659a77c73fb73e372df20ce871e",
+      "emitApplicationError": "application entry \"s1:phase4.nonlocal_exit_probe:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase5/allocator_mismatch.schway",
+      "coreSHA256": "d983488512ef2b9b399fb525bc2d8343d18f89799aa91143beaf6fe79bc9b533",
+      "emitApplicationError": "application entry \"s1:phase5.allocator_mismatch:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase5/coordinated_lie.schway",
+      "coreSHA256": "e2ec9dcd4a2c7769cb45e35122af8bfd2f6d613ca25e081aeaa8dc8fa1194ae6",
+      "emitApplicationError": "application entry \"s1:phase5.coordinated_lie:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase5/dead_store_unused_acquire.schway",
+      "coreSHA256": "31440397a59feb2a706434de33842c7aefa240a3d04499a31e9bed4a9a18d200",
+      "emitApplicationError": "application entry \"s1:phase5.dead_store_unused_acquire:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase5/defect_dies_by_signal.schway",
+      "coreSHA256": "488f2f4dcd596626b6b82ddd9a2857c0068a53a37485c7e90104957b2607761a",
+      "emitApplicationError": "application entry \"s1:phase5.defect_dies_by_signal:fn:triage\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase5/false_restrict_hoist.schway",
+      "coreSHA256": "805e4a8f93a545c7fe480695d08dd8d14a0e5dc633705c60a2e2ae72b837237d",
+      "emitApplicationError": "application entry \"s1:phase5.false_restrict_hoist:fn:touch\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase5/inline_across_foreign.schway",
+      "coreSHA256": "72fef86428dade289e837fd51dc9294bc9294c99d11f4c7f7b5f2ddf64943229",
+      "emitApplicationError": "application entry \"s1:phase5.inline_across_foreign:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase5/reorder_two_events.schway",
+      "coreSHA256": "2be6e33c8685cb2f86c87e81427ef5da94d2fb528de0dae33ac10cc60e21532d",
+      "emitApplicationError": "application entry \"s1:phase5.reorder_two_events:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase5/restrict_borrow.schway",
+      "coreSHA256": "07d661b8e89fc651cddbd92f56dcd8530d756168dd910e5ae44a1168592ac58b",
+      "emitApplicationError": "application entry \"s1:phase5.restrict_borrow:fn:touch\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase5/retained_pointer.schway",
+      "coreSHA256": "7fc95194fce966b97d59f21bcbf15668cffe33f9c307e21fe6d2b5e8225920d6",
+      "emitApplicationError": "application entry \"s1:phase5.retained_pointer:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase5/tail_collapse_release_ladder.schway",
+      "coreSHA256": "9be0c6179ffe348772a54802281a4988d343dc000e728455582a28b04fe45f33",
+      "emitApplicationError": "application entry \"s1:phase5.tail_collapse_release_ladder:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase5/typed_failure_truncated_stdout.schway",
+      "coreSHA256": "0d608061478bf8773433b0011a3522b0eb2e8b7b3c2eaa1730d8ebe6c6495319",
+      "emitApplicationError": "application entry \"s1:phase5.typed_failure_truncated_stdout:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase6/derivation_borrow_defect.schway",
+      "coreSHA256": "15c5a77e0a13c6f0c0503c84129a2c6ad56d0d51f780f6b20d325e307ff33061",
+      "emitApplicationError": "application entry \"s1:phase6.derivation_borrow_defect:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase6/derivation_match_defect.schway",
+      "coreSHA256": "7e6cec247eb19fc2d7a1a0b49f09f4fbcd4512b92d7b07ee80494c4bf3e5411b",
+      "emitApplicationError": "application entry \"s1:phase6.derivation_match_defect:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase6/derivation_move_defect.schway",
+      "coreSHA256": "bb022965045a8e14c53b0ea4f8149b4b6a4b354e1820c26f26ee69af1d999a15",
+      "emitApplicationError": "application entry \"s1:phase6.derivation_move_defect:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase6/heldout_borrow_defect.schway",
+      "coreSHA256": "836a8070c5d119f4ee304c8c9524af30130a1b8b0bfb5a37be8b7b089e39ea06",
+      "emitApplicationError": "application entry \"s1:phase6.heldout_borrow_defect:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase6/heldout_match_defect.schway",
+      "coreSHA256": "322d98cf6768ff1c16a6d24d48c6d8abf800d0c47dbb2866c99431d82d9314f1",
+      "emitApplicationError": "application entry \"s1:phase6.heldout_match_defect:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase6/heldout_move_defect.schway",
+      "coreSHA256": "4953f5e12f3f0daf66039f80c8513e258a8cc1b470cb619f8d612342355c947c",
+      "emitApplicationError": "application entry \"s1:phase6.heldout_move_defect:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    },
+    {
+      "path": "testdata/phase6/stale_evidence_subject.schway",
+      "coreSHA256": "99e5c69b278283838aadaa10ee0c99e5d12c256c6e4d5dacedb57d60165a3f3d",
+      "emitApplicationError": "application entry \"s1:phase6.stale_evidence_subject:fn:identity\": only a linear U64-to-U64 or U64-to-Unit entry is supported"
+    }
+  ]
+}
