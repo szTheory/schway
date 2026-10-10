@@ -82,6 +82,9 @@ func Validate(program core.Program, document execution.Execution) error {
 
 // ValidateFullCoverage is the intentionally separate straight-line fixture
 // control. Unlike Validate, it requires every unfolded occurrence to occur.
+// It is a test-only fixture control with no production caller by design;
+// wiring it into admission would be a new admission rule requiring a new
+// decision.
 func ValidateFullCoverage(program core.Program, document execution.Execution) error {
 	if err := Validate(program, document); err != nil {
 		return err

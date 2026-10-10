@@ -75,6 +75,8 @@ func runPhase27Gate(t *testing.T, first, second string) (string, error) {
 	return output, nil
 }
 
+var phase27RevisionHintRows = map[string]bool{"wrong-revision": true, "mixed-revision-result": true}
+
 func TestPhase27HostReceiptGate(t *testing.T) {
 	mac := phase27ReceiptLog(t, "macOS")
 	linux := phase27ReceiptLog(t, "Linux")
@@ -108,6 +110,7 @@ func TestPhase27HostReceiptGate(t *testing.T) {
 		return strings.Join(kept, "\n") + "\n"
 	}
 
+	seenRows := map[string]bool{}
 	for _, test := range []struct {
 		name         string
 		first, other string
@@ -146,7 +149,21 @@ func TestPhase27HostReceiptGate(t *testing.T) {
 			if strings.Contains(output, "status=pass") {
 				t.Fatalf("rejected pair also reported pass: %s", output)
 			}
+			seenRows[test.name] = true
+			hasHint := strings.Contains(output, "phase27 receipt gate: hint:")
+			if phase27RevisionHintRows[test.name] {
+				if !hasHint || !strings.Contains(output, "PHASE27_EXPECTED_REVISION") {
+					t.Fatalf("revision mismatch lacks hint: %s", output)
+				}
+			} else if hasHint {
+				t.Fatalf("hint fired on a non-revision rejection: %s", output)
+			}
 		})
+	}
+	for name := range phase27RevisionHintRows {
+		if !seenRows[name] {
+			t.Fatalf("phase27RevisionHintRows names unknown row %q", name)
+		}
 	}
 	if output, err := runPhase27Gate(t, mac, ""); err == nil {
 		t.Fatalf("one real host plus empty log passed: %s", output)
