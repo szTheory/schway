@@ -1165,3 +1165,26 @@ func TestDefectTerminatorRoundTrips(t *testing.T) {
 		t.Fatalf("format is not a fixed point:\nfirst:  %s\nsecond: %s", formatted, reformatted)
 	}
 }
+
+// Multi-operator `let` values stay on one line, and formatting is a fixed point.
+func TestFormatLetBinaryExpressions(t *testing.T) {
+	for _, expression := range []string{"n % 3 + 1", "a == n", "n + 2 % 4", "n < 5", "n % 15"} {
+		source := []byte("module examples.fmt\n\nexport {\n  fn main\n}\n\nfn main(n: U64) -> Unit {\n  var a = 0\n  let b = " + expression + "\n  a = b\n}\n")
+		first := session.Format(source)
+		if len(first.Diagnostics) != 0 {
+			t.Fatalf("%q format diagnostics: %+v", expression, first.Diagnostics)
+		}
+		if !strings.Contains(string(first.Canonical), "  let b = "+expression+"\n") {
+			t.Fatalf("%q was split across lines:\n%s", expression, first.Canonical)
+		}
+		second := session.Format(first.Canonical)
+		if !bytes.Equal(first.Canonical, second.Canonical) {
+			t.Fatalf("%q formatter is not a fixed point:\n%s\n---\n%s", expression, first.Canonical, second.Canonical)
+		}
+		before := withoutSpans(syntax.Parse(source).Program)
+		after := withoutSpans(syntax.Parse(first.Canonical).Program)
+		if !reflect.DeepEqual(before, after) {
+			t.Fatalf("%q semantic AST changed", expression)
+		}
+	}
+}

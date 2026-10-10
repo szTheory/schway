@@ -32,6 +32,11 @@ func Format(tree Tree) []byte {
 	return append(bytes.TrimRight([]byte(f.out.String()), " \t\r\n"), '\n')
 }
 
+// isBinaryOperatorToken reports the infix operators a `let` value may chain.
+func isBinaryOperatorToken(kind Kind) bool {
+	return kind == TokenPlus || kind == TokenLAngle || kind == TokenEqualEqual || kind == TokenPercent
+}
+
 func (f *formatter) insideFunctionBody() bool {
 	for _, context := range f.contexts {
 		if context == "function" || context == "arm" {
@@ -204,10 +209,10 @@ func (f *formatter) token(token Token, next Kind) {
 			// on this line, so (unlike the branch below) this must NOT end
 			// the line here. See callBinding's doc comment.
 			f.callBinding = true
-		} else if f.insideFunctionBody() && f.linearBinding && f.previous == TokenEqual && next == TokenPercent {
-			// A remainder expression continues on this line; the divisor
-			// operand ends the binding instead.
-		} else if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || f.previous == TokenPercent || f.previous == TokenTake || f.previous == TokenBorrow || f.previous == TokenMut) {
+		} else if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || isBinaryOperatorToken(f.previous)) && isBinaryOperatorToken(next) {
+			// A binary expression continues on this line; its final operand
+			// ends the binding instead.
+		} else if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || isBinaryOperatorToken(f.previous) || f.previous == TokenTake || f.previous == TokenBorrow || f.previous == TokenMut) {
 			f.newline()
 			f.linearBinding = false
 		} else if f.context() == "foreign_fn" && f.previous == TokenColon {
@@ -233,7 +238,7 @@ func (f *formatter) token(token Token, next Kind) {
 		f.ensureLine()
 		f.out.WriteString(token.Text)
 		f.lineOpen = true
-		if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || f.previous == TokenPercent) {
+		if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || isBinaryOperatorToken(f.previous)) && !isBinaryOperatorToken(next) {
 			f.newline()
 			f.linearBinding = false
 		}
@@ -354,7 +359,7 @@ func (f *formatter) token(token Token, next Kind) {
 		f.header = "arm"
 	case TokenLAngle:
 		f.trimSpace()
-		if f.header == "if" || f.header == "while" {
+		if f.header == "if" || f.header == "while" || (f.insideFunctionBody() && f.linearBinding) {
 			f.out.WriteString(" < ")
 		} else {
 			f.out.WriteByte('<')
