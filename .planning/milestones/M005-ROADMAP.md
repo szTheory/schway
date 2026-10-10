@@ -19,7 +19,7 @@ single C17/Clang native route, and application runner remain the implementation
 path; no new dependency or backend is required.
 
 The current requirements are in [REQUIREMENTS.md](REQUIREMENTS.md). [Research
-synthesis](research/SUMMARY.md) records source-inspected boundaries and
+synthesis](research/M005/SUMMARY.md) records source-inspected boundaries and
 historical receipts; no M005 arithmetic or loop check was executed during
 research. The living [product roadmap](PRODUCT-ROADMAP.md) and
 [language-maturity record](LANGUAGE-MATURITY.md) retain the ranked successors

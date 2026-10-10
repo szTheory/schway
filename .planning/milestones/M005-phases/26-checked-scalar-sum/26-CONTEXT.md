@@ -136,7 +136,7 @@ Phase 26 acceptance criterion cannot be met otherwise.
   next capabilities.
 - `.planning/STANDING-VERDICTS.md` — dependency posture, independent derivation,
   evidence controls, and known process pitfalls.
-- `.planning/research/SUMMARY.md` — M005 source-inspection findings, proposed
+- `.planning/research/M005/SUMMARY.md` — M005 source-inspection findings, proposed
   architecture, cross-ecosystem arithmetic alternatives, and failure modes.
 - `.planning/milestones/M004-phases/25-separate-pointer-successors-and-integrated-utility/25-CONTEXT.md`
   — accepted copy-local dependency posture and completed source/compiler

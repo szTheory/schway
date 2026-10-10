@@ -43,7 +43,7 @@ The FizzBuzz result covers `1…n`: use `FizzBuzz` for multiples of 15, `Fizz` f
 - `.planning/ROADMAP.md` §Phase 27 — goal, success criteria, runnable witness, evidence boundary, and phase ownership.
 - `.planning/REQUIREMENTS.md` — U64-02, APP-08, APP-09, EVD-12, and DX-16 acceptance requirements and traceability.
 - `.planning/PROJECT.md` — project value and constraints for feedback, correctness, runtime posture, dependencies, source authority, evidence, portability, and security.
-- `.planning/research/SUMMARY.md` — M005 research synthesis and source-inspected implementation boundaries.
+- `.planning/research/M005/SUMMARY.md` — M005 research synthesis and source-inspected implementation boundaries.
 
 ### Living direction and preserved decisions
 - `.planning/PRODUCT-ROADMAP.md` — ranked next capabilities, consumer-first scope, and current evidence/debt references.

@@ -733,7 +733,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 - `OpCall` and interprocedural equivalence deferred out of M001 (Phase 5,
   D-05-32) and promoted to M002's lead charter.
 
-- **M002 roadmap (2026-09-08):** adopted `research/SUMMARY.md`'s reconciled
+- **M002 roadmap (2026-09-08):** adopted `research/M005/SUMMARY.md`'s reconciled
   build order with **one documented departure** — SUMMARY's Phase 4 is split
   into Phases 10 and 11 at the ARCHITECTURE.md Stage 6 / Stage 7 boundary.
   Reason: as one phase it would carry 12 of 30 requirements and two brand-new

@@ -377,7 +377,7 @@ Security enforcement is enabled at ASVS Level 1 in `.planning/config.json`. This
 
 - `.planning/milestones/M005-phases/26-checked-scalar-sum/26-CONTEXT.md` — locked scope, evidence and deferrals.
 - `.planning/ROADMAP.md` Phase 26/27 and `.planning/REQUIREMENTS.md` U64-01/FLOW-01/FLOW-02/APP-07 — phase ownership and outcomes.
-- `.planning/PRODUCT-ROADMAP.md`, `.planning/LANGUAGE-MATURITY.md`, `.planning/STANDING-VERDICTS.md`, `.planning/research/SUMMARY.md` — capability sequence, source/refusal frontier and evidence posture.
+- `.planning/PRODUCT-ROADMAP.md`, `.planning/LANGUAGE-MATURITY.md`, `.planning/STANDING-VERDICTS.md`, `.planning/research/M005/SUMMARY.md` — capability sequence, source/refusal frontier and evidence posture.
 - `internal/compiler/ast/ast.go`, `syntax/{lexer,parser,format}.go`, `core/core.go`, `check/check.go`, `corevalidate/corevalidate.go`, `originvalidate/originvalidate.go`, `pathoracle/pathoracle.go`, `interp/interp.go`, `cgen/cgen_program.go`, `native/native_app.go`, `cmd/schway/main.go` — current implementation seams. Read-only inspection; no test/build execution.
 - [WG14 C draft N1570](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf) §6.2.5 — unsigned integer arithmetic is modulo, not checked language arithmetic.
 - [Rust `u64::checked_add`](https://doc.rust-lang.org/std/primitive.u64.html#method.checked_add) — explicit checked addition returns an overflow signal; comparison only.

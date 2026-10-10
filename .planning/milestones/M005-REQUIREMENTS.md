@@ -13,7 +13,7 @@ For current requirements, see `.planning/REQUIREMENTS.md`.
 **Defined:** 2026-10-02
 **Core Value:** Give an AI agent and a human reviewer the shortest reliable path from intent to sound, reproducible evidence without wasting iteration time or hiding runtime costs.
 
-Research: [M005 synthesis](research/SUMMARY.md). These requirements follow the approved M005 scope and research recommendations. M004's acceptance record is preserved at [M004-REQUIREMENTS.md](milestones/M004-REQUIREMENTS.md).
+Research: [M005 synthesis](research/M005/SUMMARY.md). These requirements follow the approved M005 scope and research recommendations. M004's acceptance record is preserved at [M004-REQUIREMENTS.md](milestones/M004-REQUIREMENTS.md).
 
 ## M005 Requirements
 
