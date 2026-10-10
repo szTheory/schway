@@ -21,8 +21,8 @@ Research: [M005 synthesis](research/SUMMARY.md). These requirements follow the a
 ### Runnable applications
 
 - [x] **APP-07**: A caller can run `sum_to_n` from ordinary Schway source through the public application route and obtain `0 → 0`, `10 → 55`, and `1,000 → 500,500`.
-- [ ] **APP-08**: A caller can run FizzBuzz from ordinary Schway source and obtain exact output for the sequence `1…n`, including fixed labels, decimal values, line breaks, and the final newline.
-- [ ] **APP-09**: Both M005 programs accept `0 ≤ n ≤ 1,000`; larger values fail without application output. Application writes remain bounded by the existing 65,536-byte ceiling, and exceeding that ceiling is a non-success outcome.
+- [x] **APP-08**: A caller can run FizzBuzz from ordinary Schway source and obtain exact output for the sequence `1…n`, including fixed labels, decimal values, line breaks, and the final newline.
+- [x] **APP-09**: Both M005 programs accept `0 ≤ n ≤ 1,000`; larger values fail without application output. Application writes remain bounded by the existing 65,536-byte ceiling, and exceeding that ceiling is a non-success outcome.
 
 ### Independent evidence and usability
 
@@ -62,8 +62,8 @@ APP-09 and EVD-12 span both programs and close with Phase 27.
 | FLOW-01 | Phase 26 | Complete |
 | FLOW-02 | Phase 26 | Complete |
 | APP-07 | Phase 26 | Complete |
-| APP-08 | Phase 27 | Pending |
-| APP-09 | Phase 27 | Pending |
+| APP-08 | Phase 27 | Complete |
+| APP-09 | Phase 27 | Complete |
 | EVD-12 | Phase 27 | Pending |
 | DX-16 | Phase 27 | Pending |
 
