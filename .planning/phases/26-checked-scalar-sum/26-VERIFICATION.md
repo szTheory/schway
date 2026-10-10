@@ -1,6 +1,6 @@
 ---
 phase: 26-checked-scalar-sum
-verified: 2026-10-03T11:23:18Z
+verified: 2026-10-10T14:21:07Z
 status: passed
 score: 5/5 roadmap truths verified
 covered_files:
@@ -51,7 +51,7 @@ covered_files:
   - internal/compiler/syntax/syntax_test.go
   - internal/compiler/syntax/token.go
   - testdata/phase16/public-emitter-consumers.json
-covered_digest: "v2:sha256:1828516bd9babb893eea41ce430d065d04efaf419b3e95b7d369219a5dfd5407"
+covered_digest: "v3:sha256:0148c9dc2e4aa542644ab26e365bf37e8cc96323891c66ec7c2decedfa64ba84"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -63,9 +63,21 @@ decision_coverage:
 # Phase 26: Checked Scalar Sum Verification Report
 
 **Phase Goal:** A developer can run a source-authored scalar loop that computes and prints the exact bounded `sum_to_n` result, with defined overflow and explicit refusal of unsafe loop-carried state.
-**Verified:** 2026-10-03T11:23:18Z
+**Verified:** 2026-10-10T00:00:00Z
 **Status:** passed
-**Re-verification:** No — initial verification
+**Re-verification:** Yes — after Phase 27 modified covered source (regression check against HEAD 127ee3f)
+
+## Re-verification Summary (Phase 27 regression check)
+
+Prior report (2026-10-03, passed, 5/5) went stale because Phase 27 touched covered files. Re-checked at HEAD 127ee3f:
+
+- `git diff --stat 6224f8b HEAD -- ':!.planning'` is empty: non-planning source at HEAD equals the hosted-evidence revision 6224f8b.
+- Hosted run [38054848320](https://github.com/szTheory/schway/actions/runs/38054848320) at 6224f8b: success; checks (ubuntu, macos) and current-evidence aggregates passed (go vet, go test ./..., go test -race ./...). Phase 26 focused job and corpus receipt job skipped (dispatch-gated); Phase 26 tests are part of `go test ./...`.
+- Source inspection at HEAD: interpreter checked add (`interp.go` OpAddChecked, `^uint64(0)-a < b` defect before any wrapped value) intact; C emitter emits `schway: U64 addition overflow` + exit 65; fixed-point budgets of 65536 remain in `check/scalar.go`, `corevalidate.go` (transferLimit) and `originvalidate.go`; `executionpeer` still has occurrence tracking; `examples/sum_to_n.schway` unchanged in shape (guard `n < 1001`, loop, repeated scalar copy, defect "input exceeds 1000"); `TestPhase26PublicAppCLI` still pins 0/55/500500 and 1001 exit 65, plus overflow tuple; 27 `TestPhase26*` functions present (ExactSumMatrix, OverflowProcessOutcome, PeerOccurrenceOrder, three AnalysisExhaustion homes, etc.); `ci.yml` still carries the dispatch-gated phase26-focused job.
+- 26-VALIDATION.md and 26-SECURITY.md re-audited this session (21/21 tests exist, 12/12 threats closed). No Phase 26 task commits since the clean 26-REVIEW.md; Phase 27 diff reviewed in 27-REVIEW.md.
+- No Phase 26 guarantee weakened. Phase 27 additions (fizzbuzz, `TestPhase27AppBoundary`) sit alongside, not in place of, Phase 26 assertions. Requirement IDs U64-01, FLOW-01, FLOW-02, APP-07 from PLAN frontmatter all appear in REQUIREMENTS.md (marked Complete, mapped to Phase 26); no orphans.
+
+Limitation: no local test run (hosted-only policy); the focused Phase 26 job was not re-dispatched at 6224f8b, so behavioral evidence for Phase 26 specifically comes from the full-suite run plus the earlier focused run 37118144404.
 
 ## Goal Achievement
 
@@ -169,5 +181,5 @@ No roadmap truth or requirement is missing. One 26-05 plan sentence overstates t
 
 ---
 
-_Verified: 2026-10-03T11:23:18Z_  
+_Verified: 2026-10-10T00:00:00Z_  
 _Verifier: the agent (gsd-verifier)_
