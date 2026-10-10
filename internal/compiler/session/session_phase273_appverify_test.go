@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -224,5 +226,38 @@ func TestPhase273RunNativeSurfacesNamedCode(t *testing.T) {
 	}
 	if result.Status != protocol.StatusOperational || len(result.Diagnostics) == 0 || result.Diagnostics[0].Code != "native.event_capacity_exhausted" {
 		t.Fatalf("run-native result status=%q diagnostics=%+v, want operational native.event_capacity_exhausted", result.Status, result.Diagnostics)
+	}
+}
+
+// TestPhase273AppVerifyOneLevelExhaustionFails pins WR-01: capacity is static
+// and level-independent, so exhaustion at exactly one optimization level is a
+// divergence and must be reported as fail, never as benign unsupported.
+func TestPhase273AppVerifyOneLevelExhaustionFails(t *testing.T) {
+	realClang, err := exec.LookPath("clang")
+	if err != nil {
+		t.Skip("env:clang toolchain unavailable, skipping one-level exhaustion exercise")
+	}
+	wrapper := filepath.Join(t.TempDir(), "clang-shrink-o3")
+	script := "#!/bin/sh\n" +
+		"o3=0; src=\n" +
+		"for a in \"$@\"; do case \"$a\" in -O3) o3=1;; *.c) src=\"$a\";; esac; done\n" +
+		"if [ \"$o3\" = 1 ] && [ -n \"$src\" ]; then sed -i.bak 's/#define SCHWAY_EVENT_CAPACITY [0-9]*u/#define SCHWAY_EVENT_CAPACITY 1u/' \"$src\"; fi\n" +
+		"exec " + realClang + " \"$@\"\n"
+	if err := os.WriteFile(wrapper, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	runner := native.DefaultRunner()
+	runner.ClangPath = wrapper
+	report, err := session.VerifyApplicationCases(context.Background(), phase273SumToNSource(t),
+		phase273Cases(phase273Case{"n14", "14", "105"}), runner)
+	if err != nil {
+		t.Fatalf("one-level exhaustion returned error: %v", err)
+	}
+	if report.Verified || len(report.Cases) != 1 {
+		t.Fatalf("report=%+v, want unverified single case", report)
+	}
+	got := report.Cases[0]
+	if got.Status != session.ReplayStatusFail || !strings.Contains(got.Diagnostic, "exhausted at -O3 only") {
+		t.Fatalf("case status=%q diagnostic=%q, want fail naming -O3 only", got.Status, got.Diagnostic)
 	}
 }

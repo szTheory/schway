@@ -323,31 +323,27 @@ func VerifyApplicationCases(ctx context.Context, source []byte, cases ReplayCase
 			markReplayFailures(&report, validIndices, "-O0 generated-C execution failed")
 			return finalizeReplayReport(report), fmt.Errorf("run generated C at -O0: %w", err)
 		}
-		exhaustedAt := make([]string, len(validIndices))
-		o3Positions := make([]int, 0, len(validIndices))
-		o3Inputs := make([]string, 0, len(validIndices))
-		for pairIndex := range validIndices {
-			if o0.Exhausted[pairIndex] {
-				exhaustedAt[pairIndex] = "-O0"
-				continue
-			}
-			o3Positions = append(o3Positions, pairIndex)
-			o3Inputs = append(o3Inputs, validInputs[pairIndex])
-		}
-		o3, err := runAppVerifyLevel(ctx, runner, cSource, "-O3", o3Inputs)
+		// Capacity is static and level-independent, so both levels must agree on
+		// exhaustion. Run every input at -O3 even when -O0 exhausted, so a
+		// one-level exhaustion is detected instead of masked.
+		o3, err := runAppVerifyLevel(ctx, runner, cSource, "-O3", validInputs)
 		if err != nil {
 			markReplayFailures(&report, validIndices, "-O3 generated-C execution failed")
 			return finalizeReplayReport(report), fmt.Errorf("run generated C at -O3: %w", err)
 		}
-		o3Slot := make(map[int]int, len(o3Positions))
-		for slot, pairIndex := range o3Positions {
-			o3Slot[pairIndex] = slot
-			if o3.Exhausted[slot] {
-				exhaustedAt[pairIndex] = "-O3"
-			}
-		}
 		for pairIndex, reportIndex := range validIndices {
-			if level := exhaustedAt[pairIndex]; level != "" {
+			if o0.Exhausted[pairIndex] != o3.Exhausted[pairIndex] {
+				level := "-O3"
+				if o0.Exhausted[pairIndex] {
+					level = "-O0"
+				}
+				report.Cases[reportIndex].Engines = map[string]execution.Execution{"interpreter": interpreted[reportIndex]}
+				report.Cases[reportIndex].Status = ReplayStatusFail
+				report.Cases[reportIndex].Diagnostic = fmt.Sprintf("event capacity exhausted at %s only; the other optimization level completed, so the levels diverge", level)
+				continue
+			}
+			if o0.Exhausted[pairIndex] {
+				level := "-O0"
 				// An exhausted case has no native evidence: only the interpreter
 				// engine is reported, and unsupported is claimed only when the
 				// interpreter outcome already equals the expected outcome.
@@ -368,7 +364,7 @@ func VerifyApplicationCases(ctx context.Context, source []byte, cases ReplayCase
 				report.Cases[reportIndex].Diagnostic = "-O0 evidence could not be projected to execution schema 2"
 				continue
 			}
-			o3Execution, projectionErr := ProjectExecutionSchema2(program, o3.Pairs[o3Slot[pairIndex]].Execution)
+			o3Execution, projectionErr := ProjectExecutionSchema2(program, o3.Pairs[pairIndex].Execution)
 			if projectionErr != nil {
 				report.Cases[reportIndex].Diagnostic = "-O3 evidence could not be projected to execution schema 2"
 				continue
