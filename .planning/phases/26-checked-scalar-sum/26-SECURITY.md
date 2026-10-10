@@ -61,3 +61,13 @@ Source inspection found all declared mitigations. The secure-phase workflow's au
 - [x] `status: verified` set in frontmatter
 
 **Approval:** verified 2026-10-03 at the configured L1 depth.
+
+## Security Audit 2026-10-10
+
+| Metric | Count |
+|---|---|
+| Threats found | 12 |
+| Closed | 12 |
+| Open | 0 |
+
+Re-audit after Phase 27 changed covered source (ASVS L1 short-circuit: register authored at plan time, threats_open 0). Grep-depth recheck confirms the 65,536 transfer budgets in `check/scalar.go`, `corevalidate/corevalidate.go`, and `originvalidate/originvalidate.go`, the `MaxSourceBytes`/`MaxTokens` parser bounds, and every control named in the register still exist. Full hosted run [38054848320](https://github.com/szTheory/schway/actions/runs/38054848320) at 6224f8b passed on Ubuntu and macOS.
