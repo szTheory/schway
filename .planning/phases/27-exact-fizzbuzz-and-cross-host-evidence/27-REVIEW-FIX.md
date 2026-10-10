@@ -24,25 +24,25 @@ Edits and commits were made in the main checkout on `phase26-validation`, not in
 
 ## Fixed Issues
 
-### WR-01: C application keeps executing after an output-limit failure
+### WR-01: C application keeps executing after an output-limit failure; the interpreter stops
 
 **Files modified:** `internal/compiler/cgen/cgen.go`, `internal/compiler/cgen/cgen_phase27_output_test.go`
 **Commit:** b96f1b7
 **Applied fix:** `schway_application_output_failure()` now flushes stdout, prints the fixed stderr line and calls `exit(65)`. This matches the interpreter's terminal defect. New test `TestPhase27OutputFailureStopsExecution` uses a program that writes and then hits a later `defect`. Before the fix it printed a second stderr line; now only the limit line appears. Status: fixed, requires human verification (control-flow semantics).
 
-### WR-02: Evidence capture reports returned/complete after output-limit failure
+### WR-02: Evidence capture reports `returned/complete` when the app already failed on output limit
 
 **Files modified:** `internal/compiler/session/session_phase27_output_test.go`
 **Commit:** 53cf8c1
 **Applied fix:** Resolved by WR-01. The process exits before the capture is written, so the report is `incomplete` with exit 65 preserved. `TestPhase27OutputEvidenceSeparation` was updated to expect `native.evidence_incomplete`, no Execution and not Verified, in place of the old complete/returned expectation.
 
-### WR-03: expectApplication loosens U64 application validation
+### WR-03: `expectApplication` loosens U64 application validation
 
 **Files modified:** `internal/compiler/native/native_app_test.go`
 **Commit:** f815e37
 **Applied fix:** Partial. Threading the entry return type into the decoder would change the public `RunApplicationWithEvidence` API, and callers only hold an artifact path. The review's alternative, coupling value to return-event shape, was already enforced by `validateExecution`. New test `TestPhase27ApplicationReturnShapeCoupling` pins it: an empty value with a source-place return event, and a non-empty value with a Unit-form event, are both rejected. Residual: a forged Unit return for a U64 entry is not detectable without the type.
 
-### WR-04: Formatter splits multi-operator let bindings
+### WR-04: Formatter splits multi-operator `let` bindings across lines
 
 **Files modified:** `internal/compiler/syntax/format.go`, `internal/compiler/syntax/syntax_test.go`
 **Commit:** 5fbc09d
