@@ -2,8 +2,11 @@ package session_test
 
 import (
 	"os"
+	"sort"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/corevalidate"
@@ -311,5 +314,42 @@ func TestPhase29GateInterpreterVectors(t *testing.T) {
 		if final.Kind != "function.defected" || final.Output != "byte index out of bounds" {
 			t.Fatalf("len %d: final event = %+v, want function.defected byte index out of bounds", len(input), final)
 		}
+	}
+}
+
+// TestPhase29GateCostReading is the interpreter Stage-A cost reading (D-14):
+// an order-of-magnitude read, never the D-12 cap record. It is opt-in.
+func TestPhase29GateCostReading(t *testing.T) {
+	if os.Getenv("SCHWAY_SPIKE008") != "1" {
+		t.Skip("SCHWAY_SPIKE008 is not 1; the Stage-A cost reading is opt-in")
+	}
+	program := phase29Library(t)
+	workloads := []struct {
+		size int
+		want string
+	}{
+		{4096, "2170679522"},
+		{16384, "2967061426"},
+		{65536, "2006388466"},
+	}
+	for _, workload := range workloads {
+		input := phase29Repeat(0xFF, workload.size)
+		var runs []time.Duration
+		for run := 0; run < 7; run++ {
+			begin := time.Now()
+			result, err := interp.RunByteViewForTest(program, "adler32", input)
+			elapsed := time.Since(begin)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.Outcome.Kind != execution.OutcomeReturned || result.Outcome.Value != workload.want {
+				t.Fatalf("%d x 0xFF run %d: outcome = %+v, want returned %s", workload.size, run, result.Outcome, workload.want)
+			}
+			if run > 0 {
+				runs = append(runs, elapsed)
+			}
+		}
+		sort.Slice(runs, func(i, j int) bool { return runs[i] < runs[j] })
+		t.Logf("interpreter size=%s median=%s max=%s", strconv.Itoa(workload.size), runs[len(runs)/2], runs[len(runs)-1])
 	}
 }
