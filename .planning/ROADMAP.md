@@ -81,7 +81,7 @@ preserving the acceptance behavior below.
 
 **Research flag**: Standard. Enumerate and pin every test, guide script, and hosted gate that asserts an exit code before changing any (PITFALLS 13); never renumber 65 or 69. N3 (duplicated capacity literal) is folded into the named table.
 
-**Plans**: 8/8 plans executed (28-08 gap closure for G-28-3 pending)
+**Plans**: 8/8 plans complete (28-08 gap closure for G-28-3 pending)
 
 Plans:
 **Wave 1**
@@ -195,7 +195,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 28. Exit Classes, Verify Report, and Entry Pruning | 8/8 | In Progress |  |
+| 28. Exit Classes, Verify Report, and Entry Pruning | 8/8 | Complete    | 2026-10-11 |
 | 29. Byte Views and the Adler-32 Library | 0/TBD | Not started | - |
 | 30. Local Modules | 0/TBD | Not started | - |
 | 31. Bounded File Checksum and Second Consumer | 0/TBD | Not started | - |

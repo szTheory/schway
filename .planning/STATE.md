@@ -2,14 +2,14 @@
 gsd_state_version: "1.0"
 milestone: M006
 milestone_name: Bounded Byte Utility and Local Modules
-current_phase: 28
-current_phase_name: Exit Classes, Verify Report, and Entry Pruning
-status: executing
-stopped_at: Completed 28-08-PLAN.md
-last_updated: "2026-10-11T19:15:42.849Z"
+current_phase: 29
+current_phase_name: Byte Views and the Adler-32 Library
+status: planning
+stopped_at: Phase 28 complete, ready to plan Phase 29
+last_updated: "2026-10-11T19:21:40.155Z"
 last_activity: 2026-10-11
-last_activity_desc: Phase 28 execution started
-state_head: 0d91b86e6a819c974f60fe3a56bd5463e0aa6196
+last_activity_desc: Phase 28 complete, transitioned to Phase 29
+state_head: 980d7c7603a53380dbe7b21614053a0713b4cc7d
 progress:
   total_phases: 5
   completed_phases: 1
@@ -123,10 +123,10 @@ plans.
 ## Current Position
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
-Phase: 28 (Exit Classes, Verify Report, and Entry Pruning) — EXECUTING
-Plan: 2 of 8
-Status: Ready to execute
-Last activity: 2026-10-11 — Phase 28 execution started
+Phase: 29 — Byte Views and the Adler-32 Library
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-11 — Phase 28 complete, transitioned to Phase 29
 
 Progress: [██░░░░░░░░] 20% (1/5 M006 phases)
 
@@ -266,7 +266,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 239
+- Total plans completed: 240
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -285,7 +285,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 27.1 | 3 | - | - |
 | 27.2 | 3 | - | - |
 | 27.3 | 4 | - | - |
-| 28 | 7 | - | - |
+| 28 | 8 | - | - |
 
 The archived aggregate preserves the cumulative project total. The detailed
 rows above are the M004 subset; do not recompute the project total from that
@@ -868,7 +868,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-10-11T19:15:42.823Z
-Stopped at: Completed 28-08-PLAN.md
+Stopped at: Phase 28 complete, ready to plan Phase 29
 Resume file: None
 Next action: Phase 28 complete and verified (4/4, 2026-10-10). Optional: /gsd-code-review 28 --fix --all for the 6 open review findings (WR-02 exit-3-on-write-failure, WR-04 latent entryErr). Then /gsd-discuss-phase 29.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
