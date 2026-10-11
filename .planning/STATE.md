@@ -5,16 +5,16 @@ milestone_name: Bounded Byte Utility and Local Modules
 current_phase: 28
 current_phase_name: Exit Classes, Verify Report, and Entry Pruning
 status: executing
-stopped_at: Completed 28-05-PLAN.md
-last_updated: "2026-10-11T02:35:27.040Z"
+stopped_at: Completed 28-06-PLAN.md
+last_updated: "2026-10-11T02:41:16.928Z"
 last_activity: 2026-10-10
 last_activity_desc: Phase 28 execution started
-state_head: 1139ef8c85291e00ab331a834b3ca5efb96efa26
+state_head: 95dab2e097c6f9cd815e1688623da94d65920e96
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -124,7 +124,7 @@ plans.
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
 Phase: 28 (Exit Classes, Verify Report, and Entry Pruning) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: Ready to execute
 Last activity: 2026-10-10 — Phase 28 execution started
 
@@ -502,6 +502,7 @@ subset alone.
 | Phase 28 P03 | 20min | 3 tasks | 7 files |
 | Phase 28 P04 | 45min | 2 tasks | 13 files |
 | Phase 28 P05 | 25min | 2 tasks | 10 files |
+| Phase 28 P06 | 25min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -632,6 +633,7 @@ decision history; they no longer describe current status.
 - [Phase 28]: 28-03: app verify schema bumped to lang.app-verification/2; exhausted cases carry fixed-size outcome_digest (D-13/D-15)
 - [Phase 28]: 28-04: main precedence (D-01); Phase4CheckedProgram returns the unpruned checked program; entry ambiguity refused after admission as core.entry_ambiguous
 - [Phase 28]: 28-05: goldens stay frozen; pin flips live in dated allow-list maps (identity, manifest)
+- [Phase 28]: 28-06: admission wired only in command-file layer; exported RunInterpreter/RunNative/runNativeChecked run no origin admission (D-19)
 
 ### Pending Todos
 
@@ -862,8 +864,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-11T02:35:26.877Z
-Stopped at: Completed 28-05-PLAN.md
+Last session: 2026-10-11T02:41:16.871Z
+Stopped at: Completed 28-06-PLAN.md
 Resume file: None
 Next action: After clearing context, run /gsd-execute-phase 28 (7 plans in 6 waves, checked 2026-10-10; plan-check passed with override for two soft scope warnings: 28-06 estimate 110k low-confidence, 28-02 13 files).
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
