@@ -168,3 +168,29 @@ func SetParameterContractModeOverrideForTest(force func() string) (restore func(
 	parameterContractModeOverrideForTest = force
 	return func() { parameterContractModeOverrideForTest = previous }
 }
+
+// SetDisableByteOpLawForTest installs Phase 29's structural bytes_len /
+// bytes_at law-disable seam and returns a restore func. Callers MUST defer
+// the restore immediately.
+func SetDisableByteOpLawForTest(disable bool) (restore func()) {
+	previous := disableByteOpLawForTest
+	disableByteOpLawForTest = disable
+	return func() { disableByteOpLawForTest = previous }
+}
+
+// SetDisableBackEdgeAuthorityLawForTest installs Phase 29's
+// core.scalar_backedge_authority law-disable seam and returns a restore func.
+func SetDisableBackEdgeAuthorityLawForTest(disable bool) (restore func()) {
+	previous := disableBackEdgeAuthorityLawForTest
+	disableBackEdgeAuthorityLawForTest = disable
+	return func() { disableBackEdgeAuthorityLawForTest = previous }
+}
+
+// SetDisableReturnValueLawForTest installs Phase 29's
+// core.return_type_mismatch matching-return law-disable seam and returns a
+// restore func.
+func SetDisableReturnValueLawForTest(disable bool) (restore func()) {
+	previous := disableReturnValueLawForTest
+	disableReturnValueLawForTest = disable
+	return func() { disableReturnValueLawForTest = previous }
+}

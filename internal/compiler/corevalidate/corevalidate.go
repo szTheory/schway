@@ -199,6 +199,21 @@ func (r Result) PeerConsultedFields() []string {
 	return out
 }
 
+// disableByteOpLawForTest skips the structural bytes_len / bytes_at law
+// (core.scalar_operation_invalid) when set. Default false; it exists only so
+// tests can arm a seeded fault proving the law is load-bearing.
+var disableByteOpLawForTest bool
+
+// disableBackEdgeAuthorityLawForTest skips the scalar place-type and OpCopy
+// type admissions that emit core.scalar_backedge_authority when set. Default
+// false; test-only seeded fault for the Phase 29 neighbor rows.
+var disableBackEdgeAuthorityLawForTest bool
+
+// disableReturnValueLawForTest skips the block-replay "returned place type
+// equals the function return type" law (core.return_type_mismatch) when set. Default false;
+// test-only seeded fault for the Phase 29 neighbor rows.
+var disableReturnValueLawForTest bool
+
 // Validate is deliberately source-blind. It proves internal consistency of a
 // typed-core statement, not that a coordinated producer translated source
 // truthfully.
@@ -1253,7 +1268,8 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 			} else {
 				shapeOK = shapeOK && operation.RightID == ""
 			}
-			if !v.check(shapeOK && operation.StoreTargetID == "" && operation.TrueEdgeID == "" && operation.FalseEdgeID == "", "core.scalar_operation_invalid", operation.ID) {
+			shapeOK = shapeOK && operation.TargetID != function.Parameter.ID && operation.SourceID != operation.TargetID
+			if !disableByteOpLawForTest && !v.check(shapeOK && operation.StoreTargetID == "" && operation.TrueEdgeID == "" && operation.FalseEdgeID == "", "core.scalar_operation_invalid", operation.ID) {
 				return nil, nil, false
 			}
 		case core.OpScalarStore:
@@ -3089,7 +3105,7 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 				if !v.check(operation.SourceID == "" && types[operation.TypeID].Shape.Constructor == "Unit", core.ReturnTypeMismatch, operation.ID) {
 					return false
 				}
-			} else if !v.check(types[source.TypeID].Shape.Constructor == function.ReturnType, core.ReturnTypeMismatch, operation.ID) {
+			} else if !disableReturnValueLawForTest && !v.check(types[source.TypeID].Shape.Constructor == function.ReturnType, core.ReturnTypeMismatch, operation.ID) {
 				return false
 			}
 			blockID, known := blockOfOperation[operation.ID]
@@ -4392,7 +4408,7 @@ func (v *validator) validateScalarFixedPoint(function *core.Function, types map[
 	for _, place := range linear.Places {
 		constructor := types[place.TypeID].Shape.Constructor
 		viewParameter := constructor == "ByteView" && place.ID == function.Parameter.ID && function.Parameter.Type == "ByteView"
-		if !v.check(constructor == "U64" || constructor == "Bool" || viewParameter, "core.scalar_backedge_authority", place.ID) {
+		if !disableBackEdgeAuthorityLawForTest && !v.check(constructor == "U64" || constructor == "Bool" || viewParameter, "core.scalar_backedge_authority", place.ID) {
 			return false
 		}
 	}
@@ -4519,7 +4535,7 @@ func (v *validator) validateScalarFixedPoint(function *core.Function, types map[
 					}
 					sourceType := types[places[operation.SourceID].TypeID].Shape.Constructor
 					targetType := types[places[operation.TargetID].TypeID].Shape.Constructor
-					if !v.check((sourceType == "U64" || sourceType == "Bool") && sourceType == targetType, "core.scalar_backedge_authority", operation.ID) {
+					if !disableBackEdgeAuthorityLawForTest && !v.check((sourceType == "U64" || sourceType == "Bool") && sourceType == targetType, "core.scalar_backedge_authority", operation.ID) {
 						return false
 					}
 					state[operation.TargetID] = source

@@ -1331,12 +1331,15 @@ func PublishProblemsFor(function core.Function, calleeContracts map[string]calle
 	if problem := phase27ArithmeticProblem(function); problem != nil {
 		return []Problem{*problem}
 	}
+	if problem := phase29ByteOpProblem(function); problem != nil {
+		return []Problem{*problem}
+	}
 	if hasRemainderOperation(function) {
 		valid, zeroOperationID := originScalarFixedPointWithFailure(function)
 		if zeroOperationID != "" {
 			return []Problem{{Code: "core.scalar_remainder_zero", Detail: zeroOperationID}}
 		}
-		if !valid {
+		if !valid && !disableScalarAnalysisLawForTest {
 			return []Problem{{Code: "core.scalar_analysis_invalid", Detail: function.ID}}
 		}
 	}
@@ -1431,6 +1434,48 @@ func phase27ArithmeticProblem(function core.Function) *Problem {
 			want = "Bool"
 		}
 		if places[operation.SourceID] != "U64" || places[operation.RightID] != "U64" || operation.RightID == "" || operation.TargetID == "" || types[operation.TypeID] != want || places[operation.TargetID] != want || operation.StoreTargetID != "" || operation.TrueEdgeID != "" || operation.FalseEdgeID != "" {
+			return &Problem{Code: "core.scalar_operation_invalid", Detail: fmt.Sprintf("%s: invalid %s operation %q", function.ID, operation.Kind, operation.ID)}
+		}
+	}
+	return nil
+}
+
+// disableByteOpLawForTest skips phase29ByteOpProblem when set. Default false;
+// it exists only so tests can arm a seeded fault proving the law is
+// load-bearing.
+var disableByteOpLawForTest bool
+
+// disableScalarAnalysisLawForTest skips the scalar fixed-point refusal
+// (core.scalar_analysis_invalid) when set. Default false; test-only seeded
+// fault for the Phase 29 neighbor rows.
+var disableScalarAnalysisLawForTest bool
+
+// phase29ByteOpProblem independently derives the operand and result shapes of
+// bytes_len / bytes_at from core type facts: a ByteView source, a U64 result
+// in a fresh (non-parameter) U64 place, an index that exists only on bytes_at
+// and is U64, and no store or edge fields. The origin peer must refuse a
+// forged byte operation on its own rather than relying on corevalidate.
+func phase29ByteOpProblem(function core.Function) *Problem {
+	if function.Linear == nil || disableByteOpLawForTest {
+		return nil
+	}
+	types := make(map[string]string, len(function.Linear.Types))
+	for _, fact := range function.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	places := make(map[string]string, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = types[place.TypeID]
+	}
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind != core.OpBytesLen && operation.Kind != core.OpBytesAt {
+			continue
+		}
+		indexOK := operation.RightID == ""
+		if operation.Kind == core.OpBytesAt {
+			indexOK = operation.RightID != "" && places[operation.RightID] == "U64"
+		}
+		if places[operation.SourceID] != "ByteView" || !indexOK || operation.TargetID == "" || operation.TargetID == function.Parameter.ID || places[operation.TargetID] != "U64" || types[operation.TypeID] != "U64" || operation.StoreTargetID != "" || operation.TrueEdgeID != "" || operation.FalseEdgeID != "" {
 			return &Problem{Code: "core.scalar_operation_invalid", Detail: fmt.Sprintf("%s: invalid %s operation %q", function.ID, operation.Kind, operation.ID)}
 		}
 	}

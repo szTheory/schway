@@ -63,3 +63,20 @@ func SetDisableOpCallOriginConsultForTest(disable bool) (restore func()) {
 	disableOpCallOriginConsultForTest = disable
 	return func() { disableOpCallOriginConsultForTest = previous }
 }
+
+// SetDisableByteOpLawForTest installs Phase 29's bytes_len / bytes_at law
+// disable seam and returns a restore func. Callers MUST defer the restore
+// immediately.
+func SetDisableByteOpLawForTest(disable bool) (restore func()) {
+	previous := disableByteOpLawForTest
+	disableByteOpLawForTest = disable
+	return func() { disableByteOpLawForTest = previous }
+}
+
+// SetDisableScalarAnalysisLawForTest installs Phase 29's
+// core.scalar_analysis_invalid law-disable seam and returns a restore func.
+func SetDisableScalarAnalysisLawForTest(disable bool) (restore func()) {
+	previous := disableScalarAnalysisLawForTest
+	disableScalarAnalysisLawForTest = disable
+	return func() { disableScalarAnalysisLawForTest = previous }
+}
