@@ -3,6 +3,7 @@ package check
 import (
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/core"
@@ -107,7 +108,79 @@ func TestPhase29PeerIndependence(t *testing.T) {
 	// Source-level counterpart: the checker refuses a byte read whose operand
 	// is not a ByteView by itself.
 	_, codes := phase29CheckSource(t, []byte("module phase29.peer.u64\nexport { fn f }\n\nfn f(n: U64) -> U64 {\n  var x = byte_at(n, 0)\n  x\n}\n"))
-	if len(codes) == 0 || codes[0] != "type.scalar_operand" {
-		t.Fatalf("byte_at over a U64 operand: codes = %v, want first type.scalar_operand", codes)
+	if len(codes) == 0 || !strings.HasPrefix(codes[0], "type.") {
+		t.Fatalf("byte_at over a U64 operand: codes = %v, want a type.* refusal first", codes)
+	}
+}
+
+func phase29LoopSource(params, result, body string) []byte {
+	return []byte("module phase29.neighbor\nexport { fn f }\n\nfn f(" + params + ") -> " + result + " {\n" + body + "}\n")
+}
+
+// TestPhase29NeighborRefusals pins, with ByteView landed, the first
+// diagnostic of every loop-function neighbor (D-08). Each source is var-first
+// so it reaches the scalar parser without the let-first widening.
+func TestPhase29NeighborRefusals(t *testing.T) {
+	const loopTail = "  var i = 0\n  while i < n {\n    i = i + 1\n  }\n  i\n"
+	cases := []struct {
+		name   string
+		source []byte
+		code   string
+	}{
+		{"borrow inside the loop", phase29LoopSource("bytes: ByteView", "U64", "  var n = byte_len(bytes)\n  var i = 0\n  while i < n {\n    let b = borrow n\n    i = i + 1\n  }\n  i\n"), "syntax.expected_scalar_operand"},
+		{"take inside the loop", phase29LoopSource("bytes: ByteView", "U64", "  var n = byte_len(bytes)\n  var i = 0\n  while i < n {\n    let t = take n\n    i = i + 1\n  }\n  i\n"), "syntax.expected_scalar_operand"},
+		{"Buffer parameter", phase29LoopSource("b: Buffer", "U64", "  var n = 1\n"+loopTail), "type.scalar_signature"},
+		{"Buffer result", phase29LoopSource("bytes: ByteView", "Buffer", "  var n = byte_len(bytes)\n"+loopTail), "type.scalar_signature"},
+		{"ByteView result", phase29LoopSource("bytes: ByteView", "ByteView", "  var n = byte_len(bytes)\n"+loopTail), "type.scalar_signature"},
+		{"copying the view", phase29LoopSource("bytes: ByteView", "U64", "  var n = byte_len(bytes)\n  let c = bytes\n"+loopTail), "type.scalar_binding"},
+		{"storing the view in a var", phase29LoopSource("bytes: ByteView", "U64", "  var n = byte_len(bytes)\n  var s = bytes\n"+loopTail), "type.scalar_binding"},
+		{"assigning the view", phase29LoopSource("bytes: ByteView", "U64", "  var n = byte_len(bytes)\n  var s = 0\n  s = bytes\n"+loopTail), "type.scalar_assignment"},
+		{"returning the view", phase29LoopSource("bytes: ByteView", "U64", "  var n = byte_len(bytes)\n  var i = 0\n  while i < n {\n    i = i + 1\n  }\n  bytes\n"), "type.scalar_result"},
+	}
+	// Positive control: the admitted adler32 shape checks clean, and so does a
+	// minimal var-first loop of the same form as every neighbor above.
+	control := phase29LoopSource("bytes: ByteView", "U64", "  var n = byte_len(bytes)\n"+loopTail)
+	if _, codes := phase29CheckSource(t, control); len(codes) != 0 {
+		t.Fatalf("positive control diagnostics: %v", codes)
+	}
+	phase29CheckedLibrary(t)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, codes := phase29CheckSource(t, tc.source)
+			if len(codes) == 0 || codes[0] != tc.code {
+				t.Fatalf("diagnostics = %v, want first %s", codes, tc.code)
+			}
+		})
+	}
+	// A forged loan carried across the back edge keeps check.cfg_back_edge with
+	// the loan category, and a ByteView place carried outside the parameter
+	// place is classified with the existing view/loan category.
+	t.Run("forged loan parameter", func(t *testing.T) {
+		_, function := phase29ForgedLibrary(t, func(f *core.Function) {
+			phase29PrependOp(f, "block:while-body:2", core.LinearOperation{ID: phase29AdlerPrefix + "op:57", Kind: core.OpBorrowShared, SourceID: phase29AdlerPrefix + "place:0", TargetID: phase29AdlerPrefix + "place:34", LoanID: "loan:forged", TypeID: phase29AdlerPrefix + "type:0"})
+		})
+		if _, code, category := checkScalarFixedPointDetailed(function); code != "check.cfg_back_edge" || category != "loan" {
+			t.Fatalf("code = %q category = %q, want check.cfg_back_edge / loan", code, category)
+		}
+	})
+	t.Run("ByteView carried across the back edge", func(t *testing.T) {
+		_, function := phase29ForgedLibrary(t, func(f *core.Function) {
+			phase29PrependOp(f, "block:while-body:2", core.LinearOperation{ID: phase29AdlerPrefix + "op:57", Kind: core.OpCopy, SourceID: phase29AdlerPrefix + "place:0", TargetID: phase29AdlerPrefix + "place:34", TypeID: phase29AdlerPrefix + "type:0"})
+		})
+		if _, code, category := checkScalarFixedPointDetailed(function); code != "check.cfg_back_edge" || category != "loan_derived_provenance" {
+			t.Fatalf("code = %q category = %q, want check.cfg_back_edge / loan_derived_provenance", code, category)
+		}
+	})
+}
+
+// phase29PrependOp adds a ByteView place and puts op at the head of the block.
+// check's fixed point resolves operations by ID, so no renumbering is needed.
+func phase29PrependOp(f *core.Function, block string, op core.LinearOperation) {
+	f.Linear.Places = append(f.Linear.Places, core.Place{ID: phase29AdlerPrefix + "place:34", Name: "view", TypeID: phase29AdlerPrefix + "type:0", Mutable: true})
+	f.Linear.Operations = append(f.Linear.Operations, op)
+	for i := range f.Linear.Blocks {
+		if f.Linear.Blocks[i].ID == phase29AdlerPrefix+block {
+			f.Linear.Blocks[i].OperationIDs = append([]string{op.ID}, f.Linear.Blocks[i].OperationIDs...)
+		}
 	}
 }

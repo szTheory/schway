@@ -312,7 +312,7 @@ func scalarAuthorityCategory(op core.LinearOperation, types map[string]string, p
 			return "resource"
 		case "Owner", "Box", "Buffer":
 			return "owner"
-		case "Loan", "Borrowed", "View":
+		case "Loan", "Borrowed", "View", "ByteView":
 			return "loan_derived_provenance"
 		}
 	default:
