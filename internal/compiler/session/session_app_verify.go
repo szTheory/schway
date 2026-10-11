@@ -28,6 +28,7 @@ const (
 	ApplicationVerifySchema  = "lang.app-verification/2"
 	MaxReplayCasesBytes      = 64 * 1024
 	MaxReplayCaseCount       = 16
+	MaxReplayCaseIDBytes     = 128
 	ReplayCaseSource         = "source"
 	ReplayCaseVerifierModel  = "verifier_model_only"
 	ReplayStatusPass         = "pass"
@@ -115,6 +116,11 @@ type ReplayReport struct {
 	Cases             []ReplayCaseReport `json:"cases"`
 }
 
+// ErrApplicationVerificationReportOversize reports that the encoded report
+// would exceed MaxReplayCasesBytes. It is defense in depth behind the static
+// budget proven by the report-budget test; no file is written when it fires.
+var ErrApplicationVerificationReportOversize = errors.New("application verification report exceeds size limit")
+
 // DecodeReplayCases accepts only one bounded JSON value with no unknown
 // fields. Missing foreign_outcomes stays nil and is rejected by the case
 // validator; ordinary source cases must explicitly declare an empty script.
@@ -148,6 +154,14 @@ func DecodeReplayCases(data []byte) (ReplayCases, error) {
 	for index, replayCase := range cases.Cases {
 		if strings.TrimSpace(replayCase.ID) == "" {
 			return ReplayCases{}, fmt.Errorf("case %d has an empty id", index)
+		}
+		if len(replayCase.ID) > MaxReplayCaseIDBytes {
+			return ReplayCases{}, fmt.Errorf("case %d id exceeds %d bytes (MaxReplayCaseIDBytes)", index, MaxReplayCaseIDBytes)
+		}
+		for position := 0; position < len(replayCase.ID); position++ {
+			if replayCase.ID[position] < 0x20 || replayCase.ID[position] > 0x7e {
+				return ReplayCases{}, fmt.Errorf("case %d id must be printable ASCII (byte %d is not)", index, position)
+			}
 		}
 		if _, exists := seen[replayCase.ID]; exists {
 			return ReplayCases{}, fmt.Errorf("duplicate replay case id %q", replayCase.ID)
@@ -600,7 +614,7 @@ func writeApplicationVerificationReport(path string, report ReplayReport) error 
 		return fmt.Errorf("encode application verification report: %w", err)
 	}
 	if len(encoded)+1 > MaxReplayCasesBytes {
-		return fmt.Errorf("application verification report exceeds %d bytes", MaxReplayCasesBytes)
+		return fmt.Errorf("%w: %d bytes > %d", ErrApplicationVerificationReportOversize, len(encoded)+1, MaxReplayCasesBytes)
 	}
 	directory := filepath.Dir(path)
 	temporary, err := os.CreateTemp(directory, ".schway-app-verification-*")

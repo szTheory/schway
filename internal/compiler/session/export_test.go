@@ -64,3 +64,15 @@ func setQLT03RegisterBytesForTest(bytes []byte) (restore func()) {
 	qlt03RegisterBytes = bytes
 	return func() { qlt03RegisterBytes = previous }
 }
+
+// EventCapacityDiagnosticForTest exposes the named capacity diagnostic so the
+// Phase 28 report-budget test can size its worst case against the real text.
+func EventCapacityDiagnosticForTest(level string) string {
+	return eventCapacityDiagnostic(level)
+}
+
+// WriteApplicationVerificationReportForTest exposes the report writer so the
+// oversize defense can be hit deliberately (D-16).
+func WriteApplicationVerificationReportForTest(path string, report ReplayReport) error {
+	return writeApplicationVerificationReport(path, report)
+}
