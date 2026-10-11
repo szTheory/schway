@@ -184,3 +184,133 @@ func phase29PrependOp(f *core.Function, block string, op core.LinearOperation) {
 		}
 	}
 }
+
+// phase29AdlerMutantSource is the adler32 library body with its per-byte read
+// bound through an in-loop `let step`. The function stays var-first (its first
+// statement is `var a = 1`), so the in-loop `let` is parsed by scalarStatements
+// and the mutant needs no let-first widening.
+const phase29AdlerMutantSource = `module phase29.events.mutant
+
+export {
+  fn adler32
+}
+
+fn adler32(bytes: ByteView) -> U64 {
+  var a = 1
+  var b = 0
+  var i = 0
+  var n = byte_len(bytes)
+  while i < n {
+    let step = byte_at(bytes, i)
+    a = a + step
+    a = a % 65521
+    b = b + a
+    b = b % 65521
+    i = i + 1
+  }
+  var r = b
+  r = r + r
+  r = r + a
+  r
+}
+`
+
+// phase29LoopOperations returns every operation in a block that lies on a
+// cycle through a back edge: reachable from the back edge's target (the loop
+// header) and able to reach the back edge's source.
+func phase29LoopOperations(f core.Function) []core.LinearOperation {
+	succ := map[string][]string{}
+	pred := map[string][]string{}
+	for _, edge := range f.Linear.Edges {
+		succ[edge.FromBlockID] = append(succ[edge.FromBlockID], edge.ToBlockID)
+		pred[edge.ToBlockID] = append(pred[edge.ToBlockID], edge.FromBlockID)
+	}
+	reach := func(start string, next map[string][]string) map[string]bool {
+		seen := map[string]bool{start: true}
+		queue := []string{start}
+		for len(queue) > 0 {
+			current := queue[0]
+			queue = queue[1:]
+			for _, n := range next[current] {
+				if !seen[n] {
+					seen[n] = true
+					queue = append(queue, n)
+				}
+			}
+		}
+		return seen
+	}
+	inLoop := map[string]bool{}
+	for _, edge := range f.Linear.Edges {
+		if edge.Pattern != "back" {
+			continue
+		}
+		forward, backward := reach(edge.ToBlockID, succ), reach(edge.FromBlockID, pred)
+		for id := range forward {
+			if backward[id] {
+				inLoop[id] = true
+			}
+		}
+	}
+	operations := map[string]core.LinearOperation{}
+	for _, operation := range f.Linear.Operations {
+		operations[operation.ID] = operation
+	}
+	var out []core.LinearOperation
+	for _, block := range f.Linear.Blocks {
+		if !inLoop[block.ID] {
+			continue
+		}
+		for _, id := range block.OperationIDs {
+			out = append(out, operations[id])
+		}
+	}
+	return out
+}
+
+func phase29CountKind(operations []core.LinearOperation, kind core.OperationKind) int {
+	count := 0
+	for _, operation := range operations {
+		if operation.Kind == kind {
+			count++
+		}
+	}
+	return count
+}
+
+// TestPhase29NoLoopEventsStructure: the admitted adler32 loop contains no
+// OpCopy (an OpCopy records a value.copied event per execution), and the
+// let-in-loop mutant is observed to contain one, so the walk is not inert.
+func TestPhase29NoLoopEventsStructure(t *testing.T) {
+	adler := func(program core.Program) core.Function {
+		for _, f := range program.Functions {
+			if f.Name == "adler32" {
+				return f
+			}
+		}
+		t.Fatal("adler32 not found")
+		return core.Function{}
+	}
+	library := adler(phase29CheckedLibrary(t))
+	loop := phase29LoopOperations(library)
+	if len(loop) == 0 || phase29CountKind(loop, core.OpBytesAt) != 1 {
+		t.Fatalf("loop walk found %d operations and %d bytes_at; the walk is mis-aimed", len(loop), phase29CountKind(loop, core.OpBytesAt))
+	}
+	if copies := phase29CountKind(loop, core.OpCopy); copies != 0 {
+		t.Fatalf("adler32 loop blocks contain %d OpCopy operations, want 0", copies)
+	}
+
+	// Armed control: the mutant must parse cleanly, check, and carry a copy.
+	parsed := syntax.Parse([]byte(phase29AdlerMutantSource))
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("mutant parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	checked := Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("mutant check diagnostics: %+v", checked.Diagnostics)
+	}
+	mutantLoop := phase29LoopOperations(adler(checked.Program))
+	if copies := phase29CountKind(mutantLoop, core.OpCopy); copies == 0 {
+		t.Fatal("the let-in-loop mutant has no OpCopy in its loop; the structural walk is inert")
+	}
+}
