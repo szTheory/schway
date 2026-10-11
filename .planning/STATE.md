@@ -6,14 +6,14 @@ current_phase: 28
 current_phase_name: Exit Classes, Verify Report, and Entry Pruning
 status: planning
 stopped_at: Phase 28 context gathered
-last_updated: "2026-10-11T00:26:26.013Z"
+last_updated: "2026-10-11T01:38:28.290Z"
 last_activity: 2026-10-10
 last_activity_desc: M006 roadmap created (5 phases, 16/16 requirements mapped)
-state_head: bedbcde1666dbe71e8adc4bc4cbaf833ef54169c
+state_head: 9f4062996bfae54f1ba732658b12cbf2b0bece45
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
+  total_plans: 7
   completed_plans: 0
   percent: 0
 ---
@@ -123,7 +123,7 @@ plans.
 ## Current Position
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
-Phase: 28 of 28–32 (Exit Classes, Verify Report, and Entry Pruning) — not started
+Phase: 28 (Exit Classes, Verify Report, and Entry Pruning) — READY TO EXECUTE
 Plan: —
 Status: Ready to discuss Phase 28
 Last activity: 2026-10-10 — M006 roadmap created (5 phases, 16/16 requirements mapped)
@@ -855,7 +855,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 Last session: 2026-10-11T00:26:25.987Z
 Stopped at: Phase 28 context gathered
 Resume file: .planning/phases/28-exit-classes-verify-report-and-entry-pruning/28-CONTEXT.md
-Next action: After clearing context, run /gsd-plan-phase 28 (Phase 28 context captured 2026-10-10 in 28-CONTEXT.md).
+Next action: After clearing context, run /gsd-execute-phase 28 (7 plans in 6 waves, checked 2026-10-10; plan-check passed with override for two soft scope warnings: 28-06 estimate 110k low-confidence, 28-02 13 files).
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
@@ -1035,5 +1035,6 @@ plans, or reopen Phase 25 implementation.
 
 ## Operator Next Steps
 
-- M006 roadmap created 2026-10-10 (Phases 28–32). Phase 28 has 28-CONTEXT.md but no
-  plans yet. After clearing context, run `/gsd-plan-phase 28`.
+- M006 roadmap created 2026-10-10 (Phases 28–32). Phase 28 is planned: 7 plans in
+  6 waves. 28-04 and 28-05 must land together: the pin-flip tests are red in between,
+  so do not push between them. After clearing context, run `/gsd-execute-phase 28`.

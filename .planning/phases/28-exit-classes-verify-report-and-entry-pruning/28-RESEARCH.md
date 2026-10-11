@@ -1,3 +1,7 @@
+---
+verification_role: proposal
+---
+
 # Phase 28: Exit Classes, Verify Report, and Entry Pruning - Research
 
 **Researched:** 2026-10-10
@@ -335,16 +339,16 @@ Test: re-marshal the in-memory execution and re-hash; assert equal.
 | A3 | zero_call EmitNative golden entries (phase272/273) are regenerated once and allow-listed, rather than keeping error text | Pin table | If the user wants goldens frozen, `main` precedence must live above cgen instead of in `callgraph.EntryFunction` |
 | A4 | Keeping `VerifyApplicationCases` refusals as errors (exit 3) is acceptable although DX-17 says "same class" | Pin table | A source refusal in `app verify` stays exit 3; needs explicit user sign-off or a one-line scope addition |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Does D-04 mean corevalidate/originvalidate see only the pruned program?** (needs user/planner confirmation before Wave 1)
+1. **Does D-04 mean corevalidate/originvalidate see only the pruned program?** RESOLVED by CONTEXT D-18: admit the full program, then prune.
    - Known: D-04 bullet 1 says dead code with errors is still refused (checker); bullet 3 and D-09 say corevalidate/originvalidate/pathoracle see only `pruned`. `testdata/phase11/multi_function_gate_corpus.schway` has a dead `touch` with an omitted origin: today `check` refuses it (`core.origin_omitted`, divergence-table entry) and `run` refuses it via `publishedOriginProblemFile`. Under the literal reading both pass and the publication gate is loosened for dead functions; the divergence-table entry becomes "RESOLVED" and fails.
    - Recommendation: run `admitProgram` on the full checked program, then prune before interp/cgen/pathoracle-for-local-owner/app-verify. It is the same code size, keeps the 12-fixture divergence table and the golden's check classes unchanged, and matches D-04's stated "dead code with errors is still refused" principle. If the literal reading is intended, remove the gate_corpus entry and list the check class flip in the Phase 28 manifest.
 
-2. **`check` newly refuses ambiguous-entry files that pass today** (D-04 says check calls the helper).
+2. **`check` newly refuses ambiguous-entry files that pass today** RESOLVED by CONTEXT D-20: `payload_borrow_interaction.schway` joins `knownAdmissionDivergences` as `core.entry_ambiguous` (plan 28-04).
    - `testdata/phase12/payload_borrow_interaction.schway` checks clean today and will exit 2 `core.entry_ambiguous`. It is used via `session.Check` (not `CheckCommandFile`) elsewhere (core_test.go:910, pathoracle_payload_test.go, session_payload_control_test.go:264), so only the divergence sweep and any CLI corpus matrices see it. Recommendation: add it to `knownAdmissionDivergences` with a "why", and record in the Phase 28 manifest.
 
-3. **Hosted-gate wording**: no hosted gate pins `entry_ambiguous` or the report schema; `.github/workflows/ci.yml` needs no edit unless the planner adds a named Phase 28 control to the evidence-aggregate (optional).
+3. **Hosted-gate wording** RESOLVED (no action):  no hosted gate pins `entry_ambiguous` or the report schema; `.github/workflows/ci.yml` needs no edit unless the planner adds a named Phase 28 control to the evidence-aggregate (optional).
 
 ## Validation Architecture
 

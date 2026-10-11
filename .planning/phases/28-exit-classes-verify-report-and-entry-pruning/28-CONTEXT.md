@@ -108,6 +108,13 @@ Make exit classes uniform and named, let programs with unused functions run, and
   - The D-11 AST scan flags every integer literal passed to `os.Exit` or returned as an exit status from the cmd, session and native exit paths, including `0`. Production code uses `exitcode.Success`. A non-exit sentinel such as `-1` is out of scope.
   - cgen-emitted C exit strings are pinned by a string-literal scan test rather than edited.
 
+- **D-22: `cmd/schway-repair` keeps a pinned mirror (refines D-07 and D-11; auto-followed after the plan check).**
+  - Rule D-06-28 (`TestRepairDriverImportsStayOutsideInternal`) forbids the repair driver from importing `internal/`. That isolation is deliberate, and the project prefers a copy to a new dependency edge.
+  - So `exitSuccess`, `exitUnrepaired`, `exitOperational` and `exitUsage` stay as named constants in `cmd/schway-repair/main.go`. A test in `internal/compiler/exitcode` parses that file and fails unless each value equals its `exitcode` counterpart (Success, Unrepaired, Operational, Usage).
+  - The D-11 scan exempts only those four declarations and still flags every other exit-position literal in the file. The table stays the single source of truth; the mirror is test-pinned to it.
+- **D-23: The corpus goldens stay frozen; allow-lists replace rewriting them (refines D-20).** The phase273 golden cannot be safely regenerated because of its sum_to_n reverse-substitution rule. So the `multi_function_zero_call` flip and the new Phase 28 example are recorded as explicit allow-list entries in the identity tests, and each entry names its reason. The test-visible result matches D-20.
+- **D-24: The D-12 corevalidate fixture is `testdata/phase07/duplicate_function_name.schway` (refines D-12).** It passes the checker and is refused by the core-validator peer (`session_peer_gate_test.go`), so it is a genuine corevalidate refusal and no new `.schway` file is needed.
+
 ### Claude's Discretion
 - Exact helper names (`resolveEntry`, `admitProgram`, `PruneToReachable`), file split, and plan/wave decomposition.
 - Golden format: a per-file hash manifest or stored C text, whichever fits existing testdata conventions.

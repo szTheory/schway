@@ -1,12 +1,38 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "M006",
-  "phases": [],
+  "milestone": "M006 — Bounded Byte Utility and Local Modules",
+  "phases": [
+    {
+      "number": "28",
+      "name": "Exit Classes, Verify Report, and Entry Pruning",
+      "status": "pending"
+    },
+    {
+      "number": "29",
+      "name": "Byte Views and the Adler-32 Library",
+      "status": "pending"
+    },
+    {
+      "number": "30",
+      "name": "Local Modules",
+      "status": "pending"
+    },
+    {
+      "number": "31",
+      "name": "Bounded File Checksum and Second Consumer",
+      "status": "pending"
+    },
+    {
+      "number": "32",
+      "name": "Clean-Checkout Guide and Final Receipts",
+      "status": "pending"
+    }
+  ],
   "next": {
-    "command": "/gsd:discuss-phase",
-    "label": "Discuss the first phase",
-    "reason": "Project initialized — plan your first phase"
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step (plan phase 28)",
+    "reason": "Phase 28 of 5 — needs a plan"
   },
-  "updated_at": "2026-10-10T23:56:11.763Z"
+  "updated_at": "2026-10-11T01:38:28.302Z"
 }
