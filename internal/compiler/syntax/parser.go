@@ -348,6 +348,9 @@ func (p *parser) scalarLetStart() bool {
 		return false
 	}
 	next := p.peekNonTrivia(4).Kind
+	if value.Kind == TokenIdentifier && (value.Text == "byte_len" || value.Text == "byte_at") && next == TokenLParen {
+		return true
+	}
 	if scalarBinaryOperator(next) != 0 {
 		operand := p.peekNonTrivia(5).Kind
 		return operand == TokenNumber || operand == TokenIdentifier
@@ -359,7 +362,7 @@ func (p *parser) scalarBodyStart(parameterType, returnType ast.TypeRef) bool {
 	if p.atAny(TokenVar, TokenIf, TokenWhile) {
 		return true
 	}
-	if parameterType.Constructor == "U64" && (returnType.Constructor == "U64" || returnType.Constructor == "Unit") && p.scalarLetStart() {
+	if (parameterType.Constructor == "U64" || parameterType.Constructor == "ByteView") && (returnType.Constructor == "U64" || returnType.Constructor == "Unit") && p.scalarLetStart() {
 		return true
 	}
 	return p.isWriteCallStart(p.peek())
@@ -540,20 +543,55 @@ func (p *parser) scalarExprAtom() *ast.Expr {
 			switch leftToken.Text {
 			case "byte_len":
 				p.advance()
-				view := p.expect(TokenIdentifier, "syntax.expected_scalar_operand")
-				end := p.expect(TokenRParen, "syntax.expected_scalar_operand")
+				if p.peek().Kind != TokenIdentifier {
+					p.byteReadArity("syntax.byte_len_arity", "byte_len requires one byte view operand")
+					return &ast.Expr{Kind: "byte_len", Span: leftToken.Span}
+				}
+				view := p.advance()
+				if p.peek().Kind != TokenRParen {
+					p.byteReadArity("syntax.byte_len_arity", "byte_len requires one byte view operand")
+					return &ast.Expr{Kind: "byte_len", Name: view.Text, Span: diagnostic.Span{Start: leftToken.Span.Start, End: view.Span.End}}
+				}
+				end := p.advance()
 				return &ast.Expr{Kind: "byte_len", Name: view.Text, Span: diagnostic.Span{Start: leftToken.Span.Start, End: end.Span.End}}
 			case "byte_at":
 				p.advance()
-				view := p.expect(TokenIdentifier, "syntax.expected_scalar_operand")
-				p.expect(TokenComma, "syntax.expected_scalar_operand")
+				const message = "byte_at requires a byte view and one U64 index"
+				if p.peek().Kind != TokenIdentifier {
+					p.byteReadArity("syntax.byte_at_arity", message)
+					return &ast.Expr{Kind: "byte_at", Span: leftToken.Span}
+				}
+				view := p.advance()
+				if p.peek().Kind != TokenComma {
+					p.byteReadArity("syntax.byte_at_arity", message)
+					return &ast.Expr{Kind: "byte_at", Name: view.Text, Span: diagnostic.Span{Start: leftToken.Span.Start, End: view.Span.End}}
+				}
+				p.advance()
+				if p.peek().Kind == TokenRParen {
+					p.byteReadArity("syntax.byte_at_arity", message)
+					return &ast.Expr{Kind: "byte_at", Name: view.Text, Span: diagnostic.Span{Start: leftToken.Span.Start, End: view.Span.End}}
+				}
 				index := p.scalarExpr()
-				end := p.expect(TokenRParen, "syntax.expected_scalar_operand")
+				if p.peek().Kind != TokenRParen {
+					p.byteReadArity("syntax.byte_at_arity", message)
+					return &ast.Expr{Kind: "byte_at", Name: view.Text, Right: index, Span: diagnostic.Span{Start: leftToken.Span.Start, End: index.Span.End}}
+				}
+				end := p.advance()
 				return &ast.Expr{Kind: "byte_at", Name: view.Text, Right: index, Span: diagnostic.Span{Start: leftToken.Span.Start, End: end.Span.End}}
 			}
 		}
 		return &ast.Expr{Kind: "name", Name: leftToken.Text, Span: leftToken.Span}
 	}
+}
+
+// byteReadArity reports a named byte-read arity refusal at the current token,
+// then recovers to and consumes the closing paren so cascades stay minimal.
+func (p *parser) byteReadArity(code, message string) {
+	p.problem(code, p.peek(), message)
+	for !p.atAny(TokenRParen, TokenRBrace, TokenEOF) {
+		p.advance()
+	}
+	p.accept(TokenRParen)
 }
 
 // borrowOrigin parses the optional Phase 3 return-type annotation preceding

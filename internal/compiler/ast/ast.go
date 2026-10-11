@@ -177,7 +177,7 @@ type Statement struct {
 }
 
 type Expr struct {
-	Kind        string // name, number, text, add, less
+	Kind        string // name, number, text, add, less, byte_len (Name = view), byte_at (Name = view, Right = index)
 	Name, Value string
 	Left, Right *Expr
 	Span        diagnostic.Span
