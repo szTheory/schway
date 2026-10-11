@@ -5,16 +5,16 @@ milestone_name: Bounded Byte Utility and Local Modules
 current_phase: 29
 current_phase_name: Byte Views and the Adler-32 Library
 status: executing
-stopped_at: Completed 29-07-PLAN.md
-last_updated: "2026-10-11T22:21:15.016Z"
+stopped_at: Completed 29-08-PLAN.md
+last_updated: "2026-10-11T22:24:35.965Z"
 last_activity: 2026-10-11
 last_activity_desc: Phase 29 execution started
-state_head: 71741060473062c88f4911cfebe4c6481a042ccb
+state_head: 7f55fd535200da71c365de2ece087b999cd34452
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 21
-  completed_plans: 16
+  completed_plans: 17
   percent: 20
 ---
 
@@ -124,7 +124,7 @@ plans.
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
 Phase: 29 (Byte Views and the Adler-32 Library) — EXECUTING
-Plan: 9 of 13
+Plan: 10 of 13
 Status: Ready to execute
 Last activity: 2026-10-11 — Phase 29 execution started
 
@@ -513,6 +513,7 @@ subset alone.
 | Phase 29 P05 | 10 min | 2 tasks | 6 files |
 | Phase 29 P06 | 40 min | 3 tasks | 15 files |
 | Phase 29 P07 | 40 min | 3 tasks | 9 files |
+| Phase 29 P08 | 15 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -649,6 +650,7 @@ decision history; they no longer describe current status.
 - [Phase 29]: Wave-0 gate verdict PROCEED (plan 29-01): Stage-A lane maxima far under 4x D-13 budget
 - [Phase 29]: 29-06: fixture-owner shape is a new closed matcher per peer keyed by schway_fixture_bytes_*; ByteView call resolved through the callee-contract table, callee name not pinned
 - [Phase 29]: 29-07: fixture owner lowered only by the application shell; conformance shell refuses with cgen.fixture_owner_shell_unsupported
+- [Phase 29]: 29-08: fixture route reports live resources across the whole stack; D-20 exception keyed to OpBytesAt defect only
 
 ### Pending Todos
 
@@ -879,8 +881,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-11T22:21:14.980Z
-Stopped at: Completed 29-07-PLAN.md
+Last session: 2026-10-11T22:24:35.932Z
+Stopped at: Completed 29-08-PLAN.md
 Resume file: None
 Next action: Phase 28 complete and verified (4/4, 2026-10-10). Optional: /gsd-code-review 28 --fix --all for the 6 open review findings (WR-02 exit-3-on-write-failure, WR-04 latent entryErr). Then /gsd-discuss-phase 29.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
