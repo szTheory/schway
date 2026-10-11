@@ -125,11 +125,11 @@ Plans:
 
 **Research flag**: Spike first. Before planning, settle: (a) a ByteView argument through `OpCall` in check's caller path and originvalidate's call-site derivation; (b) parser lookahead for byte length and indexing in scalar bodies; (c) release-while-loan-live refused by check, corevalidate, and pathoracle; (d) interpreter and native cost of 65,536 iterations, which confirms or lowers the 65,536-byte cap on recorded evidence; (e) no evented stores in the loop; (f) how the fixture's literal bytes reach the byte view before the Phase 31 file adapter exists (research proposes synthetic input to the conformance runner). Surface syntax for byte reads is decided at discussion.
 
-**Plans**: 13 plans
+**Plans**: 1/13 plans executed
 
 Plans:
 **Wave 1**
-- [ ] 29-00-PLAN.md — Wave-0 gate tracer: neighbor pins, ByteView {drop}, byte_len/byte_at through check, both peers and the interpreter with harness bytes, interpreter Stage-A vectors (wave 1)
+- [x] 29-00-PLAN.md — Wave-0 gate tracer: neighbor pins, ByteView {drop}, byte_len/byte_at through check, both peers and the interpreter with harness bytes, interpreter Stage-A vectors (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 29-01-PLAN.md — Wave-0 gate expansion: cgen both shells, gate-only native proxy at -O0/-O3/-O3+LTO, Stage-A cost reading, written verdict 29-00-GATE-VERDICT.md (wave 2)
@@ -226,7 +226,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 28. Exit Classes, Verify Report, and Entry Pruning | 8/8 | Complete    | 2026-10-11 |
-| 29. Byte Views and the Adler-32 Library | 0/TBD | Not started | - |
+| 29. Byte Views and the Adler-32 Library | 1/13 | In Progress | - |
 | 30. Local Modules | 0/TBD | Not started | - |
 | 31. Bounded File Checksum and Second Consumer | 0/TBD | Not started | - |
 | 32. Clean-Checkout Guide and Final Receipts | 0/TBD | Not started | - |
