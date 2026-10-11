@@ -451,9 +451,17 @@ milestone number.
 
 M006 requirements live in [REQUIREMENTS.md](REQUIREMENTS.md) (IDs are assigned
 at milestone kickoff). In scope: the bounded checksum byte utility, the local
-module boundary with a second consumer, and M005 carry-over N1, N2 and W2/W3.
-Tracked but not scheduled: N3 (duplicated capacity literal), N4 (guide n ≤ 14
-note), R1b, and the D-27.1-10 dispositions.
+module boundary with a second consumer, and M005 carry-over N2.
+Tracked but not scheduled: N4 (guide n ≤ 14 note), R1b, and the D-27.1-10
+dispositions.
+
+Phase 28 (2026-10-10) closed N1 (EVD-13: `app verify` keeps the named capacity
+reason at any n via a fixed-size outcome digest, report schema
+`lang.app-verification/2`), W2/W3 and N3 (DX-17: one `exitcode` table, admission
+before any tool, so check/build/both run engines give one exit class per
+source), and DX-18 (`main` wins entry selection; functions `main` never calls
+are pruned after full-program admission). Local verifier passed 4/4; hosted CI
+not yet run at this revision.
 
 Atomic IDs and acceptance for M005 are archived in
 [milestones/M005-REQUIREMENTS.md](milestones/M005-REQUIREMENTS.md).
@@ -647,4 +655,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-10 after M006 milestone start*
+*Last updated: 2026-10-10 after Phase 28*

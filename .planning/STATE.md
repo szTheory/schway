@@ -56,7 +56,7 @@ See: .planning/PROJECT.md (updated 2026-10-10)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 28 — Exit Classes, Verify Report, and Entry Pruning
+**Current focus:** Phase 29 — Byte Views and the Adler-32 Library
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -128,7 +128,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-10-10 — Phase 28 complete, transitioned to Phase 29
 
-Progress: [██░░░░░░░░] 20% (0/5 M006 phases)
+Progress: [██░░░░░░░░] 20% (1/5 M006 phases)
 
 ## M006 Planning
 
@@ -870,7 +870,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 Last session: 2026-10-11T02:46:51.028Z
 Stopped at: Phase 28 complete, ready to plan Phase 29
 Resume file: None
-Next action: After clearing context, run /gsd-execute-phase 28 (7 plans in 6 waves, checked 2026-10-10; plan-check passed with override for two soft scope warnings: 28-06 estimate 110k low-confidence, 28-02 13 files).
+Next action: Phase 28 complete and verified (4/4, 2026-10-10). Optional: /gsd-code-review 28 --fix --all for the 6 open review findings (WR-02 exit-3-on-write-failure, WR-04 latent entryErr). Then /gsd-discuss-phase 29.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
@@ -1050,6 +1050,7 @@ plans, or reopen Phase 25 implementation.
 
 ## Operator Next Steps
 
-- M006 roadmap created 2026-10-10 (Phases 28–32). Phase 28 is planned: 7 plans in
-  6 waves. 28-04 and 28-05 must land together: the pin-flip tests are red in between,
-  so do not push between them. After clearing context, run `/gsd-execute-phase 28`.
+- Phase 28 complete 2026-10-10 (7/7 plans, verifier 4/4 passed locally; hosted CI not
+  yet run). Code review left 6 open findings (0 critical, 4 warnings, 2 info) in
+  28-REVIEW-DISPOSITION.md; run `/gsd-code-review 28 --fix --all` to close them.
+  Nothing is pushed; push 28-04 and 28-05 together. Next phase: `/gsd-discuss-phase 29`.
