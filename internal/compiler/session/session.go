@@ -1081,40 +1081,22 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 		result.Diagnostics = checked.Diagnostics
 		return completeCommand(result, started, checked.Work), nil
 	}
-	if !checkCommandPeerSeam {
-		observeCheckCommandPeer("corevalidate")
-		validated := corevalidate.Validate(checked.Program)
-		if !validated.Valid {
-			result.Status = protocol.StatusInvalid
-			result.Diagnostics = []diagnostic.Diagnostic{peerRefusalDiagnostic(validated, checked.Program.ModuleID)}
-			return completeCommand(result, started, checked.Work), nil
-		}
-		checked.Program = validated.Program()
-	}
-	observeCheckCommandPeer("originvalidate")
-	if problems := originvalidate.ValidatePublished(checked.Program); len(problems) > 0 {
-		// D-04-27/WR-01: originvalidate.ValidatePublished no longer runs only
-		// on the `interface export` path -- the foreign declaration surface
-		// is a second place an alias fact can be silently absent (D-04-28),
-		// so `schway check` must independently recompute every published
-		// origin too, not merely trust what the checker declared.
+	admitted, admitDiagnostics := admitProgram(checked)
+	if len(admitDiagnostics) > 0 {
 		result.Status = protocol.StatusInvalid
-		result.Diagnostics = []diagnostic.Diagnostic{originPeerRefusalDiagnostic(problems[0], checked.Program, checked.Tree)}
+		result.Diagnostics = admitDiagnostics
+		return completeCommand(result, started, checked.Work), nil
+	}
+	checked.Program = admitted
+	if _, _, entryDiagnostics, entryErr := resolveEntry(checked.Program); entryErr != nil {
+		return protocol.Result{}, entryErr
+	} else if len(entryDiagnostics) > 0 {
+		// D-02/D-18: entry ambiguity is a source refusal, decided after the
+		// checker and every admission step.
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = entryDiagnostics
 	} else {
-		observeCheckCommandPeer("pathoracle")
-		if err := pathoracle.ValidateLocalOwnerPaths(checked.Program); err != nil {
-			result.Status = protocol.StatusInvalid
-			result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error("core.pathoracle_refused", diagnostic.Span{}, err.Error())}
-		} else if _, _, entryDiagnostics, entryErr := resolveEntry(checked.Program); entryErr != nil {
-			return protocol.Result{}, entryErr
-		} else if len(entryDiagnostics) > 0 {
-			// D-02/D-18: entry ambiguity is a source refusal, decided after the
-			// checker and every admission step.
-			result.Status = protocol.StatusInvalid
-			result.Diagnostics = entryDiagnostics
-		} else {
-			result.ModuleID = checked.Program.ModuleID
-		}
+		result.ModuleID = checked.Program.ModuleID
 	}
 	return completeCommand(result, started, checked.Work), nil
 }
@@ -1344,6 +1326,8 @@ func RunInterpreterCommandFile(path string) (protocol.Result, error) {
 	return completeCommand(result, started, len(executions)), nil
 }
 
+// runNative is the exported-lane native run: Check, corevalidate, entry
+// resolution, then runNativeChecked. It runs no origin admission (D-19).
 func runNative(ctx context.Context, source []byte, runner NativeRunner, fixture string) (NativeResult, []diagnostic.Diagnostic, error) {
 	checked := Check(source)
 	if len(checked.Diagnostics) > 0 {
@@ -1351,7 +1335,7 @@ func runNative(ctx context.Context, source []byte, runner NativeRunner, fixture 
 	}
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
-		return NativeResult{}, nil, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+		return NativeResult{}, []diagnostic.Diagnostic{peerRefusalDiagnostic(validated, checked.Program.ModuleID)}, nil
 	}
 	checked.Program = validated.Program()
 	// D-11-05: widened to permit N>1 functions -- callgraph.EntryFunction
@@ -1363,6 +1347,13 @@ func runNative(ctx context.Context, source []byte, runner NativeRunner, fixture 
 	if len(entryDiagnostics) > 0 {
 		return NativeResult{}, entryDiagnostics, nil
 	}
+	return runNativeChecked(ctx, checked, entry, pruned, runner, fixture)
+}
+
+// runNativeChecked runs the interpreter/native comparison on an already
+// checked, validated, entry-resolved and pruned program. It performs no
+// admission of its own (D-19); command-file callers admit before calling it.
+func runNativeChecked(ctx context.Context, checked CheckResult, entry core.Function, pruned core.Program, runner NativeRunner, fixture string) (NativeResult, []diagnostic.Diagnostic, error) {
 	checked.Program = pruned
 	inputs, ok := interpreterInputs(checked.Program)
 	if !ok {
@@ -1620,14 +1611,40 @@ func RunNativeFile(ctx context.Context, path string, runner NativeRunner) (Nativ
 	return runNative(ctx, source, runner, filepath.ToSlash(relative))
 }
 
+// runNativeCommand is the command-file native lane: Check, admitProgram on
+// the full program (D-10, before resolveEntry, cgen or any clang run), then
+// resolveEntry and runNativeChecked.
+func runNativeCommand(ctx context.Context, path string, runner NativeRunner) (NativeResult, []diagnostic.Diagnostic, error) {
+	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
+	if err != nil {
+		return NativeResult{}, nil, err
+	}
+	relative, relErr := filepath.Rel(nat03ProjectRoot(), path)
+	if relErr != nil {
+		return NativeResult{}, nil, relErr
+	}
+	checked := Check(source)
+	if len(checked.Diagnostics) > 0 {
+		return NativeResult{}, checked.Diagnostics, nil
+	}
+	admitted, admitDiagnostics := admitProgram(checked)
+	if len(admitDiagnostics) > 0 {
+		return NativeResult{}, admitDiagnostics, nil
+	}
+	checked.Program = admitted
+	entry, pruned, entryDiagnostics, err := resolveEntry(checked.Program)
+	if err != nil {
+		return NativeResult{}, nil, err
+	}
+	if len(entryDiagnostics) > 0 {
+		return NativeResult{}, entryDiagnostics, nil
+	}
+	return runNativeChecked(ctx, checked, entry, pruned, runner, filepath.ToSlash(relative))
+}
+
 func RunNativeCommandFile(ctx context.Context, path string, runner NativeRunner) (protocol.Result, error) {
 	started := time.Now()
-	nativeResult, diagnostics, err := RunNativeFile(ctx, path, runner)
-	if len(diagnostics) == 0 && err == nil {
-		if originProblems := publishedOriginProblemFile(path); len(originProblems) > 0 {
-			diagnostics = originProblems
-		}
-	}
+	nativeResult, diagnostics, err := runNativeCommand(ctx, path, runner)
 	result := protocol.New("run", protocol.StatusPass)
 	if len(diagnostics) > 0 {
 		result.Status = protocol.StatusInvalid

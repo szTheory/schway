@@ -1518,14 +1518,6 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 			{args: []string{"--json", "run", "--engine=native", "{path}"}, wantExit: 3, wantDiagnostic: "native.tool_failure"},
 		}}
 	}
-	cutAfterCheckRefusal := func(fixture, diagnostic string) phase4OutOfCorpusCase {
-		return phase4OutOfCorpusCase{behavior: fixture, steps: []phase4OutOfCorpusStep{
-			{args: []string{"--json", "format", "--check", "{path}"}, wantExit: 0},
-			{args: []string{"--json", "check", "{path}"}, wantExit: 2, wantDiagnostic: diagnostic},
-			{args: []string{"--json", "run", "--engine=interpreter", "{path}"}, wantExit: 2, wantDiagnostic: diagnostic},
-			{args: []string{"--json", "run", "--engine=native", "{path}"}, wantExit: 3, wantDiagnostic: "native.tool_failure"},
-		}}
-	}
 	// refused is a negative-control fixture: canonically formatted (unless
 	// formatExit says otherwise), then refused identically by check and both
 	// engines with one diagnostic code.
@@ -1561,7 +1553,9 @@ func phase4CorpusMatrix() []phase4OutOfCorpusCase {
 		// are unchanged; only what layer refuses the SEMANTIC shape moved).
 		refused("fallible_call_unconsumed.schway", 2, "format.non_canonical", "syntax.fallible_call_not_consumed"),
 		refused("foreign_call_target_not_foreign.schway", 0, "", "core.call_target_not_foreign"),
-		cutAfterCheckRefusal("foreign_origin_omitted.schway", "core.foreign_origin_omitted"),
+		// 2026-10-10 (Phase 28 D-10/D-12): native runs admit before any tool, so
+		// foreign_origin_omitted is refused identically on every surface (exit 2).
+		refused("foreign_origin_omitted.schway", 0, "", "core.foreign_origin_omitted"),
 		refused("foreign_policy_value_injection.schway", 0, "", "check.foreign_policy_value_unsafe"),
 		refused("foreign_unwind_undeclared.schway", 0, "", "foreign.unwind_policy_undeclared"),
 	}

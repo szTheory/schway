@@ -40,20 +40,162 @@ const phase28MinCorpus = 155
 // plans add one entry per deliberate class change, each with a dated reason
 // comment. An entry equal to the golden fails as stale.
 var phase28ClassChanges = map[string]phase28ManifestEntry{
-	// 2026-10-10 (Phase 28, D-04/D-05/D-20): the dead function `touch` is now
-	// pruned before emission, so native run gets past emission to the
-	// (deliberately missing) clang runner: tool_failure -> tool_missing. Check,
-	// build and interpreter classes still refuse with core.origin_omitted
-	// (D-18: admission still runs on the full program).
+	// 2026-10-10 (Phase 28, D-10/D-18): native run now admits the FULL program
+	// before pruning or any tool, so the dead function `touch` (omitted origin)
+	// is refused with core.origin_omitted like check/build/interpreter
+	// (native.tool_failure -> exit 2; superseding the 28-05 tool_missing).
 	"testdata/phase11/multi_function_gate_corpus.schway": {
 		Path:           "testdata/phase11/multi_function_gate_corpus.schway",
 		Check:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
 		Build:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
 		InterpreterRun: phase28Class{Exit: 2, Code: "core.origin_omitted"},
-		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_missing"},
+		NativeRun:      phase28Class{Exit: 2, Code: "core.origin_omitted"},
 		EntryShape:     "multi-root-main",
 		Entry:          "main",
 		DeadFunctions:  []string{"s1:phase11.multi_function_gate_corpus:fn:touch"},
+	},
+	// 2026-10-10 (Phase 28, D-10/D-12): native run admits before any tool, so
+	// the source refusal is exit 2 with the check code, not an operational
+	// native.tool_* failure.
+	"testdata/phase07/clean_but_unpublishable.schway": {
+		Path:           "testdata/phase07/clean_but_unpublishable.schway",
+		Check:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		Build:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		InterpreterRun: phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		NativeRun:      phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		EntryShape:     "single-root",
+		Entry:          "relay",
+	},
+	// 2026-10-10 (Phase 28, D-09/D-10): native run reports the corevalidate
+	// refusal as a diagnostic (exit 2 core.duplicate_function_id).
+	"testdata/phase07/duplicate_function_name.schway": {
+		Path:           "testdata/phase07/duplicate_function_name.schway",
+		Check:          phase28Class{Exit: 2, Code: "core.duplicate_function_id"},
+		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
+		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
+		NativeRun:      phase28Class{Exit: 2, Code: "core.duplicate_function_id"},
+		EntryShape:     "single-root",
+		Entry:          "main",
+	},
+	// 2026-10-10 (Phase 28, D-10/D-12): native run admits before any tool, so
+	// the source refusal is exit 2 with the check code, not an operational
+	// native.tool_* failure.
+	"testdata/phase10/compose_per_path_borrow_callee_accept.schway": {
+		Path:           "testdata/phase10/compose_per_path_borrow_callee_accept.schway",
+		Check:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		Build:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		InterpreterRun: phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		NativeRun:      phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		EntryShape:     "single-root",
+		Entry:          "callee",
+	},
+	// 2026-10-10 (Phase 28, D-10/D-12): native run admits before any tool, so
+	// the source refusal is exit 2 with the check code, not an operational
+	// native.tool_* failure.
+	"testdata/phase25/exclusive_escape_reject.schway": {
+		Path:           "testdata/phase25/exclusive_escape_reject.schway",
+		Check:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		Build:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		InterpreterRun: phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		NativeRun:      phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		EntryShape:     "single-root",
+		Entry:          "relay",
+	},
+	// 2026-10-10 (Phase 28, D-10/D-12): native run admits before any tool, so
+	// the source refusal is exit 2 with the check code, not an operational
+	// native.tool_* failure.
+	"testdata/phase25/shared_copy_accept.schway": {
+		Path:           "testdata/phase25/shared_copy_accept.schway",
+		Check:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		Build:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
+		NativeRun:      phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		EntryShape:     "single-root",
+		Entry:          "shared_copy",
+	},
+	// 2026-10-10 (Phase 28, D-10/D-12): native run admits before any tool, so
+	// the source refusal is exit 2 with the check code, not an operational
+	// native.tool_* failure.
+	"testdata/phase3/public_view_mixed_access.schway": {
+		Path:           "testdata/phase3/public_view_mixed_access.schway",
+		Check:          phase28Class{Exit: 2, Code: "core.origin_access_mismatch"},
+		Build:          phase28Class{Exit: 2, Code: "core.origin_access_mismatch"},
+		InterpreterRun: phase28Class{Exit: 2, Code: "core.origin_access_mismatch"},
+		NativeRun:      phase28Class{Exit: 2, Code: "core.origin_access_mismatch"},
+		EntryShape:     "single-root",
+		Entry:          "view",
+	},
+	// 2026-10-10 (Phase 28, D-10/D-12): native run admits before any tool, so
+	// the source refusal is exit 2 with the check code, not an operational
+	// native.tool_* failure.
+	"testdata/phase3/public_view_multi_arm_access_conflict.schway": {
+		Path:           "testdata/phase3/public_view_multi_arm_access_conflict.schway",
+		Check:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		Build:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		InterpreterRun: phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		NativeRun:      phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		EntryShape:     "single-root",
+		Entry:          "choose",
+	},
+	// 2026-10-10 (Phase 28, D-10/D-12): native run admits before any tool, so
+	// the source refusal is exit 2 with the check code, not an operational
+	// native.tool_* failure.
+	"testdata/phase3/public_view_multi_arm_omitted.schway": {
+		Path:           "testdata/phase3/public_view_multi_arm_omitted.schway",
+		Check:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		Build:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		InterpreterRun: phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		NativeRun:      phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		EntryShape:     "single-root",
+		Entry:          "choose",
+	},
+	// 2026-10-10 (Phase 28, D-10/D-12): native run admits before any tool, so
+	// the source refusal is exit 2 with the check code, not an operational
+	// native.tool_* failure.
+	"testdata/phase3/public_view_omitted.schway": {
+		Path:           "testdata/phase3/public_view_omitted.schway",
+		Check:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		Build:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		InterpreterRun: phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		NativeRun:      phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		EntryShape:     "single-root",
+		Entry:          "relay",
+	},
+	// 2026-10-10 (Phase 28, D-10/D-12): native run admits before any tool, so
+	// the source refusal is exit 2 with the check code, not an operational
+	// native.tool_* failure.
+	"testdata/phase4/foreign_origin_omitted.schway": {
+		Path:           "testdata/phase4/foreign_origin_omitted.schway",
+		Check:          phase28Class{Exit: 2, Code: "core.foreign_origin_omitted"},
+		Build:          phase28Class{Exit: 2, Code: "core.foreign_origin_omitted"},
+		InterpreterRun: phase28Class{Exit: 2, Code: "core.foreign_origin_omitted"},
+		NativeRun:      phase28Class{Exit: 2, Code: "core.foreign_origin_omitted"},
+		EntryShape:     "single-root",
+		Entry:          "main",
+	},
+	// 2026-10-10 (Phase 28, D-10/D-12): native run admits before any tool, so
+	// the source refusal is exit 2 with the check code, not an operational
+	// native.tool_* failure.
+	"testdata/phase5/false_restrict_hoist.schway": {
+		Path:           "testdata/phase5/false_restrict_hoist.schway",
+		Check:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		Build:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		InterpreterRun: phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		NativeRun:      phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		EntryShape:     "single-root",
+		Entry:          "touch",
+	},
+	// 2026-10-10 (Phase 28, D-10/D-12): native run admits before any tool, so
+	// the source refusal is exit 2 with the check code, not an operational
+	// native.tool_* failure.
+	"testdata/phase5/restrict_borrow.schway": {
+		Path:           "testdata/phase5/restrict_borrow.schway",
+		Check:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		Build:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		InterpreterRun: phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		NativeRun:      phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		EntryShape:     "single-root",
+		Entry:          "touch",
 	},
 	// 2026-10-10 (Phase 28, D-01/D-20): main wins the tie, the unused function
 	// is pruned, interpreter run now succeeds and native run reaches the runner.

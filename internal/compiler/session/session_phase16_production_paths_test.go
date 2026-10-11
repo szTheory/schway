@@ -22,7 +22,10 @@ func TestPhase16ProductionBypassMutationIsKilled(t *testing.T) {
 func TestPhase16ProductionPathsPreserveM004Refusal(t *testing.T) {
 	for _, fixture := range []string{
 		"testdata/phase4/nonlocal_exit_probe.schway",
-		"testdata/phase5/restrict_borrow.schway",
+		// 2026-10-10 (Phase 28 D-10/D-20): restrict_borrow.schway is origin-refused
+		// by check, so admission now reports it as exit 2 before any tool; the
+		// check-clean cut fixture keeps the terminal M004 native refusal covered.
+		"testdata/phase4/acquire_three_success.schway",
 	} {
 		t.Run(fixture, func(t *testing.T) {
 			result, err := session.RunNativeCommandFile(context.Background(), testsupport.ProjectPath(fixture), native.DefaultRunner())

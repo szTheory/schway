@@ -1814,13 +1814,29 @@ func TestPublishedOriginValidatedOnCheckAndRun(t *testing.T) {
 		t.Fatalf("expected schway run --engine=interpreter to refuse foreign_origin_omitted.schway with core.foreign_origin_omitted, got %+v", interpResult)
 	}
 
-	nativeResult, err := session.RunNativeCommandFile(context.Background(), foreignOmittedPath, native.DefaultRunner())
+	// 2026-10-10 (Phase 28 D-10/D-12): native runs admit before any tool runs,
+	// so the source refusal is StatusInvalid core.foreign_origin_omitted (was
+	// operational native.tool_failure) and the runner is never invoked.
+	counting := &countingNativeRunner{}
+	nativeResult, err := session.RunNativeCommandFile(context.Background(), foreignOmittedPath, counting)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if nativeResult.Status != protocol.StatusOperational || len(nativeResult.Diagnostics) != 1 || nativeResult.Diagnostics[0].Code != "native.tool_failure" {
-		t.Fatalf("expected schway run --engine=native to stop at the terminal Phase 16 foreign M004 refusal, got %+v", nativeResult)
+	if nativeResult.Status != protocol.StatusInvalid || len(nativeResult.Diagnostics) != 1 || nativeResult.Diagnostics[0].Code != "core.foreign_origin_omitted" {
+		t.Fatalf("expected schway run --engine=native to refuse foreign_origin_omitted.schway with core.foreign_origin_omitted, got %+v", nativeResult)
 	}
+	if counting.calls != 0 {
+		t.Fatalf("native runner invoked %d times for a refused source; admission must precede every tool", counting.calls)
+	}
+}
+
+// countingNativeRunner records invocations so a test can prove a refused
+// source never reaches the native toolchain.
+type countingNativeRunner struct{ calls int }
+
+func (r *countingNativeRunner) Run(context.Context, string, string, []string) (native.Result, error) {
+	r.calls++
+	return native.Result{}, errors.New("countingNativeRunner must not be invoked")
 }
 
 // TestNoReleaseAfterDefect is control:defect.no_release_on_defect's own
