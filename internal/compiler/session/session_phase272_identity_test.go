@@ -33,6 +33,17 @@ const phase272MinAcceptedCorpus = 92
 // absent from the golden: sources added after the golden was generated.
 var phase272NewlyAcceptedPaths = map[string]bool{
 	"examples/phase272/straight_line_copy.schway": true,
+	// 2026-10-10 (Phase 28, D-20): new runnable example added after the
+	// golden was generated; golden stays frozen (D-23).
+	"examples/phase28/unused_function.schway": true,
+}
+
+// phase272EntryPrecedencePaths lists the only golden entries whose
+// EmitApplication outcome may differ because main now wins entry resolution.
+// 2026-10-10 (Phase 28, D-01/D-23): the golden is frozen and records the old
+// callgraph.entry_ambiguous refusal; the observed entry must differ from it.
+var phase272EntryPrecedencePaths = map[string]string{
+	"testdata/phase11/multi_function_zero_call.schway": "D-01 main precedence; golden frozen per D-23",
 }
 
 type phase272CorpusGolden struct {
@@ -158,6 +169,19 @@ func TestPhase272AcceptedCorpusByteIdentity(t *testing.T) {
 		got, ok := byPath[want.Path]
 		if !ok {
 			t.Errorf("%s: accepted at golden revision %s but no longer accepted by session.Check", want.Path, golden.Revision)
+			continue
+		}
+		if reason, flipped := phase272EntryPrecedencePaths[want.Path]; flipped {
+			if got.CoreSHA256 != want.CoreSHA256 {
+				t.Errorf("%s: core document hash changed (%s): got %s want %s", want.Path, reason, got.CoreSHA256, want.CoreSHA256)
+			}
+			if !strings.Contains(want.EmitApplicationError, "callgraph.entry_ambiguous") {
+				t.Errorf("%s: frozen golden must carry the old callgraph.entry_ambiguous error, got %q", want.Path, want.EmitApplicationError)
+			}
+			if got.EmitApplicationSHA256 == want.EmitApplicationSHA256 && got.EmitApplicationError == want.EmitApplicationError {
+				t.Errorf("%s: allow-listed (%s) but observed entry equals the golden", want.Path, reason)
+			}
+			t.Logf("%s: entry-precedence flip observed: hash=%q error=%q", want.Path, got.EmitApplicationSHA256, got.EmitApplicationError)
 			continue
 		}
 		if got.CoreSHA256 != want.CoreSHA256 {

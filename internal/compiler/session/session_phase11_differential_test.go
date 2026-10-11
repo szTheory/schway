@@ -375,23 +375,39 @@ func TestPhase11InterproceduralDifferential(t *testing.T) {
 	// reading is unsatisfiable for a genuinely tied, zero-call,
 	// two-function program under a non-guessing resolver.
 	t.Run("ZeroCallEdges", func(t *testing.T) {
+		// 2026-10-10 (Phase 28, D-01/D-20): the ambiguous-entry refusal
+		// described above is superseded. main wins entry resolution by name,
+		// the unused function is pruned, and the program agrees on every
+		// tier. phase11CompareFourTiers still returns the checked (unpruned)
+		// program so the UnreachableFunction subtest can find orphan.
 		const fixture = "multi_function_zero_call.schway"
-		source := phase11ReadFixture(t, fixture)
-
-		if _, _, err := session.RunInterpreter(source); err == nil {
-			t.Fatal("expected RunInterpreter to refuse the ambiguous-entry program")
-		} else if ambiguous, ok := callgraph.EntryAmbiguousError(err); !ok || ambiguous.Code() != core.EntryAmbiguous {
-			t.Fatalf("expected a callgraph entry-ambiguity refusal from RunInterpreter, got: %v", err)
+		checked, entryName := phase11CheckedFixture(t, fixture)
+		if entryName != "main" {
+			t.Fatalf("expected entry main, got %q", entryName)
 		}
-
-		checked := session.Check(source)
-		if len(checked.Diagnostics) != 0 {
-			t.Fatalf("expected %s to check cleanly (the refusal is at entry resolution, not check), got diagnostics: %+v", fixture, checked.Diagnostics)
+		entry, err := callgraph.EntryFunction(checked)
+		if err != nil || entry.Name != "main" {
+			t.Fatalf("expected entry main, got %q (err %v)", entry.Name, err)
 		}
-		if _, err := cgen.EmitNative(checked.Program); err == nil {
-			t.Fatal("expected cgen.EmitNative to refuse the ambiguous-entry program")
-		} else if ambiguous, ok := callgraph.EntryAmbiguousError(err); !ok || ambiguous.Code() != core.EntryAmbiguous {
-			t.Fatalf("expected a callgraph entry-ambiguity refusal from EmitNative (the one lowering step every native tier's compile shares), got: %v", err)
+		// The tiers run the checked program (keeping the /2 multi-function
+		// documents comparable); the independent peer validates against the
+		// pruned program, whose single entry it can resolve (D-04/D-05).
+		pruned, err := callgraph.PruneToReachable(checked, entry.ID)
+		if err != nil {
+			t.Fatalf("PruneToReachable: %v", err)
+		}
+		input := phase11EntryInput(t, entry.Parameter.Type)
+		engines := phase11RunFourTiers(t, ctx, checked, entryName, input)
+		if err := session.Phase5CompareProgramEngines(fixture, pruned, engines); err != nil {
+			t.Fatalf("%s: four-tier disagreement: %v", fixture, err)
+		}
+		if len(engines) == 0 {
+			t.Fatal("expected at least one tier execution")
+		}
+		for tier, run := range engines {
+			if run.Outcome.Kind != "returned" || run.Outcome.Value != "7" {
+				t.Fatalf("%s: expected returned 7, got %+v", tier, run.Outcome)
+			}
 		}
 	})
 

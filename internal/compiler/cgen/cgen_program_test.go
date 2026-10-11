@@ -1252,30 +1252,33 @@ func TestEmitProgramEndToEndAgreesWithInterpreterAtO0(t *testing.T) {
 // program under a non-guessing resolver, and D-11-05's fail-closed
 // invariant is prioritized.
 func TestEmitProgramZeroCallEdges(t *testing.T) {
+	// 2026-10-10 (Phase 28, D-01/D-20): the pre-Phase-28 behavior above is
+	// superseded. `main` now wins entry resolution by name, so this fixture
+	// resolves to main and the unused function is pruned before emission.
 	program := phase11CheckedProgram(t, "multi_function_zero_call.schway")
 
-	_, err := cgen.EmitNative(program)
-	if err == nil {
-		t.Fatal("expected emitProgram to refuse an ambiguous-entry program, got nil error")
+	entry, err := callgraph.EntryFunction(program)
+	if err != nil {
+		t.Fatalf("EntryFunction: expected main precedence to resolve the entry, got: %v", err)
 	}
-	ambiguous, ok := callgraph.EntryAmbiguousError(err)
-	if !ok {
-		t.Fatalf("expected a callgraph entry-ambiguity refusal, got: %v", err)
+	if entry.Name != "main" {
+		t.Fatalf("expected entry main, got %q", entry.Name)
 	}
-	if ambiguous.Code() != core.EntryAmbiguous {
-		t.Fatalf("expected code %q, got %q", core.EntryAmbiguous, ambiguous.Code())
+	pruned, err := callgraph.PruneToReachable(program, entry.ID)
+	if err != nil {
+		t.Fatalf("PruneToReachable: %v", err)
 	}
-	roots := ambiguous.Roots()
-	if len(roots) != 2 {
-		t.Fatalf("expected exactly two candidate roots, got %v", roots)
+	if len(pruned.Functions) != 1 {
+		t.Fatalf("expected exactly the entry to survive pruning, got %d functions", len(pruned.Functions))
 	}
-
-	// The SAME refusal, from the SAME single resolver, must also surface
-	// through session's own run path (D-11-05's "one resolver" property):
-	// the interpreter and the native binary must never be given a chance
-	// to silently disagree about which function this program even is.
-	if _, _, err := session.RunInterpreter(mustRead(t, "multi_function_zero_call.schway")); err == nil {
-		t.Fatal("expected RunInterpreter to refuse the ambiguous-entry program")
+	generated, err := cgen.EmitNative(pruned)
+	if err != nil {
+		t.Fatalf("EmitNative over the pruned program: %v", err)
+	}
+	for _, function := range program.Functions {
+		if function.ID != entry.ID && strings.Contains(generated, function.ID) {
+			t.Fatalf("emitted C mentions pruned function %q", function.ID)
+		}
 	}
 }
 

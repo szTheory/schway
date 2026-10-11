@@ -48,7 +48,19 @@ var phase273ChangedConformancePaths = map[string]bool{
 
 // phase273NewlyAcceptedPaths lists the only accepted sources allowed to be
 // absent from the golden: sources added after the golden was generated.
-var phase273NewlyAcceptedPaths = map[string]bool{}
+var phase273NewlyAcceptedPaths = map[string]bool{
+	// 2026-10-10 (Phase 28, D-20): new runnable example added after the
+	// golden was generated; golden stays frozen (D-23).
+	"examples/phase28/unused_function.schway": true,
+}
+
+// phase273EntryPrecedencePaths lists the only golden entries whose
+// EmitNative outcome may differ because main now wins entry resolution.
+// 2026-10-10 (Phase 28, D-01/D-23): the golden is frozen and records the old
+// callgraph.entry_ambiguous refusal; the observed entry must differ from it.
+var phase273EntryPrecedencePaths = map[string]string{
+	"testdata/phase11/multi_function_zero_call.schway": "D-01 main precedence; golden frozen per D-23",
+}
 
 type phase273CorpusGolden struct {
 	Schema   string                `json:"schema"`
@@ -175,6 +187,16 @@ func TestPhase273ConformanceCorpusByteIdentity(t *testing.T) {
 		got, ok := byPath[want.Path]
 		if !ok {
 			t.Errorf("%s: accepted at golden revision %s but no longer accepted by session.Check", want.Path, golden.Revision)
+			continue
+		}
+		if reason, flipped := phase273EntryPrecedencePaths[want.Path]; flipped {
+			if !strings.Contains(want.EmitNativeError, "callgraph.entry_ambiguous") {
+				t.Errorf("%s: frozen golden must carry the old callgraph.entry_ambiguous error, got %q", want.Path, want.EmitNativeError)
+			}
+			if got.EmitNativeSHA256 == want.EmitNativeSHA256 && got.EmitNativeError == want.EmitNativeError {
+				t.Errorf("%s: allow-listed (%s) but observed entry equals the golden", want.Path, reason)
+			}
+			t.Logf("%s: entry-precedence flip observed: hash=%q error=%q", want.Path, got.EmitNativeSHA256, got.EmitNativeError)
 			continue
 		}
 		if phase273ChangedConformancePaths[want.Path] {
