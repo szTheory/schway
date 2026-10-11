@@ -95,3 +95,56 @@ func TestPhase29ByteViewAbilityAgreement(t *testing.T) {
 		}
 	}
 }
+
+func phase29FixtureAbilityShape() core.TypeRef { return core.TypeRef{Constructor: "FixtureBytes"} }
+
+// The FixtureBytes agreement test below is D-17/D-23 for the fixture owner:
+// ability.Derive and the independently written deriveAbility agree on every
+// ability, the D-23 expectation is asserted directly (granted drop, share,
+// send, escape; copy denied with witness path ["FixtureBytes"]), and an armed
+// mismatch control proves the comparator reports exactly a flipped ability.
+func TestPhase29FixtureBytesAbilityAgreement(t *testing.T) {
+	shape := phase29FixtureAbilityShape()
+
+	if got := phase29AbilityDisagreements(t, shape, ""); len(got) != 0 {
+		t.Fatalf("FixtureBytes derivations disagree: %v", got)
+	}
+
+	derived, err := ability.Derive(shape)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantGranted := []core.Ability{core.AbilityDrop, core.AbilityShare, core.AbilitySend, core.AbilityEscape}
+	if !reflect.DeepEqual(derived.Granted, wantGranted) {
+		t.Fatalf("ability.Derive(FixtureBytes).Granted = %v, want %v", derived.Granted, wantGranted)
+	}
+	for _, granted := range wantGranted {
+		ok, path, known := deriveAbility(shape, granted, 0, nil)
+		if !known || !ok || len(path) != 0 {
+			t.Fatalf("deriveAbility(FixtureBytes, %s) = %v %v %v, want granted", granted, ok, path, known)
+		}
+	}
+	ok, path, known := deriveAbility(shape, core.AbilityCopy, 0, nil)
+	if !known || ok || !reflect.DeepEqual(path, []string{"FixtureBytes"}) {
+		t.Fatalf("deriveAbility(FixtureBytes, copy) = %v %v %v, want denied with path [FixtureBytes]", ok, path, known)
+	}
+	found := false
+	for _, witness := range derived.NegativeWitnesses {
+		if witness.Ability == core.AbilityCopy {
+			found = true
+			if !reflect.DeepEqual(witness.Path, []string{"FixtureBytes"}) {
+				t.Fatalf("ability.Derive copy witness = %v, want [FixtureBytes]", witness.Path)
+			}
+		}
+	}
+	if !found || len(derived.NegativeWitnesses) != 1 {
+		t.Fatalf("ability.Derive negative witnesses = %v, want exactly the copy witness", derived.NegativeWitnesses)
+	}
+
+	for _, flipped := range phase29Abilities {
+		got := phase29AbilityDisagreements(t, shape, flipped)
+		if len(got) != 1 || len(got[0]) < len(flipped) || got[0][:len(flipped)] != string(flipped) {
+			t.Fatalf("flip %s: disagreements = %v, want exactly one naming %s", flipped, got, flipped)
+		}
+	}
+}
