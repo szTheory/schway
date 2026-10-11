@@ -595,19 +595,21 @@ The cascade diagnostics (the parser keeps going after the first error) mean test
 | A6 | The three suggested release-vs-view law codes/namespaces | Flag (c) | Naming only. |
 | A7 | Interpreter cost at 65,536 iterations is within the 12 s budget | Harness design | Unknown until 29-00 measures it (map-keyed `values`, per-op map lookups). |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **D-11 vs D-12: when is the cap measured, and through what?**
+All eight were resolved on 2026-10-11 by 29-CONTEXT.md D-14..D-21 (researcher recommendation auto-followed).
+
+1. **D-11 vs D-12: when is the cap measured, and through what?** RESOLVED: D-14.
    - What we know: D-11 makes 29-00 "minimum real ByteView plumbing + the Adler-32 loop, then measure flag (d)"; D-12 requires the measurement "through the D-05 fixture path, not a hand-built proxy"; the D-05 owner shape is Phase-23-sized (flag (f)).
    - What's unclear: whether 29-00 must include the whole fixture owner.
    - Recommendation: two stages. Stage A (29-00): harness-delivered bytes (a Go-injected `[]byte` seam for the interpreter; a gate-only driver appended to the emitted TU for native, disposable and labeled "proxy, gate-only"), enough to prove (a), the classifier/place-gate changes, and an order-of-magnitude reading that triggers a re-plan only if the slowest lane is far above budget. Stage B (last plan): the authoritative D-12 record through the real fixture owner, with hosted runs. Needs user acknowledgment because D-12's wording forbids proxies for the *record*.
-2. **Scope of D-05.** Confirm the user accepts a Phase-23-sized fixture-owner workstream, and decide between the literal-case-id source form (D-06) and the cheaper entry-parameter case id (flag (f), cheaper shape 1).
-3. **ROADMAP "runnable gain" cannot be met by `schway run --engine=*` under D-06.** Which public commands count (native `build --manifest` + `app run`; interpreter via session API)? Amend the roadmap line with a dated note, or relax D-06.
-4. **ByteView abilities** (A2): decide `drop`-only vs "no abilities" and record it before 29-00 code lands (two independent derivations must agree).
-5. **Reserved-parameter-name amendment.** Approve renaming `data` in the SC1 text and D-01/D-04 examples (Pitfall 1).
-6. **Interpreter "exit 65".** Approve the interpreter-side assertion form (defect outcome + reason + empty output) as the meaning of SC3 for the interpreter.
-7. **Defect-with-live-owner semantics** (Pitfall 8): record the rule (abort-like; owner left live; documented) before the OOB control is written.
-8. **-O3/LTO application lane:** test-only seam versus a `native.Runner` knob (a knob would change receipts' recorded flags).
+2. **Scope of D-05.** Confirm the user accepts a Phase-23-sized fixture-owner workstream, and decide between the literal-case-id source form (D-06) and the cheaper entry-parameter case id (flag (f), cheaper shape 1). RESOLVED: D-15.
+3. **ROADMAP "runnable gain" cannot be met by `schway run --engine=*` under D-06.** Which public commands count (native `build --manifest` + `app run`; interpreter via session API)? Amend the roadmap line with a dated note, or relax D-06. RESOLVED: D-16.
+4. **ByteView abilities** (A2): decide `drop`-only vs "no abilities" and record it before 29-00 code lands (two independent derivations must agree). RESOLVED: D-17.
+5. **Reserved-parameter-name amendment.** Approve renaming `data` in the SC1 text and D-01/D-04 examples (Pitfall 1). RESOLVED: D-18.
+6. **Interpreter "exit 65".** Approve the interpreter-side assertion form (defect outcome + reason + empty output) as the meaning of SC3 for the interpreter. RESOLVED: D-19.
+7. **Defect-with-live-owner semantics** (Pitfall 8): record the rule (abort-like; owner left live; documented) before the OOB control is written. RESOLVED: D-20.
+8. **-O3/LTO application lane:** test-only seam versus a `native.Runner` knob (a knob would change receipts' recorded flags). RESOLVED: D-21.
 
 ## Environment Availability
 
@@ -696,6 +698,8 @@ The cascade diagnostics (the parser keeps going after the first error) mean test
 - Focused tests only locally; full suites run on hosted CI (recorded in 28-CONTEXT.md; memory note `session-meta-tests-in-focused-runs`).
 
 ## Suggested Plan Decomposition (advisory)
+
+> Superseded by the committed plans: the gate became 29-00 + 29-01, so the numbers below shift by one (see ROADMAP Phase 29 plan list).
 
 1. **29-00 Wave-0 gate:** characterization pins; ByteView type + abilities; the two ops through check -> corevalidate -> originvalidate -> interp -> cgen with harness-delivered bytes; assert (a) Callable == true and pinned vectors on both engines; Stage-A cost reading; written verdict (stop and re-plan on failure).
 2. **29-01 Surface:** parser atoms, reserved names/arity refusals, formatter goldens, repair decision.

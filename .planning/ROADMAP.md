@@ -125,7 +125,37 @@ Plans:
 
 **Research flag**: Spike first. Before planning, settle: (a) a ByteView argument through `OpCall` in check's caller path and originvalidate's call-site derivation; (b) parser lookahead for byte length and indexing in scalar bodies; (c) release-while-loan-live refused by check, corevalidate, and pathoracle; (d) interpreter and native cost of 65,536 iterations, which confirms or lowers the 65,536-byte cap on recorded evidence; (e) no evented stores in the loop; (f) how the fixture's literal bytes reach the byte view before the Phase 31 file adapter exists (research proposes synthetic input to the conformance runner). Surface syntax for byte reads is decided at discussion.
 
-**Plans**: TBD
+**Plans**: 13 plans
+
+Plans:
+**Wave 1**
+- [ ] 29-00-PLAN.md — Wave-0 gate tracer: neighbor pins, ByteView {drop}, byte_len/byte_at through check, both peers and the interpreter with harness bytes, interpreter Stage-A vectors (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 29-01-PLAN.md — Wave-0 gate expansion: cgen both shells, gate-only native proxy at -O0/-O3/-O3+LTO, Stage-A cost reading, written verdict 29-00-GATE-VERDICT.md (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 29-02-PLAN.md — Byte-read surface: arity codes, reserved builtin names, let-first ByteView bodies, formatter goldens (wave 3)
+- [ ] 29-03-PLAN.md — Independent peer laws with seeded faults, loop-function neighbor refusals plus per-peer seeded neighbor faults (D-22), no per-byte events (wave 3)
+- [ ] 29-04-PLAN.md — OOB evidence: schema-2 reason, execution peer arm, interpreter boundary, bounds-check ordering in both C shells (wave 3)
+- [ ] 29-05-PLAN.md — Test-only fixture bytes adapter and independent Go generator, proven byte-identical (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 29-06-PLAN.md — Fixture owner caller shape in check, corevalidate and originvalidate; adler32_fixture checks clean (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 29-07-PLAN.md — Native runnable gain: pathoracle replay, session admission, fixture-main emitter, build + app run CLI (wave 5)
+- [ ] 29-08-PLAN.md — Interpreter runnable gain: RunWithFixtureBytes, D-19 OOB, D-20 abort-like byte-index defect (wave 5)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 29-09-PLAN.md — Release-while-view-live laws (D-22 code family) in check, corevalidate and pathoracle; owner release/move in a loop block pinned per peer; loop source rows as parse refusals (wave 6)
+- [ ] 29-10-PLAN.md — Pinned literals on both engines at -O0/-O3/-O3+LTO, mutants killed, OOB control lanes, per-lane sanitizer evidence and README (wave 6)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 29-11-PLAN.md — Closure: dated ROADMAP notes (incl. D-22 SC4 amendment), register reconciliation, maturity and product roadmap, transition check (wave 7)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [ ] 29-12-PLAN.md — Spike 008 Stage-B cap record; strict budget only via a dispatch input, hosted macOS and Linux runs; keep or lower decision (wave 8)
 
 ### Phase 30: Local Modules
 

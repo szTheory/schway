@@ -119,6 +119,9 @@ recommendation unless noted.
   slowest lane is far above the D-13 budget, and it never sets the cap. Stage B
   is the last plan: the authoritative D-12 record through the real D-05 fixture
   owner, with hosted runs. Only Stage B may keep or lower the cap.
+  *Planning note:* the gate is split across plans 29-00 (tracer) and 29-01
+  (cgen proxy, Stage-A cost, `29-00-GATE-VERDICT.md`) for per-plan budget; the
+  written verdict still precedes every other plan.
 - **D-15 (amends D-06; keeps D-05):** The fixture owner is kept and budgeted as
   its own multi-plan workstream. The case id comes from the entry parameter:
   `fn main(case: U64) -> U64` with `try` acquire on `case`. One built artifact
@@ -154,6 +157,38 @@ recommendation unless noted.
 - **D-21:** The `-O3` and `-O3 -flto` application-shell lanes for SC3 are a
   test-only seam, not a `native.Runner` knob. Receipts and recorded application
   flags stay `-O0`.
+
+- **D-22 (amends D-08 / BYTE-03 / SC4 "existing stable code", dated 2026-10-11):**
+  Research flag (c) found that no layer refuses a release while a view is
+  still live. Phase 29 therefore adds a new code family:
+  `check.release_while_view_live`, `core.release_while_view_live` and
+  `pathoracle.release_while_view_live`. The family covers only release before
+  the last use of the view, and each code is proven by a seeded fault per peer.
+  Neighbors in the loop body keep their existing codes:
+  - An `OpRelease` or `OpMove` of the owner placed in a loop block is pinned by
+    seeded typed-core rows. Each row asserts the first existing code it
+    produces when characterized at PLAN_BASE.
+  - A loop-body neighbor that no existing code refuses falls under this
+    amendment, and the plan must say so explicitly.
+  Source-level rows that the parser refuses (`linearBody` admits no `while`) are
+  documented as parse refusals, not ownership proofs. Every other D-08 neighbor
+  (copy, store, or return the view; borrow inside the loop; an owner or loan
+  parameter on a loop function) gets the source refusal plus one seeded fault
+  per peer that has a matching law.
+- **D-23:** The Stage-A STOP multiplier is 4× the D-13 budget, a planner choice
+  confirmed under the standing auto-follow preference. The Go generator stays
+  in `internal/compiler/testsupport`, which is test-only and consistent with D-07
+  and D-09. `FixtureBytes` takes the abilities {drop, share, send, escape} on the
+  FileByteOwner model.
+
+- **D-24 (contingency for 29-09):** At PLAN_BASE, row R2 (an owner release
+  after the view's last use but still on the loop cycle) or row M1 may be
+  accepted. That outcome is a safety finding, but the phase does not stop.
+  - **R2 accepted:** the D-22 code family is extended to cover "release of
+    the owner on a loop cycle". The 29-09 SUMMARY records the extension, and
+    29-11 adds it to the dated SC4 note.
+  - **M1 accepted:** the executor stops and re-plans. Moving an owner has had
+    an existing code since Phase 9.
 
 ### Claude's Discretion
 - Exact `ast.Expr` kind names, fixture owner type name, adapter file layout,
