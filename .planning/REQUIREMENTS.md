@@ -19,13 +19,13 @@ rejected. M005's acceptance record is preserved at
 
 ### Byte views
 
-- [ ] **BYTE-01**: Schway source can read the length of a read-only byte view and read the byte at an index, as an unsigned U64 value from 0 to 255. Checking, independent validation, interpretation, and C17 emission give these operations one defined meaning.
-- [ ] **BYTE-02**: Every byte read is bounds-checked at run time on every engine and optimization level, and no check is elided. An out-of-range index is a defined defect: exit 65, stderr exactly `schway: byte index out of bounds`, and empty stdout.
+- [x] **BYTE-01**: Schway source can read the length of a read-only byte view and read the byte at an index, as an unsigned U64 value from 0 to 255. Checking, independent validation, interpretation, and C17 emission give these operations one defined meaning.
+- [x] **BYTE-02**: Every byte read is bounds-checked at run time on every engine and optimization level, and no check is elided. An out-of-range index is a defined defect: exit 65, stderr exactly `schway: byte index out of bounds`, and empty stdout.
 - [ ] **BYTE-03**: A scalar loop function can take a read-only byte view parameter and iterate over it while carrying only U64 and Bool state. No loan, owner, or resource crosses a loop back edge. Each unsound neighbor is refused with its existing stable code: borrowing inside the loop, copying, storing or returning the view, releasing or moving an owner in the loop, and owner or loan parameters on a loop function.
 
 ### Checksum applications
 
-- [ ] **APP-10**: An `adler32` function written in ordinary Schway computes RFC 1950 Adler-32 over a byte view using only checked addition, comparison, and remainder. Interpreter and native results equal pinned literals for empty input, one `0x00` byte, `a`, `Wikipedia`, 4,096 `0x00` bytes, and 5,552 `0xFF` bytes.
+- [x] **APP-10**: An `adler32` function written in ordinary Schway computes RFC 1950 Adler-32 over a byte view using only checked addition, comparison, and remainder. Interpreter and native results equal pinned literals for empty input, one `0x00` byte, `a`, `Wikipedia`, 4,096 `0x00` bytes, and 5,552 `0xFF` bytes.
 - [ ] **APP-11**: A caller can run the `checksum` application on one file path through the public application route and get the Adler-32 value as bare decimal plus a newline. Pinned cases: an empty file gives `1`, `Wikipedia` gives `300286872`, and exactly 65,536 `0xFF` bytes gives `2006388466`. The 65,536-byte case passes on every engine.
 - [ ] **APP-12**: `checksum` refuses a file of 65,537 bytes or more with its own named oversize outcome. Missing, unreadable, and non-regular files (directory, FIFO, device) share one named outcome. Every error leaves stdout empty, uses fixed stderr text that never echoes the path, and releases the owned buffer exactly once on every path. The size check uses a bounded limit+1 read and never trusts the reported file size.
 
@@ -84,10 +84,10 @@ Each M006 requirement has one phase owner (see [ROADMAP.md](ROADMAP.md)).
 | DX-17 | Phase 28 | Complete |
 | DX-18 | Phase 28 | Complete |
 | EVD-13 | Phase 28 | Complete |
-| BYTE-01 | Phase 29 | Pending |
-| BYTE-02 | Phase 29 | Pending |
+| BYTE-01 | Phase 29 | Complete |
+| BYTE-02 | Phase 29 | Complete |
 | BYTE-03 | Phase 29 | Pending |
-| APP-10 | Phase 29 | Pending |
+| APP-10 | Phase 29 | Complete |
 | APP-11 | Phase 31 | Pending |
 | APP-12 | Phase 31 | Pending |
 | MOD-03 | Phase 30 | Pending |

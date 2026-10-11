@@ -5,16 +5,16 @@ milestone_name: Bounded Byte Utility and Local Modules
 current_phase: 29
 current_phase_name: Byte Views and the Adler-32 Library
 status: executing
-stopped_at: Completed 29-00-PLAN.md
-last_updated: "2026-10-11T21:46:37.004Z"
+stopped_at: Completed 29-01-PLAN.md
+last_updated: "2026-10-11T21:50:27.408Z"
 last_activity: 2026-10-11
 last_activity_desc: Phase 29 execution started
-state_head: 21dbd7d9f7c177d72f1f7d36d6a90396e872af51
+state_head: 1c6a7e365963640403bfec1aecaf32b24987a091
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 21
-  completed_plans: 9
+  completed_plans: 10
   percent: 20
 ---
 
@@ -124,7 +124,7 @@ plans.
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
 Phase: 29 (Byte Views and the Adler-32 Library) — EXECUTING
-Plan: 2 of 13
+Plan: 3 of 13
 Status: Ready to execute
 Last activity: 2026-10-11 — Phase 29 execution started
 
@@ -506,6 +506,7 @@ subset alone.
 | Phase 28 P06 | 25min | 3 tasks | 9 files |
 | Phase 28 P07 | 20min | 3 tasks | 10 files |
 | Phase 29 P00 | 35 min | 2 tasks | 15 files |
+| Phase 29 P01 | 25min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -639,6 +640,7 @@ decision history; they no longer describe current status.
 - [Phase 28]: 28-06: admission wired only in command-file layer; exported RunInterpreter/RunNative/runNativeChecked run no origin admission (D-19)
 - [Phase 28]: 28-07: app verify source refusals return SourceRefusalError and exit 2; admitPublishedApplication deleted
 - [Phase 29]: 29-00: ByteView type fact at :type:0 only for ByteView-parameter functions; U64-parameter functions keep their order so frozen goldens stay byte-identical
+- [Phase 29]: Wave-0 gate verdict PROCEED (plan 29-01): Stage-A lane maxima far under 4x D-13 budget
 
 ### Pending Todos
 
@@ -869,8 +871,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-11T21:46:36.955Z
-Stopped at: Completed 29-00-PLAN.md
+Last session: 2026-10-11T21:50:27.378Z
+Stopped at: Completed 29-01-PLAN.md
 Resume file: None
 Next action: Phase 28 complete and verified (4/4, 2026-10-10). Optional: /gsd-code-review 28 --fix --all for the 6 open review findings (WR-02 exit-3-on-write-failure, WR-04 latent entryErr). Then /gsd-discuss-phase 29.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
