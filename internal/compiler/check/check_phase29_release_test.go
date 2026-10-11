@@ -217,3 +217,108 @@ func TestPhase29LoopNeighborParseRefusals(t *testing.T) {
 		})
 	}
 }
+
+// phase29LoopRow rebuilds the checked fixture main as a loop-shaped typed core
+// (D-22): entry, loop header, loop body closed by an OpBranch back edge to the
+// header, exit. row R1 releases the owner in the body between the view borrow and
+// the OpCall; R2 releases it in the body after the OpCall (view dead, release on
+// the cycle); M1 moves the owner in the body between the view borrow and the
+// OpCall. Operation IDs follow program order.
+func phase29LoopRow(row string) func(f *core.Function) {
+	return func(f *core.Function) {
+		ops := f.Linear.Operations
+		acquire, view, call, release, ret := ops[0], ops[1], ops[2], ops[3], ops[4]
+		types := f.Linear.Types
+		boolType := f.ID + ":type:3"
+		f.Linear.Types = append(types, core.TypeFact{ID: boolType, Shape: core.TypeRef{Constructor: "Bool"}, Abilities: types[0].Abilities, NegativeWitnesses: types[0].NegativeWitnesses})
+		cond1, cond2, moved := f.ID+":place:4", f.ID+":place:5", f.ID+":place:6"
+		f.Linear.Places = append(f.Linear.Places,
+			core.Place{ID: cond1, Name: "c1", TypeID: boolType},
+			core.Place{ID: cond2, Name: "c2", TypeID: boolType},
+			core.Place{ID: moved, Name: "moved", TypeID: types[1].ID})
+		param := f.Parameter.ID
+		eq := func(target string) core.LinearOperation {
+			return core.LinearOperation{Kind: core.OpEqualU64, SourceID: param, RightID: param, TargetID: target, TypeID: boolType}
+		}
+		edge := func(name, from, to, pattern string) core.Edge {
+			return core.Edge{ID: f.ID + ":edge:" + name, FromBlockID: f.ID + ":block:" + from, ToBlockID: f.ID + ":block:" + to, Pattern: pattern}
+		}
+		branch := func(cond, trueEdge, falseEdge string) core.LinearOperation {
+			return core.LinearOperation{Kind: core.OpBranch, SourceID: cond, TypeID: boolType, TrueEdgeID: f.ID + ":edge:" + trueEdge, FalseEdgeID: f.ID + ":edge:" + falseEdge}
+		}
+		ownerOp := release
+		if row == "M1" {
+			ownerOp = core.LinearOperation{Kind: core.OpMove, SourceID: acquire.TargetID, TargetID: moved, TypeID: types[1].ID}
+		}
+		var flat []core.LinearOperation
+		var groups [][]int
+		if row == "R2" {
+			flat = []core.LinearOperation{acquire, view, call, eq(cond1), branch(cond1, "hb", "hx"), ownerOp, eq(cond2), branch(cond2, "bh", "bx"), ret}
+			groups = [][]int{{0, 1, 2}, {3, 4}, {5, 6, 7}, {8}}
+		} else {
+			flat = []core.LinearOperation{acquire, view, eq(cond1), branch(cond1, "hb", "hx"), ownerOp, eq(cond2), branch(cond2, "bh", "bx"), call, ret}
+			groups = [][]int{{0, 1}, {2, 3}, {4, 5, 6}, {7, 8}}
+		}
+		f.Linear.Operations = flat
+		phase29RenumberOperations(f)
+		names := []string{"entry", "header", "body", "exit"}
+		successors := [][]string{{"header"}, {"body", "exit"}, {"header", "exit"}, {}}
+		f.Linear.Blocks = nil
+		for index, group := range groups {
+			block := core.Block{ID: f.ID + ":block:" + names[index], PointID: f.ID + ":point:block:" + names[index], Successors: []string{}}
+			for _, op := range group {
+				block.OperationIDs = append(block.OperationIDs, f.Linear.Operations[op].ID)
+			}
+			for _, successor := range successors[index] {
+				block.Successors = append(block.Successors, f.ID+":block:"+successor)
+			}
+			f.Linear.Blocks = append(f.Linear.Blocks, block)
+		}
+		f.Linear.Edges = []core.Edge{edge("hb", "header", "body", "true"), edge("hx", "header", "exit", "false"), edge("bh", "body", "header", "true"), edge("bx", "body", "exit", "false")}
+	}
+}
+
+// TestPhase29OwnerLoopBlockRefused pins owner release and owner move placed in a
+// loop-body block closed by an OpBranch back edge (D-22, BYTE-03). planBaseCode is
+// the first code characterized at PLAN_BASE 677e04b in a scratch worktree through
+// the only check entry that existed there, loanLivenessFixpoint over
+// cfgBlocksForFunction; headCode is the first code of checkFixtureOwnerPostAssembly
+// at HEAD. R1 releases the owner before the view's last read, so no PLAN_BASE code
+// named the release: the D-22 law now fires first and the row carries
+// amendment D-22. R2 and M1 are refused at PLAN_BASE by an existing code and keep it
+// (D-24 did not trigger: no peer accepted R2 or M1 at PLAN_BASE).
+func TestPhase29OwnerLoopBlockRefused(t *testing.T) {
+	cases := []struct {
+		name         string
+		row          string
+		planBaseCode string
+		headCode     string
+		amendment    string
+	}{
+		{"R1 release between view borrow and call", "R1", "check.cfg_back_edge", "check.release_while_view_live", "D-22"},
+		{"R2 release after the call, on the cycle", "R2", "check.cfg_back_edge", "check.cfg_back_edge", ""},
+		{"M1 move between view borrow and call", "M1", "check.cfg_back_edge", "check.cfg_back_edge", ""},
+	}
+	first := func(row string) string {
+		diagnostics := checkFixtureOwnerPostAssembly(phase29ForgeMain(t, phase29LoopRow(row)))
+		if len(diagnostics) == 0 {
+			return ""
+		}
+		return diagnostics[0].Code
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.amendment == "" && tc.headCode != tc.planBaseCode {
+				t.Fatalf("row without an amendment must keep its PLAN_BASE code")
+			}
+			if got := first(tc.row); got != tc.headCode {
+				t.Fatalf("HEAD first code = %q, want %q", got, tc.headCode)
+			}
+			disableReleaseWhileViewLiveLawForTest = true
+			defer func() { disableReleaseWhileViewLiveLawForTest = false }()
+			if got := first(tc.row); got != tc.planBaseCode {
+				t.Fatalf("law disabled: first code = %q, want the PLAN_BASE code %q", got, tc.planBaseCode)
+			}
+		})
+	}
+}
