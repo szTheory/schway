@@ -1035,5 +1035,5 @@ plans, or reopen Phase 25 implementation.
 
 ## Operator Next Steps
 
-- M006 roadmap created 2026-10-10 (Phases 28–32). Phase 28 has no CONTEXT.md or
-  plans yet; context captured. After clearing context, run `/gsd-plan-phase 28`.
+- M006 roadmap created 2026-10-10 (Phases 28–32). Phase 28 has 28-CONTEXT.md but no
+  plans yet. After clearing context, run `/gsd-plan-phase 28`.
