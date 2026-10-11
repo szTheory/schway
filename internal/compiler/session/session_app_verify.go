@@ -311,10 +311,13 @@ func VerifyApplicationCases(ctx context.Context, source []byte, cases ReplayCase
 	if len(entryDiagnostics) > 0 {
 		return report, &SourceRefusalError{Diagnostics: entryDiagnostics}
 	}
-	program := admitted
-	if entryErr == nil {
-		program = prunedProgram
+	// A non-diagnostic resolution failure is a tool error on every lane; it
+	// must never degrade to per-case "unsupported" results (which a
+	// verifier-model-only case set would then never consult).
+	if entryErr != nil {
+		return report, entryErr
 	}
+	program := prunedProgram
 	inputSet := make([]string, 0, len(cases.Cases))
 	indices := make([]int, 0, len(cases.Cases))
 	interpreted := make(map[int]execution.Execution)
@@ -350,7 +353,7 @@ func VerifyApplicationCases(ctx context.Context, source []byte, cases ReplayCase
 		default:
 			inputSet = append(inputSet, replayCase.Input)
 			indices = append(indices, len(report.Cases))
-			if entryErr != nil || entry.Match != nil || entry.Linear == nil || entry.Parameter.Type != "U64" || entry.ReturnType != "U64" {
+			if entry.Match != nil || entry.Linear == nil || entry.Parameter.Type != "U64" || entry.ReturnType != "U64" {
 				caseReport.Status = ReplayStatusUnsupported
 				caseReport.Diagnostic = "source replay requires a linear U64-to-U64 entry"
 			} else if hasForeignContract(program) {
