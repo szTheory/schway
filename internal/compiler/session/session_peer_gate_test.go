@@ -1,6 +1,7 @@
 package session_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -323,6 +324,20 @@ func assertThreeWayEndpointAgreement(t *testing.T, fixture string, program core.
 		coreSet := corevalidateEndpoints[function.ID]
 		pathSet, _, oracleErr := pathoracle.RecomputeEndpoints(function, calleeLookup)
 		if oracleErr != nil {
+			var coded interface{ Code() string }
+			if errors.As(oracleErr, &coded) && coded.Code() == "pathoracle.cfg_back_edge" {
+				// Phase 29 (29-03, 29-12 Fix now): pathoracle is deliberately
+				// scoped to acyclic CFGs (OWN-03, T-03-11) and refuses every
+				// cyclic block graph, while check and corevalidate admit the
+				// Phase 29 while loops. This is the oracle's declared scope
+				// limit, not a verdict divergence: the oracle contributes no
+				// endpoint set for a cyclic function, so the differential
+				// narrows to check versus corevalidate on exactly that function.
+				if !reflect.DeepEqual(checkSet, coreSet) {
+					t.Errorf("%s: function %s -- check and corevalidate loan endpoints diverge on a cyclic CFG the oracle declines: check=%+v corevalidate=%+v", fixture, function.ID, checkSet, coreSet)
+				}
+				continue
+			}
 			t.Errorf("%s: pathoracle.RecomputeEndpoints(%s): %v", fixture, function.ID, oracleErr)
 			continue
 		}
