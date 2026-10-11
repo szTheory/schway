@@ -22,6 +22,7 @@ import (
 
 	"github.com/szTheory/schway/internal/compiler/cache"
 	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/exitcode"
 )
 
 const MaxStreamBytes = 64 * 1024
@@ -34,7 +35,7 @@ const defaultSubprocessTimeout = 30 * time.Second
 // outcome.
 const (
 	CodeEventCapacityExhausted = "native.event_capacity_exhausted"
-	EventCapacityExitStatus    = 69
+	EventCapacityExitStatus    = exitcode.EventCapacity
 	EventCapacityStderr        = "schway: event capacity exhausted\n"
 )
 

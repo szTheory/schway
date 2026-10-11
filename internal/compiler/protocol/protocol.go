@@ -9,6 +9,7 @@ import (
 
 	"github.com/szTheory/schway/internal/compiler/cache"
 	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/exitcode"
 	"github.com/szTheory/schway/internal/compiler/interp"
 )
 
@@ -681,14 +682,14 @@ func human(result Result) string {
 func ExitCode(status string) int {
 	switch status {
 	case StatusPass:
-		return 0
+		return exitcode.Success
 	case StatusInvalid:
-		return 2
+		return exitcode.Invalid
 	case StatusOperational:
-		return 3
+		return exitcode.Operational
 	case StatusMismatch:
-		return 4
+		return exitcode.Mismatch
 	default:
-		return 64
+		return exitcode.Usage
 	}
 }
