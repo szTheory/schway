@@ -202,6 +202,12 @@ func VerifyApplicationCasesFile(ctx context.Context, sourcePath, casesPath, repo
 	if strings.TrimSpace(reportPath) == "" {
 		return ReplayReport{}, errors.New("an application verification report path is required")
 	}
+	// A report left by an earlier run must never outlive a run that refuses,
+	// fails, or overflows before publishing its own report: a consumer that
+	// reads only the file would otherwise see a stale pass.
+	if err := removeStaleVerificationReport(reportPath, sourcePath, casesPath); err != nil {
+		return ReplayReport{}, err
+	}
 	source, err := readBoundedFile(sourcePath, syntax.MaxSourceBytes)
 	if err != nil {
 		return ReplayReport{}, fmt.Errorf("read source: %w", err)
@@ -225,6 +231,28 @@ func VerifyApplicationCasesFile(ctx context.Context, sourcePath, casesPath, repo
 		return report, err
 	}
 	return report, verifyErr
+}
+
+// removeStaleVerificationReport deletes a pre-existing report file. It never
+// removes an input: a report path that names the source or cases file is left
+// for the later atomic publish to overwrite.
+func removeStaleVerificationReport(reportPath, sourcePath, casesPath string) error {
+	info, err := os.Lstat(reportPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("inspect stale verification report: %w", err)
+	}
+	for _, input := range []string{sourcePath, casesPath} {
+		if inputInfo, statErr := os.Stat(input); statErr == nil && os.SameFile(info, inputInfo) {
+			return nil
+		}
+	}
+	if err := os.Remove(reportPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("remove stale verification report: %w", err)
+	}
+	return nil
 }
 
 // SourceRefusalError reports that the source was refused by the checker, an

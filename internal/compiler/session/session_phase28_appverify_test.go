@@ -345,3 +345,22 @@ func TestAppVerifyRefusalSurvivesReportWriteFailure(t *testing.T) {
 		t.Fatalf("err = %v, want a *SourceRefusalError despite the report write failure", err)
 	}
 }
+
+// TestAppVerifyRemovesStaleReportOnRefusal pins WR-03: a previous run's report
+// cannot survive a run that refuses before publishing its own.
+func TestAppVerifyRemovesStaleReportOnRefusal(t *testing.T) {
+	sourcePath, casesPath := phase28WriteRefusedInputs(t)
+	reportPath := filepath.Join(t.TempDir(), "report.json")
+	if err := os.WriteFile(reportPath, []byte(`{"verified":true}`+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := session.VerifyApplicationCasesFile(context.Background(), sourcePath, casesPath, reportPath, native.DefaultRunner())
+	var refusal *session.SourceRefusalError
+	if !errors.As(err, &refusal) {
+		t.Fatalf("err = %v, want a *SourceRefusalError", err)
+	}
+	data, readErr := os.ReadFile(reportPath)
+	if readErr == nil && strings.Contains(string(data), `"verified":true`) {
+		t.Fatalf("stale passing report survived a refused run: %s", data)
+	}
+}
