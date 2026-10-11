@@ -54,7 +54,7 @@ Phase IDs continue from M005's Phase 27.3. Each phase names its runnable gain.
 Phase discussions choose surface syntax and implementation detail while
 preserving the acceptance behavior below.
 
-- [ ] **Phase 28: Exit Classes, Verify Report, and Entry Pruning** - Source refusals share one exit class across commands and engines, programs with unused functions run, and `app verify` keeps the named capacity reason at every input.
+- [x] **Phase 28: Exit Classes, Verify Report, and Entry Pruning** - Source refusals share one exit class across commands and engines, programs with unused functions run, and `app verify` keeps the named capacity reason at every input. (completed 2026-10-10)
 - [ ] **Phase 29: Byte Views and the Adler-32 Library** - Ordinary Schway source reads a bounds-checked byte view in a scalar loop and computes RFC 1950 Adler-32 with pinned answers on both engines.
 - [ ] **Phase 30: Local Modules** - A program imports the Adler-32 library from another local file through an explicit import and export list, with closed resolution and named module-graph refusals.
 - [ ] **Phase 31: Bounded File Checksum and Second Consumer** - A caller runs `checksum FILE` with an exact result and error matrix, and a second application imports the same library without copying it.
@@ -81,7 +81,7 @@ preserving the acceptance behavior below.
 
 **Research flag**: Standard. Enumerate and pin every test, guide script, and hosted gate that asserts an exit code before changing any (PITFALLS 13); never renumber 65 or 69. N3 (duplicated capacity literal) is folded into the named table.
 
-**Plans**: 7/7 plans executed
+**Plans**: 7/7 plans complete
 
 Plans:
 **Wave 1**
@@ -192,7 +192,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 28. Exit Classes, Verify Report, and Entry Pruning | 7/7 | In Progress | - |
+| 28. Exit Classes, Verify Report, and Entry Pruning | 7/7 | Complete    | 2026-10-10 |
 | 29. Byte Views and the Adler-32 Library | 0/TBD | Not started | - |
 | 30. Local Modules | 0/TBD | Not started | - |
 | 31. Bounded File Checksum and Second Consumer | 0/TBD | Not started | - |

@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: M006
 milestone_name: Bounded Byte Utility and Local Modules
-current_phase: 28
-current_phase_name: Exit Classes, Verify Report, and Entry Pruning
-status: verifying
-stopped_at: Completed 28-07-PLAN.md
-last_updated: "2026-10-11T02:46:51.083Z"
+current_phase: 29
+current_phase_name: Byte Views and the Adler-32 Library
+status: planning
+stopped_at: Phase 28 complete, ready to plan Phase 29
+last_updated: "2026-10-11T02:52:07.433Z"
 last_activity: 2026-10-10
-last_activity_desc: Phase 28 execution started
-state_head: 183b720ac9e676b24606a05847fdcf74d1e5eaac
+last_activity_desc: Phase 28 complete, transitioned to Phase 29
+state_head: 944dfd44ce865b9c13f9ba2f5ac2240e59d3631c
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 7
   completed_plans: 7
-  percent: 0
+  percent: 20
 ---
 
 <!-- schway-current:start -->
@@ -123,12 +123,12 @@ plans.
 ## Current Position
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
-Phase: 28 (Exit Classes, Verify Report, and Entry Pruning) — EXECUTING
-Plan: 7 of 7
-Status: Phase complete — ready for verification
-Last activity: 2026-10-10 — Phase 28 execution started
+Phase: 29 — Byte Views and the Adler-32 Library
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-10 — Phase 28 complete, transitioned to Phase 29
 
-Progress: [░░░░░░░░░░] 0% (0/5 M006 phases)
+Progress: [██░░░░░░░░] 20% (0/5 M006 phases)
 
 ## M006 Planning
 
@@ -266,7 +266,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 232
+- Total plans completed: 239
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -285,6 +285,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 27.1 | 3 | - | - |
 | 27.2 | 3 | - | - |
 | 27.3 | 4 | - | - |
+| 28 | 7 | - | - |
 
 The archived aggregate preserves the cumulative project total. The detailed
 rows above are the M004 subset; do not recompute the project total from that
@@ -867,7 +868,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-10-11T02:46:51.028Z
-Stopped at: Completed 28-07-PLAN.md
+Stopped at: Phase 28 complete, ready to plan Phase 29
 Resume file: None
 Next action: After clearing context, run /gsd-execute-phase 28 (7 plans in 6 waves, checked 2026-10-10; plan-check passed with override for two soft scope warnings: 28-06 estimate 110k low-confidence, 28-02 13 files).
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
