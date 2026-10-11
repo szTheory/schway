@@ -581,6 +581,12 @@ func Phase4ThreeEngineDifferential(ctx context.Context, fixture string, program 
 // corpus fixture, returning its single function's name alongside the
 // validated core.Program -- the common prelude every Phase4ThreeEngineDifferential
 // caller needs before it can drive the differential itself.
+//
+// The returned core.Program is UNPRUNED: it still carries dead functions.
+// Entry resolution is done here only for its refusal and entry name. Callers
+// must prune per engine (callgraph.PruneToReachable from the returned entry)
+// before handing the program to an engine that assumes a single in-degree-zero
+// root (Phase 28 D-19).
 func Phase4CheckedProgram(corpus, fixture string) (core.Program, string, error) {
 	source, err := readBoundedFile(filepath.Join(corpus, fixture), syntax.MaxSourceBytes)
 	if err != nil {
