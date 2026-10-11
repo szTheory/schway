@@ -81,7 +81,7 @@ preserving the acceptance behavior below.
 
 **Research flag**: Standard. Enumerate and pin every test, guide script, and hosted gate that asserts an exit code before changing any (PITFALLS 13); never renumber 65 or 69. N3 (duplicated capacity literal) is folded into the named table.
 
-**Plans**: 8/8 plans complete (28-08 gap closure for G-28-3 pending)
+**Plans**: 8/8 plans complete (28-08 closed UAT gap G-28-3)
 
 Plans:
 **Wave 1**
