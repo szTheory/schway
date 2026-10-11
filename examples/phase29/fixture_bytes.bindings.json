@@ -1,0 +1,12 @@
+{
+  "schema": "schway.local-c/1",
+  "sources": ["adapter.c"],
+  "headers": ["adapter.h"],
+  "include_dirs": ["."],
+  "symbols": [
+    {"name": "schway_fixture_bytes_acquire", "header": "adapter.h", "function_type": "schway_fixture_bytes_acquire_fn"},
+    {"name": "schway_fixture_bytes_view", "header": "adapter.h", "function_type": "schway_fixture_bytes_view_fn"},
+    {"name": "schway_fixture_bytes_release", "header": "adapter.h", "function_type": "schway_fixture_bytes_release_fn"}
+  ],
+  "runtime_dependencies": ["platform-c-runtime"]
+}
