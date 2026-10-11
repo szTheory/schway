@@ -119,10 +119,13 @@ func requireEmptyDir(t *testing.T, dir string) {
 	}
 }
 
-func requireVerifyRefusal(t *testing.T, report session.ReplayReport, err error, want string) {
+// requireVerifyRefusal asserts the Phase 28 D-21 contract (2026-10-10): a
+// source refusal is a typed *SourceRefusalError carrying the refusing code.
+func requireVerifyRefusal(t *testing.T, report session.ReplayReport, err error, wantCode string) {
 	t.Helper()
-	if err == nil || err.Error() != want {
-		t.Fatalf("VerifyApplicationCases err = %v, want %q", err, want)
+	var refusal *session.SourceRefusalError
+	if !errors.As(err, &refusal) || refusal.Code() != wantCode || err.Error() != "source refused: "+wantCode {
+		t.Fatalf("VerifyApplicationCases err = %v, want SourceRefusalError %q", err, wantCode)
 	}
 	if report.Verified || report.EmittedCDigest != "" || len(report.Cases) != 0 {
 		t.Fatalf("refused verify report carries evidence: %+v", report)
@@ -160,7 +163,7 @@ func TestApplicationRoutesApplySameAdmissionLayers(t *testing.T) {
 	})
 	t.Run("checker/verify", func(t *testing.T) {
 		report, err := session.VerifyApplicationCases(ctx, checkerSource, phase271ReplayCases(), phase271MissingClangRunner(t))
-		requireVerifyRefusal(t, report, err, "source is not accepted by the checker: ownership.borrow_conflict")
+		requireVerifyRefusal(t, report, err, "ownership.borrow_conflict")
 	})
 
 	t.Run("corevalidate/build", func(t *testing.T) {
@@ -182,7 +185,7 @@ func TestApplicationRoutesApplySameAdmissionLayers(t *testing.T) {
 	})
 	t.Run("corevalidate/verify", func(t *testing.T) {
 		report, err := session.VerifyApplicationCases(ctx, coreSource, phase271ReplayCases(), phase271MissingClangRunner(t))
-		requireVerifyRefusal(t, report, err, "source core validation failed")
+		requireVerifyRefusal(t, report, err, "core.duplicate_function_id")
 	})
 
 	t.Run("origin/build", func(t *testing.T) {
@@ -202,7 +205,7 @@ func TestApplicationRoutesApplySameAdmissionLayers(t *testing.T) {
 	})
 	t.Run("origin/verify", func(t *testing.T) {
 		report, err := session.VerifyApplicationCases(ctx, originSource, phase271ReplayCases(), phase271MissingClangRunner(t))
-		requireVerifyRefusal(t, report, err, "source origin validation failed: core.origin_omitted")
+		requireVerifyRefusal(t, report, err, "core.origin_omitted")
 	})
 }
 
@@ -249,8 +252,9 @@ func TestPhase271VerifyFileRouteWritesOnlyFailReport(t *testing.T) {
 	}
 	reportPath := filepath.Join(reportDir, "report.json")
 	_, err = session.VerifyApplicationCasesFile(context.Background(), testsupport.ProjectPath("testdata", "phase25", "shared_copy_accept.schway"), casesPath, reportPath, phase271MissingClangRunner(t))
-	if err == nil || err.Error() != "source origin validation failed: core.origin_omitted" {
-		t.Fatalf("VerifyApplicationCasesFile err = %v, want source origin validation failed: core.origin_omitted", err)
+	var refusal *session.SourceRefusalError
+	if !errors.As(err, &refusal) || refusal.Code() != "core.origin_omitted" {
+		t.Fatalf("VerifyApplicationCasesFile err = %v, want SourceRefusalError core.origin_omitted", err)
 	}
 	entries, readErr := os.ReadDir(reportDir)
 	if readErr != nil || len(entries) != 1 || entries[0].Name() != "report.json" {

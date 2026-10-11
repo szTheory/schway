@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
 	"github.com/szTheory/schway/internal/compiler/execution"
 	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/native"
@@ -220,6 +221,23 @@ func VerifyApplicationCasesFile(ctx context.Context, sourcePath, casesPath, repo
 	return report, verifyErr
 }
 
+// SourceRefusalError reports that the source was refused by the checker, an
+// admission layer or entry resolution (Phase 28 D-21). The CLI maps it to
+// exit 2 (exitcode.Invalid); capacity and tool outcomes stay exit 3.
+type SourceRefusalError struct {
+	Diagnostics []diagnostic.Diagnostic
+}
+
+// Code returns the first refusing diagnostic code.
+func (e *SourceRefusalError) Code() string {
+	if e == nil || len(e.Diagnostics) == 0 {
+		return ""
+	}
+	return e.Diagnostics[0].Code
+}
+
+func (e *SourceRefusalError) Error() string { return "source refused: " + e.Code() }
+
 // VerifyApplicationCases checks one source/core, drives independent explicit
 // inputs through the interpreter and generated-C conformance shell at O0/O3,
 // and compares all tiers to the independently authored expected value.
@@ -242,26 +260,26 @@ func VerifyApplicationCases(ctx context.Context, source []byte, cases ReplayCase
 		return report, err
 	}
 	cases = validatedCases
+	// D-21: the same Check -> admitProgram -> resolveEntry steps as every other
+	// command; any source refusal is a typed *SourceRefusalError (exit 2). The
+	// fail report is still returned (and written by the file route).
 	checked := Check(source)
 	if len(checked.Diagnostics) > 0 {
-		return report, fmt.Errorf("source is not accepted by the checker: %s", checked.Diagnostics[0].Code)
+		return report, &SourceRefusalError{Diagnostics: checked.Diagnostics}
 	}
-	adm := admitPublishedApplication(checked)
-	switch adm.layer {
-	case applicationRefusedCore:
-		return report, errors.New("source core validation failed")
-	case applicationRefusedOrigin:
-		return report, fmt.Errorf("source origin validation failed: %s", adm.code)
+	admitted, admissionDiagnostics := admitProgram(checked)
+	if len(admissionDiagnostics) > 0 {
+		return report, &SourceRefusalError{Diagnostics: admissionDiagnostics}
 	}
 	// D-04/D-18: one entry resolution after admission and before the per-case
-	// loop; every engine below sees the pruned program. A refusal keeps the
-	// per-case "unsupported" result (source refusals become exit 2 in 28-07).
-	entry, prunedProgram, entryDiagnostics, entryErr := resolveEntry(adm.program)
-	program := adm.program
-	if entryErr == nil && len(entryDiagnostics) == 0 {
+	// loop; every engine below sees the pruned program.
+	entry, prunedProgram, entryDiagnostics, entryErr := resolveEntry(admitted)
+	if len(entryDiagnostics) > 0 {
+		return report, &SourceRefusalError{Diagnostics: entryDiagnostics}
+	}
+	program := admitted
+	if entryErr == nil {
 		program = prunedProgram
-	} else if entryErr == nil {
-		entryErr = errors.New(entryDiagnostics[0].Code)
 	}
 	inputSet := make([]string, 0, len(cases.Cases))
 	indices := make([]int, 0, len(cases.Cases))

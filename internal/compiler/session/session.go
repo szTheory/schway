@@ -1141,53 +1141,6 @@ func runInterpreterResolved(program core.Program) ([]interp.Execution, []diagnos
 	return executions, nil, nil
 }
 
-// applicationRefusalLayer names which admission layer refused an application
-// source after the checker accepted it.
-type applicationRefusalLayer uint8
-
-const (
-	applicationAdmitted applicationRefusalLayer = iota
-	applicationRefusedCore
-	applicationRefusedOrigin
-)
-
-// applicationAdmission is the outcome of admitPublishedApplication. program is
-// the peer-normalized program and is meaningful only when layer is
-// applicationAdmitted.
-type applicationAdmission struct {
-	layer      applicationRefusalLayer
-	code       string
-	diagnostic diagnostic.Diagnostic
-	program    core.Program
-}
-
-// admitPublishedApplication is the application/publication admission gate.
-// Retained only for VerifyApplicationCases; plan 28-07 replaces it with
-// admitProgram (D-21). BuildApplication, RunInterpreterApplication and the
-// command-file lanes use admitProgram (Phase 28 D-09/D-10/D-19). Internal
-// execution lanes (runNative, RunInterpreter, runNativeChecked) deliberately
-// run no origin admission, because differential and verify-corpus lanes run
-// undeclared-borrow fixtures (TestExclusiveBorrowInterpreterNative).
-func admitPublishedApplication(checked CheckResult) applicationAdmission {
-	validated := corevalidate.Validate(checked.Program)
-	if !validated.Valid {
-		code := ""
-		if len(validated.Problems) > 0 {
-			code = validated.Problems[0].Code
-		}
-		return applicationAdmission{layer: applicationRefusedCore, code: code}
-	}
-	program := validated.Program()
-	if problems := originvalidate.ValidatePublished(program); len(problems) > 0 {
-		return applicationAdmission{
-			layer:      applicationRefusedOrigin,
-			code:       problems[0].Code,
-			diagnostic: originPeerRefusalDiagnostic(problems[0], program, checked.Tree),
-		}
-	}
-	return applicationAdmission{layer: applicationAdmitted, program: program}
-}
-
 // RunInterpreterApplication runs one checked U64 application input. Its
 // execution document and application bytes remain separate in the result,
 // matching the retained native application boundary.

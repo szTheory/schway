@@ -314,6 +314,10 @@ func runApplicationVerify(args []string) int {
 	report, err := session.VerifyApplicationCasesFile(ctx, args[2], casesPath, reportPath, native.DefaultRunner())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "schway app verify: %v\n", err)
+		var refusal *session.SourceRefusalError
+		if errors.As(err, &refusal) {
+			return exitInvalidSource
+		}
 		return exitOperational
 	}
 	if !report.Verified {
