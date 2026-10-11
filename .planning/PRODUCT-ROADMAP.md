@@ -198,6 +198,22 @@ Phase 32. N4 and R1b stay tracked but unscheduled.
 | SEED-261008-z1g | retain dormant | Module imports may later create a caller-query need; no reviewer gap observed yet. Re-check at Phase 30. |
 | SEED-261008-z1s | retain dormant | Import and byte-read surface syntax is a Phase 29/30 discussion item; promote only if a reviewer contests a concrete form. |
 
+### Phase 28 transition amendment — 2026-10-10
+
+**What 28 changed:** `core.entry_ambiguous` is now a source refusal that exits 2 on check, build, both run engines and app verify. A program with functions `main` never calls is pruned after validation and runs: `examples/phase28/unused_function.schway` builds, and `app run` with input 7 prints 7. In app verify, source refusals (checker, core, origin, path oracle, entry) now exit 2 with the refusing code and still write the fail report, while capacity-exhausted cases stay `unsupported` with exit 3 and a digest (schema `lang.app-verification/2`). Core and origin refusals exit 2 on every command (W2 and W3 closed). One exit-code table lives in `internal/compiler/exitcode` and is published in the README "Exit codes" section, pinned by TestExitCodeDocsTable. Witnesses: TestExitClassesUniformAcrossSurfaces, TestUnreachableFunctionProgramRuns and TestAppVerifySourceRefusalExitsInvalid (newly executed locally, focused). Hosted macOS and Linux CI has not run for Phase 28 yet.
+
+**Seed transition check:**
+
+| Seed | Disposition | Reason |
+|------|-------------|--------|
+| SEED-261008-trz | retain dormant | Every Phase 28 failure was diagnosed from source, existing diagnostics and the exit-class tests; no failure was left unexplained by current capture and replay evidence. |
+| SEED-261008-z1g | retain dormant | Finding the callers of an entry did not need a symbol or caller query beyond ordinary search and the callgraph tests; no measured reviewer gap. Re-check at Phase 30. |
+| SEED-261008-z1s | retain dormant | The entry-selection rule (`main` first, then a unique root) was settled in phase discussion, not contested by a consumer or reviewer. |
+
+**Runnable gain check (AGENTS.md):** Phase 28 has a runnable gain. A library-style file with an unused function now builds and runs, and `app verify` of `sum_to_n` at n=1000 reports a named `native.event_capacity_exhausted` unsupported case with a digest instead of an unnamed failure. No scope review is triggered.
+
+**Current three recommendations re-checked:** unchanged. Recommendation 2 (bounded byte utility and local modules) continues with Phase 29. Reprioritize if a named consumer needs bitwise operators or a smaller byte API before byte views.
+
 ### Phase 26 discussion — 2026-10-02 (historical planning snapshot)
 
 The user adopted the specialist fan-out recommendations for Phase 26: use

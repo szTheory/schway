@@ -72,6 +72,8 @@ Mutation, forwarding, retention, callbacks, nonlocal exits, wider pointer
 forms, and borrowed-value return bypasses remain refused. The hosted result
 below closes EVD-10 without widening this implementation boundary.
 
+2026-10-10 (Phase 28): `core.entry_ambiguous` is a source refusal that exits 2 on check, build, both run engines and app verify; functions `main` never calls are pruned after validation so such programs run (examples/phase28/unused_function.schway); app verify source refusals exit 2 with the refusing code and still write the fail report, while capacity-exhausted cases stay unsupported with exit 3; core and origin refusals exit 2 on every command; one exit-code table in internal/compiler/exitcode, published in the README; app verify schema lang.app-verification/2 carries an outcome digest for capacity-exhausted cases; focused local tests (28-01..07), hosted CI not yet run.
+
 **Newly executed checks:** `go test -count=1 ./...`, `go vet ./...`,
 `go build ./...`, and `go test -race -count=1 ./...` passed locally on
 macOS/arm64. The focused native contract tests and
@@ -265,6 +267,7 @@ The available compiler is not a general application runtime yet.
 | Resource/loan loop carries and cyclic path enumeration | Scalar-loop admission does not authorize ownership, resources, loans, or loan-derived provenance across back edges; the path oracle remains acyclic | Phase 26 category/peer mutation controls and `TestCompositionCycleGuardFailsClosed` |
 | General strings, arrays, collections, usable library modules | Ordinary JSON/HTTP libraries are not yet writable | current syntax/checker frontier; design wiki is prospective |
 | Recursion and broader resource control | Call cycles, nonlocal exits, cancellation, general fallible cleanup and escaped pointers require further contracts | callgraph and current foreign refusal boundaries |
+| Entry selection | Entry is `main` first, then a unique in-degree-zero root, then a strictly larger closure; a genuinely ambiguous entry is refused with `core.entry_ambiguous` (exit 2) on check, build, run and app verify, and uncalled functions no longer block a run (`examples/phase28/unused_function.schway`) | `TestUnreachableFunctionProgramRuns`, `TestExitClassesUniformAcrossSurfaces`, `TestAppVerifySourceRefusalExitsInvalid` |
 
 Phase 23 adds the first public foreign-C file-byte path. Its three exact
 operation contracts acquire a byte allocation from a file, keep the local
