@@ -81,14 +81,14 @@ preserving the acceptance behavior below.
 
 **Research flag**: Standard. Enumerate and pin every test, guide script, and hosted gate that asserts an exit code before changing any (PITFALLS 13); never renumber 65 or 69. N3 (duplicated capacity literal) is folded into the named table.
 
-**Plans**: 1/7 plans executed
+**Plans**: 2/7 plans executed
 
 Plans:
 **Wave 1**
 - [x] 28-01-PLAN.md — Safety net: corpus entry/exit-class manifest and exit-pin inventory before any change (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 28-02-PLAN.md — One named exit-code table, app-run pins, static no-literal scan, repair mirror pin (wave 2)
+- [x] 28-02-PLAN.md — One named exit-code table, app-run pins, static no-literal scan, repair mirror pin (wave 2)
 - [ ] 28-03-PLAN.md — App verify outcome digest, schema /2, ID bound and size budget (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -192,7 +192,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 28. Exit Classes, Verify Report, and Entry Pruning | 1/7 | In Progress | - |
+| 28. Exit Classes, Verify Report, and Entry Pruning | 2/7 | In Progress | - |
 | 29. Byte Views and the Adler-32 Library | 0/TBD | Not started | - |
 | 30. Local Modules | 0/TBD | Not started | - |
 | 31. Bounded File Checksum and Second Consumer | 0/TBD | Not started | - |
