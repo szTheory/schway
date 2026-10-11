@@ -4227,12 +4227,90 @@ func checkFixtureBytesEntry(functionID string, function ast.FuncDecl, symbols ma
 		{ID: functionID + ":op:4", PointID: functionID + ":point:linear:4", Kind: core.OpReturn, SourceID: places[3].ID, TypeID: types[0].ID},
 	}
 	linear := &core.LinearBody{ID: functionID + ":linear", Types: types, Places: places, Operations: operations, Blocks: []core.Block{}, Edges: []core.Edge{}}
-	return core.Function{
+	assembled := core.Function{
 		ID: functionID, Name: function.Name,
 		EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
 		Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "U64"}, ReturnType: "U64",
 		Linear: linear, Span: function.Span,
-	}, nil, 14
+	}
+	if diagnostics := checkFixtureOwnerPostAssembly(assembled); len(diagnostics) != 0 {
+		return core.Function{}, diagnostics, 1
+	}
+	return assembled, nil, 14
+}
+
+// disableReleaseWhileViewLiveLawForTest is Phase 29 plan 09's D-22 seeded-fault
+// seam: when true, only the release-while-view-live law in
+// checkFixtureOwnerPostAssembly is skipped, so a test can prove the law (and not
+// the closed-shape matcher behind it) refuses an early release. Unexported,
+// same-package-test-only, restored via defer in every test that engages it.
+var disableReleaseWhileViewLiveLawForTest = false
+
+// checkFixtureOwnerPostAssembly is check's post-assembly decision point over the
+// hand-built fixture core (D-22, research flag (c)). Order: first the
+// release-while-view-live law, so its own code is observed; then, for a cyclic
+// block graph, the existing cycle refusal (check.cfg_back_edge from
+// loanLivenessFixpoint); then the closed five-operation shape. It derives
+// view-from-owner and later-read facts from the core on its own and shares no
+// helper with corevalidate or pathoracle.
+func checkFixtureOwnerPostAssembly(function core.Function) []diagnostic.Diagnostic {
+	if function.Linear == nil {
+		return nil
+	}
+	operations := function.Linear.Operations
+	if !disableReleaseWhileViewLiveLawForTest {
+		shapes := map[string]string{}
+		for _, fact := range function.Linear.Types {
+			shapes[fact.ID] = fact.Shape.Constructor
+		}
+		viewPlaces := map[string]bool{}
+		for _, place := range function.Linear.Places {
+			viewPlaces[place.ID] = shapes[place.TypeID] == "ByteView"
+		}
+		viewOwner := map[string]string{}
+		for _, operation := range operations {
+			if operation.Foreign != nil && operation.Foreign.Mode == "borrow" && operation.TargetID != "" && viewPlaces[operation.TargetID] {
+				viewOwner[operation.TargetID] = operation.SourceID
+			}
+		}
+		lastRead := map[string]int{}
+		for index, operation := range operations {
+			for _, place := range []string{operation.SourceID, operation.RightID} {
+				if _, isView := viewOwner[place]; isView && operation.TargetID != place {
+					lastRead[place] = index
+				}
+			}
+		}
+		for index, operation := range operations {
+			if operation.Kind != core.OpRelease {
+				continue
+			}
+			for view, owner := range viewOwner {
+				if last, read := lastRead[view]; read && operation.SourceID == owner && index < last {
+					return []diagnostic.Diagnostic{diagnostic.Error(
+						"check.release_while_view_live", function.Span,
+						"the owner is released before a view borrowed from it is read for the last time",
+						diagnostic.Cause{Kind: "release", Detail: operation.ID},
+						diagnostic.Cause{Kind: "view_read_later", Detail: operations[last].ID},
+					)}
+				}
+			}
+		}
+	}
+	if len(function.Linear.Blocks) > 0 {
+		if _, diag := loanLivenessFixpoint(function.ID, cfgBlocksForFunction(function), interproceduralSummaryTable{}, function.Span); diag != nil {
+			return []diagnostic.Diagnostic{*diag}
+		}
+	}
+	wantKinds := []core.OperationKind{core.OpForeignCall, core.OpForeignCall, core.OpCall, core.OpRelease, core.OpReturn}
+	shaped := len(operations) == len(wantKinds) && len(function.Linear.Blocks) == 0
+	for index := 0; shaped && index < len(wantKinds); index++ {
+		shaped = operations[index].Kind == wantKinds[index]
+	}
+	if !shaped {
+		return []diagnostic.Diagnostic{diagnostic.Error("check.fixture_owner_shape_unsupported", function.Span, "the assembled fixture core is not the closed acquire, view, call, release, return shape")}
+	}
+	return nil
 }
 
 func discardedFileByteOwnerAcquisition(body *ast.LinearBody, symbols map[string]foreignSymbolInfo) *diagnostic.Diagnostic {

@@ -2601,7 +2601,69 @@ func (v *validator) loanEndpointsMatch(function *core.Function) bool {
 	return v.check(reflect.DeepEqual(recomputed, function.Linear.LoanEndpoints), "core.loan_endpoint_mismatch", function.ID)
 }
 
+// disableReleaseWhileViewLiveLawForTest is Phase 29 plan 09's D-22 seeded-fault
+// seam: when true, only the release-while-view-live law below is skipped, so a
+// test can prove the law (and not a neighboring closed-shape matcher) is what
+// refuses an early release. Unexported, test-only, restored via defer.
+var disableReleaseWhileViewLiveLawForTest = false
+
+// releaseWhileViewLiveRead derives, from this function's own operations in
+// program order, whether an OpRelease of an owner precedes the last read of a
+// view borrowed from that same owner (D-22 / research flag (c)). A view place is
+// the ByteView-typed target of a foreign borrow operation; a read is any later operation that
+// takes the view as its source or right operand. It returns the release and the
+// later read operation IDs. It shares no helper with check or pathoracle.
+func releaseWhileViewLiveRead(function *core.Function) (releaseID, readID string, found bool) {
+	if function == nil || function.Linear == nil {
+		return "", "", false
+	}
+	operations := function.Linear.Operations
+	shapeOfType := make(map[string]string, len(function.Linear.Types))
+	for _, fact := range function.Linear.Types {
+		shapeOfType[fact.ID] = fact.Shape.Constructor
+	}
+	byteViewPlace := make(map[string]bool, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		byteViewPlace[place.ID] = shapeOfType[place.TypeID] == "ByteView"
+	}
+	ownerOfView := make(map[string]string)
+	for _, operation := range operations {
+		if operation.Foreign != nil && operation.Foreign.Mode == "borrow" && operation.TargetID != "" && operation.SourceID != "" && byteViewPlace[operation.TargetID] {
+			ownerOfView[operation.TargetID] = operation.SourceID
+		}
+	}
+	if len(ownerOfView) == 0 {
+		return "", "", false
+	}
+	lastRead := make(map[string]int, len(ownerOfView))
+	for index, operation := range operations {
+		for _, place := range []string{operation.SourceID, operation.RightID} {
+			if _, isView := ownerOfView[place]; isView && !(operation.Foreign != nil && operation.Foreign.Mode == "borrow" && operation.TargetID == place) {
+				lastRead[place] = index
+			}
+		}
+	}
+	for index, operation := range operations {
+		if operation.Kind != core.OpRelease {
+			continue
+		}
+		for view, owner := range ownerOfView {
+			if operation.SourceID == owner {
+				if last, read := lastRead[view]; read && index < last {
+					return operation.ID, operations[last].ID, true
+				}
+			}
+		}
+	}
+	return "", "", false
+}
+
 func (v *validator) replay(function *core.Function, types map[string]core.TypeFact, places map[string]core.Place) bool {
+	if !disableReleaseWhileViewLiveLawForTest {
+		if releaseID, readID, found := releaseWhileViewLiveRead(function); found {
+			return v.check(false, "core.release_while_view_live", releaseID+" before "+readID)
+		}
+	}
 	if len(function.Linear.Blocks) > 0 {
 		return v.replayBlocks(function, types, places)
 	}

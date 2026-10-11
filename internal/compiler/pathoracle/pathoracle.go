@@ -1387,12 +1387,65 @@ func ValidateFixtureOwnerPaths(program core.Program) error {
 			continue
 		}
 		checked++
+		if !disableReleaseWhileViewLiveLawForTest {
+			if err := releaseWhileViewLiveError(function); err != nil {
+				return err
+			}
+		}
 		if err := validateFixtureOwnerFunction(program, function); err != nil {
 			return err
 		}
 	}
 	if checked != 1 {
 		return fmt.Errorf("pathoracle.fixture_owner_shape: expected exactly one fixture-owner function, found %d", checked)
+	}
+	return nil
+}
+
+// disableReleaseWhileViewLiveLawForTest is Phase 29 plan 09's D-22 seeded-fault
+// seam: when true, only the release-while-view-live law is skipped so a test can
+// prove that law, not the closed-shape replay behind it, refuses an early
+// release. Unexported, test-only, restored via defer.
+var disableReleaseWhileViewLiveLawForTest = false
+
+// releaseWhileViewLiveError is pathoracle's own derivation of the D-22 law
+// (research flag (c)): walking the operations in program order it records the
+// owner each borrowed view comes from and the last index at which the view is
+// read, and refuses an OpRelease of that owner placed before that read. It does
+// not call check or corevalidate and shares no helper with them.
+func releaseWhileViewLiveError(function core.Function) error {
+	operations := function.Linear.Operations
+	constructors := make(map[string]string, len(function.Linear.Types))
+	for _, fact := range function.Linear.Types {
+		constructors[fact.ID] = fact.Shape.Constructor
+	}
+	byteViews := make(map[string]bool, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		byteViews[place.ID] = constructors[place.TypeID] == "ByteView"
+	}
+	owner := make(map[string]string)
+	for _, operation := range operations {
+		if operation.Foreign != nil && operation.Foreign.Mode == "borrow" && operation.TargetID != "" && byteViews[operation.TargetID] {
+			owner[operation.TargetID] = operation.SourceID
+		}
+	}
+	lastRead := make(map[string]int, len(owner))
+	for index, operation := range operations {
+		for _, place := range []string{operation.SourceID, operation.RightID} {
+			if _, view := owner[place]; view && operation.TargetID != place {
+				lastRead[place] = index
+			}
+		}
+	}
+	for index, operation := range operations {
+		if operation.Kind != core.OpRelease {
+			continue
+		}
+		for view, from := range owner {
+			if last, read := lastRead[view]; read && operation.SourceID == from && index < last {
+				return fmt.Errorf("pathoracle.release_while_view_live: release %q of owner %q precedes read %q of the view %q derived from it", operation.ID, from, operations[last].ID, view)
+			}
+		}
 	}
 	return nil
 }

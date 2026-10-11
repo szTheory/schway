@@ -57,7 +57,7 @@ func TestPhase29PathoracleFixtureReplay(t *testing.T) {
 		{name: "release ordered before the call", forge: func(f *core.Function) {
 			ops := f.Linear.Operations
 			ops[2], ops[3] = ops[3], ops[2]
-		}, code: "pathoracle.fixture_owner_order"},
+		}, code: "pathoracle.release_while_view_live"}, // was pathoracle.fixture_owner_order before plan 29-09 (D-22); that code is observed with the law toggled off
 		{name: "missing release", forge: func(f *core.Function) {
 			ops := f.Linear.Operations
 			f.Linear.Operations = append(append([]core.LinearOperation{}, ops[:3]...), ops[4])
@@ -80,7 +80,7 @@ func TestPhase29PathoracleFixtureReplay(t *testing.T) {
 		}, code: "pathoracle.fixture_owner_borrow"},
 		{name: "view returned instead of the call result", forge: func(f *core.Function) {
 			f.Linear.Operations[4].SourceID = f.Linear.Operations[1].TargetID
-		}, code: "pathoracle.fixture_owner_terminal"},
+		}, code: "pathoracle.release_while_view_live"}, // the returned view is read after the release; was pathoracle.fixture_owner_terminal before plan 29-09 (D-22)
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

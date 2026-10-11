@@ -19,3 +19,12 @@ func SetForceContractHopForTest(force func(calleeID string) bool) (restore func(
 	forceContractHopForTest = force
 	return func() { forceContractHopForTest = previous }
 }
+
+// SetDisableReleaseWhileViewLiveLawForTest installs Phase 29 plan 09's D-22
+// seeded-fault seam (only the release-while-view-live law is skipped) and
+// returns a restore func. Callers MUST defer the restore immediately.
+func SetDisableReleaseWhileViewLiveLawForTest(disable bool) (restore func()) {
+	previous := disableReleaseWhileViewLiveLawForTest
+	disableReleaseWhileViewLiveLawForTest = disable
+	return func() { disableReleaseWhileViewLiveLawForTest = previous }
+}

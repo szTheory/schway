@@ -79,11 +79,11 @@ func TestPhase29FixtureLifecycleReplay(t *testing.T) {
 			ops := f.Linear.Operations
 			ops[2], ops[3] = ops[3], ops[2]
 			renumber(f)
-		}, "core.invalid_target"},
+		}, "core.release_while_view_live"}, // was core.invalid_target before plan 29-09 (D-22); that code is observed with the law toggled off, see corevalidate_phase29_release_test.go
 		{"view returned from main", func(f *core.Function) {
 			ops := f.Linear.Operations
 			ops[4].SourceID = ops[1].TargetID
-		}, "core.final_claim_mismatch"},
+		}, "core.release_while_view_live"}, // the returned view is read after the release; was core.final_claim_mismatch before plan 29-09 (D-22)
 		{"second call reusing the moved view", func(f *core.Function) {
 			ops := f.Linear.Operations
 			second := ops[2]
