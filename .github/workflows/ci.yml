@@ -35,6 +35,11 @@ on:
         required: false
         type: boolean
         default: false
+      spike008_strict:
+        description: Run the spike 008 byte view cap harness in strict budget mode
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -74,6 +79,13 @@ jobs:
       - run: go build ./...
       - run: go test ./...
       - run: go test -race -timeout=20m ./...
+      - name: spike 008 strict budget
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.spike008_strict }}
+        env:
+          SCHWAY_SPIKE008: strict
+        run: |
+          go test ./internal/compiler/native -run '^TestSpike008ByteViewCap$' -count=1 -v
+          go test -race ./internal/compiler/native -run '^TestSpike008ByteViewCap$' -count=1 -v
 
   evidence-aggregate:
     name: current evidence aggregate (${{ matrix.os }})
