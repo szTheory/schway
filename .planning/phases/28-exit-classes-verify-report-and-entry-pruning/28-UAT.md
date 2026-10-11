@@ -56,6 +56,18 @@ blocked: 0
   reason: "User reported: run --engine=native with a relative path exits 3 native.tool_failure instead of 2 core.duplicate_function_id; absolute path is correct"
   severity: major
   test: 3
-  artifacts: []
-  missing: []
+  root_cause: "runNativeCommand (internal/compiler/session/session.go:1556-1559) calls filepath.Rel(nat03ProjectRoot(), path) before Check(source) at :1560. nat03ProjectRoot (session_phase5_alias.go:29-31) is an absolute build-time path from runtime.Caller; filepath.Rel errors when one side is relative, and RunNativeCommandFile (:1588-1601) maps that error to native.tool_failure / exit 3. Check never runs. The computed value feeds Phase16ControlNativeC's fixture argument (session_phase5.go:26), which ignores it. Scope: every relative `run --engine=native` fails, valid programs included (call_basic.schway relative -> exit 3, absolute -> exit 0)."
+  artifacts:
+    - path: internal/compiler/session/session.go
+      issue: "runNativeCommand (1551-1577) does fatal filepath.Rel before Check; RunNativeFile (1536-1546) has the same latent pattern"
+    - path: internal/compiler/session/session_phase5_alias.go
+      issue: "nat03ProjectRoot is a build-time runtime.Caller path used on the shipped CLI path; breaks for -trimpath or relocated binaries"
+    - path: internal/compiler/native/native_phase28_test.go
+      issue: "TestExitClassesUniformAcrossSurfaces (106-150) uses only absolute testsupport.ProjectPath inputs"
+  missing:
+    - "Remove the fatal filepath.Rel from runNativeCommand (and RunNativeFile) or make it non-fatal after Check; fixture is unused"
+    - "Drop the runtime dependency on nat03ProjectRoot from the CLI production path"
+    - "Add a relative-path row of all four surfaces to TestExitClassesUniformAcrossSurfaces (child cwd is internal/compiler/native: use ../../../testdata/... or a Dir-aware RunCLI variant)"
+    - "Add a positive control: relative run --engine=native testdata/phase07/call_basic.schway exits 0"
+  debug_session: "inline diagnosis 2026-10-11; other surfaces (build, app run, app verify, evidence, debug-map) checked clean with relative paths"
 ```
