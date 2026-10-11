@@ -160,6 +160,44 @@ receipts remain historical and cannot substitute for those runs.
 
 **Current three recommendations re-checked:** unchanged. Next action after the hosted run is the milestone audit re-run.
 
+### M006 kickoff amendment — 2026-10-10
+
+**What changed:** M005 shipped (tag `vM005`), so recommendation 1 below
+(Phase 27 FizzBuzz and cross-host evidence) is complete. Recommendation 2 is
+now milestone M006 "Bounded Byte Utility and Local Modules", Phases 28–32. See
+[ROADMAP.md](ROADMAP.md), [REQUIREMENTS.md](REQUIREMENTS.md) and
+[research/SUMMARY.md](research/SUMMARY.md).
+
+The consumer is a `checksum FILE` program that prints RFC 1950 Adler-32 for
+files up to 65,536 bytes. It is built from an `adler32` library in a local
+module, which a second application imports. Adler-32 was chosen because it
+needs only the admitted checked addition, comparison and remainder. CRC-32
+waits for a bitwise-operator milestone.
+
+The loop reads a read-only byte view, and no loan crosses a back edge, so the
+FLOW-02 refusal boundary is unchanged. Modules are whole-program composition.
+They do not establish B1/DX-06 or separate compilation.
+
+M005 carry-over: W2, W3, N3 and N1 go to Phase 28, and N2 is the last plan of
+Phase 32. N4 and R1b stay tracked but unscheduled.
+
+**Current three recommendations at kickoff:**
+1. M006 Phases 28–32, as above.
+2. A bounded JSON configuration consumer (unchanged from item 3 below). It
+   becomes reachable once byte views and modules exist, but still waits for a
+   named tool.
+3. Bitwise U64 operators (xor, shift, and) with independent evidence. The
+   user-visible program is CRC-32/`cksum`-compatible output. It is promoted
+   only if a named consumer needs interop that Adler-32 cannot provide.
+
+**Seed transition check:**
+
+| Seed | Disposition | Reason |
+|------|-------------|--------|
+| SEED-261008-trz | retain dormant | No named program failure that current capture cannot diagnose. |
+| SEED-261008-z1g | retain dormant | Module imports may later create a caller-query need; no reviewer gap observed yet. Re-check at Phase 30. |
+| SEED-261008-z1s | retain dormant | Import and byte-read surface syntax is a Phase 29/30 discussion item; promote only if a reviewer contests a concrete form. |
+
 ### Phase 26 discussion — 2026-10-02 (historical planning snapshot)
 
 The user adopted the specialist fan-out recommendations for Phase 26: use

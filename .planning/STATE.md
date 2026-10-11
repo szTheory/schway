@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-10-10T23:56:11.761Z"
 last_activity: 2026-10-10
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -51,7 +51,7 @@ See: .planning/PROJECT.md (updated 2026-10-10)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Planning next milestone (M005 shipped 2026-10-10; archive `.planning/milestones/M005-*`)
+**Current focus:** M006 Bounded Byte Utility and Local Modules — Phase 28 (Exit Classes, Verify Report, and Entry Pruning) not started; roadmap Phases 28–32
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -117,10 +117,32 @@ plans.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
+Phase: 28 of 28–32 (Exit Classes, Verify Report, and Entry Pruning) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-10-10 — Milestone M006 started
+Status: Ready to discuss Phase 28
+Last activity: 2026-10-10 — M006 roadmap created (5 phases, 16/16 requirements mapped)
+
+Progress: [░░░░░░░░░░] 0% (0/5 M006 phases)
+
+## M006 Planning
+
+Roadmap created 2026-10-10 from the research synthesis's five-phase order, with
+one deviation: MOD-06 (second consumer) is owned by Phase 31 instead of
+Phase 30, because its library-mutation control flips the `checksum`
+application's output and both consumers need the Phase 31 path input.
+
+| Phase | Name | Requirements | Research |
+|-------|------|--------------|----------|
+| 28 | Exit Classes, Verify Report, and Entry Pruning | DX-17, DX-18, EVD-13 | Standard |
+| 29 | Byte Views and the Adler-32 Library | BYTE-01, BYTE-02, BYTE-03, APP-10 | Spike first |
+| 30 | Local Modules | MOD-03, MOD-04, MOD-05 | Deeper research + spike |
+| 31 | Bounded File Checksum and Second Consumer | APP-11, APP-12, MOD-06, EVD-14 | Moderate |
+| 32 | Clean-Checkout Guide and Final Receipts | DX-19, EVD-15 | Standard |
+
+Carry-over: W2/W3/N3 → Phase 28 (DX-17), N1 → Phase 28 (EVD-13), N2 → last
+plan of Phase 32 (EVD-15). N4, R1b, and the D-27.1-10 dispositions stay
+tracked but unscheduled.
 
 ## M005 Planning
 
@@ -826,9 +848,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-10-10T22:47:27.368Z
-Stopped at: Phase 27.3 complete — all phases complete
+Stopped at: M006 roadmap created — Phase 28 not started
 Resume file: None
-Next action: After clearing context, run $gsd-execute-phase 27; plan 27-09 is next.
+Next action: After clearing context, run /gsd-discuss-phase 28 (M006 roadmap created 2026-10-10; Phase 28 not started).
+Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
 overflow/zero controls, occurrence-aware peer controls, separate capacity
@@ -1007,4 +1030,5 @@ plans, or reopen Phase 25 implementation.
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- M006 roadmap created 2026-10-10 (Phases 28–32). Phase 28 has no CONTEXT.md or
+  plans yet. After clearing context, run `/gsd-discuss-phase 28`.

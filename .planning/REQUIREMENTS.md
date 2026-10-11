@@ -77,28 +77,29 @@ These capabilities are acknowledged but not part of M006 acceptance.
 
 ## Traceability
 
-Each M006 requirement has one phase owner. Filled by the roadmap.
+Each M006 requirement has one phase owner (see [ROADMAP.md](ROADMAP.md)).
 
 | Requirement | Phase | Status |
 |---|---|---|
-| DX-17 | — | Pending |
-| DX-18 | — | Pending |
-| EVD-13 | — | Pending |
-| BYTE-01 | — | Pending |
-| BYTE-02 | — | Pending |
-| BYTE-03 | — | Pending |
-| APP-10 | — | Pending |
-| APP-11 | — | Pending |
-| APP-12 | — | Pending |
-| MOD-03 | — | Pending |
-| MOD-04 | — | Pending |
-| MOD-05 | — | Pending |
-| MOD-06 | — | Pending |
-| EVD-14 | — | Pending |
-| EVD-15 | — | Pending |
-| DX-19 | — | Pending |
+| DX-17 | Phase 28 | Pending |
+| DX-18 | Phase 28 | Pending |
+| EVD-13 | Phase 28 | Pending |
+| BYTE-01 | Phase 29 | Pending |
+| BYTE-02 | Phase 29 | Pending |
+| BYTE-03 | Phase 29 | Pending |
+| APP-10 | Phase 29 | Pending |
+| APP-11 | Phase 31 | Pending |
+| APP-12 | Phase 31 | Pending |
+| MOD-03 | Phase 30 | Pending |
+| MOD-04 | Phase 30 | Pending |
+| MOD-05 | Phase 30 | Pending |
+| MOD-06 | Phase 31 | Pending |
+| EVD-14 | Phase 31 | Pending |
+| EVD-15 | Phase 32 | Pending |
+| DX-19 | Phase 32 | Pending |
 
-**Coverage:** 16 requirements; 0 mapped (pending roadmap).
+**Coverage:** 16 requirements; 16 mapped to Phases 28–32; 0 unmapped.
 
 ---
 *Requirements defined: 2026-10-10*
+*Traceability filled by the M006 roadmap: 2026-10-10*
