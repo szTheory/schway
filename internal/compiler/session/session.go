@@ -1108,27 +1108,31 @@ func RunInterpreter(source []byte) ([]interp.Execution, []diagnostic.Diagnostic,
 	}
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
-		return nil, nil, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+		return nil, []diagnostic.Diagnostic{peerRefusalDiagnostic(validated, checked.Program.ModuleID)}, nil
 	}
 	checked.Program = validated.Program()
-	// D-11-05: widened to permit N>1 functions -- callgraph.EntryFunction
-	// replaces the old len(...Functions) != 1 guard, requiring a uniquely
-	// resolvable entry rather than exactly one declared function.
-	entry, pruned, entryDiagnostics, err := resolveEntry(checked.Program)
+	return runInterpreterResolved(checked.Program)
+}
+
+// runInterpreterResolved resolves the entry of an already validated program
+// (D-11-05: N>1 functions are permitted; callgraph.EntryFunction requires a
+// uniquely resolvable entry) and runs the pruned program under the
+// interpreter. It performs no admission (D-19).
+func runInterpreterResolved(program core.Program) ([]interp.Execution, []diagnostic.Diagnostic, error) {
+	entry, pruned, entryDiagnostics, err := resolveEntry(program)
 	if err != nil {
 		return nil, nil, err
 	}
 	if len(entryDiagnostics) > 0 {
 		return nil, entryDiagnostics, nil
 	}
-	checked.Program = pruned
-	inputs, ok := interpreterInputs(checked.Program)
+	inputs, ok := interpreterInputs(pruned)
 	if !ok {
 		return nil, nil, os.ErrInvalid
 	}
 	executions := make([]interp.Execution, 0, len(inputs))
 	for _, input := range inputs {
-		execution, err := interp.Run(checked.Program, entry.Name, input)
+		execution, err := interp.Run(pruned, entry.Name, input)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1157,15 +1161,13 @@ type applicationAdmission struct {
 	program    core.Program
 }
 
-// admitPublishedApplication is the application/publication admission gate for
-// BuildApplication, RunInterpreterApplication and VerifyApplicationCases: after
-// a clean checker it runs corevalidate.Validate and then
-// originvalidate.ValidatePublished on the validated program. Internal execution
-// lanes (runNative, RunInterpreter, RunNativeCommandFile) deliberately do not
-// call it, because differential and verify-corpus lanes run undeclared-borrow
-// fixtures (TestExclusiveBorrowInterpreterNative). The run command gates at the
-// command-file layer; see publishedOriginProblemFile. Do not widen this gate
-// without a new decision (D-27.1-02).
+// admitPublishedApplication is the application/publication admission gate.
+// Retained only for VerifyApplicationCases; plan 28-07 replaces it with
+// admitProgram (D-21). BuildApplication, RunInterpreterApplication and the
+// command-file lanes use admitProgram (Phase 28 D-09/D-10/D-19). Internal
+// execution lanes (runNative, RunInterpreter, runNativeChecked) deliberately
+// run no origin admission, because differential and verify-corpus lanes run
+// undeclared-borrow fixtures (TestExclusiveBorrowInterpreterNative).
 func admitPublishedApplication(checked CheckResult) applicationAdmission {
 	validated := corevalidate.Validate(checked.Program)
 	if !validated.Valid {
@@ -1194,17 +1196,11 @@ func RunInterpreterApplication(source []byte, input string) (interp.ApplicationR
 	if len(checked.Diagnostics) > 0 {
 		return interp.ApplicationResult{}, checked.Diagnostics, nil
 	}
-	adm := admitPublishedApplication(checked)
-	switch adm.layer {
-	case applicationRefusedCore:
-		if adm.code == "" {
-			return interp.ApplicationResult{}, nil, errors.New("core validation failed without a named problem")
-		}
-		return interp.ApplicationResult{}, nil, fmt.Errorf("core validation failed: %s", adm.code)
-	case applicationRefusedOrigin:
-		return interp.ApplicationResult{}, nil, fmt.Errorf("origin validation failed: %s", adm.code)
+	admitted, admitDiagnostics := admitProgram(checked)
+	if len(admitDiagnostics) > 0 {
+		return interp.ApplicationResult{}, admitDiagnostics, nil
 	}
-	entry, program, entryDiagnostics, err := resolveEntry(adm.program)
+	entry, program, entryDiagnostics, err := resolveEntry(admitted)
 	if err != nil {
 		return interp.ApplicationResult{}, nil, err
 	}
@@ -1274,47 +1270,32 @@ func RunInterpreterFile(path string) ([]interp.Execution, []diagnostic.Diagnosti
 	return RunInterpreter(source)
 }
 
-// publishedOriginProblemFile is D-04-27/WR-01's `schway check`/`schway run`
-// wiring point: it independently recomputes every function's published
-// origin from the typed core alone (originvalidate.ValidatePublished),
-// exactly as `interface export` already does, returning the first problem
-// as a diagnostic. This is deliberately a SEPARATE, narrow re-check at the
-// CLI command-file layer rather than folded into RunInterpreter/RunNative
-// themselves: those two functions are also the machinery every non-CLI test
-// and verify-corpus lane in this repository drives directly, several of
-// which intentionally exercise an undeclared-borrow-derived-return fixture
-// at the run/interpret layer (e.g. TestExclusiveBorrowInterpreterNative) --
-// only PUBLICATION (export, and now check/run's own command surface) was
-// ever meant to gate on a declared origin (D-03-02/WR-01), not every
-// internal call to the interpreter or native engine.
-func publishedOriginProblemFile(path string) []diagnostic.Diagnostic {
+// runInterpreterCommand is the command-file interpreter lane: Check,
+// admitProgram on the full program (never run what will be refused, D-09/D-18),
+// then entry resolution and the interpreter run on the pruned program.
+func runInterpreterCommand(path string) ([]interp.Execution, []diagnostic.Diagnostic, error) {
 	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
 	if err != nil {
-		return nil
+		return nil, nil, err
 	}
 	checked := Check(source)
 	if len(checked.Diagnostics) > 0 {
-		return nil
+		return nil, checked.Diagnostics, nil
 	}
-	problems := originvalidate.ValidatePublished(checked.Program)
-	if len(problems) == 0 {
-		return nil
+	admitted, admitDiagnostics := admitProgram(checked)
+	if len(admitDiagnostics) > 0 {
+		return nil, admitDiagnostics, nil
 	}
-	return []diagnostic.Diagnostic{diagnostic.Error(problems[0].Code, diagnostic.Span{}, problems[0].Detail)}
+	return runInterpreterResolved(admitted)
 }
 
 func RunInterpreterCommandFile(path string) (protocol.Result, error) {
 	started := time.Now()
-	executions, diagnostics, err := RunInterpreterFile(path)
+	executions, diagnostics, err := runInterpreterCommand(path)
 	if err != nil {
 		result := protocol.New("run", protocol.StatusOperational)
 		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error("tool.run_failed", diagnostic.Span{}, "interpreter operation failed")}
 		return completeCommand(result, started, 1), nil
-	}
-	if len(diagnostics) == 0 {
-		if originProblems := publishedOriginProblemFile(path); len(originProblems) > 0 {
-			diagnostics = originProblems
-		}
 	}
 	result := protocol.New("run", protocol.StatusPass)
 	if len(diagnostics) > 0 {
@@ -1447,17 +1428,11 @@ func BuildApplication(ctx context.Context, source []byte, outputPath string, run
 	if len(checked.Diagnostics) > 0 {
 		return native.BuildReceipt{}, checked.Diagnostics, nil
 	}
-	adm := admitPublishedApplication(checked)
-	switch adm.layer {
-	case applicationRefusedCore:
-		if adm.code == "" {
-			return native.BuildReceipt{}, nil, errors.New("core validation failed without a named problem")
-		}
-		return native.BuildReceipt{}, nil, fmt.Errorf("core validation failed: %s", adm.code)
-	case applicationRefusedOrigin:
-		return native.BuildReceipt{}, []diagnostic.Diagnostic{adm.diagnostic}, nil
+	admitted, admitDiagnostics := admitProgram(checked)
+	if len(admitDiagnostics) > 0 {
+		return native.BuildReceipt{}, admitDiagnostics, nil
 	}
-	entry, program, entryDiagnostics, err := resolveEntry(adm.program)
+	entry, program, entryDiagnostics, err := resolveEntry(admitted)
 	if err != nil {
 		return native.BuildReceipt{}, nil, err
 	}

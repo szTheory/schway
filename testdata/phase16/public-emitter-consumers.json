@@ -269,7 +269,7 @@
       "witness": "probe:TestPhase16M004CorpusRefusal"
     },
     {
-      "call": "internal/compiler/session/session.go:EmitNative:3113",
+      "call": "internal/compiler/session/session.go:EmitNative:3088",
       "classification": "admitted-dynamic-schema2"
     },
     {

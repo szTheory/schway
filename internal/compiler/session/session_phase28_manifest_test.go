@@ -66,13 +66,15 @@ var phase28ClassChanges = map[string]phase28ManifestEntry{
 		EntryShape:     "single-root",
 		Entry:          "relay",
 	},
-	// 2026-10-10 (Phase 28, D-09/D-10): native run reports the corevalidate
-	// refusal as a diagnostic (exit 2 core.duplicate_function_id).
+	// 2026-10-10 (Phase 28, D-09/D-10): build, interpreter run and native run
+	// report the corevalidate refusal as a diagnostic (exit 2
+	// core.duplicate_function_id) like check; was native.build_failed /
+	// tool.run_failed / native.tool_failure (exit 3).
 	"testdata/phase07/duplicate_function_name.schway": {
 		Path:           "testdata/phase07/duplicate_function_name.schway",
 		Check:          phase28Class{Exit: 2, Code: "core.duplicate_function_id"},
-		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
-		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
+		Build:          phase28Class{Exit: 2, Code: "core.duplicate_function_id"},
+		InterpreterRun: phase28Class{Exit: 2, Code: "core.duplicate_function_id"},
 		NativeRun:      phase28Class{Exit: 2, Code: "core.duplicate_function_id"},
 		EntryShape:     "single-root",
 		Entry:          "main",
@@ -104,11 +106,14 @@ var phase28ClassChanges = map[string]phase28ManifestEntry{
 	// 2026-10-10 (Phase 28, D-10/D-12): native run admits before any tool, so
 	// the source refusal is exit 2 with the check code, not an operational
 	// native.tool_* failure.
+	// 2026-10-10 (Phase 28, D-09): the interpreter command file now admits (and
+	// refuses core.origin_omitted, exit 2) instead of failing later with
+	// tool.run_failed (exit 3); native run likewise per D-10.
 	"testdata/phase25/shared_copy_accept.schway": {
 		Path:           "testdata/phase25/shared_copy_accept.schway",
 		Check:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
 		Build:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
-		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
+		InterpreterRun: phase28Class{Exit: 2, Code: "core.origin_omitted"},
 		NativeRun:      phase28Class{Exit: 2, Code: "core.origin_omitted"},
 		EntryShape:     "single-root",
 		Entry:          "shared_copy",

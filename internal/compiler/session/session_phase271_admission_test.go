@@ -166,14 +166,17 @@ func TestApplicationRoutesApplySameAdmissionLayers(t *testing.T) {
 	t.Run("corevalidate/build", func(t *testing.T) {
 		dir := t.TempDir()
 		receipt, diagnostics, err := session.BuildApplication(ctx, coreSource, filepath.Join(dir, "app"), phase271MissingClangRunner(t))
-		if err == nil || err.Error() != "core validation failed: core.duplicate_function_id" || len(diagnostics) != 0 || !reflect.DeepEqual(receipt, native.BuildReceipt{}) {
+		// 2026-10-10 (Phase 28 D-09/D-20): a corevalidate refusal is a
+		// diagnostic (exit 2), not an error text.
+		if err != nil || len(diagnostics) != 1 || diagnostics[0].Code != "core.duplicate_function_id" || !reflect.DeepEqual(receipt, native.BuildReceipt{}) {
 			t.Fatalf("receipt=%+v diagnostics=%+v err=%v", receipt, diagnostics, err)
 		}
 		requireEmptyDir(t, dir)
 	})
 	t.Run("corevalidate/interp", func(t *testing.T) {
 		result, diagnostics, err := session.RunInterpreterApplication(coreSource, "7")
-		if err == nil || err.Error() != "core validation failed: core.duplicate_function_id" || len(diagnostics) != 0 || !reflect.DeepEqual(result, interpZeroResult()) {
+		// 2026-10-10 (Phase 28 D-09/D-20): diagnostic, not error text.
+		if err != nil || len(diagnostics) != 1 || diagnostics[0].Code != "core.duplicate_function_id" || !reflect.DeepEqual(result, interpZeroResult()) {
 			t.Fatalf("result=%+v diagnostics=%+v err=%v", result, diagnostics, err)
 		}
 	})
@@ -192,7 +195,8 @@ func TestApplicationRoutesApplySameAdmissionLayers(t *testing.T) {
 	})
 	t.Run("origin/interp", func(t *testing.T) {
 		result, diagnostics, err := session.RunInterpreterApplication(originSource, "7")
-		if err == nil || err.Error() != "origin validation failed: core.origin_omitted" || len(diagnostics) != 0 || !reflect.DeepEqual(result, interpZeroResult()) {
+		// 2026-10-10 (Phase 28 D-09/D-20): diagnostic, not error text.
+		if err != nil || len(diagnostics) != 1 || diagnostics[0].Code != "core.origin_omitted" || !reflect.DeepEqual(result, interpZeroResult()) {
 			t.Fatalf("result=%+v diagnostics=%+v err=%v", result, diagnostics, err)
 		}
 	})
