@@ -1,110 +1,65 @@
 ---
 phase: 28-exit-classes-verify-report-and-entry-pruning
-reviewed: 2026-10-10T00:00:00Z
+reviewed: 2026-10-11T00:00:00Z
 depth: standard
-files_reviewed: 48
+files_reviewed: 9
 files_reviewed_list:
-  - README.md
-  - cmd/schway-repair/main.go
-  - cmd/schway/main.go
   - internal/compiler/callgraph/callgraph.go
-  - internal/compiler/callgraph/prune.go
-  - internal/compiler/exitcode/exitcode.go
-  - internal/compiler/native/native.go
-  - internal/compiler/native/native_app.go
-  - internal/compiler/native/sanitize.go
-  - internal/compiler/protocol/protocol.go
+  - internal/compiler/callgraph/callgraph_entry_test.go
+  - internal/compiler/native/native_phase28_test.go
   - internal/compiler/session/session.go
-  - internal/compiler/session/session_admit.go
   - internal/compiler/session/session_app_verify.go
   - internal/compiler/session/session_entry.go
-  - internal/compiler/session/session_phase5.go
-  - internal/compiler/session/session_phase5_mismatch.go
-  - internal/compiler/session/session_phase5_sanitize.go
+  - internal/compiler/session/session_phase28_appverify_test.go
+  - internal/compiler/session/session_phase28_native_relpath_test.go
+  - testdata/phase16/public-emitter-consumers.json
 findings:
-  critical: 0
-  warning: 4
-  info: 2
-  total: 6
+  critical: 1
+  warning: 1
+  info: 0
+  total: 2
 status: issues_found
 ---
 
-# Phase 28: Code Review Report
+# Phase 28: Code Review Report (incremental, diff_base 1beb03a9)
 
-**Reviewed:** 2026-10-10
+**Reviewed:** 2026-10-11
 **Depth:** standard
-**Files Reviewed:** the production Go files above in full diff form. Test, testdata, and example files were skimmed for reliability only.
+**Files Reviewed:** 9
 
 ## Summary
 
-I found no path where a refusal becomes exit 0 or a silent skip.
+The G-28-3 change is sound. `Phase16ControlNativeC` ignores its `fixture` argument, so replacing the root-relative path with the caller's path has no effect on emitted C or evidence. `nat03ProjectRoot` is still used elsewhere, so removing the call leaves no dead code. The duplicate-main refusal, `removeStaleVerificationReport` and `errors.Join` changes are correct. `cmd/schway/main.go` uses `errors.As`, so exit 2 is preserved. The stale-report removal does not delete inputs, and a symlinked report path only loses the link.
 
-- Every command-file lane (check, interpreter run, native run, build, app verify) runs Check, then `admitProgram` on the full program, then `resolveEntry`. Admission therefore precedes pruning (D-18).
-- `resolveEntry` errors that are not entry refusals propagate as errors, not as success.
-- `app verify` maps `*SourceRefusalError` to exit 2 and keeps all other failures at exit 3.
-- Exit-code constants route through the single `exitcode` table.
+One real regression remains. The emitter-consumer registry is out of sync with the source.
 
-The remaining issues are robustness and diagnostic-quality defects, listed below.
+## Critical Issues
+
+### CR-01: Emitter consumer registry line number is stale, so the inventory test fails at HEAD
+
+**File:** `testdata/phase16/public-emitter-consumers.json:272`
+**Issue:** The entry says `session.go:EmitNative:3047`, but the `cgen.EmitNative` call is at `internal/compiler/session/session.go:3042`. Line 3047 is `cleanRunner := runner`. Commit 307e14a ("re-ground emitter consumer registry line after doc comment") moved the pin to the wrong line. I ran `go test ./internal/compiler/session -run 'EmitterInventory|PublicEmitter|Phase16.*Emitter'` and it fails:
+```
+TestPhase16PublicEmitterConsumerInventory
+  missing registry entry for source call internal/compiler/session/session.go:EmitNative:3042
+  stale registry entry internal/compiler/session/session.go:EmitNative:3047
+```
+**Fix:** Change the line to 3042:
+```json
+"call": "internal/compiler/session/session.go:EmitNative:3042",
+```
+Then run `TestPhase16PublicEmitterConsumerInventory` after any further edit to `session.go`. The pin is line-based, so it breaks whenever lines shift above the call.
 
 ## Warnings
 
-### WR-01: Duplicate-`main` ambiguity reports the wrong roots and a misleading hint
+### WR-01: Registry pins are fragile and were re-grounded blind
 
-**File:** `internal/compiler/callgraph/callgraph.go:315-326`, `internal/compiler/session/session_entry.go:52-55`
-**Issue:** When two or more functions are named `main`, `EntryFunction` returns `&entryAmbiguousError{roots: roots}`. `roots` holds the in-degree-zero nodes, not the colliding `main` functions. The diagnostic can therefore name the wrong functions, or an empty list (for example when one `main` has a caller). It also appends "add `fn main` to disambiguate", which is wrong advice when `main` is exactly what is duplicated. The refusal itself is correct (fail-closed). The message misleads the user and the Phase 28 ambiguity test may not cover this case.
-**Fix:** Build the error from the colliding IDs:
-```go
-if len(mains) > 1 {
-    sort.Strings(mains)
-    return core.Function{}, &entryAmbiguousError{roots: mains}
-}
-```
-Then make `entryRefusalDiagnostic` omit the `fn main` hint when the roots are all named `main`. Alternatively, give the error type a reason field.
-
-### WR-02: A source refusal can be masked as exit 3 when the report write fails
-
-**File:** `internal/compiler/session/session_app_verify.go:219-223`
-**Issue:** `VerifyApplicationCasesFile` returns the report-write error in preference to `verifyErr`. If writing the (empty, failing) report fails, the `*SourceRefusalError` is discarded and the CLI exits 3 instead of 2. This breaks the D-21 exit-class contract on that path. The same applies to `ErrApplicationVerificationReportOversize`.
-**Fix:** Join the errors so `errors.As` still finds the refusal:
-```go
-if werr := writeApplicationVerificationReport(reportPath, report); werr != nil {
-    if verifyErr != nil { return report, errors.Join(verifyErr, werr) }
-    return report, werr
-}
-```
-
-### WR-03: A stale report file survives a refused or oversize run
-
-**File:** `internal/compiler/session/session_app_verify.go:636-644`, `internal/compiler/session/session_app_verify.go:219`
-**Issue:** On `ErrApplicationVerificationReportOversize` the code writes no file ("no file is written when it fires"). A previous run's report at `reportPath` stays on disk, possibly with `verified: true`. The process exits non-zero, but a consumer that reads only the file would see a stale pass. This is a fail-open risk for report-reading automation.
-**Fix:** Remove or truncate any existing `reportPath` before verification, or write a minimal fixed-size failure report on the oversize path.
-
-### WR-04: A non-diagnostic `resolveEntry` error is silently tolerated in app verify
-
-**File:** `internal/compiler/session/session_app_verify.go:275-283`
-**Issue:** When `resolveEntry` returns a plain error (for example a `buildAdjacency` failure) with no diagnostics, `entryErr` is stashed and the unpruned program is used. Only source-kind cases check `entryErr`; they are marked `unsupported`. A cases file containing only `verifier_model_only` cases never consults `entryErr`, so it can end `Verified == true` for a source whose entry could not be resolved. Every other command treats this as an error.
-**Fix:** Return `entryErr` immediately, as the other lanes do:
-```go
-if entryErr != nil { return report, entryErr }
-```
-Then drop the later `entryErr != nil` guard.
-
-## Info
-
-### IN-01: `appRunExitCode` collides with child exit statuses by design
-
-**File:** `cmd/schway/main.go:257-273`
-**Issue:** A child's own exit status passes through unchanged, so a child exiting 65, 124 or 125 is indistinguishable from the host's `AppInputRefused`, `AppTimeout` or `AppLaunchError`. D-08 appears to accept this. Confirm the README exit table says so explicitly.
-**Fix:** Add a one-line note in the README exit table, or ignore if already documented.
-
-### IN-02: `Phase4CheckedProgram` discards the pruned program
-
-**File:** `internal/compiler/session/session.go:605-612`
-**Issue:** `Phase4CheckedProgram` calls `resolveEntry` only for its refusal and its entry. It returns the unpruned program, which is intentional per the comment. Callers must now prune per engine, and nothing enforces that. A future caller that forgets will feed dead-code roots to an engine (see D-19 about a single in-degree-zero root).
-**Fix:** Add a doc comment on the function stating that its return value is unpruned. Alternatively, export a typed wrapper that returns both forms.
+**File:** `testdata/phase16/public-emitter-consumers.json:272`
+**Issue:** The prior review already flagged this line (IN-02), and the follow-up fix still did not match the source. The session meta-tests were evidently not run after the doc-comment edit to `session.go`, even though the project memory says to run them before dispatch.
+**Fix:** Run the inventory, groundedness and validation-lifecycle session tests as a gate before committing any `session.go` edit. Consider making the registry anchor on the function and call text rather than a raw line number.
 
 ---
 
-_Reviewed: 2026-10-10_
+_Reviewed: 2026-10-11_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
