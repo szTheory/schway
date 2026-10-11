@@ -67,3 +67,35 @@ candidate syntax and mechanisms, not settled specifications.
 - [Implementation path](wiki/implementation-path.md)
 - [Research ledger](wiki/research-ledger.md)
 - [Open questions](wiki/open-questions.md)
+
+## Exit codes
+
+Every Schway command takes its exit status from one named table in
+`internal/compiler/exitcode`. The same source gets the same class and code from
+`check`, `build`, `run` on both engines, and `app verify`. The values below are
+pinned to those constants by a test, so a drifting row fails the build.
+
+Compiler and repair commands:
+
+| Name | Value | Meaning |
+| --- | --- | --- |
+| `Success` | 0 | The command completed. |
+| `Unrepaired` | 1 | `schway-repair` only: the source is still refused after repair. |
+| `Invalid` | 2 | Source refusal: checker, core validator, origin validator, path oracle or entry resolution. |
+| `Operational` | 3 | Tool, IO or timeout failure; also an unsupported `app verify` case such as exhausted event capacity. |
+| `Mismatch` | 4 | The interpreter and native engines disagree. |
+| `Usage` | 64 | Bad command line. |
+
+`schway app run`:
+
+| Name | Value | Meaning |
+| --- | --- | --- |
+| `AppInputRefused` | 65 | Input refused before launch, or a generated program's checked failure; never renumbered. |
+| `EventCapacity` | 69 | Generated-C event capacity exhausted; never renumbered. |
+| `AppTimeout` | 124 | The child exceeded its time limit. |
+| `AppLaunchError` | 125 | The child could not be launched. |
+| `SignalBase` | 128 | A child killed by signal n exits 128 + n. |
+
+`schway app run` passes the child's exit status through unchanged, so a
+generated program's own status can coincide with a host code. The
+`schway app run:` stderr prefix and `--report` tell the two apart.
