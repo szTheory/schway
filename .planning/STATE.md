@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: M006
 milestone_name: Bounded Byte Utility and Local Modules
-current_phase: 29
-current_phase_name: Byte Views and the Adler-32 Library
-status: planning
-stopped_at: Phase 28 complete, ready to plan Phase 29
-last_updated: "2026-10-11T02:52:07.433Z"
-last_activity: 2026-10-10
-last_activity_desc: Phase 28 complete, transitioned to Phase 29
-state_head: 944dfd44ce865b9c13f9ba2f5ac2240e59d3631c
+current_phase: 28
+current_phase_name: exit-classes-verify-report-and-entry-pruning
+status: executing
+stopped_at: Phase 28 gap closure 28-08 (G-28-3) planned, ready to execute
+last_updated: "2026-10-11T19:04:13.462Z"
+last_activity: 2026-10-11
+last_activity_desc: Phase 28 UAT found G-28-3; gap-closure plan 28-08 created
+state_head: cf9bf0e5273723ecb56e5291b3b7d0cf56c7321e
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 7
+  total_plans: 8
   completed_plans: 7
   percent: 20
 ---
@@ -123,10 +123,10 @@ plans.
 ## Current Position
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
-Phase: 29 — Byte Views and the Adler-32 Library
+Phase: 28 (exit-classes-verify-report-and-entry-pruning) — READY TO EXECUTE
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-10 — Phase 28 complete, transitioned to Phase 29
+Status: Ready to execute
+Last activity: 2026-10-11 — Phase 28 UAT found G-28-3 (relative native run exits 3); gap-closure plan 28-08 created
 
 Progress: [██░░░░░░░░] 20% (1/5 M006 phases)
 
