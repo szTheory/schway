@@ -855,7 +855,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 Last session: 2026-10-11T00:26:25.987Z
 Stopped at: Phase 28 context gathered
 Resume file: .planning/phases/28-exit-classes-verify-report-and-entry-pruning/28-CONTEXT.md
-Next action: After clearing context, run /gsd-discuss-phase 28 (M006 roadmap created 2026-10-10; Phase 28 not started).
+Next action: After clearing context, run /gsd-plan-phase 28 (Phase 28 context captured 2026-10-10 in 28-CONTEXT.md).
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
@@ -1036,4 +1036,4 @@ plans, or reopen Phase 25 implementation.
 ## Operator Next Steps
 
 - M006 roadmap created 2026-10-10 (Phases 28–32). Phase 28 has no CONTEXT.md or
-  plans yet. After clearing context, run `/gsd-discuss-phase 28`.
+  plans yet; context captured. After clearing context, run `/gsd-plan-phase 28`.
