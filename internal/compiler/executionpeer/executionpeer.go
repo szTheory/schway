@@ -339,6 +339,7 @@ func (i *index) validate(document execution.Execution) error {
 	pending := ""
 	checkedAddDefect := -1
 	checkedRemainderDefect := -1
+	checkedBytesDefect := -1
 	for n, event := range document.Events {
 		parsed, parseErr := execution.ParseInvocation(event.Invocation)
 		if parseErr != nil {
@@ -366,7 +367,8 @@ func (i *index) validate(document execution.Execution) error {
 		}
 		checkedOverflow := op.value.Kind == core.OpAddChecked && event.Kind == "function.defected"
 		checkedRemainderZero := op.value.Kind == core.OpRemainderU64 && event.Kind == "function.defected"
-		if (i.loopOperations[op.value.ID] || event.Occurrence > 0) && !i.scalarLoopCopies[op.value.ID] && !checkedOverflow && !checkedRemainderZero {
+		checkedBytesAt := op.value.Kind == core.OpBytesAt && event.Kind == "function.defected"
+		if (i.loopOperations[op.value.ID] || event.Occurrence > 0) && !i.scalarLoopCopies[op.value.ID] && !checkedOverflow && !checkedRemainderZero && !checkedBytesAt {
 			return refusal("loop_event", n, event.Invocation, "", occ.functionID, "cyclic or repeated event is not an admitted scalar copy")
 		}
 		if checkedOverflow {
@@ -403,10 +405,26 @@ func (i *index) validate(document execution.Execution) error {
 				return refusal("remainder_zero_terminal", n, event.Invocation, "", occ.functionID, "remainder by zero must be the final event and carry an empty defect outcome")
 			}
 			checkedRemainderDefect = n
+		} else if checkedBytesAt {
+			if event.Output != "byte index out of bounds" {
+				return refusal("byte_index_attribution", n, event.Invocation, "", occ.functionID, "byte-at defect reason disagrees with fixed bounds reason")
+			}
+			if event.SourcePlace != op.value.SourceID {
+				return refusal("byte_index_attribution", n, event.Invocation, "", occ.functionID, "byte-at source place disagrees with the view place")
+			}
+			if event.TargetPlace != "" {
+				return refusal("byte_index_attribution", n, event.Invocation, "", occ.functionID, "byte-at defect must not name a target place")
+			}
+			if n != len(document.Events)-1 || document.Outcome.Kind != execution.OutcomeDefect || document.Outcome.Value != "" {
+				return refusal("byte_index_terminal", n, event.Invocation, "", occ.functionID, "byte index defect must be the final event and carry an empty defect outcome")
+			}
+			checkedBytesDefect = n
 		} else if checkedAddDefect >= 0 {
 			return refusal("checked_add_terminal", n, event.Invocation, "", occ.functionID, "event follows checked-add overflow terminal")
 		} else if checkedRemainderDefect >= 0 {
 			return refusal("remainder_zero_terminal", n, event.Invocation, "", occ.functionID, "event follows remainder-by-zero terminal")
+		} else if checkedBytesDefect >= 0 {
+			return refusal("byte_index_terminal", n, event.Invocation, "", occ.functionID, "event follows byte index defect terminal")
 		}
 		pair := event.Invocation + "\x00" + event.ID
 		if event.Occurrence < nextOccurrence[pair] || (exhaustedOccurrence[pair] && event.Occurrence == ^uint64(0)) {
@@ -494,7 +512,7 @@ func (i *index) classify(event execution.Event) (operation, error) {
 		if event.ID == id+":event:failed" && op.value.Kind == core.OpFail && event.Kind == "function.failed" {
 			return op, nil
 		}
-		if event.ID == id+":event:defected" && event.Kind == "function.defected" && (op.value.Kind == core.OpDefect || op.value.Kind == core.OpAddChecked || op.value.Kind == core.OpRemainderU64) {
+		if event.ID == id+":event:defected" && event.Kind == "function.defected" && (op.value.Kind == core.OpDefect || op.value.Kind == core.OpAddChecked || op.value.Kind == core.OpRemainderU64 || op.value.Kind == core.OpBytesAt) {
 			return op, nil
 		}
 	}
