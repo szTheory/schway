@@ -17,7 +17,7 @@ import (
 // program (D-06).
 func TestPhase29FixtureAppCLI(t *testing.T) {
 	if _, err := exec.LookPath("clang"); err != nil {
-		t.Skip("clang unavailable on this host")
+		t.Skip("env:clang toolchain unavailable on this host")
 	}
 	source := testsupport.ProjectPath("examples", "phase29", "adler32_fixture.schway")
 	manifest := testsupport.ProjectPath("examples", "phase29", "fixture_bytes.bindings.json")

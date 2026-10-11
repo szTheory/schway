@@ -23,7 +23,7 @@ const phase29FixtureManifestPath = "../../../examples/phase29/fixture_bytes.bind
 // nothing printed.
 func TestPhase29NativeFixtureVectors(t *testing.T) {
 	if _, err := exec.LookPath("clang"); err != nil {
-		t.Skip("clang unavailable on this host")
+		t.Skip("env:clang toolchain unavailable on this host")
 	}
 	artifact := filepath.Join(t.TempDir(), "adler32_fixture")
 	_, diagnostics, err := session.BuildApplicationFile(context.Background(), phase29FixturePath, artifact, native.DefaultRunner(), phase29FixtureManifestPath)
@@ -55,7 +55,7 @@ func TestPhase29NativeFixtureVectors(t *testing.T) {
 // each with the local-owner error class.
 func TestPhase29FixtureAdmission(t *testing.T) {
 	if _, err := exec.LookPath("clang"); err != nil {
-		t.Skip("clang unavailable on this host")
+		t.Skip("env:clang toolchain unavailable on this host")
 	}
 	source, err := os.ReadFile(phase29FixturePath)
 	if err != nil {

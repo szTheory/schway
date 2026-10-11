@@ -1,7 +1,6 @@
 package cgen_test
 
 import (
-	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -115,11 +114,9 @@ func phase29BuildProxy(t *testing.T, c, target string, flags []string, dir, name
 	args := []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic"}
 	args = append(args, flags...)
 	args = append(args, "-Dmain=schway_phase29_proxy_shell_main", "-o", exe, cPath)
-	command := exec.Command("clang", args...)
-	var stderr bytes.Buffer
-	command.Stderr = &stderr
-	if err := command.Run(); err != nil {
-		t.Fatalf("clang %v: %v\n%s", flags, err, stderr.String())
+	built := testsupport.RunCLI(t, "clang", nil, args...)
+	if built.Exit != 0 {
+		t.Fatalf("clang %v: exit %d\n%s", flags, built.Exit, built.Stderr)
 	}
 	return exe
 }
@@ -127,7 +124,7 @@ func phase29BuildProxy(t *testing.T, c, target string, flags []string, dir, name
 func phase29ClangOrSkip(t *testing.T) {
 	t.Helper()
 	if _, err := exec.LookPath("clang"); err != nil {
-		t.Skip("clang is absent; the native proxy needs the installed C compiler")
+		t.Skip("env:clang is absent; the native proxy needs the installed C compiler")
 	}
 }
 
@@ -172,25 +169,21 @@ func TestPhase29GateNativeProxyVectors(t *testing.T) {
 		oob := phase29BuildProxy(t, oobC, oobNames[0], level.flags, dir, "oob-"+level.name)
 		t.Run(level.name, func(t *testing.T) {
 			for _, vector := range vectors {
-				out, err := exec.Command(library, vector.selector).Output()
-				if err != nil {
-					t.Fatalf("%s: %v", vector.selector, err)
+				ran := testsupport.RunCLI(t, library, nil, vector.selector)
+				if ran.Exit != 0 {
+					t.Fatalf("%s: exit %d stderr=%q", vector.selector, ran.Exit, ran.Stderr)
 				}
-				if got := strings.TrimSpace(string(out)); got != vector.want {
+				if got := strings.TrimSpace(string(ran.Stdout)); got != vector.want {
 					t.Fatalf("%s: got %s, want %s", vector.selector, got, vector.want)
 				}
 			}
 			for _, selector := range []string{"empty", "a", "hi"} {
-				command := exec.Command(oob, selector)
-				var stdout, stderr bytes.Buffer
-				command.Stdout, command.Stderr = &stdout, &stderr
-				err := command.Run()
-				exit, ok := err.(*exec.ExitError)
-				if !ok || exit.ExitCode() != 65 {
-					t.Fatalf("oob %s: err = %v, want exit 65", selector, err)
+				ran := testsupport.RunCLI(t, oob, nil, selector)
+				if ran.Exit != 65 {
+					t.Fatalf("oob %s: exit = %d, want exit 65", selector, ran.Exit)
 				}
-				if stderr.String() != "schway: byte index out of bounds\n" || stdout.Len() != 0 {
-					t.Fatalf("oob %s: stderr %q stdout %q", selector, stderr.String(), stdout.String())
+				if string(ran.Stderr) != "schway: byte index out of bounds\n" || len(ran.Stdout) != 0 {
+					t.Fatalf("oob %s: stderr %q stdout %q", selector, ran.Stderr, ran.Stdout)
 				}
 			}
 		})
@@ -201,7 +194,7 @@ func TestPhase29GateNativeProxyVectors(t *testing.T) {
 // env-gated, proxy-only and never the D-12 cap record.
 func TestPhase29GateNativeProxyCost(t *testing.T) {
 	if os.Getenv("SCHWAY_SPIKE008") != "1" {
-		t.Skip("SCHWAY_SPIKE008 is not 1; the native Stage-A cost reading is opt-in")
+		t.Skip("SCHWAY_SPIKE008 is not 1; the native Stage-A cost reading is opt-in; see probe:TestPhase29GateNativeProxyVectors")
 	}
 	phase29ClangOrSkip(t)
 	source, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase29", "adler32_library.schway"))
@@ -223,12 +216,12 @@ func TestPhase29GateNativeProxyCost(t *testing.T) {
 			var runs []time.Duration
 			for run := 0; run < 7; run++ {
 				begin := time.Now()
-				out, err := exec.Command(exe, workload.selector).Output()
+				ran := testsupport.RunCLI(t, exe, nil, workload.selector)
 				elapsed := time.Since(begin)
-				if err != nil {
-					t.Fatalf("%s %s: %v", level.name, workload.selector, err)
+				if ran.Exit != 0 {
+					t.Fatalf("%s %s: exit %d", level.name, workload.selector, ran.Exit)
 				}
-				if got := strings.TrimSpace(string(out)); got != workload.want {
+				if got := strings.TrimSpace(string(ran.Stdout)); got != workload.want {
 					t.Fatalf("%s %s run %d: got %s, want %s", level.name, workload.selector, run, got, workload.want)
 				}
 				if run > 0 {

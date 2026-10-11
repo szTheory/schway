@@ -46,7 +46,7 @@ func phase29Lanes() []phase29Lane {
 func phase29RequireClang(t *testing.T) {
 	t.Helper()
 	if _, err := exec.LookPath("clang"); err != nil {
-		t.Skip("clang unavailable on this host")
+		t.Skip("env:clang toolchain unavailable on this host")
 	}
 }
 
@@ -90,8 +90,8 @@ func phase29RequireASan(t *testing.T) {
 	if err := os.WriteFile(probe, []byte("int main(void) { return 0; }\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if out, err := exec.Command("clang", "-fsanitize=address", "-o", filepath.Join(dir, "probe"), probe).CombinedOutput(); err != nil {
-		t.Skipf("address sanitizer unavailable on this host: %v %s", err, strings.TrimSpace(string(out)))
+	if probed := testsupport.RunCLI(t, "clang", nil, "-fsanitize=address", "-o", filepath.Join(dir, "probe"), probe); probed.Exit != 0 {
+		t.Skipf("env:clang address sanitizer unavailable on this host: exit %d %s", probed.Exit, strings.TrimSpace(string(probed.Stdout)+string(probed.Stderr)))
 	}
 }
 

@@ -321,7 +321,7 @@ func TestPhase29GateInterpreterVectors(t *testing.T) {
 // an order-of-magnitude read, never the D-12 cap record. It is opt-in.
 func TestPhase29GateCostReading(t *testing.T) {
 	if os.Getenv("SCHWAY_SPIKE008") != "1" {
-		t.Skip("SCHWAY_SPIKE008 is not 1; the Stage-A cost reading is opt-in")
+		t.Skip("SCHWAY_SPIKE008 is not 1; the Stage-A cost reading is opt-in; see probe:TestPhase29GateNativeProxyVectors")
 	}
 	program := phase29Library(t)
 	workloads := []struct {

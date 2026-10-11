@@ -114,11 +114,14 @@ func spike008MeasureInterp(run func() (interp.Execution, error), caseID uint64) 
 
 func spike008Toolchain() string {
 	clangVersion, clangTriple := "unavailable", "unavailable"
-	if out, err := exec.Command("clang", "--version").Output(); err == nil {
-		clangVersion = strings.SplitN(strings.TrimSpace(string(out)), "\n", 2)[0]
-	}
-	if out, err := exec.Command("clang", "-print-target-triple").Output(); err == nil {
-		clangTriple = strings.TrimSpace(string(out))
+	if _, lookErr := exec.LookPath("clang"); lookErr == nil {
+		// Bounded spawn (deadline plus capped streams) via the shared helper.
+		if out, err := testsupport.RunCLIErr(context.Background(), "clang", nil, "--version"); err == nil && out.Exit == 0 {
+			clangVersion = strings.SplitN(strings.TrimSpace(string(out.Stdout)), "\n", 2)[0]
+		}
+		if out, err := testsupport.RunCLIErr(context.Background(), "clang", nil, "-print-target-triple"); err == nil && out.Exit == 0 {
+			clangTriple = strings.TrimSpace(string(out.Stdout))
+		}
 	}
 	return fmt.Sprintf("go=%s clang=%q GOOS/GOARCH=%s/%s target=%s", runtime.Version(), clangVersion, runtime.GOOS, runtime.GOARCH, clangTriple)
 }

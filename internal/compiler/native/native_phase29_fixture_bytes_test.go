@@ -1,14 +1,12 @@
 package native_test
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
@@ -43,7 +41,7 @@ func phase29BuildDriver(t *testing.T, driver string, extra ...string) string {
 	t.Helper()
 	clang, err := exec.LookPath("clang")
 	if err != nil {
-		t.Skip("clang unavailable on this host")
+		t.Skip("env:clang toolchain unavailable on this host")
 	}
 	root := t.TempDir()
 	project := testsupport.ProjectPath()
@@ -63,26 +61,26 @@ func phase29BuildDriver(t *testing.T, driver string, extra ...string) string {
 	binary := filepath.Join(root, "dump")
 	args := append(strings.Fields(phase29ApplicationFlags), extra...)
 	args = append(args, "-I", root, "-o", binary, driverPath, filepath.Join(root, "adapter.c"))
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer cancel()
-	if out, err := exec.CommandContext(ctx, clang, args...).CombinedOutput(); err != nil {
-		if len(extra) > 0 && strings.Contains(string(out), "sanitize") {
-			t.Skip("address sanitizer unavailable on this host")
+	// RunCLI is the bounded spawn helper: CommandContext deadline plus
+	// independently bounded stdout and stderr.
+	compiled := testsupport.RunCLI(t, clang, nil, args...)
+	if compiled.Exit != 0 {
+		out := string(compiled.Stdout) + string(compiled.Stderr)
+		if len(extra) > 0 && strings.Contains(out, "sanitize") {
+			t.Skipf("env:clang address sanitizer unavailable on this host: %s", strings.TrimSpace(out))
 		}
-		t.Fatalf("compile dump driver: %v\n%s", err, out)
+		t.Fatalf("compile dump driver: exit %d\n%s", compiled.Exit, out)
 	}
 	return binary
 }
 
 func phase29RunDriver(t *testing.T, binary string, ids ...string) string {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-	out, err := exec.CommandContext(ctx, binary, ids...).CombinedOutput()
-	if err != nil {
-		t.Fatalf("run dump driver: %v\n%s", err, out)
+	ran := testsupport.RunCLI(t, binary, nil, ids...)
+	if ran.Exit != 0 {
+		t.Fatalf("run dump driver: exit %d\n%s%s", ran.Exit, ran.Stdout, ran.Stderr)
 	}
-	return string(out)
+	return string(ran.Stdout) + string(ran.Stderr)
 }
 
 func TestPhase29FixtureBytesGeneratorsAgree(t *testing.T) {
