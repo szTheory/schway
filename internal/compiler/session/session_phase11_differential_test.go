@@ -409,6 +409,23 @@ func TestPhase11InterproceduralDifferential(t *testing.T) {
 				t.Fatalf("%s: expected returned 7, got %+v", tier, run.Outcome)
 			}
 		}
+
+		// Retained typed-refusal control (2026-10-10, D-02/D-20): a program with
+		// no fn main and two equal-closure roots still refuses with the named
+		// core.EntryAmbiguous code at the shared lowering step.
+		ambiguousSource, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase12", "payload_borrow_interaction.schway"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		ambiguousChecked := session.Check(ambiguousSource)
+		if len(ambiguousChecked.Program.Functions) == 0 {
+			t.Fatalf("expected the control program to survive Check for emission, diagnostics: %+v", ambiguousChecked.Diagnostics)
+		}
+		if _, err := cgen.EmitNative(ambiguousChecked.Program); err == nil {
+			t.Fatal("expected cgen.EmitNative to refuse the no-main ambiguous-entry control")
+		} else if refusal, ok := callgraph.EntryAmbiguousError(err); !ok || refusal.Code() != core.EntryAmbiguous {
+			t.Fatalf("expected a callgraph entry-ambiguity refusal from EmitNative, got: %v", err)
+		}
 	})
 
 	// UnreachableFunction: multi_function_unreachable.schway's `orphan` is

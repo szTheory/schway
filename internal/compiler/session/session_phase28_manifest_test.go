@@ -39,11 +39,63 @@ const phase28MinCorpus = 155
 // differ from the golden, each with the new expected entry. Later Phase 28
 // plans add one entry per deliberate class change, each with a dated reason
 // comment. An entry equal to the golden fails as stale.
-var phase28ClassChanges = map[string]phase28ManifestEntry{}
+var phase28ClassChanges = map[string]phase28ManifestEntry{
+	// 2026-10-10 (Phase 28, D-04/D-05/D-20): the dead function `touch` is now
+	// pruned before emission, so native run gets past emission to the
+	// (deliberately missing) clang runner: tool_failure -> tool_missing. Check,
+	// build and interpreter classes still refuse with core.origin_omitted
+	// (D-18: admission still runs on the full program).
+	"testdata/phase11/multi_function_gate_corpus.schway": {
+		Path:           "testdata/phase11/multi_function_gate_corpus.schway",
+		Check:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		Build:          phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		InterpreterRun: phase28Class{Exit: 2, Code: "core.origin_omitted"},
+		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_missing"},
+		EntryShape:     "multi-root-main",
+		Entry:          "main",
+		DeadFunctions:  []string{"s1:phase11.multi_function_gate_corpus:fn:touch"},
+	},
+	// 2026-10-10 (Phase 28, D-01/D-20): main wins the tie, the unused function
+	// is pruned, interpreter run now succeeds and native run reaches the runner.
+	"testdata/phase11/multi_function_zero_call.schway": {
+		Path:           "testdata/phase11/multi_function_zero_call.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
+		InterpreterRun: phase28Class{},
+		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_missing"},
+		EntryShape:     "multi-root-main",
+		Entry:          "main",
+		DeadFunctions:  []string{"s1:phase11.multi_function_zero_call:fn:unused"},
+	},
+	// 2026-10-10 (Phase 28, D-01/D-02/D-20): no fn main and two equal-closure
+	// roots; every surface now refuses with core.entry_ambiguous (exit 2).
+	"testdata/phase12/payload_borrow_interaction.schway": {
+		Path:           "testdata/phase12/payload_borrow_interaction.schway",
+		Check:          phase28Class{Exit: 2, Code: "core.entry_ambiguous"},
+		Build:          phase28Class{Exit: 2, Code: "core.entry_ambiguous"},
+		InterpreterRun: phase28Class{Exit: 2, Code: "core.entry_ambiguous"},
+		NativeRun:      phase28Class{Exit: 2, Code: "core.entry_ambiguous"},
+		EntryShape:     "multi-root-no-main",
+		EntryError:     "core.entry_ambiguous",
+	},
+}
 
 // phase28NewlyAddedEntries lists the only paths allowed to be absent from the
 // golden (sources added after generation), with their expected entry.
-var phase28NewlyAddedEntries = map[string]phase28ManifestEntry{}
+var phase28NewlyAddedEntries = map[string]phase28ManifestEntry{
+	// 2026-10-10 (Phase 28, D-04, ROADMAP SC3): new runnable example with an
+	// uncalled function; Build and native run stop at the missing clang.
+	"examples/phase28/unused_function.schway": {
+		Path:           "examples/phase28/unused_function.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.tool_missing"},
+		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
+		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_failure"},
+		EntryShape:     "multi-root-main",
+		Entry:          "main",
+		DeadFunctions:  []string{"s1:examples.phase28.unused_function:fn:unused"},
+	},
+}
 
 type phase28Manifest struct {
 	Schema   string                 `json:"schema"`

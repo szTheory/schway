@@ -274,13 +274,13 @@ func phase16M004ProvenanceProblems(registry phase16ConsumerRegistry, evidence ph
 	phase11GateRowFound := false
 	ambiguousEntryRowFound := false
 	for _, row := range registry.Entries {
-		if row.Call == "internal/compiler/session/session_phase11_differential_test.go:EmitNative:391" {
+		if row.Call == "internal/compiler/session/session_phase11_differential_test.go:EmitNative:424" {
 			ambiguousEntryRowFound = row.Classification == phase16TypedRefusal && row.Witness == "probe:TestPhase11InterproceduralDifferential/ZeroCallEdges" && len(row.EvidenceFixtures) == 0
 		}
 		if strings.HasPrefix(row.Call, "internal/compiler/session/session_phase11_gate_test.go:EmitNative:") && row.Classification == phase16RefusalWithFrozen && row.Witness == "probe:TestPhase11ByPointerRefusalFirstEvidence" && reflect.DeepEqual(row.EvidenceFixtures, []string{"testdata/phase11/multi_function_gate_corpus.schway", "testdata/phase16/historical/phase11_gate_n_two.fixture"}) {
 			phase11GateRowFound = true
 		}
-		if row.Classification == phase16TypedRefusal && row.Call == "internal/compiler/session/session_phase11_differential_test.go:EmitNative:391" {
+		if row.Classification == phase16TypedRefusal && row.Call == "internal/compiler/session/session_phase11_differential_test.go:EmitNative:424" {
 			if row.Witness != "probe:TestPhase11InterproceduralDifferential/ZeroCallEdges" || len(row.EvidenceFixtures) != 0 {
 				problems = append(problems, "ambiguous-entry refusal lost its independent typed witness")
 			}

@@ -10,6 +10,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -1268,8 +1269,12 @@ func TestEmitProgramZeroCallEdges(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PruneToReachable: %v", err)
 	}
-	if len(pruned.Functions) != 1 {
-		t.Fatalf("expected exactly the entry to survive pruning, got %d functions", len(pruned.Functions))
+	survivors := make([]string, 0, len(pruned.Functions))
+	for _, function := range pruned.Functions {
+		survivors = append(survivors, function.ID)
+	}
+	if !reflect.DeepEqual(survivors, []string{entry.ID}) {
+		t.Fatalf("expected exactly the entry to survive pruning, got %v", survivors)
 	}
 	generated, err := cgen.EmitNative(pruned)
 	if err != nil {
