@@ -3,10 +3,14 @@ phase: 28
 review: 28-REVIEW.md
 titles: json
 findings:
+  - id: CR-01
+    severity: critical
+    disposition: fixed
+    title: "Emitter consumer registry line number is stale, so the inventory test fails at HEAD"
   - id: WR-01
     severity: warning
-    disposition: fixed
-    title: "Duplicate-`main` ambiguity reports the wrong roots and a misleading hint"
+    disposition: deferred
+    title: "Registry pins are fragile and were re-grounded blind"
   - id: WR-02
     severity: warning
     disposition: fixed
@@ -28,21 +32,23 @@ findings:
     disposition: fixed
     title: "`Phase4CheckedProgram` discards the pruned program"
 open: 0
-total: 6
-recorded: 2026-10-11T03:04:10.516Z
+total: 7
+recorded: 2026-10-11T00:00:00.000Z
 ---
 
 # Phase 28: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | fixed | 28-REVIEW-FIX.md |
-| WR-02 | warning | fixed | 28-REVIEW-FIX.md |
-| WR-03 | warning | fixed | 28-REVIEW-FIX.md |
-| WR-04 | warning | fixed | 28-REVIEW-FIX.md |
-| IN-01 | info | fixed | 28-REVIEW-FIX.md |
-| IN-02 | info | fixed | 28-REVIEW-FIX.md |
+| CR-01 | critical | fixed | eface8a (re-pinned `session.go:EmitNative` 3047→3042; the shift came from 28-08 removing 5 lines, not 307e14a) |
+| WR-01 | warning | deferred | Process finding, not a code defect. Line-number pins are by design in the Phase 16 emitter inventory; the mitigation is to run the session meta/inventory tests after any `session.go` edit, which the orchestrator now does (verified passing at eface8a). Structural fix (symbol-based pins) left for a future phase. |
+| WR-02 | warning | fixed | 28-REVIEW-FIX.md (first review) |
+| WR-03 | warning | fixed | 28-REVIEW-FIX.md (first review) |
+| WR-04 | warning | fixed | 28-REVIEW-FIX.md (first review) |
+| IN-01 | info | fixed | 28-REVIEW-FIX.md (first review) — not re-reported by the 2026-10-11 re-review |
+| IN-02 | info | fixed | 28-REVIEW-FIX.md (first review) — not re-reported by the 2026-10-11 re-review |
+
+The first review's WR-01 ("Duplicate-`main` ambiguity reports the wrong roots and a misleading hint", fixed in 28-REVIEW-FIX.md) lost its row because the re-review reused the id WR-01 for a different finding.
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
-Re-running the gate keeps every row it can. A row the current review no longer reports is kept and its Source cell flagged, so a finding does not leave this record silently. ONE exception: when a finding id is REUSED by a different finding, the earlier decision cannot keep a row — the id is taken — and it is dropped. A RECORDED decision (anything but `open`) is named on the console when that happens; a row still at `open` is replaced silently, because `open` records no decision to lose.
