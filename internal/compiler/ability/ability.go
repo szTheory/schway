@@ -178,6 +178,17 @@ func (d *deriver) deriveAt(shape core.TypeRef, depth int) (derivedShape, error) 
 			set:       abilitySet{drop: true, share: true, send: true, escape: true},
 			witnesses: map[core.Ability][]string{core.AbilityCopy: {"FileByteOwner"}},
 		}, nil
+	case "FixtureBytes":
+		if len(shape.Arguments) != 0 {
+			return derivedShape{}, fmt.Errorf("FixtureBytes takes no type arguments")
+		}
+		// FixtureBytes is the Phase 29 test-only owner (D-17, D-23): the
+		// FileByteOwner analog, noncopyable but droppable, shareable,
+		// sendable and escapable.
+		return derivedShape{
+			set:       abilitySet{drop: true, share: true, send: true, escape: true},
+			witnesses: map[core.Ability][]string{core.AbilityCopy: {"FixtureBytes"}},
+		}, nil
 	case "Box":
 		if len(shape.Arguments) != 1 {
 			return derivedShape{}, fmt.Errorf("Box takes one type argument")

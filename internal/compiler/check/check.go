@@ -3706,6 +3706,9 @@ func hasTryCall(body *ast.LinearBody) bool {
 func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType, calleeContracts map[string]calleeContract) (core.Function, []diagnostic.Diagnostic, int) {
 	parameterType := coreType(function.Parameter.Type)
 	returnType := coreType(function.ReturnType)
+	if fixtureBytesEntryCandidate(function) {
+		return checkFixtureBytesEntry(functionID, function, foreignSymbols, calleeContracts)
+	}
 	if parameterType.Constructor == "PathToken" {
 		if function.ReturnType.Constructor == "FileByteOwner" {
 			return checkLocalFileByteAcquireHelper(functionID, function, foreignSymbols, functionNames, dataTypes)
@@ -4134,6 +4137,102 @@ func checkLocalFileByteTransferCaller(functionID string, function ast.FuncDecl, 
 		{ID: id("op", 5), PointID: id("point:linear", 5), Kind: core.OpReturn, SourceID: places[4].ID, TypeID: types[2].ID},
 	}
 	return core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "PathToken"}, ReturnType: "U64", Linear: &core.LinearBody{ID: functionID + ":linear", Types: types, Places: places, Operations: ops, Blocks: []core.Block{}, Edges: []core.Edge{}}, Span: function.Span}, nil, 9
+}
+
+// fixtureBytesEntryCandidate keys the Phase 29 fixture-owner shape (D-09, D-15)
+// on the schway_fixture_bytes_acquire symbol alone. It is a separate closed
+// matcher: no Phase 23-25 matcher is consulted or edited, and PathToken /
+// FileByteOwner are never accepted here.
+func fixtureBytesEntryCandidate(function ast.FuncDecl) bool {
+	body := function.Body.Linear
+	if body == nil || len(body.Bindings) == 0 {
+		return false
+	}
+	first := body.Bindings[0].RHS
+	return first.Kind == "try_call" && first.Callee == "schway_fixture_bytes_acquire"
+}
+
+// checkFixtureBytesEntry admits the one closed D-15 caller shape: acquire the
+// fixture owner from the U64 entry parameter, borrow a ByteView from it, pass
+// the view to a callee that is resolved through the callee-contract table (so
+// the argument-type and return-type gates run), release the owner with the
+// compiler-minted release, and return the call result. The callee name is not
+// pinned: any declared function with one ByteView parameter and a U64 result
+// is accepted.
+func checkFixtureBytesEntry(functionID string, function ast.FuncDecl, symbols map[string]foreignSymbolInfo, callees map[string]calleeContract) (core.Function, []diagnostic.Diagnostic, int) {
+	body := function.Body.Linear
+	refuse := func(code, message string, span diagnostic.Span) (core.Function, []diagnostic.Diagnostic, int) {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(code, span, message)}, 1
+	}
+	if function.Name != "main" || function.Parameter.Type.Constructor != "U64" || function.ReturnType.Constructor != "U64" || len(body.Bindings) != 3 || body.Result != body.Bindings[2].Name {
+		return refuse("check.fixture_owner_shape_unsupported", "the fixture bytes owner is admitted only for a U64 entry that acquires, views, calls once with the view, and returns the U64 call result", body.Span)
+	}
+	acquireBinding, viewBinding, callBinding := body.Bindings[0], body.Bindings[1], body.Bindings[2]
+	if len(acquireBinding.RHS.Arguments) != 1 || acquireBinding.RHS.Arguments[0] != function.Parameter.Name ||
+		viewBinding.RHS.Kind != "call" || viewBinding.RHS.Callee != "schway_fixture_bytes_view" || len(viewBinding.RHS.Arguments) != 1 || viewBinding.RHS.Arguments[0] != acquireBinding.Name ||
+		callBinding.RHS.Kind != "call" || len(callBinding.RHS.Arguments) != 1 || callBinding.RHS.Arguments[0] != viewBinding.Name {
+		return refuse("check.fixture_owner_shape_unsupported", "the fixture bytes owner is admitted only for acquire, view of that owner, one call consuming the view, and generated release", body.Span)
+	}
+	acquire, hasAcquire := symbols["schway_fixture_bytes_acquire"]
+	view, hasView := symbols["schway_fixture_bytes_view"]
+	release, hasRelease := symbols["schway_fixture_bytes_release"]
+	if !hasAcquire || !hasView || !hasRelease {
+		return refuse("check.fixture_owner_contract_missing", "the fixture bytes source must declare acquire, view, and release symbols", body.Span)
+	}
+	if !foreignSignature(acquire, "U64", "FixtureBytes") || !foreignSignature(view, "FixtureBytes", "ByteView") || !foreignSignature(release, "FixtureBytes", "Unit") {
+		return refuse("check.fixture_owner_signature_mismatch", "fixture bytes operation signatures do not match the U64/FixtureBytes/ByteView contract", body.Span)
+	}
+	if !localForeignPolicy(acquire, "acquire", "schway_fixture_bytes_acquire_fn", "FixtureError") || acquire.Allocator != "libc_malloc" || acquire.Release != release.Name || release.Name != "schway_fixture_bytes_release" ||
+		!localForeignPolicy(view, "borrow", "schway_fixture_bytes_view_fn", "") ||
+		!localForeignPolicy(release, "consume", "schway_fixture_bytes_release_fn", "") || release.Allocator != "libc_malloc" {
+		return refuse("check.fixture_owner_contract_invalid", "fixture bytes operations require explicit per-operation ABI, mode, failure, allocator, and release facts", body.Span)
+	}
+	u64Type, ownerType, viewType := core.TypeRef{Constructor: "U64"}, core.TypeRef{Constructor: "FixtureBytes"}, core.TypeRef{Constructor: "ByteView"}
+	shapes := []core.TypeRef{u64Type, ownerType, viewType}
+	types := make([]core.TypeFact, len(shapes))
+	for index, shape := range shapes {
+		derived, err := ability.Derive(shape)
+		if err != nil {
+			return refuse("type.unknown", err.Error(), function.Span)
+		}
+		types[index] = core.TypeFact{ID: fmt.Sprintf("%s:type:%d", functionID, index), Shape: shape, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}
+	}
+	places := []core.Place{
+		{ID: functionID + ":place:0", Name: function.Parameter.Name, TypeID: types[0].ID},
+		{ID: functionID + ":place:1", Name: acquireBinding.Name, TypeID: types[1].ID},
+		{ID: functionID + ":place:2", Name: viewBinding.Name, TypeID: types[2].ID},
+	}
+	scope := map[string]*placeState{}
+	for _, place := range places {
+		scope[place.Name] = &placeState{place: place, initialized: true}
+	}
+	// The call is constructed through the callee-contract table so the
+	// argument-type and return-type gates run (flag (a) at the call site).
+	callOp, target, diag := resolveCallBinding(functionID, 2, callBinding, scope, callees, types[0], symbols, types)
+	if diag != nil {
+		return core.Function{}, []diagnostic.Diagnostic{*diag}, 1
+	}
+	contract := callees[callBinding.RHS.Callee]
+	if contract.ParameterType != "ByteView" || contract.ReturnType != "U64" || target.TypeID != types[0].ID {
+		return refuse("check.fixture_owner_contract_invalid", "the fixture view callee must take one ByteView and return U64", callBinding.RHS.Span)
+	}
+	target.Name = callBinding.Name
+	places = append(places, target)
+	acquireID := functionID + ":op:0"
+	operations := []core.LinearOperation{
+		{ID: acquireID, PointID: functionID + ":point:linear:0", Kind: core.OpForeignCall, SourceID: places[0].ID, TargetID: places[1].ID, TypeID: types[1].ID, Allocator: acquire.Allocator, Foreign: localForeignContract(acquire)},
+		{ID: functionID + ":op:1", PointID: functionID + ":point:linear:1", Kind: core.OpForeignCall, SourceID: places[1].ID, TargetID: places[2].ID, TypeID: types[2].ID, Foreign: localForeignContract(view)},
+		callOp,
+		phase24ReleaseOp(functionID, 3, places[1].ID, types[1].ID, acquireID, release),
+		{ID: functionID + ":op:4", PointID: functionID + ":point:linear:4", Kind: core.OpReturn, SourceID: places[3].ID, TypeID: types[0].ID},
+	}
+	linear := &core.LinearBody{ID: functionID + ":linear", Types: types, Places: places, Operations: operations, Blocks: []core.Block{}, Edges: []core.Edge{}}
+	return core.Function{
+		ID: functionID, Name: function.Name,
+		EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
+		Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "U64"}, ReturnType: "U64",
+		Linear: linear, Span: function.Span,
+	}, nil, 14
 }
 
 func discardedFileByteOwnerAcquisition(body *ast.LinearBody, symbols map[string]foreignSymbolInfo) *diagnostic.Diagnostic {

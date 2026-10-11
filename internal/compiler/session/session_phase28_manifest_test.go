@@ -254,6 +254,20 @@ var phase28NewlyAddedEntries = map[string]phase28ManifestEntry{
 		Entry:          "main",
 		DeadFunctions:  []string{"s1:testdata.phase29.adler32_library:fn:adler32"},
 	},
+	// 2026-10-11 (Phase 29, plan 29-06): the fixture-owner program checks clean
+	// and has one root (main calls adler32). Observed classes: Build stops at
+	// native.build_failed because native emission of the FixtureBytes owner is
+	// not yet implemented; plan 29-07 may change Build, InterpreterRun and
+	// NativeRun when it adds that lowering.
+	"examples/phase29/adler32_fixture.schway": {
+		Path:           "examples/phase29/adler32_fixture.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
+		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
+		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_failure"},
+		EntryShape:     "single-root",
+		Entry:          "main",
+	},
 }
 
 type phase28Manifest struct {

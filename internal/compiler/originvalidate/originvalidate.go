@@ -1346,7 +1346,11 @@ func PublishProblemsFor(function core.Function, calleeContracts map[string]calle
 	if problem := phase27WriteProblem(function); problem != nil {
 		return []Problem{*problem}
 	}
-	if function.ReturnType != "FileByteOwner" && !hasOwnerCall(function) {
+	if fixtureOwnerPresent(function) {
+		if problem := fixtureOwnerOriginProblem(function); problem != nil {
+			return []Problem{*problem}
+		}
+	} else if function.ReturnType != "FileByteOwner" && !hasOwnerCall(function) {
 		if problem := localOwnerOriginProblem(function); problem != nil {
 			return []Problem{*problem}
 		}
@@ -1654,6 +1658,109 @@ func localOwnerOriginProblem(function core.Function) *Problem {
 		if !owner.borrowed || !owner.released || returnedFrom != owner.resultID {
 			return fail(function.ID)
 		}
+	}
+	return nil
+}
+
+// fixtureOwnerPresent reports whether the function carries any Phase 29
+// fixture-owner foreign operation (D-09). The marker is the schway_fixture_bytes_
+// symbol prefix or the FixtureBytes type name on the per-operation contract; a
+// function carrying either is routed to fixtureOwnerOriginProblem and never to
+// the Phase 23-25 owner matchers.
+func fixtureOwnerPresent(function core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	for _, operation := range function.Linear.Operations {
+		contract := operation.Foreign
+		if contract == nil {
+			continue
+		}
+		if len(contract.Symbol) >= len("schway_fixture_bytes_") && contract.Symbol[:len("schway_fixture_bytes_")] == "schway_fixture_bytes_" || contract.ParameterType == "FixtureBytes" || contract.ResultType == "FixtureBytes" {
+			return true
+		}
+	}
+	return false
+}
+
+// fixtureOwnerOriginProblem is originvalidate's own closed owner/origin
+// matcher for the fixture shape, written as a step machine over the operation
+// list and independent of corevalidate's index-based replay. The owner is
+// acquired from the U64 parameter, lent to exactly one ByteView, the view is
+// consumed by exactly one OpCall into a U64, the owner is released only after
+// that call (so the view loan has ended), and only the call result is
+// returned. A view that is returned, reused after the call, or outlives the
+// release is refused.
+func fixtureOwnerOriginProblem(function core.Function) *Problem {
+	fail := func(operationID string) *Problem {
+		return &Problem{Code: "core.fixture_owner_origin", Detail: fmt.Sprintf("%s: invalid fixture owner operation %q", function.ID, operationID), FunctionID: function.ID}
+	}
+	linear := function.Linear
+	if function.Parameter.Type != "U64" || function.ReturnType != "U64" || len(linear.Blocks) != 0 || len(linear.Edges) != 0 {
+		return fail(function.ID)
+	}
+	shapes := make(map[string]string, len(linear.Types))
+	for _, fact := range linear.Types {
+		shapes[fact.ID] = fact.Shape.Constructor
+	}
+	placeShape := make(map[string]string, len(linear.Places))
+	for _, place := range linear.Places {
+		placeShape[place.ID] = shapes[place.TypeID]
+	}
+	const (
+		stepAcquire = iota
+		stepBorrow
+		stepCall
+		stepRelease
+		stepReturn
+		stepDone
+	)
+	step := stepAcquire
+	var acquireID, ownerPlace, viewPlace, resultPlace string
+	for _, operation := range linear.Operations {
+		contract := operation.Foreign
+		clean := operation.ErrTargetID == "" && operation.OkEdgeID == "" && operation.ErrEdgeID == ""
+		switch step {
+		case stepAcquire:
+			if operation.Kind != core.OpForeignCall || contract == nil || !clean || operation.SourceID != function.Parameter.ID || placeShape[operation.SourceID] != "U64" || placeShape[operation.TargetID] != "FixtureBytes" ||
+				contract.Mode != "acquire" || contract.Symbol != "schway_fixture_bytes_acquire" || contract.ABIType != "schway_fixture_bytes_acquire_fn" || contract.ParameterType != "U64" || contract.ResultType != "FixtureBytes" ||
+				contract.Fails != "FixtureError" || contract.Allocator != "libc_malloc" || contract.Release != "schway_fixture_bytes_release" || operation.Allocator != contract.Allocator {
+				return fail(operation.ID)
+			}
+			acquireID, ownerPlace = operation.ID, operation.TargetID
+			step = stepBorrow
+		case stepBorrow:
+			if operation.Kind != core.OpForeignCall || contract == nil || !clean || operation.SourceID != ownerPlace || placeShape[operation.TargetID] != "ByteView" ||
+				contract.Mode != "borrow" || contract.Symbol != "schway_fixture_bytes_view" || contract.ABIType != "schway_fixture_bytes_view_fn" || contract.ParameterType != "FixtureBytes" || contract.ResultType != "ByteView" ||
+				contract.Fails != "" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" {
+				return fail(operation.ID)
+			}
+			viewPlace = operation.TargetID
+			step = stepCall
+		case stepCall:
+			if operation.Kind != core.OpCall || contract != nil || operation.CalleeID == "" || operation.SourceID != viewPlace || placeShape[operation.TargetID] != "U64" || shapes[operation.TypeID] != "U64" {
+				return fail(operation.ID)
+			}
+			resultPlace = operation.TargetID
+			step = stepRelease
+		case stepRelease:
+			if operation.Kind != core.OpRelease || contract == nil || operation.SourceID != ownerPlace || operation.ReleasesOperationID != acquireID || operation.TargetID != "" ||
+				contract.Mode != "consume" || contract.Symbol != "schway_fixture_bytes_release" || contract.ABIType != "schway_fixture_bytes_release_fn" || contract.ParameterType != "FixtureBytes" || contract.ResultType != "Unit" ||
+				contract.Fails != "" || contract.Allocator != "libc_malloc" || contract.Release != "" || operation.Allocator != contract.Allocator {
+				return fail(operation.ID)
+			}
+			step = stepReturn
+		case stepReturn:
+			if operation.Kind != core.OpReturn || contract != nil || operation.SourceID != resultPlace || resultPlace == viewPlace {
+				return fail(operation.ID)
+			}
+			step = stepDone
+		default:
+			return fail(operation.ID)
+		}
+	}
+	if step != stepDone {
+		return fail(function.ID)
 	}
 	return nil
 }

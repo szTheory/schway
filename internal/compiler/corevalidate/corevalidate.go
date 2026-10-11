@@ -1446,6 +1446,9 @@ func (v *validator) validateLocalForeignOperation(function *core.Function, opera
 	if !v.check(sourceOK && types[source.TypeID].Shape.Constructor == contract.ParameterType, "foreign.operation_parameter_mismatch", operation.ID) {
 		return false
 	}
+	if fixtureForeignContract(contract) {
+		return v.validateFixtureForeignOperation(operation, types, places)
+	}
 	switch contract.Mode {
 	case "acquire":
 		target, targetOK := places[operation.TargetID]
@@ -1477,6 +1480,111 @@ func (v *validator) validateLocalForeignOperation(function *core.Function, opera
 		return v.check(false, "core.call_target_not_foreign", operation.ID)
 	}
 	return true
+}
+
+// fixtureForeignContract reports whether a per-operation foreign contract
+// belongs to the Phase 29 fixture-owner shape (D-09). The shape is keyed by
+// the schway_fixture_bytes_ symbol prefix or by the FixtureBytes type name, so
+// a forged contract that borrows either marker is routed to the fixture
+// matcher's pins and refused there, never into the Phase 23-25 pins.
+func fixtureForeignContract(contract *core.ForeignOperationContract) bool {
+	if contract == nil {
+		return false
+	}
+	return len(contract.Symbol) >= len("schway_fixture_bytes_") && contract.Symbol[:len("schway_fixture_bytes_")] == "schway_fixture_bytes_" || contract.ParameterType == "FixtureBytes" || contract.ResultType == "FixtureBytes"
+}
+
+// validateFixtureForeignOperation is corevalidate's own closed matcher for the
+// three fixture operations (acquire, borrow, consume). It is written beside,
+// not inside, the Phase 23 pins and shares no helper with them beyond the
+// generic error-edge predicate (the fixture shape admits no error edges).
+func (v *validator) validateFixtureForeignOperation(operation core.LinearOperation, types map[string]core.TypeFact, places map[string]core.Place) bool {
+	contract := operation.Foreign
+	noEdges := operation.ErrTargetID == "" && operation.OkEdgeID == "" && operation.ErrEdgeID == ""
+	target, targetOK := places[operation.TargetID]
+	switch contract.Mode {
+	case "acquire":
+		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || !noEdges ||
+			contract.Symbol != "schway_fixture_bytes_acquire" || contract.ABIType != "schway_fixture_bytes_acquire_fn" || contract.ParameterType != "U64" || contract.ResultType != "FixtureBytes" ||
+			contract.Fails != "FixtureError" || contract.Allocator != "libc_malloc" || contract.Release != "schway_fixture_bytes_release" || operation.Allocator != contract.Allocator {
+			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
+		}
+	case "borrow":
+		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || !noEdges ||
+			contract.Symbol != "schway_fixture_bytes_view" || contract.ABIType != "schway_fixture_bytes_view_fn" || contract.ParameterType != "FixtureBytes" || contract.ResultType != "ByteView" ||
+			contract.Fails != "" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" {
+			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
+		}
+	case "consume":
+		if operation.Kind != core.OpRelease || operation.TargetID != "" || !noEdges ||
+			contract.Symbol != "schway_fixture_bytes_release" || contract.ABIType != "schway_fixture_bytes_release_fn" || contract.ParameterType != "FixtureBytes" || contract.ResultType != "Unit" ||
+			contract.Fails != "" || contract.Allocator != "libc_malloc" || contract.Release != "" || operation.Allocator != contract.Allocator {
+			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
+		}
+	default:
+		return v.check(false, "foreign.operation_mode_invalid", operation.ID)
+	}
+	return true
+}
+
+// fixtureViewCall exempts the one Phase 29 fixture call from the generic
+// "call keeps its argument's type when parameter and return types match" law:
+// the fixture entry is U64 -> U64, but its OpCall consumes a ByteView place
+// and yields a U64. The exemption is narrow: the function must itself carry
+// fixture-owner foreign operations, and the call must be ByteView -> U64.
+func fixtureViewCall(function *core.Function, operation core.LinearOperation, types map[string]core.TypeFact, places map[string]core.Place) bool {
+	if operation.Kind != core.OpCall || types[places[operation.SourceID].TypeID].Shape.Constructor != "ByteView" || types[operation.TypeID].Shape.Constructor != "U64" {
+		return false
+	}
+	for _, candidate := range function.Linear.Operations {
+		if fixtureForeignContract(candidate.Foreign) {
+			return true
+		}
+	}
+	return false
+}
+
+// fixtureOwnerLifecycleValid replays the fixture lifecycle as its own closed
+// shape, independent of check and originvalidate: acquire from the U64
+// parameter, borrow a ByteView from that owner, one OpCall consuming the view
+// into a U64, the release naming that exact acquisition, and a return of the
+// call result. Any other order, count or source is refused.
+func (v *validator) fixtureOwnerLifecycleValid(function *core.Function) bool {
+	if function == nil || function.Linear == nil || function.Parameter.Type != "U64" || function.ReturnType != "U64" || len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 {
+		return false
+	}
+	operations := function.Linear.Operations
+	if len(operations) != 5 {
+		return false
+	}
+	acquire, view, call, release, ret := operations[0], operations[1], operations[2], operations[3], operations[4]
+	placeTypes := make(map[string]string, len(function.Linear.Places))
+	typeShapes := make(map[string]string, len(function.Linear.Types))
+	for _, fact := range function.Linear.Types {
+		typeShapes[fact.ID] = fact.Shape.Constructor
+	}
+	for _, place := range function.Linear.Places {
+		placeTypes[place.ID] = typeShapes[place.TypeID]
+	}
+	if acquire.Kind != core.OpForeignCall || acquire.Foreign == nil || acquire.Foreign.Mode != "acquire" || acquire.SourceID != function.Parameter.ID || acquire.TargetID == "" || placeTypes[acquire.TargetID] != "FixtureBytes" {
+		return false
+	}
+	if view.Kind != core.OpForeignCall || view.Foreign == nil || view.Foreign.Mode != "borrow" || view.SourceID != acquire.TargetID || view.TargetID == "" || placeTypes[view.TargetID] != "ByteView" {
+		return false
+	}
+	var callee *core.Function
+	for index := range v.program.Functions {
+		if v.program.Functions[index].ID == call.CalleeID {
+			callee = &v.program.Functions[index]
+		}
+	}
+	if call.Kind != core.OpCall || callee == nil || callee.Parameter.Type != "ByteView" || callee.ReturnType != "U64" || call.SourceID != view.TargetID || call.TargetID == "" || placeTypes[call.TargetID] != "U64" {
+		return false
+	}
+	if release.Kind != core.OpRelease || release.Foreign == nil || release.Foreign.Mode != "consume" || release.ReleasesOperationID != acquire.ID || release.SourceID != acquire.TargetID || release.Foreign.Symbol != acquire.Foreign.Release {
+		return false
+	}
+	return ret.Kind == core.OpReturn && ret.Foreign == nil && ret.SourceID == call.TargetID
 }
 
 func validLocalForeignErrorEdges(operation core.LinearOperation, contract *core.ForeignOperationContract, types map[string]core.TypeFact, places map[string]core.Place) bool {
@@ -2575,7 +2683,7 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 	returned := false
 	for index, operation := range operations {
 		source := places[operation.SourceID]
-		if !v.check(operation.Kind == core.OpConst || operation.Kind != core.OpCall || source.TypeID == operation.TypeID || function.Parameter.Type != function.ReturnType, "core.type_mismatch", operation.ID) {
+		if !v.check(operation.Kind == core.OpConst || operation.Kind != core.OpCall || source.TypeID == operation.TypeID || function.Parameter.Type != function.ReturnType || fixtureViewCall(function, operation, types, places), "core.type_mismatch", operation.ID) {
 			return false
 		}
 		if !v.check(optionalOperationSource(function, operation) || initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
@@ -2814,6 +2922,11 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 	hasCall := false
 	for _, operation := range operations {
 		hasCall = hasCall || operation.Kind == core.OpCall
+	}
+	for _, operation := range operations {
+		if fixtureForeignContract(operation.Foreign) {
+			return v.check(v.fixtureOwnerLifecycleValid(function), "core.fixture_owner_lifecycle", function.ID)
+		}
 	}
 	for _, operation := range operations {
 		if operation.Foreign != nil && function.ReturnType != "FileByteOwner" && !hasCall {
@@ -4779,6 +4892,14 @@ func deriveAbility(shape core.TypeRef, requested core.Ability, depth int, sealed
 		}
 		if requested == core.AbilityCopy {
 			return false, []string{"FileByteOwner"}, true
+		}
+		return true, nil, true
+	case "FixtureBytes":
+		if len(shape.Arguments) != 0 {
+			return false, nil, false
+		}
+		if requested == core.AbilityCopy {
+			return false, []string{"FixtureBytes"}, true
 		}
 		return true, nil, true
 	case "Box":
