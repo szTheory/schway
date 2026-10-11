@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/szTheory/schway/internal/compiler/exitcode"
 )
 
 // SanitizerOptimization is D-05-12's pinned optimization level for every
@@ -224,7 +226,7 @@ func (r Runner) compileSanitized(parent context.Context, cSource string, compile
 // finding, since abort-without-report is exactly the false-green mode this
 // control exists to catch.
 func classifySanitizerRun(exitCode int, stderrText string) (SanitizerReport, *ToolError) {
-	if exitCode == 0 {
+	if exitCode == exitcode.Success {
 		return SanitizerReport{ExitCode: exitCode}, nil
 	}
 	for _, signature := range SanitizerReportSignatures {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/szTheory/schway/internal/compiler/corevalidate"
 	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/exitcode"
 	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/protocol"
 )
@@ -177,7 +178,7 @@ func VerifyPhase5SanitizeLane(ctx context.Context, runner native.Runner) (Phase5
 	retainedRunner.ForeignSources = native.ForeignLegacyRetainedSourcePaths()
 	retainedReport, retainedErr := retainedRunner.RunSanitized(ctx, retainedSource, []string{"7"})
 	wantUseAfterFree := sanitizerSignatureFor("heap-use-after-free")
-	if retainedErr != nil || retainedReport.ExitCode == 0 || retainedReport.ReportSignature != wantUseAfterFree {
+	if retainedErr != nil || retainedReport.ExitCode == exitcode.Success || retainedReport.ReportSignature != wantUseAfterFree {
 		addLane(LaneNativeSanitize, protocol.StatusMismatch, nil, 1, retainedStarted)
 		return fail(protocol.StatusMismatch, "native.sanitizer_positive_control_silent",
 			fmt.Sprintf("%s: the always-on positive control did not report %q (exit=%d, check_kind=%q, err=%v)",
@@ -202,7 +203,7 @@ func VerifyPhase5SanitizeLane(ctx context.Context, runner native.Runner) (Phase5
 	allocatorRunner.ForeignSources = native.ForeignLegacyArenaSourcePaths()
 	allocatorReport, allocatorErr := allocatorRunner.RunSanitized(ctx, allocatorSource, []string{"7"})
 	wantAllocMismatch := sanitizerSignatureFor("alloc-dealloc-mismatch")
-	if allocatorErr != nil || allocatorReport.ExitCode == 0 || allocatorReport.ReportSignature != wantAllocMismatch {
+	if allocatorErr != nil || allocatorReport.ExitCode == exitcode.Success || allocatorReport.ReportSignature != wantAllocMismatch {
 		addLane(LaneNativeSanitize, protocol.StatusMismatch, nil, 1, allocatorStarted)
 		return fail(protocol.StatusMismatch, "native.sanitizer_allocator_mismatch_silent",
 			fmt.Sprintf("%s: allocator-mismatch fixture did not report %q (exit=%d, check_kind=%q, err=%v)",
@@ -215,7 +216,7 @@ func VerifyPhase5SanitizeLane(ctx context.Context, runner native.Runner) (Phase5
 	ubsanStarted := time.Now()
 	ubsanReport, ubsanErr := runner.RunSanitized(ctx, ubsanTriggerFixtureSource, nil)
 	wantRuntimeError := sanitizerSignatureFor("runtime error")
-	if ubsanErr != nil || ubsanReport.ExitCode == 0 || ubsanReport.ReportSignature != wantRuntimeError {
+	if ubsanErr != nil || ubsanReport.ExitCode == exitcode.Success || ubsanReport.ReportSignature != wantRuntimeError {
 		addLane(LaneNativeSanitize, protocol.StatusMismatch, nil, 1, ubsanStarted)
 		return fail(protocol.StatusMismatch, "native.sanitizer_ubsan_no_recover_silent",
 			fmt.Sprintf("%s: UBSan fixture did not report %q (exit=%d, check_kind=%q, err=%v)",

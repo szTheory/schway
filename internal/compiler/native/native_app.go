@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/exitcode"
 )
 
 const (
@@ -421,7 +422,7 @@ func (r Runner) runApplication(parent context.Context, artifactPath, input, capt
 		return RunOutcome{Kind: RunTimedOut, Diagnostic: "application exceeded the run timeout"}, receipt, nil
 	}
 	if err == nil {
-		return RunOutcome{Kind: RunExited, ExitCode: 0}, receipt, nil
+		return RunOutcome{Kind: RunExited, ExitCode: exitcode.Success}, receipt, nil
 	}
 	var exitError *exec.ExitError
 	if errors.As(err, &exitError) {

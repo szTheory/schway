@@ -14,6 +14,7 @@ import (
 	"github.com/szTheory/schway/internal/compiler/corevalidate"
 	"github.com/szTheory/schway/internal/compiler/diagnostic"
 	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/exitcode"
 	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/protocol"
@@ -453,7 +454,7 @@ func assertAllocatorMismatchMovesAxis(ctx context.Context, mutation NAT03Mutatio
 	runner.ForeignSources = native.ForeignLegacyArenaSourcePaths()
 	report, runErr := runner.RunSanitized(ctx, cSource, []string{"7"})
 	wantSignature := sanitizerSignatureFor("alloc-dealloc-mismatch")
-	if runErr != nil || report.ExitCode == 0 || report.ReportSignature != wantSignature {
+	if runErr != nil || report.ExitCode == exitcode.Success || report.ReportSignature != wantSignature {
 		return fmt.Errorf("%s produced no divergence: allocator-mismatch fixture did not report %q (exit=%d, check_kind=%q, err=%v)",
 			mutation.ControlID, wantSignature, report.ExitCode, report.CheckKind, runErr)
 	}

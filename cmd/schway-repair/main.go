@@ -8,6 +8,9 @@ import (
 	"strings"
 )
 
+// Pinned mirror of internal/compiler/exitcode (Success, Unrepaired,
+// Operational, Usage); D-06-28 forbids importing internal/ here;
+// TestRepairExitMirrorMatchesTable verifies the values (D-22).
 const (
 	exitSuccess     = 0
 	exitUnrepaired  = 1

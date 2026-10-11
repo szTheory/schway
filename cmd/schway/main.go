@@ -15,6 +15,7 @@ import (
 
 	"github.com/szTheory/schway/internal/compiler/diagnostic"
 	"github.com/szTheory/schway/internal/compiler/evidence"
+	"github.com/szTheory/schway/internal/compiler/exitcode"
 	"github.com/szTheory/schway/internal/compiler/measure"
 	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/protocol"
@@ -22,10 +23,10 @@ import (
 )
 
 const (
-	exitSuccess       = 0
-	exitInvalidSource = 2
-	exitOperational   = 3
-	exitUsage         = 64
+	exitSuccess       = exitcode.Success
+	exitInvalidSource = exitcode.Invalid
+	exitOperational   = exitcode.Operational
+	exitUsage         = exitcode.Usage
 )
 
 func main() { os.Exit(run(os.Args[1:])) }
@@ -236,28 +237,38 @@ func runApplicationRun(args []string) int {
 		outcome, err = native.RunApplication(context.Background(), args[2], args[separator+1], os.Stdout, os.Stderr)
 	}
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "schway app run: %v\n", err)
+		return appRunExitCode(outcome, err)
+	}
+	switch outcome.Kind {
+	case native.RunTimedOut, native.RunLaunchError:
+		fmt.Fprintf(os.Stderr, "schway app run: %s\n", outcome.Diagnostic)
+	case native.RunExited, native.RunSignaled:
+	default:
+		fmt.Fprintln(os.Stderr, "schway app run: invalid process outcome")
+	}
+	return appRunExitCode(outcome, nil)
+}
+
+// appRunExitCode decides the app run exit status (D-08): a child exit status
+// passes through unchanged; host-side failures use the app-run codes.
+func appRunExitCode(outcome native.RunOutcome, err error) int {
+	if err != nil {
 		var toolError *native.ToolError
 		if errors.As(err, &toolError) && (toolError.Code == "native.input_too_long" || toolError.Code == "native.input_contains_nul") {
-			fmt.Fprintf(os.Stderr, "schway app run: %v\n", err)
-			return 65
+			return exitcode.AppInputRefused
 		}
-		fmt.Fprintf(os.Stderr, "schway app run: %v\n", err)
-		return 125
+		return exitcode.AppLaunchError
 	}
 	switch outcome.Kind {
 	case native.RunExited:
 		return outcome.ExitCode
 	case native.RunSignaled:
-		return 128 + outcome.SignalNumber
+		return exitcode.SignalExit(outcome.SignalNumber)
 	case native.RunTimedOut:
-		fmt.Fprintf(os.Stderr, "schway app run: %s\n", outcome.Diagnostic)
-		return 124
-	case native.RunLaunchError:
-		fmt.Fprintf(os.Stderr, "schway app run: %s\n", outcome.Diagnostic)
-		return 125
+		return exitcode.AppTimeout
 	default:
-		fmt.Fprintln(os.Stderr, "schway app run: invalid process outcome")
-		return 125
+		return exitcode.AppLaunchError
 	}
 }
 
