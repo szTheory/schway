@@ -49,6 +49,7 @@ package pathoracle
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/szTheory/schway/internal/compiler/core"
 )
@@ -1337,4 +1338,146 @@ func pathReachesLoanViaSuccessor(results []pathResult, fromBlockID, successor, l
 		}
 	}
 	return false
+}
+
+// HasFixtureOwnerOperations reports whether any function carries a Phase 29
+// fixture-owner foreign operation, identified by the schway_fixture_bytes_
+// symbol prefix or the FixtureBytes type name. A program that borrows either
+// marker is routed to ValidateFixtureOwnerPaths and refused there rather than
+// admitted through any earlier owner shape.
+func HasFixtureOwnerOperations(program core.Program) bool {
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if fixtureOwnerContract(operation.Foreign) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func fixtureOwnerContract(contract *core.ForeignOperationContract) bool {
+	if contract == nil {
+		return false
+	}
+	const prefix = "schway_fixture_bytes_"
+	return strings.HasPrefix(contract.Symbol, prefix) || contract.ParameterType == "FixtureBytes" || contract.ResultType == "FixtureBytes"
+}
+
+// ValidateFixtureOwnerPaths independently replays the Phase 29 fixture-owner
+// path. It starts from the entry parameter, not from the release: the acquire
+// is seeded from the U64 parameter, the borrow yields a ByteView from that
+// live owner, exactly one call consumes the view while the owner is still
+// live, and exactly one release of that acquisition follows the call before
+// the call result is returned. Any other order, count or source is refused.
+func ValidateFixtureOwnerPaths(program core.Program) error {
+	checked := 0
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		fixture := false
+		for _, operation := range function.Linear.Operations {
+			fixture = fixture || fixtureOwnerContract(operation.Foreign)
+		}
+		if !fixture {
+			continue
+		}
+		checked++
+		if err := validateFixtureOwnerFunction(program, function); err != nil {
+			return err
+		}
+	}
+	if checked != 1 {
+		return fmt.Errorf("pathoracle.fixture_owner_shape: expected exactly one fixture-owner function, found %d", checked)
+	}
+	return nil
+}
+
+func validateFixtureOwnerFunction(program core.Program, function core.Function) error {
+	if function.Parameter.Type != "U64" || function.ReturnType != "U64" || len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 {
+		return fmt.Errorf("pathoracle.fixture_owner_shape: function %q is outside the admitted U64-to-U64 path", function.ID)
+	}
+	types := make(map[string]string, len(function.Linear.Types))
+	for _, fact := range function.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	places := make(map[string]string, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = types[place.TypeID]
+	}
+	callees := make(map[string]core.Function, len(program.Functions))
+	for _, candidate := range program.Functions {
+		callees[candidate.ID] = candidate
+	}
+	var (
+		acquire, borrow, call *core.LinearOperation
+		released, returned    bool
+		callResult            string
+	)
+	for index := range function.Linear.Operations {
+		operation := &function.Linear.Operations[index]
+		contract := operation.Foreign
+		switch {
+		case contract != nil && contract.Mode == "acquire":
+			if acquire != nil || borrow != nil || call != nil || operation.Kind != core.OpForeignCall || operation.SourceID != function.Parameter.ID || places[operation.SourceID] != "U64" || places[operation.TargetID] != "FixtureBytes" ||
+				contract.Symbol != "schway_fixture_bytes_acquire" || contract.ABIType != "schway_fixture_bytes_acquire_fn" || contract.ParameterType != "U64" || contract.ResultType != "FixtureBytes" ||
+				contract.Fails != "FixtureError" || contract.Allocator != "libc_malloc" || contract.Release != "schway_fixture_bytes_release" || contract.Unwind != "forbidden" || contract.NonlocalExit != "forbidden" ||
+				operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+				return fmt.Errorf("pathoracle.fixture_owner_acquire: operation %q is not a valid owner seed from the entry parameter", operation.ID)
+			}
+			acquire = operation
+		case contract != nil && contract.Mode == "borrow":
+			if acquire == nil || borrow != nil || call != nil || released || operation.Kind != core.OpForeignCall || operation.SourceID != acquire.TargetID || places[operation.TargetID] != "ByteView" ||
+				contract.Symbol != "schway_fixture_bytes_view" || contract.ABIType != "schway_fixture_bytes_view_fn" || contract.ParameterType != "FixtureBytes" || contract.ResultType != "ByteView" ||
+				contract.Fails != "" || contract.Allocator != "" || contract.Release != "" || contract.Unwind != "forbidden" || contract.NonlocalExit != "forbidden" ||
+				operation.Allocator != "" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+				return fmt.Errorf("pathoracle.fixture_owner_borrow: operation %q does not borrow a view from the one live acquired owner", operation.ID)
+			}
+			borrow = operation
+		case operation.Kind == core.OpCall:
+			callee, known := callees[operation.CalleeID]
+			if borrow == nil || call != nil || released {
+				return fmt.Errorf("pathoracle.fixture_owner_order: call %q must consume the view while the owner is live", operation.ID)
+			}
+			if !known || callee.Parameter.Type != "ByteView" || callee.ReturnType != "U64" || operation.SourceID != borrow.TargetID || places[operation.TargetID] != "U64" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+				return fmt.Errorf("pathoracle.fixture_owner_call: call %q does not consume the borrowed view into a U64", operation.ID)
+			}
+			call = operation
+			callResult = operation.TargetID
+		case contract != nil && contract.Mode == "consume":
+			if acquire == nil || borrow == nil {
+				return fmt.Errorf("pathoracle.fixture_owner_release: release %q has no live acquired owner", operation.ID)
+			}
+			if call == nil {
+				return fmt.Errorf("pathoracle.fixture_owner_order: release %q is ordered before the call that consumes the view", operation.ID)
+			}
+			if released {
+				return fmt.Errorf("pathoracle.fixture_owner_release: release %q discharges the owner a second time", operation.ID)
+			}
+			if operation.Kind != core.OpRelease || operation.ReleasesOperationID != acquire.ID || operation.SourceID != acquire.TargetID || operation.TargetID != "" ||
+				contract.Symbol != acquire.Foreign.Release || contract.ABIType != "schway_fixture_bytes_release_fn" || contract.ParameterType != "FixtureBytes" || contract.ResultType != "Unit" ||
+				contract.Fails != "" || contract.Release != "" || contract.Allocator != acquire.Foreign.Allocator || operation.Allocator != contract.Allocator || contract.Unwind != "forbidden" || contract.NonlocalExit != "forbidden" {
+				return fmt.Errorf("pathoracle.fixture_owner_release: release %q does not discharge its acquired owner", operation.ID)
+			}
+			released = true
+		case operation.Kind == core.OpReturn:
+			if returned || call == nil || !released || operation.SourceID != callResult {
+				return fmt.Errorf("pathoracle.fixture_owner_terminal: return %q must follow the release and return the call result", operation.ID)
+			}
+			returned = true
+		default:
+			return fmt.Errorf("pathoracle.fixture_owner_operation: operation %q escapes the admitted fixture-owner shape", operation.ID)
+		}
+	}
+	if acquire == nil || !released {
+		return fmt.Errorf("pathoracle.fixture_owner_unreleased: function %q has no complete acquisition discharge", function.ID)
+	}
+	if !returned || borrow == nil || call == nil {
+		return fmt.Errorf("pathoracle.fixture_owner_terminal: function %q does not return the call result after discharge", function.ID)
+	}
+	return nil
 }

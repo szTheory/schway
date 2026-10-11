@@ -254,11 +254,14 @@ var phase28NewlyAddedEntries = map[string]phase28ManifestEntry{
 		Entry:          "main",
 		DeadFunctions:  []string{"s1:testdata.phase29.adler32_library:fn:adler32"},
 	},
-	// 2026-10-11 (Phase 29, plan 29-06): the fixture-owner program checks clean
-	// and has one root (main calls adler32). Observed classes: Build stops at
-	// native.build_failed because native emission of the FixtureBytes owner is
-	// not yet implemented; plan 29-07 may change Build, InterpreterRun and
-	// NativeRun when it adds that lowering.
+	// 2026-10-11 (Phase 29, plan 29-06; reconfirmed plan 29-07): the
+	// fixture-owner program checks clean and has one root (main calls
+	// adler32). These classes are observed WITHOUT a binding manifest, the way
+	// this walker invokes build and run: Build stops at native.build_failed
+	// because the fixture owner needs its manifest (the manifest-bearing
+	// `schway build --manifest` plus `app run` route is the runnable gain,
+	// pinned by TestPhase29FixtureAppCLI), and `schway run` is unchanged for
+	// this program (D-06/D-16).
 	"examples/phase29/adler32_fixture.schway": {
 		Path:           "examples/phase29/adler32_fixture.schway",
 		Check:          phase28Class{},

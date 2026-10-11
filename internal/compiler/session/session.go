@@ -1402,11 +1402,16 @@ func BuildApplication(ctx context.Context, source []byte, outputPath string, run
 	}
 	localOwnerEntry := entry.Parameter.Type == "PathToken" && hasLocalForeignOperations(program)
 	u64Application := entry.Parameter.Type == "U64" && (entry.ReturnType == "U64" || entry.ReturnType == "Unit")
+	fixtureOwnerEntry := entry.Parameter.Type == "U64" && entry.ReturnType == "U64" && pathoracle.HasFixtureOwnerOperations(program)
 	if entry.Match != nil || entry.Linear == nil || (!u64Application && !(localOwnerEntry && entry.ReturnType == "U64")) {
 		return native.BuildReceipt{}, nil, fmt.Errorf("application entry %q: only a linear U64-to-U64, U64-to-Unit, or checked PathToken-to-U64 entry is supported", entry.ID)
 	}
-	if localOwnerEntry {
-		if err := pathoracle.ValidateLocalOwnerPaths(program); err != nil {
+	if localOwnerEntry || fixtureOwnerEntry {
+		if fixtureOwnerEntry {
+			if err := pathoracle.ValidateFixtureOwnerPaths(program); err != nil {
+				return native.BuildReceipt{}, nil, err
+			}
+		} else if err := pathoracle.ValidateLocalOwnerPaths(program); err != nil {
 			return native.BuildReceipt{}, nil, err
 		}
 		if len(manifestPath) != 1 {

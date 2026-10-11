@@ -658,6 +658,10 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 			}
 		}
 	}
+	fixtureOwnerProgram, fixtureErr := checkFixtureOwnerProgram(program, entry, shell)
+	if fixtureErr != nil {
+		return "", fixtureErr
+	}
 	transferHelper, transferFileByteProgram, transferErr := localFileByteTransferHelper(program, entry)
 	if transferErr != nil {
 		return "", transferErr
@@ -897,7 +901,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	out.WriteString("/* Moves below are authority transitions; C value assignment makes no ABI or zero-copy claim. */\n")
 	out.WriteString(emitCallBoundaryAttributeComment(functions))
 	out.WriteString("#include <stddef.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n")
-	if localFileByteProgram {
+	if localFileByteProgram || fixtureOwnerProgram {
 		out.WriteString("#include \"local/adapter.h\"\n\n")
 	}
 	if needsU64 || trackEventOccurrences {
@@ -961,6 +965,8 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 			err = emitProgramTransferredOwnerHelper(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames)
 		} else if transferFileByteProgram && function.ID == entry.ID {
 			err = emitProgramTransferredOwnerCaller(&out, function, transferHelper, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames)
+		} else if fixtureOwnerProgram && function.ID == entry.ID {
+			err = emitProgramFixtureBytesFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames)
 		} else if isLocalFileByteFunction(function) {
 			err = emitProgramLocalFileByteFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames)
 		} else if hasScalarOperations(function) {
@@ -2828,4 +2834,144 @@ func blockOrdinal(blocks []core.Block, id string) int {
 		}
 	}
 	return -1
+}
+
+// hasFixtureOwnerFacts routes any function that borrows a Phase 29 fixture
+// marker (the schway_fixture_bytes_ symbol prefix or the FixtureBytes type
+// name) to the fixture validator, so a malformed candidate is refused there
+// and never reaches a Phase 23-25 emitter.
+func hasFixtureOwnerFacts(function core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	for _, operation := range function.Linear.Operations {
+		contract := operation.Foreign
+		if contract != nil && (strings.HasPrefix(contract.Symbol, "schway_fixture_bytes_") || contract.ParameterType == "FixtureBytes" || contract.ResultType == "FixtureBytes") {
+			return true
+		}
+	}
+	return false
+}
+
+// checkFixtureOwnerProgram reports whether the program is the Phase 29
+// fixture-owner application. The conformance shell refuses it with a typed
+// error: the fixture owner is lowered only by the application shell.
+func checkFixtureOwnerProgram(program core.Program, entry core.Function, shell programEntryShell) (bool, error) {
+	found := false
+	for _, function := range program.Functions {
+		if !hasFixtureOwnerFacts(function) {
+			continue
+		}
+		if shell != programApplicationShell {
+			return false, fmt.Errorf("cgen.fixture_owner_shell_unsupported: function %q is lowered only by the application shell", function.ID)
+		}
+		if found || function.ID != entry.ID {
+			return false, fmt.Errorf("function %q: unsupported fixture-owner C shape", function.ID)
+		}
+		if err := validateFixtureOwnerFunction(function); err != nil {
+			return false, err
+		}
+		found = true
+	}
+	return found, nil
+}
+
+// validateFixtureOwnerFunction pins the fixture main at the serializer
+// boundary: acquire from the U64 parameter, a borrowed ByteView, one call
+// consuming that view, the release naming that acquisition, and a return of
+// the call result. Every contract is compared whole.
+func validateFixtureOwnerFunction(function core.Function) error {
+	fail := func(reason string) error {
+		return fmt.Errorf("function %q: unsupported fixture-owner C shape: %s", function.ID, reason)
+	}
+	if function.Linear == nil || function.Parameter.Type != "U64" || function.ReturnType != "U64" || len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 || len(function.Linear.Operations) != 5 {
+		return fail("entry is not a five-operation U64-to-U64 body")
+	}
+	operations := function.Linear.Operations
+	acquire, view, call, release, returned := operations[0], operations[1], operations[2], operations[3], operations[4]
+	wantAcquire := core.ForeignOperationContract{
+		Symbol: "schway_fixture_bytes_acquire", ABIType: "schway_fixture_bytes_acquire_fn", Mode: "acquire",
+		ParameterType: "U64", ResultType: "FixtureBytes", Fails: "FixtureError",
+		Allocator: "libc_malloc", Release: "schway_fixture_bytes_release", Unwind: "forbidden", NonlocalExit: "forbidden",
+	}
+	wantView := core.ForeignOperationContract{
+		Symbol: "schway_fixture_bytes_view", ABIType: "schway_fixture_bytes_view_fn", Mode: "borrow",
+		ParameterType: "FixtureBytes", ResultType: "ByteView", Unwind: "forbidden", NonlocalExit: "forbidden",
+	}
+	wantRelease := core.ForeignOperationContract{
+		Symbol: "schway_fixture_bytes_release", ABIType: "schway_fixture_bytes_release_fn", Mode: "consume",
+		ParameterType: "FixtureBytes", ResultType: "Unit", Allocator: "libc_malloc", Unwind: "forbidden", NonlocalExit: "forbidden",
+	}
+	if acquire.Kind != core.OpForeignCall || acquire.Foreign == nil || *acquire.Foreign != wantAcquire {
+		return fail("acquire contract does not match the fixture owner ABI")
+	}
+	if view.Kind != core.OpForeignCall || view.Foreign == nil || *view.Foreign != wantView {
+		return fail("view contract does not match the fixture owner ABI")
+	}
+	if release.Kind != core.OpRelease || release.Foreign == nil || *release.Foreign != wantRelease {
+		return fail("release contract does not match the fixture owner ABI")
+	}
+	if acquire.ID == "" || view.ID == "" || call.ID == "" || release.ID == "" || returned.ID == "" ||
+		acquire.SourceID != function.Parameter.ID || acquire.TargetID == "" ||
+		view.SourceID != acquire.TargetID || view.TargetID == "" ||
+		call.Kind != core.OpCall || call.CalleeID == "" || call.SourceID != view.TargetID || call.TargetID == "" ||
+		release.SourceID != acquire.TargetID || release.ReleasesOperationID != acquire.ID ||
+		returned.Kind != core.OpReturn || returned.SourceID != call.TargetID ||
+		acquire.Allocator != wantAcquire.Allocator || release.Allocator != wantRelease.Allocator {
+		return fail("operation sources, targets or order do not form the acquire-view-call-release-return path")
+	}
+	return nil
+}
+
+func emitProgramFixtureBytesFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, globalNames []string, lookup *emitCallLookup, childTableNames map[string]string) error {
+	if err := validateFixtureOwnerFunction(function); err != nil {
+		return err
+	}
+	operations := function.Linear.Operations
+	acquire, view, call, release, returned := operations[0], operations[1], operations[2], operations[3], operations[4]
+	for _, contract := range []*core.ForeignOperationContract{acquire.Foreign, view.Foreign, release.Foreign} {
+		if !validForeignSymbol(contract.Symbol) || !validForeignSymbol(contract.ABIType) {
+			return fmt.Errorf("function %q: fixture-owner ABI contract is not a closed C identifier shape", function.ID)
+		}
+	}
+	calleeName, calleeTypeName, ok := lookup.resolve(call.CalleeID)
+	if !ok || lookup.takesPointer(call.CalleeID) {
+		return fmt.Errorf("operation %q: unresolved fixture-owner callee", call.ID)
+	}
+	childTable, ok := childTableNames[call.ID]
+	if !ok {
+		return fmt.Errorf("operation %q has no invocation child table", call.ID)
+	}
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = place
+	}
+	parameter, parameterOK := places[function.Parameter.ID]
+	owner, ownerOK := places[acquire.TargetID]
+	viewPlace, viewOK := places[view.TargetID]
+	value, valueOK := places[call.TargetID]
+	if !parameterOK || !ownerOK || !viewOK || !valueOK {
+		return fmt.Errorf("function %q: fixture-owner operation places do not agree", function.ID)
+	}
+	names := newCNames(append(append([]string(nil), linearFixedNames...), globalNames...)...)
+	parameterName := names.allocate(cLocal(parameter.Name), "place", 0)
+	ownerName := names.allocate(cLocal(owner.Name), "place", 1)
+	viewName := names.allocate(cLocal(viewPlace.Name), "place", 2)
+	valueName := names.allocate(cLocal(value.Name), "place", 3)
+	acquireResultName := names.allocate("schway_fixture_acquire_result", "ffi", 0)
+	viewResultName := names.allocate("schway_fixture_view_result", "ffi", 1)
+	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n", returnTypeName, functionName, parameterTypeName, parameterName)
+	fmt.Fprintf(out, "  schway_fixture_bytes_acquire_result %s = %s(%s);\n", acquireResultName, acquire.Foreign.Symbol, parameterName)
+	fmt.Fprintf(out, "  if (%s.status != 0) exit(65);\n", acquireResultName)
+	fmt.Fprintf(out, "  schway_fixture_bytes_owner %s = %s.owner;\n", ownerName, acquireResultName)
+	fmt.Fprintf(out, "  schway_fixture_bytes_view_result %s = %s(%s); /* borrow: %s */\n", viewResultName, view.Foreign.Symbol, ownerName, view.ID)
+	fmt.Fprintf(out, "  SCHWAY_BYTE_VIEW %s;\n  %s.data = %s.data;\n  %s.length = %s.length;\n", viewName, viewName, viewResultName, viewName, viewResultName)
+	fmt.Fprintf(out, "  if (!schway_record_event(%s, %s, %s, %s, %s, %s, schway_invocations[invocation_index], %s)) abort();\n",
+		strconv.Quote("function.called"), strconv.Quote(call.ID+":event:called"), strconv.Quote(function.ID), strconv.Quote(call.SourceID), strconv.Quote(call.TargetID), strconv.Quote(call.TypeID), strconv.Quote(call.CalleeID))
+	fmt.Fprintf(out, "  %s %s = %s(%s, %s[invocation_index]); /* call: %s */\n", calleeTypeName, valueName, calleeName, viewName, childTable, call.ID)
+	fmt.Fprintf(out, "  %s(%s); /* paired release: %s -> %s */\n", release.Foreign.Symbol, ownerName, release.ID, release.ReleasesOperationID)
+	fmt.Fprintf(out, "  if (!schway_record_event(%s, %s, %s, %s, NULL, %s, schway_invocations[invocation_index], NULL)) abort();\n",
+		strconv.Quote("function.returned"), strconv.Quote(returned.ID+":event:returned"), strconv.Quote(function.ID), strconv.Quote(returned.SourceID), strconv.Quote(returned.TypeID))
+	fmt.Fprintf(out, "  return %s;\n}\n\n", valueName)
+	return nil
 }
