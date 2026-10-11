@@ -81,7 +81,7 @@ preserving the acceptance behavior below.
 
 **Research flag**: Standard. Enumerate and pin every test, guide script, and hosted gate that asserts an exit code before changing any (PITFALLS 13); never renumber 65 or 69. N3 (duplicated capacity literal) is folded into the named table.
 
-**Plans**: 3/7 plans executed
+**Plans**: 4/7 plans executed
 
 Plans:
 **Wave 1**
@@ -92,7 +92,7 @@ Plans:
 - [x] 28-03-PLAN.md — App verify outcome digest, schema /2, ID bound and size budget (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 28-04-PLAN.md — `main` precedence, pruning through one resolveEntry, ambiguous entry exits 2, peer unreachability (wave 3)
+- [x] 28-04-PLAN.md — `main` precedence, pruning through one resolveEntry, ambiguous entry exits 2, peer unreachability (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 28-05-PLAN.md — Deliberate pin flips over frozen goldens, class-manifest changes, census (wave 4)
@@ -192,7 +192,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 28. Exit Classes, Verify Report, and Entry Pruning | 3/7 | In Progress | - |
+| 28. Exit Classes, Verify Report, and Entry Pruning | 4/7 | In Progress | - |
 | 29. Byte Views and the Adler-32 Library | 0/TBD | Not started | - |
 | 30. Local Modules | 0/TBD | Not started | - |
 | 31. Bounded File Checksum and Second Consumer | 0/TBD | Not started | - |
