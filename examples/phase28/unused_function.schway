@@ -1,0 +1,17 @@
+// Phase 28 runnable gain: a library-style file with an uncalled function builds and runs.
+
+module examples.phase28.unused_function
+
+export {
+  fn main
+}
+
+fn main(n: U64) -> U64 {
+  let total = n
+  total
+}
+
+fn unused(n: U64) -> U64 {
+  let kept = n
+  kept
+}

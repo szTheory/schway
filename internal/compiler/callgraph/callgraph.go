@@ -252,24 +252,20 @@ func (e *entryAmbiguousError) Roots() []string {
 // A single in-degree-zero candidate resolves immediately: that function IS
 // the program.
 //
-// CONTRACT for a declared-but-never-called function (D-11-05,
-// TestEntryFunctionEmitsUnreachableFunctions): such a function's own
-// in-degree is also zero, so it becomes a SECOND in-degree-zero candidate
-// alongside the genuine entry. EntryFunction does not treat these two
-// candidates as equally uncertain: it computes each candidate's own
-// transitive reachable closure (the set of functions it calls, directly or
-// transitively) and prefers the candidate with a STRICTLY LARGER closure
-// than every other candidate. A function nothing calls purely because it is
-// dead code calls nothing itself either (an empty closure); the genuine
-// entry point drives the program's actual call chain (a non-empty
-// closure), so this comparison is a real structural fact about the
-// program -- never an arbitrary tie-break like Functions[0] -- and never
-// widens to prefer a merely LARGER-OR-EQUAL closure, which would silently
-// pick one of two genuinely equal candidates by iteration order. When no
-// candidate's closure is strictly largest (including the all-empty case:
-// two or more functions that call nothing and are called by nothing, or
-// two or more genuinely separate call chains of equal reach), the refusal
-// is exactly as fail-closed as the single-candidate check: never a guess.
+// D-01 (2026-10-10, Phase 28): a function named exactly `main` is the
+// entry whenever exactly one exists, regardless of in-degree or closure
+// size; two or more functions named `main` are refused as ambiguous. This
+// closes the fail-open case where an uncalled orphan chain with a larger
+// closure than main was silently chosen as the program. Without a `main`,
+// the rules below apply unchanged: a declared-but-never-called function is
+// a second in-degree-zero candidate, and the candidate with a STRICTLY
+// LARGER reachable closure than every other wins (D-03); a tie (including
+// all-empty closures) is refused, never guessed by declaration order.
+//
+// Unreachable functions no longer ride along into emission: after the
+// checker and admission have validated the full program, PruneToReachable
+// drops them (D-04/D-05), superseding D-11-05's "unreachable functions are
+// emitted".
 //
 // Zero declared functions, or a call graph with no in-degree-zero node at
 // all (every function has at least one caller -- only possible together
@@ -314,6 +310,19 @@ func EntryFunction(program core.Program) (core.Function, error) {
 			return core.Function{}, &entryAmbiguousError{roots: roots}
 		}
 		return function, nil
+	}
+
+	var mains []string
+	for _, function := range program.Functions {
+		if function.Name == "main" {
+			mains = append(mains, function.ID)
+		}
+	}
+	if len(mains) == 1 {
+		return resolve(mains[0])
+	}
+	if len(mains) > 1 {
+		return core.Function{}, &entryAmbiguousError{roots: roots}
 	}
 
 	if len(roots) == 1 {

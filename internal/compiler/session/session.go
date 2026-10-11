@@ -1443,10 +1443,12 @@ func BuildApplication(ctx context.Context, source []byte, outputPath string, run
 	case applicationRefusedOrigin:
 		return native.BuildReceipt{}, []diagnostic.Diagnostic{adm.diagnostic}, nil
 	}
-	program := adm.program
-	entry, err := callgraph.EntryFunction(program)
+	entry, program, entryDiagnostics, err := resolveEntry(adm.program)
 	if err != nil {
 		return native.BuildReceipt{}, nil, err
+	}
+	if len(entryDiagnostics) > 0 {
+		return native.BuildReceipt{}, entryDiagnostics, nil
 	}
 	localOwnerEntry := entry.Parameter.Type == "PathToken" && hasLocalForeignOperations(program)
 	u64Application := entry.Parameter.Type == "U64" && (entry.ReturnType == "U64" || entry.ReturnType == "Unit")
