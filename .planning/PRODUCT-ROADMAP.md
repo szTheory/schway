@@ -214,6 +214,20 @@ Phase 32. N4 and R1b stay tracked but unscheduled.
 
 **Current three recommendations re-checked:** unchanged. Recommendation 2 (bounded byte utility and local modules) continues with Phase 29. Reprioritize if a named consumer needs bitwise operators or a smaller byte API before byte views.
 
+### Phase 29 transition amendment — 2026-10-11
+
+**What 29 changed:** ordinary Schway source reads a read-only `ByteView` in a scalar loop (`byte_len`, `byte_at`, parameter named `bytes`) with a never-elided bounds check (exit 65, stderr `schway: byte index out of bounds`), and `adler32` is pinned on both engines. Release before the last use of a view is refused by `check.release_while_view_live`, `core.release_while_view_live` and `pathoracle.release_while_view_live` (D-22). The native runnable gain is `schway build examples/phase29/adler32_fixture.schway --manifest examples/phase29/fixture_bytes.bindings.json --output ART` plus `schway app run ART -- N`; `schway run --engine=*` is unchanged. Witnesses (newly executed locally, focused): TestPhase29ReleaseBeforeViewUseRefused, TestPhase29OwnerLoopBlockRefused, TestPhase29OOBApplicationLanes, TestPhase29FixtureAppCLI. Hosted CI has not run, and the 65,536-byte cap record (plan 29-12, spike 008) is pending, so the cap is not authoritatively measured. Full check: [29-TRANSITION-CHECK.md](phases/29-byte-views-and-the-adler-32-library/29-TRANSITION-CHECK.md).
+
+**Seed transition check:**
+
+| Seed | Disposition | Reason |
+|------|-------------|--------|
+| SEED-261008-trz | retain dormant | Phase 29 failures were diagnosed from source, refusal codes and focused tests. |
+| SEED-261008-z1g | retain dormant | No measured reviewer gap; re-check at Phase 30 when imports create cross-file callers. |
+| SEED-261008-z1s | retain dormant | Byte-read surface syntax is now settled by D-01 and D-18 and no reviewer contests a concrete form; this supersedes the earlier "Phase 29/30 discussion item" wording. |
+
+**Current three recommendations re-checked:** recommendation 2 (bounded byte utility and local modules) is partly delivered: byte views and the Adler-32 library exist, while local modules (Phase 30) and the `checksum FILE` consumer with the measured cap (Phase 31) remain. Recommendations 1 and 3 are unchanged. Reprioritize if the Stage-B cap record fails or a consumer needs bitwise operators first.
+
 ### Phase 26 discussion — 2026-10-02 (historical planning snapshot)
 
 The user adopted the specialist fan-out recommendations for Phase 26: use
