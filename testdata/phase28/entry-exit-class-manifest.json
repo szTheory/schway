@@ -1,0 +1,3062 @@
+{
+  "schema": "phase28.entry-exit-class-manifest/1",
+  "revision": "c2a6f719ec4b823b330781949b7d37682ef0f9c2",
+  "entries": [
+    {
+      "path": "examples/checksum.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.expected_rbrace"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.expected_rbrace"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.expected_rbrace"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.expected_rbrace"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "examples/fizzbuzz.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "interpreterRun": {
+        "exit": 3,
+        "code": "tool.run_failed"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "examples/phase22/identity.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "interpreterRun": {
+        "exit": 3,
+        "code": "tool.run_failed"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "examples/phase23/file_byte.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 3,
+        "code": "tool.run_failed"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "examples/phase24/error.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 3,
+        "code": "tool.run_failed"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "examples/phase24/transfer.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 3,
+        "code": "tool.run_failed"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "examples/phase26/checked_add_overflow.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "interpreterRun": {
+        "exit": 3,
+        "code": "tool.run_failed"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "examples/phase272/straight_line_copy.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "interpreterRun": {
+        "exit": 3,
+        "code": "tool.run_failed"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "examples/sum_to_n.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "interpreterRun": {
+        "exit": 3,
+        "code": "tool.run_failed"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/distinctness/arithmetic.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/distinctness/dangling_pipe.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.expected_alternative"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.expected_alternative"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.expected_alternative"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.expected_alternative"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/distinctness/empty_file.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.expected_module"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.expected_module"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.expected_module"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.expected_module"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/distinctness/for_range.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/distinctness/lone_else.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/distinctness/one_token_hard_case.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/distinctness/spiral_bare.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/distinctness/spiral_full.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/distinctness/spiral_narrow.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.expected_declaration"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/distinctness/stray_semicolon.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.unexpected_byte"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.unexpected_byte"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.unexpected_byte"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.unexpected_byte"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/distinctness/unclosed_brace.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.expected_rbrace"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.expected_rbrace"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.expected_rbrace"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.expected_rbrace"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase07/call_argument_used_once.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase07/call_argument_used_twice.schway",
+      "check": {
+        "exit": 2,
+        "code": "ownership.use_after_move"
+      },
+      "build": {
+        "exit": 2,
+        "code": "ownership.use_after_move"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "ownership.use_after_move"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "ownership.use_after_move"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase07/call_basic.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase07/call_fallible_foreign_reach.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase07/call_from_both_match_arms.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase07/call_two_fallible_callees_disagree.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase07/call_type_mismatch.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase07/call_uncallable_callee.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.callee_not_callable"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.callee_not_callable"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.callee_not_callable"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "core.callee_not_callable"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase07/clean_but_unpublishable.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "relay"
+    },
+    {
+      "path": "testdata/phase07/cycle_indirect.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase07/cycle_mutual.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase07/cycle_self.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase07/cycle_through_match_arm.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase07/cycle_unreachable.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase07/deep_diamond_acyclic.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "top4"
+    },
+    {
+      "path": "testdata/phase07/duplicate_function_name.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.duplicate_function_id"
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 3,
+        "code": "tool.run_failed"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase07/foreign_symbol_shadowing.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "core.call_graph_cycle"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase07/relay_escort_witness.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase08/match_arm_call.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase08/negative_control_fails.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.callee_not_callable"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.callee_not_callable"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.callee_not_callable"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "core.callee_not_callable"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase08/negative_control_infallible.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.callee_not_callable"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.callee_not_callable"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.callee_not_callable"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "core.callee_not_callable"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase08/relay_depth2_accept.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "caller"
+    },
+    {
+      "path": "testdata/phase08/relay_depth2_refuse.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase08/twin_a_accept.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "escort"
+    },
+    {
+      "path": "testdata/phase08/twin_a_refuse.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase08/twin_b_accept.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase08/twin_b_refuse.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase1/comments.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "toggle"
+    },
+    {
+      "path": "testdata/phase1/malformed.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.unexpected_byte"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.unexpected_byte"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.unexpected_byte"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.unexpected_byte"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase1/non_exhaustive.schway",
+      "check": {
+        "exit": 2,
+        "code": "match.non_exhaustive"
+      },
+      "build": {
+        "exit": 2,
+        "code": "match.non_exhaustive"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "match.non_exhaustive"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "match.non_exhaustive"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase1/toggle.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "toggle"
+    },
+    {
+      "path": "testdata/phase10/compose_per_path_borrow_callee_accept.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "callee"
+    },
+    {
+      "path": "testdata/phase10/compose_per_path_borrow_caller_accept.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "caller"
+    },
+    {
+      "path": "testdata/phase10/relay_depth3_accept.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "caller"
+    },
+    {
+      "path": "testdata/phase10/relay_depth3_refuse.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase11/multi_function_diamond_call.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase11/multi_function_entry_basic.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase11/multi_function_forward_callee.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase11/multi_function_gate_corpus.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "multi-root-main",
+      "entry": "main",
+      "deadFunctions": [
+        "s1:phase11.multi_function_gate_corpus:fn:touch"
+      ]
+    },
+    {
+      "path": "testdata/phase11/multi_function_reduce_gate.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase11/multi_function_relay_depth2.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase11/multi_function_unreachable.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "multi-root-main",
+      "entry": "main",
+      "deadFunctions": [
+        "s1:phase11.multi_function_unreachable:fn:orphan"
+      ]
+    },
+    {
+      "path": "testdata/phase11/multi_function_zero_call.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 3,
+        "code": "tool.run_failed"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "multi-root-main",
+      "entryError": "core.entry_ambiguous"
+    },
+    {
+      "path": "testdata/phase12/payload_arity_mismatch.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.payload_arity_mismatch"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.payload_arity_mismatch"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.payload_arity_mismatch"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.payload_arity_mismatch"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase12/payload_binder_on_nullary.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.binder_on_nullary_alternative"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.binder_on_nullary_alternative"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.binder_on_nullary_alternative"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.binder_on_nullary_alternative"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase12/payload_borrow_interaction.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 3,
+        "code": "tool.run_failed"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "multi-root-no-main",
+      "entryError": "core.entry_ambiguous"
+    },
+    {
+      "path": "testdata/phase12/payload_drop_obligation.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "identity"
+    },
+    {
+      "path": "testdata/phase12/payload_duplicate_payload_type.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.duplicate_payload_type"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.duplicate_payload_type"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.duplicate_payload_type"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.duplicate_payload_type"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase12/payload_missing_binder.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.missing_payload_binder"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.missing_payload_binder"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.missing_payload_binder"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.missing_payload_binder"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase12/payload_resource_refused.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.resource_payload_refused"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.resource_payload_refused"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.resource_payload_refused"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.resource_payload_refused"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase12/payload_tracer.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "identity"
+    },
+    {
+      "path": "testdata/phase13/derivation_call_argument_mismatch.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase13/derivation_fallible_call_unconsumed.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase13/derivation_interprocedural_loan_defect.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase13/explain_three_function_chain.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase13/explain_three_function_chain_reordered.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.interprocedural_loan_liveness"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase13/heldout_call_argument_ambiguous.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase13/heldout_call_argument_mismatch.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase13/heldout_fallible_call_unconsumed.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase13/heldout_shared_callee_twin_alpha.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "multi-root-main",
+      "entry": "main",
+      "deadFunctions": [
+        "s1:phase13.heldout_shared_callee_twin_alpha:fn:beta"
+      ]
+    },
+    {
+      "path": "testdata/phase13/heldout_shared_callee_twin_mirror.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "multi-root-main",
+      "entry": "main",
+      "deadFunctions": [
+        "s1:phase13.heldout_shared_callee_twin_mirror:fn:alpha"
+      ]
+    },
+    {
+      "path": "testdata/phase14/blame_unreachable_admission_refusal.schway",
+      "check": {
+        "exit": 2,
+        "code": "type.return_mismatch"
+      },
+      "build": {
+        "exit": 2,
+        "code": "type.return_mismatch"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "type.return_mismatch"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "type.return_mismatch"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase14/multi_function_match_refusal.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase17/call_argument_type_mismatch.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase17/call_return_type_unrepresentable.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.call_return_type_unrepresentable"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.call_return_type_unrepresentable"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.call_return_type_unrepresentable"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.call_return_type_unrepresentable"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase17/derivation_call_argument_mismatch.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase17/heldout_call_argument_mismatch.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.call_argument_type_mismatch"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase17/return_type_tracer.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase18/computed_match.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "select"
+    },
+    {
+      "path": "testdata/phase18/loan_across_branch.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "select"
+    },
+    {
+      "path": "testdata/phase18/long_payload_return.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "return_payload"
+    },
+    {
+      "path": "testdata/phase18/payload_return.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "return_payload"
+    },
+    {
+      "path": "testdata/phase18/result_computed_match.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase19/literal_malformed.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.malformed_numeric_literal"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.malformed_numeric_literal"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.malformed_numeric_literal"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.malformed_numeric_literal"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase19/literal_overflow.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.literal_out_of_range"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.literal_out_of_range"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.literal_out_of_range"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.literal_out_of_range"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase19/literal_tracer.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase2/ability_shapes.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.unexecutable_shape"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.unexecutable_shape"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.unexecutable_shape"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.unexecutable_shape"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase2/implicit_copy.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "retain"
+    },
+    {
+      "path": "testdata/phase2/implicit_noncopy.schway",
+      "check": {
+        "exit": 2,
+        "code": "ownership.transfer_requires_take"
+      },
+      "build": {
+        "exit": 2,
+        "code": "ownership.transfer_requires_take"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "ownership.transfer_requires_take"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "ownership.transfer_requires_take"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase2/move_while_borrowed.schway",
+      "check": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "build": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase2/owned_transfer.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "relay"
+    },
+    {
+      "path": "testdata/phase2/reborrow_while_moved.schway",
+      "check": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "build": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase2/use_after_move.schway",
+      "check": {
+        "exit": 2,
+        "code": "ownership.use_after_move"
+      },
+      "build": {
+        "exit": 2,
+        "code": "ownership.use_after_move"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "ownership.use_after_move"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "ownership.use_after_move"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase23/discard_owner.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.local_owner_discarded"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.local_owner_discarded"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.local_owner_discarded"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.local_owner_discarded"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase25/exclusive_conflict_reject.schway",
+      "check": {
+        "exit": 2,
+        "code": "ownership.borrow_conflict"
+      },
+      "build": {
+        "exit": 2,
+        "code": "ownership.borrow_conflict"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "ownership.borrow_conflict"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "ownership.borrow_conflict"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase25/exclusive_copy_accept.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "interpreterRun": {
+        "exit": 3,
+        "code": "tool.run_failed"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "exclusive_copy"
+    },
+    {
+      "path": "testdata/phase25/exclusive_escape_reject.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "relay"
+    },
+    {
+      "path": "testdata/phase25/shared_copy_accept.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "interpreterRun": {
+        "exit": 3,
+        "code": "tool.run_failed"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "shared_copy"
+    },
+    {
+      "path": "testdata/phase3/borrowed_view.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "choose"
+    },
+    {
+      "path": "testdata/phase3/branch_one_arm_shared_accept.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "choose"
+    },
+    {
+      "path": "testdata/phase3/branch_one_arm_shared_reject.schway",
+      "check": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "build": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase3/branch_view.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "direction"
+    },
+    {
+      "path": "testdata/phase3/exclusive_exclusive_reject.schway",
+      "check": {
+        "exit": 2,
+        "code": "ownership.borrow_conflict"
+      },
+      "build": {
+        "exit": 2,
+        "code": "ownership.borrow_conflict"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "ownership.borrow_conflict"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "ownership.borrow_conflict"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase3/exclusive_move_reject.schway",
+      "check": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "build": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "ownership.move_while_borrowed"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase3/public_view.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "view"
+    },
+    {
+      "path": "testdata/phase3/public_view_impossible.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "view"
+    },
+    {
+      "path": "testdata/phase3/public_view_mixed_access.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.origin_access_mismatch"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.origin_access_mismatch"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.origin_access_mismatch"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "view"
+    },
+    {
+      "path": "testdata/phase3/public_view_multi_arm_access_conflict.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "choose"
+    },
+    {
+      "path": "testdata/phase3/public_view_multi_arm_omitted.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "choose"
+    },
+    {
+      "path": "testdata/phase3/public_view_omitted.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "relay"
+    },
+    {
+      "path": "testdata/phase3/public_view_understated.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "view"
+    },
+    {
+      "path": "testdata/phase3/sequential_shared_then_exclusive_accept.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "relay"
+    },
+    {
+      "path": "testdata/phase3/shared_exclusive_reject.schway",
+      "check": {
+        "exit": 2,
+        "code": "ownership.borrow_conflict"
+      },
+      "build": {
+        "exit": 2,
+        "code": "ownership.borrow_conflict"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "ownership.borrow_conflict"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "ownership.borrow_conflict"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase3/shared_shared_accept.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "relay"
+    },
+    {
+      "path": "testdata/phase4/acquire_three_fail_second.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase4/acquire_three_fail_third.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase4/acquire_three_success.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase4/defect_terminal.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "triage"
+    },
+    {
+      "path": "testdata/phase4/discard_because.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase4/fallible_call_unconsumed.schway",
+      "check": {
+        "exit": 2,
+        "code": "syntax.fallible_call_not_consumed"
+      },
+      "build": {
+        "exit": 2,
+        "code": "syntax.fallible_call_not_consumed"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "syntax.fallible_call_not_consumed"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "syntax.fallible_call_not_consumed"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase4/foreign_acquire_one.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase4/foreign_call_target_not_foreign.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.call_target_not_foreign"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.call_target_not_foreign"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.call_target_not_foreign"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "core.call_target_not_foreign"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase4/foreign_origin_omitted.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.foreign_origin_omitted"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.foreign_origin_omitted"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.foreign_origin_omitted"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase4/foreign_policy_value_injection.schway",
+      "check": {
+        "exit": 2,
+        "code": "check.foreign_policy_value_unsafe"
+      },
+      "build": {
+        "exit": 2,
+        "code": "check.foreign_policy_value_unsafe"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "check.foreign_policy_value_unsafe"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "check.foreign_policy_value_unsafe"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase4/foreign_unwind_undeclared.schway",
+      "check": {
+        "exit": 2,
+        "code": "foreign.unwind_policy_undeclared"
+      },
+      "build": {
+        "exit": 2,
+        "code": "foreign.unwind_policy_undeclared"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "foreign.unwind_policy_undeclared"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "foreign.unwind_policy_undeclared"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase4/nonlocal_exit_probe.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase5/allocator_mismatch.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase5/coordinated_lie.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "relay"
+    },
+    {
+      "path": "testdata/phase5/dead_store_unused_acquire.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase5/defect_dies_by_signal.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "triage"
+    },
+    {
+      "path": "testdata/phase5/explain_use_after_move.schway",
+      "check": {
+        "exit": 2,
+        "code": "ownership.use_after_move"
+      },
+      "build": {
+        "exit": 2,
+        "code": "ownership.use_after_move"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "ownership.use_after_move"
+      },
+      "nativeRun": {
+        "exit": 2,
+        "code": "ownership.use_after_move"
+      },
+      "entryShape": "unchecked"
+    },
+    {
+      "path": "testdata/phase5/false_restrict_hoist.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "touch"
+    },
+    {
+      "path": "testdata/phase5/inline_across_foreign.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase5/reorder_two_events.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase5/restrict_borrow.schway",
+      "check": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "build": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "interpreterRun": {
+        "exit": 2,
+        "code": "core.origin_omitted"
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "touch"
+    },
+    {
+      "path": "testdata/phase5/retained_pointer.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase5/tail_collapse_release_ladder.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase5/typed_failure_truncated_stdout.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_failure"
+      },
+      "entryShape": "single-root",
+      "entry": "main"
+    },
+    {
+      "path": "testdata/phase6/derivation_borrow_defect.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "relay"
+    },
+    {
+      "path": "testdata/phase6/derivation_match_defect.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "relay"
+    },
+    {
+      "path": "testdata/phase6/derivation_move_defect.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "relay"
+    },
+    {
+      "path": "testdata/phase6/heldout_borrow_defect.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "relay"
+    },
+    {
+      "path": "testdata/phase6/heldout_match_defect.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "relay"
+    },
+    {
+      "path": "testdata/phase6/heldout_move_defect.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "relay"
+    },
+    {
+      "path": "testdata/phase6/stale_evidence_subject.schway",
+      "check": {
+        "exit": 0
+      },
+      "build": {
+        "exit": 3,
+        "code": "native.build_failed"
+      },
+      "interpreterRun": {
+        "exit": 0
+      },
+      "nativeRun": {
+        "exit": 3,
+        "code": "native.tool_missing"
+      },
+      "entryShape": "single-root",
+      "entry": "identity"
+    }
+  ]
+}
