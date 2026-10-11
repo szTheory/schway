@@ -56,3 +56,14 @@ auto-followed per the user's standing fan-out-then-auto-follow preference (no pe
 ## Deferred Ideas
 
 - `[]` sugar (arrays milestone); byte-string literals; public `schway run` input; all Phase 31 file/route work.
+
+---
+
+## Post-research decisions (2026-10-11)
+
+29-RESEARCH.md raised 8 open questions. The researcher's recommendation was auto-followed on each and recorded as CONTEXT D-14..D-21:
+two-stage cap evidence (Stage A proxy gate, Stage B record through the real owner); keep the D-05 owner but take the case id from a `main(case: U64)`
+entry parameter; runnable gain via `build --manifest` + `app run` and the session interpreter API; ByteView = {drop};
+parameter renamed `bytes` (`data` is a keyword); interpreter SC3 = defect outcome + reason + empty output;
+the OOB defect is abort-like with the owner left live; the `-O3`/LTO app lanes are a test-only seam.
+Alternatives not taken: per-vector baked literals, `PathToken` reuse, relaxing D-06, a `Runner` optimization knob.

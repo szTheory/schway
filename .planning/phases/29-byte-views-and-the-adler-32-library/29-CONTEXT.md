@@ -108,6 +108,53 @@ checked self-additions; pinned literals from Python `zlib.adler32` / Go
   — **Reversibility:** costly — a lowered cap propagates into Phase 31's
   pinned oversize matrix and the guide.
 
+### Post-research decisions (2026-10-11, resolving 29-RESEARCH.md Open Questions 1-8)
+Auto-followed per the standing preference; each takes the researcher's
+recommendation unless noted.
+- **D-14 (amends D-11/D-12):** Two-stage cap evidence. Stage A in plan 29-00
+  uses harness-delivered bytes (a Go-injected `[]byte` seam for the
+  interpreter, a disposable gate-only native driver labeled "proxy, gate-only")
+  to prove flag (a), the classifier/place-gate changes, and an
+  order-of-magnitude cost reading. Stage A triggers a re-plan only if the
+  slowest lane is far above the D-13 budget, and it never sets the cap. Stage B
+  is the last plan: the authoritative D-12 record through the real D-05 fixture
+  owner, with hosted runs. Only Stage B may keep or lower the cap.
+- **D-15 (amends D-06; keeps D-05):** The fixture owner is kept and budgeted as
+  its own multi-plan workstream. The case id comes from the entry parameter:
+  `fn main(case: U64) -> U64` with `try` acquire on `case`. One built artifact
+  serves every vector (`schway app run ART -- <case>`), and the acquire keeps the
+  Phase 23 shape, with the entry parameter as its source. Per-vector baked
+  literals are dropped. The reason: D-06's rationale assumed `schway run` was
+  the route, and it cannot run U64 entries at all (D-16). There are still no
+  ByteView entry parameters, no byte-string literals and no `PathToken` reuse
+  (D-09 separation holds).
+- **D-16 (amends the ROADMAP runnable-gain wording):** `schway run --engine=*`
+  stays unchanged (D-06). The runnable gain is met by
+  `schway build FIXTURE --manifest M --output ART` plus `schway app run ART -- N`
+  for native, and by the session interpreter API (the same route Phase 23 uses)
+  for the interpreter. Record this as a dated note on the ROADMAP Phase 29
+  runnable-gain line.
+- **D-17:** `ByteView` has the ability set {`drop`} only; `copy`, `share`,
+  `send` and `escape` are denied. Both independent ability derivations
+  (`ability.Derive`, `corevalidate.deriveAbility`) must agree.
+- **D-18 (amends SC1 text and the D-01/D-04 examples):** `data` is a lexer
+  keyword, so the library parameter is named `bytes`:
+  `adler32(bytes: ByteView) -> U64`, `byte_len(bytes)`, `byte_at(bytes, i)`.
+  Add a dated note to ROADMAP SC1.
+- **D-19 (SC3 for the interpreter):** The interpreter has no process exit, so
+  "exits 65" means a defect outcome with reason `byte index out of bounds`, empty
+  output, and the existing exit-class projection to 65 wherever the interpreter
+  result is surfaced as a process exit. Native asserts the real exit 65 plus the
+  exact stderr line.
+- **D-20 (defect with a live owner):** A byte-index defect is abort-like. The
+  process exits 65 without running the fixture owner's release; the OS reclaims
+  it. The interpreter accepts a defect terminal with live resources for this
+  defect class only. Every other terminal still rejects live resources
+  (`interp.go:253`). Document this beside the OOB control.
+- **D-21:** The `-O3` and `-O3 -flto` application-shell lanes for SC3 are a
+  test-only seam, not a `native.Runner` knob. Receipts and recorded application
+  flags stay `-O0`.
+
 ### Claude's Discretion
 - Exact `ast.Expr` kind names, fixture owner type name, adapter file layout,
   case-id numbering, and whether fixture sources are generated or hand-written.
