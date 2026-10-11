@@ -2,6 +2,7 @@ package session_test
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/core"
@@ -147,5 +148,168 @@ func TestPhase29GateCallable(t *testing.T) {
 	}
 	if run.Outcome.Kind != execution.OutcomeReturned || run.Outcome.Value != "6422626" {
 		t.Fatalf("adler32(a) outcome = %+v, want returned 6422626", run.Outcome)
+	}
+}
+
+const phase29ByteSource = `module phase29.gate.edges
+
+export {
+  fn main
+}
+
+fn at0(bytes: ByteView) -> U64 {
+  var x = byte_at(bytes, 0)
+  x
+}
+
+fn at1(bytes: ByteView) -> U64 {
+  var one = 1
+  var x = byte_at(bytes, one)
+  x
+}
+
+fn len0(bytes: ByteView) -> U64 {
+  var n = byte_len(bytes)
+  n
+}
+
+fn past(bytes: ByteView) -> U64 {
+  var n = byte_len(bytes)
+  var x = byte_at(bytes, n)
+  x
+}
+
+fn last(bytes: ByteView) -> U64 {
+  var n = byte_len(bytes)
+  var one = 1
+  var i = 0
+  var spent = 0
+  if n < 1 {
+    i = 0
+  } else {
+    spent = n + 0
+    i = 0
+    while i + one < n {
+      i = i + 1
+    }
+  }
+  var x = byte_at(bytes, i)
+  x
+}
+
+fn main(n: U64) -> U64 {
+  var kept = n
+  kept
+}
+`
+
+func phase29Repeat(b byte, n int) []byte {
+	out := make([]byte, n)
+	for i := range out {
+		out[i] = b
+	}
+	return out
+}
+
+// TestPhase29GateInterpreterVectors is the Stage-A interpreter half of the
+// Wave-0 gate: the pinned adler32 oracle literals, the unsigned-octet and
+// empty-view edges, the bounds defect, and flag (e) event silence.
+func TestPhase29GateInterpreterVectors(t *testing.T) {
+	program := phase29Library(t)
+	// Oracle literals produced 2026-10-11 by Python 3.14.4 `zlib.adler32` and
+	// Go 1.24.0 `hash/adler32`; both agree on every row.
+	vectors := []struct {
+		name  string
+		input []byte
+		want  string
+	}{
+		{"empty", []byte{}, "1"},
+		{"one zero byte", []byte{0x00}, "65537"},
+		{"a", []byte("a"), "6422626"},
+		{"Wikipedia", []byte("Wikipedia"), "300286872"},
+		{"4096 x 0x00", phase29Repeat(0x00, 4096), "268435457"},
+		{"5552 x 0xFF", phase29Repeat(0xFF, 5552), "4052720524"},
+		{"high bit pair", []byte{0x80, 0xFF}, "33620352"},
+	}
+	for _, vector := range vectors {
+		t.Run(vector.name, func(t *testing.T) {
+			run, err := interp.RunByteViewForTest(program, "adler32", vector.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if run.Outcome.Kind != execution.OutcomeReturned || run.Outcome.Value != vector.want {
+				t.Fatalf("outcome = %+v, want returned %s", run.Outcome, vector.want)
+			}
+			// Flag (e): neither byte op records an event on success.
+			for _, event := range run.Events {
+				if strings.Contains(event.ID, "bytes_len") || strings.Contains(event.ID, "bytes_at") {
+					t.Fatalf("byte op recorded an event: %+v", event)
+				}
+			}
+			bytesOps := map[string]bool{}
+			for _, function := range program.Functions {
+				if function.Name != "adler32" {
+					continue
+				}
+				for _, operation := range function.Linear.Operations {
+					if operation.Kind == core.OpBytesLen || operation.Kind == core.OpBytesAt {
+						bytesOps[operation.ID] = true
+					}
+				}
+			}
+			if len(bytesOps) == 0 {
+				t.Fatal("adler32 lowered no byte operations")
+			}
+			for _, event := range run.Events {
+				if bytesOps[strings.TrimSuffix(event.ID, ":event:defected")] || bytesOps[event.SourcePlace] {
+					t.Fatalf("event attributed to a byte operation on success: %+v", event)
+				}
+			}
+		})
+	}
+
+	edgeChecked := session.Check([]byte(phase29ByteSource))
+	if len(edgeChecked.Diagnostics) != 0 {
+		t.Fatalf("edge source diagnostics: %+v", edgeChecked.Diagnostics)
+	}
+	edges := []struct {
+		name     string
+		function string
+		input    []byte
+		want     string
+	}{
+		{"at0 unsigned 0x80", "at0", []byte{0x80, 0xFF}, "128"},
+		{"at1 unsigned 0xFF", "at1", []byte{0x80, 0xFF}, "255"},
+		{"len0 empty", "len0", []byte{}, "0"},
+		{"last index in range", "last", []byte{0x80, 0xFF}, "255"},
+		{"last on single byte", "last", []byte("a"), "97"},
+	}
+	for _, edge := range edges {
+		t.Run(edge.name, func(t *testing.T) {
+			run, err := interp.RunByteViewForTest(edgeChecked.Program, edge.function, edge.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if run.Outcome.Kind != execution.OutcomeReturned || run.Outcome.Value != edge.want {
+				t.Fatalf("outcome = %+v, want returned %s", run.Outcome, edge.want)
+			}
+		})
+	}
+
+	for _, input := range [][]byte{{}, []byte("a")} {
+		run, err := interp.RunByteViewForTest(edgeChecked.Program, "past", input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if run.Outcome.Kind != execution.OutcomeDefect || run.Outcome.Value != "" {
+			t.Fatalf("len %d: outcome = %+v, want empty defect", len(input), run.Outcome)
+		}
+		if len(run.Events) == 0 {
+			t.Fatalf("len %d: defect recorded no event", len(input))
+		}
+		final := run.Events[len(run.Events)-1]
+		if final.Kind != "function.defected" || final.Output != "byte index out of bounds" {
+			t.Fatalf("len %d: final event = %+v, want function.defected byte index out of bounds", len(input), final)
+		}
 	}
 }
