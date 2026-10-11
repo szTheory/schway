@@ -333,7 +333,7 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/session/session_phase5.go:EmitNative:26",
+      "call": "internal/compiler/session/session_phase5.go:EmitNative:27",
       "classification": "admitted-dynamic-schema2"
     },
     {
