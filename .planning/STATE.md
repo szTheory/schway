@@ -4,17 +4,17 @@ milestone: M006
 milestone_name: Bounded Byte Utility and Local Modules
 current_phase: 28
 current_phase_name: Exit Classes, Verify Report, and Entry Pruning
-status: planning
-stopped_at: Phase 28 context gathered
-last_updated: "2026-10-11T01:38:28.290Z"
+status: executing
+stopped_at: Completed 28-01-PLAN.md
+last_updated: "2026-10-11T02:10:50.443Z"
 last_activity: 2026-10-10
-last_activity_desc: M006 roadmap created (5 phases, 16/16 requirements mapped)
-state_head: 9f4062996bfae54f1ba732658b12cbf2b0bece45
+last_activity_desc: Phase 28 execution started
+state_head: 467ffcb7d6db110a1df342701930e28f195540a5
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 7
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -56,7 +56,7 @@ See: .planning/PROJECT.md (updated 2026-10-10)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** M006 Bounded Byte Utility and Local Modules — Phase 28 (Exit Classes, Verify Report, and Entry Pruning) not started; roadmap Phases 28–32
+**Current focus:** Phase 28 — Exit Classes, Verify Report, and Entry Pruning
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -123,10 +123,10 @@ plans.
 ## Current Position
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
-Phase: 28 (Exit Classes, Verify Report, and Entry Pruning) — READY TO EXECUTE
-Plan: —
-Status: Ready to discuss Phase 28
-Last activity: 2026-10-10 — M006 roadmap created (5 phases, 16/16 requirements mapped)
+Phase: 28 (Exit Classes, Verify Report, and Entry Pruning) — EXECUTING
+Plan: 2 of 7
+Status: Ready to execute
+Last activity: 2026-10-10 — Phase 28 execution started
 
 Progress: [░░░░░░░░░░] 0% (0/5 M006 phases)
 
@@ -497,6 +497,7 @@ subset alone.
 | Phase 27.3 P01 | 25 min | 3 tasks | 7 files |
 | Phase 27.3 P02 | 15 min | 3 tasks | 6 files |
 | Phase 27.3 P03 | 10 min | 2 tasks | 3 files |
+| Phase 28 P01 | 30min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -622,6 +623,7 @@ decision history; they no longer describe current status.
 - [Phase 27.3]: 27.3-01: corpus floor set to observed 93; run-native loop proof split between real-C runner test and RunNativeCommandFile surfacing test (D-27.3-10 amendment)
 - [Phase 27.3]: 27.3-02: capacity contract is exit 69 plus exact stderr line, adjudicated only on wait-status Exited; app verify recovers per-case via failure-path per-input re-run (Run signature unchanged)
 - [Phase 27.3]: 27.3-03: guide outputs routed under ignored .schway/phase27; executed temp-repo guide run declined
+- [Phase 28]: 28-01: Phase 28 class manifest sweep uses a missing-clang runner; allow-list maps start empty
 
 ### Pending Todos
 
@@ -852,9 +854,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-11T00:26:25.987Z
-Stopped at: Phase 28 context gathered
-Resume file: .planning/phases/28-exit-classes-verify-report-and-entry-pruning/28-CONTEXT.md
+Last session: 2026-10-11T02:10:50.421Z
+Stopped at: Completed 28-01-PLAN.md
+Resume file: None
 Next action: After clearing context, run /gsd-execute-phase 28 (7 plans in 6 waves, checked 2026-10-10; plan-check passed with override for two soft scope warnings: 28-06 estimate 110k low-confidence, 28-02 13 files).
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
