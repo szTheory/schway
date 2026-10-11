@@ -184,7 +184,7 @@ var matchFixedNames = []string{
 // macros, typedefs, struct members, globals, helper functions, and locals.
 var linearFixedNames = []string{
 	// macros and typedefs
-	"SCHWAY_BUFFER", "SCHWAY_EVENT", "SCHWAY_OUTPUT_LIMIT", "SCHWAY_EVENT_CAPACITY",
+	"SCHWAY_BUFFER", "SCHWAY_BYTE_VIEW", "SCHWAY_EVENT", "SCHWAY_OUTPUT_LIMIT", "SCHWAY_EVENT_CAPACITY",
 	// SCHWAY_BUFFER and SCHWAY_EVENT struct members
 	"bytes", "length",
 	"kind", "id", "function_id", "source_place", "target_place", "type_id",
@@ -1520,6 +1520,8 @@ func linearInput(function core.Function) (input, initializer, typeName string, e
 		return "7", "7u", "unsigned char", nil
 	case "U64":
 		return "0", "UINT64_C(0)", "uint64_t", nil
+	case "ByteView":
+		return "", "", "SCHWAY_BYTE_VIEW", nil
 	case "PathToken":
 		return "", "NULL", "const char *", nil
 	default:

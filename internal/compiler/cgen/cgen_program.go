@@ -236,8 +236,13 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 				// remainder expression is evaluated; reserve it in the evidence bound.
 				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", "U64 remainder by zero"
 				event.TargetPlace = ""
-			case core.OpLessU64, core.OpEqualU64, core.OpScalarStore, core.OpBranch, core.OpWriteU64, core.OpWriteNewline, core.OpWriteText:
-				// Comparisons, stores, CFG control, and application writes are
+			case core.OpBytesAt:
+				// An index at or past the view length emits this terminal defect
+				// before any byte is loaded; reserve it in the evidence bound.
+				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", "byte index out of bounds"
+				event.TargetPlace = ""
+			case core.OpBytesLen, core.OpLessU64, core.OpEqualU64, core.OpScalarStore, core.OpBranch, core.OpWriteU64, core.OpWriteNewline, core.OpWriteText:
+				// Byte length, comparisons, stores, CFG control, and application writes are
 				// event-free. Application bytes are tracked by the bounded writer.
 				continue
 			case core.OpCopy:
@@ -845,6 +850,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	lookup := &emitCallLookup{indexByFunctionID: indexByFunctionID, functionNames: functionNames, returnTypeNames: returnTypeNames, pointerABIFacts: pointerABIFacts}
 
 	needsBuffer := false
+	needsByteView := false
 	needsByte := false
 	needsU64 := false
 	needsDefect := false
@@ -863,6 +869,10 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		case "Byte":
 			needsByte = true
 		case "U64":
+			needsU64 = true
+		}
+		if function.Parameter.Type == "ByteView" {
+			needsByteView = true
 			needsU64 = true
 		}
 		if function.Linear != nil {
@@ -901,6 +911,9 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		}
 	}
 	emitInvocationPathTable(&out, paths, childTableNames)
+	if needsByteView {
+		out.WriteString("typedef struct SCHWAY_BYTE_VIEW {\n  const unsigned char *data;\n  uint64_t length;\n} SCHWAY_BYTE_VIEW;\n\n")
+	}
 	if needsBuffer {
 		out.WriteString("typedef struct SCHWAY_BUFFER {\n  unsigned char bytes[4];\n  size_t length;\n} SCHWAY_BUFFER;\n\n")
 	}
@@ -2520,7 +2533,7 @@ func hasScalarOperations(function core.Function) bool {
 		return true
 	}
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpBytesLen || operation.Kind == core.OpBytesAt || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
 			return true
 		}
 	}
@@ -2712,6 +2725,22 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 				}
 				out.WriteString("  }\n")
 				fmt.Fprintf(out, "  %s = (%s %% %s);\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
+			case core.OpBytesLen:
+				fmt.Fprintf(out, "  %s = %s.length;\n", locals[op.TargetID], locals[op.SourceID])
+			case core.OpBytesAt:
+				// The bounds test is an ordinary if before the load in both
+				// shells: never assert, never elided, even under a loop guard.
+				fmt.Fprintf(out, "  if (%s >= %s.length) {\n", locals[op.RightID], locals[op.SourceID])
+				if shell == programApplicationShell {
+					out.WriteString("    fputs(\"schway: byte index out of bounds\\n\", stderr);\n    exit(65);\n")
+				} else {
+					defect := op
+					defect.Reason = "byte index out of bounds"
+					emitProgramDefectTerminal(out, function, defect)
+					out.WriteString("    exit(0);\n")
+				}
+				out.WriteString("  }\n")
+				fmt.Fprintf(out, "  %s = (uint64_t)%s.data[%s];\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
 			case core.OpScalarStore:
 				fmt.Fprintf(out, "  %s = %s;\n", locals[op.StoreTargetID], locals[op.SourceID])
 			case core.OpBranch:
