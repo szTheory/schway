@@ -1,7 +1,11 @@
 package session_test
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/core"
@@ -69,4 +73,63 @@ func TestPhase29FixtureChecks(t *testing.T) {
 	if problems := originvalidate.ValidatePublished(validated.Program()); len(problems) != 0 {
 		t.Fatalf("originvalidate rejected the fixture: %+v", problems)
 	}
+
+	t.Run("phase 23 file byte keeps its own shape and core hash", func(t *testing.T) {
+		source, err := os.ReadFile("../../../examples/phase23/file_byte.schway")
+		if err != nil {
+			t.Fatal(err)
+		}
+		checked := session.Check(source)
+		if len(checked.Diagnostics) != 0 {
+			t.Fatalf("file_byte diagnostics: %+v", checked.Diagnostics)
+		}
+		document, err := json.Marshal(checked.Program)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(document)
+		raw, err := os.ReadFile(phase272GoldenPath())
+		if err != nil {
+			t.Fatal(err)
+		}
+		var golden phase272CorpusGolden
+		if err := json.Unmarshal(raw, &golden); err != nil {
+			t.Fatal(err)
+		}
+		want := ""
+		for _, entry := range golden.Entries {
+			if entry.Path == "examples/phase23/file_byte.schway" {
+				want = entry.CoreSHA256
+			}
+		}
+		if want == "" {
+			t.Fatal("file_byte is absent from the phase272 golden")
+		}
+		if got := hex.EncodeToString(sum[:]); got != want {
+			t.Fatalf("file_byte core hash = %s, want golden %s", got, want)
+		}
+	})
+
+	t.Run("phase 23 shape naming fixture symbols is refused", func(t *testing.T) {
+		source, err := os.ReadFile("../../../examples/phase23/file_byte.schway")
+		if err != nil {
+			t.Fatal(err)
+		}
+		mixed := strings.NewReplacer(
+			"schway_file_byte_acquire", "schway_fixture_bytes_acquire",
+			"schway_file_byte_use", "schway_fixture_bytes_view",
+			"schway_file_byte_release", "schway_fixture_bytes_release",
+			"module phase23.file_byte", "module phase29.mixed_owner",
+		).Replace(string(source))
+		if mixed == string(source) || !strings.Contains(mixed, "path: PathToken") {
+			t.Fatal("mixed source was not constructed")
+		}
+		checked := session.Check([]byte(mixed))
+		if len(checked.Diagnostics) == 0 {
+			t.Fatal("PathToken program naming the fixture symbols was accepted")
+		}
+		if code := checked.Diagnostics[0].Code; !strings.HasPrefix(code, "check.fixture_owner_") {
+			t.Fatalf("first code = %q, want a check.fixture_owner_* refusal", code)
+		}
+	})
 }
