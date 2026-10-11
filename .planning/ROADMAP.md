@@ -125,7 +125,7 @@ Plans:
 
 **Research flag**: Spike first. Before planning, settle: (a) a ByteView argument through `OpCall` in check's caller path and originvalidate's call-site derivation; (b) parser lookahead for byte length and indexing in scalar bodies; (c) release-while-loan-live refused by check, corevalidate, and pathoracle; (d) interpreter and native cost of 65,536 iterations, which confirms or lowers the 65,536-byte cap on recorded evidence; (e) no evented stores in the loop; (f) how the fixture's literal bytes reach the byte view before the Phase 31 file adapter exists (research proposes synthetic input to the conformance runner). Surface syntax for byte reads is decided at discussion.
 
-**Plans**: 7/13 plans executed
+**Plans**: 8/13 plans executed
 
 Plans:
 **Wave 1**
@@ -144,7 +144,7 @@ Plans:
 - [x] 29-06-PLAN.md — Fixture owner caller shape in check, corevalidate and originvalidate; adler32_fixture checks clean (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 29-07-PLAN.md — Native runnable gain: pathoracle replay, session admission, fixture-main emitter, build + app run CLI (wave 5)
+- [x] 29-07-PLAN.md — Native runnable gain: pathoracle replay, session admission, fixture-main emitter, build + app run CLI (wave 5)
 - [ ] 29-08-PLAN.md — Interpreter runnable gain: RunWithFixtureBytes, D-19 OOB, D-20 abort-like byte-index defect (wave 5)
 
 **Wave 6** *(blocked on Wave 5 completion)*
@@ -226,7 +226,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 28. Exit Classes, Verify Report, and Entry Pruning | 8/8 | Complete    | 2026-10-11 |
-| 29. Byte Views and the Adler-32 Library | 7/13 | In Progress | - |
+| 29. Byte Views and the Adler-32 Library | 8/13 | In Progress | - |
 | 30. Local Modules | 0/TBD | Not started | - |
 | 31. Bounded File Checksum and Second Consumer | 0/TBD | Not started | - |
 | 32. Clean-Checkout Guide and Final Receipts | 0/TBD | Not started | - |
