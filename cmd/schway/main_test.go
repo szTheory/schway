@@ -869,4 +869,25 @@ func TestPhase273AppVerifyCapacityCLI(t *testing.T) {
 	if report.Cases[1].Status != session.ReplayStatusUnsupported || !strings.HasPrefix(report.Cases[1].Diagnostic, "native.event_capacity_exhausted: ") {
 		t.Fatalf("n = 15 case=%+v, want unsupported with the named capacity prefix; capacity edge may have moved (see the coupling note above this test)", report.Cases[1])
 	}
+	// Phase 28 (EVD-13, ROADMAP SC4): far past the edge the report is still a
+	// named unsupported case under schema /2, not an unnamed oversize failure.
+	t.Run("n=1000", func(t *testing.T) {
+		far := session.ReplayCases{Schema: session.ReplayCasesSchema, Cases: []session.ReplayCase{
+			{ID: "n1000", Kind: session.ReplayCaseSource, Input: "1000", Expected: session.ReplayExpected{Kind: "returned", Value: "500500"}, ForeignOutcomes: []session.ReplayForeignOutcome{}},
+		}}
+		code, stderr, reportPath, report := runCLIReplayCasesSource(t, string(source), far)
+		if code != exitOperational {
+			t.Fatalf("exit code=%d want %d; stderr=%q report=%+v", code, exitOperational, stderr, report)
+		}
+		if want := "schway app verify: verification failed; see " + reportPath + "\n"; stderr != want {
+			t.Fatalf("stderr=%q want %q", stderr, want)
+		}
+		if report.Schema != "lang.app-verification/2" || report.Verified || len(report.Cases) != 1 {
+			t.Fatalf("report schema=%q verified=%v cases=%d: %+v", report.Schema, report.Verified, len(report.Cases), report)
+		}
+		got := report.Cases[0]
+		if got.Status != session.ReplayStatusUnsupported || !strings.HasPrefix(got.Diagnostic, "native.event_capacity_exhausted: ") || got.OutcomeDigest == nil || got.OutcomeDigest.OutcomeValue != "500500" {
+			t.Fatalf("n = 1000 case=%+v, want unsupported with the named prefix and a digest", got)
+		}
+	})
 }

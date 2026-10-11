@@ -78,7 +78,25 @@ func phase28RequireWrittenReport(t *testing.T, reportPath string, wantCases int)
 
 func TestAppVerifyExhaustedCases(t *testing.T) {
 	phase28RequireClang(t)
-	for _, n := range []int{173} {
+	t.Run("n=14", func(t *testing.T) {
+		report, reportPath := phase28VerifyFile(t, phase273Cases(phase273Case{"within", "14", "105"}))
+		if !report.Verified || len(report.Cases) != 1 || report.Cases[0].Status != session.ReplayStatusPass {
+			t.Fatalf("n=14 report=%+v, want pass", report)
+		}
+		got := report.Cases[0]
+		if got.OutcomeDigest != nil || len(got.Engines) != 3 {
+			t.Fatalf("n=14 case=%+v, want three engines and no digest", got)
+		}
+		for _, name := range []string{"interpreter", "O0", "O3"} {
+			if _, ok := got.Engines[name]; !ok {
+				t.Fatalf("n=14 engines lack %s", name)
+			}
+		}
+		if _, err := os.Stat(reportPath); err != nil {
+			t.Fatal(err)
+		}
+	})
+	for _, n := range []int{15, 172, 173, 1000} {
 		t.Run("n="+strconv.Itoa(n), func(t *testing.T) {
 			value := phase28SumToN(n)
 			report, reportPath := phase28VerifyFile(t, phase273Cases(phase273Case{"exhausted", strconv.Itoa(n), value}))
@@ -261,4 +279,38 @@ func TestAppVerifyOutcomeDigest(t *testing.T) {
 	if digest.EvidenceSHA256 != hex.EncodeToString(sum[:]) || digest.EvidenceBytes != len(encoded) || digest.EventCount != len(projected.Events) {
 		t.Fatalf("digest=%+v, recomputed sha=%x bytes=%d events=%d", digest, sum, len(encoded), len(projected.Events))
 	}
+}
+
+// TestAppVerifySixteenExhausted is the only real-clang 16-case run (D-17):
+// sixteen exhausted cases are all named in input order, fit in the report
+// limit, and never count as success.
+func TestAppVerifySixteenExhausted(t *testing.T) {
+	phase28RequireClang(t)
+	inputs := []int{}
+	for n := 15; n <= 29; n++ {
+		inputs = append(inputs, n)
+	}
+	inputs = append(inputs, 1000)
+	var entries []phase273Case
+	for index, n := range inputs {
+		entries = append(entries, phase273Case{phase28ID(index), strconv.Itoa(n), phase28SumToN(n)})
+	}
+	report, reportPath := phase28VerifyFile(t, phase273Cases(entries...))
+	if report.Verified || len(report.Cases) != 16 {
+		t.Fatalf("verified=%v cases=%d", report.Verified, len(report.Cases))
+	}
+	for index, got := range report.Cases {
+		if got.ID != phase28ID(index) {
+			t.Fatalf("case %d id=%q, want input order %q", index, got.ID, phase28ID(index))
+		}
+		if got.Status != session.ReplayStatusUnsupported || !strings.HasPrefix(got.Diagnostic, "native.event_capacity_exhausted") || got.OutcomeDigest == nil {
+			t.Fatalf("case %d=%+v, want unsupported with the named prefix and a digest", index, got)
+		}
+	}
+	phase28RequireWrittenReport(t, reportPath, 16)
+	info, err := os.Stat(reportPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("sixteen exhausted cases wrote a %d byte report (limit %d)", info.Size(), session.MaxReplayCasesBytes)
 }

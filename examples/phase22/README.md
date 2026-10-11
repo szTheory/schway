@@ -97,7 +97,10 @@ It never compiles Lang foreign calls or executes C. The report names this kind
 and sets `actual_host_io` and `physical_cleanup` to `false`; a scripted result
 does not establish host IO or physical resource cleanup.
 
-Application verification writes `lang.app-verification/1`. Only a report whose
+Application verification writes `lang.app-verification/2`. A case whose
+generated C exhausts its static event capacity reports an `outcome_digest`
+(the interpreter outcome plus the SHA-256 and size of the omitted evidence)
+instead of embedded evidence, and is `unsupported`, never success. Only a report whose
 every case passed the engine comparisons and independent expected answer has
 `verified: true`. This is controlled local evidence, not a claim of complete
 toolchain provenance or behavior on another host.
