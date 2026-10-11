@@ -51,6 +51,9 @@ func entryRefusalDiagnostic(err error) (diagnostic.Diagnostic, bool) {
 		roots := append([]string(nil), ambiguous.Roots()...)
 		sort.Strings(roots)
 		message := "program entry is ambiguous: in-degree-zero roots " + strings.Join(roots, ", ") + "; add `fn main` to disambiguate"
+		if ambiguous.DuplicateMain() {
+			message = "program entry is ambiguous: multiple functions named main: " + strings.Join(roots, ", ") + "; keep exactly one `fn main`"
+		}
 		return diagnostic.Error(ambiguous.Code(), diagnostic.Span{}, message), true
 	}
 	if unresolved, ok := callgraph.UnresolvedCalleeError(err); ok {

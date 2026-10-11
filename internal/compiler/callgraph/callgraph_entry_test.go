@@ -484,3 +484,26 @@ func checkedPhase11Fixture(t *testing.T, name string) core.Program {
 	}
 	return result.Program
 }
+
+// TestEntryFunctionDuplicateMainNamesCollidingFunctions proves the refusal
+// for two functions named `main` reports those functions (sorted by ID), not
+// the in-degree-zero roots, and flags the duplicate-main cause.
+func TestEntryFunctionDuplicateMainNamesCollidingFunctions(t *testing.T) {
+	second := leafFunction("fn:main:b")
+	second.Name = "main"
+	first := leafFunction("fn:main:a")
+	first.Name = "main"
+	program := core.Program{Functions: []core.Function{second, first, leafFunction("fn:other")}}
+	_, err := callgraph.EntryFunction(program)
+	ambiguous, ok := callgraph.EntryAmbiguousError(err)
+	if !ok {
+		t.Fatalf("expected an entry-ambiguity refusal, got: %v", err)
+	}
+	if !ambiguous.DuplicateMain() {
+		t.Fatal("expected DuplicateMain() to be true")
+	}
+	roots := ambiguous.Roots()
+	if len(roots) != 2 || roots[0] != "fn:main:a" || roots[1] != "fn:main:b" {
+		t.Fatalf("expected the colliding main IDs sorted, got %v", roots)
+	}
+}

@@ -213,9 +213,22 @@ func UnresolvedCalleeError(err error) (*unresolvedCalleeError, bool) {
 // declared its functions in.
 type entryAmbiguousError struct {
 	roots []string
+	// duplicateMain marks the case where roots holds the colliding `main`
+	// function IDs rather than in-degree-zero roots.
+	duplicateMain bool
 }
 
+// DuplicateMain reports whether the refusal is caused by more than one
+// function named `main`; Roots then names those colliding functions.
+func (e *entryAmbiguousError) DuplicateMain() bool { return e.duplicateMain }
+
 func (e *entryAmbiguousError) Error() string {
+	if e.duplicateMain {
+		return fmt.Sprintf(
+			"callgraph.entry_ambiguous: program declares %d functions named main, expected exactly one: %v",
+			len(e.roots), e.roots,
+		)
+	}
 	return fmt.Sprintf(
 		"callgraph.entry_ambiguous: program has %d in-degree-zero root(s), expected exactly one: %v",
 		len(e.roots), e.roots,
@@ -322,7 +335,8 @@ func EntryFunction(program core.Program) (core.Function, error) {
 		return resolve(mains[0])
 	}
 	if len(mains) > 1 {
-		return core.Function{}, &entryAmbiguousError{roots: roots}
+		sort.Strings(mains)
+		return core.Function{}, &entryAmbiguousError{roots: mains, duplicateMain: true}
 	}
 
 	if len(roots) == 1 {
