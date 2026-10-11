@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -81,6 +82,28 @@ func phase29AssertOOB(t *testing.T, artifact string, caseID uint64) {
 	}
 }
 
+func phase29RequireASan(t *testing.T) {
+	t.Helper()
+	phase29RequireClang(t)
+	dir := t.TempDir()
+	probe := filepath.Join(dir, "probe.c")
+	if err := os.WriteFile(probe, []byte("int main(void) { return 0; }\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := exec.Command("clang", "-fsanitize=address", "-o", filepath.Join(dir, "probe"), probe).CombinedOutput(); err != nil {
+		t.Skipf("address sanitizer unavailable on this host: %v %s", err, strings.TrimSpace(string(out)))
+	}
+}
+
+// phase29LeakOption renders ASAN_OPTIONS for the lane. LeakSanitizer is not
+// supported on darwin, where asking for it is itself an error.
+func phase29LeakOption(on int) string {
+	if runtime.GOOS == "darwin" {
+		return "detect_leaks=0"
+	}
+	return "detect_leaks=" + strconv.Itoa(on)
+}
+
 // TestPhase29OOBApplicationLanes pins SC3 / BYTE-02: reading one byte past the
 // end exits 65 with the exact stderr at -O0, -O3 and -O3 -flto, so the
 // optimizer cannot remove the observable check (T-29-28); the interpreter
@@ -101,6 +124,31 @@ func TestPhase29OOBApplicationLanes(t *testing.T) {
 			}
 		})
 	}
+	t.Run("asan", func(t *testing.T) {
+		phase29RequireASan(t)
+		flags := append(append([]string(nil), phase29BaseFlags...), "-O0", "-fsanitize=address", "-fno-sanitize-ignorelist", "-fno-omit-frame-pointer")
+		// One subtest per claim so a skip is visible per lane.
+		t.Run("vectors", func(t *testing.T) {
+			t.Setenv("ASAN_OPTIONS", phase29LeakOption(1))
+			artifact := phase29BuildLane(t, testsupport.ProjectPath(phase29FixtureSource), flags)
+			for _, caseID := range testsupport.Phase29FixtureCaseIDs() {
+				want, _ := testsupport.Phase29FixtureExpected(caseID)
+				outcome, stdout, stderr := phase29Run(t, artifact, caseID)
+				if outcome.Kind != native.RunExited || outcome.ExitCode != 0 || stdout != strconv.FormatUint(want, 10)+"\n" || stderr != "" {
+					t.Errorf("asan case %d outcome=%+v stdout=%q stderr=%q, want %d with no sanitizer report", caseID, outcome, stdout, stderr, want)
+				}
+			}
+		})
+		t.Run("oob-control", func(t *testing.T) {
+			// D-20: the defect is abort-like and never runs release, so the
+			// fixture allocation is reclaimed by the OS, not freed.
+			t.Setenv("ASAN_OPTIONS", phase29LeakOption(0))
+			artifact := phase29BuildLane(t, source, flags)
+			for _, caseID := range []uint64{0, 2} {
+				phase29AssertOOB(t, artifact, caseID)
+			}
+		})
+	})
 	t.Run("interpreter", func(t *testing.T) {
 		data, err := os.ReadFile(source)
 		if err != nil {
