@@ -86,6 +86,28 @@ Make exit classes uniform and named, let programs with unused functions run, and
   - Keep the runtime oversize check as defense in depth, as a named error (e.g. `ErrApplicationVerificationReportOversize`) with size and limit. Exit 3, no partial file. A synthetic test hits it deliberately.
 - **D-17: Required evidence:** sum_to_n n=14 passes; n=15, 172, 173 and 1000 are each `unsupported` with the named diagnostic and a written report; a 16-exhausted-case set names every case and stays within the limit; the one-level exhaustion test keeps asserting `fail`.
 
+### Post-research amendments (2026-10-10, auto-followed per the research recommendations)
+- **D-18: Admit the full program, then prune (refines D-04 and D-09).** `admitProgram` (corevalidate → originvalidate → pathoracle) runs on the full checked program. `resolveEntry` prunes only after admission, before interp, cgen and app verify. Dead code with a validator refusal, e.g. `multi_function_gate_corpus`, stays refused, so the publication gate never loosens. This follows D-04's own principle: dead code with errors is still refused.
+- **D-19: Admission lives in the command-file layer only (refines D-10).**
+  - Wire `admitProgram` into `check`, `build`, `RunInterpreterCommandFile` and `RunNativeCommandFile`. Split `runNative` into a check-resolve-admit step and a `runNativeChecked` step.
+  - Internal differential lanes, `admitPublishedApplication` and the D-27.1-02 rule ("internal lanes do not run origin admission") stay unchanged. `TestExclusiveBorrowInterpreterNative` and the 12-fixture divergence table keep passing.
+  - `executionpeer.resolveEntry` keeps its copy of the tiebreak. Add a property test that a pruned program has exactly one in-degree-zero root, and never hand an unpruned multi-root program to the peer.
+- **D-20: Pins outside the D-12 list that also move:**
+  - `TestPhase16ProductionPathsPreserveM004Refusal`: swap in a cut fixture that passes check, replacing `restrict_borrow.schway`.
+  - The exact error-text asserts in `session_phase271_admission_test.go` (~169, 176, 195) become diagnostic asserts.
+  - The `multi_function_zero_call` pins flip to "runs":
+    - `TestEmitProgramZeroCallEdges`
+    - the `ZeroCallEdges` subtest in `session_phase11_differential_test.go`
+    - `payloadCorpusExpectedSkips`
+    - both corpus goldens
+  - `payload_borrow_interaction.schway` joins `knownAdmissionDivergences` as `core.entry_ambiguous`.
+  - `callgraph`'s `Error()` text stays byte-identical; the "add fn main" hint goes only in the diagnostic message.
+  - Reuse the existing corpus goldens (`testdata/phase273/conformance-corpus-hashes.json`, `testdata/phase272/accepted-corpus-hashes.json`) as the D-05 safety net, plus a thin `testdata/phase28` class manifest. New tests emit C through `Phase16ControlNativeC`, never `cgen.Emit*`.
+- **D-21: `app verify` source refusals also exit 2, and the static scan covers every exit path (closes the DX-17 gap).**
+  - `VerifyApplicationCases` runs the same check, admit and resolve steps. A source refusal gives exit 2 with the refusing code, while capacity and tool outcomes keep exit 3 and `unsupported` semantics.
+  - The D-11 AST scan flags every integer literal passed to `os.Exit` or returned as an exit status from the cmd, session and native exit paths, including `0`. Production code uses `exitcode.Success`. A non-exit sentinel such as `-1` is out of scope.
+  - cgen-emitted C exit strings are pinned by a string-literal scan test rather than edited.
+
 ### Claude's Discretion
 - Exact helper names (`resolveEntry`, `admitProgram`, `PruneToReachable`), file split, and plan/wave decomposition.
 - Golden format: a per-file hash manifest or stored C text, whichever fits existing testdata conventions.
