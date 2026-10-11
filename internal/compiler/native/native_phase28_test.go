@@ -102,12 +102,34 @@ func decodePhase28Command(t *testing.T, stdout []byte) phase28Command {
 // gets the same exit class and refusing code from check, build, run
 // --engine=interpreter and run --engine=native on the shipped binary. The
 // corevalidate fixture is the existing checker-clean duplicate_function_name
-// (D-24); no new .schway file exists for it.
+// (D-24); no new .schway file exists for it. The relative rows pin G-28-3
+// (relative native run must reach Check and admitProgram; the CLI child
+// inherits the test cwd internal/compiler/native, hence the ../../.. prefix).
 func TestExitClassesUniformAcrossSurfaces(t *testing.T) {
 	if _, err := exec.LookPath("clang"); err != nil {
 		t.Skipf("env:clang toolchain unavailable on this host: %v", err)
 	}
 	binary := testsupport.BuildCLI(t)
+	assertUniformRefusal := func(t *testing.T, source, code string) {
+		t.Helper()
+		artifact := filepath.Join(t.TempDir(), "app")
+		surfaces := [][]string{
+			{"--json", "check", source},
+			{"--json", "build", source, "--output", artifact},
+			{"--json", "run", "--engine=interpreter", source},
+			{"--json", "run", "--engine=native", source},
+		}
+		for _, arguments := range surfaces {
+			result := testsupport.RunCLI(t, binary, nil, arguments...)
+			decoded := decodePhase28Command(t, result.Stdout)
+			if result.Exit != 2 || len(decoded.Diagnostics) == 0 || decoded.Diagnostics[0].Code != code {
+				t.Fatalf("%v: exit=%d diagnostics=%+v, want exit 2 %s (stdout=%s)", arguments, result.Exit, decoded.Diagnostics, code, result.Stdout)
+			}
+		}
+		if _, err := os.Stat(artifact); !os.IsNotExist(err) {
+			t.Fatalf("build left an artifact after a refusal: stat err=%v", err)
+		}
+	}
 	fixtures := []struct {
 		name string
 		path []string
@@ -119,24 +141,29 @@ func TestExitClassesUniformAcrossSurfaces(t *testing.T) {
 	}
 	for _, fixture := range fixtures {
 		t.Run(fixture.name, func(t *testing.T) {
-			source := testsupport.ProjectPath(fixture.path...)
-			artifact := filepath.Join(t.TempDir(), "app")
-			surfaces := [][]string{
-				{"--json", "check", source},
-				{"--json", "build", source, "--output", artifact},
-				{"--json", "run", "--engine=interpreter", source},
-				{"--json", "run", "--engine=native", source},
-			}
-			for _, arguments := range surfaces {
-				result := testsupport.RunCLI(t, binary, nil, arguments...)
-				decoded := decodePhase28Command(t, result.Stdout)
-				if result.Exit != 2 || len(decoded.Diagnostics) == 0 || decoded.Diagnostics[0].Code != fixture.code {
-					t.Fatalf("%v: exit=%d diagnostics=%+v, want exit 2 %s (stdout=%s)", arguments, result.Exit, decoded.Diagnostics, fixture.code, result.Stdout)
-				}
-			}
-			if _, err := os.Stat(artifact); !os.IsNotExist(err) {
-				t.Fatalf("build left an artifact after a refusal: stat err=%v", err)
-			}
+			assertUniformRefusal(t, testsupport.ProjectPath(fixture.path...), fixture.code)
 		})
 	}
+	relativeSource := func(t *testing.T, name string) string {
+		t.Helper()
+		source := filepath.Join("..", "..", "..", "testdata", "phase07", name)
+		if filepath.IsAbs(source) {
+			t.Fatalf("source %q must be relative", source)
+		}
+		if _, err := os.Stat(source); err != nil {
+			t.Fatalf("relative fixture unreachable from test cwd: %v", err)
+		}
+		return source
+	}
+	t.Run("relative_path/duplicate_function_name", func(t *testing.T) {
+		assertUniformRefusal(t, relativeSource(t, "duplicate_function_name.schway"), "core.duplicate_function_id")
+	})
+	t.Run("relative_path/native_positive_control", func(t *testing.T) {
+		source := relativeSource(t, "call_basic.schway")
+		result := testsupport.RunCLI(t, binary, nil, "--json", "run", "--engine=native", source)
+		decoded := decodePhase28Command(t, result.Stdout)
+		if result.Exit != 0 || len(decoded.Diagnostics) != 0 {
+			t.Fatalf("exit=%d diagnostics=%+v stdout=%s stderr=%s, want exit 0", result.Exit, decoded.Diagnostics, result.Stdout, result.Stderr)
+		}
+	})
 }
