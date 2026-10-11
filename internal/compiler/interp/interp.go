@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/corevalidate"
@@ -256,6 +257,162 @@ func RunWithForeignOutcomes(program core.Program, functionName, input string, ou
 		Execution: result, EvidenceScope: EvidenceScopeModelOnly,
 		ActualHostIO: false, PhysicalCleanup: false,
 	}, nil
+}
+
+// RunWithFixtureBytes runs the Phase 29 fixture bytes program (D-16) in the
+// interpreter. The caller supplies the foreign behavior: bytes enter only
+// through the generator parameter (D-07), never from the C adapter, so the
+// interpreter and native routes stay independent. The fixture owner replays
+// its lifecycle here: acquire binds an owner holding a copy of the generated
+// bytes, the borrow yields a read-only view sharing them, the call passes the
+// view by the ordinary frame-copy rule, and the release discharges the owner.
+// An unknown case id (generator ok == false) fails the acquire through the
+// typed-failure path with no owner published.
+//
+// D-20: an out-of-range byte_at is abort-like -- the process dies and the OS
+// reclaims the owner -- so a defect terminal that leaves the fixture owner
+// live is accepted ONLY when its final event is the byte-index defect raised
+// by an OpBytesAt operation. Every other terminal with live resources is
+// rejected exactly as RunWithForeignOutcomes rejects them.
+func RunWithFixtureBytes(program core.Program, functionName, input string, bytes func(caseID uint64) ([]byte, bool)) (Execution, error) {
+	if bytes == nil {
+		return Execution{}, fmt.Errorf("fixture bytes route requires a caller-supplied byte generator")
+	}
+	validated := corevalidate.Validate(program)
+	if !validated.Valid {
+		return Execution{}, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	program = validated.Program()
+	function, ok := findFunction(program, functionName)
+	if !ok {
+		return Execution{}, fmt.Errorf("function %q is absent from checked core", functionName)
+	}
+	if !function.HasClosedBody() || function.Linear == nil || function.Match != nil || len(function.Linear.Blocks) != 0 || function.Parameter.Type != "U64" || function.ReturnType != "U64" {
+		return Execution{}, fmt.Errorf("fixture bytes route requires the checked U64-to-U64 fixture-owner entry")
+	}
+	acquires, borrows := 0, 0
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind != core.OpForeignCall || operation.Foreign == nil {
+			continue
+		}
+		switch {
+		case operation.Foreign.Mode == "acquire" && operation.Foreign.ParameterType == "U64" && operation.Foreign.Fails != "":
+			acquires++
+		case operation.Foreign.Mode == "borrow" && operation.Foreign.ResultType == "ByteView":
+			borrows++
+		}
+	}
+	if acquires != 1 || borrows != 1 {
+		return Execution{}, fmt.Errorf("fixture bytes route requires one fixture acquire and one ByteView borrow in %q", functionName)
+	}
+	initial, err := inputValue(program, function, input)
+	if err != nil {
+		return Execution{}, err
+	}
+	base := newFlatFrame(function, map[string]value{function.Parameter.ID: initial})
+	base.fixtureBytes = bytes
+	result, err := runProgramFrameStack(program, base)
+	if err != nil {
+		return Execution{}, err
+	}
+	if len(result.LiveResources) != 0 && !isByteIndexDefect(program, result) {
+		return Execution{}, fmt.Errorf("model execution reached a terminal outcome with live local resources %v", result.LiveResources)
+	}
+	return result, nil
+}
+
+// isByteIndexDefect is the D-20 predicate: a defect outcome whose final event
+// is the out-of-range byte_at defect attributed to an OpBytesAt operation.
+func isByteIndexDefect(program core.Program, result Execution) bool {
+	if result.Outcome.Kind != execution.OutcomeDefect || len(result.Events) == 0 {
+		return false
+	}
+	final := result.Events[len(result.Events)-1]
+	if final.Kind != "function.defected" || final.Output != "byte index out of bounds" || !strings.HasSuffix(final.ID, ":event:defected") {
+		return false
+	}
+	operationID := strings.TrimSuffix(final.ID, ":event:defected")
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.ID == operationID {
+				return operation.Kind == core.OpBytesAt
+			}
+		}
+	}
+	return false
+}
+
+// terminalLiveResources reports the resources live at a terminal. Ordinary
+// runs report the terminating frame only (unchanged). The fixture route
+// reports every frame on the stack, because its owner lives in the caller of
+// the frame that defects.
+func terminalLiveResources(stack []frame, top *frame) []string {
+	if top.fixtureBytes == nil {
+		return frameLiveResourceList(top)
+	}
+	result := []string{}
+	for index := range stack {
+		result = append(result, frameLiveResourceList(&stack[index])...)
+	}
+	return result
+}
+
+// fixtureForeignCall replays one fixture foreign operation. It returns a
+// terminal Execution (done == true) only for the typed acquire failure.
+func fixtureForeignCall(program core.Program, top *frame, operation core.LinearOperation, source value, events *[]Event) (Execution, bool, error) {
+	contract := operation.Foreign
+	if contract == nil {
+		return Execution{}, false, fmt.Errorf("foreign operation %q has no checked per-operation contract", operation.ID)
+	}
+	called := Event{
+		Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID, Invocation: top.invocation,
+		SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
+	}
+	switch contract.Mode {
+	case "acquire":
+		if !source.isU64 {
+			return Execution{}, false, fmt.Errorf("fixture acquire %q case operand is not U64", operation.ID)
+		}
+		data, ok := top.fixtureBytes(source.u64)
+		if !ok {
+			alternative := ""
+			for _, dataType := range program.DataTypes {
+				if dataType.Name == contract.Fails && len(dataType.Alternatives) > 0 {
+					alternative = dataType.Alternatives[0]
+				}
+			}
+			if alternative == "" {
+				return Execution{}, false, fmt.Errorf("fixture acquire %q failure type %q has no alternative", operation.ID, contract.Fails)
+			}
+			called.Kind, called.TypeID = "foreign.failed", contract.Fails
+			*events = append(*events, called, Event{
+				Schema: top.eventSchema(), ID: operation.ID + ":event:failed", Kind: "function.failed",
+				FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: contract.Fails,
+			})
+			return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: "typed_failure", Value: alternative}, Events: *events, LiveResources: []string{}}, true, nil
+		}
+		top.values[operation.TargetID] = value{
+			bytes: append([]byte{}, data...), isBytes: true,
+			ownerOperationID: operation.ID, ownerActivationID: ownerActivationID(top, operation.ID),
+		}
+		top.live[operation.ID] = true
+		top.liveOrder = append(top.liveOrder, operation.ID)
+	case "borrow":
+		if !source.isBytes || source.ownerOperationID == "" || !top.live[source.ownerOperationID] {
+			return Execution{}, false, fmt.Errorf("fixture borrow %q has no live fixture owner", operation.ID)
+		}
+		// The view shares the owner's bytes and carries no owner identity: it
+		// is read-only and discharges nothing.
+		top.values[operation.TargetID] = value{bytes: source.bytes, isBytes: true}
+	default:
+		return Execution{}, false, fmt.Errorf("fixture route does not support foreign mode %q", contract.Mode)
+	}
+	*events = append(*events, called)
+	top.idx++
+	return Execution{}, false, nil
 }
 
 func phase24ErrorProgram(program core.Program) bool {
@@ -825,6 +982,9 @@ type frame struct {
 	modeledFailure          *ForeignOutcome
 	modeledReusableOutcomes map[string]bool
 	modeledReusableUsed     map[string]bool
+	// fixtureBytes is non-nil only for RunWithFixtureBytes; callee frames
+	// inherit it so a defect anywhere on the stack sees every live owner.
+	fixtureBytes func(caseID uint64) ([]byte, bool)
 
 	// placeTypes and types index this frame's OWN function's declared
 	// places and type facts by ID -- present on every frame shape (not
@@ -1417,7 +1577,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
 					TypeID: operation.TypeID, Output: "U64 addition overflow",
 				})
-				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourceList(top.live, top.liveOrder)}, nil
+				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: terminalLiveResources(stack, top)}, nil
 			}
 			top.values[operation.TargetID] = value{u64: sourceValue.u64 + right.u64, isU64: true}
 			top.idx++
@@ -1447,7 +1607,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
 					TypeID: operation.TypeID, Output: reason,
 				})
-				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourceList(top.live, top.liveOrder)}, nil
+				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: terminalLiveResources(stack, top)}, nil
 			}
 			top.values[operation.TargetID] = value{u64: sourceValue.u64 % right.u64, isU64: true}
 			top.idx++
@@ -1470,7 +1630,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
 					TypeID: operation.TypeID, Output: reason,
 				})
-				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourceList(top.live, top.liveOrder)}, nil
+				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: terminalLiveResources(stack, top)}, nil
 			}
 			// The octet widens as unsigned, never as a code point or signed byte.
 			top.values[operation.TargetID] = value{u64: uint64(sourceValue.bytes[index.u64]), isU64: true}
@@ -1570,6 +1730,16 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			events = append(events, ownedEvent(top, operation, "resource.released"))
 			top.idx++
 		case core.OpForeignCall:
+			if top.fixtureBytes != nil {
+				terminal, done, err := fixtureForeignCall(program, top, operation, sourceValue, &events)
+				if err != nil {
+					return Execution{}, err
+				}
+				if done {
+					return terminal, nil
+				}
+				continue
+			}
 			if top.modeledOutcomes != nil {
 				if top.modeledFailure != nil {
 					top.idx++
@@ -1704,6 +1874,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				result.frame.modeledReusableOutcomes = top.modeledReusableOutcomes
 				result.frame.modeledReusableUsed = top.modeledReusableUsed
 			}
+			result.frame.fixtureBytes = top.fixtureBytes
 			if top.eventSchema() == execution.Schema2 {
 				events = append(events, calledEvent(top, operation, result.calleeID))
 			}
@@ -1760,7 +1931,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				}
 				continue
 			}
-			liveResources := frameLiveResourceList(top)
+			liveResources := terminalLiveResources(stack, top)
 			return Execution{Schema: top.eventSchema(), Outcome: outcome, Events: events, LiveResources: liveResources}, nil
 		default:
 			return Execution{}, fmt.Errorf("operation %q has unknown kind %q", operation.ID, operation.Kind)
