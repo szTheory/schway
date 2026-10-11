@@ -25,7 +25,7 @@ import (
 
 const (
 	ReplayCasesSchema        = "lang.replay-cases/1"
-	ApplicationVerifySchema  = "lang.app-verification/1"
+	ApplicationVerifySchema  = "lang.app-verification/2"
 	MaxReplayCasesBytes      = 64 * 1024
 	MaxReplayCaseCount       = 16
 	ReplayCaseSource         = "source"
@@ -76,11 +76,27 @@ type ReplayCaseReport struct {
 	InputID         string                         `json:"input_id,omitempty"`
 	Expected        ReplayExpected                 `json:"expected"`
 	Engines         map[string]execution.Execution `json:"engines,omitempty"`
+	OutcomeDigest   *ReplayOutcomeDigest           `json:"outcome_digest,omitempty"`
 	ModeledOutcome  *ReplayForeignOutcome          `json:"modeled_outcome,omitempty"`
 	EvidenceScope   string                         `json:"evidence_scope"`
 	Diagnostic      string                         `json:"diagnostic,omitempty"`
 	ActualHostIO    bool                           `json:"actual_host_io"`
 	PhysicalCleanup bool                           `json:"physical_cleanup"`
+}
+
+// ReplayOutcomeDigest replaces embedded interpreter evidence for cases whose
+// generated C exhausted its static event capacity (D-13). It is fixed-size, so
+// the report no longer grows with the program's event count. EvidenceSHA256 is
+// the lowercase hex SHA-256 of the exact json.Marshal bytes of the omitted
+// schema-2 interpreter execution and EvidenceBytes is their length.
+type ReplayOutcomeDigest struct {
+	Engine         string `json:"engine"`
+	OutcomeKind    string `json:"outcome_kind"`
+	OutcomeValue   string `json:"outcome_value"`
+	EventCount     int    `json:"event_count"`
+	EvidenceSHA256 string `json:"evidence_sha256"`
+	EvidenceBytes  int    `json:"evidence_bytes"`
+	ExhaustedLevel string `json:"exhausted_level"`
 }
 
 type ReplayReport struct {
@@ -337,7 +353,13 @@ func VerifyApplicationCases(ctx context.Context, source []byte, cases ReplayCase
 				if o0.Exhausted[pairIndex] {
 					level = "-O0"
 				}
-				report.Cases[reportIndex].Engines = map[string]execution.Execution{"interpreter": interpreted[reportIndex]}
+				digest, digestErr := replayOutcomeDigest(interpreted[reportIndex], level)
+				if digestErr != nil {
+					report.Cases[reportIndex].Status = ReplayStatusFail
+					report.Cases[reportIndex].Diagnostic = "interpreter evidence could not be digested"
+					continue
+				}
+				report.Cases[reportIndex].OutcomeDigest = digest
 				report.Cases[reportIndex].Status = ReplayStatusFail
 				report.Cases[reportIndex].Diagnostic = fmt.Sprintf("event capacity exhausted at %s only; the other optimization level completed, so the levels diverge", level)
 				continue
@@ -349,7 +371,13 @@ func VerifyApplicationCases(ctx context.Context, source []byte, cases ReplayCase
 				// interpreter outcome already equals the expected outcome.
 				actual := interpreted[reportIndex].Outcome
 				expected := report.Cases[reportIndex].Expected
-				report.Cases[reportIndex].Engines = map[string]execution.Execution{"interpreter": interpreted[reportIndex]}
+				digest, digestErr := replayOutcomeDigest(interpreted[reportIndex], level)
+				if digestErr != nil {
+					report.Cases[reportIndex].Status = ReplayStatusFail
+					report.Cases[reportIndex].Diagnostic = "interpreter evidence could not be digested"
+					continue
+				}
+				report.Cases[reportIndex].OutcomeDigest = digest
 				if actual.Kind == expected.Kind && actual.Value == expected.Value {
 					report.Cases[reportIndex].Status = ReplayStatusUnsupported
 					report.Cases[reportIndex].Diagnostic = eventCapacityDiagnostic(level)
@@ -450,6 +478,20 @@ func hasForeignContract(program core.Program) bool {
 func canonicalU64(value string) bool {
 	parsed, err := strconv.ParseUint(value, 10, 64)
 	return err == nil && strconv.FormatUint(parsed, 10) == value
+}
+
+// replayOutcomeDigest summarizes an omitted schema-2 interpreter execution. It
+// fails closed: a marshal error is returned so the caller marks the case fail.
+func replayOutcomeDigest(document execution.Execution, level string) (*ReplayOutcomeDigest, error) {
+	raw, err := json.Marshal(document)
+	if err != nil {
+		return nil, err
+	}
+	return &ReplayOutcomeDigest{
+		Engine: "interpreter", OutcomeKind: document.Outcome.Kind, OutcomeValue: document.Outcome.Value,
+		EventCount: len(document.Events), EvidenceSHA256: replayDigest(raw), EvidenceBytes: len(raw),
+		ExhaustedLevel: level,
+	}, nil
 }
 
 func replayDigest(data []byte) string {

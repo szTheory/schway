@@ -70,12 +70,22 @@ func phase273RequireUnsupportedCapacity(t *testing.T, caseReport session.ReplayC
 			t.Fatalf("case %q diagnostic %q lacks %q", caseReport.ID, caseReport.Diagnostic, want)
 		}
 	}
-	if len(caseReport.Engines) != 1 {
-		t.Fatalf("case %q engines=%v, want only the interpreter", caseReport.ID, caseReport.Engines)
+	phase273RequireDigest(t, caseReport, "120", "-O0")
+}
+
+// phase273RequireDigest asserts the D-13 outcome digest shape: no embedded
+// engines map, an interpreter digest carrying the expected outcome.
+func phase273RequireDigest(t *testing.T, caseReport session.ReplayCaseReport, value, level string) {
+	t.Helper()
+	if len(caseReport.Engines) != 0 {
+		t.Fatalf("case %q engines=%v, want none (digest replaces evidence)", caseReport.ID, caseReport.Engines)
 	}
-	interpreter, ok := caseReport.Engines["interpreter"]
-	if !ok || interpreter.Outcome.Kind != "returned" || interpreter.Outcome.Value != "120" {
-		t.Fatalf("case %q engines=%+v, want interpreter returned 120", caseReport.ID, caseReport.Engines)
+	digest := caseReport.OutcomeDigest
+	if digest == nil || digest.Engine != "interpreter" || digest.OutcomeKind != "returned" || digest.OutcomeValue != value {
+		t.Fatalf("case %q digest=%+v, want interpreter returned %s", caseReport.ID, digest, value)
+	}
+	if digest.EvidenceBytes <= 0 || len(digest.EvidenceSHA256) != 64 || digest.ExhaustedLevel != level {
+		t.Fatalf("case %q digest=%+v, want evidence bytes, 64-hex digest, level %s", caseReport.ID, digest, level)
 	}
 }
 
@@ -271,13 +281,7 @@ func TestPhase273AppVerifyOneLevelExhaustionFails(t *testing.T) {
 			if got.Diagnostic != want {
 				t.Fatalf("diagnostic=%q, want %q", got.Diagnostic, want)
 			}
-			if len(got.Engines) != 1 {
-				t.Fatalf("engines=%v, want only the interpreter", got.Engines)
-			}
-			interpreter, ok := got.Engines["interpreter"]
-			if !ok || interpreter.Outcome.Kind != "returned" || interpreter.Outcome.Value != "105" {
-				t.Fatalf("engines=%+v, want interpreter returned 105", got.Engines)
-			}
+			phase273RequireDigest(t, got, "105", level)
 			phase273RequireNoSignalText(t, report)
 		})
 	}
