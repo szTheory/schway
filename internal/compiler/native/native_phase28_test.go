@@ -2,6 +2,7 @@ package native
 
 import (
 	"encoding/json"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -95,4 +96,47 @@ func decodePhase28Command(t *testing.T, stdout []byte) phase28Command {
 		t.Fatalf("decode command result: %v\n%s", err, stdout)
 	}
 	return decoded
+}
+
+// TestExitClassesUniformAcrossSurfaces pins ROADMAP SC1 (DX-17): one source
+// gets the same exit class and refusing code from check, build, run
+// --engine=interpreter and run --engine=native on the shipped binary. The
+// corevalidate fixture is the existing checker-clean duplicate_function_name
+// (D-24); no new .schway file exists for it.
+func TestExitClassesUniformAcrossSurfaces(t *testing.T) {
+	if _, err := exec.LookPath("clang"); err != nil {
+		t.Skipf("env:clang toolchain unavailable on this host: %v", err)
+	}
+	binary := testsupport.BuildCLI(t)
+	fixtures := []struct {
+		name string
+		path []string
+		code string
+	}{
+		{"duplicate_function_name", []string{"testdata", "phase07", "duplicate_function_name.schway"}, "core.duplicate_function_id"},
+		{"foreign_origin_omitted", []string{"testdata", "phase4", "foreign_origin_omitted.schway"}, "core.foreign_origin_omitted"},
+		{"payload_borrow_interaction", []string{"testdata", "phase12", "payload_borrow_interaction.schway"}, "core.entry_ambiguous"},
+	}
+	for _, fixture := range fixtures {
+		t.Run(fixture.name, func(t *testing.T) {
+			source := testsupport.ProjectPath(fixture.path...)
+			artifact := filepath.Join(t.TempDir(), "app")
+			surfaces := [][]string{
+				{"--json", "check", source},
+				{"--json", "build", source, "--output", artifact},
+				{"--json", "run", "--engine=interpreter", source},
+				{"--json", "run", "--engine=native", source},
+			}
+			for _, arguments := range surfaces {
+				result := testsupport.RunCLI(t, binary, nil, arguments...)
+				decoded := decodePhase28Command(t, result.Stdout)
+				if result.Exit != 2 || len(decoded.Diagnostics) == 0 || decoded.Diagnostics[0].Code != fixture.code {
+					t.Fatalf("%v: exit=%d diagnostics=%+v, want exit 2 %s (stdout=%s)", arguments, result.Exit, decoded.Diagnostics, fixture.code, result.Stdout)
+				}
+			}
+			if _, err := os.Stat(artifact); !os.IsNotExist(err) {
+				t.Fatalf("build left an artifact after a refusal: stat err=%v", err)
+			}
+		})
+	}
 }
