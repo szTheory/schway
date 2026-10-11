@@ -4298,8 +4298,20 @@ func checkFixtureOwnerPostAssembly(function core.Function) []diagnostic.Diagnost
 		}
 	}
 	if len(function.Linear.Blocks) > 0 {
-		if _, diag := loanLivenessFixpoint(function.ID, cfgBlocksForFunction(function), interproceduralSummaryTable{}, function.Span); diag != nil {
-			return []diagnostic.Diagnostic{*diag}
+		// Cycle refusal only: the same detectCFGCycle + cfgBackEdgeDiagnostic
+		// pair loanLivenessFixpoint uses, called directly so this law is not a
+		// fifth loanLivenessFixpoint caller (single-liveness-law scan, D-22).
+		blocks := cfgBlocksForFunction(function)
+		order := make([]string, 0, len(blocks))
+		byID := make(map[string]cfgBlockSpec, len(blocks))
+		var allOps []core.LinearOperation
+		for _, block := range blocks {
+			byID[block.id] = block
+			order = append(order, block.id)
+			allOps = append(allOps, block.operations...)
+		}
+		if cycleBlockID, cyclic := detectCFGCycle(order, byID); cyclic {
+			return []diagnostic.Diagnostic{cfgBackEdgeDiagnostic(function.ID, cycleBlockID, cfgBackEdgeCategory(allOps), function.Span)}
 		}
 	}
 	wantKinds := []core.OperationKind{core.OpForeignCall, core.OpForeignCall, core.OpCall, core.OpRelease, core.OpReturn}
