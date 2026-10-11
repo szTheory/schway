@@ -5,43 +5,43 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "Duplicate-`main` ambiguity reports the wrong roots and a misleading hint"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "A source refusal can be masked as exit 3 when the report write fails"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "A stale report file survives a refused or oversize run"
   - id: WR-04
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "A non-diagnostic `resolveEntry` error is silently tolerated in app verify"
   - id: IN-01
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`appRunExitCode` collides with child exit statuses by design"
   - id: IN-02
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`Phase4CheckedProgram` discards the pruned program"
-open: 6
+open: 0
 total: 6
-recorded: 2026-10-11T02:50:11.355Z
+recorded: 2026-10-11T03:04:10.516Z
 ---
 
 # Phase 28: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
-| WR-04 | warning | open | - |
-| IN-01 | info | open | - |
-| IN-02 | info | open | - |
+| WR-01 | warning | fixed | 28-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 28-REVIEW-FIX.md |
+| WR-03 | warning | fixed | 28-REVIEW-FIX.md |
+| WR-04 | warning | fixed | 28-REVIEW-FIX.md |
+| IN-01 | info | fixed | 28-REVIEW-FIX.md |
+| IN-02 | info | fixed | 28-REVIEW-FIX.md |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
