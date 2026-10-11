@@ -390,7 +390,7 @@ func ReduceSeededAliasMismatch(ctx context.Context) (reduce.MismatchDocument, er
 	}
 	seedSignature := SignatureFromDisagreement(disagreement, seedForeignSequence)
 	predicate := mismatchPredicate(baseRunner, fixturePath, nativeInput, seedSignature)
-	entryFunction, err := callgraph.EntryFunction(program)
+	entryFunction, err := entryOf(program)
 	if err != nil {
 		return reduce.MismatchDocument{}, fmt.Errorf("mismatch-reduce: resolving entry function: %w", err)
 	}

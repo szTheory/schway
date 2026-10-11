@@ -15,7 +15,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/szTheory/schway/internal/compiler/callgraph"
 	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/execution"
 	"github.com/szTheory/schway/internal/compiler/interp"
@@ -254,7 +253,16 @@ func VerifyApplicationCases(ctx context.Context, source []byte, cases ReplayCase
 	case applicationRefusedOrigin:
 		return report, fmt.Errorf("source origin validation failed: %s", adm.code)
 	}
+	// D-04/D-18: one entry resolution after admission and before the per-case
+	// loop; every engine below sees the pruned program. A refusal keeps the
+	// per-case "unsupported" result (source refusals become exit 2 in 28-07).
+	entry, prunedProgram, entryDiagnostics, entryErr := resolveEntry(adm.program)
 	program := adm.program
+	if entryErr == nil && len(entryDiagnostics) == 0 {
+		program = prunedProgram
+	} else if entryErr == nil {
+		entryErr = errors.New(entryDiagnostics[0].Code)
+	}
 	inputSet := make([]string, 0, len(cases.Cases))
 	indices := make([]int, 0, len(cases.Cases))
 	interpreted := make(map[int]execution.Execution)
@@ -290,7 +298,6 @@ func VerifyApplicationCases(ctx context.Context, source []byte, cases ReplayCase
 		default:
 			inputSet = append(inputSet, replayCase.Input)
 			indices = append(indices, len(report.Cases))
-			entry, entryErr := callgraph.EntryFunction(program)
 			if entryErr != nil || entry.Match != nil || entry.Linear == nil || entry.Parameter.Type != "U64" || entry.ReturnType != "U64" {
 				caseReport.Status = ReplayStatusUnsupported
 				caseReport.Diagnostic = "source replay requires a linear U64-to-U64 entry"

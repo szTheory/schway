@@ -317,8 +317,12 @@ func TestPruneToReachable(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(pruned.Functions) != 1 || pruned.Functions[0].ID != "fn:main" {
-			t.Fatalf("pruned = %+v", pruned.Functions)
+		var ids []string
+		for _, f := range pruned.Functions {
+			ids = append(ids, f.ID)
+		}
+		if !reflect.DeepEqual(ids, []string{"fn:main"}) {
+			t.Fatalf("pruned = %v", ids)
 		}
 	})
 	t.Run("unknown-entry", func(t *testing.T) {

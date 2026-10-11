@@ -15,7 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/szTheory/schway/internal/compiler/callgraph"
 	"github.com/szTheory/schway/internal/compiler/cgen"
 	"github.com/szTheory/schway/internal/compiler/check"
 	"github.com/szTheory/schway/internal/compiler/core"
@@ -508,7 +507,7 @@ func ProjectExecutionSchema2(program core.Program, document execution.Execution)
 	if document.Schema == execution.Schema2 {
 		return document, nil
 	}
-	entry, err := callgraph.EntryFunction(program)
+	entry, err := entryOf(program)
 	if err != nil {
 		return execution.Execution{}, err
 	}
@@ -599,9 +598,16 @@ func Phase4CheckedProgram(corpus, fixture string) (core.Program, string, error) 
 	// D-11-05: widened to permit N>1 functions -- callgraph.EntryFunction is
 	// the single resolver of "which function IS this program", replacing
 	// the old len(program.Functions) != 1 guard plus Functions[0] index.
-	entry, err := callgraph.EntryFunction(program)
+	// Phase 28 (pitfall 7): the entry is resolved through the single helper so
+	// ambiguity is refused here too, but the CHECKED (unpruned) program is
+	// returned: callers such as the Phase 11 differential look up dead
+	// functions in it by name, and prune per engine themselves.
+	entry, _, diagnostics, err := resolveEntry(program)
 	if err != nil {
 		return core.Program{}, "", fmt.Errorf("%s: %w", fixture, err)
+	}
+	if len(diagnostics) > 0 {
+		return core.Program{}, "", fmt.Errorf("%s: %s: %s", fixture, diagnostics[0].Code, diagnostics[0].Message)
 	}
 	return program, entry.Name, nil
 }
@@ -1099,6 +1105,13 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 		if err := pathoracle.ValidateLocalOwnerPaths(checked.Program); err != nil {
 			result.Status = protocol.StatusInvalid
 			result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error("core.pathoracle_refused", diagnostic.Span{}, err.Error())}
+		} else if _, _, entryDiagnostics, entryErr := resolveEntry(checked.Program); entryErr != nil {
+			return protocol.Result{}, entryErr
+		} else if len(entryDiagnostics) > 0 {
+			// D-02/D-18: entry ambiguity is a source refusal, decided after the
+			// checker and every admission step.
+			result.Status = protocol.StatusInvalid
+			result.Diagnostics = entryDiagnostics
 		} else {
 			result.ModuleID = checked.Program.ModuleID
 		}
@@ -1119,10 +1132,14 @@ func RunInterpreter(source []byte) ([]interp.Execution, []diagnostic.Diagnostic,
 	// D-11-05: widened to permit N>1 functions -- callgraph.EntryFunction
 	// replaces the old len(...Functions) != 1 guard, requiring a uniquely
 	// resolvable entry rather than exactly one declared function.
-	entry, err := callgraph.EntryFunction(checked.Program)
+	entry, pruned, entryDiagnostics, err := resolveEntry(checked.Program)
 	if err != nil {
 		return nil, nil, err
 	}
+	if len(entryDiagnostics) > 0 {
+		return nil, entryDiagnostics, nil
+	}
+	checked.Program = pruned
 	inputs, ok := interpreterInputs(checked.Program)
 	if !ok {
 		return nil, nil, os.ErrInvalid
@@ -1205,10 +1222,12 @@ func RunInterpreterApplication(source []byte, input string) (interp.ApplicationR
 	case applicationRefusedOrigin:
 		return interp.ApplicationResult{}, nil, fmt.Errorf("origin validation failed: %s", adm.code)
 	}
-	program := adm.program
-	entry, err := callgraph.EntryFunction(program)
+	entry, program, entryDiagnostics, err := resolveEntry(adm.program)
 	if err != nil {
 		return interp.ApplicationResult{}, nil, err
+	}
+	if len(entryDiagnostics) > 0 {
+		return interp.ApplicationResult{}, entryDiagnostics, nil
 	}
 	if entry.Match != nil || entry.Linear == nil || entry.Parameter.Type != "U64" || (entry.ReturnType != "U64" && entry.ReturnType != "Unit") {
 		return interp.ApplicationResult{}, nil, fmt.Errorf("application entry %q: only a linear U64-to-U64 or U64-to-Unit entry is supported", entry.ID)
@@ -1232,7 +1251,7 @@ func RunInterpreterApplication(source []byte, input string) (interp.ApplicationR
 // callers across this package are unaffected -- EntryFunction resolves
 // trivially to that sole function for every one of them.
 func interpreterInputs(program core.Program) ([]string, bool) {
-	function, err := callgraph.EntryFunction(program)
+	function, err := entryOf(program)
 	if err != nil {
 		return nil, false
 	}
@@ -1337,10 +1356,14 @@ func runNative(ctx context.Context, source []byte, runner NativeRunner, fixture 
 	checked.Program = validated.Program()
 	// D-11-05: widened to permit N>1 functions -- callgraph.EntryFunction
 	// replaces the old len(...Functions) != 1 guard.
-	entry, err := callgraph.EntryFunction(checked.Program)
+	entry, pruned, entryDiagnostics, err := resolveEntry(checked.Program)
 	if err != nil {
 		return NativeResult{}, nil, err
 	}
+	if len(entryDiagnostics) > 0 {
+		return NativeResult{}, entryDiagnostics, nil
+	}
+	checked.Program = pruned
 	inputs, ok := interpreterInputs(checked.Program)
 	if !ok {
 		return NativeResult{}, nil, os.ErrInvalid
