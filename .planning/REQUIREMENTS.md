@@ -21,7 +21,7 @@ rejected. M005's acceptance record is preserved at
 
 - [x] **BYTE-01**: Schway source can read the length of a read-only byte view and read the byte at an index, as an unsigned U64 value from 0 to 255. Checking, independent validation, interpretation, and C17 emission give these operations one defined meaning.
 - [x] **BYTE-02**: Every byte read is bounds-checked at run time on every engine and optimization level, and no check is elided. An out-of-range index is a defined defect: exit 65, stderr exactly `schway: byte index out of bounds`, and empty stdout.
-- [ ] **BYTE-03**: A scalar loop function can take a read-only byte view parameter and iterate over it while carrying only U64 and Bool state. No loan, owner, or resource crosses a loop back edge. Each unsound neighbor is refused with its existing stable code: borrowing inside the loop, copying, storing or returning the view, releasing or moving an owner in the loop, and owner or loan parameters on a loop function.
+- [x] **BYTE-03**: A scalar loop function can take a read-only byte view parameter and iterate over it while carrying only U64 and Bool state. No loan, owner, or resource crosses a loop back edge. Each unsound neighbor is refused with its existing stable code: borrowing inside the loop, copying, storing or returning the view, releasing or moving an owner in the loop, and owner or loan parameters on a loop function.
 
 ### Checksum applications
 
@@ -86,7 +86,7 @@ Each M006 requirement has one phase owner (see [ROADMAP.md](ROADMAP.md)).
 | EVD-13 | Phase 28 | Complete |
 | BYTE-01 | Phase 29 | Complete |
 | BYTE-02 | Phase 29 | Complete |
-| BYTE-03 | Phase 29 | Pending |
+| BYTE-03 | Phase 29 | Complete |
 | APP-10 | Phase 29 | Complete |
 | APP-11 | Phase 31 | Pending |
 | APP-12 | Phase 31 | Pending |

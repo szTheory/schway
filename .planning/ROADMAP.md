@@ -125,7 +125,7 @@ Plans:
 
 **Research flag**: Spike first. Before planning, settle: (a) a ByteView argument through `OpCall` in check's caller path and originvalidate's call-site derivation; (b) parser lookahead for byte length and indexing in scalar bodies; (c) release-while-loan-live refused by check, corevalidate, and pathoracle; (d) interpreter and native cost of 65,536 iterations, which confirms or lowers the 65,536-byte cap on recorded evidence; (e) no evented stores in the loop; (f) how the fixture's literal bytes reach the byte view before the Phase 31 file adapter exists (research proposes synthetic input to the conformance runner). Surface syntax for byte reads is decided at discussion.
 
-**Plans**: 3/13 plans executed
+**Plans**: 4/13 plans executed
 
 Plans:
 **Wave 1**
@@ -136,7 +136,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 - [x] 29-02-PLAN.md — Byte-read surface: arity codes, reserved builtin names, let-first ByteView bodies, formatter goldens (wave 3)
-- [ ] 29-03-PLAN.md — Independent peer laws with seeded faults, loop-function neighbor refusals plus per-peer seeded neighbor faults (D-22), no per-byte events (wave 3)
+- [x] 29-03-PLAN.md — Independent peer laws with seeded faults, loop-function neighbor refusals plus per-peer seeded neighbor faults (D-22), no per-byte events (wave 3)
 - [ ] 29-04-PLAN.md — OOB evidence: schema-2 reason, execution peer arm, interpreter boundary, bounds-check ordering in both C shells (wave 3)
 - [ ] 29-05-PLAN.md — Test-only fixture bytes adapter and independent Go generator, proven byte-identical (wave 3)
 
@@ -226,7 +226,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 28. Exit Classes, Verify Report, and Entry Pruning | 8/8 | Complete    | 2026-10-11 |
-| 29. Byte Views and the Adler-32 Library | 3/13 | In Progress | - |
+| 29. Byte Views and the Adler-32 Library | 4/13 | In Progress | - |
 | 30. Local Modules | 0/TBD | Not started | - |
 | 31. Bounded File Checksum and Second Consumer | 0/TBD | Not started | - |
 | 32. Clean-Checkout Guide and Final Receipts | 0/TBD | Not started | - |
