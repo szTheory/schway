@@ -1538,24 +1538,19 @@ func RunNativeFile(ctx context.Context, path string, runner NativeRunner) (Nativ
 	if err != nil {
 		return NativeResult{}, nil, err
 	}
-	relative, relErr := filepath.Rel(nat03ProjectRoot(), path)
-	if relErr != nil {
-		return NativeResult{}, nil, relErr
-	}
-	return runNative(ctx, source, runner, filepath.ToSlash(relative))
+	return runNative(ctx, source, runner, filepath.ToSlash(path))
 }
 
 // runNativeCommand is the command-file native lane: Check, admitProgram on
 // the full program (D-10, before resolveEntry, cgen or any clang run), then
-// resolveEntry and runNativeChecked.
+// resolveEntry and runNativeChecked. The fixture argument is the
+// caller-supplied path, informational only (Phase16ControlNativeC does not
+// read it); no path arithmetic may precede Check so relative and absolute
+// paths behave identically (G-28-3).
 func runNativeCommand(ctx context.Context, path string, runner NativeRunner) (NativeResult, []diagnostic.Diagnostic, error) {
 	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
 	if err != nil {
 		return NativeResult{}, nil, err
-	}
-	relative, relErr := filepath.Rel(nat03ProjectRoot(), path)
-	if relErr != nil {
-		return NativeResult{}, nil, relErr
 	}
 	checked := Check(source)
 	if len(checked.Diagnostics) > 0 {
@@ -1573,7 +1568,7 @@ func runNativeCommand(ctx context.Context, path string, runner NativeRunner) (Na
 	if len(entryDiagnostics) > 0 {
 		return NativeResult{}, entryDiagnostics, nil
 	}
-	return runNativeChecked(ctx, checked, entry, pruned, runner, filepath.ToSlash(relative))
+	return runNativeChecked(ctx, checked, entry, pruned, runner, filepath.ToSlash(path))
 }
 
 func RunNativeCommandFile(ctx context.Context, path string, runner NativeRunner) (protocol.Result, error) {
