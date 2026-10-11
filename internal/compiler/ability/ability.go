@@ -154,6 +154,22 @@ func (d *deriver) deriveAt(shape core.TypeRef, depth int) (derivedShape, error) 
 				core.AbilityCopy: {"Buffer"},
 			},
 		}, nil
+	case "ByteView":
+		if len(shape.Arguments) != 0 {
+			return derivedShape{}, fmt.Errorf("ByteView takes no type arguments")
+		}
+		// ByteView is a harness-delivered read-only byte window that may be
+		// dropped but never duplicated, shared, sent or allowed to escape
+		// (D-17).
+		return derivedShape{
+			set: abilitySet{drop: true},
+			witnesses: map[core.Ability][]string{
+				core.AbilityCopy:   {"ByteView"},
+				core.AbilityShare:  {"ByteView"},
+				core.AbilitySend:   {"ByteView"},
+				core.AbilityEscape: {"ByteView"},
+			},
+		}, nil
 	case "FileByteOwner":
 		if len(shape.Arguments) != 0 {
 			return derivedShape{}, fmt.Errorf("FileByteOwner takes no type arguments")

@@ -292,7 +292,7 @@ func SetOriginScalarTransferBudgetForTest(budget int) func() {
 
 func originHasScalarCFG(function core.Function) bool {
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline || operation.Kind == core.OpWriteText {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpBytesLen || operation.Kind == core.OpBytesAt || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline || operation.Kind == core.OpWriteText {
 			return true
 		}
 	}
@@ -312,7 +312,8 @@ func originScalarFixedPointWithFailure(function core.Function) (bool, string) {
 		types[fact.ID] = fact.Shape.Constructor
 	}
 	for _, place := range linear.Places {
-		if types[place.TypeID] != "U64" && types[place.TypeID] != "Bool" {
+		viewParameter := types[place.TypeID] == "ByteView" && place.ID == function.Parameter.ID && function.Parameter.Type == "ByteView"
+		if types[place.TypeID] != "U64" && types[place.TypeID] != "Bool" && !viewParameter {
 			return false, ""
 		}
 		placeTypes[place.ID] = types[place.TypeID]
@@ -467,6 +468,15 @@ func originTransferScalarOperation(operation core.LinearOperation, state originS
 			value.known, value.u64 = true, source.u64%right.u64
 		}
 		state[operation.TargetID] = value
+	case core.OpBytesLen, core.OpBytesAt:
+		right := state[operation.RightID]
+		if !source.initialized || placeTypes[operation.SourceID] != "ByteView" || placeTypes[operation.TargetID] != "U64" {
+			return false
+		}
+		if operation.Kind == core.OpBytesAt && (!right.initialized || placeTypes[operation.RightID] != "U64") {
+			return false
+		}
+		state[operation.TargetID] = originScalarValue{initialized: true}
 	case core.OpScalarStore:
 		if !source.initialized || placeTypes[operation.SourceID] != placeTypes[operation.StoreTargetID] {
 			return false

@@ -702,6 +702,8 @@ const (
 	OpLessU64            OperationKind = "less_u64"
 	OpEqualU64           OperationKind = "equal_u64"
 	OpRemainderU64       OperationKind = "remainder_u64"
+	OpBytesLen           OperationKind = "bytes_len"
+	OpBytesAt            OperationKind = "bytes_at"
 	OpScalarStore        OperationKind = "scalar_store"
 	OpBranch             OperationKind = "branch"
 	// OpWriteU64 is a bounded output event with one typed U64 operand. It
@@ -856,7 +858,7 @@ const CalleeFrameNotDrained = "core.callee_frame_not_drained"
 // slice is exactly the defect this registry exists to catch --
 // TestAllOperationKindsRegistered fails the moment the two counts diverge.
 func AllOperationKinds() []OperationKind {
-	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConst, OpConstructPayload, OpDestructurePayload, OpAddChecked, OpLessU64, OpEqualU64, OpRemainderU64, OpScalarStore, OpBranch, OpWriteU64, OpWriteNewline, OpWriteText}
+	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConst, OpConstructPayload, OpDestructurePayload, OpAddChecked, OpLessU64, OpEqualU64, OpRemainderU64, OpScalarStore, OpBranch, OpWriteU64, OpWriteNewline, OpWriteText, OpBytesLen, OpBytesAt}
 }
 
 // TerminatorKinds returns exactly the operation kinds that end a block --

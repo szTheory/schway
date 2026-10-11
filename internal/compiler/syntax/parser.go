@@ -536,6 +536,22 @@ func (p *parser) scalarExprAtom() *ast.Expr {
 		if leftToken.Kind != TokenIdentifier {
 			p.problem("syntax.expected_scalar_operand", leftToken, "expected a scalar operand")
 		}
+		if leftToken.Kind == TokenIdentifier && p.peek().Kind == TokenLParen {
+			switch leftToken.Text {
+			case "byte_len":
+				p.advance()
+				view := p.expect(TokenIdentifier, "syntax.expected_scalar_operand")
+				end := p.expect(TokenRParen, "syntax.expected_scalar_operand")
+				return &ast.Expr{Kind: "byte_len", Name: view.Text, Span: diagnostic.Span{Start: leftToken.Span.Start, End: end.Span.End}}
+			case "byte_at":
+				p.advance()
+				view := p.expect(TokenIdentifier, "syntax.expected_scalar_operand")
+				p.expect(TokenComma, "syntax.expected_scalar_operand")
+				index := p.scalarExpr()
+				end := p.expect(TokenRParen, "syntax.expected_scalar_operand")
+				return &ast.Expr{Kind: "byte_at", Name: view.Text, Right: index, Span: diagnostic.Span{Start: leftToken.Span.Start, End: end.Span.End}}
+			}
+		}
 		return &ast.Expr{Kind: "name", Name: leftToken.Text, Span: leftToken.Span}
 	}
 }

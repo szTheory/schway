@@ -680,6 +680,34 @@ func runLinear(program core.Program, function core.Function, input string) (Exec
 	return runProgramFrameStack(program, base)
 }
 
+// RunByteViewForTest is the harness entry for Stage A and evidence tests: it
+// runs the named function with its single ByteView parameter bound to a copy
+// of bytes. It is not a public input route and is reachable from no CLI path
+// (D-14).
+func RunByteViewForTest(program core.Program, functionName string, bytes []byte) (Execution, error) {
+	validated := corevalidate.Validate(program)
+	if !validated.Valid {
+		return Execution{}, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	program = validated.Program()
+	function, ok := findFunction(program, functionName)
+	if !ok {
+		return Execution{}, fmt.Errorf("function %q is absent from checked core", functionName)
+	}
+	if function.Linear == nil || function.Match != nil || function.Parameter.Type != "ByteView" {
+		return Execution{}, fmt.Errorf("function %q does not take a ByteView parameter", functionName)
+	}
+	initial := value{bytes: append([]byte{}, bytes...), isBytes: true}
+	values := map[string]value{function.Parameter.ID: initial}
+	var base frame
+	if len(function.Linear.Blocks) > 0 {
+		base = newBlockFrame(function, values, function.ID+":block:entry")
+	} else {
+		base = newFlatFrame(function, values)
+	}
+	return runProgramFrameStack(program, base)
+}
+
 // inputValue mirrors the production emitter's closed test-input convention:
 // data parameters receive the requested alternative and the same canonical
 // payload bytes that native main initializes for that alternative.
@@ -822,12 +850,16 @@ type frame struct {
 // named parallel-map anti-pattern) -- this single struct is the one
 // widened representation every frame.values entry uses.
 type value struct {
-	tag               string
-	payload           string
-	u64               uint64
-	isU64             bool
-	boolean           bool
-	isBool            bool
+	tag     string
+	payload string
+	u64     uint64
+	isU64   bool
+	boolean bool
+	isBool  bool
+	// bytes is the read-only payload of a ByteView value (Phase 29); isBytes
+	// distinguishes an empty view from a non-view value.
+	bytes             []byte
+	isBytes           bool
 	ownerOperationID  string
 	ownerActivationID string
 }
@@ -1418,6 +1450,30 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourceList(top.live, top.liveOrder)}, nil
 			}
 			top.values[operation.TargetID] = value{u64: sourceValue.u64 % right.u64, isU64: true}
+			top.idx++
+		case core.OpBytesLen:
+			if !sourceValue.isBytes {
+				return Execution{}, fmt.Errorf("operation %q byte_len operand is not a byte view", operation.ID)
+			}
+			top.values[operation.TargetID] = value{u64: uint64(len(sourceValue.bytes)), isU64: true}
+			top.idx++
+		case core.OpBytesAt:
+			index, initialized := top.values[operation.RightID]
+			if !initialized || !sourceValue.isBytes || !index.isU64 {
+				return Execution{}, fmt.Errorf("operation %q has invalid byte_at operands", operation.ID)
+			}
+			// The bounds comparison precedes every slice index (BYTE-02).
+			if index.u64 >= uint64(len(sourceValue.bytes)) {
+				const reason = "byte index out of bounds"
+				events = append(events, Event{
+					Schema: top.eventSchema(), ID: operation.ID + ":event:defected", Kind: "function.defected",
+					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
+					TypeID: operation.TypeID, Output: reason,
+				})
+				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResourceList(top.live, top.liveOrder)}, nil
+			}
+			// The octet widens as unsigned, never as a code point or signed byte.
+			top.values[operation.TargetID] = value{u64: uint64(sourceValue.bytes[index.u64]), isU64: true}
 			top.idx++
 		case core.OpScalarStore:
 			top.values[operation.StoreTargetID] = sourceValue

@@ -242,6 +242,18 @@ var phase28NewlyAddedEntries = map[string]phase28ManifestEntry{
 		Entry:          "main",
 		DeadFunctions:  []string{"s1:examples.phase28.unused_function:fn:unused"},
 	},
+	// 2026-10-11 (Phase 29, plan 29-00): the adler32 byte-view library; its
+	// adler32 function is dead from main and pruned per engine.
+	"testdata/phase29/adler32_library.schway": {
+		Path:           "testdata/phase29/adler32_library.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.tool_missing"},
+		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
+		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_failure"},
+		EntryShape:     "multi-root-main",
+		Entry:          "main",
+		DeadFunctions:  []string{"s1:testdata.phase29.adler32_library:fn:adler32"},
+	},
 }
 
 type phase28Manifest struct {

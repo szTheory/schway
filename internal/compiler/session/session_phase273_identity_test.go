@@ -52,6 +52,9 @@ var phase273NewlyAcceptedPaths = map[string]bool{
 	// 2026-10-10 (Phase 28, D-20): new runnable example added after the
 	// golden was generated; golden stays frozen (D-23).
 	"examples/phase28/unused_function.schway": true,
+	// 2026-10-11 (Phase 29, plan 29-00): adler32 byte-view library fixture;
+	// golden stays frozen (D-23).
+	"testdata/phase29/adler32_library.schway": true,
 }
 
 // phase273EntryPrecedencePaths lists the only golden entries whose

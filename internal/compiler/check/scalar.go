@@ -32,12 +32,21 @@ type scalarBuilder struct {
 var scalarAnalysisBudgetForTest int
 
 func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Function, []diagnostic.Diagnostic, int) {
-	if function.Parameter.Type.Constructor != "U64" || (function.ReturnType.Constructor != "U64" && function.ReturnType.Constructor != "Unit") {
+	byteView := function.Parameter.Type.Constructor == "ByteView" && len(function.Parameter.Type.Arguments) == 0
+	if (function.Parameter.Type.Constructor != "U64" && !byteView) || (function.ReturnType.Constructor != "U64" && function.ReturnType.Constructor != "Unit") {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.scalar_signature", function.Span, "scalar CFG functions require U64 input and either U64 or Unit output")}, 1
 	}
 	b := &scalarBuilder{function: function, functionID: functionID, types: map[string]string{}, places: map[string]core.Place{}, names: map[string]string{}, initialized: map[string]bool{}, remainderSpans: map[string]diagnostic.Span{}}
 	b.linear = core.LinearBody{ID: functionID + ":linear"}
-	for _, name := range []string{"U64", "Bool", "Unit"} {
+	typeNames := []string{"U64", "Bool", "Unit"}
+	parameterType := "U64"
+	if byteView {
+		// The ByteView fact is :type:0 only for ByteView-parameter functions;
+		// every U64-parameter function keeps its existing type-fact order.
+		typeNames = []string{"ByteView", "U64", "Bool", "Unit"}
+		parameterType = "ByteView"
+	}
+	for _, name := range typeNames {
 		shape := core.TypeRef{Constructor: name}
 		derived, err := ability.Derive(shape)
 		if err != nil {
@@ -47,7 +56,7 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 		b.linear.Types = append(b.linear.Types, core.TypeFact{ID: id, Shape: shape, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses})
 		b.types[name] = id
 	}
-	parameter := b.addPlace(function.Parameter.Name, "U64", false)
+	parameter := b.addPlace(function.Parameter.Name, parameterType, false)
 	b.names[function.Parameter.Name] = parameter.ID
 	b.initialized[parameter.ID] = true
 	b.newBlock("entry")
@@ -86,7 +95,7 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 		return core.Function{}, b.diagnostics, b.work
 	}
 	b.linear.Blocks, b.linear.Edges = b.blocks, b.edges
-	checked := core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: parameter.ID, Name: function.Parameter.Name, Type: "U64"}, ReturnType: function.ReturnType.Constructor, Linear: &b.linear, Span: function.Span}
+	checked := core.Function{ID: functionID, Name: function.Name, EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return", Parameter: core.Parameter{ID: parameter.ID, Name: function.Parameter.Name, Type: parameterType}, ReturnType: function.ReturnType.Constructor, Linear: &b.linear, Span: function.Span}
 	analysisWork, refusal, category := checkScalarFixedPointDetailed(checked)
 	b.work += analysisWork
 	if refusal != "" {
@@ -227,6 +236,17 @@ func checkScalarFixedPointDetailed(function core.Function) (int, string, string)
 						fact.known, fact.u64 = true, source.u64%right.u64
 					}
 					state[op.TargetID] = fact
+				case core.OpBytesLen:
+					if !source.initialized {
+						return work, "check.scalar_uninitialized", ""
+					}
+					state[op.TargetID] = checkerScalarFact{initialized: true}
+				case core.OpBytesAt:
+					right := state[op.RightID]
+					if !source.initialized || !right.initialized {
+						return work, "check.scalar_uninitialized", ""
+					}
+					state[op.TargetID] = checkerScalarFact{initialized: true}
 				case core.OpScalarStore:
 					if !source.initialized {
 						return work, "check.scalar_uninitialized", ""
@@ -635,6 +655,31 @@ func (b *scalarBuilder) expression(expr *ast.Expr) (string, string) {
 		}
 		b.initialized[place.ID] = true
 		return place.ID, resultType
+	case "byte_len", "byte_at":
+		view, ok := b.names[expr.Name]
+		if !ok {
+			b.refuse("name.unknown_place", expr.Span, "unknown scalar local")
+			return "", ""
+		}
+		if b.types["ByteView"] == "" || b.places[view].TypeID != b.types["ByteView"] {
+			b.refuse("type.scalar_operand", expr.Span, "byte read requires the ByteView parameter")
+			return "", ""
+		}
+		if expr.Kind == "byte_len" {
+			place := b.addPlace("scalar", "U64", false)
+			b.addOperation(core.LinearOperation{Kind: core.OpBytesLen, SourceID: view, TargetID: place.ID, TypeID: b.types["U64"]})
+			b.initialized[place.ID] = true
+			return place.ID, "U64"
+		}
+		index, indexType := b.expression(expr.Right)
+		if indexType != "U64" {
+			b.refuse("type.scalar_operand", expr.Span, "byte index must be U64")
+			return "", ""
+		}
+		place := b.addPlace("scalar", "U64", false)
+		b.addOperation(core.LinearOperation{Kind: core.OpBytesAt, SourceID: view, RightID: index, TargetID: place.ID, TypeID: b.types["U64"]})
+		b.initialized[place.ID] = true
+		return place.ID, "U64"
 	default:
 		b.refuse("syntax.scalar_expression", expr.Span, "unsupported scalar expression")
 		return "", ""

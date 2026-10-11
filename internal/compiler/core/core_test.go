@@ -797,7 +797,7 @@ func splitPath(path string) []string {
 // listed twice, so a constant added without registering it is caught
 // (D-04-22).
 func TestAllOperationKindsRegistered(t *testing.T) {
-	const declaredCount = 22 // legacy kinds plus Phase 26 scalar CFG and Phase 27 arithmetic/text writes
+	const declaredCount = 24 // legacy kinds plus Phase 26 scalar CFG, Phase 27 arithmetic/text writes and Phase 29 byte-view reads
 	all := core.AllOperationKinds()
 	if len(all) != declaredCount {
 		t.Fatalf("AllOperationKinds() has %d entries, want %d", len(all), declaredCount)
@@ -911,6 +911,7 @@ var exhaustiveDispatchFixtures = []string{
 	"testdata/phase19/literal_tracer.schway",
 	"examples/sum_to_n.schway",
 	"examples/fizzbuzz.schway",
+	"testdata/phase29/adler32_library.schway",
 }
 
 // runExhaustiveDispatchControl is control:kind.exhaustive_dispatch.phase07_in_process's

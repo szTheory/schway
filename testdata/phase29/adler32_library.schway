@@ -1,0 +1,43 @@
+module testdata.phase29.adler32_library
+
+export {
+  fn main
+}
+
+fn adler32(bytes: ByteView) -> U64 {
+  var a = 1
+  var b = 0
+  var i = 0
+  var n = byte_len(bytes)
+  while i < n {
+    a = a + byte_at(bytes, i)
+    a = a % 65521
+    b = b + a
+    b = b % 65521
+    i = i + 1
+  }
+  var r = b
+  r = r + r
+  r = r + r
+  r = r + r
+  r = r + r
+  r = r + r
+  r = r + r
+  r = r + r
+  r = r + r
+  r = r + r
+  r = r + r
+  r = r + r
+  r = r + r
+  r = r + r
+  r = r + r
+  r = r + r
+  r = r + r
+  r = r + a
+  r
+}
+
+fn main(n: U64) -> U64 {
+  var kept = n
+  kept
+}
