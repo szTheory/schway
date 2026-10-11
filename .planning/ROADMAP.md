@@ -81,7 +81,7 @@ preserving the acceptance behavior below.
 
 **Research flag**: Standard. Enumerate and pin every test, guide script, and hosted gate that asserts an exit code before changing any (PITFALLS 13); never renumber 65 or 69. N3 (duplicated capacity literal) is folded into the named table.
 
-**Plans**: 7/8 plans complete (28-08 gap closure for G-28-3 pending)
+**Plans**: 8/8 plans executed (28-08 gap closure for G-28-3 pending)
 
 Plans:
 **Wave 1**
@@ -104,7 +104,7 @@ Plans:
 - [x] 28-07-PLAN.md — App verify source refusals exit 2; README exit table; living-docs transition (wave 6)
 
 **Gap closure** *(UAT G-28-3)*
-- [ ] 28-08-PLAN.md — Relative-path `run --engine=native` reaches Check (drop build-root path arithmetic); relative rows across all four surfaces
+- [x] 28-08-PLAN.md — Relative-path `run --engine=native` reaches Check (drop build-root path arithmetic); relative rows across all four surfaces
 
 ### Phase 29: Byte Views and the Adler-32 Library
 
@@ -195,7 +195,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 28. Exit Classes, Verify Report, and Entry Pruning | 7/7 | Complete    | 2026-10-10 |
+| 28. Exit Classes, Verify Report, and Entry Pruning | 8/8 | In Progress |  |
 | 29. Byte Views and the Adler-32 Library | 0/TBD | Not started | - |
 | 30. Local Modules | 0/TBD | Not started | - |
 | 31. Bounded File Checksum and Second Consumer | 0/TBD | Not started | - |

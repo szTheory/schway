@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: M006
 milestone_name: Bounded Byte Utility and Local Modules
 current_phase: 28
-current_phase_name: exit-classes-verify-report-and-entry-pruning
+current_phase_name: Exit Classes, Verify Report, and Entry Pruning
 status: executing
-stopped_at: Phase 28 gap closure 28-08 (G-28-3) planned, ready to execute
-last_updated: "2026-10-11T19:04:13.462Z"
+stopped_at: Completed 28-08-PLAN.md
+last_updated: "2026-10-11T19:15:42.849Z"
 last_activity: 2026-10-11
-last_activity_desc: Phase 28 UAT found G-28-3; gap-closure plan 28-08 created
-state_head: cf9bf0e5273723ecb56e5291b3b7d0cf56c7321e
+last_activity_desc: Phase 28 execution started
+state_head: 0d91b86e6a819c974f60fe3a56bd5463e0aa6196
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
   percent: 20
 ---
 
@@ -56,7 +56,7 @@ See: .planning/PROJECT.md (updated 2026-10-10)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 29 — Byte Views and the Adler-32 Library
+**Current focus:** Phase 28 — Exit Classes, Verify Report, and Entry Pruning
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -123,10 +123,10 @@ plans.
 ## Current Position
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
-Phase: 28 (exit-classes-verify-report-and-entry-pruning) — READY TO EXECUTE
-Plan: Not started
+Phase: 28 (Exit Classes, Verify Report, and Entry Pruning) — EXECUTING
+Plan: 2 of 8
 Status: Ready to execute
-Last activity: 2026-10-11 — Phase 28 UAT found G-28-3 (relative native run exits 3); gap-closure plan 28-08 created
+Last activity: 2026-10-11 — Phase 28 execution started
 
 Progress: [██░░░░░░░░] 20% (1/5 M006 phases)
 
@@ -867,8 +867,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-11T02:46:51.028Z
-Stopped at: Phase 28 complete, ready to plan Phase 29
+Last session: 2026-10-11T19:15:42.823Z
+Stopped at: Completed 28-08-PLAN.md
 Resume file: None
 Next action: Phase 28 complete and verified (4/4, 2026-10-10). Optional: /gsd-code-review 28 --fix --all for the 6 open review findings (WR-02 exit-3-on-write-failure, WR-04 latent entryErr). Then /gsd-discuss-phase 29.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
