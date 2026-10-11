@@ -42,6 +42,9 @@ var phase272NewlyAcceptedPaths = map[string]bool{
 	// 2026-10-11 (Phase 29, plan 29-06): fixture-owner adler32 program;
 	// golden stays frozen (D-23).
 	"examples/phase29/adler32_fixture.schway": true,
+	// 2026-10-11 (Phase 29, plan 29-10): out-of-bounds control; golden stays
+	// frozen (D-23).
+	"examples/phase29/byte_index_oob.schway": true,
 }
 
 // phase272EntryPrecedencePaths lists the only golden entries whose

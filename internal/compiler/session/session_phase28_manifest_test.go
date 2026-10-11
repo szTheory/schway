@@ -271,6 +271,17 @@ var phase28NewlyAddedEntries = map[string]phase28ManifestEntry{
 		EntryShape:     "single-root",
 		Entry:          "main",
 	},
+	// 2026-10-11 (Phase 29, plan 29-10): the out-of-bounds control; same
+	// manifest-less observations as the fixture program it is cut from.
+	"examples/phase29/byte_index_oob.schway": {
+		Path:           "examples/phase29/byte_index_oob.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
+		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
+		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_failure"},
+		EntryShape:     "single-root",
+		Entry:          "main",
+	},
 }
 
 type phase28Manifest struct {

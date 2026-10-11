@@ -114,6 +114,12 @@ func (r Runner) evidenceCapacityLimit() int {
 
 var applicationFlags = []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", "-O0"}
 
+// applicationCSourceMutationForTest is a test-only seam (Phase 29, D-07): when
+// non-nil, BuildApplication rewrites the emitted C before digesting and
+// compiling it. It is nil in production and is only assigned from a _test.go
+// file in this package.
+var applicationCSourceMutationForTest func(string) string
+
 func applicationReceiptPath(artifactPath string) string {
 	return artifactPath + ".schway-build.json"
 }
@@ -126,6 +132,9 @@ func BuildApplication(ctx context.Context, source []byte, cSource, outputPath st
 }
 
 func (r Runner) BuildApplication(parent context.Context, source []byte, cSource, outputPath string, manifestPath ...string) (BuildReceipt, error) {
+	if applicationCSourceMutationForTest != nil {
+		cSource = applicationCSourceMutationForTest(cSource)
+	}
 	if r.ClangPath == "" {
 		r.ClangPath = "clang"
 	}
