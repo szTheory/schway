@@ -99,6 +99,16 @@ func Program(program ast.Program) Result {
 	// an OpCall operation ID onto a source span. No Span is added to
 	// core.LinearOperation.
 	spanByOperationID := map[string]diagnostic.Span{}
+	// D-04: byte_len and byte_at are reserved byte-read builtins; a user
+	// function of either name would shadow the scalar atom.
+	for _, function := range program.Funcs {
+		if function.Name == "byte_len" || function.Name == "byte_at" {
+			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("check.reserved_builtin_name", function.Span, "byte_len and byte_at are reserved byte-read builtins"))
+		}
+	}
+	if len(result.Diagnostics) > 0 {
+		return result
+	}
 	hasMatch, hasLinear := false, false
 	for _, function := range program.Funcs {
 		if function.Body.Linear != nil {
