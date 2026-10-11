@@ -116,3 +116,53 @@ func TestPhase29FixtureBytesGeneratorsAgree(t *testing.T) {
 		t.Error("Go generator accepted case 10")
 	}
 }
+
+const phase29RefuseDriver = `#include <stdio.h>
+#include "adapter.h"
+
+int main(void) {
+  uint64_t ids[2] = {UINT64_C(10), UINT64_MAX};
+  int i;
+  for (i = 0; i < 2; i++) {
+    schway_fixture_bytes_acquire_result got = schway_fixture_bytes_acquire(ids[i]);
+    printf("%d %d %s\n", i, (int)got.status, got.owner.data == NULL ? "null" : "set");
+  }
+  return 0;
+}
+`
+
+const phase29ReleaseDriver = `#include <stdio.h>
+#include "adapter.h"
+
+int main(void) {
+  uint64_t id;
+  for (id = UINT64_C(0); id < UINT64_C(10); id++) {
+    schway_fixture_bytes_acquire_result got = schway_fixture_bytes_acquire(id);
+    if (got.status != SCHWAY_FIXTURE_BYTES_OK) return 3;
+    schway_fixture_bytes_view_result view = schway_fixture_bytes_view(got.owner);
+    unsigned long long sum = 0;
+    for (uint64_t k = 0; k < view.length; k++) sum += view.data[k];
+    printf("%llu %llu\n", (unsigned long long)id, sum);
+    schway_fixture_bytes_release(got.owner);
+  }
+  return 0;
+}
+`
+
+func TestPhase29FixtureBytesUnknownCaseRefused(t *testing.T) {
+	t.Run("refusal", func(t *testing.T) {
+		binary := phase29BuildDriver(t, phase29RefuseDriver)
+		got := strings.TrimSpace(phase29RunDriver(t, binary))
+		want := "0 1 null\n1 1 null"
+		if got != want {
+			t.Fatalf("refusal output = %q, want %q", got, want)
+		}
+	})
+	t.Run("asan", func(t *testing.T) {
+		binary := phase29BuildDriver(t, phase29ReleaseDriver, "-fsanitize=address", "-g")
+		lines := strings.Split(strings.TrimSpace(phase29RunDriver(t, binary)), "\n")
+		if len(lines) != 10 {
+			t.Fatalf("release driver printed %d lines, want 10", len(lines))
+		}
+	})
+}
