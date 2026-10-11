@@ -216,6 +216,12 @@ func VerifyApplicationCasesFile(ctx context.Context, sourcePath, casesPath, repo
 	}
 	report, verifyErr := VerifyApplicationCases(ctx, source, cases, runner)
 	if err := writeApplicationVerificationReport(reportPath, report); err != nil {
+		// Keep the verification error visible (errors.As still finds a
+		// *SourceRefusalError, so the CLI keeps exit 2) alongside the
+		// report-write failure.
+		if verifyErr != nil {
+			return report, errors.Join(verifyErr, err)
+		}
 		return report, err
 	}
 	return report, verifyErr

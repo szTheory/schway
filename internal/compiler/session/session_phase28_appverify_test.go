@@ -314,3 +314,34 @@ func TestAppVerifySixteenExhausted(t *testing.T) {
 	}
 	t.Logf("sixteen exhausted cases wrote a %d byte report (limit %d)", info.Size(), session.MaxReplayCasesBytes)
 }
+
+func phase28WriteRefusedInputs(t *testing.T) (sourcePath, casesPath string) {
+	t.Helper()
+	dir := t.TempDir()
+	sourcePath = filepath.Join(dir, "refused.schway")
+	if err := os.WriteFile(sourcePath, []byte("fn main(x: U64) -> U64 {\n  undefined_name\n}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := json.Marshal(phase271ReplayCases())
+	if err != nil {
+		t.Fatal(err)
+	}
+	casesPath = filepath.Join(dir, "cases.json")
+	if err := os.WriteFile(casesPath, encoded, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return sourcePath, casesPath
+}
+
+// TestAppVerifyRefusalSurvivesReportWriteFailure pins WR-02: a source refusal
+// stays a typed *SourceRefusalError (exit 2) even when the report cannot be
+// written.
+func TestAppVerifyRefusalSurvivesReportWriteFailure(t *testing.T) {
+	sourcePath, casesPath := phase28WriteRefusedInputs(t)
+	reportPath := filepath.Join(t.TempDir(), "missing-dir", "report.json")
+	_, err := session.VerifyApplicationCasesFile(context.Background(), sourcePath, casesPath, reportPath, native.DefaultRunner())
+	var refusal *session.SourceRefusalError
+	if !errors.As(err, &refusal) {
+		t.Fatalf("err = %v, want a *SourceRefusalError despite the report write failure", err)
+	}
+}
