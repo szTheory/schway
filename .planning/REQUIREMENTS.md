@@ -15,7 +15,7 @@ rejected. M005's acceptance record is preserved at
 
 - [x] **DX-17**: Every source refusal exits 2 with the refusing layer's code: checker, core validator, origin validator, and entry resolution. Tool, IO, and timeout failures exit 3, and engine disagreement exits 4. `build`, `check`, and `run` report the same class and code for the same source, and so do `run --engine=interpreter` and `run --engine=native` (closes W2 and W3). Exit codes come from one named table instead of duplicated literals (closes N3).
 - [x] **DX-18**: A program that contains functions unreachable from `main` runs instead of failing with `callgraph.entry_ambiguous` as an operational error. Unreachable functions are pruned before validation and emission. A genuinely ambiguous entry is a source refusal (exit 2). Programs whose functions are all reachable keep byte-identical generated C.
-- [ ] **EVD-13**: `app verify` keeps the named `native.event_capacity_exhausted` reason for every exhausted case, including `sum_to_n` at n = 173 and n = 1,000 and a set of 16 exhausted cases. The report stays within its size limit and is never counted as success (closes N1).
+- [x] **EVD-13**: `app verify` keeps the named `native.event_capacity_exhausted` reason for every exhausted case, including `sum_to_n` at n = 173 and n = 1,000 and a set of 16 exhausted cases. The report stays within its size limit and is never counted as success (closes N1).
 
 ### Byte views
 
@@ -83,7 +83,7 @@ Each M006 requirement has one phase owner (see [ROADMAP.md](ROADMAP.md)).
 |---|---|---|
 | DX-17 | Phase 28 | Complete |
 | DX-18 | Phase 28 | Complete |
-| EVD-13 | Phase 28 | Pending |
+| EVD-13 | Phase 28 | Complete |
 | BYTE-01 | Phase 29 | Pending |
 | BYTE-02 | Phase 29 | Pending |
 | BYTE-03 | Phase 29 | Pending |

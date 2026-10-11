@@ -5,16 +5,16 @@ milestone_name: Bounded Byte Utility and Local Modules
 current_phase: 28
 current_phase_name: Exit Classes, Verify Report, and Entry Pruning
 status: executing
-stopped_at: Completed 28-02-PLAN.md
-last_updated: "2026-10-11T02:14:38.403Z"
+stopped_at: Completed 28-03-PLAN.md
+last_updated: "2026-10-11T02:18:51.234Z"
 last_activity: 2026-10-10
 last_activity_desc: Phase 28 execution started
-state_head: 710ce0a0bd6e6ce98186596aa0f54effb9645b63
+state_head: 24a4610985e84a552a2d00733fcbe543edbdb8da
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 7
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -124,7 +124,7 @@ plans.
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
 Phase: 28 (Exit Classes, Verify Report, and Entry Pruning) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
 Last activity: 2026-10-10 — Phase 28 execution started
 
@@ -499,6 +499,7 @@ subset alone.
 | Phase 27.3 P03 | 10 min | 2 tasks | 3 files |
 | Phase 28 P01 | 30min | 2 tasks | 3 files |
 | Phase 28 P02 | 25min | 3 tasks | 14 files |
+| Phase 28 P03 | 20min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -626,6 +627,7 @@ decision history; they no longer describe current status.
 - [Phase 27.3]: 27.3-03: guide outputs routed under ignored .schway/phase27; executed temp-repo guide run declined
 - [Phase 28]: 28-01: Phase 28 class manifest sweep uses a missing-clang runner; allow-list maps start empty
 - [Phase 28]: 28-02: exitcode leaf table; schway-repair keeps pinned literal mirror verified by test (D-22); 65/69 unchanged
+- [Phase 28]: 28-03: app verify schema bumped to lang.app-verification/2; exhausted cases carry fixed-size outcome_digest (D-13/D-15)
 
 ### Pending Todos
 
@@ -856,8 +858,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-11T02:14:38.379Z
-Stopped at: Completed 28-02-PLAN.md
+Last session: 2026-10-11T02:18:51.199Z
+Stopped at: Completed 28-03-PLAN.md
 Resume file: None
 Next action: After clearing context, run /gsd-execute-phase 28 (7 plans in 6 waves, checked 2026-10-10; plan-check passed with override for two soft scope warnings: 28-06 estimate 110k low-confidence, 28-02 13 files).
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
