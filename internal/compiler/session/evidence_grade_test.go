@@ -370,7 +370,151 @@ func checkedInCorpusRunRecord(requested []pkgPattern, recordData, manifestData [
 	return record, nil
 }
 
-func loadCheckedInCorpusRunRecord(requested []pkgPattern) (*runRecord, error) {
+// retiredCorpusTest records one top-level test that was deliberately deleted
+// after the hosted corpus receipt was produced. The receipt files under
+// testdata/phase16 are frozen (they are a byte-identical record of a hosted
+// run), so a retirement is explained here, dated and reasoned, rather than by
+// re-pinning the receipt.
+type retiredCorpusTest struct {
+	Package string // package operand the test lived in, as requestedCorpusPairs spells it
+	Reason  string // dated reason; names the decision that retired the test
+}
+
+// corpusRetiredTests is consulted ONLY when matching the checked-in receipt
+// (receiptTimeCorpusPairs). requestedCorpusPairs and the producer seam
+// (TestExportValidationCorpusPairs) never see it, so a future hosted refresh
+// exports the current pairs and then makes every entry here stale -- which
+// receiptTimeCorpusPairs reports, forcing the entry's removal.
+var corpusRetiredTests = map[string]retiredCorpusTest{
+	"TestPhase20ChecksumFrontier": {
+		Package: "./internal/compiler/session",
+		Reason:  "2026-10-12 Phase 32 D-05: the checksum frontier was retired (examples/checksum.schway and session_phase20_test.go deleted); see the PROJECT.md frontier-retirement amendment. Archived 20-VALIDATION rows citing it are reconciled superseded (D-14-145/146).",
+	},
+}
+
+// retiredTestsCitedBy returns the corpusRetiredTests names an evidence cell
+// cites as whole identifiers, sorted.
+func retiredTestsCitedBy(evidence string) []string {
+	var cited []string
+	for name := range corpusRetiredTests {
+		if regexp.MustCompile(`\b` + regexp.QuoteMeta(name) + `\b`).MatchString(evidence) {
+			cited = append(cited, name)
+		}
+	}
+	sort.Strings(cited)
+	return cited
+}
+
+// retiredCitationProblem requires every cited retired name to carry a
+// `superseded` row in EVIDENCE-RECONCILIATION.md, so a retirement can never be
+// absorbed silently by the grade scan.
+func retiredCitationProblem(cited []string) string {
+	data, err := os.ReadFile(testsupport.ProjectPath(".planning", "EVIDENCE-RECONCILIATION.md"))
+	if err != nil {
+		return fmt.Sprintf("read EVIDENCE-RECONCILIATION.md: %v", err)
+	}
+	for _, name := range cited {
+		found := false
+		for _, line := range strings.Split(string(data), "\n") {
+			if strings.Contains(line, name) && strings.Contains(line, "| superseded |") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Sprintf("cites retired test %s with no `superseded` row in EVIDENCE-RECONCILIATION.md", name)
+		}
+	}
+	return ""
+}
+
+// indexWithRetired returns a copy of index in which every retired test name is
+// re-inserted into its package, i.e. the index as it stood at receipt time.
+func indexWithRetired(index *testIndex, retired map[string]retiredCorpusTest) *testIndex {
+	clone := &testIndex{byImportPath: make(map[string]map[string]bool, len(index.byImportPath)), root: index.root}
+	for importPath, set := range index.byImportPath {
+		copied := make(map[string]bool, len(set))
+		for name := range set {
+			copied[name] = true
+		}
+		clone.byImportPath[importPath] = copied
+	}
+	for name, entry := range retired {
+		importPath := clone.canonicalImportPath(entry.Package)
+		if clone.byImportPath[importPath] == nil {
+			clone.byImportPath[importPath] = map[string]bool{}
+		}
+		clone.byImportPath[importPath][name] = true
+	}
+	return clone
+}
+
+// receiptTimeCorpusPairs reconstructs the pair set the hosted receipt was
+// produced against: it re-runs the ONE derivation (requestedCorpusPairs) over
+// an index with the retired names re-inserted, so each name lands in its
+// pattern exactly where the original derivation placed it. The caller still
+// requires the manifest digest to equal the digest of the returned set, so an
+// allow-list entry can only ever explain drift it actually reproduces. Every
+// entry must (1) be genuinely absent from the current index, (2) be needed
+// (the receipt does not already match without the allow-list), and (3) alter
+// the reconstructed set (so no entry rides along unexplained).
+func receiptTimeCorpusPairs(index *testIndex, byDoc map[string][]validationRawRow, retired map[string]retiredCorpusTest, manifestPairDigest string) ([]pkgPattern, error) {
+	current, err := requestedCorpusPairs(index, byDoc)
+	if err != nil {
+		return nil, err
+	}
+	if len(retired) == 0 {
+		return current, nil
+	}
+	names := make([]string, 0, len(retired))
+	for name, entry := range retired {
+		if entry.Reason == "" {
+			return nil, fmt.Errorf("retired corpus test %q has no dated reason", name)
+		}
+		if live, _ := index.resolvePackageNames(entry.Package); live[name] {
+			return nil, fmt.Errorf("retired corpus test %q still resolves in the test index of %s; it is not retired, remove it from corpusRetiredTests", name, entry.Package)
+		}
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	currentData, err := corpusPairBytes(current)
+	if err != nil {
+		return nil, err
+	}
+	if sha256Hex(currentData) == manifestPairDigest {
+		return nil, fmt.Errorf("corpusRetiredTests is stale: the checked-in receipt already matches the current requested corpus; remove %v", names)
+	}
+	full, err := requestedCorpusPairs(indexWithRetired(index, retired), byDoc)
+	if err != nil {
+		return nil, err
+	}
+	fullData, err := corpusPairBytes(full)
+	if err != nil {
+		return nil, err
+	}
+	for _, name := range names {
+		without := make(map[string]retiredCorpusTest, len(retired)-1)
+		for other, entry := range retired {
+			if other != name {
+				without[other] = entry
+			}
+		}
+		partial, err := requestedCorpusPairs(indexWithRetired(index, without), byDoc)
+		if err != nil {
+			return nil, err
+		}
+		partialData, err := corpusPairBytes(partial)
+		if err != nil {
+			return nil, err
+		}
+		if string(partialData) == string(fullData) {
+			return nil, fmt.Errorf("corpusRetiredTests entry %q does not alter the receipt-time pair set (no archived row cites it); remove it", name)
+		}
+	}
+	return full, nil
+}
+
+func loadCheckedInCorpusRunRecord(index *testIndex, byDoc map[string][]validationRawRow, retired map[string]retiredCorpusTest) (*runRecord, error) {
 	recordData, err := os.ReadFile(testsupport.ProjectPath(checkedInCorpusRecordRelPath...))
 	if err != nil {
 		return nil, fmt.Errorf("read checked-in validation corpus record: %w", err)
@@ -379,7 +523,15 @@ func loadCheckedInCorpusRunRecord(requested []pkgPattern) (*runRecord, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read checked-in validation corpus manifest: %w", err)
 	}
-	return checkedInCorpusRunRecord(requested, recordData, manifestData)
+	var manifest checkedInCorpusRecord
+	if err := json.Unmarshal(manifestData, &manifest); err != nil {
+		return nil, fmt.Errorf("decode checked-in validation corpus manifest: %w", err)
+	}
+	pairs, err := receiptTimeCorpusPairs(index, byDoc, retired, manifest.PairDigest)
+	if err != nil {
+		return nil, err
+	}
+	return checkedInCorpusRunRecord(pairs, recordData, manifestData)
 }
 
 // evidenceRunRecordScriptRelPath is scripts/evidence-run-record.sh's
@@ -1582,12 +1734,7 @@ func runRecordAdmissible(record *runRecord, requested []pkgPattern) error {
 func corpusRunRecord(t testing.TB, index *testIndex, byDoc map[string][]validationRawRow) *runRecord {
 	t.Helper()
 	evidenceRunRecordOnce.Do(func() {
-		requested, err := requestedCorpusPairs(index, byDoc)
-		if err != nil {
-			evidenceRunRecordFatal = err.Error()
-			return
-		}
-		record, err := loadCheckedInCorpusRunRecord(requested)
+		record, err := loadCheckedInCorpusRunRecord(index, byDoc, corpusRetiredTests)
 		if err != nil {
 			evidenceRunRecordFatal = err.Error()
 			return
@@ -1881,6 +2028,111 @@ func TestCheckedInCorpusRecordRejectsTamperingAndVacuity(t *testing.T) {
 	}
 }
 
+// TestCorpusRetiredTestsAllowListIsNotInert proves the dated retirement
+// allow-list explains exactly the drift it names and nothing else: the
+// unmodified control must reconstruct the frozen receipt's pair digest, and
+// each seeded fault must be refused.
+func TestCorpusRetiredTestsAllowListIsNotInert(t *testing.T) {
+	index := buildTestIndex(t)
+	byDoc := allPrimaryValidationRows(t)
+	manifestData, err := os.ReadFile(testsupport.ProjectPath(checkedInCorpusManifestRelPath...))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var manifest checkedInCorpusRecord
+	if err := json.Unmarshal(manifestData, &manifest); err != nil {
+		t.Fatal(err)
+	}
+	digestOf := func(pairs []pkgPattern) string {
+		data, err := corpusPairBytes(pairs)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return sha256Hex(data)
+	}
+
+	t.Run("control: the allow-list reproduces the frozen receipt digest", func(t *testing.T) {
+		pairs, err := receiptTimeCorpusPairs(index, byDoc, corpusRetiredTests, manifest.PairDigest)
+		if err != nil {
+			t.Fatalf("allow-list control rejected: %v", err)
+		}
+		if got := digestOf(pairs); got != manifest.PairDigest {
+			t.Fatalf("reconstructed digest %s != frozen receipt %s", got, manifest.PairDigest)
+		}
+	})
+	t.Run("the producer seam still exports the current pairs, not the reconstruction", func(t *testing.T) {
+		current, err := requestedCorpusPairs(index, byDoc)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if digestOf(current) == manifest.PairDigest {
+			t.Fatal("current requested pairs already equal the receipt; corpusRetiredTests is unneeded")
+		}
+		for name := range corpusRetiredTests {
+			for _, p := range current {
+				if strings.Contains(p.Pattern, name) {
+					t.Fatalf("current requested pairs still name retired test %s", name)
+				}
+			}
+		}
+	})
+	t.Run("stale entry: a name that still resolves is refused", func(t *testing.T) {
+		live := map[string]retiredCorpusTest{"TestExportValidationCorpusPairs": {Package: "./internal/compiler/session", Reason: "seeded"}}
+		if _, err := receiptTimeCorpusPairs(index, byDoc, live, manifest.PairDigest); err == nil || !strings.Contains(err.Error(), "still resolves") {
+			t.Fatalf("live name accepted as retired: %v", err)
+		}
+	})
+	t.Run("unneeded entry: a receipt that already matches reports the allow-list stale", func(t *testing.T) {
+		current, err := requestedCorpusPairs(index, byDoc)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := receiptTimeCorpusPairs(index, byDoc, corpusRetiredTests, digestOf(current)); err == nil || !strings.Contains(err.Error(), "stale") {
+			t.Fatalf("unneeded allow-list accepted: %v", err)
+		}
+	})
+	t.Run("unexplained drift: removing the entry reproduces the digest mismatch", func(t *testing.T) {
+		pairs, err := receiptTimeCorpusPairs(index, byDoc, nil, manifest.PairDigest)
+		if err != nil {
+			t.Fatal(err)
+		}
+		recordData, err := os.ReadFile(testsupport.ProjectPath(checkedInCorpusRecordRelPath...))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := checkedInCorpusRunRecord(pairs, recordData, manifestData); err == nil || !strings.Contains(err.Error(), "pair digest does not match") {
+			t.Fatalf("drift without the allow-list entry was not reported: %v", err)
+		}
+	})
+	t.Run("a row citing a retired test needs a superseded reconciliation", func(t *testing.T) {
+		cited := retiredTestsCitedBy("go test ./internal/compiler/session -run '^TestPhase20ChecksumFrontier$' -count=1")
+		if len(cited) != 1 || retiredCitationProblem(cited) != "" {
+			t.Fatalf("control: cited=%v problem=%q", cited, retiredCitationProblem(cited))
+		}
+		if retiredCitationProblem([]string{"TestUnreconciledRetiredName"}) == "" {
+			t.Fatal("an unreconciled retired citation was accepted")
+		}
+		if got := retiredTestsCitedBy("go test -run '^TestPhase20ChecksumFrontierX$'"); len(got) != 0 {
+			t.Fatalf("identifier-prefix match accepted: %v", got)
+		}
+	})
+	t.Run("an allow-listed name the receipt never contained cannot be explained", func(t *testing.T) {
+		bogus := map[string]retiredCorpusTest{}
+		for name, entry := range corpusRetiredTests {
+			bogus[name] = entry
+		}
+		bogus["TestNeverInTheReceipt"] = retiredCorpusTest{Package: "./internal/compiler/session", Reason: "seeded"}
+		if _, err := receiptTimeCorpusPairs(index, byDoc, bogus, manifest.PairDigest); err == nil || !strings.Contains(err.Error(), "does not alter") {
+			t.Fatalf("extra allow-listed name was tolerated: %v", err)
+		}
+		only := map[string]retiredCorpusTest{"TestNeverInTheReceipt": bogus["TestNeverInTheReceipt"]}
+		pairs, err := receiptTimeCorpusPairs(index, byDoc, only, manifest.PairDigest)
+		if err == nil && digestOf(pairs) == manifest.PairDigest {
+			t.Fatal("a name the receipt never contained reproduced the receipt digest")
+		}
+	})
+}
+
 // evidenceRunRecordAnchoredPatternShape recognizes resolvedPkgPatterns' and
 // pkgPatternsFor's own "^(...)$" output shape.
 var evidenceRunRecordAnchoredPatternShape = regexp.MustCompile(`^\^\(.*\)\$$`)
@@ -2011,6 +2263,7 @@ func TestValidationRowGradesAreEarnedOverArchivedCorpus(t *testing.T) {
 		t.Fatal("no *-VALIDATION.md primary table discovered -- the glob or table detector has gone inert")
 	}
 	record := corpusRunRecord(t, index, byDoc)
+	receiptIndex := indexWithRetired(index, corpusRetiredTests)
 
 	docs := make([]string, 0, len(byDoc))
 	for doc := range byDoc {
@@ -2037,7 +2290,19 @@ func TestValidationRowGradesAreEarnedOverArchivedCorpus(t *testing.T) {
 					t.Fatalf("%s: row %s has no Non-inertness column", name, taskID)
 				}
 				evidence := rowEvidence(row)
-				if problem := validationRowProblem(index, record, taskID, gradeCell, nonInertCell, evidence); problem != "" {
+				// A row citing a retired test is graded over the receipt-time
+				// index: its grade was earned by the frozen hosted run, which
+				// is the only run that ever saw the test. It is never graded
+				// against the live index (the test is gone) and never skipped,
+				// and the retirement must be reconciled `superseded`.
+				gradeIndex := index
+				if cited := retiredTestsCitedBy(evidence); len(cited) > 0 {
+					if problem := retiredCitationProblem(cited); problem != "" {
+						t.Fatalf("%s: row %s: %s", name, taskID, problem)
+					}
+					gradeIndex = receiptIndex
+				}
+				if problem := validationRowProblem(gradeIndex, record, taskID, gradeCell, nonInertCell, evidence); problem != "" {
 					t.Fatalf("%s: %s", name, problem)
 				}
 				if !exempt {
