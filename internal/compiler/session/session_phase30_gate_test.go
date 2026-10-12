@@ -131,6 +131,7 @@ func TestPhase30GateUnitConsumerInventory(t *testing.T) {
 		"internal/compiler/check/check.go",
 		"internal/compiler/check/scalar.go",
 		"internal/compiler/evidence/evidence.go",
+		"internal/compiler/modload/resolve.go",
 		"internal/compiler/protocol/protocol.go",
 		"internal/compiler/reduce/mismatch.go",
 		"internal/compiler/session/session.go",

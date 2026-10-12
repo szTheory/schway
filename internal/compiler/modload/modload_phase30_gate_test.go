@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
 	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
@@ -20,14 +21,24 @@ func gateWrite(t *testing.T, path, content string) {
 	}
 }
 
-func gateOpen(t *testing.T, dir string) *rootFS {
+func gateOpen(t *testing.T, dir string) *resolver {
 	t.Helper()
-	r, err := openModuleRoot(dir)
+	r, err := newResolver(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { r.close() })
 	return r
+}
+
+// gateRead reads segments through the production resolver and reports the first
+// diagnostic code, "" on success.
+func gateRead(r *resolver, segments []string) ([]byte, string) {
+	source, diags := r.readSegments(segments, "", diagnostic.Span{})
+	if len(diags) != 0 {
+		return nil, diags[0].Code
+	}
+	return source.Bytes, ""
 }
 
 // TestPhase30GateRootEscapesAndSymlinks is flag (a) of the D-14 gate.
@@ -50,7 +61,7 @@ func TestPhase30GateRootEscapesAndSymlinks(t *testing.T) {
 	}
 	r := gateOpen(t, rootDir)
 
-	data, code := r.readModule([]string{"real"})
+	data, code := gateRead(r, []string{"real"})
 	if code != "" {
 		t.Fatalf("tracer row refused: %s", code)
 	}
@@ -70,7 +81,7 @@ func TestPhase30GateRootEscapesAndSymlinks(t *testing.T) {
 		{"dotdot segment", []string{"..", "outside", "secret"}, CodeEscape},
 	}
 	for _, row := range rows {
-		if got, code := r.readModule(row.segments); code != row.want || got != nil {
+		if got, code := gateRead(r, row.segments); code != row.want || got != nil {
 			t.Errorf("%s: code %q bytes %d, want %q and no bytes", row.name, code, len(got), row.want)
 		}
 	}
@@ -78,7 +89,7 @@ func TestPhase30GateRootEscapesAndSymlinks(t *testing.T) {
 	t.Run("control skip per-component Lstat", func(t *testing.T) {
 		skipComponentLstatForTest = true
 		defer func() { skipComponentLstatForTest = false }()
-		if data, code := r.readModule([]string{"subl", "n"}); code != "" || len(data) == 0 {
+		if data, code := gateRead(r, []string{"subl", "n"}); code != "" || len(data) == 0 {
 			t.Fatalf("control must observe the in-root dir link read through, got code %q", code)
 		}
 	})
@@ -91,20 +102,20 @@ func TestPhase30GateCaseExact(t *testing.T) {
 	gateWrite(t, filepath.Join(rootDir, "Sub", "n.schway"), gateModuleSource)
 	r := gateOpen(t, rootDir)
 
-	if _, code := r.readModule([]string{"lib"}); code != CodeCaseMismatch {
+	if _, code := gateRead(r, []string{"lib"}); code != CodeCaseMismatch {
 		t.Fatalf("lib with only Lib.schway: code %q, want %q", code, CodeCaseMismatch)
 	}
-	if _, code := r.readModule([]string{"sub", "n"}); code != CodeCaseMismatch {
+	if _, code := gateRead(r, []string{"sub", "n"}); code != CodeCaseMismatch {
 		t.Fatalf("sub.n with only Sub/: code %q, want %q", code, CodeCaseMismatch)
 	}
-	if _, code := r.readModule([]string{"Lib"}); code != "" {
+	if _, code := gateRead(r, []string{"Lib"}); code != "" {
 		t.Fatalf("exact Lib: code %q", code)
 	}
 
 	t.Run("control case-fold accept", func(t *testing.T) {
 		caseFoldAcceptForTest = true
 		defer func() { caseFoldAcceptForTest = false }()
-		if _, code := r.readModule([]string{"lib"}); code == CodeCaseMismatch {
+		if _, code := gateRead(r, []string{"lib"}); code == CodeCaseMismatch {
 			t.Fatalf("control must differ from %q", CodeCaseMismatch)
 		}
 	})

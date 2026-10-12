@@ -26,7 +26,7 @@ func TestPhase30GateFIFONonBlocking(t *testing.T) {
 	run := func() chan gateResult {
 		done := make(chan gateResult, 1)
 		go func() {
-			_, code := r.readModule([]string{"pipe"})
+			_, code := gateRead(r, []string{"pipe"})
 			done <- gateResult{code}
 		}()
 		return done
