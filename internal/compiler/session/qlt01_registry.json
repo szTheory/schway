@@ -275,8 +275,8 @@
     "control_mechanism": "a byte-view length cap kept without measuring the Adler-32 fixture at the cap lets an interpreter or native lane exceed the per-lane time budget once the workload is scaled linearly to the cap, so the declared limit promises a run no engine can finish in budget",
     "live_descendant": null,
     "waived": {
-      "reason": "spike 008 is a cost-measurement probe with a PARTIAL verdict pending hosted Stage-B evidence, not a defect-injection workbench with its own control: registry identifier, so this row cannot cite a live_descendant.control_id without failing the stale-control-reference audit; the harness that records the measurement is a test, not a shipped control",
-      "citation": ".planning/spikes/008-byteview-cap/README.md (PARTIAL verdict, pending hosted Stage-B evidence); internal/compiler/native/native_phase29_spike008_test.go's TestSpike008ByteViewCap; internal/compiler/cgen/cgen_phase29_gate_test.go's TestPhase29GateNativeProxyCost",
+      "reason": "spike 008 is a cost-measurement probe with a VALIDATED verdict (cap kept at 65,536, hosted Stage-B run 38186068052), not a defect-injection workbench with its own control: registry identifier, so this row cannot cite a live_descendant.control_id without failing the stale-control-reference audit; the harness that records the measurement is a test, not a shipped control",
+      "citation": ".planning/spikes/008-byteview-cap/README.md (VALIDATED verdict, hosted run 38186068052); internal/compiler/native/native_phase29_spike008_test.go's TestSpike008ByteViewCap; internal/compiler/cgen/cgen_phase29_gate_test.go's TestPhase29GateNativeProxyCost",
       "owner": "compiler-frontend",
       "phase": "29"
     }

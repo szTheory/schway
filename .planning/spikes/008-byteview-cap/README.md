@@ -4,7 +4,7 @@ idea: ownership-kernel
 name: byteview-cap
 type: standard
 validates: "Given the Adler-32 fixture with a 65,536-byte host-owned byte view run through the real D-05 fixture path, every engine lane stays within the D-13 budget (native run <= 3 s, interpreter <= 12 s) when scaled linearly to the recorded cap, so the 65,536-byte cap can be kept"
-verdict: PARTIAL
+verdict: VALIDATED
 related: [005-native-ffi-provenance-cleanup]
 tags: [byte-views, cap, native, interpreter, timing, phase-gate, d-12, d-13]
 ---
@@ -106,6 +106,66 @@ Stage-A numbers in 29-00-GATE-VERDICT.md are a proxy, gate-only, not the record.
 
 ### Hosted runs
 
-Pending: one dispatched checks job with spike008_strict=true on ubuntu-latest
-and macos-latest (plain and -race). Verdict stays PARTIAL, and local evidence
-may only lower, never keep, the cap, until these are recorded.
+Run 38186068052 (workflow_dispatch, `spike008_strict=true`) at head SHA
+906d6481ef017157eecc8f8f30528ebdd0428876. Overall conclusion: success.
+
+| Host | go test ./... | go test -race ./... | spike 008 strict budget |
+|------|---------------|---------------------|-------------------------|
+| ubuntu-latest (job 114608534221) | success | success | success |
+| macos-latest (job 114608534241) | success | success | success |
+
+(An earlier dispatch, run 38185331902 at 1327cf1, failed before the strict step
+on five repo convention tests unrelated to the cap; fixed in 0364898, 532f0ba,
+614841f and 906d648. Only run 38186068052 is the record.)
+
+Strict lane tables (7 runs per lane per case, first dropped, median / max of 6).
+Toolchain go1.24.13. ubuntu: Ubuntu clang 18.1.3, linux/amd64. macos: Apple
+clang 21.0.0 (clang-2100.1.1.101), darwin/arm64.
+
+ubuntu-latest, plain (step part 1):
+
+| Lane | 4096 med/max | 16384 med/max | 65536 med/max |
+|------|--------------|---------------|---------------|
+| native -O0 | 0.857 / 0.933 ms | 0.995 / 1.442 ms | 1.466 / 1.531 ms |
+| native -O3 | 0.890 / 1.070 ms | 0.818 / 0.886 ms | 0.965 / 1.039 ms |
+| native -O3 -flto | 0.875 / 1.041 ms | 0.825 / 1.065 ms | 0.975 / 0.994 ms |
+| interpreter | 9.66 / 10.01 ms | 34.75 / 36.56 ms | 136.61 / 138.32 ms |
+
+ubuntu-latest, -race (step part 2):
+
+| Lane | 4096 med/max | 16384 med/max | 65536 med/max |
+|------|--------------|---------------|---------------|
+| native -O0 | 2.080 / 2.168 ms | 2.209 / 2.764 ms | 2.682 / 2.736 ms |
+| native -O3 | 2.081 / 2.198 ms | 2.056 / 2.067 ms | 2.213 / 2.237 ms |
+| native -O3 -flto | 2.147 / 2.597 ms | 2.100 / 2.146 ms | 2.300 / 2.612 ms |
+| interpreter-race | 32.95 / 35.71 ms | 101.23 / 102.45 ms | 371.94 / 376.48 ms |
+
+macos-latest, plain:
+
+| Lane | 4096 med/max | 16384 med/max | 65536 med/max |
+|------|--------------|---------------|---------------|
+| native -O0 | 3.525 / 6.547 ms | 7.792 / 8.041 ms | 4.356 / 4.628 ms |
+| native -O3 | 3.501 / 4.031 ms | 6.433 / 7.151 ms | 4.710 / 6.515 ms |
+| native -O3 -flto | 6.960 / 7.239 ms | 3.578 / 5.925 ms | 7.562 / 7.996 ms |
+| interpreter | 8.95 / 9.42 ms | 33.37 / 38.29 ms | 149.83 / 157.20 ms |
+
+macos-latest, -race:
+
+| Lane | 4096 med/max | 16384 med/max | 65536 med/max |
+|------|--------------|---------------|---------------|
+| native -O0 | 4.244 / 5.118 ms | 4.225 / 4.265 ms | 4.655 / 4.867 ms |
+| native -O3 | 4.112 / 4.378 ms | 3.965 / 4.182 ms | 4.181 / 4.927 ms |
+| native -O3 -flto | 4.057 / 4.317 ms | 3.974 / 4.157 ms | 4.315 / 5.034 ms |
+| interpreter-race | 38.91 / 40.91 ms | 180.30 / 238.71 ms | 351.92 / 356.61 ms |
+
+Every lane logged `within budget ... (largest fitting cap 65536)`; no
+`OVER BUDGET` line on either host, plain or -race. Worst hosted native max
+8.0 ms against 3 s; worst hosted interpreter max 376.5 ms against 12 s. The
+`armed-fault` subtest passed on both hosts.
+
+### Decision (D-12 / D-13)
+
+Local evidence and both hosted strict runs (one Linux, one macOS, plain and
+-race) pass inside the D-13 budget with orders of magnitude of headroom.
+**cap kept at 65,536.** `spike008RecordedCap` stays 65536; no D-13 reopening and
+no Phase 31 literal change. Verdict: VALIDATED.
