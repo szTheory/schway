@@ -58,7 +58,7 @@ preserving the acceptance behavior below.
 - [x] **Phase 29: Byte Views and the Adler-32 Library** - Ordinary Schway source reads a bounds-checked byte view in a scalar loop and computes RFC 1950 Adler-32 with pinned answers on both engines. (completed 2026-10-11)
 - [x] **Phase 30: Local Modules** - A program imports the Adler-32 library from another local file through an explicit import and export list, with closed resolution and named module-graph refusals. (completed 2026-10-12)
 - [x] **Phase 31: Bounded File Checksum and Second Consumer** - A caller runs `checksum FILE` with an exact result and error matrix, and a second application imports the same library without copying it. (completed 2026-10-12)
-- [ ] **Phase 32: Clean-Checkout Guide and Final Receipts** - A developer can follow the documented commands from a clean checkout, and hosted macOS/Linux receipts bind the final M006 revision.
+- [x] **Phase 32: Clean-Checkout Guide and Final Receipts** - A developer can follow the documented commands from a clean checkout, and hosted macOS/Linux receipts bind the final M006 revision. (completed 2026-10-12)
 
 ## Phase Details
 
@@ -294,7 +294,7 @@ Plans:
 - [x] 32-10-PLAN.md — Human checkpoint: one push-and-dispatch line naming the freeze commit
 
 **Wave 8** *(blocked on Wave 7 completion)*
-- [ ] 32-11-PLAN.md — .planning-only ingest of the hosted macOS/Linux receipts; last plan of M006
+- [x] 32-11-PLAN.md — .planning-only ingest of the hosted macOS/Linux receipts; last plan of M006
 
 ## Progress
 
@@ -306,7 +306,7 @@ Plans:
 | 29. Byte Views and the Adler-32 Library | 13/13 | Complete    | 2026-10-11 |
 | 30. Local Modules | 10/10 | Complete    | 2026-10-12 |
 | 31. Bounded File Checksum and Second Consumer | 10/10 | Complete    | 2026-10-12 |
-| 32. Clean-Checkout Guide and Final Receipts | 10/11 | In Progress | - |
+| 32. Clean-Checkout Guide and Final Receipts | 11/11 | Complete | 2026-10-12 |
 
 **Coverage:** 16/16 M006 requirements have exactly one phase owner. MOD-06
 (second consumer) is owned by Phase 31 rather than Phase 30, because its

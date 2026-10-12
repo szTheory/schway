@@ -234,6 +234,10 @@ thresholds below reflect the later Phase 23 closeout.
 
 ## What exists
 
+M006 final hosted receipts: bound to codedigest c1b4e85df4d7723659c62e8338c0c961c0fd930fb45f84b7c25de1fa718cd227 (run 38315799626)
+
+The hosted receipts cover the M006 programs (checksum, adler_low, the adler32 library demo, the Phase 29 Adler-32 fixture and out-of-bounds control) plus sum_to_n and FizzBuzz (N2 closed). Receipt rows are default-build only; the optimization matrix is bound by the same run's go test lanes. Any later code change reopens them.
+
 | Capability | Observed boundary | Source / evidence anchor |
 |---|---|---|
 | Source → checked core → interpreter/native C17 | A working compiler exists; Go 1.24/Clang remain the development path | `cmd/schway/main.go`, `internal/compiler/session/session.go` |

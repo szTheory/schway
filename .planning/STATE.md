@@ -130,6 +130,10 @@ Last activity: 2026-10-12 — Phase 32 execution started
 
 Progress: [████████░░] 80% (3/5 M006 phases)
 
+M006 final hosted receipts: bound to codedigest c1b4e85df4d7723659c62e8338c0c961c0fd930fb45f84b7c25de1fa718cd227 (run 38315799626)
+
+The hosted receipts cover the M006 programs (checksum, adler_low, the adler32 library demo, the Phase 29 Adler-32 fixture and out-of-bounds control) plus sum_to_n and FizzBuzz (N2 closed). Receipt rows are default-build only; the optimization matrix is bound by the same run's go test lanes. Any later code change reopens them.
+
 ## M006 Planning
 
 Roadmap created 2026-10-10 from the research synthesis's five-phase order, with

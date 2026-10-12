@@ -2,9 +2,9 @@
 phase: "32"
 slug: "clean-checkout-guide-and-final-receipts"
 # status lifecycle: planned (plan-phase; TestPhase20ValidationLifecycle forbids committed drafts) → validated (closure plan / validate-phase)
-status: planned
-nyquist_compliant: false
-wave_0_complete: false
+status: validated
+nyquist_compliant: true
+wave_0_complete: true
 created: "2026-10-12"
 ---
 
@@ -47,24 +47,24 @@ There is one row per success criterion or decision. Test names come from `32-RES
 
 | Ref | Requirement | Behavior | Test | Armed control | Status |
 |-----|-------------|----------|------|---------------|--------|
-| D-10 | (todo, process) | A `var` body ending in a bare identifier, number or `)` round-trips: reparse, fixed point, same tokens. Every other corpus file formats unchanged. The full syntax, cmd, check, cgen, core, evidence, schway-repair and (after the allow-list) session packages stay green. | `TestPhase32FormatVarBody` | the pre-fix formatter output (`r = r + ar`) is rejected | ⬜ pending |
-| D-10 / D-06 | (todo) | The Phase 30 golden holds with a dated format-change allow-list | `TestPhase30PreChangeGolden` | a stale allow-list entry fails | ⬜ pending |
-| SC1 / D-01..D-03 | DX-19 | The README's marked blocks run in a tracked-file temp copy. Each row matches exit, stdout and stderr. Error rows hide the path. Outputs go only under `.schway/`. | `TestPhase32GuideCleanCheckout` | a mutated guide value fails | ⬜ pending |
-| SC1 / D-04 | DX-19 | Anti-vacuity: block count, all three programs present, row count | `TestPhase32GuideParserNegativeControls` | a changed expected value fails; a renamed command fails | ⬜ pending |
-| SC1 / D-01 | DX-19 | The guide's limit, case names and outputs agree with `checksum.expected.json` and the oracle rows | `TestPhase32GuideMatchesExpectedJSON` | a mutated JSON value fails | ⬜ pending |
-| SC1 / D-04 | DX-19 | Hosted + missing clang fails; local + missing clang skips | `TestPhase32NativePolicy` | the policy function returns skip on hosted | ⬜ pending |
-| SC2 / D-05 | DX-19 | The old path is absent and the replacement exists. No renamed copy by tombstone digest. Live-doc hygiene holds. | `TestPhase32ChecksumFrontierRetired` | old bytes in a tempdir are flagged | ⬜ pending |
-| SC2 / D-06 | DX-19 | A retired path may be absent from the frozen Phase 28 and 30 goldens; a retired path observed again fails | `TestPhase28EntryExitClassManifest`, `TestPhase30PreChangeGoldenIsNotInert` | a retired path present again fails | ⬜ pending |
-| SC2 / D-07 | DX-19 | LANGUAGE-MATURITY counts are re-derived | `TestLanguageMaturityCountsAreCurrent` | the existing count control | ⬜ pending |
-| SC3 / D-08 | EVD-15 | The sh and Go codedigests agree. The digest moves on a code edit, but not on a `.md` or `.planning` edit. | `TestPhase32CodeDigest` | a mutated code file changes the digest | ⬜ pending |
-| SC3 / D-09 | EVD-15 | The gate accepts a good pair and rejects digest, dirty-tree, missing-host and missing-program cases | `TestPhase32ReceiptGate` | each named mutation is rejected | ⬜ pending |
-| SC3 / D-09a | EVD-15 | The shared case table holds 39 rows over seven programs, including `adler32_fixture` (APP-10 native vectors, cases 0..10) and `byte_index_oob` (BYTE-02 native OOB, exit 65, empty stdout). Each row agrees with its independent source. | `TestPhase32ProducerCaseTable` | dropping all `byte_index_oob` rows is rejected by `TestPhase32ReceiptGate` (oob-rows-dropped) | ⬜ pending |
-| SC3 / D-09a | EVD-15 | The receipt records the -O0/-O3/-O3+LTO matrix as a non-claim bound by the same run's go test lanes, not as receipt rows | `TestPhase32ReceiptLivingClaims` | a receipt without the non-claim is rejected (nonclaim_missing_optimization_matrix) | ⬜ pending |
-| SC3 / D-10a | EVD-15 | No receipt and no claim passes. A claim without a receipt fails. A current claim with a stale digest fails. A "reopened" claim passes. | `TestPhase32ReceiptLivingClaims` | a stale-digest current claim fails | ⬜ pending |
-| SC3 / D-10b / D-09a | EVD-15 | Every public route and entry program has a covered row or a "not covered because" row. The covered set is the seven receipt programs, including both Phase 29 programs, and equals the producer's `phase32_programs=` line. | `TestPhase32PublicRouteAudit` | an injected new route fails | ⬜ pending |
-| SC3 / D-00 / D-08c | EVD-15 | Revision = codedigest (D-08). The run headSha, the pushed HEAD and origin are one commit with no digest-path change since the freeze; a `.planning`-only HEAD move is accepted | `TestPhase32FreezeGate` (`scripts/check-phase32-freeze.sh`) | a synthetic mismatched headSha, a mismatched origin and a post-freeze digest-path change are each rejected | ⬜ pending |
-| SC3 | EVD-15 | The hosted macOS and Linux logs are bound to the final digest | `sh scripts/check-phase32-receipts.sh` at ingest, plus `TestPhase32ReceiptLivingClaims` | a digest mismatch is rejected | ⬜ pending |
-| Process | (all) | Every Phase 32 SUMMARY has a resolvable `coverage:` block | `TestSummaryCoverageGroundedness` | the seeded bad controls | ⬜ pending |
+| D-10 | (todo, process) | A `var` body ending in a bare identifier, number or `)` round-trips: reparse, fixed point, same tokens. Every other corpus file formats unchanged. The full syntax, cmd, check, cgen, core, evidence, schway-repair and (after the allow-list) session packages stay green. | `TestPhase32FormatVarBody` | the pre-fix formatter output (`r = r + ar`) is rejected | ✅ green |
+| D-10 / D-06 | (todo) | The Phase 30 golden holds with a dated format-change allow-list | `TestPhase30PreChangeGolden` | a stale allow-list entry fails | ✅ green |
+| SC1 / D-01..D-03 | DX-19 | The README's marked blocks run in a tracked-file temp copy. Each row matches exit, stdout and stderr. Error rows hide the path. Outputs go only under `.schway/`. | `TestPhase32GuideCleanCheckout` | a mutated guide value fails | ✅ green |
+| SC1 / D-04 | DX-19 | Anti-vacuity: block count, all three programs present, row count | `TestPhase32GuideParserNegativeControls` | a changed expected value fails; a renamed command fails | ✅ green |
+| SC1 / D-01 | DX-19 | The guide's limit, case names and outputs agree with `checksum.expected.json` and the oracle rows | `TestPhase32GuideMatchesExpectedJSON` | a mutated JSON value fails | ✅ green |
+| SC1 / D-04 | DX-19 | Hosted + missing clang fails; local + missing clang skips | `TestPhase32NativePolicy` | the policy function returns skip on hosted | ✅ green |
+| SC2 / D-05 | DX-19 | The old path is absent and the replacement exists. No renamed copy by tombstone digest. Live-doc hygiene holds. | `TestPhase32ChecksumFrontierRetired` | old bytes in a tempdir are flagged | ✅ green |
+| SC2 / D-06 | DX-19 | A retired path may be absent from the frozen Phase 28 and 30 goldens; a retired path observed again fails | `TestPhase28EntryExitClassManifest`, `TestPhase30PreChangeGoldenIsNotInert` | a retired path present again fails | ✅ green |
+| SC2 / D-07 | DX-19 | LANGUAGE-MATURITY counts are re-derived | `TestLanguageMaturityCountsAreCurrent` | the existing count control | ✅ green |
+| SC3 / D-08 | EVD-15 | The sh and Go codedigests agree. The digest moves on a code edit, but not on a `.md` or `.planning` edit. | `TestPhase32CodeDigest` | a mutated code file changes the digest | ✅ green |
+| SC3 / D-09 | EVD-15 | The gate accepts a good pair and rejects digest, dirty-tree, missing-host and missing-program cases | `TestPhase32ReceiptGate` | each named mutation is rejected | ✅ green |
+| SC3 / D-09a | EVD-15 | The shared case table holds 39 rows over seven programs, including `adler32_fixture` (APP-10 native vectors, cases 0..10) and `byte_index_oob` (BYTE-02 native OOB, exit 65, empty stdout). Each row agrees with its independent source. | `TestPhase32ProducerCaseTable` | dropping all `byte_index_oob` rows is rejected by `TestPhase32ReceiptGate` (oob-rows-dropped) | ✅ green |
+| SC3 / D-09a | EVD-15 | The receipt records the -O0/-O3/-O3+LTO matrix as a non-claim bound by the same run's go test lanes, not as receipt rows | `TestPhase32ReceiptLivingClaims` | a receipt without the non-claim is rejected (nonclaim_missing_optimization_matrix) | ✅ green |
+| SC3 / D-10a | EVD-15 | No receipt and no claim passes. A claim without a receipt fails. A current claim with a stale digest fails. A "reopened" claim passes. | `TestPhase32ReceiptLivingClaims` | a stale-digest current claim fails | ✅ green |
+| SC3 / D-10b / D-09a | EVD-15 | Every public route and entry program has a covered row or a "not covered because" row. The covered set is the seven receipt programs, including both Phase 29 programs, and equals the producer's `phase32_programs=` line. | `TestPhase32PublicRouteAudit` | an injected new route fails | ✅ green |
+| SC3 / D-00 / D-08c | EVD-15 | Revision = codedigest (D-08). The run headSha, the pushed HEAD and origin are one commit with no digest-path change since the freeze; a `.planning`-only HEAD move is accepted | `TestPhase32FreezeGate` (`scripts/check-phase32-freeze.sh`) | a synthetic mismatched headSha, a mismatched origin and a post-freeze digest-path change are each rejected | ✅ green |
+| SC3 | EVD-15 | The hosted macOS and Linux logs are bound to the final digest | `sh scripts/check-phase32-receipts.sh` at ingest, plus `TestPhase32ReceiptLivingClaims` | a digest mismatch is rejected | ✅ green |
+| Process | (all) | Every Phase 32 SUMMARY has a resolvable `coverage:` block | `TestSummaryCoverageGroundedness` | the seeded bad controls | ✅ green |
 
 ---
 
@@ -95,11 +95,11 @@ Everything else is automated.
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without an automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 90 s
-- [ ] `nyquist_compliant: true` set in frontmatter at closure
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without an automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 90 s
+- [x] `nyquist_compliant: true` set in frontmatter at closure
 
-**Approval:** pending
+**Approval:** validated 2026-10-12 (run 38315799626)

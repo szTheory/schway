@@ -47,8 +47,8 @@ rejected. M005's acceptance record is preserved at
   - a deleted bounds check (observed by ASan)
   - each refused loop neighbor
   - a library mutation
-- [ ] **EVD-15**: Hosted macOS and Linux receipts are taken at the final M006 revision and cover the M006 programs and the carried-forward M005 programs (closes N2). A later code change reopens the receipts.
-- [ ] **DX-19**: From a clean checkout, a developer can follow documented commands to build and run `checksum`, the second module consumer, and the `adler32` library. The guide states the expected results, the 65,536-byte limit, and the error outcomes. The provisional `examples/checksum.schway` frontier is retired with a dated amendment.
+- [x] **EVD-15**: Hosted macOS and Linux receipts are taken at the final M006 revision and cover the M006 programs and the carried-forward M005 programs (closes N2). A later code change reopens the receipts.
+- [x] **DX-19**: From a clean checkout, a developer can follow documented commands to build and run `checksum`, the second module consumer, and the `adler32` library. The guide states the expected results, the 65,536-byte limit, and the error outcomes. The provisional `examples/checksum.schway` frontier is retired with a dated amendment.
 
 ## Future Requirements
 
@@ -95,8 +95,8 @@ Each M006 requirement has one phase owner (see [ROADMAP.md](ROADMAP.md)).
 | MOD-05 | Phase 30 | Complete |
 | MOD-06 | Phase 31 | Complete |
 | EVD-14 | Phase 31 | Complete |
-| EVD-15 | Phase 32 | Pending |
-| DX-19 | Phase 32 | Pending |
+| EVD-15 | Phase 32 | Complete |
+| DX-19 | Phase 32 | Complete |
 
 **Coverage:** 16 requirements; 16 mapped to Phases 28–32; 0 unmapped.
 

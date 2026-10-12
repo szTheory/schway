@@ -7,6 +7,10 @@ forecasts and evidence remain in their archives.
 
 ## Intent and present position
 
+M006 final hosted receipts: bound to codedigest c1b4e85df4d7723659c62e8338c0c961c0fd930fb45f84b7c25de1fa718cd227 (run 38315799626)
+
+The hosted receipts cover the M006 programs (checksum, adler_low, the adler32 library demo, the Phase 29 Adler-32 fixture and out-of-bounds control) plus sum_to_n and FizzBuzz (N2 closed). Receipt rows are default-build only; the optimization matrix is bound by the same run's go test lanes. Any later code change reopens them.
+
 Build a usable general-purpose language for AI-authored, human-audited software:
 fast structured feedback, readable canonical source, explicit costs, low-level
 ownership, deterministic cleanup, and reproducible evidence. A native compiler
