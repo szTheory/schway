@@ -3,6 +3,10 @@ package native_test
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -275,6 +279,152 @@ func TestPhase31Controls(t *testing.T) {
 		}
 		if strings.Contains(stderr, "schway: byte index out of bounds") {
 			t.Fatalf("the checked failure fired although the bounds check was deleted:\n%s", stderr)
+		}
+	})
+}
+
+// phase31ControlEntry maps one EVD-14 bullet to the subtest that observes it.
+type phase31ControlEntry struct {
+	Requirement, File, Test, Subtest string
+}
+
+const (
+	phase31ControlsFile  = "internal/compiler/native/native_phase31_controls_test.go"
+	phase31NeighborsFile = "cmd/schway/main_phase31_neighbors_test.go"
+	phase31SingleFile    = "internal/compiler/session/session_phase31_single_copy_test.go"
+)
+
+var phase31ControlInventory = []phase31ControlEntry{
+	{Requirement: "a wrong modulus", File: phase31ControlsFile, Test: "TestPhase31Controls", Subtest: "wrong-modulus"},
+	{Requirement: "wrong initial state", File: phase31ControlsFile, Test: "TestPhase31Controls", Subtest: "wrong-initial-state"},
+	{Requirement: "swapped halves", File: phase31ControlsFile, Test: "TestPhase31Controls", Subtest: "swapped-halves"},
+	{Requirement: "an off-by-one loop bound", File: phase31ControlsFile, Test: "TestPhase31Controls", Subtest: "off-by-one-loop-bound"},
+	{Requirement: "signed-char widening (a `-fsigned-char` mutant)", File: phase31ControlsFile, Test: "TestPhase31Controls", Subtest: "signed-char-retype"},
+	{Requirement: "a deleted bounds check (observed by ASan)", File: phase31ControlsFile, Test: "TestPhase31Controls", Subtest: "deleted-bounds-check-asan"},
+	{Requirement: "each refused loop neighbor", File: phase31NeighborsFile, Test: "TestPhase31LoopNeighborRefusals", Subtest: "borrow inside the loop"},
+	{Requirement: "a library mutation", File: phase31SingleFile, Test: "TestPhase31SingleCopyAndDualFlip", Subtest: "dual-flip"},
+}
+
+// phase31ControlEvd14Bullets reads the eight bullets under **EVD-14**.
+func phase31ControlEvd14Bullets(t *testing.T) []string {
+	t.Helper()
+	data, err := os.ReadFile(testsupport.ProjectPath(".planning", "REQUIREMENTS.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var bullets []string
+	in := false
+	for _, line := range strings.Split(string(data), "\n") {
+		switch {
+		case strings.HasPrefix(line, "- [") && strings.Contains(line, "**EVD-14**"):
+			in = true
+		case in && strings.HasPrefix(line, "  - "):
+			bullets = append(bullets, strings.TrimPrefix(line, "  - "))
+		case in:
+			return bullets
+		}
+	}
+	return bullets
+}
+
+// phase31ControlSubtestCount counts the places a test function names the
+// subtest as a string literal: the first argument of t.Run, or the first field
+// of a table row whose name feeds a non-literal t.Run. It returns -1 when the
+// test function is absent and -2 when the function never calls t.Run.
+func phase31ControlSubtestCount(t *testing.T, file, test, subtest string) int {
+	t.Helper()
+	fset := token.NewFileSet()
+	parsed, err := parser.ParseFile(fset, testsupport.ProjectPath(strings.Split(file, "/")...), nil, 0)
+	if err != nil {
+		t.Fatalf("parse %s: %v", file, err)
+	}
+	quoted := fmt.Sprintf("%q", subtest)
+	for _, decl := range parsed.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if !ok || fn.Name.Name != test || fn.Body == nil {
+			continue
+		}
+		count, runs := 0, 0
+		ast.Inspect(fn.Body, func(n ast.Node) bool {
+			switch node := n.(type) {
+			case *ast.CallExpr:
+				if sel, ok := node.Fun.(*ast.SelectorExpr); ok && sel.Sel.Name == "Run" && len(node.Args) == 2 {
+					runs++
+					if lit, ok := node.Args[0].(*ast.BasicLit); ok && lit.Kind == token.STRING && lit.Value == quoted {
+						count++
+					}
+				}
+			case *ast.CompositeLit:
+				if len(node.Elts) > 0 {
+					if lit, ok := node.Elts[0].(*ast.BasicLit); ok && lit.Kind == token.STRING && lit.Value == quoted {
+						count++
+					}
+				}
+			}
+			return true
+		})
+		if runs == 0 {
+			return -2
+		}
+		return count
+	}
+	return -1
+}
+
+// phase31ControlInventoryProblems reports every defect in an inventory: a
+// requirement set that differs from the bullets, a (file, test, subtest) that is
+// not found exactly once, and a mapping shared by two controls.
+func phase31ControlInventoryProblems(t *testing.T, inventory []phase31ControlEntry, bullets []string) []string {
+	t.Helper()
+	var problems []string
+	have := map[string]int{}
+	for _, e := range inventory {
+		have[e.Requirement]++
+	}
+	for _, b := range bullets {
+		if have[b] != 1 {
+			problems = append(problems, fmt.Sprintf("bullet %q is mapped %d times", b, have[b]))
+		}
+		delete(have, b)
+	}
+	for extra := range have {
+		problems = append(problems, fmt.Sprintf("inventory names %q, which is not an EVD-14 bullet", extra))
+	}
+	seen := map[[3]string]bool{}
+	for _, e := range inventory {
+		key := [3]string{e.File, e.Test, e.Subtest}
+		if seen[key] {
+			problems = append(problems, fmt.Sprintf("%s %s/%s is mapped by two controls", e.File, e.Test, e.Subtest))
+		}
+		seen[key] = true
+		if got := phase31ControlSubtestCount(t, e.File, e.Test, e.Subtest); got != 1 {
+			problems = append(problems, fmt.Sprintf("%s %s/%s found %d times, want exactly 1", e.File, e.Test, e.Subtest, got))
+		}
+	}
+	return problems
+}
+
+func TestPhase31ControlInventory(t *testing.T) {
+	bullets := phase31ControlEvd14Bullets(t)
+	if len(bullets) != 8 {
+		t.Fatalf("EVD-14 bullets = %d (%q), want 8", len(bullets), bullets)
+	}
+	if len(phase31ControlInventory) != 8 {
+		t.Fatalf("inventory rows = %d, want 8", len(phase31ControlInventory))
+	}
+	if problems := phase31ControlInventoryProblems(t, phase31ControlInventory, bullets); len(problems) != 0 {
+		t.Fatalf("inventory problems:\n%s", strings.Join(problems, "\n"))
+	}
+	t.Run("armed", func(t *testing.T) {
+		missing := append([]phase31ControlEntry(nil), phase31ControlInventory...)
+		missing[0].Subtest = "no-such-subtest"
+		if got := phase31ControlInventoryProblems(t, missing, bullets); len(got) != 1 {
+			t.Fatalf("missing subtest problems = %q, want exactly one", got)
+		}
+		doubled := append([]phase31ControlEntry(nil), phase31ControlInventory...)
+		doubled[1].Subtest = doubled[0].Subtest
+		if got := phase31ControlInventoryProblems(t, doubled, bullets); len(got) != 1 {
+			t.Fatalf("duplicate mapping problems = %q, want exactly one", got)
 		}
 	})
 }
