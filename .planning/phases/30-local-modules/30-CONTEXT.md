@@ -296,6 +296,61 @@ is not repeated here:
     engines through the public CLI route, the same route Phase 29 used: build
     with `--manifest`, then `app run ART -- N`.
 
+### Post-research decisions (2026-10-12, resolving 30-RESEARCH.md Open Questions 1-9 / A1-A14)
+These were auto-followed per the standing preference, and each takes the
+researcher's recommendation.
+- **D-18 (amends D-07; resolves A1):** Imported module segments use
+  `[a-z][a-z0-9]*(_[a-z0-9]+)*`: no `__`, no trailing `_`, at most 64 bytes.
+  An exported function that is imported must have a name with no leading `_`,
+  no `__` and no trailing `_`. Anything else is refused at the import site with
+  `module.invalid_segment` or `module.invalid_import_name`. This keeps D-12's
+  "no new `__`" without an escape scheme. Entry-module names are unaffected.
+- **D-19 (resolves A2):** Duplicate refusals use two codes:
+  - `module.duplicate`: an imported module name equals the entry header.
+  - `module.duplicate_import`: the same module is imported twice in one file.
+    Its repair deletes the later import, with a `"\n"` replacement because
+    `DriverEligible` requires a non-empty `Replacement`.
+- **D-20 (resolves A3, A4):** Two more refusals, both by name:
+  - Imported modules may not declare `data` or `foreign` blocks:
+    `module.imported_data_unsupported` and
+    `module.imported_foreign_unsupported`. The foreign owner stays in the entry
+    module, and the library stays pure scalar.
+  - Importing any function named `main` is always refused.
+- **D-21 (resolves A5):** The merged program is capped at the existing
+  per-file limits, 1,024 functions and 4,096 declarations, exported from
+  `syntax`. Over the cap is refused with `module.program_limit`.
+  Exact-N/N+1 controls apply. The measured reason is that corevalidate cost is
+  roughly quadratic: 26.7 s at 16,384 functions.
+- **D-22 (resolves A6):** The commands that run through the loader are `check`,
+  `run` (both engines), `build`, `app verify` and `debug-map`. `format`,
+  `evidence`, `explain`, `query` and `interface` stay single-file. They refuse a
+  source containing `import` with `module.imports_not_loaded`. `check.Program`
+  fails closed on unresolved `Imports`.
+- **D-23 (amends D-11 wording; resolves A7, A8):** The human projection is
+  `ID CODE unit=<module> [s:e]: message`, with `unit=` present only when set.
+  It is not a `unit:` prefix. Peer-refusal attribution derives the unit from
+  the module segment of the ID in `Problem.Detail`. `cmd/schway-repair`
+  declines any repair whose effective unit is not the entry, and never writes
+  the entry file for it.
+- **D-24 (resolves A10, A13):** Two loader rules:
+  - The D-09 directory listing examines at most 65,536 entries; beyond that
+    it is refused with `module.directory_limit`.
+  - A cycle through the entry is detected with `os.SameFile` against the
+    entry file and reported as `module.import_cycle`, never as
+    `path_mismatch`.
+- **D-25:** `..`, absolute paths and separators cannot be written in `import`
+  grammar, so they are pinned as syntax refusals. Symlinks are the real escape
+  vector and are pinned in modload (refines SC1 evidence).
+  `module.imports_limit` exact-N is tested at parser level. End to end, 16
+  imports would exceed the 16-module cap.
+- **D-26 (resolves A12, A14):** SEED-261008-z1g (bounded symbol/caller query)
+  stays dormant. Plan 30-09 performs the full AGENTS.md transition read
+  (PRODUCT-ROADMAP, LANGUAGE-MATURITY, seeds) and records it.
+- **D-27:** Committed fixtures are limited to `examples/phase30/` (library,
+  entry, README). Every adversarial fixture is generated under `t.TempDir()`,
+  so the five corpus registers (phase28 manifest, 272/273 allow-lists, maturity
+  count, emitter inventory) move only for those files.
+
 ### Claude's Discretion
 - The exact names of the new `module.*` refusal codes beyond those listed. They
   must follow the `<family>.<snake_case>` convention, and every MOD-05 refusal
