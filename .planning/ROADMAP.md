@@ -56,7 +56,7 @@ preserving the acceptance behavior below.
 
 - [x] **Phase 28: Exit Classes, Verify Report, and Entry Pruning** - Source refusals share one exit class across commands and engines, programs with unused functions run, and `app verify` keeps the named capacity reason at every input. (completed 2026-10-10)
 - [x] **Phase 29: Byte Views and the Adler-32 Library** - Ordinary Schway source reads a bounds-checked byte view in a scalar loop and computes RFC 1950 Adler-32 with pinned answers on both engines. (completed 2026-10-11)
-- [ ] **Phase 30: Local Modules** - A program imports the Adler-32 library from another local file through an explicit import and export list, with closed resolution and named module-graph refusals.
+- [x] **Phase 30: Local Modules** - A program imports the Adler-32 library from another local file through an explicit import and export list, with closed resolution and named module-graph refusals. (completed 2026-10-12)
 - [ ] **Phase 31: Bounded File Checksum and Second Consumer** - A caller runs `checksum FILE` with an exact result and error matrix, and a second application imports the same library without copying it.
 - [ ] **Phase 32: Clean-Checkout Guide and Final Receipts** - A developer can follow the documented commands from a clean checkout, and hosted macOS/Linux receipts bind the final M006 revision.
 
@@ -179,7 +179,7 @@ Plans:
 
 **Research flag**: Deeper research plus a spike. Settle `os.Root` symlink and macOS case-insensitivity behavior, the `import` and `export` surface and formatter, the reach of `Diagnostic.Unit` (protocol, debug map, human output, repair patches), injective C name mangling, and module count/size/depth caps with exact-N and N+1 controls. Keep a plan-count checkpoint: this phase has the widest blast radius in M006. Modules are whole-program composition; do not describe them as separate compilation or as closing B1/DX-06.
 
-**Plans**: 10/10 plans executed (at the D-16 ceiling; 30-00 gate verdict decides PROCEED or SPLIT into 30 / 30.1)
+**Plans**: 10/10 plans complete (at the D-16 ceiling; 30-00 gate verdict decides PROCEED or SPLIT into 30 / 30.1)
 
 Plans:
 **Wave 1**
@@ -253,7 +253,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 28. Exit Classes, Verify Report, and Entry Pruning | 8/8 | Complete    | 2026-10-11 |
 | 29. Byte Views and the Adler-32 Library | 13/13 | Complete    | 2026-10-11 |
-| 30. Local Modules | 10/10 | In Progress | - |
+| 30. Local Modules | 10/10 | Complete    | 2026-10-12 |
 | 31. Bounded File Checksum and Second Consumer | 0/TBD | Not started | - |
 | 32. Clean-Checkout Guide and Final Receipts | 0/TBD | Not started | - |
 
