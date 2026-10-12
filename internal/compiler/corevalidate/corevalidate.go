@@ -1466,6 +1466,9 @@ func (v *validator) validateLocalForeignOperation(function *core.Function, opera
 	if !v.check(sourceOK && types[source.TypeID].Shape.Constructor == contract.ParameterType, "foreign.operation_parameter_mismatch", operation.ID) {
 		return false
 	}
+	if fileBytesForeignContract(contract) {
+		return v.validateFileBytesForeignOperation(operation, types, places)
+	}
 	if fixtureForeignContract(contract) {
 		return v.validateFixtureForeignOperation(operation, types, places)
 	}
@@ -1500,6 +1503,115 @@ func (v *validator) validateLocalForeignOperation(function *core.Function, opera
 		return v.check(false, "core.call_target_not_foreign", operation.ID)
 	}
 	return true
+}
+
+// fileBytesForeignContract reports whether a per-operation foreign contract
+// belongs to the Phase 31 bounded file-bytes owner shape (D-06). The shape is
+// keyed by the plural schway_file_bytes_ symbol prefix (never the Phase 23
+// schway_file_byte_ prefix) or by the FileBytes type name, so a forged contract
+// that borrows either marker is routed to this matcher's pins and refused
+// there, never into the Phase 23-25 or Phase 29 pins.
+func fileBytesForeignContract(contract *core.ForeignOperationContract) bool {
+	if contract == nil {
+		return false
+	}
+	return len(contract.Symbol) >= len("schway_file_bytes_") && contract.Symbol[:len("schway_file_bytes_")] == "schway_file_bytes_" || contract.ParameterType == "FileBytes" || contract.ResultType == "FileBytes"
+}
+
+// validateFileBytesForeignOperation is corevalidate's own closed matcher for
+// the three file-bytes operations (acquire, borrow, consume). It is written
+// beside, not inside, the Phase 23 and Phase 29 pins and shares no helper with
+// them. The shape admits no error edges.
+func (v *validator) validateFileBytesForeignOperation(operation core.LinearOperation, types map[string]core.TypeFact, places map[string]core.Place) bool {
+	contract := operation.Foreign
+	noEdges := operation.ErrTargetID == "" && operation.OkEdgeID == "" && operation.ErrEdgeID == ""
+	target, targetOK := places[operation.TargetID]
+	switch contract.Mode {
+	case "acquire":
+		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || !noEdges ||
+			contract.Symbol != "schway_file_bytes_acquire" || contract.ABIType != "schway_file_bytes_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileBytes" ||
+			contract.Fails != "FileError" || contract.Allocator != "libc_malloc" || contract.Release != "schway_file_bytes_release" || operation.Allocator != contract.Allocator {
+			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
+		}
+	case "borrow":
+		if operation.Kind != core.OpForeignCall || !targetOK || types[target.TypeID].Shape.Constructor != contract.ResultType || !noEdges ||
+			contract.Symbol != "schway_file_bytes_view" || contract.ABIType != "schway_file_bytes_view_fn" || contract.ParameterType != "FileBytes" || contract.ResultType != "ByteView" ||
+			contract.Fails != "" || contract.Allocator != "" || contract.Release != "" || operation.Allocator != "" {
+			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
+		}
+	case "consume":
+		if operation.Kind != core.OpRelease || operation.TargetID != "" || !noEdges ||
+			contract.Symbol != "schway_file_bytes_release" || contract.ABIType != "schway_file_bytes_release_fn" || contract.ParameterType != "FileBytes" || contract.ResultType != "Unit" ||
+			contract.Fails != "" || contract.Allocator != "libc_malloc" || contract.Release != "" || operation.Allocator != contract.Allocator {
+			return v.check(false, "foreign.operation_contract_invalid", operation.ID)
+		}
+	default:
+		return v.check(false, "foreign.operation_mode_invalid", operation.ID)
+	}
+	return true
+}
+
+// fileBytesOwnerLifecycleValid replays the file-bytes lifecycle as its own
+// closed shape, independent of check, originvalidate and pathoracle: acquire
+// from the PathToken parameter, borrow a ByteView from that owner, one OpCall
+// consuming the view into a U64, the release naming that exact acquisition,
+// then either a return of the call result or exactly one trailing OpCall of a
+// U64 -> U64 function defined in the entry module whose argument is the
+// library result, then a return of the trailing result (D-16).
+func (v *validator) fileBytesOwnerLifecycleValid(function *core.Function) bool {
+	if function == nil || function.Linear == nil || function.Parameter.Type != "PathToken" || function.ReturnType != "U64" || len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 {
+		return false
+	}
+	operations := function.Linear.Operations
+	if len(operations) != 5 && len(operations) != 6 {
+		return false
+	}
+	acquire, view, call, release := operations[0], operations[1], operations[2], operations[3]
+	ret := operations[len(operations)-1]
+	placeTypes := make(map[string]string, len(function.Linear.Places))
+	typeShapes := make(map[string]string, len(function.Linear.Types))
+	for _, fact := range function.Linear.Types {
+		typeShapes[fact.ID] = fact.Shape.Constructor
+	}
+	for _, place := range function.Linear.Places {
+		placeTypes[place.ID] = typeShapes[place.TypeID]
+	}
+	if acquire.Kind != core.OpForeignCall || acquire.Foreign == nil || acquire.Foreign.Mode != "acquire" || acquire.SourceID != function.Parameter.ID || acquire.TargetID == "" || placeTypes[acquire.TargetID] != "FileBytes" {
+		return false
+	}
+	if view.Kind != core.OpForeignCall || view.Foreign == nil || view.Foreign.Mode != "borrow" || view.SourceID != acquire.TargetID || view.TargetID == "" || placeTypes[view.TargetID] != "ByteView" {
+		return false
+	}
+	find := func(id string) *core.Function {
+		for index := range v.program.Functions {
+			if v.program.Functions[index].ID == id {
+				return &v.program.Functions[index]
+			}
+		}
+		return nil
+	}
+	callee := find(call.CalleeID)
+	if call.Kind != core.OpCall || callee == nil || callee.Parameter.Type != "ByteView" || callee.ReturnType != "U64" || call.SourceID != view.TargetID || call.TargetID == "" || placeTypes[call.TargetID] != "U64" {
+		return false
+	}
+	if release.Kind != core.OpRelease || release.Foreign == nil || release.Foreign.Mode != "consume" || release.ReleasesOperationID != acquire.ID || release.SourceID != acquire.TargetID || release.Foreign.Symbol != acquire.Foreign.Release {
+		return false
+	}
+	result := call.TargetID
+	if len(operations) == 6 {
+		trailing := operations[4]
+		entryPrefix := function.ID
+		if len(entryPrefix) >= len(function.Name) && entryPrefix[len(entryPrefix)-len(function.Name):] == function.Name {
+			entryPrefix = entryPrefix[:len(entryPrefix)-len(function.Name)]
+		}
+		tail := find(trailing.CalleeID)
+		if trailing.Kind != core.OpCall || tail == nil || tail.Parameter.Type != "U64" || tail.ReturnType != "U64" || entryPrefix == function.ID || tail.ID != entryPrefix+tail.Name ||
+			trailing.SourceID != call.TargetID || trailing.TargetID == "" || placeTypes[trailing.TargetID] != "U64" {
+			return false
+		}
+		result = trailing.TargetID
+	}
+	return ret.Kind == core.OpReturn && ret.Foreign == nil && ret.SourceID == result
 }
 
 // fixtureForeignContract reports whether a per-operation foreign contract
@@ -3007,6 +3119,11 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 	hasCall := false
 	for _, operation := range operations {
 		hasCall = hasCall || operation.Kind == core.OpCall
+	}
+	for _, operation := range operations {
+		if fileBytesForeignContract(operation.Foreign) {
+			return v.check(v.fileBytesOwnerLifecycleValid(function), "core.file_bytes_owner_lifecycle", function.ID)
+		}
 	}
 	for _, operation := range operations {
 		if fixtureForeignContract(operation.Foreign) {
@@ -4989,6 +5106,14 @@ func deriveAbility(shape core.TypeRef, requested core.Ability, depth int, sealed
 		}
 		if requested == core.AbilityCopy {
 			return false, []string{"FixtureBytes"}, true
+		}
+		return true, nil, true
+	case "FileBytes":
+		if len(shape.Arguments) != 0 {
+			return false, nil, false
+		}
+		if requested == core.AbilityCopy {
+			return false, []string{"FileBytes"}, true
 		}
 		return true, nil, true
 	case "Box":

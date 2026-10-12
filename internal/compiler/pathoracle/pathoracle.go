@@ -1450,6 +1450,210 @@ func releaseWhileViewLiveError(function core.Function) error {
 	return nil
 }
 
+// HasFileBytesOwnerOperations reports whether any function carries a Phase 31
+// file-bytes owner foreign operation, identified by the plural
+// schway_file_bytes_ symbol prefix or the FileBytes type name. A program that
+// borrows either marker is routed to ValidateFileBytesOwnerPaths and refused
+// there rather than admitted through any earlier owner shape.
+func HasFileBytesOwnerOperations(program core.Program) bool {
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if fileBytesOwnerContract(operation.Foreign) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func fileBytesOwnerContract(contract *core.ForeignOperationContract) bool {
+	if contract == nil {
+		return false
+	}
+	const prefix = "schway_file_bytes_"
+	return strings.HasPrefix(contract.Symbol, prefix) || contract.ParameterType == "FileBytes" || contract.ResultType == "FileBytes"
+}
+
+// ValidateFileBytesOwnerPaths independently replays the Phase 31 file-bytes
+// owner path. It starts from the entry parameter: the acquire is seeded from
+// the PathToken parameter, the borrow yields a ByteView from that live owner,
+// exactly one call consumes the view while the owner is still live, exactly one
+// release of that acquisition follows the call, then either the call result or
+// the result of exactly one trailing U64 -> U64 entry-module call is returned
+// (D-16). Any other order, count or source is refused.
+func ValidateFileBytesOwnerPaths(program core.Program) error {
+	checked := 0
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		owner := false
+		for _, operation := range function.Linear.Operations {
+			owner = owner || fileBytesOwnerContract(operation.Foreign)
+		}
+		if !owner {
+			continue
+		}
+		checked++
+		if err := fileBytesReleaseWhileViewLiveError(function); err != nil {
+			return err
+		}
+		if err := validateFileBytesOwnerFunction(program, function); err != nil {
+			return err
+		}
+	}
+	if checked != 1 {
+		return fmt.Errorf("pathoracle.file_bytes_owner_shape: expected exactly one file-bytes owner function, found %d", checked)
+	}
+	return nil
+}
+
+// fileBytesReleaseWhileViewLiveError is pathoracle's own derivation of the
+// release-while-view-live law for the file-bytes shape: walking the operations
+// in program order it records the owner each borrowed view comes from and the
+// last index at which the view is read, and refuses an OpRelease of that owner
+// placed before that read.
+func fileBytesReleaseWhileViewLiveError(function core.Function) error {
+	operations := function.Linear.Operations
+	constructors := make(map[string]string, len(function.Linear.Types))
+	for _, fact := range function.Linear.Types {
+		constructors[fact.ID] = fact.Shape.Constructor
+	}
+	byteViews := make(map[string]bool, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		byteViews[place.ID] = constructors[place.TypeID] == "ByteView"
+	}
+	owner := make(map[string]string)
+	for _, operation := range operations {
+		if operation.Foreign != nil && operation.Foreign.Mode == "borrow" && operation.TargetID != "" && byteViews[operation.TargetID] {
+			owner[operation.TargetID] = operation.SourceID
+		}
+	}
+	lastRead := make(map[string]int, len(owner))
+	for index, operation := range operations {
+		for _, place := range []string{operation.SourceID, operation.RightID} {
+			if _, view := owner[place]; view && operation.TargetID != place {
+				lastRead[place] = index
+			}
+		}
+	}
+	for index, operation := range operations {
+		if operation.Kind != core.OpRelease {
+			continue
+		}
+		for view, from := range owner {
+			if last, read := lastRead[view]; read && operation.SourceID == from && index < last {
+				return fmt.Errorf("pathoracle.release_while_view_live: release %q of owner %q precedes read %q of the view %q derived from it", operation.ID, from, operations[last].ID, view)
+			}
+		}
+	}
+	return nil
+}
+
+func validateFileBytesOwnerFunction(program core.Program, function core.Function) error {
+	if function.Parameter.Type != "PathToken" || function.ReturnType != "U64" || len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 {
+		return fmt.Errorf("pathoracle.file_bytes_owner_shape: function %q is outside the admitted PathToken-to-U64 path", function.ID)
+	}
+	entryPrefix := strings.TrimSuffix(function.ID, function.Name)
+	types := make(map[string]string, len(function.Linear.Types))
+	for _, fact := range function.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	places := make(map[string]string, len(function.Linear.Places))
+	for _, place := range function.Linear.Places {
+		places[place.ID] = types[place.TypeID]
+	}
+	callees := make(map[string]core.Function, len(program.Functions))
+	for _, candidate := range program.Functions {
+		callees[candidate.ID] = candidate
+	}
+	var (
+		acquire, borrow, call, trailing *core.LinearOperation
+		released, returned              bool
+		result                          string
+	)
+	for index := range function.Linear.Operations {
+		operation := &function.Linear.Operations[index]
+		contract := operation.Foreign
+		switch {
+		case contract != nil && contract.Mode == "acquire":
+			if acquire != nil || borrow != nil || call != nil || operation.Kind != core.OpForeignCall || operation.SourceID != function.Parameter.ID || places[operation.SourceID] != "PathToken" || places[operation.TargetID] != "FileBytes" ||
+				contract.Symbol != "schway_file_bytes_acquire" || contract.ABIType != "schway_file_bytes_acquire_fn" || contract.ParameterType != "PathToken" || contract.ResultType != "FileBytes" ||
+				contract.Fails != "FileError" || contract.Allocator != "libc_malloc" || contract.Release != "schway_file_bytes_release" || contract.Unwind != "forbidden" || contract.NonlocalExit != "forbidden" ||
+				operation.Allocator != contract.Allocator || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+				return fmt.Errorf("pathoracle.file_bytes_owner_acquire: operation %q is not a valid owner seed from the entry parameter", operation.ID)
+			}
+			acquire = operation
+		case contract != nil && contract.Mode == "borrow":
+			if acquire == nil || borrow != nil || call != nil || released || operation.Kind != core.OpForeignCall || operation.SourceID != acquire.TargetID || places[operation.TargetID] != "ByteView" ||
+				contract.Symbol != "schway_file_bytes_view" || contract.ABIType != "schway_file_bytes_view_fn" || contract.ParameterType != "FileBytes" || contract.ResultType != "ByteView" ||
+				contract.Fails != "" || contract.Allocator != "" || contract.Release != "" || contract.Unwind != "forbidden" || contract.NonlocalExit != "forbidden" ||
+				operation.Allocator != "" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+				return fmt.Errorf("pathoracle.file_bytes_owner_borrow: operation %q does not borrow a view from the one live acquired owner", operation.ID)
+			}
+			borrow = operation
+		case operation.Kind == core.OpCall:
+			callee, known := callees[operation.CalleeID]
+			if borrow == nil {
+				return fmt.Errorf("pathoracle.file_bytes_owner_order: call %q must consume the view while the owner is live", operation.ID)
+			}
+			if call == nil {
+				if released {
+					return fmt.Errorf("pathoracle.file_bytes_owner_order: call %q must consume the view while the owner is live", operation.ID)
+				}
+				if !known || callee.Parameter.Type != "ByteView" || callee.ReturnType != "U64" || operation.SourceID != borrow.TargetID || places[operation.TargetID] != "U64" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+					return fmt.Errorf("pathoracle.file_bytes_owner_borrow: call %q does not consume the borrowed view into a U64", operation.ID)
+				}
+				call = operation
+				result = operation.TargetID
+				continue
+			}
+			if !released {
+				return fmt.Errorf("pathoracle.file_bytes_owner_trailing: call %q is ordered before the release", operation.ID)
+			}
+			if returned || trailing != nil || !known || entryPrefix == function.ID || callee.ID != entryPrefix+callee.Name || callee.Parameter.Type != "U64" || callee.ReturnType != "U64" ||
+				operation.SourceID != call.TargetID || places[operation.TargetID] != "U64" || operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "" {
+				return fmt.Errorf("pathoracle.file_bytes_owner_trailing: call %q is not the one admitted trailing U64 -> U64 entry-module call over the library result", operation.ID)
+			}
+			trailing = operation
+			result = operation.TargetID
+		case contract != nil && contract.Mode == "consume":
+			if acquire == nil || borrow == nil {
+				return fmt.Errorf("pathoracle.file_bytes_owner_release: release %q has no live acquired owner", operation.ID)
+			}
+			if call == nil {
+				return fmt.Errorf("pathoracle.file_bytes_owner_order: release %q is ordered before the call that consumes the view", operation.ID)
+			}
+			if released {
+				return fmt.Errorf("pathoracle.file_bytes_owner_release: release %q discharges the owner a second time", operation.ID)
+			}
+			if operation.Kind != core.OpRelease || operation.ReleasesOperationID != acquire.ID || operation.SourceID != acquire.TargetID || operation.TargetID != "" ||
+				contract.Symbol != acquire.Foreign.Release || contract.ABIType != "schway_file_bytes_release_fn" || contract.ParameterType != "FileBytes" || contract.ResultType != "Unit" ||
+				contract.Fails != "" || contract.Release != "" || contract.Allocator != acquire.Foreign.Allocator || operation.Allocator != contract.Allocator || contract.Unwind != "forbidden" || contract.NonlocalExit != "forbidden" {
+				return fmt.Errorf("pathoracle.file_bytes_owner_release: release %q does not discharge its acquired owner", operation.ID)
+			}
+			released = true
+		case operation.Kind == core.OpReturn:
+			if returned || call == nil || !released || operation.SourceID != result {
+				return fmt.Errorf("pathoracle.file_bytes_owner_order: return %q must follow the release and return the last call result", operation.ID)
+			}
+			returned = true
+		default:
+			return fmt.Errorf("pathoracle.file_bytes_owner_shape: operation %q escapes the admitted file-bytes owner shape", operation.ID)
+		}
+	}
+	if acquire == nil || !released {
+		return fmt.Errorf("pathoracle.file_bytes_owner_order: function %q has no complete acquisition discharge", function.ID)
+	}
+	if !returned || borrow == nil || call == nil {
+		return fmt.Errorf("pathoracle.file_bytes_owner_order: function %q does not return the call result after discharge", function.ID)
+	}
+	return nil
+}
+
 func validateFixtureOwnerFunction(program core.Program, function core.Function) error {
 	if function.Parameter.Type != "U64" || function.ReturnType != "U64" || len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 {
 		return fmt.Errorf("pathoracle.fixture_owner_shape: function %q is outside the admitted U64-to-U64 path", function.ID)

@@ -1445,7 +1445,7 @@ func buildApplicationChecked(ctx context.Context, checked CheckResult, source []
 			if err := pathoracle.ValidateFixtureOwnerPaths(program); err != nil {
 				return native.BuildReceipt{}, nil, err
 			}
-		} else if err := pathoracle.ValidateLocalOwnerPaths(program); err != nil {
+		} else if err := validateLocalOrFileBytesOwnerPaths(program); err != nil {
 			return native.BuildReceipt{}, nil, err
 		}
 		if len(manifestPath) != 1 {

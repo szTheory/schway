@@ -4159,6 +4159,9 @@ func hasTryCall(body *ast.LinearBody) bool {
 func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbols map[string]foreignSymbolInfo, functionNames map[string]bool, dataTypes map[string]core.DataType, calleeContracts map[string]calleeContract) (core.Function, []diagnostic.Diagnostic, int) {
 	parameterType := coreType(function.Parameter.Type)
 	returnType := coreType(function.ReturnType)
+	if fileBytesEntryCandidate(function) {
+		return checkFileBytesEntry(functionID, function, foreignSymbols, calleeContracts)
+	}
 	if fixtureBytesEntryCandidate(function) {
 		return checkFixtureBytesEntry(functionID, function, foreignSymbols, calleeContracts)
 	}
@@ -4774,6 +4777,212 @@ func checkFixtureOwnerPostAssembly(function core.Function) []diagnostic.Diagnost
 	}
 	if !shaped {
 		return []diagnostic.Diagnostic{diagnostic.Error("check.fixture_owner_shape_unsupported", function.Span, "the assembled fixture core is not the closed acquire, view, call, release, return shape")}
+	}
+	return nil
+}
+
+// fileBytesEntryCandidate keys the Phase 31 bounded file-bytes owner shape
+// (D-06) on the schway_file_bytes_acquire symbol alone, with the plural prefix
+// so the Phase 23 schway_file_byte_ matchers can never capture it. It is a
+// separate closed matcher: the Phase 23 and Phase 29 matchers are not edited.
+func fileBytesEntryCandidate(function ast.FuncDecl) bool {
+	body := function.Body.Linear
+	if body == nil || len(body.Bindings) == 0 {
+		return false
+	}
+	first := body.Bindings[0].RHS
+	return first.Kind == "try_call" && first.Callee == "schway_file_bytes_acquire"
+}
+
+// checkFileBytesEntry admits the closed D-16 caller shape: acquire the file
+// owner from the PathToken entry parameter, borrow a ByteView from it, pass the
+// view to a callee resolved through the callee-contract table, release the
+// owner with the compiler-minted release, then optionally make exactly one
+// trailing U64 -> U64 call to a function defined in the entry module, and
+// return the last result. The source contains no release call.
+func checkFileBytesEntry(functionID string, function ast.FuncDecl, symbols map[string]foreignSymbolInfo, callees map[string]calleeContract) (core.Function, []diagnostic.Diagnostic, int) {
+	body := function.Body.Linear
+	refuse := func(code, message string, span diagnostic.Span) (core.Function, []diagnostic.Diagnostic, int) {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(code, span, message)}, 1
+	}
+	const shapeMessage = "the file bytes owner is admitted only for a PathToken entry that acquires, views, calls once with the view, and returns that U64 result or the result of one trailing U64 -> U64 call"
+	if !isEntryMain(function) || function.Parameter.Type.Constructor != "PathToken" || function.ReturnType.Constructor != "U64" || (len(body.Bindings) != 3 && len(body.Bindings) != 4) || body.Result != body.Bindings[len(body.Bindings)-1].Name {
+		return refuse("check.file_bytes_owner_shape_unsupported", shapeMessage, body.Span)
+	}
+	acquireBinding, viewBinding, callBinding := body.Bindings[0], body.Bindings[1], body.Bindings[2]
+	if len(acquireBinding.RHS.Arguments) != 1 || acquireBinding.RHS.Arguments[0] != function.Parameter.Name ||
+		viewBinding.RHS.Kind != "call" || viewBinding.RHS.Callee != "schway_file_bytes_view" || len(viewBinding.RHS.Arguments) != 1 || viewBinding.RHS.Arguments[0] != acquireBinding.Name ||
+		callBinding.RHS.Kind != "call" || len(callBinding.RHS.Arguments) != 1 || callBinding.RHS.Arguments[0] != viewBinding.Name {
+		return refuse("check.file_bytes_owner_shape_unsupported", shapeMessage, body.Span)
+	}
+	acquire, hasAcquire := symbols["schway_file_bytes_acquire"]
+	view, hasView := symbols["schway_file_bytes_view"]
+	release, hasRelease := symbols["schway_file_bytes_release"]
+	if !hasAcquire || !hasView || !hasRelease {
+		return refuse("check.file_bytes_owner_contract_missing", "the file bytes source must declare acquire, view, and release symbols", body.Span)
+	}
+	if !foreignSignature(acquire, "PathToken", "FileBytes") || !foreignSignature(view, "FileBytes", "ByteView") || !foreignSignature(release, "FileBytes", "Unit") {
+		return refuse("check.file_bytes_owner_signature_mismatch", "file bytes operation signatures do not match the PathToken/FileBytes/ByteView contract", body.Span)
+	}
+	if !localForeignPolicy(acquire, "acquire", "schway_file_bytes_acquire_fn", "FileError") || acquire.Allocator != "libc_malloc" || acquire.Release != release.Name || release.Name != "schway_file_bytes_release" ||
+		!localForeignPolicy(view, "borrow", "schway_file_bytes_view_fn", "") ||
+		!localForeignPolicy(release, "consume", "schway_file_bytes_release_fn", "") || release.Allocator != "libc_malloc" {
+		return refuse("check.file_bytes_owner_contract_invalid", "file bytes operations require explicit per-operation ABI, mode, failure, allocator, and release facts", body.Span)
+	}
+	pathType, ownerType, viewType, u64Type := core.TypeRef{Constructor: "PathToken"}, core.TypeRef{Constructor: "FileBytes"}, core.TypeRef{Constructor: "ByteView"}, core.TypeRef{Constructor: "U64"}
+	shapes := []core.TypeRef{pathType, ownerType, viewType, u64Type}
+	types := make([]core.TypeFact, len(shapes))
+	for index, shape := range shapes {
+		derived, err := ability.Derive(shape)
+		if err != nil {
+			return refuse("type.unknown", err.Error(), function.Span)
+		}
+		types[index] = core.TypeFact{ID: fmt.Sprintf("%s:type:%d", functionID, index), Shape: shape, Abilities: derived.Granted, NegativeWitnesses: derived.NegativeWitnesses}
+	}
+	places := []core.Place{
+		{ID: functionID + ":place:0", Name: function.Parameter.Name, TypeID: types[0].ID},
+		{ID: functionID + ":place:1", Name: acquireBinding.Name, TypeID: types[1].ID},
+		{ID: functionID + ":place:2", Name: viewBinding.Name, TypeID: types[2].ID},
+	}
+	scope := map[string]*placeState{}
+	for _, place := range places {
+		scope[place.Name] = &placeState{place: place, initialized: true}
+	}
+	// The library call is constructed through the callee-contract table so the
+	// argument-type and return-type gates run at the call site.
+	callOp, target, diag := resolveCallBinding(functionID, 2, callBinding, scope, callees, types[3], symbols, types)
+	if diag != nil {
+		return core.Function{}, []diagnostic.Diagnostic{*diag}, 1
+	}
+	contract := callees[callBinding.RHS.Callee]
+	if contract.ParameterType != "ByteView" || contract.ReturnType != "U64" || target.TypeID != types[3].ID {
+		return refuse("check.file_bytes_owner_contract_invalid", "the file bytes view callee must take one ByteView and return U64", callBinding.RHS.Span)
+	}
+	target.Name = callBinding.Name
+	places = append(places, target)
+	scope[target.Name] = &placeState{place: target, initialized: true}
+	acquireID := functionID + ":op:0"
+	operations := []core.LinearOperation{
+		{ID: acquireID, PointID: functionID + ":point:linear:0", Kind: core.OpForeignCall, SourceID: places[0].ID, TargetID: places[1].ID, TypeID: types[1].ID, Allocator: acquire.Allocator, Foreign: localForeignContract(acquire)},
+		{ID: functionID + ":op:1", PointID: functionID + ":point:linear:1", Kind: core.OpForeignCall, SourceID: places[1].ID, TargetID: places[2].ID, TypeID: types[2].ID, Foreign: localForeignContract(view)},
+		callOp,
+		phase24ReleaseOp(functionID, 3, places[1].ID, types[1].ID, acquireID, release),
+	}
+	result := places[3]
+	if len(body.Bindings) == 4 {
+		tailBinding := body.Bindings[3]
+		tailContract, known := callees[tailBinding.RHS.Callee]
+		entryPrefix := strings.TrimSuffix(functionID, function.Name)
+		if tailBinding.RHS.Kind != "call" || len(tailBinding.RHS.Arguments) != 1 || tailBinding.RHS.Arguments[0] != callBinding.Name || !known ||
+			tailContract.ID != entryPrefix+tailBinding.RHS.Callee || tailContract.ParameterType != "U64" || tailContract.ReturnType != "U64" {
+			return refuse("check.file_bytes_owner_shape_unsupported", "the only admitted trailing call takes the library result and calls a U64 -> U64 function defined in the entry module", tailBinding.RHS.Span)
+		}
+		// A target place must be place:<operation index + 1> and places must be
+		// contiguous, so the release at index 3 leaves place:4 as a typed
+		// placeholder (it is never read) and the trailing call at index 4
+		// targets place:5.
+		places = append(places, core.Place{ID: functionID + ":place:4", Name: "_released", TypeID: types[3].ID})
+		tailOp, tailTarget, tailDiag := resolveCallBinding(functionID, 4, tailBinding, scope, callees, types[3], symbols, types)
+		if tailDiag != nil {
+			return core.Function{}, []diagnostic.Diagnostic{*tailDiag}, 1
+		}
+		tailTarget.Name = tailBinding.Name
+		places = append(places, tailTarget)
+		operations = append(operations, tailOp)
+		result = tailTarget
+	}
+	operations = append(operations, core.LinearOperation{ID: fmt.Sprintf("%s:op:%d", functionID, len(operations)), PointID: fmt.Sprintf("%s:point:linear:%d", functionID, len(operations)), Kind: core.OpReturn, SourceID: result.ID, TypeID: types[3].ID})
+	linear := &core.LinearBody{ID: functionID + ":linear", Types: types, Places: places, Operations: operations, Blocks: []core.Block{}, Edges: []core.Edge{}}
+	assembled := core.Function{
+		ID: functionID, Name: function.Name,
+		EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
+		Parameter: core.Parameter{ID: places[0].ID, Name: function.Parameter.Name, Type: "PathToken"}, ReturnType: "U64",
+		Linear: linear, Span: function.Span,
+	}
+	if diagnostics := checkFileBytesOwnerPostAssembly(assembled); len(diagnostics) != 0 {
+		return core.Function{}, diagnostics, 1
+	}
+	return assembled, nil, 14
+}
+
+// checkFileBytesOwnerPostAssembly is check's post-assembly decision point over
+// the hand-built file-bytes core. Order: first the release-while-view-live law,
+// so its own code is observed; then, for a cyclic block graph, the existing
+// cycle refusal; then the closed shape: acquire, view, call, release, an
+// optional single trailing call, return. It derives view-from-owner and
+// later-read facts from the core on its own and is not a loanLivenessFixpoint
+// caller.
+func checkFileBytesOwnerPostAssembly(function core.Function) []diagnostic.Diagnostic {
+	if function.Linear == nil {
+		return nil
+	}
+	operations := function.Linear.Operations
+	shapes := map[string]string{}
+	for _, fact := range function.Linear.Types {
+		shapes[fact.ID] = fact.Shape.Constructor
+	}
+	viewPlaces := map[string]bool{}
+	for _, place := range function.Linear.Places {
+		viewPlaces[place.ID] = shapes[place.TypeID] == "ByteView"
+	}
+	viewOwner := map[string]string{}
+	for _, operation := range operations {
+		if operation.Foreign != nil && operation.Foreign.Mode == "borrow" && operation.TargetID != "" && viewPlaces[operation.TargetID] {
+			viewOwner[operation.TargetID] = operation.SourceID
+		}
+	}
+	lastRead := map[string]int{}
+	for index, operation := range operations {
+		for _, place := range []string{operation.SourceID, operation.RightID} {
+			if _, isView := viewOwner[place]; isView && operation.TargetID != place {
+				lastRead[place] = index
+			}
+		}
+	}
+	for index, operation := range operations {
+		if operation.Kind != core.OpRelease {
+			continue
+		}
+		for view, owner := range viewOwner {
+			if last, read := lastRead[view]; read && operation.SourceID == owner && index < last {
+				return []diagnostic.Diagnostic{diagnostic.Error(
+					"check.release_while_view_live", function.Span,
+					"the owner is released before a view borrowed from it is read for the last time",
+					diagnostic.Cause{Kind: "release", Detail: operation.ID},
+					diagnostic.Cause{Kind: "view_read_later", Detail: operations[last].ID},
+				)}
+			}
+		}
+	}
+	if len(function.Linear.Blocks) > 0 {
+		blocks := cfgBlocksForFunction(function)
+		order := make([]string, 0, len(blocks))
+		byID := make(map[string]cfgBlockSpec, len(blocks))
+		var allOps []core.LinearOperation
+		for _, block := range blocks {
+			byID[block.id] = block
+			order = append(order, block.id)
+			allOps = append(allOps, block.operations...)
+		}
+		if cycleBlockID, cyclic := detectCFGCycle(order, byID); cyclic {
+			return []diagnostic.Diagnostic{cfgBackEdgeDiagnostic(function.ID, cycleBlockID, cfgBackEdgeCategory(allOps), function.Span)}
+		}
+	}
+	core5 := []core.OperationKind{core.OpForeignCall, core.OpForeignCall, core.OpCall, core.OpRelease, core.OpReturn}
+	core6 := []core.OperationKind{core.OpForeignCall, core.OpForeignCall, core.OpCall, core.OpRelease, core.OpCall, core.OpReturn}
+	shaped := len(function.Linear.Blocks) == 0
+	if shaped {
+		want := core5
+		if len(operations) == len(core6) {
+			want = core6
+		}
+		shaped = len(operations) == len(want)
+		for index := 0; shaped && index < len(want); index++ {
+			shaped = operations[index].Kind == want[index]
+		}
+	}
+	if !shaped {
+		return []diagnostic.Diagnostic{diagnostic.Error("check.file_bytes_owner_shape_unsupported", function.Span, "the assembled file bytes core is not the closed acquire, view, call, release, optional trailing call, return shape")}
 	}
 	return nil
 }

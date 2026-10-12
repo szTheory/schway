@@ -66,6 +66,8 @@ var phase30NewCommittedPaths = map[string]bool{
 	// the golden stays frozen (D-15).
 	"examples/checksum/adler32.schway":     true,
 	"examples/checksum/adler32_cli.schway": true,
+	// 2026-10-12 (Phase 31, plan 31-01): the bounded file checksum entry.
+	"examples/checksum/checksum.schway": true,
 }
 
 type phase30PreChangeGolden struct {
