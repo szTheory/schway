@@ -1,8 +1,10 @@
 package main
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -56,5 +58,62 @@ func TestPhase29FixtureAppCLI(t *testing.T) {
 				t.Fatalf("run --engine=%s code=%d stdout=%q stderr=%q; want exit 3 and %s (D-06 unchanged)", test.engine, code, stdout, stderr, test.code)
 			}
 		})
+	}
+}
+
+// TestPhase29OOBControlAppCLI pins the README out-of-bounds control through
+// the public CLI: `schway build --manifest` then `schway app run -- N` reads
+// one byte past the end and exits 65 with the exact stderr and empty stdout.
+func TestPhase29OOBControlAppCLI(t *testing.T) {
+	if _, err := exec.LookPath("clang"); err != nil {
+		t.Skip("env:clang toolchain unavailable on this host")
+	}
+	source := testsupport.ProjectPath("examples", "phase29", "byte_index_oob.schway")
+	manifest := testsupport.ProjectPath("examples", "phase29", "fixture_bytes.bindings.json")
+	artifact := filepath.Join(t.TempDir(), "byte-index-oob")
+	code, stdout, stderr := captureLangRun(t, []string{"build", source, "--manifest", manifest, "--output", artifact})
+	if code != 0 || stdout != "built "+artifact+"\n" || stderr != "" {
+		t.Fatalf("oob control public build code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	for _, input := range []string{"0", "2"} {
+		t.Run("case-"+input, func(t *testing.T) {
+			code, stdout, stderr := captureLangRun(t, []string{"app", "run", artifact, "--", input})
+			if code != 65 || stdout != "" || stderr != "schway: byte index out of bounds\n" {
+				t.Fatalf("case %s code=%d stdout=%q stderr=%q; want code=65, empty stdout, byte index stderr", input, code, stdout, stderr)
+			}
+		})
+	}
+}
+
+var phase29ReadmeCaseRow = regexp.MustCompile("(?m)^\\| ([0-9]+) \\| [^|]+ \\| ([0-9]+) \\|$")
+
+// TestPhase29ExampleReadmeCaseTable keeps examples/phase29/README.md in step
+// with the pinned oracle table: every case row names the pinned checksum, and
+// the documented out-of-bounds stderr and exit code match the tested ones.
+func TestPhase29ExampleReadmeCaseTable(t *testing.T) {
+	data, err := os.ReadFile(testsupport.ProjectPath("examples", "phase29", "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	readme := string(data)
+	seen := map[uint64]bool{}
+	for _, m := range phase29ReadmeCaseRow.FindAllStringSubmatch(readme, -1) {
+		caseID, _ := strconv.ParseUint(m[1], 10, 64)
+		documented, _ := strconv.ParseUint(m[2], 10, 64)
+		want, ok := testsupport.Phase29FixtureExpected(caseID)
+		if !ok || documented != want {
+			t.Errorf("README case %d documents %d; pinned %d (known=%v)", caseID, documented, want, ok)
+		}
+		seen[caseID] = true
+	}
+	for _, caseID := range testsupport.Phase29FixtureCaseIDs() {
+		if !seen[caseID] {
+			t.Errorf("README case table has no row for case %d", caseID)
+		}
+	}
+	for _, claim := range []string{"`schway: byte index out of bounds`", "exit code is\n65", "and exit 65"} {
+		if !strings.Contains(readme, claim) {
+			t.Errorf("README is missing %q", claim)
+		}
 	}
 }

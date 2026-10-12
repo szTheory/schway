@@ -55,6 +55,14 @@ Turn acceptance criteria into early deterministic checks at the lowest layer tha
 
 This preference does not waive mandatory workflow gates, required user authorization, or acceptance decisions explicitly designated as human-only. Future phase plans must name the concrete verification commands that prove their acceptance criteria and arrange for high-value recurring checks to run in existing CI.
 
+During `/gsd-verify-work`, the agent runs every derived checkpoint itself before
+presenting any (CLI command, exit code, stdout/stderr, docs claim), records each
+as `result: pass` with `source: automated` and its covering test, and adds a
+focused test (with a mutation/armed control) for any checkpoint not already
+pinned in `go test ./...` CI. Only checkpoints with no repeatable proxy reach
+the user; when none remain, the session completes with no human prompt.
+Settled 2026-10-11 (Phase 29 UAT); do not re-ask.
+
 When an automated verification report becomes stale, preserve completed UAT and
 refresh the report from current source and automated evidence instead of
 replaying user checkpoints. If the phase is already marked complete and
