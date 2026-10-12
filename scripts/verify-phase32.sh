@@ -23,7 +23,45 @@ set -eu
 phase32_programs=checksum,adler_low,adler32_cli,adler32_fixture,byte_index_oob,sum_to_n,fizzbuzz
 
 # phase32-cases-begin
+# case checksum empty 0 1 -
+# case checksum zero 0 65537 -
 # case checksum wikipedia 0 300286872 -
+# case checksum ff65536 0 2006388466 -
+# case checksum ff65537 65 - FileError.FileTooLarge
+# case checksum missing 65 - FileError.FileUnavailable
+# case checksum directory 65 - FileError.FileUnavailable
+# case adler_low empty 0 1 -
+# case adler_low zero 0 1 -
+# case adler_low wikipedia 0 920 -
+# case adler_low ff65536 0 3826 -
+# case adler_low ff65537 65 - FileError.FileTooLarge
+# case adler_low missing 65 - FileError.FileUnavailable
+# case adler_low directory 65 - FileError.FileUnavailable
+# case adler32_cli 3 0 300286872 -
+# case adler32_cli 10 65 - -
+# case adler32_fixture 0 0 1 -
+# case adler32_fixture 1 0 65537 -
+# case adler32_fixture 2 0 6422626 -
+# case adler32_fixture 3 0 300286872 -
+# case adler32_fixture 4 0 268435457 -
+# case adler32_fixture 5 0 4052720524 -
+# case adler32_fixture 6 0 33620352 -
+# case adler32_fixture 7 0 2170679522 -
+# case adler32_fixture 8 0 2967061426 -
+# case adler32_fixture 9 0 2006388466 -
+# case adler32_fixture 10 65 - -
+# case byte_index_oob 0 65 - schway: byte index out of bounds
+# case byte_index_oob 2 65 - schway: byte index out of bounds
+# case sum_to_n 0 0 0 -
+# case sum_to_n 1 0 1 -
+# case sum_to_n 15 0 120 -
+# case sum_to_n 1000 0 500500 -
+# case sum_to_n 1001 65 - schway app: input exceeds 1000
+# case fizzbuzz 0 0 - -
+# case fizzbuzz 1 0 1 -
+# case fizzbuzz 15 0 @examples/phase27/fizzbuzz-15.out -
+# case fizzbuzz 1000 0 @examples/phase27/fizzbuzz-1000.out -
+# case fizzbuzz 1001 65 - schway app: input exceeds 1000
 # phase32-cases-end
 
 fail() {
@@ -89,9 +127,20 @@ build_program() { # build_program PROGRAM SOURCE [MANIFEST]
 	fi
 }
 build_program checksum examples/checksum/checksum.schway examples/checksum/file_bytes.bindings.json
+build_program adler_low examples/checksum/adler_low.schway examples/checksum/file_bytes.bindings.json
+build_program adler32_cli examples/checksum/adler32_cli.schway examples/phase29/fixture_bytes.bindings.json
+build_program adler32_fixture examples/phase29/adler32_fixture.schway examples/phase29/fixture_bytes.bindings.json
+build_program byte_index_oob examples/phase29/byte_index_oob.schway examples/phase29/fixture_bytes.bindings.json
+build_program sum_to_n examples/sum_to_n.schway
+build_program fizzbuzz examples/fizzbuzz.schway
 
 mkdir -p "$verify_tmp/in"
+: >"$verify_tmp/in/empty"
+printf '\000' >"$verify_tmp/in/zero"
 printf 'Wikipedia' >"$verify_tmp/in/wikipedia"
+head -c 65536 /dev/zero | LC_ALL=C tr '\000' '\377' >"$verify_tmp/in/ff65536"
+head -c 65537 /dev/zero | LC_ALL=C tr '\000' '\377' >"$verify_tmp/in/ff65537"
+mkdir "$verify_tmp/in/directory"
 
 : >"$verify_tmp/empty"
 case_count=0
@@ -136,6 +185,25 @@ $case_table
 EOF
 
 control_count=0
+# run_control NAME PACKAGE REGEX TEST... (a skipped or empty control fails)
+run_control() {
+	name=$1; pkg=$2; regex=$3; shift 3
+	log="$verify_tmp/control-$name.log"
+	go test -v -count=1 -run "$regex" "$pkg" >"$log" 2>&1 ||
+		{ cat "$log" >&2; fail "native control failed: $name" "control_failed_$name"; }
+	if grep -Fq -- '--- SKIP:' "$log" || grep -Fq 'no tests to run' "$log"; then
+		fail "native control skipped: $name" "control_skipped_$name"
+	fi
+	for test_name in "$@"; do
+		grep -Fq -- "--- PASS: $test_name " "$log" || fail "native control did not pass: $test_name" "control_missing_$test_name"
+	done
+	printf 'phase32 control name=%s package=%s tests=%s status=pass\n' "$name" "$pkg" "$*"
+	control_count=$((control_count + 1))
+}
+run_control guide ./cmd/schway '^TestPhase32GuideCleanCheckout$' TestPhase32GuideCleanCheckout
+run_control route-audit ./cmd/schway '^TestPhase32PublicRouteAudit$' TestPhase32PublicRouteAudit
+run_control codedigest ./internal/compiler/session '^TestPhase32CodeDigest$' TestPhase32CodeDigest
+run_control receipt-rules ./internal/compiler/session '^TestPhase32ReceiptLivingClaims$' TestPhase32ReceiptLivingClaims
 
 tree_end=$(tree_state)
 [ "$tree_end" = "$tree_start" ] || fail "tree moved during the run" "tree_moved"

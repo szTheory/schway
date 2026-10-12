@@ -83,10 +83,10 @@ check_log() { # check_log LOG -> prints host name on success
 	[ "$(field "$result" programs)" = "$want_programs" ] || reject "result_programs_mismatch_$log"
 
 	for program in $(printf '%s\n' "$want_programs" | tr ',' ' '); do
-		if printf '%s\n' "$case_table" | grep -q "^# case $program "; then
-			[ "$(grep -c "^phase32 case program=$program " "$log" || true)" -ge 1 ] || reject "program_missing_${program}_$log"
-		fi
+		printf '%s\n' "$case_table" | grep -q "^# case $program " || reject "program_without_table_entry_$program"
+		[ "$(grep -c "^phase32 case program=$program " "$log" || true)" -ge 1 ] || reject "program_missing_${program}_$log"
 	done
+	[ "$(field "$result" controls)" = 4 ] || reject "result_control_count_$log"
 	[ "$(field "$result" cases)" = "$table_count" ] || reject "result_case_count_$log"
 	[ "$(grep -c '^phase32 case ' "$log" || true)" = "$table_count" ] || reject "case_row_count_$log"
 	while read -r _hash _case program key want_exit _stdout _stderr; do
@@ -95,6 +95,10 @@ check_log() { # check_log LOG -> prints host name on success
 	done <<EOF
 $case_table
 EOF
+	[ "$(grep -c '^phase32 control ' "$log" || true)" = 4 ] || reject "control_row_count_$log"
+	for control in guide route-audit codedigest receipt-rules; do
+		[ "$(grep -Ec "^phase32 control name=$control package=[^ ]+ tests=[^ ]+( [^ ]+)* status=pass\$" "$log" || true)" = 1 ] || reject "control_missing_or_altered_${control}_$log"
+	done
 	printf '%s' "$host"
 }
 

@@ -425,6 +425,35 @@ func phase32UsageProblems(usage string, routes []string, omissions []string) []s
 	return problems
 }
 
+var phase32ProducerProgramsLine = regexp.MustCompile(`(?m)^phase32_programs=(.*)$`)
+
+// phase32ProducerPrograms reads the `phase32_programs=` line of the receipt
+// producer script text (D-10b). It returns nil when the line is absent.
+func phase32ProducerPrograms(scriptText string) []string {
+	match := phase32ProducerProgramsLine.FindStringSubmatch(scriptText)
+	if match == nil {
+		return nil
+	}
+	return strings.Split(match[1], ",")
+}
+
+// phase32ProducerProgramProblems compares the covered program set with the
+// producer's line. The producer line is the hub of the coupling.
+func phase32ProducerProgramProblems(scriptText string, covered []string) []string {
+	want := phase32ProducerPrograms(scriptText)
+	if want == nil {
+		return []string{"programs_line_missing"}
+	}
+	got := append([]string(nil), covered...)
+	sort.Strings(got)
+	sorted := append([]string(nil), want...)
+	sort.Strings(sorted)
+	if strings.Join(got, ",") != strings.Join(sorted, ",") {
+		return []string{"programs_line_drift covered=" + strings.Join(got, ",") + " producer=" + strings.Join(sorted, ",")}
+	}
+	return nil
+}
+
 func phase32WithoutRow(rows []phase32RouteRow, key string) []phase32RouteRow {
 	out := []phase32RouteRow{}
 	for _, row := range rows {
@@ -477,6 +506,26 @@ func TestPhase32PublicRouteAudit(t *testing.T) {
 		t.Fatalf("covered program set = %v, want %v (D-09a)", got, want)
 	}
 
+	producer, err := os.ReadFile(testsupport.ProjectPath("scripts", "verify-phase32.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if problems := phase32ProducerProgramProblems(string(producer), got); len(problems) > 0 {
+		t.Fatalf("covered set differs from scripts/verify-phase32.sh phase32_programs= (D-10b): %v", problems)
+	}
+	t.Run("programs-line-drift", func(t *testing.T) {
+		original := "phase32_programs=" + strings.Join(phase32ReceiptPrograms, ",")
+		if !strings.Contains(string(producer), "\n"+original+"\n") {
+			t.Fatalf("producer lacks the line %q", original)
+		}
+		drifted := strings.Replace(string(producer), original, "phase32_programs="+strings.Join(phase32ReceiptPrograms[:len(phase32ReceiptPrograms)-1], ","), 1)
+		if problems := phase32ProducerProgramProblems(drifted, got); len(problems) == 0 {
+			t.Fatal("a producer line without fizzbuzz did not report a problem")
+		}
+		if problems := phase32ProducerProgramProblems("no line here\n", got); !phase32Contains(problems, "programs_line_missing") {
+			t.Fatalf("problems = %v, want programs_line_missing", problems)
+		}
+	})
 	t.Run("uncovered-route", func(t *testing.T) {
 		injected := append(append([]string(nil), routes...), "frobnicate")
 		problems := phase32RouteAuditProblems(injected, entries, phase32RouteRows, testNames)
