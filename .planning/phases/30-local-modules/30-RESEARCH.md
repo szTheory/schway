@@ -465,7 +465,20 @@ Not applicable: this is not a rename/refactor/migration phase. The one string th
 | A13 | Cycle through the entry detected by `os.SameFile` against the entry file | Pitfall 8 | Entry given through an unusual path (symlink) could fail identity; entry is user authority |
 | A14 | The PRODUCT-ROADMAP / LANGUAGE-MATURITY transition read required by AGENTS.md was only skimmed (grep for module claims), not executed as a full transition check | Project constraints | Planner should perform it |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> Resolved 2026-10-12 in 30-CONTEXT.md:
+> - Q1/A1: D-18
+> - Q2/A2: D-19 (amended)
+> - Q3/A3 and Q4/A4: D-20
+> - Q5/A5: D-21
+> - Q6/A6: D-22 (amended for `format`)
+> - Q7/A7 and A8: D-23
+> - Q8/A10 and A13: D-24
+> - Q9: D-16 ceiling, held at 10
+> - A9 and A11: D-28
+> - A12 and A14: D-26 plus the pre-planning transition read
+
 
 1. **`__` in C names (A1).** What we know: D-07 allows `a__b` and trailing `_`; fn names may lead with `_`; D-12 forbids new `__`. Unclear: whether narrowing the grammar is acceptable. Recommendation: gate flag (d) decides; refuse such imported segments (`module.invalid_segment`) and imported function names (new code) rather than escape.
 2. **Which situations are `module.duplicate`?** CONTEXT assigns (a) imported == entry header. The same-module-twice case needs its own code (A2). Planner to confirm.

@@ -179,7 +179,30 @@ Plans:
 
 **Research flag**: Deeper research plus a spike. Settle `os.Root` symlink and macOS case-insensitivity behavior, the `import` and `export` surface and formatter, the reach of `Diagnostic.Unit` (protocol, debug map, human output, repair patches), injective C name mangling, and module count/size/depth caps with exact-N and N+1 controls. Keep a plan-count checkpoint: this phase has the widest blast radius in M006. Modules are whole-program composition; do not describe them as separate compilation or as closing B1/DX-06.
 
-**Plans**: TBD
+**Plans**: 10 plans (at the D-16 ceiling; 30-00 gate verdict decides PROCEED or SPLIT into 30 / 30.1)
+
+Plans:
+**Wave 1**
+- [ ] 30-00-PLAN.md — Wave-0 gate: pre-change no-import golden first (D-15), gate flags (a)-(f), written verdict
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 30-01-PLAN.md — `import` syntax, AST model, refusals and repairs, imports-per-module cap, formatter lanes
+- [ ] 30-02-PLAN.md — `Unit` on the diagnostic protocol (one-way, D-11/D-23), human `unit=`, repair driver cross-unit decline
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 30-03-PLAN.md — modload closed resolver: entry root, symlinks, exact case, FIFO, TOCTOU, single read, per-module cap
+- [ ] 30-05-PLAN.md — check module scopes, visibility and collision refusals, unit stamping, body-blind admission, core module facts
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 30-04-PLAN.md — modload graph and merge: named cycles, missing, path mismatch, duplicate, diamond once, caps N/N+1
+- [ ] 30-06-PLAN.md — corevalidate independent visibility law, entry-module selection, interpreter lookup, debug-map units
+- [ ] 30-07-PLAN.md — cgen injective module C names, entry first, order-independent, one definition per function
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 30-08-PLAN.md — session routes through modload, unit-attributed peers, single IO site, single-file refusals
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 30-09-PLAN.md — runnable gain: Adler-32 imported from its own module on both engines; registers, validation, transition read
 
 ### Phase 31: Bounded File Checksum and Second Consumer
 

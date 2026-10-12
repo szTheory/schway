@@ -194,7 +194,8 @@ is not repeated here:
     and same-offset diagnostics in different files get distinct IDs.
   - The module-to-path mapping comes from the loader's module table, which
     evidence surfaces as `Program.Modules[]` in Phase 31.
-  - The human projection prints a `unit:` prefix only when `Unit` is set.
+  - The human projection shows the unit only when `Unit` is set, as in-line
+    `unit=<module>` (form fixed by D-23).
 
   — **Reversibility:** one-way — `unit` becomes part of the published
   diagnostic protocol that agents consume.
@@ -310,6 +311,10 @@ researcher's recommendation.
   - `module.duplicate_import`: the same module is imported twice in one file.
     Its repair deletes the later import, with a `"\n"` replacement because
     `DriverEligible` requires a non-empty `Replacement`.
+    *Amended 2026-10-12 (plan check):* the deletion repair is offered only
+    when every item in the later declaration also appears in the earlier
+    one, so deleting it cannot drop an import. Otherwise the refusal stands
+    with no repair.
 - **D-20 (resolves A3, A4):** Two more refusals, both by name:
   - Imported modules may not declare `data` or `foreign` blocks:
     `module.imported_data_unsupported` and
@@ -326,6 +331,11 @@ researcher's recommendation.
   `evidence`, `explain`, `query` and `interface` stay single-file. They refuse a
   source containing `import` with `module.imports_not_loaded`. `check.Program`
   fails closed on unresolved `Imports`.
+  *Amended 2026-10-12 during planning:* `format` is the exception. Per D-03 it
+  formats `import` declarations as plain syntax without loading modules, so it
+  never refuses them. Only `evidence`, `explain`, `query` and `interface`
+  refuse with `module.imports_not_loaded`. This is pinned by
+  `TestPhase30SingleFileCommandsRefuseImports` (30-08).
 - **D-23 (amends D-11 wording; resolves A7, A8):** The human projection is
   `ID CODE unit=<module> [s:e]: message`, with `unit=` present only when set.
   It is not a `unit:` prefix. Peer-refusal attribution derives the unit from
@@ -350,6 +360,49 @@ researcher's recommendation.
   entry, README). Every adversarial fixture is generated under `t.TempDir()`,
   so the five corpus registers (phase28 manifest, 272/273 allow-lists, maturity
   count, emitter inventory) move only for those files.
+
+- **D-28 (resolves A9, A11; plan check, 2026-10-12):**
+  - The corevalidate codes are `core.callee_not_exported` and
+    `core.callee_not_imported`. The check code is `module.not_exported`.
+  - Only counts are pinned. Timing figures (A11, host-specific) are evidence
+    for D-21 and are never asserted in tests.
+- **Pre-planning transition read (AGENTS.md, 2026-10-12):** this read covered
+  `.planning/PRODUCT-ROADMAP.md` (M006 recommendation 2; lines 167-229, 303,
+  329-346), `.planning/LANGUAGE-MATURITY.md` (lines 166, 189, 270, 343-360) and
+  the three dormant seeds. The current source witness is that the parser has no
+  `import` token, so local modules are absent, as both documents state.
+  Dispositions:
+  - Both documents keep "whole-program composition; not B1/DX-06", which is
+    consistent with this phase's boundary.
+  - **SEED-261008-z1g** (caller query): retain dormant. No named reviewer gap
+    exists yet. Re-check after 30-09, when cross-file callers exist.
+  - **SEED-261008-z1s** (contract and source forms): retain dormant. The import
+    surface (D-01) was chosen by advisor research, and no named reviewer
+    contests it.
+  - **SEED-261008-trz** (failure observability): retain dormant. No named
+    failure is undiagnosable. D-11 `Unit` attribution improves cross-file
+    diagnosis.
+  - Plan 30-09 repeats the read after completion (D-26).
+
+- **D-29 (final plan check, 2026-10-12):** A library module may define a
+  private function named `main`. It is an ordinary non-entry function: it is
+  never an entry root, and no refusal rule applies to defining it. D-20 refuses
+  only *importing* `main`. Tests assert the invariant this fixes: entry-unit
+  (`Unit == ""`) diagnostics and the entry result are identical with and
+  without the library `main`. No library-`main` refusal code is invented.
+- **D-27 amendment (final plan check, 2026-10-12):** two committed files fall
+  outside `examples/phase30/`. Both are accepted:
+  - `testdata/phase30/prechange-corpus.json`, the D-15 golden. D-15 requires
+    it, and it is evidence, not a fixture.
+  - The `testdata/phase16/public-emitter-consumers.json` line re-pin forced by
+    `session.go` edits. It moves a line number only, with no corpus content
+    change.
+- **D-15 scope note (final plan check, 2026-10-12):** "evidence" in the phase
+  boundary is pinned through its inputs. The golden covers check JSON, core
+  JSON, both C emitters, debug-map and format. The `evidence`, `explain` and
+  `query` routes stay single-file (D-22) and are unchanged code paths for
+  programs without imports. Their byte identity follows from unchanged core
+  and C and is already pinned by the existing 272/273 identity tests.
 
 ### Claude's Discretion
 - The exact names of the new `module.*` refusal codes beyond those listed. They
@@ -451,7 +504,8 @@ researcher's recommendation.
   never read.
 - corevalidate re-derives visibility from `Function.Exported` and refuses
   cross-module `OpCall` to an unexported callee.
-- `cmd/schway` human diagnostic output gains the `unit:` prefix.
+- `cmd/schway` human diagnostic output gains an in-line `unit=<module>` field
+  when the unit is set (D-23 amended the earlier "`unit:` prefix" wording).
 
 </code_context>
 
