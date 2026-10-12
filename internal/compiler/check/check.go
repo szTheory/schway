@@ -2248,8 +2248,13 @@ func buildScopedCalleeContracts(program ast.Program) map[string]moduleScope {
 					continue
 				}
 				contract := functionContract(program, callee)
-				if scopedContractBodyReadSeam && callee.Body.Linear != nil {
-					contract.ReturnType += "#body" + strconv.Itoa(len(callee.Body.Linear.Bindings))
+				if scopedContractBodyReadSeam {
+					// The fault: fold a body-derived value into the contract.
+					// Production never enters this block, so admission cannot
+					// depend on a callee body (SC2).
+					if callee.Body.Linear != nil {
+						contract.ReturnType += "#body" + strconv.Itoa(len(callee.Body.Linear.Bindings))
+					}
 				}
 				scope[item.Name] = contract
 			}
