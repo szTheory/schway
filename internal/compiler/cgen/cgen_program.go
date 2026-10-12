@@ -773,11 +773,15 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	ensureInvocationChildTables(&paths, functions)
 
 	// Two-tier name allocation (D-11-08/T-11-06): ONE global cNames
-	// allocates every function's own C name, iterating in
-	// callgraph.Order's order so allocation is deterministic. Each
+	// allocates every function's own C name (allocateFunctionNames: entry
+	// functions first in callgraph.Order's order, imported functions second
+	// in canonical (Module, Name) order) so allocation is deterministic. Each
 	// function's parameter and return C types are allocated independently.
 	globals := newCNames(linearFixedNames...)
-	functionNames := make([]string, len(functions))
+	functionNames := allocateFunctionNames(functions)
+	for _, name := range functionNames {
+		globals.used[name] = struct{}{}
+	}
 	parameterTypeNames := make([]string, len(functions))
 	returnTypeNames := make([]string, len(functions))
 	branchTypes := make(map[string]programBranchType)
@@ -795,7 +799,6 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		return branchType, nil
 	}
 	for index, function := range functions {
-		functionNames[index] = globals.allocate(cName(function.Name), "function", index)
 		if function.Match != nil {
 			parameterBranchType, err := branchTypeFor(function.Parameter.Type, function.Parameter.Type)
 			if err != nil {
@@ -2974,4 +2977,69 @@ func emitProgramFixtureBytesFunction(out *strings.Builder, function core.Functio
 		strconv.Quote("function.returned"), strconv.Quote(returned.ID+":event:returned"), strconv.Quote(function.ID), strconv.Quote(returned.SourceID), strconv.Quote(returned.TypeID))
 	fmt.Fprintf(out, "  return %s;\n}\n\n", valueName)
 	return nil
+}
+
+// importedFirstForTest swaps the two allocation passes of
+// allocateFunctionNames so imported functions contend for names before entry
+// functions. It is false in production; the injectivity test engages it to
+// observe that the entry-first order is what protects an entry function whose
+// name literally equals a mangled module name (D-12).
+var importedFirstForTest bool
+
+// skipCanonicalImportSortForTest makes the imported pass allocate in input
+// order instead of canonical (Module, Name) order. It is the armed control for
+// order independence and is false in production.
+var skipCanonicalImportSortForTest bool
+
+// allocateFunctionNames assigns every function its C name in two passes
+// (D-12). Entry functions (Module == "") are allocated first, in input order,
+// with the ordinal equal to their position among entry functions, so a program
+// with no imports keeps today's names byte for byte and an entry function wins
+// a contested name. Imported functions are allocated second in canonical
+// (Module, Name) order with the ordinal equal to their position in that
+// order, under moduleCName; import declaration order therefore never changes
+// the generated C. The module and bare name come straight from
+// core.Function.Module and core.Function.Name, never from the function ID.
+func allocateFunctionNames(functions []core.Function) []string {
+	names := newCNames(linearFixedNames...)
+	result := make([]string, len(functions))
+	entry := func() {
+		ordinal := 0
+		for index, function := range functions {
+			if function.Module != "" {
+				continue
+			}
+			result[index] = names.allocate(cName(function.Name), "function", ordinal)
+			ordinal++
+		}
+	}
+	imported := func() {
+		var indexes []int
+		for index, function := range functions {
+			if function.Module != "" {
+				indexes = append(indexes, index)
+			}
+		}
+		if !skipCanonicalImportSortForTest {
+			sort.SliceStable(indexes, func(i, j int) bool {
+				left, right := functions[indexes[i]], functions[indexes[j]]
+				if left.Module != right.Module {
+					return left.Module < right.Module
+				}
+				return left.Name < right.Name
+			})
+		}
+		for position, index := range indexes {
+			function := functions[index]
+			result[index] = names.allocate(moduleCName(function.Module, function.Name), "function", position)
+		}
+	}
+	if importedFirstForTest {
+		imported()
+		entry()
+	} else {
+		entry()
+		imported()
+	}
+	return result
 }

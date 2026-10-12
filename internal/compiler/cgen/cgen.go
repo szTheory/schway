@@ -1603,7 +1603,7 @@ var plainJoinModuleNameForTest bool
 // are D-18 admissible (segments match [a-z][a-z0-9]*(_[a-z0-9]+)*), which keeps
 // the result free of "__" and inside ^SCHWAY_[A-Z0-9_]*$. Function names that
 // differ only by case collapse under ToUpper; the caller resolves those through
-// cNames.allocate. Emission does not use this function until plan 30-07.
+// cNames.allocate. Emission uses it through allocateFunctionNames.
 func moduleCName(module, function string) string {
 	if plainJoinModuleNameForTest {
 		return cName(strings.ReplaceAll(module, ".", "_") + "_" + function)
