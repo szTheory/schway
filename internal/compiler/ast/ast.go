@@ -11,6 +11,41 @@ type Program struct {
 	// zero or more blocks, each declaring one or more foreign symbols a
 	// linear body may call fallibly through `try`.
 	Foreign []ForeignBlock
+	// Imports is the Phase 30 `import a.b { fn x }` surface (D-01, D-02):
+	// zero or more declarations between the module header and the export
+	// block, in source order. A program with no import declarations has nil
+	// Imports.
+	Imports []ImportDecl
+	// Units is filled only by the modload merge (plan 30-04): one entry per
+	// module of a multi-module program. Empty means a single-file program.
+	Units []Unit
+}
+
+// ImportDecl is one `import a.b { fn x  fn y }` declaration. Module is the raw
+// dotted path text; Items are whitespace/newline separated (no commas).
+// ModuleSpan covers the dotted path, Span the whole declaration from the
+// `import` keyword through the closing brace.
+type ImportDecl struct {
+	Module     string
+	Items      []ImportItem
+	Span       diagnostic.Span
+	ModuleSpan diagnostic.Span
+}
+
+// ImportItem is one imported name. Kind is "fn" or "type"; `type` items are
+// kept so check refuses them by name (plan 30-05).
+type ImportItem struct {
+	Kind string
+	Name string
+	Span diagnostic.Span
+}
+
+// Unit is one module of a merged multi-module program: its name, the imports
+// it declared and the exports it published (D-21, plan 30-04).
+type Unit struct {
+	Name    string
+	Imports []ImportDecl
+	Exports []Export
 }
 
 // ForeignBlock is one `foreign C { }` declaration. Language is the literal
@@ -67,6 +102,10 @@ type Alternative struct {
 }
 
 type FuncDecl struct {
+	// Module names the module this function was declared in after the
+	// modload merge. Empty means the entry module, so every single-file
+	// program is unchanged.
+	Module       string
 	Name         string
 	Parameter    Parameter
 	ReturnOrigin *BorrowOrigin

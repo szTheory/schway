@@ -157,6 +157,9 @@ func (p *parser) parseProgram() ast.Program {
 	var program ast.Program
 	p.expect(TokenModule, "syntax.expected_module")
 	program.Module = p.modulePath()
+	for p.peek().Kind == TokenImport {
+		program.Imports = append(program.Imports, p.importDecl())
+	}
 	program.Exports = p.exports()
 	for p.peek().Kind != TokenEOF {
 		switch p.peek().Kind {
@@ -256,11 +259,47 @@ func (p *parser) foreignSymbol() ast.ForeignSymbol {
 }
 
 func (p *parser) modulePath() string {
-	parts := []string{p.identifier("syntax.expected_module_name").Text}
+	text, _ := p.modulePathSpan()
+	return text
+}
+
+// modulePathSpan parses a dotted module path and also returns the byte extent
+// of the tokens it consumed.
+func (p *parser) modulePathSpan() (string, diagnostic.Span) {
+	first := p.identifier("syntax.expected_module_name")
+	last := first
+	parts := []string{first.Text}
 	for p.accept(TokenDot) {
-		parts = append(parts, p.identifier("syntax.expected_module_name").Text)
+		last = p.identifier("syntax.expected_module_name")
+		parts = append(parts, last.Text)
 	}
-	return strings.Join(parts, ".")
+	return strings.Join(parts, "."), spanFrom(first, last)
+}
+
+// importDecl parses one `import a.b { fn x  fn y }` declaration (D-02):
+// importDecl := "import" modulePath "{" ("fn" IDENT | "type" IDENT)+ "}".
+// Items are whitespace/newline separated; `type` items are kept so check
+// refuses them by name.
+func (p *parser) importDecl() ast.ImportDecl {
+	start := p.expect(TokenImport, "syntax.expected_import")
+	module, moduleSpan := p.modulePathSpan()
+	p.expect(TokenLBrace, "syntax.expected_lbrace")
+	var items []ast.ImportItem
+	for !p.atAny(TokenRBrace, TokenData, TokenEOF, TokenExport, TokenImport, TokenForeign) {
+		if p.peek().Kind == TokenFn && p.looksLikeFunctionDecl() {
+			break
+		}
+		kind := p.peek()
+		if kind.Kind != TokenType && kind.Kind != TokenFn {
+			p.advance()
+			continue
+		}
+		p.advance()
+		name := p.identifier("syntax.expected_import_name")
+		items = append(items, ast.ImportItem{Kind: kind.Text, Name: name.Text, Span: spanFrom(kind, name)})
+	}
+	end := p.expect(TokenRBrace, "syntax.expected_rbrace")
+	return ast.ImportDecl{Module: module, Items: items, Span: spanFrom(start, end), ModuleSpan: moduleSpan}
 }
 
 func (p *parser) exports() []ast.Export {

@@ -10,6 +10,7 @@ import (
 var keywords = map[string]Kind{
 	"module":  TokenModule,
 	"export":  TokenExport,
+	"import":  TokenImport,
 	"type":    TokenType,
 	"data":    TokenData,
 	"fn":      TokenFn,

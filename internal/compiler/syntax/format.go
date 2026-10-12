@@ -107,11 +107,15 @@ func (f *formatter) token(token Token, next Kind) {
 	case TokenExport:
 		f.blankBeforeTopLevel()
 		f.write("export ")
+	case TokenImport:
+		f.blankBeforeTopLevel()
+		f.write("import ")
+		f.header = "import"
 	case TokenData:
 		f.blankBeforeTopLevel()
 		f.write("data ")
 	case TokenFn:
-		if f.context() == "export" {
+		if f.context() == "export" || f.context() == "import" {
 			f.ensureLine()
 		} else {
 			f.blankBeforeTopLevel()
@@ -197,7 +201,7 @@ func (f *formatter) token(token Token, next Kind) {
 		}
 		f.out.WriteString(token.Text)
 		f.lineOpen = true
-		if f.context() == "export" && (f.previous == TokenType || f.previous == TokenFn) {
+		if (f.context() == "export" || f.context() == "import") && (f.previous == TokenType || f.previous == TokenFn) {
 			f.newline()
 		} else if f.previous == TokenPipe || f.previous == TokenFatArrow {
 			f.newline()
@@ -280,7 +284,7 @@ func (f *formatter) token(token Token, next Kind) {
 		f.out.WriteByte('}')
 		f.lineOpen = true
 		f.newline()
-		if closed == "export" {
+		if closed == "export" || closed == "import" {
 			f.newline()
 		}
 	case TokenLParen:

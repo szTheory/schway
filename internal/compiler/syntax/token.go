@@ -11,6 +11,7 @@ const (
 	TokenIdentifier Kind = "identifier"
 	TokenModule     Kind = "module"
 	TokenExport     Kind = "export"
+	TokenImport     Kind = "import"
 	TokenType       Kind = "type"
 	TokenData       Kind = "data"
 	TokenFn         Kind = "fn"
