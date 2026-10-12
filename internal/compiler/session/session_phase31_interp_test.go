@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -144,6 +145,48 @@ func TestPhase31ChecksumInterpreter(t *testing.T) {
 		}
 		if run.Outcome.Kind != execution.OutcomeReturned || run.Outcome.Value != "1" {
 			t.Fatalf("control outcome = %+v, want returned 1", run.Outcome)
+		}
+	})
+
+	t.Run("oracle-rows", func(t *testing.T) {
+		count := 0
+		for _, row := range testsupport.ChecksumOracleRows() {
+			if row.App != "checksum" {
+				continue
+			}
+			count++
+			path := filepath.Join(t.TempDir(), "in.bin")
+			if err := os.WriteFile(path, row.Input, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			run, err := interp.RunWithFileBytes(checked.Program, "main", path, testsupport.ChecksumReadFile)
+			if err != nil {
+				t.Fatalf("%s: %v", row.Name, err)
+			}
+			if len(run.LiveResources) != 0 {
+				t.Fatalf("%s: live resources %v", row.Name, run.LiveResources)
+			}
+			if row.Outcome == "FileTooLarge" {
+				if run.Outcome.Kind != execution.OutcomeTypedFailure || run.Outcome.Value != "FileTooLarge" {
+					t.Fatalf("%s: outcome %+v, want typed_failure FileTooLarge", row.Name, run.Outcome)
+				}
+				continue
+			}
+			if run.Outcome.Kind != execution.OutcomeReturned || run.Outcome.Value != strconv.FormatUint(row.Want, 10) {
+				t.Fatalf("%s: outcome %+v, want returned %d", row.Name, run.Outcome, row.Want)
+			}
+			released := 0
+			for _, event := range run.Events {
+				if event.Kind == "resource.released" {
+					released++
+				}
+			}
+			if released != 1 {
+				t.Fatalf("%s: release events = %d, want 1", row.Name, released)
+			}
+		}
+		if count == 0 {
+			t.Fatal("no checksum oracle rows")
 		}
 	})
 }
