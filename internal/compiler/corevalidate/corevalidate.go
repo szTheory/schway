@@ -2911,6 +2911,9 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 				if !v.check(peerCallable(&callee), core.CalleeNotCallable, operation.CalleeID) {
 					return false
 				}
+				if code, allowed := visibilityAllows(*function, callee, v.importFacts()); !v.check(allowed, code, callee.ID) {
+					return false
+				}
 				if !v.checkCallTypeContract(callee, source, operation, places, types) {
 					return false
 				}
@@ -3302,6 +3305,10 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			// See replayStraightLine's identical case (07-05 Task 3/D-07-34).
 			if callee, ok := functionByID[operation.CalleeID]; ok {
 				if !v.check(peerCallable(&callee), core.CalleeNotCallable, operation.CalleeID) {
+					return false
+				}
+				// See replayStraightLine's identical case (Phase 30, MOD-04).
+				if code, allowed := visibilityAllows(*function, callee, v.importFacts()); !v.check(allowed, code, callee.ID) {
 					return false
 				}
 				// See replayStraightLine's identical case (07-09).
@@ -5231,7 +5238,64 @@ func cloneProgram(program core.Program) core.Program {
 	if err := json.Unmarshal(encoded, &clone); err != nil {
 		panic(fmt.Sprintf("core validation clone: %v", err))
 	}
+	if dropModuleFactsInCloneForTest {
+		for index := range clone.Functions {
+			clone.Functions[index].Module = ""
+			clone.Functions[index].Exported = false
+		}
+		clone.Imports = nil
+	}
 	return clone
+}
+
+// Phase 30 (MOD-04, SC2): the cross-module visibility law. It is written
+// from core facts only -- Function.Module, Function.Exported and
+// Program.Imports -- and never imports or consults check, so a forged core
+// program that claims a private or un-imported cross-module call is refused
+// here even when check was bypassed. A coordinated lie (matching Exported
+// and Imports facts) escapes by design: that is the frontend trust boundary,
+// cross-checked later by the Phase 31 module digests.
+const (
+	calleeNotExportedCode = "core.callee_not_exported"
+	calleeNotImportedCode = "core.callee_not_imported"
+)
+
+// disableVisibilityPeerForTest makes visibilityAllows admit every call. It is
+// the armed control proving the law, not some other check, refuses the
+// forged rows.
+var disableVisibilityPeerForTest bool
+
+// dropModuleFactsInCloneForTest models the M-CLONE mutant (a lossy clone) in
+// the production cloneProgram path.
+var dropModuleFactsInCloneForTest bool
+
+// visibilityAllows decides whether caller may call callee. Absent facts
+// refuse (fail closed). A call within one module is always allowed here; a
+// call across modules needs the callee to be an exported function of a
+// non-entry module and an import fact naming exactly that pair. The entry
+// module has Module "", so a call from an imported module into the entry
+// module is refused as not exported.
+func visibilityAllows(caller, callee core.Function, imports map[core.ModuleImport]bool) (code string, ok bool) {
+	if disableVisibilityPeerForTest || callee.Module == caller.Module {
+		return "", true
+	}
+	if callee.Module == "" || !callee.Exported {
+		return calleeNotExportedCode, false
+	}
+	if !imports[core.ModuleImport{From: caller.Module, Module: callee.Module, Name: callee.Name}] {
+		return calleeNotImportedCode, false
+	}
+	return "", true
+}
+
+// importFacts is the set of resolved import facts, built from this program's
+// own Imports and nothing else.
+func (v *validator) importFacts() map[core.ModuleImport]bool {
+	imports := make(map[core.ModuleImport]bool, len(v.program.Imports))
+	for _, fact := range v.program.Imports {
+		imports[fact] = true
+	}
+	return imports
 }
 
 // ---------------------------------------------------------------------
