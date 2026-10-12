@@ -329,7 +329,7 @@ func (r *resolver) load(module string, segments []string, entry fs.FileInfo) (So
 				if errors.Is(err, fs.ErrNotExist) {
 					return Source{}, false, r.notExist(parent, dir, path)
 				}
-				return Source{}, false, &refusal{code: CodeEscape, rel: path, err: err}
+				return Source{}, false, &refusal{code: ioRefusalCode(err), rel: path, err: err}
 			}
 			if info.Mode()&fs.ModeSymlink != 0 {
 				return Source{}, false, &refusal{code: CodeSymlink, rel: path}
@@ -357,7 +357,7 @@ func (r *resolver) load(module string, segments []string, entry fs.FileInfo) (So
 		if errors.Is(err, fs.ErrNotExist) {
 			return Source{}, false, r.notExist(parent, finalName, finalPath)
 		}
-		return Source{}, false, &refusal{code: CodeEscape, rel: finalPath, err: err}
+		return Source{}, false, &refusal{code: ioRefusalCode(err), rel: finalPath, err: err}
 	}
 	if linfo.Mode()&fs.ModeSymlink != 0 {
 		return Source{}, false, &refusal{code: CodeSymlink, rel: finalPath}
@@ -375,7 +375,7 @@ func (r *resolver) load(module string, segments []string, entry fs.FileInfo) (So
 	if file == nil {
 		opened, err := r.fsys.Open(finalPath)
 		if err != nil {
-			return Source{}, false, &refusal{code: CodeEscape, rel: finalPath, err: err}
+			return Source{}, false, &refusal{code: ioRefusalCode(err), rel: finalPath, err: err}
 		}
 		defer opened.Close()
 		file = opened
@@ -391,6 +391,27 @@ func (r *resolver) load(module string, segments []string, entry fs.FileInfo) (So
 	return Source{Module: module, RelPath: finalPath, Bytes: data, info: oinfo}, false, nil
 }
 
+// rootEscapeText is the text os.Root reports when a path leaves the root.
+// os.Root exposes no sentinel for it in Go 1.24, so the text is matched; an
+// unrecognized error fails closed as a read failure, never as an escape.
+const rootEscapeText = "path escapes from parent"
+
+// ioRefusalCode classifies a filesystem error: only a root escape is
+// module.escape. Every other failure (permissions, a long name, descriptor
+// exhaustion, I/O error) is module.read_failed, so the message does not claim a
+// confinement breach that did not happen (WR-06). The error text itself stays
+// out of the diagnostic.
+func ioRefusalCode(err error) string {
+	if !ioErrorAlwaysEscapeForTest && !strings.Contains(err.Error(), rootEscapeText) {
+		return CodeReadFailed
+	}
+	return CodeEscape
+}
+
+// ioErrorAlwaysEscapeForTest restores the pre-fix classification, where every
+// non-NotExist filesystem error is reported as module.escape.
+var ioErrorAlwaysEscapeForTest bool
+
 // pathSafeSegment rejects a segment that cannot name one directory entry.
 func pathSafeSegment(segment string) bool {
 	if segment == "" || segment == "." || segment == ".." {
@@ -401,12 +422,12 @@ func pathSafeSegment(segment string) bool {
 
 // exactCase requires a byte-equal entry named name in parent. A case-folded
 // match is CodeCaseMismatch, none is CodeNotFound, a truncated listing is
-// CodeDirectoryLimit. A listing failure is CodeEscape: the parent was already
-// proven to be an in-root directory, so only the root layer can refuse it now.
+// CodeDirectoryLimit. A listing failure is classified like any other I/O error: the
+// parent was already proven to be an in-root directory.
 func (r *resolver) exactCase(parent, name, rel string) *refusal {
 	names, truncated, err := r.fsys.ListDir(listParent(parent), MaxDirectoryEntries)
 	if err != nil {
-		return &refusal{code: CodeEscape, rel: rel, err: err}
+		return &refusal{code: ioRefusalCode(err), rel: rel, err: err}
 	}
 	if truncated {
 		return &refusal{code: CodeDirectoryLimit, rel: rel}

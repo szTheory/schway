@@ -381,9 +381,24 @@ func TestPhase30ErrorsNeverLeakAbsolutePaths(t *testing.T) {
 	lr := &resolver{fsys: leaky, sameFile: fakeSameFile}
 	_, _, diags := lr.read("lib", resolveImporter, resolveAt, nil)
 	check("leaky production", diags, "lib")
-	if diags[0].Code != CodeEscape {
-		t.Fatalf("leaky Lstat: code %q, want %q", diags[0].Code, CodeEscape)
+	if diags[0].Code != CodeReadFailed {
+		t.Fatalf("leaky Lstat: code %q, want %q", diags[0].Code, CodeReadFailed)
 	}
+	escaping := &leakyFileSystem{dir: base, err: errors.New("path escapes from parent")}
+	er := &resolver{fsys: escaping, sameFile: fakeSameFile}
+	_, _, diags = er.read("lib", resolveImporter, resolveAt, nil)
+	check("leaky escape", diags, "lib")
+	if diags[0].Code != CodeEscape {
+		t.Fatalf("root-escape Lstat: code %q, want %q", diags[0].Code, CodeEscape)
+	}
+	t.Run("control always-escape", func(t *testing.T) {
+		ioErrorAlwaysEscapeForTest = true
+		defer func() { ioErrorAlwaysEscapeForTest = false }()
+		_, _, diags := lr.read("lib", resolveImporter, resolveAt, nil)
+		if diags[0].Code != CodeEscape {
+			t.Fatalf("control must reproduce the misclassification, got %q", diags[0].Code)
+		}
+	})
 
 	t.Run("control format error text", func(t *testing.T) {
 		formatErrorTextForTest = true
@@ -397,10 +412,17 @@ func TestPhase30ErrorsNeverLeakAbsolutePaths(t *testing.T) {
 }
 
 // leakyFileSystem fails Lstat with an error whose text names an absolute path.
-type leakyFileSystem struct{ dir string }
+type leakyFileSystem struct {
+	dir string
+	err error
+}
 
 func (l *leakyFileSystem) Lstat(name string) (fs.FileInfo, error) {
-	return nil, &fs.PathError{Op: "lstat", Path: filepath.Join(l.dir, name), Err: errors.New("denied")}
+	cause := l.err
+	if cause == nil {
+		cause = errors.New("denied")
+	}
+	return nil, &fs.PathError{Op: "lstat", Path: filepath.Join(l.dir, name), Err: cause}
 }
 func (l *leakyFileSystem) Open(string) (moduleFile, error) { return nil, errors.New("unused") }
 func (l *leakyFileSystem) ListDir(string, int) ([]string, bool, error) {
