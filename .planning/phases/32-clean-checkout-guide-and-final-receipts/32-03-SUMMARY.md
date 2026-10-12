@@ -99,6 +99,13 @@ completed: 2026-10-12
 - **Fix:** added `superseded` reconciliation entries D-14-145/146 (superseding phase P32, commit 75d4d21b, covering `TestPhase32ChecksumFrontierRetired`) to `PHASE-14-DEBT.md` (Items table rows, `items: 102`, detail sections) and the generated `EVIDENCE-RECONCILIATION.md` view (71 entries). The archived rows are untouched.
 - **Commit:** 22f405bc
 
+**3. [Rule 1 - Bug] Retiring the test broke the frozen hosted corpus receipt match (follow-up, orchestrator-directed)**
+- **Found during:** post-plan full session run (`TestValidationRowGradesAreEarnedOverArchivedCorpus`)
+- **Issue:** archived 20-VALIDATION rows cite `TestPhase20ChecksumFrontier`; once deleted it no longer resolved, so `requestedCorpusPairs` changed the session pair pattern and its digest no longer matched `testdata/phase16/validation-corpus-run-record.*` (revision 72a81740).
+- **Fix (D-06, receipt stays byte-identical):** `corpusRetiredTests` (dated, reasoned) consulted only by `receiptTimeCorpusPairs`, which re-inserts retired names into the test index and re-runs the one derivation, so the manifest digest must equal the reconstructed set. `requestedCorpusPairs` and the producer seam still export current pairs. Rows citing a retired name are graded over the receipt-time index and require a `superseded` row in EVIDENCE-RECONCILIATION.md. Armed controls in `TestCorpusRetiredTestsAllowListIsNotInert`: stale (still resolves), unneeded (receipt already matches), unexplained drift (entry removed), unexplainable extra name; each observed failing when its guard was disabled.
+- **Files modified:** `internal/compiler/session/evidence_grade_test.go`; `git diff 75d4d21b~1 -- testdata/phase16` is empty.
+- **Commit:** 8c565e8b
+
 ## Deferred Issues
 
 **`TestValidationRowGradesAreEarnedOverArchivedCorpus` fails: stale hosted corpus receipt (needs a decision / hosted run).**
