@@ -139,6 +139,51 @@ Every decision below came from advisor research. There was one `gsd-advisor-rese
 - The exact file and test names for the route audit and receipt gate (`session_phase32_*` or `native/phase32_*`). Register any new tests the session meta-tests (inventory, groundedness, reconciliation) require.
 - Whether the verify and gate script changes generalize `verify-phase27.sh` in place or add `verify-phase32.sh` and `check-phase32-receipts.sh`. Phase 27's receipt behaviour must stay valid either way.
 
+### Post-research amendments (2026-10-12, auto-followed)
+These amendments come from `32-RESEARCH.md` findings and open questions. Each recommendation was auto-followed under the standing fan-out preference.
+- **D-08a (amends D-08):** the codedigest path set also includes `native` and `testdata`. `native/*.c` is runtime code compiled by the native path, and `testdata/` holds the goldens and fixtures the gates read. The final set is `cmd internal examples native scripts testdata go.mod .github/workflows/ci.yml`, excluding `*.md`.
+  - Recipe: `git -c core.quotePath=false ls-tree -r HEAD -- <paths> | grep -v '\.md$' | shasum -a 256`.
+  - Go runs the same git command and filters with `HasSuffix(".md")`.
+
+  — **Reversibility:** costly — this is the receipt contract.
+- **D-08b (refines D-08 / Discretion):** add new scripts (`scripts/codedigest.sh`, `scripts/verify-phase32.sh`, `scripts/check-phase32-receipts.sh`) plus an additive CI step and artifact upload. The phase27 scripts and their pins (`TestPhase27HostReceiptGate`, `TestPhase27CIHostMatrix`, `TestPhase27GuideContract`) stay untouched.
+- **D-08c (ordering):** the receipt test lives inside the digest, so it is committed before the freeze.
+  - It must pass when no receipt exists and no living doc claims bound evidence, without `t.Skip`.
+  - Ingest is a single `.planning`-only commit holding the receipt, the downloaded logs and the living-doc markers. The same test enforces from then on.
+  - Dispatch exactly once, on the branch ref: `ci.yml` has `cancel-in-progress: true`, and a `pull_request` run checks out a merge commit.
+  - The checkpoint plan names the freeze commit explicitly.
+- **D-10c (refines D-10):** the formatter fix changes the *formatted output* (`format_sha256`) of 5 committed sources:
+  - `examples/checksum/adler32.schway`
+  - `examples/checksum/adler_low.schway`
+  - `examples/phase29/adler32_fixture.schway`
+  - `examples/phase29/byte_index_oob.schway`
+  - `testdata/phase29/adler32_library.schway`
+
+  The sources themselves stay byte-identical. The frozen `testdata/phase30/prechange-corpus.json` is not regenerated. A dated `phase30FormatChanges` allow-list holds hashes recomputed from the real fix, with a stale-entry control.
+  - The guard must exclude `match` context, because without it 9 phase12/18 outputs regress.
+  - The regression test needs a var-body table, because the generated lanes never emit that shape.
+  - `}` / `else {` line placement is out of scope.
+- **D-07a (extends D-07):** frontier retirement also updates:
+  - `PRODUCT-ROADMAP.md:272`;
+  - the `LANGUAGE-MATURITY.md:304` counts (163 → 162 programs, 5,389 → 5,352 lines; `TestLanguageMaturityCountsAreCurrent`, `TestSelfDescribingDocsGuardIsNotInert`).
+
+  `session_phase28_manifest_test.go` has no negative-control test yet, so extract a `phase28Compare` helper first, then add the retired-path control. In the hygiene scan, "live" means lines not under a dated heading, with an armed control showing a historical line is exempt.
+- **D-01a (extends D-01):** guide outputs go under `.schway/<name>/` with `mkdir -p`, never the repo root, because the root outputs are not git-ignored and would dirty the receipt tree. This copies `phase273GuideOutputTargets`.
+  - Spawn with `sh -c 'cd "$0" && eval "$1"' <copy> <line>`, which respects the spawn lint.
+  - Inputs come from `testsupport.ChecksumCaseMatrix()` by case name.
+  - `adler_low` values are cross-checked against `ChecksumOracleRows` (`checksum % 65536`).
+  - The copy stays alive for native helper resolution, with no `-trimpath`.
+- **D-04a (resolves Discretion):** native policy is a pure function. It fails when clang is missing and either `GITHUB_ACTIONS=true` or `SCHWAY_REQUIRE_NATIVE=1`, and skips otherwise. Tested as `TestPhase32NativePolicy`. `ci.yml` also sets `SCHWAY_REQUIRE_NATIVE=1`.
+- **D-10d (route audit):** enumerate routes by Go AST over `run()`, `runApplication` and `runApplicationRun` in a `package main` test, with `usageResult()` text as a secondary cross-check.
+  - Usage text omits `stats` and `build --manifest`. Record that as audit rows plus a pending todo; do not edit the usage text in this phase.
+  - The 9 uncovered entry programs get real "not covered because" reasons.
+  - The test must not call inventory-restricted `cgen` emitters or `callgraph.EntryFunction`.
+- **D-11 (planning-doc conventions):**
+  - PLAN docs carry `verification_role: proposal`.
+  - `32-VALIDATION.md` goes `planned` → `validated` at closure.
+  - Every `go test -run` span in VALIDATION and VERIFICATION docs must resolve to existing tests, so pin commands only after the tests land, or use plain test-name spans.
+  - Every SUMMARY carries `coverage:`. The push-checkpoint plan is the only `human_judgment: true` entry.
+
 </decisions>
 
 <canonical_refs>
