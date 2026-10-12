@@ -72,6 +72,14 @@ var phase30NewCommittedPaths = map[string]bool{
 	"examples/checksum/adler_low.schway": true,
 }
 
+// phase30FormatChanges maps a frozen golden path to its new format_sha256.
+// 2026-10-12 (Phase 32, plan 32-01, D-10c): the var-body formatter fix changes format_sha256 for these frozen entries; the golden stays frozen (D-15).
+var phase30FormatChanges = map[string]string{
+	"examples/phase29/adler32_fixture.schway": "b2824fdd0f08960277fbc1a1d1670d373bb169f38c93995d0b60427e96c51ca3",
+	"examples/phase29/byte_index_oob.schway":  "736a53528232a598ba5d5d51710e7bf824c80c8997cee56db4be357a82e9b6e4",
+	"testdata/phase29/adler32_library.schway": "ec1f3a40c576cc19d47563b5e5e76ca2213de1ad35a578845da9169c94237a36",
+}
+
 type phase30PreChangeGolden struct {
 	Schema   string                  `json:"schema"`
 	Revision string                  `json:"revision"`
@@ -261,6 +269,14 @@ func phase30Compare(golden phase30PreChangeGolden, observed []phase30PreChangeEn
 			{"format_sha256", got.FormatSHA256, want.FormatSHA256},
 		}
 		for _, field := range fields {
+			if field.name == "format_sha256" {
+				if changed, ok := phase30FormatChanges[want.Path]; ok {
+					if changed == want.FormatSHA256 {
+						problems = append(problems, want.Path+": stale phase30FormatChanges entry equals the golden")
+					}
+					field.want = changed
+				}
+			}
 			if field.got != field.want {
 				problems = append(problems, fmt.Sprintf("%s: %s changed: got %q want %q", want.Path, field.name, field.got, field.want))
 			}
@@ -345,4 +361,33 @@ func TestPhase30PreChangeGoldenIsNotInert(t *testing.T) {
 	if problems := phase30Compare(mutated, observed); len(problems) == 0 {
 		t.Fatal("flipping one recorded hash was not reported: the golden comparison is inert")
 	}
+
+	t.Run("format-change-stale", func(t *testing.T) {
+		saved := phase30FormatChanges
+		t.Cleanup(func() { phase30FormatChanges = saved })
+		stale := map[string]string{}
+		for path, value := range saved {
+			stale[path] = value
+		}
+		var target string
+		for path := range saved {
+			target = path
+			break
+		}
+		for _, entry := range golden.Entries {
+			if entry.Path == target {
+				stale[target] = entry.FormatSHA256
+			}
+		}
+		phase30FormatChanges = stale
+		found := false
+		for _, problem := range phase30Compare(golden, observed) {
+			if strings.Contains(problem, "stale phase30FormatChanges entry") {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatal("a phase30FormatChanges entry equal to the golden was not reported stale")
+		}
+	})
 }

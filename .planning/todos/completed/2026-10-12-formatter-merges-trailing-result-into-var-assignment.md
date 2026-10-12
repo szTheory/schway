@@ -32,3 +32,12 @@ and `examples/checksum/adler32.schway`, asserting that the formatted output pars
 and checks to the same core. Then format both files canonically. Consider
 extending the existing generated-program and lossless lanes to cover var-bodies
 ending in a bare result.
+
+## Resolution
+
+Fixed by plan 32-01 (D-10). A second newline guard in `syntax.Format` keeps a
+bare result identifier on its own line after a var-body statement ending in an
+identifier, number or call paren; it excludes `match` context. Five committed
+sources change formatted output only (the in-memory copy); their bytes on disk
+were deliberately not reformatted (D-10). Three frozen Phase 30 format hashes
+moved and are carried by the dated `phase30FormatChanges` allow-list (D-10c).
