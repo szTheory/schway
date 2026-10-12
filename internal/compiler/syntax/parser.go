@@ -10,13 +10,29 @@ import (
 const (
 	maxPrimaryDiagnostics = 20
 	// MaxSourceBytes and MaxTokens bound every untrusted source entry point.
-	MaxSourceBytes    = 1 << 20
-	MaxTokens         = 1 << 17
-	maxDeclarations   = 4096
-	maxFunctions      = 1024
-	maxAlternatives   = 4096
-	maxLinearBindings = 1 << 16
+	MaxSourceBytes = 1 << 20
+	MaxTokens      = 1 << 17
+	// MaxDeclarations and MaxFunctions are the per-file caps (unchanged); plan
+	// 30-04 reuses them as the merged-program caps across every loaded module
+	// (D-21).
+	MaxDeclarations = 4096
+	MaxFunctions    = 1024
+	// MaxImportsPerModule bounds the import declarations in one file; the
+	// comparison goes through exceeds (D-13, D-25).
+	MaxImportsPerModule = 16
+	maxAlternatives     = 4096
+	maxLinearBindings   = 1 << 16
 )
+
+// exceedsOffByOneForTest turns exceeds' `>` into `>=`; the exact-N control row
+// of TestPhase30ImportsLimitParse engages it to observe the cap's seam.
+var exceedsOffByOneForTest bool
+
+// admitModulePathFormForTest is a test-only table-driven seam ("", "slash",
+// "absolute", "dotdot"). Production leaves it "". Each non-empty value makes
+// exactly one rejected module-path shape parse, so each path-syntax refusal
+// has its own armed control (D-25).
+var admitModulePathFormForTest string
 
 type ParseResult struct {
 	Tree        Tree
@@ -67,7 +83,7 @@ func Parse(source []byte) ParseResult {
 }
 
 func programLimit(program ast.Program) string {
-	if len(program.Data)+len(program.Funcs) > maxDeclarations || len(program.Funcs) > maxFunctions {
+	if len(program.Data)+len(program.Funcs) > MaxDeclarations || len(program.Funcs) > MaxFunctions {
 		return "declarations"
 	}
 	alternatives, bindings := 0, 0
