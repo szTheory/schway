@@ -34,6 +34,14 @@ var exceedsOffByOneForTest bool
 // has its own armed control (D-25).
 var admitModulePathFormForTest string
 
+// exceeds is the single comparison behind every import-count cap.
+func exceeds(n, limit int) bool {
+	if exceedsOffByOneForTest {
+		return n >= limit
+	}
+	return n > limit
+}
+
 type ParseResult struct {
 	Tree        Tree
 	Program     ast.Program
@@ -41,6 +49,7 @@ type ParseResult struct {
 }
 
 type parser struct {
+	source      []byte
 	tokens      []Token
 	position    int
 	diagnostics []diagnostic.Diagnostic
@@ -70,7 +79,7 @@ func Parse(source []byte) ParseResult {
 		// its pre-normalization diagnostic cap is not a real truncation.
 		truncated = false
 	}
-	p := parser{tokens: tokens, diagnostics: diagnostics, truncated: truncated}
+	p := parser{source: source, tokens: tokens, diagnostics: diagnostics, truncated: truncated}
 	program := p.parseProgram()
 	if limit := programLimit(program); limit != "" {
 		p.diagnostics = []diagnostic.Diagnostic{inputLimit(len(source))}
@@ -173,12 +182,30 @@ func (p *parser) parseProgram() ast.Program {
 	var program ast.Program
 	p.expect(TokenModule, "syntax.expected_module")
 	program.Module = p.modulePath()
-	for p.peek().Kind == TokenImport {
-		program.Imports = append(program.Imports, p.importDecl())
+	limitReported := false
+	addImport := func(declaration ast.ImportDecl) {
+		if exceeds(len(program.Imports)+1, MaxImportsPerModule) {
+			// Checked at parse time, before any resolution (D-13, D-25). The
+			// excess declarations are consumed for recovery but not kept.
+			if !limitReported {
+				limitReported = true
+				p.report(diagnostic.Error("module.imports_limit", declaration.Span, "module declares more imports than the per-module limit"))
+			}
+			return
+		}
+		program.Imports = append(program.Imports, declaration)
 	}
+	for p.peek().Kind == TokenImport {
+		addImport(p.importDecl())
+	}
+	exportStart, hadExport := p.peek().Span.Start, p.peek().Kind == TokenExport
 	program.Exports = p.exports()
 	for p.peek().Kind != TokenEOF {
 		switch p.peek().Kind {
+		case TokenImport:
+			declaration := p.importDecl()
+			p.report(p.importAfterExport(declaration, exportStart, hadExport))
+			addImport(declaration)
 		case TokenData:
 			program.Data = append(program.Data, p.dataDecl())
 		case TokenFn:
@@ -188,7 +215,7 @@ func (p *parser) parseProgram() ast.Program {
 		default:
 			unexpected := p.peek()
 			p.advance()
-			skipped, discarded := p.recoverRegion(TokenData, TokenFn, TokenForeign, TokenEOF)
+			skipped, discarded := p.recoverRegion(TokenData, TokenFn, TokenForeign, TokenImport, TokenEOF)
 			if discarded {
 				p.problem("syntax.expected_declaration", unexpected, "expected `data` or `fn` declaration", diagnostic.Cause{Kind: "skipped_region", Span: &skipped})
 			} else {
@@ -196,7 +223,89 @@ func (p *parser) parseProgram() ast.Program {
 			}
 		}
 	}
+	p.duplicateImports(program.Imports)
 	return program
+}
+
+// report appends an already-built diagnostic under the primary-diagnostic cap.
+func (p *parser) report(value diagnostic.Diagnostic) {
+	if len(p.diagnostics) >= maxPrimaryDiagnostics {
+		p.truncated = true
+		return
+	}
+	p.diagnostics = append(p.diagnostics, value)
+}
+
+// importAfterExport refuses an import written after the export block (D-02).
+// When the export block was actually parsed it carries the one deterministic
+// repair that rotates the declaration above `export` (D-04).
+func (p *parser) importAfterExport(declaration ast.ImportDecl, exportStart int, hadExport bool) diagnostic.Diagnostic {
+	const message = "import declarations must precede the export block"
+	if !hadExport || exportStart > declaration.Span.Start || declaration.Span.End > len(p.source) {
+		return diagnostic.Error("syntax.import_after_export", declaration.Span, message)
+	}
+	span := diagnostic.Span{Start: exportStart, End: declaration.Span.End}
+	exportText := strings.TrimRight(string(p.source[exportStart:declaration.Span.Start]), " \t\r\n")
+	replacement := string(p.source[declaration.Span.Start:declaration.Span.End]) + "\n\n" + exportText
+	return diagnostic.ErrorWithRepairs("syntax.import_after_export", declaration.Span, message, nil, diagnostic.Repair{
+		Kind:          "move_import_above_export",
+		Detail:        declaration.Module,
+		Span:          &span,
+		Replacement:   replacement,
+		Applicability: diagnostic.ApplicabilityMachineApplicable,
+	})
+}
+
+// duplicateImports refuses a module imported twice in one file (D-04, D-19).
+// The delete repair is offered only when the later item set is a subset of the
+// earlier declaration's, so applying it can never drop an import.
+func (p *parser) duplicateImports(imports []ast.ImportDecl) {
+	first := make(map[string]int, len(imports))
+	for index, declaration := range imports {
+		earlierIndex, seen := first[declaration.Module]
+		if !seen {
+			first[declaration.Module] = index
+			continue
+		}
+		earlier := imports[earlierIndex]
+		const message = "module is imported more than once in this file"
+		causes := []diagnostic.Cause{{Kind: "earlier_import", Span: &earlier.Span}}
+		if !importItemsSubset(declaration.Items, earlier.Items) || declaration.Span.End > len(p.source) {
+			p.report(diagnostic.Error("module.duplicate_import", declaration.Span, message, causes...))
+			continue
+		}
+		end := declaration.Span.End
+		if end < len(p.source) && p.source[end] == '\r' {
+			end++
+		}
+		if end < len(p.source) && p.source[end] == '\n' {
+			end++
+		}
+		span := diagnostic.Span{Start: declaration.Span.Start, End: end}
+		p.report(diagnostic.ErrorWithRepairs("module.duplicate_import", declaration.Span, message, causes, diagnostic.Repair{
+			Kind:          "delete_duplicate_import",
+			Detail:        declaration.Module,
+			Span:          &span,
+			Replacement:   "\n",
+			Applicability: diagnostic.ApplicabilityMachineApplicable,
+		}))
+	}
+}
+
+func importItemsSubset(later, earlier []ast.ImportItem) bool {
+	for _, item := range later {
+		found := false
+		for _, candidate := range earlier {
+			if candidate.Kind == item.Kind && candidate.Name == item.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }
 
 // maxForeignSymbolsPerBlock and maxForeignPoliciesPerSymbol bound Phase 4's
@@ -282,14 +391,22 @@ func (p *parser) modulePath() string {
 // modulePathSpan parses a dotted module path and also returns the byte extent
 // of the tokens it consumed.
 func (p *parser) modulePathSpan() (string, diagnostic.Span) {
+	opening := p.peek()
+	prefix := ""
+	if admitModulePathFormForTest == "dotdot" {
+		for p.peek().Kind == TokenDot {
+			prefix += "."
+			p.advance()
+		}
+	}
 	first := p.identifier("syntax.expected_module_name")
 	last := first
-	parts := []string{first.Text}
+	parts := []string{prefix + first.Text}
 	for p.accept(TokenDot) {
 		last = p.identifier("syntax.expected_module_name")
 		parts = append(parts, last.Text)
 	}
-	return strings.Join(parts, "."), spanFrom(first, last)
+	return strings.Join(parts, "."), spanFrom(opening, last)
 }
 
 // importDecl parses one `import a.b { fn x  fn y }` declaration (D-02):
@@ -301,18 +418,30 @@ func (p *parser) importDecl() ast.ImportDecl {
 	module, moduleSpan := p.modulePathSpan()
 	p.expect(TokenLBrace, "syntax.expected_lbrace")
 	var items []ast.ImportItem
+	reported := false
 	for !p.atAny(TokenRBrace, TokenData, TokenEOF, TokenExport, TokenImport, TokenForeign) {
 		if p.peek().Kind == TokenFn && p.looksLikeFunctionDecl() {
 			break
 		}
 		kind := p.peek()
 		if kind.Kind != TokenType && kind.Kind != TokenFn {
+			// Commas, `as`, `*` and every other stray token: items are
+			// whitespace separated `fn`/`type` names and nothing else.
+			p.problem("syntax.expected_import_name", kind, "expected `fn` or `type` followed by a name in import block")
+			reported = true
 			p.advance()
 			continue
 		}
 		p.advance()
 		name := p.identifier("syntax.expected_import_name")
+		if name.Kind != TokenIdentifier {
+			reported = true
+			continue
+		}
 		items = append(items, ast.ImportItem{Kind: kind.Text, Name: name.Text, Span: spanFrom(kind, name)})
+	}
+	if len(items) == 0 && !reported {
+		p.problem("syntax.expected_import_name", p.peek(), "import block needs at least one `fn` item")
 	}
 	end := p.expect(TokenRBrace, "syntax.expected_rbrace")
 	return ast.ImportDecl{Module: module, Items: items, Span: spanFrom(start, end), ModuleSpan: moduleSpan}

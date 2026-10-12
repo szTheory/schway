@@ -135,10 +135,18 @@ func lex(source []byte) ([]Token, []diagnostic.Diagnostic, bool) {
 			tokens = append(tokens, Token{Kind: TokenWhitespace, Text: string(source[start:offset]), Span: diagnostic.Span{Start: start, End: offset}})
 			continue
 		}
-		if unicode.IsLetter(r) || r == '_' {
+		form := admitModulePathFormForTest
+		if unicode.IsLetter(r) || r == '_' || (form == "absolute" && r == '/' && pathLetterAt(source, offset+size)) {
 			offset += size
 			for offset < len(source) {
 				next, nextSize := utf8.DecodeRune(source[offset:])
+				if next == '/' && (form == "slash" || form == "absolute") && pathLetterAt(source, offset+nextSize) {
+					// Test-only seam (D-25): the production lexer never joins
+					// identifiers with `/`; this reproduces exactly the
+					// rejected `a/b` and `/etc/x` shapes for the armed controls.
+					offset += nextSize
+					continue
+				}
 				if !(unicode.IsLetter(next) || unicode.IsDigit(next) || next == '_') {
 					break
 				}
@@ -164,6 +172,15 @@ func lex(source []byte) ([]Token, []diagnostic.Diagnostic, bool) {
 	}
 	tokens = append(tokens, Token{Kind: TokenEOF, Span: diagnostic.Span{Start: len(source), End: len(source)}})
 	return tokens, diagnostics, truncated
+}
+
+// pathLetterAt reports whether the rune at offset can start a path segment.
+func pathLetterAt(source []byte, offset int) bool {
+	if offset >= len(source) {
+		return false
+	}
+	r, _ := utf8.DecodeRune(source[offset:])
+	return unicode.IsLetter(r) || r == '_'
 }
 
 func isNumericCandidateByte(value byte) bool {

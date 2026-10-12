@@ -175,7 +175,7 @@ func TestPhase30ImportRepairs(t *testing.T) {
 		if len(repairs) != 1 || repairs[0].Kind != "move_import_above_export" || !diagnostic.DriverEligible(repairs[0]) {
 			t.Fatalf("repairs = %+v", repairs)
 		}
-		exportStart, importEnd := strings.Index(source, "export"), strings.Index(source, "}\nfn main")
+		exportStart, importEnd := strings.Index(source, "export"), strings.Index(source, "}\nfn main")+1
 		if repairs[0].Span.Start != exportStart || repairs[0].Span.End != importEnd {
 			t.Fatalf("repair span = %+v, want [%d,%d)", *repairs[0].Span, exportStart, importEnd)
 		}
