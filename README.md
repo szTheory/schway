@@ -90,7 +90,7 @@ Compiler and repair commands:
 
 | Name | Value | Meaning |
 | --- | --- | --- |
-| `AppInputRefused` | 65 | Input refused before launch, or a generated program's checked failure; never renumbered. |
+| `AppInputRefused` | 65 | Input refused before launch, or a generated program's checked failure (for checksum: FileTooLarge, FileUnavailable, AllocFailed); never renumbered. |
 | `EventCapacity` | 69 | Generated-C event capacity exhausted; never renumbered. |
 | `AppTimeout` | 124 | The child exceeded its time limit. |
 | `AppLaunchError` | 125 | The child could not be launched. |

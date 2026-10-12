@@ -1,68 +1,142 @@
-# Checksum examples: the Adler-32 library and the Phase 30 fixture CLI
+# Checksum examples: a bounded file checksum, a second consumer and the Phase 30 fixture CLI
 
-The Phase 29 Adler-32 program with the library moved into its own module file
-and imported by the entry (D-17). The checksum code exists in exactly one place.
+Two ordinary applications read one file and share one Adler-32 library:
 
-## Module layout
+- `checksum` prints the full Adler-32 of a file of at most 65,536 bytes.
+- `adler_low` prints only the low 16 bits (the A half) of the same checksum.
 
-- `adler32.schway` is the library. Its header is `module adler32`, its export
-  list is `fn adler32`, and it is pure scalar: no data type, no foreign block,
-  no `main`.
-- `adler32_cli.schway` is the entry. Its header is
-  `module examples.checksum.adler32_cli`. It imports `fn adler32` from `adler32`,
-  keeps the Phase 29 `foreign C` owner and `data FixtureError`, and exports
-  `fn main`.
+Both import `adler32.schway`; the loop exists in exactly one place.
 
-A module header must match the file's path under the entry's directory: the
-import `adler32` loads `adler32.schway` beside the entry, and a mismatch is a
-refusal with a `module.*` code, not a silent load. The entry's own header is
-free, as it is for every single-file program.
+## Layout
 
-## Imports
+- `adler32.schway` is the library: `module adler32`, exporting `fn adler32`. It is
+  pure scalar: no data type, no foreign block, no `main`.
+- `checksum.schway` and `adler_low.schway` are the two entries. Each imports
+  `fn adler32`, declares the `FileBytes` foreign owner block, the `FileError` data
+  type and `fn main(path: PathToken)`.
+- `adapter.c`, `adapter.h` and `file_bytes.bindings.json` are the copy-local
+  adapter triple and its `schway.local-c/1` manifest. The adapter acquires the
+  bytes, lends a view and releases them; it writes nothing to stdout or stderr.
+- `checksum.expected.json` is the machine-readable case table.
+- `adler32_cli.schway` is the Phase 30 fixture CLI (see below).
 
-The entry writes an import block that names the module and then lists the
-exported functions it uses, one per line. The imported function is then called
-by its bare name, `adler32(view)`. Only names in the library's export list are
-visible; a private library name is refused.
+Every consumer sits beside the one library because an import resolves only to a
+file under the entry's own directory. The foreign block is repeated in each entry
+because imported foreign declarations are not supported.
 
-## Build and run
+## checksum
 
 Run these commands from the repository root with Go 1.24 and Clang installed.
-The build reuses the Phase 29 binding manifest in place, because that manifest
-names its adapter files relative to itself and carries no module name.
 
 ```sh
 go build -o ./schway ./cmd/schway
+./schway build examples/checksum/checksum.schway \
+  --manifest examples/checksum/file_bytes.bindings.json --output ./checksum
+./schway app run ./checksum -- PATH
+```
+
+PATH is passed as given after `--`; a leading `-` in it is a path, not a flag.
+The `app run` usage line still says INPUT (D-18): the argument is a file path for
+this program, and the usage text is unchanged. A path of 4,097 bytes or more, a
+NUL byte or an empty argument is refused before launch with exit 65.
+
+Limit: files up to 65,536 bytes are read; a file of 65,537 bytes is refused.
+The read asks for one byte past the limit and never trusts the size the file
+reports.
+
+## adler_low
+
+```sh
+./schway build examples/checksum/adler_low.schway \
+  --manifest examples/checksum/file_bytes.bindings.json --output ./adler_low
+./schway app run ./adler_low -- PATH
+```
+
+`adler_low` calls the same `adler32` and then a trailing `low16` call that keeps
+the low 16 bits (the A half of the checksum), so the result is the checksum
+modulo 65,536 (D-16).
+
+## Results
+
+Answers come from Python `zlib.adler32` (Python 3.14.4) and are cross-checked by
+Go `hash/adler32`; they are never derived by running Schway. The 65,537-byte rows
+are refused, so no checksum is printed for them.
+
+| Input | checksum | adler_low | Python command (checksum) |
+| --- | --- | --- | --- |
+| empty file | 1 | 1 | `python3 -c 'import zlib;print(zlib.adler32(b""))'` |
+| one byte 0x00 | 65537 | 1 | `python3 -c 'import zlib;print(zlib.adler32(b"\x00"))'` |
+| `Wikipedia` | 300286872 | 920 | `python3 -c 'import zlib;print(zlib.adler32(b"Wikipedia"))'` |
+| 65,536 bytes of 0xFF | 2006388466 | 3826 | `python3 -c 'import zlib;print(zlib.adler32(b"\xff"*65536))'` |
+| 65,537 bytes of 0xFF | `FileError.FileTooLarge` | `FileError.FileTooLarge` | n/a (refused before any checksum) |
+
+For adler_low the same command ends with ` % 65536` inside the `print`. The inputs
+0x80 and 0x80 0xFF give checksums 8454273 and 33620352 (adler_low 129 and 384),
+which pins unsigned byte handling.
+
+Tests: `TestPhase31ChecksumPublicRoute`, `TestPhase31ChecksumInterpreter`,
+`TestPhase31AdlerLowPublicRoute`, `TestPhase31OracleRows` and
+`TestPhase31ExpectedMatrixJSON`.
+
+## Errors
+
+Every error exits 65 (`AppInputRefused`) with empty stdout and a single fixed
+stderr line. The path is never echoed (`TestPhase31CaseMatrix`).
+
+| Outcome | stderr | Causes |
+| --- | --- | --- |
+| `FileTooLarge` | `FileError.FileTooLarge` | more than 65,536 bytes |
+| `FileUnavailable` | `FileError.FileUnavailable` | missing file, directory, FIFO, `/dev/null`, mode 000, or a read, stat or close failure |
+| `AllocFailed` | `FileError.AllocFailed` | the buffer could not be allocated |
+
+The adapter releases its buffer exactly once on success, on oversize, on
+`AllocFailed` and on a read error (`TestPhase31ReleaseExactlyOnce`). The bounded
+limit-plus-one read is pinned by `TestPhase31BoundedReadMutants`. The shape
+refusals for neighbouring loops are pinned by `TestPhase31LoopNeighborRefusals`,
+and each EVD-14 control by `TestPhase31Controls` with `TestPhase31ControlInventory`.
+
+## Single copy and identity
+
+`TestPhase31SingleCopyAndDualFlip` shows the loop exists once, that editing the
+library changes both applications, and that a library edit which only the
+`checksum` result depends on leaves `adler_low` at 920. Build identity, the receipt and the evidence report carry a
+sorted `modules` list whenever the program imports
+(`TestPhase31ModuleDigests`); a program with no import is byte-identical to
+before. The moved library bytes are pinned by `TestPhase31MovedLibraryIdentity`.
+
+## Phase 30 fixture CLI
+
+`adler32_cli.schway` is the Phase 29 Adler-32 program with the library imported.
+It keeps the Phase 29 `foreign C` owner and `data FixtureError`, and builds with
+the Phase 29 manifest.
+
+```sh
 ./schway build examples/checksum/adler32_cli.schway \
   --manifest examples/phase29/fixture_bytes.bindings.json --output ./adler32-module
 ./schway app run ./adler32-module -- 3
-./schway app run ./adler32-module -- 10
 ```
 
-Case 3 prints `300286872` with exit 0 and empty stderr. Case 10 is outside the
-table: nothing is printed and the exit code is 65. The case table and the
-expected checksums are exactly those of `examples/phase29/README.md`; they come
-from Python `zlib.adler32` and Go `hash/adler32`, never from Schway.
-
-`schway run` keeps the exit class the Phase 29 fixture gives under the same
-command, because the program owns a foreign resource. The interpreter route for
-the same ten answers is the session interpreter API with the Phase 29 fixture
-bytes.
-
-The tests that pin this are `TestPhase30AdlerModuleAppCLI` (public build and app
-run, with a `mutated-library` control), `TestPhase30AdlerModuleInterpreter` and
+Case 3 prints `300286872`; case 10 is outside the table and exits 65. The tests
+are `TestPhase30AdlerModuleAppCLI`, `TestPhase30AdlerModuleInterpreter` and
 `TestPhase30LibraryIsSingleCopy`.
 
 ## Resolution rules
 
 Resolution is closed. There is no search path and no environment lookup: an
 import resolves only to a file under the entry's directory. A path segment that
-is `..`, an absolute path, and a symlink are all refused.
+is `..`, an absolute path and a symlink are all refused.
 
 ## Non-claims
 
 - This is whole-program composition: the entry and its imports are merged into
-  one program and checked and emitted together. It is not separate compilation.
-- There are no per-module interface artifacts.
-- Module hashing in build identity and evidence is Phase 31 (MOD-06); the build
-  receipt digests the entry file only.
+  one program and checked and emitted together. It is not separate compilation,
+  and there are no per-module interface artifacts.
+- Build identity, the receipt and the evidence report hash every loaded module
+  file (sorted `modules` rows), not only the entry file.
+- Imported foreign declarations are not supported, so the adapter block is
+  repeated in each entry.
+- There is no `schway run --engine` path input; files are read through
+  `build --manifest` plus `app run`.
+- The provisional `examples/checksum.schway` frontier is unchanged and owned by
+  Phase 32, as are the hosted receipts and the clean-checkout guide. Hosted CI
+  has not run for Phase 31.

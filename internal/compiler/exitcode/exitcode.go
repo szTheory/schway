@@ -18,7 +18,9 @@ const (
 	Usage = 64
 	// AppInputRefused means app run refused its input argument (app-run
 	// domain). Published contract baked into generated C and
-	// scripts/verify-phase27.sh; never renumber.
+	// scripts/verify-phase27.sh; never renumber. The checksum program's
+	// checked failures (FileTooLarge, FileUnavailable, AllocFailed) exit with
+	// this code.
 	AppInputRefused = 65
 	// EventCapacity is the generated C exit when its static event array is
 	// full (app-run domain). Published contract baked into generated C and
