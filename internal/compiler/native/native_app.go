@@ -705,6 +705,7 @@ func validateReceiptModules(receipt BuildReceipt) error {
 		return errors.New("receipt modules must list the entry and at least one import")
 	}
 	entryLinked := false
+	seenPaths := make(map[string]bool, len(modules))
 	for i, row := range modules {
 		if i > 0 && modules[i-1].Module >= row.Module {
 			return errors.New("receipt modules are unsorted or duplicated")
@@ -715,11 +716,24 @@ func validateReceiptModules(receipt BuildReceipt) error {
 		if row.Path == "" || strings.HasPrefix(row.Path, "/") || strings.Contains(row.Path, "\\") || filepath.IsAbs(row.Path) {
 			return errors.New("receipt module path must be relative")
 		}
+		// A path is canonical when every segment is a real name: no "..", no
+		// empty segment (a//b, trailing slash), no "." segment, and no drive or
+		// scheme prefix such as C:x (WR-03).
 		for _, part := range strings.Split(row.Path, "/") {
 			if part == ".." {
 				return errors.New("receipt module path must not contain ..")
 			}
+			if part == "" || part == "." {
+				return errors.New("receipt module path must be canonical")
+			}
 		}
+		if strings.Contains(row.Path, ":") || strings.ContainsRune(row.Path, 0) {
+			return errors.New("receipt module path must be canonical")
+		}
+		if seenPaths[row.Path] {
+			return errors.New("receipt module paths are duplicated")
+		}
+		seenPaths[row.Path] = true
 		if row.Digest == receipt.SourceDigest {
 			entryLinked = true
 		}
