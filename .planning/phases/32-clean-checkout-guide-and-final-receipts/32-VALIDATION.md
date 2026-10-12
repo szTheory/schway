@@ -60,6 +60,7 @@ There is one row per success criterion or decision. Test names come from `32-RES
 | SC3 / D-09 | EVD-15 | The gate accepts a good pair and rejects digest, dirty-tree, missing-host and missing-program cases | `TestPhase32ReceiptGate` | each named mutation is rejected | ⬜ pending |
 | SC3 / D-10a | EVD-15 | No receipt and no claim passes. A claim without a receipt fails. A current claim with a stale digest fails. A "reopened" claim passes. | `TestPhase32ReceiptLivingClaims` | a stale-digest current claim fails | ⬜ pending |
 | SC3 / D-10b | EVD-15 | Every public route and entry program has a covered row or a "not covered because" row. The receipt program set equals the audit set. | `TestPhase32PublicRouteAudit` | an injected new route fails | ⬜ pending |
+| SC3 / D-00 / D-08c | EVD-15 | Revision = codedigest (D-08). The run headSha, the pushed HEAD and origin are one commit with no digest-path change since the freeze; a `.planning`-only HEAD move is accepted | `TestPhase32FreezeGate` (`scripts/check-phase32-freeze.sh`) | a synthetic mismatched headSha, a mismatched origin and a post-freeze digest-path change are each rejected | ⬜ pending |
 | SC3 | EVD-15 | The hosted macOS and Linux logs are bound to the final digest | `sh scripts/check-phase32-receipts.sh` at ingest, plus `TestPhase32ReceiptLivingClaims` | a digest mismatch is rejected | ⬜ pending |
 | Process | (all) | Every Phase 32 SUMMARY has a resolvable `coverage:` block | `TestSummaryCoverageGroundedness` | the seeded bad controls | ⬜ pending |
 
@@ -72,7 +73,8 @@ There is one row per success criterion or decision. Test names come from `32-RES
 - `cmd/schway/main_phase32_routes_test.go`
 - `internal/compiler/session/session_phase32_retire_test.go`
 - `internal/compiler/session/session_phase32_receipt_test.go`
-- `scripts/codedigest.sh`, `scripts/verify-phase32.sh`, `scripts/check-phase32-receipts.sh`
+- `internal/compiler/session/session_phase32_freeze_test.go`
+- `scripts/codedigest.sh`, `scripts/verify-phase32.sh`, `scripts/check-phase32-receipts.sh`, `scripts/check-phase32-freeze.sh`
 
 No framework install is needed.
 

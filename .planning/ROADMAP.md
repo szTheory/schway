@@ -266,7 +266,7 @@ Plans:
 
 **Research flag**: Standard. Run a public-route audit before the receipt plan so the receipts bind the final source. Hosted runs need explicit user approval for push and dispatch.
 
-**Plans**: 8 plans
+**Plans**: 11 plans
 
 Plans:
 **Wave 1**
@@ -277,17 +277,24 @@ Plans:
 - [ ] 32-03-PLAN.md — Retire examples/checksum.schway with a dated amendment, retired-path allow-lists and live pointers (D-05..D-07)
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 32-04-PLAN.md — Executable clean-checkout guide in examples/checksum/README.md and its doc-test (D-01..D-04)
-- [ ] 32-05-PLAN.md — Codedigest, receipt validator with reopen rule, and public-route audit (D-08, D-10a, D-10b)
+- [ ] 32-04-PLAN.md — Executable clean-checkout guide in examples/checksum/README.md and its doc-test (D-01..D-03, D-01a)
+- [ ] 32-05-PLAN.md — Codedigest and receipt validator with reopen rule (D-08, D-09, D-10a)
+- [ ] 32-06-PLAN.md — Public-route audit for the final receipts (D-10b, D-10d)
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [ ] 32-06-PLAN.md — Receipt producer, two-host gate, CI wiring, and the code freeze (D-08b, D-09)
+- [ ] 32-07-PLAN.md — Guide checker negative controls and the hosted native policy pin (D-04, D-04a)
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 32-07-PLAN.md — Human checkpoint: one push-and-dispatch line naming the freeze commit
+- [ ] 32-08-PLAN.md — Receipt producer and two-host gate with armed controls (D-08b, D-09)
 
 **Wave 6** *(blocked on Wave 5 completion)*
-- [ ] 32-08-PLAN.md — .planning-only ingest of the hosted macOS/Linux receipts; last plan of M006
+- [ ] 32-09-PLAN.md — Armed freeze binding gate, CI wiring, and the code freeze (D-00, D-08b, D-08c)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 32-10-PLAN.md — Human checkpoint: one push-and-dispatch line naming the freeze commit
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [ ] 32-11-PLAN.md — .planning-only ingest of the hosted macOS/Linux receipts; last plan of M006
 
 ## Progress
 
