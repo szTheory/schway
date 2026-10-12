@@ -1,6 +1,7 @@
 package session_test
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -10,7 +11,11 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
@@ -156,4 +161,64 @@ func TestPhase30GateUnitConsumerInventory(t *testing.T) {
 			t.Fatal("a file naming only diagnostic.Error must not be reported")
 		}
 	})
+}
+
+// gateFunctionSource builds a no-import source of exactly count trivial
+// functions, exported entry first. withMain names the first function main.
+func gateFunctionSource(module, prefix string, count int, withMain bool) []byte {
+	var b strings.Builder
+	entry := prefix + "0"
+	if withMain {
+		entry = "main"
+	}
+	fmt.Fprintf(&b, "module %s\n\nexport {\n  fn %s\n}\n\n", module, entry)
+	for i := 0; i < count; i++ {
+		name := fmt.Sprintf("%s%d", prefix, i)
+		if i == 0 && withMain {
+			name = "main"
+		}
+		fmt.Fprintf(&b, "fn %s(n: U64) -> U64 {\n  n\n}\n\n", name)
+	}
+	return []byte(b.String())
+}
+
+// TestPhase30GateMergedProgramLimit is flag (f) of the D-14 gate (D-13, D-21).
+// The per-file function cap is 1,024; a merge of two parsed programs that
+// exceeds it reaches check.Program with no limit diagnostic today. Plan 30-04
+// closes that gap with module.program_limit (D-21).
+func TestPhase30GateMergedProgramLimit(t *testing.T) {
+	const perFileCap = 1024
+	if parsed := syntax.Parse(gateFunctionSource("gate.cap", "f", perFileCap, true)); len(parsed.Diagnostics) != 0 {
+		t.Fatalf("%d functions must parse: %v", perFileCap, parsed.Diagnostics)
+	} else if len(parsed.Program.Funcs) != perFileCap {
+		t.Fatalf("parsed %d functions, want %d", len(parsed.Program.Funcs), perFileCap)
+	}
+
+	over := syntax.Parse(gateFunctionSource("gate.cap", "f", perFileCap+1, true))
+	if len(over.Diagnostics) != 1 || over.Diagnostics[0].Code != "syntax.input_limit" {
+		t.Fatalf("%d functions must be refused syntax.input_limit, got %v", perFileCap+1, over.Diagnostics)
+	}
+
+	first := syntax.Parse(gateFunctionSource("gate.first", "f", 600, true))
+	second := syntax.Parse(gateFunctionSource("gate.second", "g", 425, false))
+	if len(first.Diagnostics) != 0 || len(second.Diagnostics) != 0 {
+		t.Fatalf("merge inputs must parse: %v %v", first.Diagnostics, second.Diagnostics)
+	}
+	merged := first.Program
+	merged.Funcs = append(append(merged.Funcs[:0:0], merged.Funcs...), second.Program.Funcs...)
+	if len(merged.Funcs) != perFileCap+1 {
+		t.Fatalf("merged program has %d functions, want %d", len(merged.Funcs), perFileCap+1)
+	}
+	checked := check.Program(merged)
+	for _, diag := range checked.Diagnostics {
+		if diag.Code == "syntax.input_limit" || strings.HasSuffix(diag.Code, ".program_limit") {
+			t.Fatalf("a merged-size limit already exists: %s", diag.Code)
+		}
+	}
+	t.Logf("merged program of %d functions reached check.Program with %d diagnostics and no limit code", len(merged.Funcs), len(checked.Diagnostics))
+
+	// One host, not pinned (D-28): logged only, never compared.
+	started := time.Now()
+	validated := corevalidate.Validate(checked.Program)
+	t.Logf("corevalidate.Validate on the merged program: valid=%v elapsed=%s (one host, not pinned)", validated.Valid, time.Since(started))
 }
