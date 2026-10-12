@@ -72,6 +72,13 @@ var phase30NewCommittedPaths = map[string]bool{
 	"examples/checksum/adler_low.schway": true,
 }
 
+// phase30RetiredPaths lists frozen-golden paths that may be absent because the
+// source was deliberately retired; observing one again is a failure.
+var phase30RetiredPaths = map[string]bool{
+	// 2026-10-12 (Phase 32, DX-19, D-06): retired path; may be absent; a failure if observed again. The golden stays frozen.
+	"examples/checksum.schway": true,
+}
+
 // phase30FormatChanges maps a frozen golden path to its new format_sha256.
 // 2026-10-12 (Phase 32, plan 32-01, D-10c): the var-body formatter fix changes format_sha256 for these frozen entries; the golden stays frozen (D-15).
 var phase30FormatChanges = map[string]string{
@@ -253,6 +260,9 @@ func phase30Compare(golden phase30PreChangeGolden, observed []phase30PreChangeEn
 		goldenPaths[want.Path] = true
 		got, ok := byPath[want.Path]
 		if !ok {
+			if phase30RetiredPaths[want.Path] {
+				continue
+			}
 			if want.Path == phase30GeneratedOverWorkKey {
 				problems = append(problems, want.Path+": generated row missing")
 			} else {
@@ -283,6 +293,10 @@ func phase30Compare(golden phase30PreChangeGolden, observed []phase30PreChangeEn
 		}
 	}
 	for _, entry := range observed {
+		if phase30RetiredPaths[entry.Path] {
+			problems = append(problems, entry.Path+": retired path observed again")
+			continue
+		}
 		if !goldenPaths[entry.Path] && !phase30NewCommittedPaths[entry.Path] {
 			problems = append(problems, entry.Path+": walked source is absent from the golden and not in the allow-list")
 		}
@@ -350,7 +364,13 @@ func TestPhase30PreChangeGoldenIsNotInert(t *testing.T) {
 	}
 
 	mutated := phase30PreChangeGolden{Schema: golden.Schema, Revision: golden.Revision, Entries: append([]phase30PreChangeEntry(nil), golden.Entries...)}
-	target := &mutated.Entries[0]
+	var target *phase30PreChangeEntry
+	for i := range mutated.Entries {
+		if !phase30RetiredPaths[mutated.Entries[i].Path] {
+			target = &mutated.Entries[i]
+			break
+		}
+	}
 	flipped := []byte(target.CheckSHA256)
 	if flipped[0] == '0' {
 		flipped[0] = '1'

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -569,6 +570,22 @@ func TestPhase28EntryExitClassManifest(t *testing.T) {
 	if !sort.SliceIsSorted(golden.Entries, func(i, j int) bool { return golden.Entries[i].Path < golden.Entries[j].Path }) {
 		t.Fatal("golden entries are not sorted by path")
 	}
+	for _, problem := range phase28Compare(golden, observed) {
+		t.Error(problem)
+	}
+}
+
+// phase28RetiredEntries lists frozen-golden paths that may be absent because
+// the source was deliberately retired; observing one again is a failure.
+var phase28RetiredEntries = map[string]bool{
+	// 2026-10-12 (Phase 32, DX-19, D-06): retired path; may be absent; a failure if observed again. The golden stays frozen.
+	"examples/checksum.schway": true,
+}
+
+// phase28Compare reports every difference between the golden and the observed
+// entries. An empty result means the recorded classes hold.
+func phase28Compare(golden phase28Manifest, observed []phase28ManifestEntry) []string {
+	var problems []string
 	goldenByPath := map[string]phase28ManifestEntry{}
 	for _, entry := range golden.Entries {
 		goldenByPath[entry.Path] = entry
@@ -582,28 +599,35 @@ func TestPhase28EntryExitClassManifest(t *testing.T) {
 		added, isAdded := phase28NewlyAddedEntries[got.Path]
 		changed, isChanged := phase28ClassChanges[got.Path]
 		switch {
+		case phase28RetiredEntries[got.Path]:
+			problems = append(problems, fmt.Sprintf("%s: retired entry observed again", got.Path))
 		case !inGolden && !isAdded:
-			t.Errorf("%s: absent from the golden and not in phase28NewlyAddedEntries: %+v", got.Path, got)
+			problems = append(problems, fmt.Sprintf("%s: absent from the golden and not in phase28NewlyAddedEntries: %+v", got.Path, got))
 		case !inGolden:
 			if !reflect.DeepEqual(got, added) {
-				t.Errorf("%s: newly added entry differs from allow-list: got %+v want %+v", got.Path, got, added)
+				problems = append(problems, fmt.Sprintf("%s: newly added entry differs from allow-list: got %+v want %+v", got.Path, got, added))
 			}
 		case isChanged:
 			if reflect.DeepEqual(changed, want) {
-				t.Errorf("%s: stale phase28ClassChanges entry equals the golden", got.Path)
+				problems = append(problems, fmt.Sprintf("%s: stale phase28ClassChanges entry equals the golden", got.Path))
 			}
 			if !reflect.DeepEqual(got, changed) {
-				t.Errorf("%s: observed differs from phase28ClassChanges: got %+v want %+v", got.Path, got, changed)
+				problems = append(problems, fmt.Sprintf("%s: observed differs from phase28ClassChanges: got %+v want %+v", got.Path, got, changed))
 			}
 		default:
 			if !reflect.DeepEqual(got, want) {
-				t.Errorf("%s: class changed without allow-list: got %+v want %+v", got.Path, got, want)
+				problems = append(problems, fmt.Sprintf("%s: class changed without allow-list: got %+v want %+v", got.Path, got, want))
 			}
 		}
 	}
 	for path := range goldenByPath {
+		if phase28RetiredEntries[path] {
+			continue
+		}
 		if _, ok := observedByPath[path]; !ok {
-			t.Errorf("%s: in the golden at %s but no longer observed", path, golden.Revision)
+			problems = append(problems, fmt.Sprintf("%s: in the golden at %s but no longer observed", path, golden.Revision))
 		}
 	}
+	sort.Strings(problems)
+	return problems
 }
