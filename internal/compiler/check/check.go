@@ -2103,6 +2103,10 @@ var scopedContractBodyReadSeam bool
 // private function enters the importer's scope.
 var admitPrivateImportForTest bool
 
+// skipDeclaredImportCheckForTest is the armed control for the exported-but-
+// undeclared import refusal: when set, the import is admitted as before.
+var skipDeclaredImportCheckForTest bool
+
 // skipImportCollisionForTest is TestPhase30ImportCollisions' control: when
 // set, the import-vs-local and import-vs-import collision checks are skipped.
 var skipImportCollisionForTest bool
@@ -2288,6 +2292,10 @@ func resolveImports(program ast.Program) ([]core.ModuleImport, []diagnostic.Diag
 		}
 		return "module " + module
 	}
+	declaredInTarget := map[string]bool{}
+	for _, function := range program.Funcs {
+		declaredInTarget[function.Module+"\x00"+function.Name] = true
+	}
 	var imports []core.ModuleImport
 	var diagnostics []diagnostic.Diagnostic
 	refuse := func(importer, code string, span diagnostic.Span, message string, causes ...diagnostic.Cause) {
@@ -2340,6 +2348,14 @@ func resolveImports(program ast.Program) ([]core.ModuleImport, []diagnostic.Diag
 				if !exported && !admitPrivateImportForTest {
 					refuse(unit.Name, "module.not_exported", item.Span,
 						fmt.Sprintf("module %s does not export %q", declaration.Module, item.Name),
+						diagnostic.Cause{Kind: "export_list", Detail: item.Name, Span: firstExport, Unit: target.Name})
+					continue
+				}
+				if !declaredInTarget[declaration.Module+"\x00"+item.Name] && !skipDeclaredImportCheckForTest {
+					// Exported but never declared: no function exists to bind, and
+					// a ModuleImport fact for it would be a wrong fact in core.
+					refuse(unit.Name, "module.not_exported", item.Span,
+						fmt.Sprintf("module %s exports %q but does not declare a function of that name", declaration.Module, item.Name),
 						diagnostic.Cause{Kind: "export_list", Detail: item.Name, Span: firstExport, Unit: target.Name})
 					continue
 				}

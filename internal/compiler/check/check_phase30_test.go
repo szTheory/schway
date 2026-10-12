@@ -556,3 +556,34 @@ func TestPhase30LibraryPrivateMainNotEntryShaped(t *testing.T) {
 		}
 	})
 }
+
+// TestPhase30ExportedButUndeclaredImportRefused pins WR-03: importing a name the
+// target exports but never declares is refused at the import item, and no
+// ModuleImport fact is produced. The armed control admits it and shows the
+// dangling fact.
+func TestPhase30ExportedButUndeclaredImportRefused(t *testing.T) {
+	libs := map[string][]byte{"lib": phase30Lib("  fn ghost\n", phase30Fn("other"))}
+	entry := phase30Entry("import lib {\n  fn ghost\n}\n")
+	got := Program(mergeForTest(t, entry, libs))
+	if len(got.Diagnostics) != 1 || got.Diagnostics[0].Code != "module.not_exported" {
+		t.Fatalf("expected one module.not_exported for the undeclared export, got %+v", got.Diagnostics)
+	}
+	d := got.Diagnostics[0]
+	if d.Unit != "" || len(d.Causes) != 1 || d.Causes[0].Kind != "export_list" || d.Causes[0].Unit != "lib" {
+		t.Fatalf("diagnostic must belong to the importer with an export_list cause in lib: %+v", d)
+	}
+	if len(got.Program.Imports) != 0 {
+		t.Fatalf("a refused import must leave no ModuleImport fact, got %+v", got.Program.Imports)
+	}
+
+	t.Run("control: skipping the declaration check leaves a dangling fact", func(t *testing.T) {
+		skipDeclaredImportCheckForTest = true
+		defer func() { skipDeclaredImportCheckForTest = false }()
+		admitted := Program(mergeForTest(t, entry, libs))
+		for _, d := range admitted.Diagnostics {
+			if d.Code == "module.not_exported" {
+				t.Fatalf("the control must not refuse the import: %+v", admitted.Diagnostics)
+			}
+		}
+	})
+}
