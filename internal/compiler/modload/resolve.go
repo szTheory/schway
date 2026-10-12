@@ -54,6 +54,14 @@ var (
 	// bypassRootForTest makes the real filesystem resolve host paths outside
 	// the confinement root, following links.
 	bypassRootForTest bool
+	// skipSameFileForTest accepts an opened file whose identity differs from
+	// the pre-open Lstat result.
+	skipSameFileForTest bool
+	// sizeFromStatForTest takes the per-module size from Stat instead of the
+	// bytes actually read.
+	sizeFromStatForTest bool
+	// byteCapOffByOneForTest refuses a module of exactly the maximum size.
+	byteCapOffByOneForTest bool
 )
 
 // moduleFile is the opened module file the resolver reads.
@@ -227,7 +235,11 @@ func (r *resolver) readSegments(segments []string, importer string, at diagnosti
 	if refused != nil {
 		return Source{}, r.diagnose(refused, module, importer, at)
 	}
-	if len(source.Bytes) > syntax.MaxSourceBytes {
+	size := int64(len(source.Bytes))
+	if sizeFromStatForTest {
+		size = source.info.Size()
+	}
+	if size > int64(syntax.MaxSourceBytes) || byteCapOffByOneForTest && size == int64(syntax.MaxSourceBytes) {
 		return Source{}, []diagnostic.Diagnostic{
 			diagnostic.Error(codeInputLimit, at, "source exceeds a compiler input limit").InUnit(module),
 		}
@@ -339,7 +351,7 @@ func (r *resolver) load(module string, segments []string) (Source, *refusal) {
 		file = opened
 	}
 	oinfo, err := file.Stat()
-	if err != nil || !r.sameFile(linfo, oinfo) {
+	if err != nil || !skipSameFileForTest && !r.sameFile(linfo, oinfo) {
 		return Source{}, &refusal{code: CodeUnstableFile, rel: finalPath}
 	}
 	data, err := io.ReadAll(io.LimitReader(file, int64(syntax.MaxSourceBytes)+1))
