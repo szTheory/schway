@@ -321,6 +321,113 @@ func RunWithFixtureBytes(program core.Program, functionName, input string, bytes
 	return result, nil
 }
 
+// RunWithFileBytes runs the checked PathToken-to-U64 file-bytes entry with a
+// host-supplied reader keyed by path (Phase 31, D-07). The reader returns the
+// file bytes, or a non-empty FileError alternative name. The interpreter never
+// opens files itself, and it refuses (D-09) an alternative that is not one of
+// the acquire contract's Fails type alternatives.
+func RunWithFileBytes(program core.Program, functionName, path string, read func(path string) ([]byte, string)) (Execution, error) {
+	if read == nil {
+		return Execution{}, fmt.Errorf("file bytes route requires a caller-supplied file reader")
+	}
+	validated := corevalidate.Validate(program)
+	if !validated.Valid {
+		return Execution{}, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	program = validated.Program()
+	function, ok := findFunction(program, functionName)
+	if !ok {
+		return Execution{}, fmt.Errorf("function %q is absent from checked core", functionName)
+	}
+	if !function.HasClosedBody() || function.Linear == nil || function.Match != nil || len(function.Linear.Blocks) != 0 || function.Parameter.Type != "PathToken" || function.ReturnType != "U64" {
+		return Execution{}, fmt.Errorf("file bytes route requires the checked PathToken-to-U64 file-owner entry")
+	}
+	acquires, borrows := 0, 0
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind != core.OpForeignCall || operation.Foreign == nil {
+			continue
+		}
+		switch {
+		case operation.Foreign.Mode == "acquire" && operation.Foreign.ParameterType == "PathToken" && operation.Foreign.ResultType == "FileBytes":
+			acquires++
+		case operation.Foreign.Mode == "borrow" && operation.Foreign.ResultType == "ByteView":
+			borrows++
+		}
+	}
+	if acquires != 1 || borrows != 1 {
+		return Execution{}, fmt.Errorf("file bytes route requires one file acquire and one ByteView borrow in %q", functionName)
+	}
+	initial, err := inputValue(program, function, path)
+	if err != nil {
+		return Execution{}, err
+	}
+	base := newFlatFrame(function, map[string]value{function.Parameter.ID: initial})
+	base.fileBytes = read
+	result, err := runProgramFrameStack(program, base)
+	if err != nil {
+		return Execution{}, err
+	}
+	if len(result.LiveResources) != 0 {
+		return Execution{}, fmt.Errorf("model execution reached a terminal outcome with live local resources %v", result.LiveResources)
+	}
+	return result, nil
+}
+
+// fileForeignCall replays one file-bytes foreign operation. It returns a
+// terminal Execution (done == true) only for the typed acquire failure.
+func fileForeignCall(program core.Program, top *frame, operation core.LinearOperation, source value, events *[]Event) (Execution, bool, error) {
+	contract := operation.Foreign
+	if contract == nil {
+		return Execution{}, false, fmt.Errorf("foreign operation %q has no checked per-operation contract", operation.ID)
+	}
+	called := Event{
+		Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID, Invocation: top.invocation,
+		SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
+	}
+	switch contract.Mode {
+	case "acquire":
+		data, alternative := top.fileBytes(source.payload)
+		if alternative != "" {
+			known := false
+			for _, dataType := range program.DataTypes {
+				if dataType.Name != contract.Fails {
+					continue
+				}
+				for _, candidate := range dataType.Alternatives {
+					if candidate == alternative {
+						known = true
+					}
+				}
+			}
+			if !known {
+				return Execution{}, false, fmt.Errorf("file acquire %q reader returned unknown alternative %q for %q", operation.ID, alternative, contract.Fails)
+			}
+			called.Kind, called.TypeID = "foreign.failed", contract.Fails
+			*events = append(*events, called, Event{
+				Schema: top.eventSchema(), ID: operation.ID + ":event:failed", Kind: "function.failed",
+				FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: contract.Fails,
+			})
+			return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: "typed_failure", Value: alternative}, Events: *events, LiveResources: []string{}}, true, nil
+		}
+		top.values[operation.TargetID] = value{
+			bytes: append([]byte{}, data...), isBytes: true,
+			ownerOperationID: operation.ID, ownerActivationID: ownerActivationID(top, operation.ID),
+		}
+		top.live[operation.ID] = true
+		top.liveOrder = append(top.liveOrder, operation.ID)
+	case "borrow":
+		if !source.isBytes || source.ownerOperationID == "" || !top.live[source.ownerOperationID] {
+			return Execution{}, false, fmt.Errorf("file borrow %q has no live file owner", operation.ID)
+		}
+		top.values[operation.TargetID] = value{bytes: source.bytes, isBytes: true}
+	default:
+		return Execution{}, false, fmt.Errorf("file route does not support foreign mode %q", contract.Mode)
+	}
+	*events = append(*events, called)
+	top.idx++
+	return Execution{}, false, nil
+}
+
 // isByteIndexDefect is the D-20 predicate: a defect outcome whose final event
 // is the out-of-range byte_at defect attributed to an OpBytesAt operation.
 func isByteIndexDefect(program core.Program, result Execution) bool {
@@ -350,6 +457,13 @@ func isByteIndexDefect(program core.Program, result Execution) bool {
 // reports every frame on the stack, because its owner lives in the caller of
 // the frame that defects.
 func terminalLiveResources(stack []frame, top *frame) []string {
+	if top.fileBytes != nil {
+		result := []string{}
+		for index := range stack {
+			result = append(result, frameLiveResourceList(&stack[index])...)
+		}
+		return result
+	}
 	if top.fixtureBytes == nil {
 		return frameLiveResourceList(top)
 	}
@@ -985,6 +1099,9 @@ type frame struct {
 	// fixtureBytes is non-nil only for RunWithFixtureBytes; callee frames
 	// inherit it so a defect anywhere on the stack sees every live owner.
 	fixtureBytes func(caseID uint64) ([]byte, bool)
+	// fileBytes is non-nil only for RunWithFileBytes (Phase 31, D-07); callee
+	// frames inherit it.
+	fileBytes func(path string) ([]byte, string)
 
 	// placeTypes and types index this frame's OWN function's declared
 	// places and type facts by ID -- present on every frame shape (not
@@ -1730,6 +1847,16 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			events = append(events, ownedEvent(top, operation, "resource.released"))
 			top.idx++
 		case core.OpForeignCall:
+			if top.fileBytes != nil {
+				terminal, done, err := fileForeignCall(program, top, operation, sourceValue, &events)
+				if err != nil {
+					return Execution{}, err
+				}
+				if done {
+					return terminal, nil
+				}
+				continue
+			}
 			if top.fixtureBytes != nil {
 				terminal, done, err := fixtureForeignCall(program, top, operation, sourceValue, &events)
 				if err != nil {
@@ -1875,6 +2002,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				result.frame.modeledReusableUsed = top.modeledReusableUsed
 			}
 			result.frame.fixtureBytes = top.fixtureBytes
+			result.frame.fileBytes = top.fileBytes
 			if top.eventSchema() == execution.Schema2 {
 				events = append(events, calledEvent(top, operation, result.calleeID))
 			}
