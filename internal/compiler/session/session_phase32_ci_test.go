@@ -2,6 +2,7 @@ package session_test
 
 import (
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -72,4 +73,31 @@ func TestPhase32HostedCIEnv(t *testing.T) {
 			t.Fatal("armed-native control not detected")
 		}
 	})
+}
+
+func TestPhase32TestIndexCacheIsolation(t *testing.T) {
+	first := buildTestIndex(t)
+	second := buildTestIndex(t)
+	if first.root != second.root || !reflect.DeepEqual(first.byImportPath, second.byImportPath) {
+		t.Fatal("two buildTestIndex calls differ")
+	}
+	first.byImportPath["phase32/injected"] = map[string]bool{"TestInjected": true}
+	for importPath := range second.byImportPath {
+		first.byImportPath[importPath]["TestInjectedToo"] = true
+		break
+	}
+	third := buildTestIndex(t)
+	if _, leaked := third.byImportPath["phase32/injected"]; leaked {
+		t.Fatal("outer-map mutation leaked into a later caller")
+	}
+	if !reflect.DeepEqual(second.byImportPath, third.byImportPath) {
+		t.Fatal("inner-map mutation leaked into a later caller")
+	}
+	fresh, err := buildTestIndexWithTags(testsupport.ProjectPath(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fresh.root != third.root || !reflect.DeepEqual(fresh.byImportPath, third.byImportPath) {
+		t.Fatal("cached index differs from a fresh parse")
+	}
 }

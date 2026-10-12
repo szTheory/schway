@@ -37,6 +37,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -70,11 +71,33 @@ var testFuncNamePattern = regexp.MustCompile(`^(Test|Fuzz|Benchmark|Example)([A-
 // OS/arch-excluded test file is not counted as live.
 func buildTestIndex(t testing.TB) *testIndex {
 	t.Helper()
-	index, err := buildTestIndexWithTags(testsupport.ProjectPath(), nil)
-	if err != nil {
-		t.Fatalf("buildTestIndex: %v", err)
+	phase32IndexCache.once.Do(func() {
+		phase32IndexCache.index, phase32IndexCache.err = buildTestIndexWithTags(testsupport.ProjectPath(), nil)
+	})
+	if phase32IndexCache.err != nil {
+		t.Fatalf("buildTestIndex: %v", phase32IndexCache.err)
 	}
-	return index
+	return phase32IndexCache.index.clone()
+}
+
+// phase32IndexCache holds the one per-process parse of the untagged index.
+// Callers only ever receive deep copies; tagged variants stay uncached.
+var phase32IndexCache struct {
+	once  sync.Once
+	index *testIndex
+	err   error
+}
+
+func (index *testIndex) clone() *testIndex {
+	out := &testIndex{byImportPath: make(map[string]map[string]bool, len(index.byImportPath)), root: index.root}
+	for importPath, names := range index.byImportPath {
+		copied := make(map[string]bool, len(names))
+		for name, ok := range names {
+			copied[name] = ok
+		}
+		out.byImportPath[importPath] = copied
+	}
+	return out
 }
 
 func buildTestIndexWithTags(root string, tags []string) (*testIndex, error) {
