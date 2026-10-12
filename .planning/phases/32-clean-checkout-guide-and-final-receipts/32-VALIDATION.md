@@ -47,7 +47,7 @@ There is one row per success criterion or decision. Test names come from `32-RES
 
 | Ref | Requirement | Behavior | Test | Armed control | Status |
 |-----|-------------|----------|------|---------------|--------|
-| D-10 | (todo, process) | A `var` body ending in a bare identifier, number or `)` round-trips: reparse, fixed point, same tokens. Every other corpus file formats unchanged. | `TestPhase32FormatVarBody` | the pre-fix formatter output (`r = r + ar`) is rejected | ⬜ pending |
+| D-10 | (todo, process) | A `var` body ending in a bare identifier, number or `)` round-trips: reparse, fixed point, same tokens. Every other corpus file formats unchanged. The full syntax, cmd, check, cgen, core, evidence, schway-repair and (after the allow-list) session packages stay green. | `TestPhase32FormatVarBody` | the pre-fix formatter output (`r = r + ar`) is rejected | ⬜ pending |
 | D-10 / D-06 | (todo) | The Phase 30 golden holds with a dated format-change allow-list | `TestPhase30PreChangeGolden` | a stale allow-list entry fails | ⬜ pending |
 | SC1 / D-01..D-03 | DX-19 | The README's marked blocks run in a tracked-file temp copy. Each row matches exit, stdout and stderr. Error rows hide the path. Outputs go only under `.schway/`. | `TestPhase32GuideCleanCheckout` | a mutated guide value fails | ⬜ pending |
 | SC1 / D-04 | DX-19 | Anti-vacuity: block count, all three programs present, row count | `TestPhase32GuideParserNegativeControls` | a changed expected value fails; a renamed command fails | ⬜ pending |
@@ -58,8 +58,10 @@ There is one row per success criterion or decision. Test names come from `32-RES
 | SC2 / D-07 | DX-19 | LANGUAGE-MATURITY counts are re-derived | `TestLanguageMaturityCountsAreCurrent` | the existing count control | ⬜ pending |
 | SC3 / D-08 | EVD-15 | The sh and Go codedigests agree. The digest moves on a code edit, but not on a `.md` or `.planning` edit. | `TestPhase32CodeDigest` | a mutated code file changes the digest | ⬜ pending |
 | SC3 / D-09 | EVD-15 | The gate accepts a good pair and rejects digest, dirty-tree, missing-host and missing-program cases | `TestPhase32ReceiptGate` | each named mutation is rejected | ⬜ pending |
+| SC3 / D-09a | EVD-15 | The shared case table holds 39 rows over seven programs, including `adler32_fixture` (APP-10 native vectors, cases 0..10) and `byte_index_oob` (BYTE-02 native OOB, exit 65, empty stdout). Each row agrees with its independent source. | `TestPhase32ProducerCaseTable` | dropping all `byte_index_oob` rows is rejected by `TestPhase32ReceiptGate` (oob-rows-dropped) | ⬜ pending |
+| SC3 / D-09a | EVD-15 | The receipt records the -O0/-O3/-O3+LTO matrix as a non-claim bound by the same run's go test lanes, not as receipt rows | `TestPhase32ReceiptLivingClaims` | a receipt without the non-claim is rejected (nonclaim_missing_optimization_matrix) | ⬜ pending |
 | SC3 / D-10a | EVD-15 | No receipt and no claim passes. A claim without a receipt fails. A current claim with a stale digest fails. A "reopened" claim passes. | `TestPhase32ReceiptLivingClaims` | a stale-digest current claim fails | ⬜ pending |
-| SC3 / D-10b | EVD-15 | Every public route and entry program has a covered row or a "not covered because" row. The receipt program set equals the audit set. | `TestPhase32PublicRouteAudit` | an injected new route fails | ⬜ pending |
+| SC3 / D-10b / D-09a | EVD-15 | Every public route and entry program has a covered row or a "not covered because" row. The covered set is the seven receipt programs, including both Phase 29 programs, and equals the producer's `phase32_programs=` line. | `TestPhase32PublicRouteAudit` | an injected new route fails | ⬜ pending |
 | SC3 / D-00 / D-08c | EVD-15 | Revision = codedigest (D-08). The run headSha, the pushed HEAD and origin are one commit with no digest-path change since the freeze; a `.planning`-only HEAD move is accepted | `TestPhase32FreezeGate` (`scripts/check-phase32-freeze.sh`) | a synthetic mismatched headSha, a mismatched origin and a post-freeze digest-path change are each rejected | ⬜ pending |
 | SC3 | EVD-15 | The hosted macOS and Linux logs are bound to the final digest | `sh scripts/check-phase32-receipts.sh` at ingest, plus `TestPhase32ReceiptLivingClaims` | a digest mismatch is rejected | ⬜ pending |
 | Process | (all) | Every Phase 32 SUMMARY has a resolvable `coverage:` block | `TestSummaryCoverageGroundedness` | the seeded bad controls | ⬜ pending |
@@ -73,6 +75,7 @@ There is one row per success criterion or decision. Test names come from `32-RES
 - `cmd/schway/main_phase32_routes_test.go`
 - `internal/compiler/session/session_phase32_retire_test.go`
 - `internal/compiler/session/session_phase32_receipt_test.go`
+- `internal/compiler/session/session_phase32_gate_test.go`
 - `internal/compiler/session/session_phase32_freeze_test.go`
 - `scripts/codedigest.sh`, `scripts/verify-phase32.sh`, `scripts/check-phase32-receipts.sh`, `scripts/check-phase32-freeze.sh`
 

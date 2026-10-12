@@ -279,13 +279,13 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 32-04-PLAN.md — Executable clean-checkout guide in examples/checksum/README.md and its doc-test (D-01..D-03, D-01a)
 - [ ] 32-05-PLAN.md — Codedigest and receipt validator with reopen rule (D-08, D-09, D-10a)
-- [ ] 32-06-PLAN.md — Public-route audit for the final receipts (D-10b, D-10d)
+- [ ] 32-06-PLAN.md — Public-route audit for the final receipts; seven covered programs including the Phase 29 fixture and OOB control (D-10b, D-10d, D-09a)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 32-07-PLAN.md — Guide checker negative controls and the hosted native policy pin (D-04, D-04a)
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 32-08-PLAN.md — Receipt producer and two-host gate with armed controls (D-08b, D-09)
+- [ ] 32-08-PLAN.md — Receipt producer and two-host gate with armed controls, seven programs and 39 cases (D-08b, D-09, D-09a)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 - [ ] 32-09-PLAN.md — Armed freeze binding gate, CI wiring, and the code freeze (D-00, D-08b, D-08c)
@@ -306,7 +306,7 @@ Plans:
 | 29. Byte Views and the Adler-32 Library | 13/13 | Complete    | 2026-10-11 |
 | 30. Local Modules | 10/10 | Complete    | 2026-10-12 |
 | 31. Bounded File Checksum and Second Consumer | 10/10 | Complete    | 2026-10-12 |
-| 32. Clean-Checkout Guide and Final Receipts | 0/8 | Not started | - |
+| 32. Clean-Checkout Guide and Final Receipts | 0/11 | Not started | - |
 
 **Coverage:** 16/16 M006 requirements have exactly one phase owner. MOD-06
 (second consumer) is owned by Phase 31 rather than Phase 30, because its

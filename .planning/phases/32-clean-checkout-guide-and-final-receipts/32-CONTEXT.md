@@ -178,6 +178,11 @@ These amendments come from `32-RESEARCH.md` findings and open questions. Each re
   - Usage text omits `stats` and `build --manifest`. Record that as audit rows plus a pending todo; do not edit the usage text in this phase.
   - The 9 uncovered entry programs get real "not covered because" reasons.
   - The test must not call inventory-restricted `cgen` emitters or `callgraph.EntryFunction`.
+- **D-09a (extends D-09 and D-10d; from plan-check iteration 2, auto-followed):** the receipt program set also includes the two Phase 29 programs that carry M006 native claims.
+  - `examples/phase29/adler32_fixture.schway`: the APP-10 native pinned vectors.
+  - `examples/phase29/byte_index_oob.schway`: BYTE-02, native OOB exit 65 with empty stdout.
+
+  With these, every M006 native program has a hosted receipt row, alongside checksum, adler_low, adler32_cli, sum_to_n and FizzBuzz. Each row is taken at the default build. The -O0, -O3 and -O3+LTO matrix stays bound by the hosted `go test` lanes in the same run, and the receipt states that as a recorded non-claim, not as receipt rows. The route audit moves these two from "not covered because" to covered.
 - **D-11 (planning-doc conventions):**
   - PLAN docs carry `verification_role: proposal`.
   - `32-VALIDATION.md` goes `planned` → `validated` at closure.
