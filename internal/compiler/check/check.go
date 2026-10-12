@@ -93,6 +93,22 @@ type Result struct {
 
 func Program(program ast.Program) Result {
 	result := Result{Program: core.Program{Schema: core.Schema, Module: program.Module, ModuleID: semanticID(program.Module, "module", program.Module)}}
+	// D-22: imports are resolved only by the module-aware commands, which hand
+	// check a merged program carrying Units. An import-bearing program with no
+	// Units reached check through a single-file caller and fails closed.
+	if len(program.Imports) > 0 && len(program.Units) == 0 && !ignoreUnloadedImportsForTest {
+		result.Diagnostics = append(result.Diagnostics, diagnostic.Error(
+			"module.imports_not_loaded", program.Imports[0].Span,
+			"imports are resolved only by the module-aware commands (check, run, build, app verify, debug-map)",
+		))
+		return result
+	}
+	resolvedImports, importDiagnostics := resolveImports(program)
+	if len(importDiagnostics) > 0 {
+		result.Diagnostics = append(result.Diagnostics, importDiagnostics...)
+		return result
+	}
+	result.Program.Imports = resolvedImports
 	// spanByOperationID is D-07-35's program-wide merge of every checked
 	// function's own CallSpans: check's OWN emission-time bookkeeping,
 	// consulted only when a core.call_graph_cycle diagnostic must project
@@ -103,7 +119,7 @@ func Program(program ast.Program) Result {
 	// function of either name would shadow the scalar atom.
 	for _, function := range program.Funcs {
 		if function.Name == "byte_len" || function.Name == "byte_at" {
-			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("check.reserved_builtin_name", function.Span, "byte_len and byte_at are reserved byte-read builtins"))
+			result.Diagnostics = append(result.Diagnostics, stampUnit(diagnostic.Error("check.reserved_builtin_name", function.Span, "byte_len and byte_at are reserved byte-read builtins"), function.Module))
 		}
 	}
 	if len(result.Diagnostics) > 0 {
@@ -247,13 +263,62 @@ func Program(program ast.Program) Result {
 	// checked. Both tables are signature-only channels: neither carries a
 	// *core.LinearBody or *core.Match, so SEM-05's body-blindness holds on
 	// this path too.
-	calleeContracts := buildCalleeContracts(program)
+	scopes := buildScopedCalleeContracts(program)
+	scopeNames := make(map[string]map[string]bool, len(scopes))
+	for unit, scope := range scopes {
+		names := make(map[string]bool, len(scope))
+		for name := range scope {
+			names[name] = true
+		}
+		scopeNames[unit] = names
+	}
 	for _, function := range program.Funcs {
 		functionNames[function.Name] = true
 	}
+	// Phase 30 (MOD-04, D-20): each function resolves callees and recognizes
+	// its entry shape against its own unit's scope. A library function can
+	// never resolve a foreign symbol, because foreign blocks live only in the
+	// entry module.
+	noForeignSymbols := map[string]foreignSymbolInfo{}
+	allForeignSymbols, allFunctionNames := foreignSymbols, functionNames
+	var wideContracts map[string]calleeContract
+	if programWideRecognizerScopeForTest {
+		wideContracts = make(map[string]calleeContract, len(program.Funcs))
+		for _, function := range program.Funcs {
+			wideContracts[function.Name] = functionContract(program, function)
+		}
+	}
+	functionModules := make(map[string]string, len(program.Funcs))
+	functionExported := make(map[string]bool, len(program.Funcs))
+	exportsByUnit := make(map[string]map[string]bool, len(program.Units))
+	for _, unit := range program.Units {
+		exported := map[string]bool{}
+		for _, export := range unit.Exports {
+			if export.Kind == "fn" {
+				exported[export.Name] = true
+			}
+		}
+		exportsByUnit[unit.Name] = exported
+	}
+	diagnosticStarts := make([]int, len(program.Funcs)+1)
 
-	for _, function := range program.Funcs {
-		functionID := semanticID(program.Module, "fn", function.Name)
+	for functionIndex, function := range program.Funcs {
+		diagnosticStarts[functionIndex] = len(result.Diagnostics)
+		module := idModule(program, function)
+		functionID := semanticID(module, "fn", function.Name)
+		functionModules[functionID] = function.Module
+		functionExported[functionID] = function.Module != "" && exportsByUnit[function.Module][function.Name]
+		calleeContracts := map[string]calleeContract(scopes[function.Module])
+		functionNames := scopeNames[function.Module]
+		foreignSymbols := foreignSymbols
+		if function.Module != "" {
+			foreignSymbols = noForeignSymbols
+		}
+		if programWideRecognizerScopeForTest {
+			calleeContracts = wideContracts
+			functionNames = allFunctionNames
+			foreignSymbols = allForeignSymbols
+		}
 		if !function.Body.HasClosedVariant() {
 			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("core.invalid_body", function.Span, "function must have exactly one body variant"))
 			continue
@@ -290,7 +355,7 @@ func Program(program ast.Program) Result {
 					result.Diagnostics = append(result.Diagnostics, diagnostic.Error("type.unknown", function.Parameter.Span, "unknown parameter type"))
 					continue
 				}
-				checked, diagnostics, work, callSpans := checkBranch(program.Module, functionID, semanticID(program.Module, "match", function.Name), branch, dataType, types, sealedNames(types), calleeContracts, foreignSymbols, function.Body.Linear)
+				checked, diagnostics, work, callSpans := checkBranch(module, functionID, semanticID(module, "match", function.Name), branch, dataType, types, sealedNames(types), calleeContracts, foreignSymbols, function.Body.Linear)
 				result.Work += work
 				result.Diagnostics = append(result.Diagnostics, diagnostics...)
 				if len(diagnostics) == 0 {
@@ -309,7 +374,7 @@ func Program(program ast.Program) Result {
 			if hasTryCall(function.Body.Linear) {
 				checked, diagnostics, work = checkFallibleLinear(functionID, function, foreignSymbols, functionNames, types, calleeContracts)
 			} else {
-				checked, diagnostics, work, callSpans = checkLinear(program.Module, functionID, function, calleeContracts, foreignSymbols)
+				checked, diagnostics, work, callSpans = checkLinear(module, functionID, function, calleeContracts, foreignSymbols)
 			}
 			result.Work += work
 			result.Diagnostics = append(result.Diagnostics, diagnostics...)
@@ -334,7 +399,7 @@ func Program(program ast.Program) Result {
 			}
 			continue
 		}
-		matchID := semanticID(program.Module, "match", function.Name)
+		matchID := semanticID(module, "match", function.Name)
 		dataType, ok := types[function.Parameter.Type.Constructor]
 		if !ok {
 			result.Diagnostics = append(result.Diagnostics, diagnostic.Error("type.unknown", function.Parameter.Span, "unknown parameter type"))
@@ -368,7 +433,7 @@ func Program(program ast.Program) Result {
 		// checkBranch's block/edge scaffolding exactly like an arm-body
 		// match, even though no arm carries a `{ ... }` body.
 		if hasArmBody || dataTypeHasPayload(dataType) {
-			checked, diagnostics, work, callSpans := checkBranch(program.Module, functionID, matchID, function, dataType, types, sealedNames(types), calleeContracts, foreignSymbols)
+			checked, diagnostics, work, callSpans := checkBranch(module, functionID, matchID, function, dataType, types, sealedNames(types), calleeContracts, foreignSymbols)
 			result.Work += work
 			result.Diagnostics = append(result.Diagnostics, diagnostics...)
 			if len(diagnostics) == 0 {
@@ -460,11 +525,30 @@ func Program(program ast.Program) Result {
 		result.Program.Functions = append(result.Program.Functions, core.Function{
 			ID: functionID, Name: function.Name,
 			EntryPointID: functionID + ":point:entry", ReturnPointID: functionID + ":point:return",
-			Parameter:  core.Parameter{ID: semanticID(program.Module, "parameter", function.Name+"."+function.Parameter.Name), Name: function.Parameter.Name, Type: function.Parameter.Type.Constructor},
+			Parameter:  core.Parameter{ID: semanticID(module, "parameter", function.Name+"."+function.Parameter.Name), Name: function.Parameter.Name, Type: function.Parameter.Type.Constructor},
 			ReturnType: function.ReturnType.Constructor,
 			Match:      &core.Match{ID: matchID, PointID: functionID + ":point:match", Scrutinee: function.Body.Scrutinee, Arms: arms},
 			Span:       function.Span,
 		})
+	}
+	diagnosticStarts[len(program.Funcs)] = len(result.Diagnostics)
+	if !skipUnitStampingForTest {
+		// D-11: every diagnostic produced while checking a function of unit U
+		// carries Unit = U (empty for the entry), stamped once per function
+		// after the loop so no per-diagnostic emit site can forget it.
+		for index, function := range program.Funcs {
+			if function.Module == "" {
+				continue
+			}
+			for position := diagnosticStarts[index]; position < diagnosticStarts[index+1]; position++ {
+				result.Diagnostics[position] = result.Diagnostics[position].InUnit(function.Module)
+			}
+		}
+	}
+	for index := range result.Program.Functions {
+		functionID := result.Program.Functions[index].ID
+		result.Program.Functions[index].Module = functionModules[functionID]
+		result.Program.Functions[index].Exported = functionExported[functionID]
 	}
 	if len(result.Diagnostics) == 0 {
 		// D-07-29/D-07-41: check's own independent re-derivation of the
@@ -653,7 +737,7 @@ func checkCallGraphAcyclic(program core.Program, spanByOperationID map[string]di
 				causes = append(causes, diagnostic.Cause{Kind: "truncated", Detail: callgraph.TruncatedCycleBound})
 			}
 			primary := spanByOperationID[cycle.ClosingOperationID()]
-			diag := diagnostic.Error(core.CallGraphCycle, primary, "call graph contains a cycle; recursion is refused", causes...)
+			diag := stampUnit(diagnostic.Error(core.CallGraphCycle, primary, "call graph contains a cycle; recursion is refused", causes...), moduleOfOperation(program, cycle.ClosingOperationID()))
 			return &diag
 		}
 		if _, ok := callgraph.UnresolvedCalleeError(err); ok && verifyCallInvariantsSeam {
@@ -1394,10 +1478,18 @@ func cfgBlocksForFunction(function core.Function) []cfgBlockSpec {
 // open question here was silently dropped.
 func checkInterproceduralLoanLiveness(program core.Program, summaries interproceduralSummaryTable, spanByOperationID map[string]diagnostic.Span) []diagnostic.Diagnostic {
 	var diagnostics []diagnostic.Diagnostic
+	// D-11: each function's diagnostics are stamped with its own module once
+	// the loop ends; starts[i]..starts[i+1] is function i's slice.
+	type unitRange struct {
+		module string
+		start  int
+	}
+	var ranges []unitRange
 	for _, function := range program.Functions {
 		if function.Linear == nil || len(function.Linear.Operations) == 0 {
 			continue
 		}
+		ranges = append(ranges, unitRange{module: function.Module, start: len(diagnostics)})
 		blocks := cfgBlocksForFunction(function)
 		fixpoint, diag := loanLivenessFixpoint(function.ID, blocks, summaries, function.Span)
 		if diag != nil {
@@ -1601,6 +1693,17 @@ func checkInterproceduralLoanLiveness(program core.Program, summaries interproce
 		diagnostics = append(diagnostics, moveWhileBorrowedDiagnosticPostAssembly(
 			offendingMove, borrowOperation, lastUseSpanAt(function, lastUseIndexByLoan[offendingLoanID], spanByOperationID), spanByOperationID,
 		))
+	}
+	if !skipUnitStampingForTest {
+		for index, r := range ranges {
+			end := len(diagnostics)
+			if index+1 < len(ranges) {
+				end = ranges[index+1].start
+			}
+			for position := r.start; position < end; position++ {
+				diagnostics[position] = diagnostics[position].InUnit(r.module)
+			}
+		}
 	}
 	return diagnostics
 }
@@ -1955,21 +2058,329 @@ type calleeContract struct {
 	ReturnsBorrowOfParam bool
 }
 
-// buildCalleeContracts builds the pre-body callee-contract table from
-// program's own AST, one entry per declared function, keyed by function
-// name. See calleeContract's own doc comment for why this table is
-// necessarily separate from callSignatureTable.
+// buildCalleeContracts returns the entry unit's scope of the scoped
+// callee-contract table. It delegates to buildScopedCalleeContracts so there
+// is one code path; for a program with no Units the entry scope is exactly
+// the pre-Phase-30 table (one entry per declared function, keyed by name).
 func buildCalleeContracts(program ast.Program) map[string]calleeContract {
-	contracts := make(map[string]calleeContract, len(program.Funcs))
-	for _, function := range program.Funcs {
-		contracts[function.Name] = calleeContract{
-			ID:                   semanticID(program.Module, "fn", function.Name),
-			ParameterType:        function.Parameter.Type.Constructor,
-			ReturnType:           function.ReturnType.Constructor,
-			ReturnsBorrowOfParam: function.ReturnOrigin != nil,
+	return map[string]calleeContract(buildScopedCalleeContracts(program)[""])
+}
+
+// moduleScope is one unit's callee-contract scope (D-01): its own functions
+// plus the functions its resolved import items bring in, keyed by the bare
+// name a call site writes. A private function of another module is never in
+// it (T-30-20).
+type moduleScope map[string]calleeContract
+
+// idModule returns the module that function's IDs are derived from: its
+// defining module, or the entry header for an entry function (D-12).
+func idModule(program ast.Program, function ast.FuncDecl) string {
+	if function.Module != "" {
+		return function.Module
+	}
+	return program.Module
+}
+
+// functionContract is the signature-only contract of one declared function.
+// It reads the declared types and the return-origin presence, never the body.
+func functionContract(program ast.Program, function ast.FuncDecl) calleeContract {
+	return calleeContract{
+		ID:                   semanticID(idModule(program, function), "fn", function.Name),
+		ParameterType:        function.Parameter.Type.Constructor,
+		ReturnType:           function.ReturnType.Constructor,
+		ReturnsBorrowOfParam: function.ReturnOrigin != nil,
+	}
+}
+
+// scopedContractBodyReadSeam is TestPhase30CallAdmissionBodyBlind's control:
+// when set, buildScopedCalleeContracts reads an imported function's body and
+// folds a body-derived value into its contract, which the test observes to
+// break the signature-only equality. Never set in production.
+var scopedContractBodyReadSeam bool
+
+// admitPrivateImportForTest is TestPhase30PrivateNameRefused's control: when
+// set, an import of a name the target does not export is not refused and the
+// private function enters the importer's scope.
+var admitPrivateImportForTest bool
+
+// skipImportCollisionForTest is TestPhase30ImportCollisions' control: when
+// set, the import-vs-local and import-vs-import collision checks are skipped.
+var skipImportCollisionForTest bool
+
+// skipUnitStampingForTest is TestPhase30UnitStampedPerFunction's control:
+// when set, no diagnostic is attributed to a unit.
+var skipUnitStampingForTest bool
+
+// ignoreUnloadedImportsForTest is TestPhase30CheckRefusesUnloadedImports'
+// control: when set, the D-22 fail-closed guard is skipped.
+var ignoreUnloadedImportsForTest bool
+
+// programWideRecognizerScopeForTest is
+// TestPhase30LibraryPrivateMainNotEntryShaped's control: when set, the entry
+// shape recognizers see the program-wide bare-name maps, the entry's foreign
+// table for every unit, and a bare `Name == "main"` test, as they did before
+// Phase 30.
+var programWideRecognizerScopeForTest bool
+
+func setBoolSeam(seam *bool, enabled bool) (restore func()) {
+	previous := *seam
+	*seam = enabled
+	restored := false
+	return func() {
+		if restored {
+			return
+		}
+		restored = true
+		*seam = previous
+	}
+}
+
+// SetSkipUnitStampingForTest toggles only per-function unit attribution so the
+// session end-to-end test can arm the same control (cgen.SetPayloadSlotSwapForTest
+// precedent). The restore closure is idempotent.
+func SetSkipUnitStampingForTest(enabled bool) (restore func()) {
+	return setBoolSeam(&skipUnitStampingForTest, enabled)
+}
+
+// SetIgnoreUnloadedImportsForTest toggles only the D-22 fail-closed guard so
+// the single-file refusal test in the session package can arm its control.
+func SetIgnoreUnloadedImportsForTest(enabled bool) (restore func()) {
+	return setBoolSeam(&ignoreUnloadedImportsForTest, enabled)
+}
+
+// stampUnit attributes a diagnostic to a unit (D-11) unless the stamping
+// control is engaged. An empty unit leaves the diagnostic unchanged.
+func stampUnit(d diagnostic.Diagnostic, unit string) diagnostic.Diagnostic {
+	if skipUnitStampingForTest {
+		return d
+	}
+	return d.InUnit(unit)
+}
+
+// isEntryMain reports whether function is the entry module's `main`. A
+// library module's private `main` is an ordinary non-entry function (D-29).
+func isEntryMain(function ast.FuncDecl) bool {
+	return function.Name == "main" && (function.Module == "" || programWideRecognizerScopeForTest)
+}
+
+// moduleOfOperation returns the defining module of the function that owns the
+// operation with the given ID (an operation ID is its function ID plus a
+// suffix), or "" for an entry function or an unknown operation.
+func moduleOfOperation(program core.Program, operationID string) string {
+	best, module := -1, ""
+	for _, function := range program.Functions {
+		if strings.HasPrefix(operationID, function.ID+":") && len(function.ID) > best {
+			best, module = len(function.ID), function.Module
 		}
 	}
-	return contracts
+	return module
+}
+
+// scopeUnitNames returns the unit names a program's functions are scoped
+// under: the merged Units, or the entry plus any module a function names.
+func scopeUnitNames(program ast.Program) []string {
+	if len(program.Units) > 0 {
+		names := make([]string, 0, len(program.Units))
+		for _, unit := range program.Units {
+			names = append(names, unit.Name)
+		}
+		return names
+	}
+	names := []string{""}
+	seen := map[string]bool{"": true}
+	for _, function := range program.Funcs {
+		if !seen[function.Module] {
+			seen[function.Module] = true
+			names = append(names, function.Module)
+		}
+	}
+	return names
+}
+
+// buildScopedCalleeContracts returns one moduleScope per unit ("" for the
+// entry): the unit's own functions, keyed by bare name, plus each fn import
+// item whose target unit exports it, mapped to the target function's
+// contract. It reads declared signatures only (SC2): a callee body never
+// enters admission, and the contract type has no body field. For a program
+// with no Units the single "" scope is today's table exactly.
+func buildScopedCalleeContracts(program ast.Program) map[string]moduleScope {
+	names := scopeUnitNames(program)
+	scopes := make(map[string]moduleScope, len(names))
+	for _, name := range names {
+		scopes[name] = moduleScope{}
+	}
+	byModule := map[string]map[string]ast.FuncDecl{}
+	for _, function := range program.Funcs {
+		if scope, ok := scopes[function.Module]; ok {
+			scope[function.Name] = functionContract(program, function)
+		}
+		if byModule[function.Module] == nil {
+			byModule[function.Module] = map[string]ast.FuncDecl{}
+		}
+		byModule[function.Module][function.Name] = function
+	}
+	unitByName := make(map[string]ast.Unit, len(program.Units))
+	for _, unit := range program.Units {
+		unitByName[unit.Name] = unit
+	}
+	for _, unit := range program.Units {
+		scope := scopes[unit.Name]
+		for _, declaration := range unit.Imports {
+			target, loaded := unitByName[declaration.Module]
+			if !loaded {
+				continue
+			}
+			exported := map[string]bool{}
+			for _, export := range target.Exports {
+				if export.Kind == "fn" {
+					exported[export.Name] = true
+				}
+			}
+			for _, item := range declaration.Items {
+				if item.Kind != "fn" || (!exported[item.Name] && !admitPrivateImportForTest) {
+					continue
+				}
+				callee, ok := byModule[target.Name][item.Name]
+				if !ok {
+					continue
+				}
+				if _, local := scope[item.Name]; local {
+					continue
+				}
+				contract := functionContract(program, callee)
+				if scopedContractBodyReadSeam && callee.Body.Linear != nil {
+					contract.ReturnType += "#body" + strconv.Itoa(len(callee.Body.Linear.Bindings))
+				}
+				scope[item.Name] = contract
+			}
+		}
+	}
+	return scopes
+}
+
+// isReservedBuiltinImportName reports whether a name is one of the reserved
+// builtins an import may never shadow (D-04): the byte-read atoms and the
+// write_* statement forms.
+func isReservedBuiltinImportName(name string) bool {
+	return name == "byte_len" || name == "byte_at" || strings.HasPrefix(name, "write_")
+}
+
+// resolveImports validates every import item of every unit and returns the
+// resolved fn imports, sorted by (From, Module, Name), or the refusals. Each
+// diagnostic is attributed to the importing unit and carries no repair
+// (renaming is a semantic choice, and the fix may be in another file, D-04).
+func resolveImports(program ast.Program) ([]core.ModuleImport, []diagnostic.Diagnostic) {
+	if len(program.Units) == 0 {
+		return nil, nil
+	}
+	unitByName := make(map[string]ast.Unit, len(program.Units))
+	for _, unit := range program.Units {
+		unitByName[unit.Name] = unit
+	}
+	originName := func(importer, module string) string {
+		if module == importer {
+			return "this module"
+		}
+		return "module " + module
+	}
+	var imports []core.ModuleImport
+	var diagnostics []diagnostic.Diagnostic
+	refuse := func(importer, code string, span diagnostic.Span, message string, causes ...diagnostic.Cause) {
+		diagnostics = append(diagnostics, diagnostic.Error(code, span, message, causes...).InUnit(importer))
+	}
+	for _, unit := range program.Units {
+		localSpan := map[string]diagnostic.Span{}
+		for _, function := range program.Funcs {
+			if function.Module == unit.Name {
+				localSpan[function.Name] = function.Span
+			}
+		}
+		type origin struct {
+			module string
+			span   diagnostic.Span
+		}
+		imported := map[string]origin{}
+		for _, declaration := range unit.Imports {
+			target, loaded := unitByName[declaration.Module]
+			for _, item := range declaration.Items {
+				switch {
+				case item.Kind == "type":
+					refuse(unit.Name, "module.type_import_unsupported", item.Span,
+						fmt.Sprintf("a type import %q from module %s is not supported; only fn items can be imported", item.Name, declaration.Module))
+					continue
+				case item.Name == "main":
+					refuse(unit.Name, "module.main_not_importable", item.Span,
+						fmt.Sprintf("main of module %s is an entry point and cannot be imported", declaration.Module))
+					continue
+				case isReservedBuiltinImportName(item.Name):
+					refuse(unit.Name, "module.import_collision", item.Span,
+						fmt.Sprintf("%q imported from module %s collides with the reserved builtin of the same name", item.Name, declaration.Module))
+					continue
+				case !loaded:
+					refuse(unit.Name, "module.imports_not_loaded", item.Span,
+						fmt.Sprintf("module %s was not loaded, so %q cannot be resolved", declaration.Module, item.Name))
+					continue
+				}
+				exported := false
+				var firstExport *diagnostic.Span
+				for index, export := range target.Exports {
+					if index == 0 {
+						span := export.Span
+						firstExport = &span
+					}
+					if export.Kind == "fn" && export.Name == item.Name {
+						exported = true
+					}
+				}
+				if !exported && !admitPrivateImportForTest {
+					refuse(unit.Name, "module.not_exported", item.Span,
+						fmt.Sprintf("module %s does not export %q", declaration.Module, item.Name),
+						diagnostic.Cause{Kind: "export_list", Detail: item.Name, Span: firstExport, Unit: target.Name})
+					continue
+				}
+				if !skipImportCollisionForTest {
+					if span, local := localSpan[item.Name]; local {
+						localCause := diagnostic.Cause{Kind: "local_declaration", Detail: item.Name, Span: &span}
+						refuse(unit.Name, "module.import_collision", item.Span,
+							fmt.Sprintf("%q imported from %s collides with the function declared in %s", item.Name, originName(unit.Name, declaration.Module), originName(unit.Name, unit.Name)),
+							localCause)
+						continue
+					}
+					if earlier, seen := imported[item.Name]; seen && earlier.module != declaration.Module {
+						earlierSpan := earlier.span
+						refuse(unit.Name, "module.import_collision", item.Span,
+							fmt.Sprintf("%q is imported from %s and from %s", item.Name, originName(unit.Name, earlier.module), originName(unit.Name, declaration.Module)),
+							diagnostic.Cause{Kind: "earlier_import", Detail: earlier.module, Span: &earlierSpan})
+						continue
+					}
+				}
+				if _, seen := imported[item.Name]; !seen {
+					imported[item.Name] = origin{module: declaration.Module, span: item.Span}
+				}
+				imports = append(imports, core.ModuleImport{From: unit.Name, Module: declaration.Module, Name: item.Name})
+			}
+		}
+	}
+	if len(diagnostics) > 0 {
+		return nil, diagnostics
+	}
+	sort.SliceStable(imports, func(i, j int) bool {
+		if imports[i].From != imports[j].From {
+			return imports[i].From < imports[j].From
+		}
+		if imports[i].Module != imports[j].Module {
+			return imports[i].Module < imports[j].Module
+		}
+		return imports[i].Name < imports[j].Name
+	})
+	unique := imports[:0]
+	for _, item := range imports {
+		if len(unique) > 0 && unique[len(unique)-1] == item {
+			continue
+		}
+		unique = append(unique, item)
+	}
+	return unique, nil
 }
 
 // callSignatureTable is D-07-34's immutable signature table: a same-package,
@@ -2138,10 +2549,10 @@ func verifyCallableRefusal(functions []core.Function, table callSignatureTable) 
 				// a considered decision rather than an artifact of
 				// implementation order (13-RESEARCH.md's own note on this
 				// site).
-				diag := diagnostic.Error(
+				diag := stampUnit(diagnostic.Error(
 					core.CalleeNotCallable, function.Span, "call target is not callable",
 					diagnostic.Cause{Kind: "callee", Detail: operation.CalleeID},
-				)
+				), function.Module)
 				return &diag
 			}
 		}
@@ -2197,20 +2608,20 @@ func verifyCallInvariants(functions []core.Function) *diagnostic.Diagnostic {
 		for _, operation := range function.Linear.Operations {
 			if operation.Kind != core.OpCall {
 				if operation.CalleeID != "" {
-					diag := diagnostic.Error("core.callee_id_kind_exclusive", function.Span, "only an OpCall operation may carry a CalleeID")
+					diag := stampUnit(diagnostic.Error("core.callee_id_kind_exclusive", function.Span, "only an OpCall operation may carry a CalleeID"), function.Module)
 					return &diag
 				}
 				continue
 			}
 			if operation.CalleeID == "" {
-				diag := diagnostic.Error("core.callee_id_missing", function.Span, "an OpCall operation must carry a CalleeID")
+				diag := stampUnit(diagnostic.Error("core.callee_id_missing", function.Span, "an OpCall operation must carry a CalleeID"), function.Module)
 				return &diag
 			}
 			if verifyCallInvariantsSeam {
 				continue
 			}
 			if !declared[operation.CalleeID] {
-				diag := diagnostic.Error(core.CallCalleeUnresolved, function.Span, "call target does not resolve to a declared function")
+				diag := stampUnit(diagnostic.Error(core.CallCalleeUnresolved, function.Span, "call target does not resolve to a declared function"), function.Module)
 				return &diag
 			}
 		}
@@ -3763,7 +4174,7 @@ func phase24ErrorFunctionCandidate(function ast.FuncDecl, functionNames map[stri
 		return true
 	}
 	body := function.Body.Linear
-	return function.Name == "main" && body != nil && len(body.Bindings) == 3 &&
+	return isEntryMain(function) && body != nil && len(body.Bindings) == 3 &&
 		body.Bindings[0].RHS.Kind == "try_call" && body.Bindings[0].RHS.Callee == "acquire" &&
 		body.Bindings[1].RHS.Kind == "try_call" && body.Bindings[1].RHS.Callee == "acquire" &&
 		body.Bindings[2].RHS.Kind == "try_call" && body.Bindings[2].RHS.Callee == "probe" &&
@@ -3803,7 +4214,7 @@ func checkPhase24ErrorFunction(functionID string, function ast.FuncDecl, symbols
 		return checked, nil, 18
 	}
 	probeContract, hasProbe := callees["probe"]
-	if function.Name != "main" || !hasProbe || probeContract.ParameterType != "PathToken" || probeContract.ReturnType != "U64" || function.ReturnType.Constructor != "U64" ||
+	if !isEntryMain(function) || !hasProbe || probeContract.ParameterType != "PathToken" || probeContract.ReturnType != "U64" || function.ReturnType.Constructor != "U64" ||
 		len(body.Bindings) != 3 || body.Result != body.Bindings[2].Name ||
 		!phase24TryCall(body.Bindings[0], "acquire", function.Parameter.Name) ||
 		!phase24TryCall(body.Bindings[1], "acquire", function.Parameter.Name) ||
@@ -3973,7 +4384,7 @@ func phase24ReleaseOp(functionID string, ordinal int, ownerPlace, ownerType, acq
 // destructor policy.
 func checkLocalFileByteEntry(functionID string, function ast.FuncDecl, symbols map[string]foreignSymbolInfo, callees map[string]calleeContract) (core.Function, []diagnostic.Diagnostic, int) {
 	body := function.Body.Linear
-	if transfer, ok := callees[bodyTransferCallee(body)]; ok && function.Name == "main" && function.ReturnType.Constructor == "U64" {
+	if transfer, ok := callees[bodyTransferCallee(body)]; ok && isEntryMain(function) && function.ReturnType.Constructor == "U64" {
 		return checkLocalFileByteTransferCaller(functionID, function, symbols, callees, transfer)
 	}
 	refusal := func(code, message string) (core.Function, []diagnostic.Diagnostic, int) {
@@ -3982,7 +4393,7 @@ func checkLocalFileByteEntry(functionID string, function ast.FuncDecl, symbols m
 	if problem := discardedFileByteOwnerAcquisition(body, symbols); problem != nil {
 		return core.Function{}, []diagnostic.Diagnostic{*problem}, 1
 	}
-	if function.Name != "main" || function.ReturnType.Constructor != "U64" || body == nil || len(body.Bindings) != 2 || body.Result != body.Bindings[1].Name {
+	if !isEntryMain(function) || function.ReturnType.Constructor != "U64" || body == nil || len(body.Bindings) != 2 || body.Result != body.Bindings[1].Name {
 		return refusal("check.local_owner_shape_unsupported", "PathToken is admitted only for the checked acquire, borrow, and generated release entry shape")
 	}
 	acquireBinding, useBinding := body.Bindings[0], body.Bindings[1]
@@ -4048,7 +4459,7 @@ func checkLocalFileByteAcquireHelper(functionID string, function ast.FuncDecl, s
 	refuse := func() (core.Function, []diagnostic.Diagnostic, int) {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("check.local_owner_shape_unsupported", body.Span, "PathToken owner helpers may only acquire and return FileByteOwner")}, 1
 	}
-	if function.Name == "main" || body == nil || len(body.Bindings) != 1 || body.Result != body.Bindings[0].Name || body.Bindings[0].RHS.Kind != "try_call" ||
+	if isEntryMain(function) || body == nil || len(body.Bindings) != 1 || body.Result != body.Bindings[0].Name || body.Bindings[0].RHS.Kind != "try_call" ||
 		body.Bindings[0].RHS.Callee != "schway_file_byte_acquire" || len(body.Bindings[0].RHS.Arguments) != 1 || body.Bindings[0].RHS.Arguments[0] != function.Parameter.Name {
 		return refuse()
 	}
@@ -4164,7 +4575,7 @@ func checkFixtureBytesEntry(functionID string, function ast.FuncDecl, symbols ma
 	refuse := func(code, message string, span diagnostic.Span) (core.Function, []diagnostic.Diagnostic, int) {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(code, span, message)}, 1
 	}
-	if function.Name != "main" || function.Parameter.Type.Constructor != "U64" || function.ReturnType.Constructor != "U64" || len(body.Bindings) != 3 || body.Result != body.Bindings[2].Name {
+	if !isEntryMain(function) || function.Parameter.Type.Constructor != "U64" || function.ReturnType.Constructor != "U64" || len(body.Bindings) != 3 || body.Result != body.Bindings[2].Name {
 		return refuse("check.fixture_owner_shape_unsupported", "the fixture bytes owner is admitted only for a U64 entry that acquires, views, calls once with the view, and returns the U64 call result", body.Span)
 	}
 	acquireBinding, viewBinding, callBinding := body.Bindings[0], body.Bindings[1], body.Bindings[2]

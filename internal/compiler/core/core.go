@@ -18,6 +18,20 @@ type Program struct {
 	ModuleID  string     `json:"module_id"`
 	DataTypes []DataType `json:"data_types"`
 	Functions []Function `json:"functions"`
+	// Imports is the Phase 30 (MOD-04) import facts corevalidate re-derives
+	// visibility from: every resolved `fn` import, sorted by (From, Module,
+	// Name). Additive and omitempty, so a program with no imports keeps its
+	// serialized bytes unchanged (D-15).
+	Imports []ModuleImport `json:"imports,omitempty"`
+}
+
+// ModuleImport is one resolved function import: the importing unit (From,
+// empty for the entry module), the module the name is imported from, and the
+// imported function name.
+type ModuleImport struct {
+	From   string `json:"from"`
+	Module string `json:"module"`
+	Name   string `json:"name"`
 }
 
 type DataType struct {
@@ -147,6 +161,15 @@ type Function struct {
 	// (D-04-23).
 	ForeignContract *ForeignContract `json:"foreign_contract,omitempty"`
 	Span            diagnostic.Span  `json:"span"`
+	// Module is the module the function was defined in (Phase 30, MOD-04).
+	// Empty means the entry module, so every single-module program keeps its
+	// serialized bytes unchanged. Function identity is the pair (Module,
+	// Name); the ID already carries the module segment.
+	Module string `json:"module,omitempty"`
+	// Exported is set only for a function of an imported module that appears
+	// in that module's export list. It is meaningful only when Module is
+	// non-empty.
+	Exported bool `json:"exported,omitempty"`
 }
 
 // ForeignContract is the complete obligation set FFI-01 names for one
