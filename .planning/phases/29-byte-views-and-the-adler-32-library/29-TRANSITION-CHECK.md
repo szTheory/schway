@@ -2,6 +2,8 @@
 
 Executed 2026-10-11 by plan 29-11 under the AGENTS.md "Living language roadmap and proactive planning" section. Hosted CI has not run for Phase 29, and the Stage-B cap record (plan 29-12) has not run; nothing below claims the 65,536-byte cap is authoritatively measured.
 
+**Amended 2026-10-11 after plan 29-12:** hosted CI run 38186068052 at 906d648 (macOS and Linux, including `go test -race` and the strict spike 008 step) passes, and spike 008 is VALIDATED with the cap kept at 65,536 (.planning/spikes/008-byteview-cap/README.md). The Phase 31 item below no longer waits on the cap record.
+
 ## 1. Claims checked
 
 | Claim | Where | Evidence class | Witness |
