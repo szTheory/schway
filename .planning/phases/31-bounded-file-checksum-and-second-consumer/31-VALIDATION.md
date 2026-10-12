@@ -2,9 +2,9 @@
 phase: "31"
 slug: "bounded-file-checksum-and-second-consumer"
 # status lifecycle: planned (plan-phase; TestPhase20ValidationLifecycle forbids committed drafts) → validated (closure plan / validate-phase)
-status: planned
-nyquist_compliant: false
-wave_0_complete: false
+status: validated
+nyquist_compliant: true
+wave_0_complete: true
 created: "2026-10-12"
 ---
 
@@ -45,35 +45,36 @@ created: "2026-10-12"
 
 ## Per-Task Verification Map
 
-There is one row per success criterion or decision; the plan-checker maps tasks to rows. Test names are the ones proposed in `31-RESEARCH.md`, and the planner may refine them. Every row must have an armed control that has been seen to fail.
+There is one row per success criterion or decision; the plan-checker maps tasks to rows. Test names are the ones that exist after execution (verified by `TestVerificationGroundedness`). Every row must have an armed control that has been seen to fail.
 
 | Ref | Requirement | Secure Behavior | Test | Armed control | Status |
 |-----|-------------|-----------------|------|---------------|--------|
-| SC1 / D-05 / D-06 | APP-11 | Through `build` + `app run -- PATH`: empty→1, 0x00→65537, Wikipedia→300286872, 65,536×0xFF→2006388466 | `TestPhase31ChecksumPublicRoute` | mutated library flips the outputs | ⬜ pending |
-| SC1 / D-07 | APP-11 | The same answers on the interpreter, from an independent host read | `TestPhase31ChecksumInterpreter` | the reader uses stat size, or skips IsRegular | ⬜ pending |
-| SC2 / D-08 / D-09 / D-17 | APP-12 | 65,537 bytes → `FileTooLarge`. Missing, directory, FIFO, `/dev/null` and mode-000 → `FileUnavailable`. Exit 65, stdout empty, fixed stderr with no path, identical across engines | `TestPhase31CaseMatrix` | the S_ISREG check deleted (`/dev/null` → 1); `>=`/`>` boundary mutant | ⬜ pending |
-| SC2 / D-10 | APP-12 | Released exactly once on success, oversize, AllocFailed and EIO | `TestPhase31ReleaseExactlyOnce` | a double-release mutant on the oversize path is seen to fail under ASan | ⬜ pending |
-| SC2 | APP-12 | The size check is a limit+1 read and never uses st_size, and growth after fstat is caught | `TestPhase31BoundedReadMutants` | an st_size-trusting mutant | ⬜ pending |
-| SC3 / D-01 / D-03 / D-04 / D-16 | MOD-06 | Single copy (allow-list pinned by sha256); each app has exactly one `adler32`; `adler_low` Wikipedia→920; dual flip; reverse B-only control | `TestPhase31SingleCopyAndDualFlip` | a copied library is detected; the B-only mutation leaves `adler_low` unflipped | ⬜ pending |
-| SC3 / D-11 / D-19 | MOD-06 | `Modules[]` (every module, sorted) appears in identity, receipt and evidence; independent of order; no-import bytes unchanged | `TestPhase31ModuleDigests` | a comment-only library edit flips BuildID but not EmittedCDigest | ⬜ pending |
-| SC4 / D-12 | EVD-14 | Every oracle row carries `cmd` and `python`; Go `hash/adler32` agrees | `TestPhase31OracleRows` | a row with empty cmd fails the meta-test | ⬜ pending |
-| SC4 / D-13 | EVD-14 | Wrong modulus, wrong initial state, swapped halves, off-by-one bound (exit 65), signed-char retype, deleted bounds check (ASan, non-empty input), refused loop neighbours and library mutation are each seen to fail; the `-fsigned-char` flag lane passes | `TestPhase31Controls` and its inventory meta-test | the inventory maps each control to a subtest one-to-one | ⬜ pending |
-| D-06 / D-16 | APP-11 / MOD-06 | A seeded fault in each peer for the third shape (check, corevalidate, originvalidate, pathoracle), with named refusals for neighbouring shapes | `TestPhase31` in each peer package | one seeded fault per peer | ⬜ pending |
-| D-01 | MOD-06 | Moved files are hash-identical apart from the header, and the prechange golden bytes are unchanged | `TestPhase30PreChangeGolden`, `TestPhase30LibraryIsSingleCopy` (re-pinned) | the existing non-inert control | ⬜ pending |
-| D-14 | APP-11 | The cap case runs on every race-enabled hosted run, with no `-short` or env gate | covered by `TestPhase31ChecksumPublicRoute` and `TestPhase31ChecksumInterpreter` | n/a (no gate exists) | ⬜ pending |
-| Security | APP-12 | A distinctive path segment never appears in stderr on any error row, including host refusals; a leading `-` path is safe | `TestPhase31CaseMatrix` | the emitter echoes argv | ⬜ pending |
+| SC1 / D-05 / D-06 | APP-11 | Through `build` + `app run -- PATH`: empty→1, 0x00→65537, Wikipedia→300286872, 65,536×0xFF→2006388466 | `TestPhase31ChecksumPublicRoute` | mutated library flips the outputs | ✅ green |
+| SC1 / D-07 | APP-11 | The same answers on the interpreter, from an independent host read | `TestPhase31ChecksumInterpreter` | the reader uses stat size, or skips IsRegular | ✅ green |
+| SC2 / D-08 / D-09 / D-17 | APP-12 | 65,537 bytes → `FileTooLarge`. Missing, directory, FIFO, `/dev/null` and mode-000 → `FileUnavailable`. Exit 65, stdout empty, fixed stderr with no path, identical across engines | `TestPhase31CaseMatrix`, `TestPhase31ExpectedMatrixJSON` | the S_ISREG check deleted (`/dev/null` → 1) and the `>=`/`>` boundary mutant, both in `TestPhase31BoundedReadMutants` | ✅ green |
+| SC2 / D-10 | APP-12 | Released exactly once on success, oversize, AllocFailed and EIO | `TestPhase31ReleaseExactlyOnce` | a double-release mutant on the oversize path is seen to fail under ASan | ✅ green |
+| SC2 | APP-12 | The size check is a limit+1 read and never uses st_size, and growth after fstat is caught | `TestPhase31BoundedReadMutants` | an st_size-trusting mutant | ✅ green |
+| SC3 / D-01 / D-03 / D-04 / D-16 | MOD-06 | Single copy (allow-list pinned by sha256); each app has exactly one `adler32`; `adler_low` Wikipedia→920; dual flip; reverse B-only control | `TestPhase31SingleCopyAndDualFlip`, `TestPhase31AdlerLowPublicRoute` | a copied library is detected; the B-only mutation leaves `adler_low` unflipped | ✅ green |
+| SC3 / D-11 / D-19 | MOD-06 | `Modules[]` (every module, sorted) appears in identity, receipt and evidence; independent of order; no-import bytes unchanged | `TestPhase31ModuleDigests` | a comment-only library edit flips BuildID but not EmittedCDigest | ✅ green |
+| SC4 / D-12 | EVD-14 | Every oracle row carries `cmd` and `python`; Go `hash/adler32` agrees | `TestPhase31OracleRows` | a row with empty cmd fails the meta-test | ✅ green |
+| SC4 / D-13 | EVD-14 | Wrong modulus, wrong initial state, swapped halves, off-by-one bound (exit 65), signed-char retype, deleted bounds check (ASan, non-empty input), refused loop neighbours and library mutation are each seen to fail; the `-fsigned-char` flag lane passes | `TestPhase31Controls`, `TestPhase31ControlInventory` and `TestPhase31LoopNeighborRefusals` | the inventory maps each control to a subtest one-to-one | ✅ green |
+| D-06 / D-16 | APP-11 / MOD-06 | A seeded fault in each peer for the third shape (check, corevalidate, originvalidate, pathoracle), with named refusals for neighbouring shapes | `TestPhase31FileBytesSeededFaults` in each peer package, `TestPhase31FileBytesNeighborRefusals` (check) and `TestPhase31FileErrorStderrTable` (cgen) | one seeded fault per peer | ✅ green |
+| D-01 | MOD-06 | Moved files are hash-identical apart from the header, and the prechange golden bytes are unchanged | `TestPhase31MovedLibraryIdentity`, `TestPhase30PreChangeGolden`, `TestPhase30LibraryIsSingleCopy` (re-pinned) | the existing non-inert control | ✅ green |
+| D-14 | APP-11 | The cap case runs on every race-enabled hosted run, with no `-short` or env gate | covered by `TestPhase31ChecksumPublicRoute` and `TestPhase31ChecksumInterpreter` | n/a (no gate exists) | ✅ green |
+| D-08 | APP-12 | The case table in `checksum.expected.json` matches the matrix, `exitcode.AppInputRefused` and the `FileError` alternative order | `TestPhase31ExpectedMatrixJSON` | a table row that disagrees with the matrix fails | ✅ green |
+| Security | APP-12 | A distinctive path segment never appears in stderr on any error row, including host refusals; a leading `-` path is safe | `TestPhase31CaseMatrix` | the emitter echoes argv | ✅ green |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: ✅ green · ❌ red · ⚠️ flaky (no row is open)*
 
 ---
 
 ## Wave 0 Requirements
 
-- [ ] Every `TestPhase31*` file above.
-- [ ] `internal/compiler/testsupport` oracle rows with `cmd` and `python` fields (D-12).
-- [ ] An adapter fault-hook harness helper (OPEN, READ, MALLOC, FREE).
-- [ ] A `root` token added to the closed `env:` skip set (D-20).
-- [ ] The D-01 move and re-pin, landed atomically before any new example file.
+- [x] Every `TestPhase31*` file above.
+- [x] `internal/compiler/testsupport` oracle rows with `cmd` and `python` fields (D-12).
+- [x] An adapter fault-hook harness helper (OPEN, READ, MALLOC, FREE).
+- [x] A `root` token added to the closed `env:` skip set (D-20).
+- [x] The D-01 move and re-pin, landed atomically before any new example file.
 
 ---
 
@@ -85,11 +86,11 @@ All phase behaviors have automated verification.
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 60s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 60s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-10-12 (31-09)
