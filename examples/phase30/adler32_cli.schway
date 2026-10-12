@@ -1,0 +1,47 @@
+// Phase 30 entry (D-01): imports the Adler-32 library from its own module file.
+module examples.phase30.adler32_cli
+
+import adler32 {
+  fn adler32
+}
+
+export {
+  fn main
+}
+
+foreign C {
+  fn schway_fixture_bytes_acquire(case: U64) -> FixtureBytes {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    mode: "acquire"
+    abi: schway_fixture_bytes_acquire_fn
+    allocator: "libc_malloc"
+    release: "schway_fixture_bytes_release"
+    fails: FixtureError
+  }
+
+  fn schway_fixture_bytes_view(owner: FixtureBytes) -> ByteView {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    mode: "borrow"
+    abi: schway_fixture_bytes_view_fn
+  }
+
+  fn schway_fixture_bytes_release(owner: FixtureBytes) -> Unit {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    mode: "consume"
+    abi: schway_fixture_bytes_release_fn
+    allocator: "libc_malloc"
+  }
+}
+
+data FixtureError =
+  | FixtureMissing
+
+fn main(case: U64) -> U64 {
+  let owner = try schway_fixture_bytes_acquire(case)
+  let view = schway_fixture_bytes_view(owner)
+  let sum = adler32(view)
+  sum
+}
