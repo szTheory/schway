@@ -2969,6 +2969,9 @@ func checkFileBytesOwnerProgram(program core.Program, entry core.Function, shell
 		if err := validateFileBytesOwnerFunction(function); err != nil {
 			return false, err
 		}
+		if err := validateFileBytesTrailingCallee(program, function); err != nil {
+			return false, err
+		}
 		found = true
 	}
 	return found, nil
@@ -3029,6 +3032,29 @@ func validateFileBytesOwnerFunction(function core.Function) error {
 		return fail("operation sources, targets or order do not form the acquire-view-call-release-return path")
 	}
 	return nil
+}
+
+// validateFileBytesTrailingCallee resolves the optional trailing call (D-16)
+// in the program and refuses a callee that is not a U64 -> U64 function
+// defined in the entry module. validateFileBytesOwnerFunction sees one
+// function only, so the callee facts need the program.
+func validateFileBytesTrailingCallee(program core.Program, function core.Function) error {
+	operations := function.Linear.Operations
+	if len(operations) != 6 {
+		return nil
+	}
+	trailing := operations[4]
+	entryPrefix := strings.TrimSuffix(function.ID, function.Name)
+	for _, candidate := range program.Functions {
+		if candidate.ID != trailing.CalleeID {
+			continue
+		}
+		if entryPrefix == function.ID || candidate.ID != entryPrefix+candidate.Name || candidate.Parameter.Type != "U64" || candidate.ReturnType != "U64" {
+			return fmt.Errorf("function %q: unsupported file-bytes owner C shape: trailing callee %q is not a U64 -> U64 entry-module function", function.ID, trailing.CalleeID)
+		}
+		return nil
+	}
+	return fmt.Errorf("function %q: unsupported file-bytes owner C shape: trailing callee %q is not defined in the program", function.ID, trailing.CalleeID)
 }
 
 func emitProgramFileBytesFunction(out *strings.Builder, dataTypes []core.DataType, function core.Function, parameterTypeName, returnTypeName, functionName string, globalNames []string, lookup *emitCallLookup, childTableNames map[string]string) error {

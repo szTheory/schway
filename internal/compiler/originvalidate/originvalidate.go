@@ -1890,6 +1890,33 @@ func fileBytesOwnerOriginProblem(function core.Function) *Problem {
 	return nil
 }
 
+// fileBytesTrailingCalleeProblem is the program-level half of the file-bytes
+// owner/origin matcher (D-16). fileBytesOwnerOriginProblem sees one function,
+// so it can only key the trailing callee by its entry-module ID prefix; this
+// check resolves the callee in the program and refuses a trailing call whose
+// callee is not a U64 -> U64 function, with originvalidate's own code and
+// without relying on another peer.
+func fileBytesTrailingCalleeProblem(program core.Program) *Problem {
+	for _, function := range program.Functions {
+		if !fileBytesOwnerPresent(function) {
+			continue
+		}
+		operations := function.Linear.Operations
+		for index, operation := range operations {
+			if operation.Kind != core.OpRelease || index+1 >= len(operations) || operations[index+1].Kind != core.OpCall {
+				continue
+			}
+			trailing := operations[index+1]
+			for _, callee := range program.Functions {
+				if callee.ID == trailing.CalleeID && (callee.Parameter.Type != "U64" || callee.ReturnType != "U64") {
+					return &Problem{Code: "core.file_bytes_owner_origin", Detail: fmt.Sprintf("%s: trailing callee %q is not a U64 -> U64 function", function.ID, trailing.CalleeID), FunctionID: function.ID}
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func originIdentifier(value string) bool {
 	if value == "" || !(value[0] == '_' || value[0] >= 'A' && value[0] <= 'Z' || value[0] >= 'a' && value[0] <= 'z') {
 		return false
@@ -1913,6 +1940,9 @@ func originIdentifier(value string) bool {
 // the first non-empty PublishProblemsFor result it encounters.
 func ValidatePublished(program core.Program) []Problem {
 	if problem := transferredOwnerProblem(program); problem != nil {
+		return []Problem{*problem}
+	}
+	if problem := fileBytesTrailingCalleeProblem(program); problem != nil {
 		return []Problem{*problem}
 	}
 	calleeContracts := BuildCalleeOriginFacts(program)
