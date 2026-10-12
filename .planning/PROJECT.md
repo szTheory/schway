@@ -479,6 +479,20 @@ over a test-only foreign fixture owner (`schway build --manifest` plus
 `schway app run -- N`). Verifier 5/5, threats 35/35 closed, UAT 6/6 automated;
 hosted run 38186068052 kept the spike 008 cap at 65,536 bytes.
 
+Phase 30 (2026-10-12) closed MOD-03, MOD-04 and MOD-05. An entry writes
+`import adler32 { fn adler32 }` and calls the imported function by its bare
+name. Modules resolve only to exact-case regular files under the entry's
+directory: symlinks, `..`, FIFOs and case aliases are refused. Only exported
+names are visible, and corevalidate re-derives that independently. Cycles,
+missing modules, header/path mismatches, collisions and the caps (16 modules,
+depth 8, 4 MiB) are each refused with a named `module.*` code. A diagnostic
+inside an imported file carries `unit=<module>`. No-import output is
+byte-identical to a pre-change golden. The Phase 29 Adler-32 program now
+imports its library from one file, with the 10 pinned answers on both engines.
+Verifier 4/4, threats 36/36 closed, UAT 6/6 automated. Hosted CI has not run
+at this revision. A formatter defect carried over from Phase 29 is tracked as a
+todo.
+
 Atomic IDs and acceptance for M005 are archived in
 [milestones/M005-REQUIREMENTS.md](milestones/M005-REQUIREMENTS.md).
 
@@ -650,6 +664,7 @@ Canonical planning inputs:
 | Validate checked-add terminal evidence separately from arithmetic semantics | Structural event membership cannot prove operand arithmetic; native size admission must include possible failure records | ✓ Phase 26 CR-01 — peer attribution/outcome and N−1/N capture-bound controls pass; actual overflow is exercised in each engine |
 | Name generated-C event-capacity exhaustion (exit 69 + exact stderr) instead of aborting | A signal hid a bounded-evidence limit as a crash; a named outcome lets app verify report `unsupported` without masking a mismatch | ✓ Phase 27.3 — n=14 passes, n=15 unsupported, wrong expected stays fail; one-level exhaustion fails as divergence (WR-01) |
 | Insert decimal tech-debt phases from the milestone audit before closing | Audit warnings W1/W4 and R1 were concrete user-facing defects, not cosmetic | ✓ Good — 27.1–27.3 closed R1, W1, W4 with hosted evidence; residual N1–N4 tracked |
+| Compose local modules as one merged whole program with closed in-root resolution | Separate compilation and per-module interfaces are not needed for a second consumer, and a closed resolver (no search path, no symlinks, exact case, one IO site) keeps the import surface a non-escalating boundary | ✓ Phase 30 — imported Adler-32 gives identical answers on both engines; no-import bytes unchanged against a pre-change golden; module digests in identity are Phase 31 (MOD-06) |
 
 ## Evolution
 
@@ -671,4 +686,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-11 after Phase 29*
+*Last updated: 2026-10-12 after Phase 30*

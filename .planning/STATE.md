@@ -51,12 +51,12 @@ control list is parsed. Do not run project suites locally.
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-11)
+See: .planning/PROJECT.md (updated 2026-10-12)
 
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 30 — Local Modules
+**Current focus:** Phase 31 — Bounded File Checksum and Second Consumer
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -128,7 +128,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-10-12 — Phase 30 complete, transitioned to Phase 31
 
-Progress: [██████░░░░] 60% (2/5 M006 phases)
+Progress: [██████░░░░] 60% (3/5 M006 phases)
 
 ## M006 Planning
 
@@ -711,6 +711,17 @@ Carried into M003 as cheap, unowned cleanup:
 - 2026-10-10 (D-27.1-11): after Phase 27.1 lands and before milestone completion, run `/gsd-secure-phase 27`, then `/gsd-validate-phase 27`, then re-run the milestone audit (`/gsd-audit-milestone`). Running them before 27.1 would be stale.
 
 ### Blockers/Concerns
+
+**Current — Phase 30 closeout (2026-10-12):** No Phase 30 blocker or human UAT
+remains (verifier 4/4, UAT 6/6 automated, threats 36/36 closed). Open carries:
+- the formatter merges a trailing result line into the preceding `var`
+  assignment (`r = r + a` / `r` → `r = r + ar`); a major todo, and the
+  phase30 Adler-32 sources are committed unformatted because of it;
+- hosted CI has not run at the Phase 30 revision (EVD-15 belongs to Phase 32);
+- review findings IN-01 and IN-02 are deferred;
+- `debug-map` already panicked on 5 sources before this phase; those panics
+  are pinned, not fixed;
+- `explain` and `query` cannot look up unknown IDs on import-bearing sources.
 
 **Current — Phase 26 closeout (2026-10-03):** No Phase 26 blocker or human UAT
 remains. Phase 27 owns equality/remainder, fixed text, shared output limits,
