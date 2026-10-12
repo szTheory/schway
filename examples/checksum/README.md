@@ -28,11 +28,22 @@ because imported foreign declarations are not supported.
 
 Run these commands from the repository root with Go 1.24 and Clang installed.
 
-```sh
+```sh doc-test=clean-checkout
 go build -o ./schway ./cmd/schway
+mkdir -p .schway/checksum
 ./schway build examples/checksum/checksum.schway \
-  --manifest examples/checksum/file_bytes.bindings.json --output ./checksum
-./schway app run ./checksum -- PATH
+  --manifest examples/checksum/file_bytes.bindings.json --output .schway/checksum/checksum
+./schway build examples/checksum/adler_low.schway \
+  --manifest examples/checksum/file_bytes.bindings.json --output .schway/checksum/adler_low
+./schway build examples/checksum/adler32_cli.schway \
+  --manifest examples/phase29/fixture_bytes.bindings.json --output .schway/checksum/adler32-module
+```
+
+Outputs live under the git-ignored `.schway/` directory, so the tree stays clean.
+Then run the checksum program on a file:
+
+```sh doc-test=run app=checksum
+./schway app run .schway/checksum/checksum -- PATH
 ```
 
 PATH is passed as given after `--`; a leading `-` in it is a path, not a flag.
@@ -59,16 +70,19 @@ modulo 65,536 (D-16).
 ## Results
 
 Answers come from Python `zlib.adler32` (Python 3.14.4) and are cross-checked by
-Go `hash/adler32`; they are never derived by running Schway. The 65,537-byte rows
-are refused, so no checksum is printed for them.
+Go `hash/adler32`; they are never derived by running Schway. The 65,537-byte case
+is refused, so no checksum is printed for it. Each row is keyed by its case name in
+`checksum.expected.json`.
 
-| Input | checksum | adler_low | Python command (checksum) |
+| Case | checksum | adler_low | Python command (checksum) |
 | --- | --- | --- | --- |
-| empty file | 1 | 1 | `python3 -c 'import zlib;print(zlib.adler32(b""))'` |
-| one byte 0x00 | 65537 | 1 | `python3 -c 'import zlib;print(zlib.adler32(b"\x00"))'` |
-| `Wikipedia` | 300286872 | 920 | `python3 -c 'import zlib;print(zlib.adler32(b"Wikipedia"))'` |
-| 65,536 bytes of 0xFF | 2006388466 | 3826 | `python3 -c 'import zlib;print(zlib.adler32(b"\xff"*65536))'` |
-| 65,537 bytes of 0xFF | `FileError.FileTooLarge` | `FileError.FileTooLarge` | n/a (refused before any checksum) |
+| `empty` | 1 | 1 | `python3 -c 'import zlib;print(zlib.adler32(b""))'` |
+| `zero` | 65537 | 1 | `python3 -c 'import zlib;print(zlib.adler32(b"\x00"))'` |
+| `wikipedia` | 300286872 | 920 | `python3 -c 'import zlib;print(zlib.adler32(b"Wikipedia"))'` |
+| `ff65536` | 2006388466 | 3826 | `python3 -c 'import zlib;print(zlib.adler32(b"\xff"*65536))'` |
+| `ff65537` | `FileError.FileTooLarge` | `FileError.FileTooLarge` | n/a (refused before any checksum) |
+| `missing` | `FileError.FileUnavailable` | `FileError.FileUnavailable` | n/a (no such file) |
+| `directory` | `FileError.FileUnavailable` | `FileError.FileUnavailable` | n/a (not a file) |
 
 For adler_low the same command ends with ` % 65536` inside the `print`. The inputs
 0x80 and 0x80 0xFF give checksums 8454273 and 33620352 (adler_low 129 and 384),
