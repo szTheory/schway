@@ -43,6 +43,7 @@ type BuildReceipt struct {
 	RuntimeDependencies []string             `json:"runtime_dependencies"`
 	DependencyClosure   string               `json:"dependency_closure"`
 	Cacheable           bool                 `json:"cacheable"`
+	Modules             []ModuleDigest       `json:"modules,omitempty"`
 }
 
 type RunOutcomeKind string
@@ -95,6 +96,7 @@ type ApplicationEvidenceReport struct {
 	CaptureStatus  EvidenceCaptureStatus `json:"capture_status"`
 	Execution      *execution.Execution  `json:"execution,omitempty"`
 	Verified       bool                  `json:"verified"`
+	Modules        []ModuleDigest        `json:"modules,omitempty"`
 }
 
 type applicationCapture struct {
@@ -132,6 +134,13 @@ func BuildApplication(ctx context.Context, source []byte, cSource, outputPath st
 }
 
 func (r Runner) BuildApplication(parent context.Context, source []byte, cSource, outputPath string, manifestPath ...string) (BuildReceipt, error) {
+	return r.BuildApplicationModules(parent, source, nil, cSource, outputPath, manifestPath...)
+}
+
+// BuildApplicationModules is BuildApplication with the loaded module digests
+// bound into identity, receipt and evidence (D-11). nil modules is the
+// no-import behavior and leaves every byte unchanged.
+func (r Runner) BuildApplicationModules(parent context.Context, source []byte, modules []ModuleDigest, cSource, outputPath string, manifestPath ...string) (BuildReceipt, error) {
 	if applicationCSourceMutationForTest != nil {
 		cSource = applicationCSourceMutationForTest(cSource)
 	}
@@ -214,6 +223,7 @@ func (r Runner) BuildApplication(parent context.Context, source []byte, cSource,
 		CompilerDigest: compilerDigest, CompilerVersion: strings.TrimSpace(version), Target: strings.TrimSpace(target),
 		HostABI: runtime.GOOS + "/" + runtime.GOARCH, Flags: append([]string(nil), applicationFlags...),
 		RuntimeDependencies: []string{"platform-c-runtime"},
+		Modules:             append([]ModuleDigest(nil), modules...),
 	}
 	var objects []string
 	if bindings != nil {
@@ -261,6 +271,7 @@ func (r Runner) BuildApplication(parent context.Context, source []byte, cSource,
 		// complete provenance or cacheability.
 		DependencyClosure: "incomplete",
 		Cacheable:         false,
+		Modules:           append([]ModuleDigest(nil), modules...),
 	}
 	identity.ExecutableDigest = executableDigest
 	receipt.Identity = &identity
@@ -346,7 +357,7 @@ func (r Runner) RunApplicationWithEvidence(parent context.Context, artifactPath,
 		Schema: ApplicationEvidenceSchema, BuildID: receipt.BuildID, InputID: receipt.InputID,
 		ArtifactDigest: receipt.ExecutableDigest, SourceDigest: receipt.SourceDigest,
 		InputDigest: digestBytes([]byte(input)), ProcessOutcome: outcome,
-		CaptureStatus: EvidenceStatusDisabled, Verified: false,
+		CaptureStatus: EvidenceStatusDisabled, Verified: false, Modules: receipt.Modules,
 	}
 	if mode == EvidenceEvents {
 		report.CaptureStatus = EvidenceStatusIncomplete
@@ -663,6 +674,9 @@ func readApplicationReceipt(path string) (BuildReceipt, error) {
 		if identity.ID() != receipt.BuildID || identity.InputID() != receipt.InputID || identity.ExecutableDigest != receipt.ExecutableDigest || identity.SourceDigest != receipt.SourceDigest || identity.EmittedCDigest != receipt.EmittedCDigest || identity.CompilerVersion != receipt.CompilerVersion || identity.Target != receipt.Target || !validSHA256(identity.CompilerDigest) || !equalJSON(identity.Flags, receipt.Flags) || !equalJSON(identity.RuntimeDependencies, receipt.RuntimeDependencies) {
 			return BuildReceipt{}, &ToolError{Code: "native.receipt_invalid", Err: errors.New("build identity does not match receipt facts")}
 		}
+		if err := validateReceiptModules(receipt); err != nil {
+			return BuildReceipt{}, &ToolError{Code: "native.receipt_invalid", Err: err}
+		}
 		if receipt.Bindings != nil {
 			canonical, _ := json.Marshal(receipt.Bindings)
 			if digestBytes(canonical) != identity.ManifestDigest {
@@ -671,10 +685,49 @@ func readApplicationReceipt(path string) (BuildReceipt, error) {
 		} else if identity.ManifestDigest != "" {
 			return BuildReceipt{}, &ToolError{Code: "native.receipt_invalid", Err: errors.New("manifest is missing from build receipt")}
 		}
-	} else if receipt.Bindings != nil || receipt.BuildID != "" || receipt.InputID != "" {
+	} else if receipt.Bindings != nil || receipt.BuildID != "" || receipt.InputID != "" || len(receipt.Modules) != 0 {
 		return BuildReceipt{}, &ToolError{Code: "native.receipt_invalid", Err: errors.New("build identity is missing")}
 	}
 	return receipt, nil
+}
+
+// validateReceiptModules refuses a malformed module list (T-31-15, T-31-16).
+// An empty list is the no-import case and is always accepted.
+func validateReceiptModules(receipt BuildReceipt) error {
+	modules := receipt.Modules
+	if !equalJSON(modules, receipt.Identity.Modules) {
+		return errors.New("receipt modules differ from build identity modules")
+	}
+	if len(modules) == 0 {
+		return nil
+	}
+	if len(modules) < 2 {
+		return errors.New("receipt modules must list the entry and at least one import")
+	}
+	entryLinked := false
+	for i, row := range modules {
+		if i > 0 && modules[i-1].Module >= row.Module {
+			return errors.New("receipt modules are unsorted or duplicated")
+		}
+		if row.Module == "" || !validSHA256(row.Digest) {
+			return errors.New("receipt module row has an invalid name or digest")
+		}
+		if row.Path == "" || strings.HasPrefix(row.Path, "/") || strings.Contains(row.Path, "\\") || filepath.IsAbs(row.Path) {
+			return errors.New("receipt module path must be relative")
+		}
+		for _, part := range strings.Split(row.Path, "/") {
+			if part == ".." {
+				return errors.New("receipt module path must not contain ..")
+			}
+		}
+		if row.Digest == receipt.SourceDigest {
+			entryLinked = true
+		}
+	}
+	if !entryLinked {
+		return errors.New("receipt modules carry no row matching the entry source digest")
+	}
+	return nil
 }
 
 func equalJSON(a, b any) bool {

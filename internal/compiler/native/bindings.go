@@ -335,6 +335,16 @@ type BuildIdentityInputs struct {
 	Commands            [][]string      `json:"commands"`
 	RuntimeDependencies []string        `json:"runtime_dependencies"`
 	ExecutableDigest    string          `json:"executable_digest"`
+	// Modules lists every loaded module (entry included) sorted by module
+	// name; absent for a program without imports (D-11, D-19).
+	Modules []ModuleDigest `json:"modules,omitempty"`
+}
+
+// ModuleDigest binds one module file's bytes into build identity.
+type ModuleDigest struct {
+	Module string `json:"module"`
+	Path   string `json:"path"`
+	Digest string `json:"digest"`
 }
 
 // ID hashes a domain and canonical JSON with explicit length framing. JSON

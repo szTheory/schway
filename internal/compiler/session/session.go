@@ -1413,13 +1413,13 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 // BuildApplication checks and independently validates source, then emits and
 // compiles a retained U64 application without executing its entry point.
 func BuildApplication(ctx context.Context, source []byte, outputPath string, runner native.Runner, manifestPath ...string) (native.BuildReceipt, []diagnostic.Diagnostic, error) {
-	return buildApplicationChecked(ctx, Check(source), source, outputPath, runner, manifestPath...)
+	return buildApplicationChecked(ctx, Check(source), source, nil, outputPath, runner, manifestPath...)
 }
 
 // buildApplicationChecked is everything BuildApplication does after its
 // check. source is the ENTRY bytes: the receipt SourceDigest stays the entry
 // digest, and module hashing is not claimed (Phase 31).
-func buildApplicationChecked(ctx context.Context, checked CheckResult, source []byte, outputPath string, runner native.Runner, manifestPath ...string) (native.BuildReceipt, []diagnostic.Diagnostic, error) {
+func buildApplicationChecked(ctx context.Context, checked CheckResult, source []byte, modules []native.ModuleDigest, outputPath string, runner native.Runner, manifestPath ...string) (native.BuildReceipt, []diagnostic.Diagnostic, error) {
 	if len(checked.Diagnostics) > 0 {
 		return native.BuildReceipt{}, checked.Diagnostics, nil
 	}
@@ -1463,7 +1463,7 @@ func buildApplicationChecked(ctx context.Context, checked CheckResult, source []
 	if err != nil {
 		return native.BuildReceipt{}, nil, err
 	}
-	receipt, err := runner.BuildApplication(ctx, source, cSource, outputPath, manifestPath...)
+	receipt, err := runner.BuildApplicationModules(ctx, source, modules, cSource, outputPath, manifestPath...)
 	if err != nil {
 		return native.BuildReceipt{}, nil, err
 	}
@@ -1513,11 +1513,11 @@ func validateLocalOperationBindings(program core.Program, manifest native.Bindin
 }
 
 func BuildApplicationFile(ctx context.Context, sourcePath, outputPath string, runner native.Runner, manifestPath ...string) (native.BuildReceipt, []diagnostic.Diagnostic, error) {
-	checked, entryBytes, err := checkSourcePath(sourcePath)
+	checked, entryBytes, modules, err := checkSourcePathModules(sourcePath)
 	if err != nil {
 		return native.BuildReceipt{}, nil, err
 	}
-	return buildApplicationChecked(ctx, checked, entryBytes, outputPath, runner, manifestPath...)
+	return buildApplicationChecked(ctx, checked, entryBytes, modules, outputPath, runner, manifestPath...)
 }
 
 // runNativeInputs is task 04-07-03's own bug fix, discovered by driving the
