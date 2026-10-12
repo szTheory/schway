@@ -1,6 +1,8 @@
 package cgen
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,6 +12,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/szTheory/schway/internal/compiler/core"
 )
@@ -141,9 +144,13 @@ func TestPhase30ModuleFunctionCName(t *testing.T) {
 		if err := os.WriteFile(source, []byte(mergedC), 0o600); err != nil {
 			t.Fatal(err)
 		}
-		command := exec.Command(clang, "-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", "-c", source, "-o", filepath.Join(dir, "merged.o"))
-		if output, err := command.CombinedOutput(); err != nil {
-			t.Fatalf("clang rejected merged C: %v\n%s", err, output)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		command := exec.CommandContext(ctx, clang, "-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", "-c", source, "-o", filepath.Join(dir, "merged.o"))
+		var stdout, stderr bytes.Buffer
+		command.Stdout, command.Stderr = &stdout, &stderr
+		if err := command.Run(); err != nil {
+			t.Fatalf("clang rejected merged C: %v\n%s%s", err, stdout.Bytes(), stderr.Bytes())
 		}
 	})
 }
