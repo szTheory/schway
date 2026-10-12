@@ -188,6 +188,7 @@ type graphLoader struct {
 	processed map[string]bool
 	reloaded  map[string]bool
 	queue     []workItem
+	order     []string
 
 	count int
 	total int
@@ -229,13 +230,12 @@ func loadGraph(entry parsedModule, entryInfo fs.FileInfo, resolve *resolver) (Se
 	}
 	l.findCycles()
 
-	imported := make([]parsedModule, 0, len(l.nodes))
-	for name, module := range l.nodes {
-		if name != "" {
-			imported = append(imported, module)
-		}
+	// Handed over in first-import order: merge, not the loader, owns the
+	// canonical order (D-12).
+	imported := make([]parsedModule, 0, len(l.order))
+	for _, name := range l.order {
+		imported = append(imported, l.nodes[name])
 	}
-	sort.Slice(imported, func(a, b int) bool { return imported[a].name < imported[b].name })
 	program, mergeDiags := merge(entry, imported)
 	l.diags = append(l.diags, mergeDiags...)
 	return l.result(program), l.diags
@@ -361,6 +361,9 @@ func (l *graphLoader) process(item workItem) bool {
 		return true
 	}
 
+	if _, again := l.nodes[item.name]; !again {
+		l.order = append(l.order, item.name)
+	}
 	l.nodes[item.name] = module
 	l.processed[item.name] = true
 	if rereadForTest {
