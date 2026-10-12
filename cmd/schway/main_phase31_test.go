@@ -90,4 +90,30 @@ func TestPhase31ChecksumPublicRoute(t *testing.T) {
 			t.Fatalf("second trailing call code=%d stdout=%q stderr=%q; want exit 2 and check.file_bytes_owner_shape_unsupported", code, stdout, stderr)
 		}
 	})
+	t.Run("mutated-library", func(t *testing.T) {
+		dir := phase30CopyExampleDir(t)
+		libraryPath := filepath.Join(dir, "adler32.schway")
+		library, err := os.ReadFile(libraryPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Count(string(library), "var a = 1\n") != 1 {
+			t.Fatal("library no longer has exactly one `var a = 1` line")
+		}
+		if err := os.WriteFile(libraryPath, []byte(strings.Replace(string(library), "var a = 1\n", "var a = 2\n", 1)), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		mutatedArtifact := filepath.Join(t.TempDir(), "checksum-mutated")
+		code, stdout, stderr := captureLangRun(t, []string{"build", filepath.Join(dir, "checksum.schway"), "--manifest", filepath.Join(dir, "file_bytes.bindings.json"), "--output", mutatedArtifact})
+		if code != 0 || stdout != "built "+mutatedArtifact+"\n" || stderr != "" {
+			t.Fatalf("mutated build code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+		code, stdout, stderr = captureLangRun(t, []string{"app", "run", mutatedArtifact, "--", phase31RouteInput(t, "Wikipedia")})
+		if code != 0 || stderr != "" {
+			t.Fatalf("mutated run code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+		if stdout == "300286872\n" {
+			t.Fatal("mutated library still printed the pinned value; the tracer answer is not coming from the library")
+		}
+	})
 }
