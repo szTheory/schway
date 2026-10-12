@@ -1974,7 +1974,21 @@ func calledEvent(f *frame, operation core.LinearOperation, calleeID string) Even
 	}
 }
 
+// entryModulePreferenceOffForTest restores the pre-Phase-30 first-match
+// lookup, so a same-named library function can shadow the entry (T-30-26).
+var entryModulePreferenceOffForTest bool
+
+// findFunction resolves a name to the entry-module function (Module "")
+// first, so a same-named library function never shadows the entry; any other
+// match is the fallback.
 func findFunction(program core.Program, name string) (core.Function, bool) {
+	if !entryModulePreferenceOffForTest {
+		for _, function := range program.Functions {
+			if function.Name == name && function.Module == "" {
+				return function, true
+			}
+		}
+	}
 	for _, function := range program.Functions {
 		if function.Name == name {
 			return function, true

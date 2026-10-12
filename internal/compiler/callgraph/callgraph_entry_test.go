@@ -416,8 +416,15 @@ func TestNoCoreProgramEntryField(t *testing.T) {
 		found = true
 		for _, field := range structType.Fields.List {
 			for _, name := range field.Names {
-				if name.Name == "Exported" || name.Name == "EntryFunctionID" {
+				if name.Name == "EntryFunctionID" {
 					t.Fatalf("core.Function declares a %q field -- D-11-06 requires this stay a call-graph-derived fact, never a schema field", name.Name)
+				}
+				// Phase 30 (MOD-04) deliberately adds Function.Exported as a
+				// module-visibility fact, not an entry fact. It is admitted
+				// only while it is omitempty, so a program with no imports
+				// keeps its frozen core bytes (D-15, D-05-39).
+				if name.Name == "Exported" && (field.Tag == nil || !strings.Contains(field.Tag.Value, `json:"exported,omitempty"`)) {
+					t.Fatalf("core.Function declares an %q field that is not the Phase 30 omitempty module-visibility fact -- D-11-06 requires the entry fact stay call-graph-derived", name.Name)
 				}
 			}
 		}

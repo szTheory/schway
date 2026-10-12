@@ -114,6 +114,10 @@ var (
 	skipUnresolvedEdgeForTest    = false
 )
 
+// entryModuleFilterOffForTest removes EntryFunction's Phase 30 entry-module
+// filter (T-30-26), so a library `main` competes with the entry `main`.
+var entryModuleFilterOffForTest = false
+
 // cycleError is callgraph's private witness-carrying typed error for a
 // discovered cycle: the canonically-rotated member function IDs
 // (D-07-16 -- the lexicographically smallest function ID sits at index 0)
@@ -301,18 +305,25 @@ func EntryFunction(program core.Program) (core.Function, error) {
 		}
 	}
 
-	var roots []string
-	for id, degree := range inDegree {
-		if degree == 0 {
-			roots = append(roots, id)
-		}
-	}
-	sort.Strings(roots)
-
 	byID := make(map[string]core.Function, len(program.Functions))
 	for _, function := range program.Functions {
 		byID[function.ID] = function
 	}
+
+	// Phase 30 (MOD-04): only entry-module functions (Module "") are entry
+	// candidates, so an imported library's `main` or an unimported library
+	// export never makes the entry ambiguous.
+	inEntryModule := func(id string) bool {
+		return entryModuleFilterOffForTest || byID[id].Module == ""
+	}
+
+	var roots []string
+	for id, degree := range inDegree {
+		if degree == 0 && inEntryModule(id) {
+			roots = append(roots, id)
+		}
+	}
+	sort.Strings(roots)
 
 	resolve := func(id string) (core.Function, error) {
 		function, ok := byID[id]
@@ -327,7 +338,7 @@ func EntryFunction(program core.Program) (core.Function, error) {
 
 	var mains []string
 	for _, function := range program.Functions {
-		if function.Name == "main" {
+		if function.Name == "main" && inEntryModule(function.ID) {
 			mains = append(mains, function.ID)
 		}
 	}
