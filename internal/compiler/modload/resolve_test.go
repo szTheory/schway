@@ -21,7 +21,7 @@ const resolveImporter = "main"
 // first diagnostic code, "" on success.
 func resolveCode(t *testing.T, r *resolver, module string) (Source, string) {
 	t.Helper()
-	source, diags := r.read(module, resolveImporter, resolveAt)
+	source, _, diags := r.read(module, resolveImporter, resolveAt, nil)
 	if len(diags) == 0 {
 		return source, ""
 	}
@@ -193,7 +193,7 @@ func TestPhase30FakeFSToctouAndStatSize(t *testing.T) {
 		entry.statSize = 10
 		r := newFakeResolver(fsys)
 		diags := func() []diagnostic.Diagnostic {
-			_, d := r.read("lib", resolveImporter, resolveAt)
+			_, _, d := r.read("lib", resolveImporter, resolveAt, nil)
 			return d
 		}()
 		if len(diags) != 1 || diags[0].Code != "syntax.input_limit" || diags[0].Unit != "lib" {
@@ -222,7 +222,7 @@ func TestPhase30PerModuleByteCap(t *testing.T) {
 	if code != "" || len(source.Bytes) != maxModuleBytes || syntax.MaxSourceBytes != maxModuleBytes {
 		t.Fatalf("exact cap: code %q len %d", code, len(source.Bytes))
 	}
-	_, diags := r.read("over", resolveImporter, resolveAt)
+	_, _, diags := r.read("over", resolveImporter, resolveAt, nil)
 	if len(diags) != 1 || diags[0].Code != "syntax.input_limit" || diags[0].Unit != "over" {
 		t.Fatalf("cap+1: %+v, want syntax.input_limit in unit over", diags)
 	}
@@ -371,7 +371,7 @@ func TestPhase30ErrorsNeverLeakAbsolutePaths(t *testing.T) {
 		}
 	}
 	for _, module := range modules {
-		_, diags := r.read(module, resolveImporter, resolveAt)
+		_, _, diags := r.read(module, resolveImporter, resolveAt, nil)
 		check(module, diags, module)
 	}
 
@@ -379,7 +379,7 @@ func TestPhase30ErrorsNeverLeakAbsolutePaths(t *testing.T) {
 	// filesystem whose errors carry the temp path proves production strips it.
 	leaky := &leakyFileSystem{dir: base}
 	lr := &resolver{fsys: leaky, sameFile: fakeSameFile}
-	_, diags := lr.read("lib", resolveImporter, resolveAt)
+	_, _, diags := lr.read("lib", resolveImporter, resolveAt, nil)
 	check("leaky production", diags, "lib")
 	if diags[0].Code != CodeEscape {
 		t.Fatalf("leaky Lstat: code %q, want %q", diags[0].Code, CodeEscape)
@@ -388,7 +388,7 @@ func TestPhase30ErrorsNeverLeakAbsolutePaths(t *testing.T) {
 	t.Run("control format error text", func(t *testing.T) {
 		formatErrorTextForTest = true
 		defer func() { formatErrorTextForTest = false }()
-		_, diags := lr.read("lib", resolveImporter, resolveAt)
+		_, _, diags := lr.read("lib", resolveImporter, resolveAt, nil)
 		encoded, _ := json.Marshal(diags)
 		if !strings.Contains(string(encoded), base) {
 			t.Fatalf("control must observe the temp path leak, got %s", encoded)

@@ -147,6 +147,9 @@ type Source struct {
 type resolver struct {
 	fsys     fileSystem
 	sameFile func(a, b fs.FileInfo) bool
+	// dir is the entry directory. It is rendered only under
+	// formatErrorTextForTest.
+	dir string
 }
 
 // newResolver opens dir as the entry directory.
@@ -155,7 +158,7 @@ func newResolver(dir string) (*resolver, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &resolver{fsys: &rootFileSystem{root: root, dir: dir}, sameFile: os.SameFile}, nil
+	return &resolver{fsys: &rootFileSystem{root: root, dir: dir}, sameFile: os.SameFile, dir: dir}, nil
 }
 
 func (r *resolver) close() error {
@@ -224,31 +227,43 @@ type refusal struct {
 // read resolves module to its file under the entry directory. Every refusal is
 // one diagnostic with primary span at (the import declaration in importer),
 // attributed to importer, and naming the module and a root-relative path only.
-func (r *resolver) read(module, importer string, at diagnostic.Span) (Source, []diagnostic.Diagnostic) {
+//
+// When entry is non-nil and the file's Lstat identity is the entry's
+// (sameFile), isEntry is true and the file is not opened: the loader records an
+// edge to the entry instead of reading it a second time (D-24).
+func (r *resolver) read(module, importer string, at diagnostic.Span, entry fs.FileInfo) (Source, bool, []diagnostic.Diagnostic) {
 	if !validateModulePath(module) {
-		return Source{}, r.diagnose(&refusal{code: CodeInvalidSegment}, module, importer, at)
+		return Source{}, false, r.diagnose(&refusal{code: CodeInvalidSegment}, module, importer, at)
 	}
-	return r.readSegments(strings.Split(module, "."), importer, at)
+	return r.readEntryAware(strings.Split(module, "."), importer, at, entry)
 }
 
 // readSegments performs resolution without the grammar check; read calls it
 // after validateModulePath. The root layer is still the second defence.
 func (r *resolver) readSegments(segments []string, importer string, at diagnostic.Span) (Source, []diagnostic.Diagnostic) {
+	source, _, diags := r.readEntryAware(segments, importer, at, nil)
+	return source, diags
+}
+
+func (r *resolver) readEntryAware(segments []string, importer string, at diagnostic.Span, entry fs.FileInfo) (Source, bool, []diagnostic.Diagnostic) {
 	module := strings.Join(segments, ".")
-	source, refused := r.load(module, segments)
+	source, isEntry, refused := r.load(module, segments, entry)
 	if refused != nil {
-		return Source{}, r.diagnose(refused, module, importer, at)
+		return Source{}, false, r.diagnose(refused, module, importer, at)
+	}
+	if isEntry {
+		return source, true, nil
 	}
 	size := int64(len(source.Bytes))
 	if sizeFromStatForTest {
 		size = source.info.Size()
 	}
 	if size > int64(syntax.MaxSourceBytes) || byteCapOffByOneForTest && size == int64(syntax.MaxSourceBytes) {
-		return Source{}, []diagnostic.Diagnostic{
+		return Source{}, false, []diagnostic.Diagnostic{
 			diagnostic.Error(codeInputLimit, at, "source exceeds a compiler input limit").InUnit(module),
 		}
 	}
-	return source, nil
+	return source, false, nil
 }
 
 func (r *resolver) diagnose(refused *refusal, module, importer string, at diagnostic.Span) []diagnostic.Diagnostic {
@@ -277,8 +292,13 @@ func (r *resolver) diagnose(refused *refusal, module, importer string, at diagno
 	default:
 		message = "module \"" + module + "\" could not be read" + where
 	}
-	if formatErrorTextForTest && refused.err != nil {
-		message += ": " + refused.err.Error()
+	if formatErrorTextForTest {
+		if refused.err != nil {
+			message += ": " + refused.err.Error()
+		}
+		if refused.code == CodeNotFound {
+			message += ": " + filepath.Join(r.dir, filepath.FromSlash(refused.rel))
+		}
 	}
 	return []diagnostic.Diagnostic{diagnostic.Error(refused.code, at, message).InUnit(importer)}
 }
@@ -286,13 +306,13 @@ func (r *resolver) diagnose(refused *refusal, module, importer string, at diagno
 // load runs the filesystem pipeline: per-component Lstat and exact-case
 // listing, regular-file check before Open, SameFile after Open, one bounded
 // read.
-func (r *resolver) load(module string, segments []string) (Source, *refusal) {
+func (r *resolver) load(module string, segments []string, entry fs.FileInfo) (Source, bool, *refusal) {
 	if len(segments) == 0 {
-		return Source{}, &refusal{code: CodeNotFound}
+		return Source{}, false, &refusal{code: CodeNotFound}
 	}
 	for _, segment := range segments {
 		if !pathSafeSegment(segment) {
-			return Source{}, &refusal{code: CodeEscape, rel: segment}
+			return Source{}, false, &refusal{code: CodeEscape, rel: segment}
 		}
 	}
 	dirs := segments[:len(segments)-1]
@@ -307,18 +327,18 @@ func (r *resolver) load(module string, segments []string) (Source, *refusal) {
 			info, err := r.fsys.Lstat(path)
 			if err != nil {
 				if errors.Is(err, fs.ErrNotExist) {
-					return Source{}, r.notExist(parent, dir, path)
+					return Source{}, false, r.notExist(parent, dir, path)
 				}
-				return Source{}, &refusal{code: CodeEscape, rel: path, err: err}
+				return Source{}, false, &refusal{code: CodeEscape, rel: path, err: err}
 			}
 			if info.Mode()&fs.ModeSymlink != 0 {
-				return Source{}, &refusal{code: CodeSymlink, rel: path}
+				return Source{}, false, &refusal{code: CodeSymlink, rel: path}
 			}
 			if !info.IsDir() {
-				return Source{}, &refusal{code: CodeNotFound, rel: path}
+				return Source{}, false, &refusal{code: CodeNotFound, rel: path}
 			}
 			if refused := r.exactCase(parent, dir, path); refused != nil {
-				return Source{}, refused
+				return Source{}, false, refused
 			}
 			parent = path
 		}
@@ -335,37 +355,40 @@ func (r *resolver) load(module string, segments []string) (Source, *refusal) {
 	linfo, err := r.fsys.Lstat(finalPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return Source{}, r.notExist(parent, finalName, finalPath)
+			return Source{}, false, r.notExist(parent, finalName, finalPath)
 		}
-		return Source{}, &refusal{code: CodeEscape, rel: finalPath, err: err}
+		return Source{}, false, &refusal{code: CodeEscape, rel: finalPath, err: err}
 	}
 	if linfo.Mode()&fs.ModeSymlink != 0 {
-		return Source{}, &refusal{code: CodeSymlink, rel: finalPath}
+		return Source{}, false, &refusal{code: CodeSymlink, rel: finalPath}
 	}
 	if refused := r.exactCase(parent, finalName, finalPath); refused != nil {
-		return Source{}, refused
+		return Source{}, false, refused
 	}
 	if !linfo.Mode().IsRegular() {
-		return Source{}, &refusal{code: CodeNotRegular, rel: finalPath}
+		return Source{}, false, &refusal{code: CodeNotRegular, rel: finalPath}
+	}
+	if entry != nil && r.sameFile(linfo, entry) {
+		return Source{Module: module, RelPath: finalPath}, true, nil
 	}
 	file := early
 	if file == nil {
 		opened, err := r.fsys.Open(finalPath)
 		if err != nil {
-			return Source{}, &refusal{code: CodeEscape, rel: finalPath, err: err}
+			return Source{}, false, &refusal{code: CodeEscape, rel: finalPath, err: err}
 		}
 		defer opened.Close()
 		file = opened
 	}
 	oinfo, err := file.Stat()
 	if err != nil || !skipSameFileForTest && !r.sameFile(linfo, oinfo) {
-		return Source{}, &refusal{code: CodeUnstableFile, rel: finalPath}
+		return Source{}, false, &refusal{code: CodeUnstableFile, rel: finalPath}
 	}
 	data, err := io.ReadAll(io.LimitReader(file, int64(syntax.MaxSourceBytes)+1))
 	if err != nil {
-		return Source{}, &refusal{code: CodeReadFailed, rel: finalPath, err: err}
+		return Source{}, false, &refusal{code: CodeReadFailed, rel: finalPath, err: err}
 	}
-	return Source{Module: module, RelPath: finalPath, Bytes: data, info: oinfo}, nil
+	return Source{Module: module, RelPath: finalPath, Bytes: data, info: oinfo}, false, nil
 }
 
 // pathSafeSegment rejects a segment that cannot name one directory entry.
