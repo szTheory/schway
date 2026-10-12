@@ -2803,6 +2803,8 @@ var debtRegisterEnvironmentalSet = map[string]bool{
 	"symlink":             true,
 	"mkfifo":              true,
 	"case-insensitive-fs": true,
+	// Phase 31 D-20: running as the superuser makes a mode-000 file readable; a capability of the host, never debt.
+	"root": true,
 }
 
 // debtRegisterModuleTestNames scans every *_test.go file in the module

@@ -2,9 +2,12 @@ package testsupport
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"syscall"
+	"testing"
 )
 
 // ChecksumLimit is the bounded-read limit for the Phase 31 file checksum
@@ -98,4 +101,106 @@ func ChecksumOracleRows() []ChecksumOracleRow {
 		}
 	}
 	return rows
+}
+
+// ChecksumCase is one shared (input, expected result) row run on both engines
+// (D-07, D-08, D-09). Exit, Stdout and Stderr are literal expectations; no
+// engine is compared only against the other.
+type ChecksumCase struct {
+	Name, Kind string
+	Content    []byte
+	Exit       int
+	Stdout     string
+	Stderr     string
+	Outcome    string
+	NativeOnly bool
+}
+
+// ChecksumSecretSegment is a distinctive non-ASCII directory name every
+// materialised case lives under; no error output may contain ChecksumSecret.
+const (
+	ChecksumSecretSegment = "phase31-secret-\u00fc-segment"
+	ChecksumSecret        = "phase31-secret"
+)
+
+// ChecksumCaseMatrix returns the shared case list. Success stdout values come
+// from ChecksumOracleRows, never from new literals.
+func ChecksumCaseMatrix() []ChecksumCase {
+	want := map[string]string{}
+	var tooLarge []byte
+	for _, row := range ChecksumOracleRows() {
+		if row.App != "checksum" {
+			continue
+		}
+		if row.Outcome == "returned" {
+			want[row.Name] = fmt.Sprintf("%d\n", row.Want)
+		} else {
+			tooLarge = row.Input
+		}
+	}
+	const (
+		unavailable = "FileError.FileUnavailable\n"
+		bigName     = "FileError.FileTooLarge\n"
+	)
+	success := func(name, oracle string, content []byte) ChecksumCase {
+		return ChecksumCase{Name: name, Kind: "file", Content: content, Exit: 0, Stdout: want[oracle], Outcome: "returned"}
+	}
+	unavail := func(name, kind string, content []byte) ChecksumCase {
+		return ChecksumCase{Name: name, Kind: kind, Content: content, Exit: 65, Stderr: unavailable, Outcome: "FileUnavailable"}
+	}
+	return []ChecksumCase{
+		success("empty", "empty", []byte{}),
+		success("zero", "0x00", []byte{0x00}),
+		success("wikipedia", "Wikipedia", []byte("Wikipedia")),
+		success("ff65536", "65536x0xFF", bytes.Repeat([]byte{0xFF}, 65536)),
+		{Name: "ff65537", Kind: "file", Content: tooLarge, Exit: 65, Stderr: bigName, Outcome: "FileTooLarge"},
+		unavail("missing", "missing", nil),
+		unavail("directory", "directory", nil),
+		unavail("fifo", "fifo", nil),
+		unavail("devnull", "devnull", nil),
+		unavail("mode000", "mode000", bytes.Repeat([]byte{0xFF}, 65537)),
+	}
+}
+
+// MaterializeChecksumCase creates the input for c under dir and returns the
+// path. It skips with cited env: tokens where the host cannot.
+func MaterializeChecksumCase(t testing.TB, dir string, c ChecksumCase) string {
+	t.Helper()
+	if c.Kind == "devnull" {
+		return "/dev/null"
+	}
+	secret := filepath.Join(dir, ChecksumSecretSegment)
+	if err := os.MkdirAll(secret, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(secret, c.Name+".bin")
+	switch c.Kind {
+	case "file":
+		if err := os.WriteFile(path, c.Content, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	case "missing":
+	case "directory":
+		if err := os.Mkdir(path, 0o700); err != nil {
+			t.Fatal(err)
+		}
+	case "fifo":
+		if err := syscall.Mkfifo(path, 0o600); err != nil {
+			t.Skip("env:mkfifo unavailable on this host")
+		}
+	case "mode000":
+		if os.Geteuid() == 0 {
+			t.Skip("env:root mode-000 file is readable by the superuser")
+		}
+		if err := os.WriteFile(path, c.Content, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(path, 0); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chmod(path, 0o600) })
+	default:
+		t.Fatalf("unknown checksum case kind %q", c.Kind)
+	}
+	return path
 }
