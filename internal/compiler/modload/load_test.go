@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/szTheory/schway/internal/compiler/ast"
 	"github.com/szTheory/schway/internal/compiler/diagnostic"
 	"github.com/szTheory/schway/internal/compiler/syntax"
 )
@@ -187,4 +186,295 @@ func TestPhase30NoImportLoadIsSingleFileParse(t *testing.T) {
 	}
 }
 
-var _ = ast.Program{}
+// readCounts installs a read observer and returns the live counter plus the
+// restore func.
+func readCounts() (map[string]int, func()) {
+	counts := map[string]int{}
+	return counts, SetReadObserverForTest(func(module string) { counts[module]++ })
+}
+
+func importCycles(diags []diagnostic.Diagnostic) []diagnostic.Diagnostic {
+	var out []diagnostic.Diagnostic
+	for _, d := range diags {
+		if d.Code == "module.import_cycle" {
+			out = append(out, d)
+		}
+	}
+	return out
+}
+
+func TestPhase30ImportCycles(t *testing.T) {
+	rows := []struct {
+		name    string
+		files   map[string]string
+		message string
+		unit    string
+	}{
+		{"self", map[string]string{"main.schway": entryUsing("a"), "a.schway": libSource("a", "a")}, "import cycle: a -> a", "a"},
+		{"length-2", map[string]string{"main.schway": entryUsing("a"), "a.schway": libSource("a", "b"), "b.schway": libSource("b", "a")}, "import cycle: a -> b -> a", "b"},
+		{"length-3", map[string]string{"main.schway": entryUsing("a"), "a.schway": libSource("a", "b"), "b.schway": libSource("b", "c"), "c.schway": libSource("c", "a")}, "import cycle: a -> b -> c -> a", "c"},
+		{"length-3-entered-at-b", map[string]string{"main.schway": entryUsing("b"), "a.schway": libSource("a", "b"), "b.schway": libSource("b", "c"), "c.schway": libSource("c", "a")}, "import cycle: a -> b -> c -> a", "a"},
+		{"length-3-entered-at-c", map[string]string{"main.schway": entryUsing("c"), "a.schway": libSource("a", "b"), "b.schway": libSource("b", "c"), "c.schway": libSource("c", "a")}, "import cycle: a -> b -> c -> a", "b"},
+		{"via-entry", map[string]string{"main.schway": entryUsing("a"), "a.schway": libSource("a", "main")}, "import cycle: a -> app.main -> a", "a"},
+	}
+	for _, row := range rows {
+		t.Run(row.name, func(t *testing.T) {
+			_, diags := loadDir(t, writeModules(t, row.files))
+			cycles := importCycles(diags)
+			if len(cycles) != 1 || len(diags) != 1 {
+				t.Fatalf("diagnostics = %v, want exactly one module.import_cycle", codesOf(diags))
+			}
+			if cycles[0].Message != row.message {
+				t.Fatalf("message = %q, want %q", cycles[0].Message, row.message)
+			}
+			if cycles[0].Unit != row.unit {
+				t.Fatalf("unit = %q, want the importer %q", cycles[0].Unit, row.unit)
+			}
+			if len(cycles[0].Causes) == 0 {
+				t.Fatalf("cycle carries no per-hop causes")
+			}
+		})
+	}
+
+	t.Run("diamond-is-not-a-cycle-and-the-visited-mutant-refuses-it", func(t *testing.T) {
+		files := map[string]string{
+			"main.schway": entryUsing("a", "b"), "a.schway": libSource("a", "c"),
+			"b.schway": libSource("b", "c"), "c.schway": libSource("c"),
+		}
+		dir := writeModules(t, files)
+		if _, diags := loadDir(t, dir); len(diags) != 0 {
+			t.Fatalf("diamond refused: %v", codesOf(diags))
+		}
+		visitedInsteadOfColorForTest = true
+		defer func() { visitedInsteadOfColorForTest = false }()
+		if _, diags := loadDir(t, dir); len(importCycles(diags)) == 0 {
+			t.Fatalf("visitedInsteadOfColorForTest did not falsely refuse the diamond")
+		}
+	})
+}
+
+func TestPhase30GraphRefusals(t *testing.T) {
+	good := map[string]string{"main.schway": entryUsing("lib"), "lib.schway": libSource("lib")}
+	with := func(name, content string) map[string]string {
+		files := map[string]string{}
+		for key, value := range good {
+			files[key] = value
+		}
+		files[name] = content
+		return files
+	}
+	t.Run("sibling-accepted", func(t *testing.T) {
+		if _, diags := loadDir(t, writeModules(t, good)); len(diags) != 0 {
+			t.Fatalf("accepted fixture refused: %v", codesOf(diags))
+		}
+	})
+
+	armed := func(t *testing.T, code string, files map[string]string, check func(t *testing.T, d diagnostic.Diagnostic, files map[string]string)) {
+		t.Helper()
+		dir := writeModules(t, files)
+		_, diags := loadDir(t, dir)
+		d, ok := findCode(diags, code)
+		if !ok {
+			t.Fatalf("%s not observed; got %v", code, codesOf(diags))
+		}
+		if check != nil {
+			check(t, d, files)
+		}
+		skipGraphCheckForTest = code
+		defer func() { skipGraphCheckForTest = "" }()
+		if _, diags := loadDir(t, dir); hasCode(diags, code) {
+			t.Fatalf("%s still observed with skipGraphCheckForTest engaged", code)
+		}
+	}
+
+	t.Run("not_found", func(t *testing.T) {
+		files := map[string]string{"main.schway": entryUsing("missing")}
+		armed(t, "module.not_found", files, func(t *testing.T, d diagnostic.Diagnostic, files map[string]string) {
+			if d.Unit != "" {
+				t.Fatalf("unit = %q, want the entry importer", d.Unit)
+			}
+			source := files["main.schway"]
+			start := strings.Index(source, "missing")
+			if d.Primary.Start != start || d.Primary.End != start+len("missing") {
+				t.Fatalf("span = %+v, want the import's module path at %d", d.Primary, start)
+			}
+		})
+	})
+	t.Run("path_mismatch", func(t *testing.T) {
+		files := with("lib.schway", strings.Replace(libSource("lib"), "module lib", "module other", 1))
+		armed(t, "module.path_mismatch", files, func(t *testing.T, d diagnostic.Diagnostic, files map[string]string) {
+			if d.Unit != "" || len(d.Causes) != 1 || d.Causes[0].Unit != "lib" || d.Causes[0].Span == nil {
+				t.Fatalf("attribution = %+v", d)
+			}
+			span := d.Causes[0].Span
+			if got := files["lib.schway"][span.Start:span.End]; got != "other" {
+				t.Fatalf("cause span covers %q, want the header name", got)
+			}
+		})
+	})
+	t.Run("duplicate", func(t *testing.T) {
+		files := map[string]string{
+			"main.schway": strings.Replace(entryUsing("lib"), "module app.main", "module lib", 1),
+			"lib.schway":  libSource("lib"),
+		}
+		armed(t, "module.duplicate", files, func(t *testing.T, d diagnostic.Diagnostic, files map[string]string) {
+			if d.Unit != "" {
+				t.Fatalf("unit = %q, want the importer", d.Unit)
+			}
+		})
+	})
+	t.Run("entry-header-is-never-checked-against-its-path", func(t *testing.T) {
+		if _, diags := loadDir(t, writeModules(t, good)); hasCode(diags, "module.path_mismatch") {
+			t.Fatalf("entry header app.main was checked against main.schway")
+		}
+	})
+	for _, name := range []string{"_x", "a__b", "b_"} {
+		t.Run("invalid_import_name/"+name, func(t *testing.T) {
+			source := strings.Replace(entryUsing("lib"), "fn f", "fn "+name, 1)
+			_, diags := loadDir(t, writeModules(t, with("main.schway", source)))
+			d, ok := findCode(diags, "module.invalid_import_name")
+			if !ok {
+				t.Fatalf("not refused; got %v", codesOf(diags))
+			}
+			start := strings.Index(source, "fn "+name)
+			if d.Primary.Start > start+3 || d.Primary.End < start+3+len(name) {
+				t.Fatalf("span %+v does not cover the item %q at %d", d.Primary, name, start)
+			}
+		})
+	}
+	t.Run("imported_data_unsupported", func(t *testing.T) {
+		source := libSource("lib") + "\ndata Thing =\n  | One\n"
+		_, diags := loadDir(t, writeModules(t, with("lib.schway", source)))
+		d, ok := findCode(diags, "module.imported_data_unsupported")
+		if !ok || d.Unit != "lib" {
+			t.Fatalf("got %+v, want imported_data_unsupported in lib", diags)
+		}
+	})
+	t.Run("imported_foreign_unsupported", func(t *testing.T) {
+		source := libSource("lib") + "\nforeign C {\n  fn c_one(n: U64) -> U64 {\n    unwind: forbidden\n    nonlocal_exit: forbidden\n    mode: \"pure\"\n    abi: c_one_fn\n  }\n}\n"
+		_, diags := loadDir(t, writeModules(t, with("lib.schway", source)))
+		d, ok := findCode(diags, "module.imported_foreign_unsupported")
+		if !ok || d.Unit != "lib" {
+			t.Fatalf("got %+v, want imported_foreign_unsupported in lib", diags)
+		}
+	})
+	t.Run("parse-error-unit", func(t *testing.T) {
+		broken := strings.Replace(libSource("lib"), "export {\n  fn f\n}", "export {\n  fn f\n", 1)
+		dir := writeModules(t, with("lib.schway", broken))
+		_, diags := loadDir(t, dir)
+		var syntaxDiag *diagnostic.Diagnostic
+		for index := range diags {
+			if strings.HasPrefix(diags[index].Code, "syntax.") {
+				syntaxDiag = &diags[index]
+				break
+			}
+		}
+		if syntaxDiag == nil || syntaxDiag.Unit != "lib" {
+			t.Fatalf("parse diagnostics = %+v, want Unit lib", diags)
+		}
+		restore := SetSkipParseUnitStampForTest(true)
+		defer restore()
+		_, diags = loadDir(t, dir)
+		for _, d := range diags {
+			if strings.HasPrefix(d.Code, "syntax.") && d.Unit != "" {
+				t.Fatalf("Unit = %q with the stamp skipped, want empty", d.Unit)
+			}
+		}
+	})
+	t.Run("not_found-text-leak-control", func(t *testing.T) {
+		dir := writeModules(t, map[string]string{"main.schway": entryUsing("missing")})
+		_, diags := loadDir(t, dir)
+		d, _ := findCode(diags, "module.not_found")
+		if strings.Contains(d.Message, dir) {
+			t.Fatalf("production message leaks the absolute path: %q", d.Message)
+		}
+		restore := SetFormatErrorTextForTest(true)
+		defer restore()
+		_, diags = loadDir(t, dir)
+		d, _ = findCode(diags, "module.not_found")
+		if !strings.Contains(d.Message, dir) {
+			t.Fatalf("formatErrorTextForTest did not append the candidate path: %q", d.Message)
+		}
+	})
+}
+
+func diamondFixture() map[string]string {
+	return map[string]string{
+		"main.schway": entryUsing("a", "b"), "a.schway": libSource("a", "c"),
+		"b.schway": libSource("b", "c"), "c.schway": libSource("c"),
+	}
+}
+
+func TestPhase30DiamondLoadsOnce(t *testing.T) {
+	dir := writeModules(t, diamondFixture())
+	counts, restore := readCounts()
+	set, diags := loadDir(t, dir)
+	restore()
+	if len(diags) != 0 {
+		t.Fatalf("diagnostics: %v", codesOf(diags))
+	}
+	if counts["c"] != 1 {
+		t.Fatalf("c read %d times, want 1", counts["c"])
+	}
+	inC := 0
+	for _, function := range set.Program.Funcs {
+		if function.Module == "c" {
+			inC++
+		}
+	}
+	if inC != 1 || len(set.Program.Units) != 4 {
+		t.Fatalf("c functions = %d, units = %d; want 1 and 4", inC, len(set.Program.Units))
+	}
+
+	t.Run("diamondTwice-control", func(t *testing.T) {
+		counts, restoreObserver := readCounts()
+		defer restoreObserver()
+		restoreSeam := SetDiamondTwiceForTest(true)
+		defer restoreSeam()
+		loadDir(t, dir)
+		if counts["c"] != 2 {
+			t.Fatalf("c read %d times with the mutant engaged, want 2", counts["c"])
+		}
+	})
+}
+
+func TestPhase30LoaderReadsEachFileOnce(t *testing.T) {
+	fixtures := map[string]map[string]string{
+		"diamond":   diamondFixture(),
+		"via-entry": {"main.schway": entryUsing("a"), "a.schway": libSource("a", "main")},
+	}
+	for name, files := range fixtures {
+		t.Run(name, func(t *testing.T) {
+			counts, restore := readCounts()
+			defer restore()
+			loadDir(t, writeModules(t, files))
+			if counts[""] != 1 {
+				t.Fatalf("entry read %d times, want 1", counts[""])
+			}
+			if len(counts) != len(files) {
+				t.Fatalf("observed %v for %d files", counts, len(files))
+			}
+			for module, count := range counts {
+				if count != 1 {
+					t.Fatalf("module %q read %d times, want 1", module, count)
+				}
+			}
+		})
+	}
+	t.Run("reread-control", func(t *testing.T) {
+		counts, restore := readCounts()
+		defer restore()
+		rereadForTest = true
+		defer func() { rereadForTest = false }()
+		loadDir(t, writeModules(t, fixtures["diamond"]))
+		twice := false
+		for module, count := range counts {
+			if module != "" && count == 2 {
+				twice = true
+			}
+		}
+		if !twice {
+			t.Fatalf("rereadForTest produced counts %v, want some imported module at 2", counts)
+		}
+	})
+}
