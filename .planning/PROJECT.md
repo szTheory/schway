@@ -63,6 +63,16 @@ pinned in `go test ./...` CI. Only checkpoints with no repeatable proxy reach
 the user; when none remain, the session completes with no human prompt.
 Settled 2026-10-11 (Phase 29 UAT); do not re-ask.
 
+From Phase 32 on, every plan SUMMARY carries a frontmatter `coverage:` block,
+as in the GSD summary template. Each deliverable is either
+`human_judgment: false` with passing `ref: <file>#<TestName>` rows, or
+`human_judgment: true` with a `rationale` naming why no repeatable proxy
+exists. `/gsd-verify-work` then auto-passes deliverables deterministically
+instead of re-deriving checkpoints from prose (Phase 31's SUMMARYs lacked the
+block, so its UAT was derived by hand). `TestSummaryCoverageGroundedness`
+(session meta set) enforces the block and resolves every named test. Settled
+2026-10-12 (Phase 31 UAT); do not re-ask.
+
 When an automated verification report becomes stale, preserve completed UAT and
 refresh the report from current source and automated evidence instead of
 replaying user checkpoints. If the phase is already marked complete and
