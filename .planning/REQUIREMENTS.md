@@ -34,7 +34,7 @@ rejected. M005's acceptance record is preserved at
 - [x] **MOD-03**: A Schway program can import another local source file as a module through an explicit import declaration. Each file is one module, and the declared `module` name must match its path under the entry directory. Resolution never leaves the entry directory: no search path, `..`, absolute path, or symlink escape. *Amended 2026-10-12 (Phase 30 CONTEXT D-06):* the header/path check applies to imported modules. The entry module's own header is exempt, so existing programs without imports keep their headers and their generated C unchanged.
 - [x] **MOD-04**: Only names listed in a module's `export` list are usable from importing modules. Using a private name is refused with a stable code, and an independent validator re-derives visibility. Cross-module calls are admitted from signatures alone, without reading the callee's body.
 - [x] **MOD-05**: Each of these module-graph errors is refused with its own named, source-attributed diagnostic: import cycles (self, length 2, and length 3), missing modules, duplicate modules, header/path mismatch, and name collisions. A diamond import loads and emits its shared module once. A program without imports produces byte-identical C, and diagnostics in imported files name that file.
-- [ ] **MOD-06**: A second application imports the same `adler32` library and prints a different pinned result, without a copy of the library source. Mutating the library flips both applications' pinned outputs, and both build identities and evidence records hash every module in sorted order.
+- [x] **MOD-06**: A second application imports the same `adler32` library and prints a different pinned result, without a copy of the library source. Mutating the library flips both applications' pinned outputs, and both build identities and evidence records hash every module in sorted order.
 
 ### Independent evidence and usability
 
@@ -93,7 +93,7 @@ Each M006 requirement has one phase owner (see [ROADMAP.md](ROADMAP.md)).
 | MOD-03 | Phase 30 | Complete |
 | MOD-04 | Phase 30 | Complete |
 | MOD-05 | Phase 30 | Complete |
-| MOD-06 | Phase 31 | Pending |
+| MOD-06 | Phase 31 | Complete |
 | EVD-14 | Phase 31 | Pending |
 | EVD-15 | Phase 32 | Pending |
 | DX-19 | Phase 32 | Pending |
