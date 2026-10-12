@@ -471,6 +471,14 @@ source), and DX-18 (`main` wins entry selection; functions `main` never calls
 are pruned after full-program admission). Local verifier passed 4/4; hosted CI
 not yet run at this revision.
 
+Phase 29 (2026-10-11) closed BYTE-01, BYTE-02, BYTE-03 and APP-10: ordinary
+source reads a read-only `ByteView` in a scalar loop (`byte_len`, `byte_at`)
+with a bounds check that survives -O3 and LTO (exit 65,
+`schway: byte index out of bounds`), and Adler-32 is pinned on both engines
+over a test-only foreign fixture owner (`schway build --manifest` plus
+`schway app run -- N`). Verifier 5/5, threats 35/35 closed, UAT 6/6 automated;
+hosted run 38186068052 kept the spike 008 cap at 65,536 bytes.
+
 Atomic IDs and acceptance for M005 are archived in
 [milestones/M005-REQUIREMENTS.md](milestones/M005-REQUIREMENTS.md).
 
@@ -663,4 +671,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-10 after Phase 28*
+*Last updated: 2026-10-11 after Phase 29*

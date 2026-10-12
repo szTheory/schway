@@ -51,12 +51,12 @@ control list is parsed. Do not run project suites locally.
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-10)
+See: .planning/PROJECT.md (updated 2026-10-11)
 
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 29 — Byte Views and the Adler-32 Library
+**Current focus:** Phase 30 — Local Modules
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -128,7 +128,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-10-11 — Phase 29 complete, transitioned to Phase 30
 
-Progress: [████░░░░░░] 40% (1/5 M006 phases)
+Progress: [████░░░░░░] 40% (2/5 M006 phases)
 
 ## M006 Planning
 
