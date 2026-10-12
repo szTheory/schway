@@ -320,6 +320,17 @@ var phase28NewlyAddedEntries = map[string]phase28ManifestEntry{
 		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_failure"},
 		EntryShape:     "unchecked",
 	},
+	// 2026-10-12 (Phase 31, plan 31-07): the second consumer of the adler32
+	// library; plain engine classes match checksum, the file route is pinned
+	// by TestPhase31AdlerLowPublicRoute.
+	"examples/checksum/adler_low.schway": {
+		Path:           "examples/checksum/adler_low.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
+		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
+		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_failure"},
+		EntryShape:     "unchecked",
+	},
 }
 
 type phase28Manifest struct {

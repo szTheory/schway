@@ -300,7 +300,7 @@ design exploration, not a supported language specification.
 
 ## Corpus and guard census
 
-Corpus: **162 `.schway` programs, 5,332 lines total** (~33 lines average,
+Corpus: **163 `.schway` programs, 5,389 lines total** (~33 lines average,
 193-line maximum). These counts match the current machine-checked tree; the
 corpus predominantly contains focused semantic fixtures, not applications.
 

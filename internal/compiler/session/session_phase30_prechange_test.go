@@ -68,6 +68,8 @@ var phase30NewCommittedPaths = map[string]bool{
 	"examples/checksum/adler32_cli.schway": true,
 	// 2026-10-12 (Phase 31, plan 31-01): the bounded file checksum entry.
 	"examples/checksum/checksum.schway": true,
+	// 2026-10-12 (Phase 31, plan 31-07): the second consumer of the library.
+	"examples/checksum/adler_low.schway": true,
 }
 
 type phase30PreChangeGolden struct {

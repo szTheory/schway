@@ -1,0 +1,57 @@
+
+// Phase 31 second consumer (D-03, D-16): imports the one adler32 library and prints only its low 16 bits.
+module examples.checksum.adler_low
+
+import adler32 {
+  fn adler32
+}
+
+export {
+  fn main
+}
+
+foreign C {
+  fn schway_file_bytes_acquire(path: PathToken) -> FileBytes {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    mode: "acquire"
+    abi: schway_file_bytes_acquire_fn
+    allocator: "libc_malloc"
+    release: "schway_file_bytes_release"
+    fails: FileError
+  }
+
+  fn schway_file_bytes_view(owner: FileBytes) -> ByteView {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    mode: "borrow"
+    abi: schway_file_bytes_view_fn
+  }
+
+  fn schway_file_bytes_release(owner: FileBytes) -> Unit {
+    unwind: forbidden
+    nonlocal_exit: forbidden
+    mode: "consume"
+    abi: schway_file_bytes_release_fn
+    allocator: "libc_malloc"
+  }
+}
+
+data FileError =
+  | FileTooLarge
+  | FileUnavailable
+  | AllocFailed
+
+fn low16(sum: U64) -> U64 {
+  var r = sum
+  r = r % 65536
+  r
+}
+
+fn main(path: PathToken) -> U64 {
+  let owner = try schway_file_bytes_acquire(path)
+  let view = schway_file_bytes_view(owner)
+  let sum = adler32(view)
+  let low = low16(sum)
+  low
+}
