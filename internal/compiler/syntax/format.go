@@ -37,6 +37,16 @@ func Format(tree Tree) []byte {
 				f.newline()
 			}
 		}
+		// D-10: a bare result identifier on its own source line after a var-body
+		// statement (ending in an identifier, number or call paren) must stay on
+		// its own line; match arms keep their existing layout.
+		if token.Kind == TokenIdentifier && index > 0 && f.lineOpen && f.insideFunctionBody() && f.context() != "match" {
+			previous := tokens[index-1]
+			if (previous.Kind == TokenIdentifier || previous.Kind == TokenNumber || previous.Kind == TokenRParen) &&
+				previous.Span.End <= token.Span.Start && bytes.Contains(tree.Source[previous.Span.End:token.Span.Start], []byte("\n")) {
+				f.newline()
+			}
+		}
 		f.token(token, next)
 	}
 	return append(bytes.TrimRight([]byte(f.out.String()), " \t\r\n"), '\n')
