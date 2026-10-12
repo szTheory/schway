@@ -57,7 +57,7 @@ None found in the phase's example files. Known, tracked non-gaps: formatter var-
 
 ### External-Blocker Note (not a gap)
 
-Hosted full and race CI on ubuntu-latest and macos-latest has not run for Phase 30. No run ID is recorded. Per 30-TRANSITION-CHECK section 5 and plan 30-09, this is an external-blocker note only. No gap plan is opened; M006 receipts belong to Phase 32 (EVD-15). The case-sensitive-filesystem row of TestPhase30CaseExactMatch skips by design on APFS and is expected to run on Linux CI.
+Hosted CI run 38283564836 (2026-10-12, headSha b6f45bb8) passed: `checks` and `current evidence aggregate` succeeded on ubuntu-latest and macos-latest. Final M006 receipts still belong to Phase 32 (EVD-15). The case-sensitive-filesystem row of TestPhase30CaseExactMatch skips by design on APFS and is expected to run on Linux CI.
 
 ### Human Verification Required
 

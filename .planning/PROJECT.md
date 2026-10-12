@@ -489,8 +489,8 @@ depth 8, 4 MiB) are each refused with a named `module.*` code. A diagnostic
 inside an imported file carries `unit=<module>`. No-import output is
 byte-identical to a pre-change golden. The Phase 29 Adler-32 program now
 imports its library from one file, with the 10 pinned answers on both engines.
-Verifier 4/4, threats 36/36 closed, UAT 6/6 automated. Hosted CI has not run
-at this revision. A formatter defect carried over from Phase 29 is tracked as a
+Verifier 4/4, threats 36/36 closed, UAT 6/6 automated. Hosted run 38283564836 (b6f45bb8) passed
+on ubuntu and macOS. A formatter defect carried over from Phase 29 is tracked as a
 todo.
 
 Atomic IDs and acceptance for M005 are archived in

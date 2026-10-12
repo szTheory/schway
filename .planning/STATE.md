@@ -717,7 +717,8 @@ remains (verifier 4/4, UAT 6/6 automated, threats 36/36 closed). Open carries:
 - the formatter merges a trailing result line into the preceding `var`
   assignment (`r = r + a` / `r` → `r = r + ar`); a major todo, and the
   phase30 Adler-32 sources are committed unformatted because of it;
-- hosted CI has not run at the Phase 30 revision (EVD-15 belongs to Phase 32);
+- hosted CI run 38283564836 passed at b6f45bb8 (ubuntu and macOS checks and
+  evidence aggregate; final M006 receipts remain EVD-15, Phase 32);
 - review findings IN-01 and IN-02 are deferred;
 - `debug-map` already panicked on 5 sources before this phase; those panics
   are pinned, not fixed;
