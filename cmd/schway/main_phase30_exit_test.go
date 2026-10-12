@@ -58,3 +58,43 @@ func TestPhase30ModuleRefusalExitCodes(t *testing.T) {
 		}
 	})
 }
+
+// TestPhase30CapRefusalExitsInvalid pins CR-01 on the CLI: an over-cap module
+// program exits exitcode.Invalid naming the cap code, on every module-aware
+// route, never module.imports_not_loaded. The within-cap control names no cap.
+func TestPhase30CapRefusalExitsInvalid(t *testing.T) {
+	write := func(imports int) string {
+		dir := t.TempDir()
+		var entry strings.Builder
+		entry.WriteString("module app.main\n\n")
+		for index := 1; index <= imports; index++ {
+			name := "m" + strings.Repeat("x", index)
+			entry.WriteString("import " + name + " {\n  fn f\n}\n\n")
+			lib := "module " + name + "\n\nexport {\n  fn f\n}\n\nfn f(n: U64) -> U64 {\n  n\n}\n"
+			if err := os.WriteFile(filepath.Join(dir, name+".schway"), []byte(lib), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		entry.WriteString("export {\n  fn main\n}\n\nfn main(n: U64) -> U64 {\n  n\n}\n")
+		path := filepath.Join(dir, "main.schway")
+		if err := os.WriteFile(path, []byte(entry.String()), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	for _, args := range [][]string{{"check"}, {"debug-map"}} {
+		t.Run(args[0], func(t *testing.T) {
+			code, stdout, stderr := captureLangRun(t, append(append([]string{}, args...), write(16)))
+			out := stdout + stderr
+			if code != exitcode.Invalid || !strings.Contains(out, "module.count_limit") || strings.Contains(out, "module.imports_not_loaded") {
+				t.Fatalf("16 imports: exit %d, output %q; want exitcode.Invalid naming module.count_limit", code, out)
+			}
+		})
+	}
+	t.Run("control-within-cap", func(t *testing.T) {
+		_, stdout, stderr := captureLangRun(t, []string{"check", write(2)})
+		if strings.Contains(stdout+stderr, "module.count_limit") {
+			t.Fatalf("a within-cap program names module.count_limit: %q", stdout+stderr)
+		}
+	})
+}

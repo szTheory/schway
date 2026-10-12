@@ -226,7 +226,10 @@ func loadGraph(entry parsedModule, entryInfo fs.FileInfo, resolve *resolver) (Se
 	}
 
 	if len(l.capDiags) > 0 {
-		return l.result(ast.Program{}), l.capDiags
+		// The entry program is kept, imports and all, so a caller that tests
+		// len(Program.Imports) takes the module-aware path and reports the cap
+		// diagnostic (D-13) instead of re-checking the entry as a single file.
+		return l.result(entry.program), l.capDiags
 	}
 	l.findCycles()
 
