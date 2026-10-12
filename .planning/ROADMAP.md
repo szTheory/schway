@@ -266,11 +266,11 @@ Plans:
 
 **Research flag**: Standard. Run a public-route audit before the receipt plan so the receipts bind the final source. Hosted runs need explicit user approval for push and dispatch.
 
-**Plans**: 11 plans
+**Plans**: 1/11 plans executed
 
 Plans:
 **Wave 1**
-- [ ] 32-01-PLAN.md — Formatter fix: a trailing var-body result stays on its own line; dated phase30FormatChanges allow-list (D-10)
+- [x] 32-01-PLAN.md — Formatter fix: a trailing var-body result stays on its own line; dated phase30FormatChanges allow-list (D-10)
 - [ ] 32-02-PLAN.md — Hosted CI hardening: GOFLAGS 20m budget on the phase6 aggregate, SCHWAY_REQUIRE_NATIVE, cached test index
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -306,7 +306,7 @@ Plans:
 | 29. Byte Views and the Adler-32 Library | 13/13 | Complete    | 2026-10-11 |
 | 30. Local Modules | 10/10 | Complete    | 2026-10-12 |
 | 31. Bounded File Checksum and Second Consumer | 10/10 | Complete    | 2026-10-12 |
-| 32. Clean-Checkout Guide and Final Receipts | 0/11 | Not started | - |
+| 32. Clean-Checkout Guide and Final Receipts | 1/11 | In Progress | - |
 
 **Coverage:** 16/16 M006 requirements have exactly one phase owner. MOD-06
 (second consumer) is owned by Phase 31 rather than Phase 30, because its

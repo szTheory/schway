@@ -5,17 +5,17 @@ milestone_name: Bounded Byte Utility and Local Modules
 current_phase: 32
 current_phase_name: Clean-Checkout Guide and Final Receipts
 status: executing
-stopped_at: Phase 32 context gathered
-last_updated: "2026-10-12T21:19:29.321Z"
+stopped_at: Completed 32-01-PLAN.md
+last_updated: "2026-10-12T21:29:34.122Z"
 last_activity: 2026-10-12
-last_activity_desc: Phase 31 complete, transitioned to Phase 32
-state_head: 283f87fad0f8b7e42696726972b86ab392c536cd
+last_activity_desc: Phase 32 execution started
+state_head: 58e66b2d19324168182c6cd34b48418ad663a639
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 52
-  completed_plans: 41
-  percent: 79
+  completed_plans: 42
+  percent: 80
 ---
 
 <!-- schway-current:start -->
@@ -56,7 +56,7 @@ See: .planning/PROJECT.md (updated 2026-10-12)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 31 — Bounded File Checksum and Second Consumer
+**Current focus:** Phase 32 — Clean-Checkout Guide and Final Receipts
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -123,12 +123,12 @@ plans.
 ## Current Position
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
-Phase: 32 (Clean-Checkout Guide and Final Receipts) — READY TO EXECUTE
-Plan: Not started
+Phase: 32 (Clean-Checkout Guide and Final Receipts) — EXECUTING
+Plan: 2 of 11
 Status: Ready to execute
-Last activity: 2026-10-12 — Phase 31 complete, transitioned to Phase 32
+Last activity: 2026-10-12 — Phase 32 execution started
 
-Progress: [████████░░] 79% (3/5 M006 phases)
+Progress: [████████░░] 80% (3/5 M006 phases)
 
 ## M006 Planning
 
@@ -541,6 +541,7 @@ subset alone.
 | Phase 31 P07 | ~25min | 3 tasks | 6 files |
 | Phase 31 P08 | 25min | 3 tasks | 4 files |
 | Phase 31 P09 | 20min | 3 tasks | 7 files |
+| Phase 32 P01 | 20 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -705,6 +706,7 @@ decision history; they no longer describe current status.
 - [Phase 31]: 31-07: dual-flip asserts receipt Modules rows, BuildID inequality and evidence Modules, never cross-build ExecutableDigest equality
 - [Phase 31]: 31-08: off-by-one mutant is n = n + 1 (no <= operator); interp file route exempts byte-index defect
 - [Phase 31]: 31-09: exit-65 row names FileTooLarge, FileUnavailable, AllocFailed with no constant change; Phase 31 validation finalized, hosted CI deferred to the phase gate
+- [Phase 32]: 32-01: var-body formatter guard excludes match context; 3 frozen Phase 30 format hashes carried by dated phase30FormatChanges allow-list (golden stays frozen)
 
 ### Pending Todos
 
@@ -947,9 +949,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-12T20:13:46.704Z
-Stopped at: Phase 32 context gathered
-Resume file: .planning/phases/32-clean-checkout-guide-and-final-receipts/32-CONTEXT.md
+Last session: 2026-10-12T21:29:34.066Z
+Stopped at: Completed 32-01-PLAN.md
+Resume file: None
 Next action: Phase 28 complete and verified (4/4, 2026-10-10). Optional: /gsd-code-review 28 --fix --all for the 6 open review findings (WR-02 exit-3-on-write-failure, WR-04 latent entryErr). Then /gsd-discuss-phase 29.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
