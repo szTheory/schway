@@ -266,7 +266,7 @@ Plans:
 
 **Research flag**: Standard. Run a public-route audit before the receipt plan so the receipts bind the final source. Hosted runs need explicit user approval for push and dispatch.
 
-**Plans**: 6/11 plans executed
+**Plans**: 7/11 plans executed
 
 Plans:
 **Wave 1**
@@ -282,7 +282,7 @@ Plans:
 - [x] 32-06-PLAN.md — Public-route audit for the final receipts; seven covered programs including the Phase 29 fixture and OOB control (D-10b, D-10d, D-09a)
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [ ] 32-07-PLAN.md — Guide checker negative controls and the hosted native policy pin (D-04, D-04a)
+- [x] 32-07-PLAN.md — Guide checker negative controls and the hosted native policy pin (D-04, D-04a)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 - [ ] 32-08-PLAN.md — Receipt producer and two-host gate with armed controls, seven programs and 39 cases (D-08b, D-09, D-09a)
@@ -306,7 +306,7 @@ Plans:
 | 29. Byte Views and the Adler-32 Library | 13/13 | Complete    | 2026-10-11 |
 | 30. Local Modules | 10/10 | Complete    | 2026-10-12 |
 | 31. Bounded File Checksum and Second Consumer | 10/10 | Complete    | 2026-10-12 |
-| 32. Clean-Checkout Guide and Final Receipts | 6/11 | In Progress | - |
+| 32. Clean-Checkout Guide and Final Receipts | 7/11 | In Progress | - |
 
 **Coverage:** 16/16 M006 requirements have exactly one phase owner. MOD-06
 (second consumer) is owned by Phase 31 rather than Phase 30, because its
