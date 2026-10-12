@@ -130,6 +130,19 @@ jobs:
           path: ${{ runner.temp }}/phase27/receipt-${{ matrix.os }}.log
           if-no-files-found: error
           retention-days: 14
+      - name: scripts/verify-phase32.sh
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/phase32"
+          sh scripts/verify-phase32.sh 2>&1 | tee "$RUNNER_TEMP/phase32/receipt-${{ matrix.os }}.log"
+      - name: Upload Phase 32 host receipt
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase32-receipt-${{ matrix.os }}-${{ github.sha }}
+          path: ${{ runner.temp }}/phase32/receipt-${{ matrix.os }}.log
+          if-no-files-found: error
+          retention-days: 14
       - name: scripts/verify-phase24.sh
         run: sh scripts/verify-phase24.sh
       - name: scripts/verify-phase25.sh
