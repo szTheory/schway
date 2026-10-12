@@ -345,6 +345,10 @@ func phase32ReadGuide(t *testing.T) phase32Guide {
 // TestPhase32GuideCleanCheckout runs the checksum guide, line by line, from a
 // simulated clean checkout and compares every result against the README cells.
 func TestPhase32GuideCleanCheckout(t *testing.T) {
+	// D-04: the static check gates execution; a drifted guide never runs.
+	if problems := phase32ReadStaticProblems(t); len(problems) != 0 {
+		t.Fatalf("guide fails the static check:\n%s", strings.Join(problems, "\n"))
+	}
 	_, clangErr := exec.LookPath("clang")
 	if clangErr != nil {
 		if phase32NativePolicy(clangErr, os.Getenv) {
@@ -358,45 +362,15 @@ func TestPhase32GuideCleanCheckout(t *testing.T) {
 		cases[c.Name] = c
 	}
 
-	// D-04 anti-vacuity: enough marked blocks and all three programs present.
-	if len(guide.Blocks) < 4 {
-		t.Fatalf("guide has %d marked blocks, want at least 4", len(guide.Blocks))
-	}
-	apps := map[string]bool{}
-	var targets []string
 	var setup []string
 	var runs []phase32Block
 	for _, b := range guide.Blocks {
-		targets = append(targets, phase32GuideOutputTargets(b.Lines)...)
 		switch b.Kind {
 		case "clean-checkout":
 			setup = append(setup, b.Lines...)
 		case "run":
-			apps[b.Attrs["app"]] = true
 			runs = append(runs, b)
 		}
-	}
-	for _, app := range []string{"checksum", "adler_low", "adler32_cli"} {
-		if !apps[app] {
-			t.Fatalf("guide has no run fence for app %q", app)
-		}
-	}
-	for _, target := range targets {
-		if !phase32TargetAllowed(target) {
-			t.Fatalf("guide output target %q is outside the ignored .schway/ tree", target)
-		}
-	}
-	mkdirAt, buildAt := -1, -1
-	for i, line := range setup {
-		if line == "mkdir -p .schway/checksum" && mkdirAt < 0 {
-			mkdirAt = i
-		}
-		if strings.HasPrefix(line, "./schway build ") && buildAt < 0 {
-			buildAt = i
-		}
-	}
-	if mkdirAt < 0 || buildAt < 0 || mkdirAt > buildAt {
-		t.Fatalf("guide must run `mkdir -p .schway/checksum` before the first build (mkdir=%d build=%d)", mkdirAt, buildAt)
 	}
 
 	copyDir := phase32CopyCheckout(t, testsupport.ProjectPath())
@@ -605,4 +579,165 @@ func TestPhase32GuideMatchesExpectedJSON(t *testing.T) {
 			t.Fatal("a mutated json limit produced no problem")
 		}
 	})
+}
+
+func phase32ReadStaticProblems(t *testing.T) []string {
+	t.Helper()
+	raw, err := os.ReadFile(testsupport.ProjectPath("examples", "checksum", "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(testsupport.ProjectPath("examples", "checksum", "checksum.expected.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return phase32GuideStaticProblems(string(raw), data)
+}
+
+// phase32GuideStaticProblems is the pure, clang-free guide check: parse,
+// anti-vacuity (D-04), output targets (D-01a), command shapes, and the JSON and
+// oracle cross-check. Empty means the guide is acceptable.
+func phase32GuideStaticProblems(text string, expectedJSON []byte) []string {
+	guide, err := phase32ParseGuide(text)
+	if err != nil {
+		return []string{"parse: " + err.Error()}
+	}
+	var problems []string
+	if len(guide.Blocks) < 4 {
+		problems = append(problems, fmt.Sprintf("guide has %d marked blocks, want at least 4", len(guide.Blocks)))
+	}
+	apps := map[string]bool{}
+	var setup []string
+	for _, b := range guide.Blocks {
+		for _, target := range phase32GuideOutputTargets(b.Lines) {
+			if !phase32TargetAllowed(target) {
+				problems = append(problems, fmt.Sprintf("output target %q is outside the ignored .schway/ tree", target))
+			}
+		}
+		switch b.Kind {
+		case "clean-checkout":
+			setup = append(setup, b.Lines...)
+		case "run":
+			apps[b.Attrs["app"]] = true
+			if len(b.Lines) != 1 {
+				problems = append(problems, fmt.Sprintf("run fence for %s holds %d lines, want exactly one", b.Attrs["app"], len(b.Lines)))
+				continue
+			}
+			if !strings.HasPrefix(b.Lines[0], "./schway app run ") {
+				problems = append(problems, fmt.Sprintf("run line %q must start with `./schway app run `", b.Lines[0]))
+			}
+		}
+	}
+	for _, app := range []string{"checksum", "adler_low", "adler32_cli"} {
+		if !apps[app] {
+			problems = append(problems, fmt.Sprintf("guide has no run fence for app %q", app))
+		}
+	}
+	mkdirAt, buildAt := -1, -1
+	for i, line := range setup {
+		if line == "mkdir -p .schway/checksum" && mkdirAt < 0 {
+			mkdirAt = i
+		}
+		if strings.HasPrefix(line, "./schway ") && !strings.HasPrefix(line, "./schway build ") {
+			problems = append(problems, fmt.Sprintf("setup line %q must start with `./schway build `", line))
+		}
+		if strings.HasPrefix(line, "./schway build ") && buildAt < 0 {
+			buildAt = i
+		}
+	}
+	if mkdirAt < 0 || buildAt < 0 || mkdirAt > buildAt {
+		problems = append(problems, fmt.Sprintf("guide must run `mkdir -p .schway/checksum` before the first build (mkdir=%d build=%d)", mkdirAt, buildAt))
+	}
+	var doc phase32ExpectedJSON
+	if err := json.Unmarshal(expectedJSON, &doc); err != nil {
+		return append(problems, "expected json: "+err.Error())
+	}
+	return append(problems, phase32GuideJSONProblems(guide, doc)...)
+}
+
+// TestPhase32GuideParserNegativeControls shows the static check rejecting each
+// kind of drift on an in-memory mutated copy of the real guide.
+func TestPhase32GuideParserNegativeControls(t *testing.T) {
+	raw, err := os.ReadFile(testsupport.ProjectPath("examples", "checksum", "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(testsupport.ProjectPath("examples", "checksum", "checksum.expected.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	if problems := phase32GuideStaticProblems(text, data); len(problems) != 0 {
+		t.Fatalf("baseline guide has problems:\n%s", strings.Join(problems, "\n"))
+	}
+	controls := []struct {
+		name   string
+		mutate func(string) (string, bool)
+	}{
+		{"mutated-value", func(s string) (string, bool) {
+			return strings.Replace(s, "300286872 | 920", "300286873 | 920", 1), strings.Contains(s, "300286872 | 920")
+		}},
+		{"renamed-command", func(s string) (string, bool) {
+			const anchor = "./schway app run .schway/checksum/checksum -- PATH"
+			return strings.Replace(s, anchor, "./schway app runx .schway/checksum/checksum -- PATH", 1), strings.Contains(s, anchor)
+		}},
+		{"dropped-fence", func(s string) (string, bool) {
+			const anchor = "```sh doc-test=run app=adler_low\n./schway app run .schway/checksum/adler_low -- PATH\n```\n"
+			return strings.Replace(s, anchor, "", 1), strings.Contains(s, anchor)
+		}},
+		{"outside-target", func(s string) (string, bool) {
+			const anchor = "--output .schway/checksum/checksum"
+			return strings.Replace(s, anchor, "--output ./checksum", 1), strings.Contains(s, anchor)
+		}},
+		{"dropped-row", func(s string) (string, bool) {
+			var kept []string
+			found := false
+			for _, line := range strings.Split(s, "\n") {
+				if strings.HasPrefix(line, "| `ff65537` |") {
+					found = true
+					continue
+				}
+				kept = append(kept, line)
+			}
+			return strings.Join(kept, "\n"), found
+		}},
+	}
+	for _, c := range controls {
+		t.Run(c.name, func(t *testing.T) {
+			mutated, anchored := c.mutate(text)
+			if !anchored {
+				t.Fatalf("control %s: anchor absent from the README; the control would pass vacuously", c.name)
+			}
+			if mutated == text {
+				t.Fatalf("control %s: mutation changed nothing", c.name)
+			}
+			if len(phase32GuideStaticProblems(mutated, data)) == 0 {
+				t.Fatalf("control %s: the mutated guide produced no problem", c.name)
+			}
+		})
+	}
+}
+
+// TestPhase32NativePolicy pins the hosted-runner policy as a pure function.
+func TestPhase32NativePolicy(t *testing.T) {
+	missing := errors.New("clang not found")
+	rows := []struct {
+		name string
+		err  error
+		env  map[string]string
+		fail bool
+	}{
+		{"missing-on-github-actions", missing, map[string]string{"GITHUB_ACTIONS": "true"}, true},
+		{"missing-with-require-native", missing, map[string]string{"SCHWAY_REQUIRE_NATIVE": "1"}, true},
+		{"missing-local-skips", missing, map[string]string{}, false},
+		{"present-never-fails", nil, map[string]string{"GITHUB_ACTIONS": "true", "SCHWAY_REQUIRE_NATIVE": "1"}, false},
+	}
+	for _, row := range rows {
+		t.Run(row.name, func(t *testing.T) {
+			getenv := func(k string) string { return row.env[k] }
+			if got := phase32NativePolicy(row.err, getenv); got != row.fail {
+				t.Fatalf("phase32NativePolicy = %v, want %v", got, row.fail)
+			}
+		})
+	}
 }
