@@ -136,3 +136,39 @@ func TestPhase30ImportsLimitParse(t *testing.T) {
 		}
 	})
 }
+
+// importOrderKept reports whether the formatted source lists `import b`
+// before `import a`, the order the source was written in.
+func importOrderKept(formatted []byte) bool {
+	text := string(formatted)
+	b, a := strings.Index(text, "import b"), strings.Index(text, "import a")
+	return b >= 0 && a >= 0 && b < a
+}
+
+// TestPhase30FormatKeepsImportOrder pins D-03: the formatter never reorders
+// import declarations. The control engages sortImportsForTest and requires
+// the order check to fail, so the check cannot pass vacuously.
+func TestPhase30FormatKeepsImportOrder(t *testing.T) {
+	source := phase30Program("import b { fn y }\nimport a { fn x  fn z }\n")
+	parsed := Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("diagnostics: %v", codesOf(parsed.Diagnostics))
+	}
+	if formatted := Format(parsed.Tree); !importOrderKept(formatted) {
+		t.Fatalf("formatter reordered imports: %q", formatted)
+	}
+	t.Run("sorting control fails the order check", func(t *testing.T) {
+		sortImportsForTest = true
+		defer func() { sortImportsForTest = false }()
+		formatted := Format(parsed.Tree)
+		if importOrderKept(formatted) {
+			t.Fatalf("sorting seam engaged but the order check still passed: %q", formatted)
+		}
+		if again := Parse(formatted); len(again.Diagnostics) != 0 {
+			t.Fatalf("sorted output does not parse: %q", formatted)
+		}
+	})
+	if formatted := Format(parsed.Tree); !importOrderKept(formatted) {
+		t.Fatalf("seam leaked out of the control: %q", formatted)
+	}
+}

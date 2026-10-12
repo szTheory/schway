@@ -2,8 +2,15 @@ package syntax
 
 import (
 	"bytes"
+	"sort"
 	"strings"
 )
+
+// sortImportsForTest is a test-only control (D-03): when set, the formatter
+// sorts import declarations by module name. Production leaves it false so
+// imports keep their source order; TestPhase30FormatKeepsImportOrder engages
+// it to prove the order check can fail.
+var sortImportsForTest bool
 
 // Format owns the single Phase 1 source projection. It is intentionally a
 // token/CST projection: comments remain data and semantic tokens never move.
@@ -15,6 +22,9 @@ func Format(tree Tree) []byte {
 			continue
 		}
 		tokens = append(tokens, token)
+	}
+	if sortImportsForTest {
+		tokens = sortImportDeclarations(tokens)
 	}
 	for index, token := range tokens {
 		next := TokenEOF
@@ -461,4 +471,62 @@ func (f *formatter) trimSpace() {
 	}
 	f.out.Reset()
 	f.out.WriteString(trimmed)
+}
+
+// sortImportDeclarations reorders top-level import declarations by module
+// name. It exists only for sortImportsForTest. A comment run directly before
+// an import travels with it.
+func sortImportDeclarations(tokens []Token) []Token {
+	type group struct {
+		key    string
+		tokens []Token
+	}
+	var (
+		head, tail []Token
+		groups     []group
+		pending    []Token
+		current    *group
+		depth      int
+	)
+	for _, token := range tokens {
+		switch {
+		case current != nil:
+			current.tokens = append(current.tokens, token)
+			switch token.Kind {
+			case TokenLBrace:
+				depth++
+			case TokenRBrace:
+				depth--
+				if depth == 0 {
+					groups = append(groups, *current)
+					current = nil
+				}
+			case TokenIdentifier, TokenDot:
+				if depth == 0 {
+					current.key += token.Text
+				}
+			}
+		case token.Kind == TokenImport && len(tail) == 0:
+			current = &group{tokens: append(append([]Token(nil), pending...), token)}
+			pending = nil
+			depth = 0
+		case token.Kind == TokenComment && len(tail) == 0:
+			pending = append(pending, token)
+		case len(groups) == 0 && current == nil && len(tail) == 0:
+			head = append(head, append(pending, token)...)
+			pending = nil
+		default:
+			tail = append(tail, append(pending, token)...)
+			pending = nil
+		}
+	}
+	if current != nil {
+		groups = append(groups, *current)
+	}
+	sort.SliceStable(groups, func(left, right int) bool { return groups[left].key < groups[right].key })
+	result := append([]Token(nil), head...)
+	for _, entry := range groups {
+		result = append(result, entry.tokens...)
+	}
+	return append(append(result, pending...), tail...)
 }

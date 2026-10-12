@@ -1,6 +1,9 @@
 package syntax_test
 
 import (
+	"bytes"
+	"math/rand"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -238,6 +241,123 @@ func TestPhase30ImportRepairs(t *testing.T) {
 					t.Fatalf("%q: %s carries repairs %+v", source, problem.Code, problem.Repairs)
 				}
 			}
+		}
+	})
+}
+
+// phase30GeneratedImportProgram builds one program with 0..4 import
+// declarations of 1..3 items in a random (not alphabetical) order, with mixed
+// spacing, newlines and line comments at item and declaration boundaries.
+func phase30GeneratedImportProgram(random *rand.Rand) []byte {
+	modules := []string{"zeta", "alpha.core", "mid_module", "b.c.d", "omega"}
+	random.Shuffle(len(modules), func(left, right int) { modules[left], modules[right] = modules[right], modules[left] })
+	names := []string{"run", "adler32", "digest", "x", "next_value"}
+	gap := func() string {
+		switch random.Intn(4) {
+		case 0:
+			return " "
+		case 1:
+			return "\n"
+		case 2:
+			return "  \n\n  "
+		default:
+			return " // note\n"
+		}
+	}
+	var out strings.Builder
+	out.WriteString("module gen.phase30" + gap())
+	for index := 0; index < random.Intn(5); index++ {
+		out.WriteString("import" + gap()[:1] + modules[index] + " {" + gap())
+		random.Shuffle(len(names), func(left, right int) { names[left], names[right] = names[right], names[left] })
+		for item := 0; item <= random.Intn(3); item++ {
+			kind := "fn"
+			if random.Intn(5) == 0 {
+				kind = "type"
+			}
+			out.WriteString(kind + " " + names[item] + gap())
+		}
+		out.WriteString("}" + gap())
+	}
+	out.WriteString("export {" + gap() + "fn main" + gap() + "}\nfn main(n: U64) -> U64 { n }\n")
+	return []byte(out.String())
+}
+
+func phase30ImportShape(program ast.Program) []string {
+	var shape []string
+	for _, declaration := range program.Imports {
+		line := declaration.Module + ":"
+		for _, item := range declaration.Items {
+			line += " " + item.Kind + " " + item.Name
+		}
+		shape = append(shape, line)
+	}
+	return shape
+}
+
+// TestPhase30GeneratedImportRoundTrips runs the idempotence, lossless-CST and
+// semantic-token lanes over 200 deterministic generated import programs.
+func TestPhase30GeneratedImportRoundTrips(t *testing.T) {
+	random := rand.New(rand.NewSource(0x30c0de))
+	withImports := 0
+	for caseID := 0; caseID < 200; caseID++ {
+		source := phase30GeneratedImportProgram(random)
+		parsed := syntax.Parse(source)
+		if !bytes.Equal(parsed.Tree.Bytes(), source) {
+			t.Fatalf("case %d lost CST bytes: %q", caseID, source)
+		}
+		if len(parsed.Diagnostics) != 0 {
+			t.Fatalf("case %d did not parse: %q diagnostics=%v", caseID, source, diagnosticIdentity(parsed.Diagnostics))
+		}
+		if len(parsed.Program.Imports) > 0 {
+			withImports++
+		}
+		canonical := syntax.Format(parsed.Tree)
+		reparsed := syntax.Parse(canonical)
+		if len(reparsed.Diagnostics) != 0 {
+			t.Fatalf("case %d canonical form does not reparse: %q diagnostics=%v", caseID, canonical, diagnosticIdentity(reparsed.Diagnostics))
+		}
+		if !bytes.Equal(canonical, syntax.Format(reparsed.Tree)) {
+			t.Fatalf("case %d is not a fixed point:\nfirst=%q\nsecond=%q", caseID, canonical, syntax.Format(reparsed.Tree))
+		}
+		if !reflect.DeepEqual(semanticTokens(parsed.Tree), semanticTokens(reparsed.Tree)) {
+			t.Fatalf("case %d changed token identity\nsource=%q\ncanonical=%q", caseID, source, canonical)
+		}
+		if !reflect.DeepEqual(phase30ImportShape(parsed.Program), phase30ImportShape(reparsed.Program)) {
+			t.Fatalf("case %d changed import order or items\nsource=%q\ncanonical=%q", caseID, source, canonical)
+		}
+		if !reflect.DeepEqual(comments(parsed.Tree), comments(reparsed.Tree)) {
+			t.Fatalf("case %d changed comments\nsource=%q\ncanonical=%q", caseID, source, canonical)
+		}
+	}
+	if withImports < 100 {
+		t.Fatalf("generator produced imports in only %d of 200 programs", withImports)
+	}
+}
+
+func FuzzPhase30ImportParseFormat(f *testing.F) {
+	f.Add([]byte(phase30Tracer))
+	f.Add([]byte("module m\nimport a {}\nexport { fn main }\nfn main(n: U64) -> U64 { n }\n"))
+	f.Add([]byte("module m\nexport { fn main }\nimport a { fn f }\nfn main(n: U64) -> U64 { n }\n"))
+	f.Add([]byte("module m\nimport a { fn f }\nimport a { fn f }\nexport { fn main }\nfn main(n: U64) -> U64 { n }\n"))
+	f.Add([]byte("module m\nimport b.c {\n  type T // c\n  fn g\n}\nimport a { fn f }\nexport { fn main }\nfn main(n: U64) -> U64 { n }\n"))
+	f.Fuzz(func(t *testing.T, source []byte) {
+		parsed := syntax.Parse(source)
+		if !bytes.Equal(parsed.Tree.Bytes(), source) {
+			t.Fatal("CST round trip changed fuzz input")
+		}
+		if len(parsed.Diagnostics) > 21 {
+			t.Fatalf("unbounded diagnostics: %d", len(parsed.Diagnostics))
+		}
+		if len(parsed.Diagnostics) != 0 {
+			return
+		}
+		first := syntax.Format(parsed.Tree)
+		formatted := syntax.Parse(first)
+		if len(formatted.Diagnostics) != 0 {
+			t.Fatalf("formatter produced invalid source: %q diagnostics=%v", first, diagnosticIdentity(formatted.Diagnostics))
+		}
+		if second := syntax.Format(formatted.Tree); !bytes.Equal(first, second) {
+			t.Fatalf("formatter is not idempotent:\nfirst=%q\nsecond=%q", first, second)
 		}
 	})
 }
