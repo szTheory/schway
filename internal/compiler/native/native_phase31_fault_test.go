@@ -353,6 +353,25 @@ func TestPhase31BoundedReadMutants(t *testing.T) {
 		}
 	})
 
+	// WR-01: the adapter opens an untrusted path before the regular-file check,
+	// so the open must carry O_NOCTTY and O_CLOEXEC. The observer refuses any
+	// open that lacks them (where the host defines them); dropping either flag
+	// turns the same input from a checksum into FileUnavailable.
+	t.Run("open-flags-mutant", func(t *testing.T) {
+		wiki, wikiWant := phase31FaultOracle(t, "Wikipedia")
+		if got := phase31FaultResult(t, faithful, phase31FaultWrite(t, wiki), "require-open-flags"); !got.is(wikiWant, "", 0) {
+			t.Fatalf("faithful hardened open: %s, want %q", got, wikiWant)
+		}
+		for _, drop := range []string{" | SCHWAY_FILE_BYTES_NOCTTY", " | SCHWAY_FILE_BYTES_CLOEXEC"} {
+			mutant := phase31FaultBuild(t, true, func(a string) string {
+				return phase31FaultReplaceOnce(t, a, drop, "")
+			})
+			if got := phase31FaultResult(t, mutant, phase31FaultWrite(t, wiki), "require-open-flags"); !got.is("", unavailable, 65) {
+				t.Fatalf("mutant dropping%s: %s, want the observer to refuse the unhardened open", drop, got)
+			}
+		}
+	})
+
 	t.Run("double-release-asan", func(t *testing.T) {
 		phase29RequireASan(t)
 		flags := append(append([]string(nil), phase29BaseFlags...), "-O0", "-fsanitize=address", "-fno-sanitize-ignorelist", "-fno-omit-frame-pointer")

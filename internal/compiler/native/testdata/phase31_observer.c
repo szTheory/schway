@@ -83,6 +83,16 @@ int phase31_observer_open(const char *path, int flags) {
     (void)strncpy(saved_path, path, sizeof saved_path - 1u);
     saved_path[sizeof saved_path - 1u] = '\0';
   }
+  if (is("require-open-flags")) {
+    /* WR-01: refuse the open unless the adapter hardened it. */
+#ifdef O_NOCTTY
+    if ((flags & O_NOCTTY) == 0) { errno = ENOENT; return -1; }
+#endif
+#ifdef O_CLOEXEC
+    if ((flags & O_CLOEXEC) == 0) { errno = ENOENT; return -1; }
+#endif
+    if ((flags & O_NONBLOCK) == 0) { errno = ENOENT; return -1; }
+  }
   return open(path, flags);
 }
 

@@ -35,6 +35,21 @@
 
 #define SCHWAY_FILE_BYTES_LIMIT 65536u
 
+/* The path is untrusted and is opened before the regular-file check, so the
+   open itself must not have side effects: O_NOCTTY keeps a tty from becoming
+   the controlling terminal, and O_CLOEXEC keeps the descriptor out of any
+   child. Both are optional extensions on some hosts and degrade to zero. */
+#ifdef O_NOCTTY
+#define SCHWAY_FILE_BYTES_NOCTTY O_NOCTTY
+#else
+#define SCHWAY_FILE_BYTES_NOCTTY 0
+#endif
+#ifdef O_CLOEXEC
+#define SCHWAY_FILE_BYTES_CLOEXEC O_CLOEXEC
+#else
+#define SCHWAY_FILE_BYTES_CLOEXEC 0
+#endif
+
 /* The adapter is silent: it never writes to stdout or stderr. The generated
    program maps the status to FileError.<Alternative> (D-17). */
 
@@ -59,7 +74,8 @@ schway_file_bytes_acquire_result schway_file_bytes_acquire(const char *path) {
   schway_file_bytes_acquire_result result;
 
   if (path == NULL || path[0] == '\0') return acquire_failure(SCHWAY_FILE_BYTES_UNAVAILABLE);
-  descriptor = SCHWAY_FILE_BYTES_OPEN(path, O_RDONLY | O_NONBLOCK);
+  descriptor = SCHWAY_FILE_BYTES_OPEN(
+      path, O_RDONLY | O_NONBLOCK | SCHWAY_FILE_BYTES_NOCTTY | SCHWAY_FILE_BYTES_CLOEXEC);
   if (descriptor < 0) return acquire_failure(SCHWAY_FILE_BYTES_UNAVAILABLE);
   if (SCHWAY_FILE_BYTES_FSTAT(descriptor, &details) != 0 || !S_ISREG(details.st_mode)) {
     return acquire_cleanup_failure(descriptor, NULL, SCHWAY_FILE_BYTES_UNAVAILABLE);
