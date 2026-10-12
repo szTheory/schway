@@ -1,11 +1,17 @@
 package session_test
 
 import (
+	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"github.com/szTheory/schway/internal/compiler/native"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -216,5 +222,148 @@ func TestPhase31SingleCopyAndDualFlip(t *testing.T) {
 			}
 		}
 	})
-	//GSD-TASK3
+	phase31CopyNeedClang := func(t *testing.T) {
+		t.Helper()
+		if _, err := exec.LookPath("clang"); err != nil {
+			t.Skipf("env:clang toolchain unavailable on this host: %v", err)
+		}
+	}
+
+	t.Run("shared-library-row", func(t *testing.T) {
+		phase31CopyNeedClang(t)
+		dir := phase31CopyDir(t, checksumDir)
+		_, a := phase31CopyBuild(t, dir, "checksum")
+		_, b := phase31CopyBuild(t, dir, "adler_low")
+		if a.Modules[0] != b.Modules[0] || a.Modules[0].Module != "adler32" {
+			t.Fatalf("adler32 rows differ: %+v vs %+v", a.Modules[0], b.Modules[0])
+		}
+	})
+
+	t.Run("dual-flip", func(t *testing.T) {
+		phase31CopyNeedClang(t)
+		pristine := phase31CopyDir(t, checksumDir)
+		mutated := phase31CopyDir(t, checksumDir)
+		phase31CopyReplaceOnce(t, filepath.Join(mutated, "adler32.schway"), "var a = 1\n", "var a = 2\n")
+		pins := map[string]string{"checksum": "300286872\n", "adler_low": "920\n"}
+		for _, app := range []string{"checksum", "adler_low"} {
+			pArt, pRec := phase31CopyBuild(t, pristine, app)
+			mArt, mRec := phase31CopyBuild(t, mutated, app)
+			if got := phase31CopyNative(t, pArt, "Wikipedia"); got != pins[app] {
+				t.Fatalf("%s pristine native = %q, want %q", app, got, pins[app])
+			}
+			if got := phase31CopyNative(t, mArt, "Wikipedia"); got == pins[app] {
+				t.Fatalf("%s mutated native still printed the pin", app)
+			}
+			if got := phase31CopyInterp(t, mutated, app); got == strings.TrimSpace(pins[app]) {
+				t.Fatalf("%s mutated interpreter still printed the pin", app)
+			}
+			if got := phase31CopyInterp(t, pristine, app); got != strings.TrimSpace(pins[app]) {
+				t.Fatalf("%s pristine interpreter = %q", app, got)
+			}
+			if pRec.BuildID == mRec.BuildID {
+				t.Fatalf("%s BuildID did not change", app)
+			}
+			if pRec.Modules[0].Digest == mRec.Modules[0].Digest || pRec.Modules[0].Module != "adler32" {
+				t.Fatalf("%s adler32 row did not change: %+v vs %+v", app, pRec.Modules, mRec.Modules)
+			}
+			if pRec.Modules[1] != mRec.Modules[1] {
+				t.Fatalf("%s entry row moved: %+v vs %+v", app, pRec.Modules[1], mRec.Modules[1])
+			}
+			for _, pair := range []struct {
+				art string
+				rec native.BuildReceipt
+			}{{pArt, pRec}, {mArt, mRec}} {
+				var stdout, stderr bytes.Buffer
+				report := filepath.Join(t.TempDir(), "report.json")
+				_, evidence, err := native.RunApplicationWithEvidence(context.Background(), pair.art, phase31CopyInput(t, "Wikipedia"), report, native.EvidenceEvents, &stdout, &stderr)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !reflect.DeepEqual(evidence.Modules, pair.rec.Modules) {
+					t.Fatalf("%s evidence modules %+v != receipt modules %+v", app, evidence.Modules, pair.rec.Modules)
+				}
+			}
+			if app == "adler_low" {
+				_, cRec := phase31CopyBuild(t, mutated, "checksum")
+				if cRec.Modules[0] != mRec.Modules[0] {
+					t.Fatalf("mutated adler32 rows differ across apps: %+v vs %+v", cRec.Modules[0], mRec.Modules[0])
+				}
+			}
+		}
+	})
+
+	t.Run("reverse-b-only", func(t *testing.T) {
+		phase31CopyNeedClang(t)
+		mutated := phase31CopyDir(t, checksumDir)
+		phase31CopyReplaceOnce(t, filepath.Join(mutated, "adler32.schway"), "var b = 0\n", "var b = 1\n")
+		cArt, _ := phase31CopyBuild(t, mutated, "checksum")
+		lArt, _ := phase31CopyBuild(t, mutated, "adler_low")
+		if got := phase31CopyNative(t, cArt, "Wikipedia"); got == "300286872\n" {
+			t.Fatal("checksum native still printed its pin after a B-only mutation")
+		}
+		if got := phase31CopyNative(t, lArt, "Wikipedia"); got != "920\n" {
+			t.Fatalf("adler_low native = %q, want 920", got)
+		}
+		if got := phase31CopyInterp(t, mutated, "checksum"); got == "300286872" {
+			t.Fatal("checksum interpreter still printed its pin after a B-only mutation")
+		}
+		if got := phase31CopyInterp(t, mutated, "adler_low"); got != "920" {
+			t.Fatalf("adler_low interpreter = %q, want 920", got)
+		}
+	})
+}
+
+func phase31CopyInput(t *testing.T, content string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "in.bin")
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// phase31CopyBuild builds dir/app.schway and returns the artifact and the
+// receipt read back from disk.
+func phase31CopyBuild(t *testing.T, dir, app string) (string, native.BuildReceipt) {
+	t.Helper()
+	artifact := filepath.Join(t.TempDir(), app)
+	_, diagnostics, err := session.BuildApplicationFile(context.Background(), filepath.Join(dir, app+".schway"), artifact, native.DefaultRunner(), filepath.Join(dir, "file_bytes.bindings.json"))
+	if err != nil || len(diagnostics) > 0 {
+		t.Fatalf("build %s: err=%v diagnostics=%+v", app, err, diagnostics)
+	}
+	data, err := os.ReadFile(artifact + ".schway-build.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var receipt native.BuildReceipt
+	if err := json.Unmarshal(data, &receipt); err != nil {
+		t.Fatal(err)
+	}
+	if len(receipt.Modules) != 2 {
+		t.Fatalf("%s receipt modules = %+v, want 2 rows", app, receipt.Modules)
+	}
+	return artifact, receipt
+}
+
+func phase31CopyNative(t *testing.T, artifact, content string) string {
+	t.Helper()
+	var stdout, stderr bytes.Buffer
+	outcome, err := native.RunApplication(context.Background(), artifact, phase31CopyInput(t, content), &stdout, &stderr)
+	if err != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 0 {
+		t.Fatalf("native run outcome=%+v err=%v stderr=%q", outcome, err, stderr.String())
+	}
+	return stdout.String()
+}
+
+func phase31CopyInterp(t *testing.T, dir, app string) string {
+	t.Helper()
+	checked, err := session.CheckFile(filepath.Join(dir, app+".schway"))
+	if err != nil || len(checked.Diagnostics) != 0 {
+		t.Fatalf("check %s: err=%v diagnostics=%+v", app, err, checked.Diagnostics)
+	}
+	run, err := interp.RunWithFileBytes(checked.Program, "main", phase31CopyInput(t, "Wikipedia"), testsupport.ChecksumReadFile)
+	if err != nil || run.Outcome.Kind != execution.OutcomeReturned {
+		t.Fatalf("interp %s: err=%v outcome=%+v", app, err, run.Outcome)
+	}
+	return run.Outcome.Value
 }
