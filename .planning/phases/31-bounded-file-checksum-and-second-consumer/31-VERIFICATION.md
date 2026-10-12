@@ -91,7 +91,7 @@ None. The phase is fully automated (31-VALIDATION.md: no manual-only checks).
 
 ### External Notes (not code gaps)
 
-- Hosted CI (full and race runs on ubuntu-latest and macos-latest) has not run at this revision. The project dispatches it via `gh workflow run` at the phase gate. Phase 32 owns the M006 final receipts (EVD-15).
+- Hosted CI run 38299800002 (2026-10-12, headSha c7256924) passed: `checks` and `current evidence aggregate` succeeded on ubuntu-latest and macos-latest. Phase 32 still owns the final M006 receipts (EVD-15).
 - The `interp` package holds no Phase31-named test; the interpreter route is tested in session by design (31-09 deviation 1). This is not a gap.
 
 ### Gaps Summary
