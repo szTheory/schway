@@ -587,3 +587,31 @@ func TestPhase30ExportedButUndeclaredImportRefused(t *testing.T) {
 		}
 	})
 }
+
+// TestPhase30ImportCollidingWithForeignSymbolRefused pins WR-04: an entry
+// import whose name equals one of the entry's foreign symbols is refused at the
+// import with module.import_collision and a local_declaration cause. The armed
+// control admits the import and shows the refusal moves to a later, wrong code.
+func TestPhase30ImportCollidingWithForeignSymbolRefused(t *testing.T) {
+	entry := []byte("module app.main\n\nimport lib {\n  fn acquire\n}\n\nexport {\n  fn main\n}\n\nforeign C {\n  fn acquire(request: Byte) -> Byte {\n    unwind: forbidden\n    nonlocal_exit: forbidden\n    allocator: \"libc_malloc\"\n    fails: AcquireError\n  }\n}\n\ndata AcquireError =\n  | OpenFailed\n\nfn main(value: Byte) -> Byte {\n  let ok = try acquire(value)\n  ok\n}\n")
+	libs := map[string][]byte{"lib": phase30Lib("  fn acquire\n", phase30Fn("acquire"))}
+	got := Program(mergeForTest(t, entry, libs))
+	if len(got.Diagnostics) != 1 || got.Diagnostics[0].Code != "module.import_collision" {
+		t.Fatalf("expected one module.import_collision, got %+v", got.Diagnostics)
+	}
+	d := got.Diagnostics[0]
+	if d.Unit != "" || len(d.Causes) != 1 || d.Causes[0].Kind != "local_declaration" {
+		t.Fatalf("diagnostic must belong to the entry with a local_declaration cause: %+v", d)
+	}
+
+	t.Run("control: skipping the foreign collision check admits the import", func(t *testing.T) {
+		skipForeignImportCollisionForTest = true
+		defer func() { skipForeignImportCollisionForTest = false }()
+		admitted := Program(mergeForTest(t, entry, libs))
+		for _, d := range admitted.Diagnostics {
+			if d.Code == "module.import_collision" {
+				t.Fatalf("the control must not report the collision: %+v", admitted.Diagnostics)
+			}
+		}
+	})
+}

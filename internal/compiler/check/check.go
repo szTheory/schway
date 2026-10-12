@@ -2107,6 +2107,10 @@ var admitPrivateImportForTest bool
 // undeclared import refusal: when set, the import is admitted as before.
 var skipDeclaredImportCheckForTest bool
 
+// skipForeignImportCollisionForTest is the armed control for the entry
+// foreign-symbol import collision: when set, the import is admitted as before.
+var skipForeignImportCollisionForTest bool
+
 // skipImportCollisionForTest is TestPhase30ImportCollisions' control: when
 // set, the import-vs-local and import-vs-import collision checks are skipped.
 var skipImportCollisionForTest bool
@@ -2308,6 +2312,17 @@ func resolveImports(program ast.Program) ([]core.ModuleImport, []diagnostic.Diag
 				localSpan[function.Name] = function.Span
 			}
 		}
+		// Foreign symbols live only in the entry module and call sites resolve
+		// them before any import, so an entry import of the same name would
+		// be shadowed: it collides at the import (WR-04).
+		foreignSpan := map[string]diagnostic.Span{}
+		if unit.Name == "" && !skipForeignImportCollisionForTest {
+			for _, block := range program.Foreign {
+				for _, symbol := range block.Symbols {
+					foreignSpan[symbol.Name] = symbol.Span
+				}
+			}
+		}
 		type origin struct {
 			module string
 			span   diagnostic.Span
@@ -2365,6 +2380,12 @@ func resolveImports(program ast.Program) ([]core.ModuleImport, []diagnostic.Diag
 						refuse(unit.Name, "module.import_collision", item.Span,
 							fmt.Sprintf("%q imported from %s collides with the function declared in %s", item.Name, originName(unit.Name, declaration.Module), originName(unit.Name, unit.Name)),
 							localCause)
+						continue
+					}
+					if span, foreign := foreignSpan[item.Name]; foreign {
+						refuse(unit.Name, "module.import_collision", item.Span,
+							fmt.Sprintf("%q imported from %s collides with the foreign symbol declared in %s", item.Name, originName(unit.Name, declaration.Module), originName(unit.Name, unit.Name)),
+							diagnostic.Cause{Kind: "local_declaration", Detail: item.Name, Span: &span})
 						continue
 					}
 					if earlier, seen := imported[item.Name]; seen && earlier.module != declaration.Module {
