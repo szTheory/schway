@@ -367,7 +367,7 @@ func RunWithFileBytes(program core.Program, functionName, path string, read func
 	if err != nil {
 		return Execution{}, err
 	}
-	if len(result.LiveResources) != 0 {
+	if len(result.LiveResources) != 0 && !isByteIndexDefect(program, result) {
 		return Execution{}, fmt.Errorf("model execution reached a terminal outcome with live local resources %v", result.LiveResources)
 	}
 	return result, nil
