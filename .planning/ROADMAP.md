@@ -266,7 +266,28 @@ Plans:
 
 **Research flag**: Standard. Run a public-route audit before the receipt plan so the receipts bind the final source. Hosted runs need explicit user approval for push and dispatch.
 
-**Plans**: TBD
+**Plans**: 8 plans
+
+Plans:
+**Wave 1**
+- [ ] 32-01-PLAN.md — Formatter fix: a trailing var-body result stays on its own line; dated phase30FormatChanges allow-list (D-10)
+- [ ] 32-02-PLAN.md — Hosted CI hardening: GOFLAGS 20m budget on the phase6 aggregate, SCHWAY_REQUIRE_NATIVE, cached test index
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 32-03-PLAN.md — Retire examples/checksum.schway with a dated amendment, retired-path allow-lists and live pointers (D-05..D-07)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 32-04-PLAN.md — Executable clean-checkout guide in examples/checksum/README.md and its doc-test (D-01..D-04)
+- [ ] 32-05-PLAN.md — Codedigest, receipt validator with reopen rule, and public-route audit (D-08, D-10a, D-10b)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 32-06-PLAN.md — Receipt producer, two-host gate, CI wiring, and the code freeze (D-08b, D-09)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 32-07-PLAN.md — Human checkpoint: one push-and-dispatch line naming the freeze commit
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 32-08-PLAN.md — .planning-only ingest of the hosted macOS/Linux receipts; last plan of M006
 
 ## Progress
 
@@ -278,7 +299,7 @@ Plans:
 | 29. Byte Views and the Adler-32 Library | 13/13 | Complete    | 2026-10-11 |
 | 30. Local Modules | 10/10 | Complete    | 2026-10-12 |
 | 31. Bounded File Checksum and Second Consumer | 10/10 | Complete    | 2026-10-12 |
-| 32. Clean-Checkout Guide and Final Receipts | 0/TBD | Not started | - |
+| 32. Clean-Checkout Guide and Final Receipts | 0/8 | Not started | - |
 
 **Coverage:** 16/16 M006 requirements have exactly one phase owner. MOD-06
 (second consumer) is owned by Phase 31 rather than Phase 30, because its
