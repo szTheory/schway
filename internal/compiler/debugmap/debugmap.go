@@ -117,7 +117,7 @@ type Entry struct {
 	Kind         string          `json:"kind"`
 	Availability Availability    `json:"availability"`
 	// Unit is the dotted module name the entry belongs to; empty means the
-	// entry module and the field is omitted (D-11). Plan 30-06 sets it.
+	// entry module and the field is omitted (D-11).
 	Unit string `json:"unit,omitempty"`
 }
 
@@ -147,6 +147,14 @@ func kindFor(operationKind core.OperationKind) string {
 	}
 }
 
+// funcKey identifies a function across modules: the module it was declared in
+// (empty for the entry module) and its name.
+type funcKey struct{ module, name string }
+
+// bareNameJoinForTest restores the pre-Phase-30 name-only join key, so the
+// control can observe two same-named functions cross-join.
+var bareNameJoinForTest bool
+
 // Build independently joins astProgram's own span-bearing bindings against
 // checkedProgram's already-lowered operations, for every straight-line
 // function and every branch (match-arm-body) function checkedProgram
@@ -165,12 +173,25 @@ func Build(ctx context.Context, astProgram ast.Program, checkedProgram core.Prog
 	result := Map{Schema: Schema, Entries: make([]Entry, 0, 16)}
 	work := 0
 
-	astByName := make(map[string]ast.FuncDecl, len(astProgram.Funcs))
+	// Phase 30 (D-11): functions are joined by (module, name), so two
+	// same-named functions of different modules never cross-join. The entry
+	// module is "". bareNameJoinForTest restores the bare-name key.
+	keyFor := func(module, name string) funcKey {
+		if bareNameJoinForTest {
+			return funcKey{name: name}
+		}
+		return funcKey{module: module, name: name}
+	}
+	astByKey := make(map[funcKey]ast.FuncDecl, len(astProgram.Funcs))
 	for _, function := range astProgram.Funcs {
-		astByName[function.Name] = function
+		key := keyFor(function.Module, function.Name)
+		if _, taken := astByKey[key]; bareNameJoinForTest && taken {
+			continue
+		}
+		astByKey[key] = function
 	}
 
-	appendEntry := func(functionID, coreID string, span diagnostic.Span, operationID, pointID, kind string) error {
+	appendEntry := func(module, functionID, coreID string, span diagnostic.Span, operationID, pointID, kind string) error {
 		if ctx.Err() != nil {
 			return ErrDeadlineExceeded
 		}
@@ -180,14 +201,14 @@ func Build(ctx context.Context, astProgram ast.Program, checkedProgram core.Prog
 		result.Entries = append(result.Entries, Entry{
 			ID:     fmt.Sprintf("%s:debug:%d", functionID, len(result.Entries)),
 			CoreID: coreID, SourceSpan: span, OperationID: operationID, PointID: pointID,
-			Kind: kind, Availability: Available,
+			Kind: kind, Availability: Available, Unit: module,
 		})
 		work++
 		return nil
 	}
 
 	for _, function := range checkedProgram.Functions {
-		astFunction, ok := astByName[function.Name]
+		astFunction, ok := astByKey[keyFor(function.Module, function.Name)]
 		if !ok {
 			continue
 		}
@@ -202,7 +223,7 @@ func Build(ctx context.Context, astProgram ast.Program, checkedProgram core.Prog
 			if astFunction.Body.Linear == nil {
 				continue
 			}
-			if err := joinBindings(appendEntry, function.ID, astFunction.Body.Linear.Bindings, astFunction.Body.Linear.Span, function.Linear.Operations); err != nil {
+			if err := joinBindings(appendEntry, function.Module, function.ID, astFunction.Body.Linear.Bindings, astFunction.Body.Linear.Span, function.Linear.Operations); err != nil {
 				return Map{}, work, err
 			}
 		case function.Match != nil:
@@ -245,7 +266,7 @@ func Build(ctx context.Context, astProgram ast.Program, checkedProgram core.Prog
 				if len(armOperations) > 0 {
 					armOperations = armOperations[1:]
 				}
-				if err := joinBindings(appendEntry, function.ID, astArm.Body.Bindings, astArm.Body.Span, armOperations); err != nil {
+				if err := joinBindings(appendEntry, function.Module, function.ID, astArm.Body.Bindings, astArm.Body.Span, armOperations); err != nil {
 					return Map{}, work, err
 				}
 			}
@@ -262,22 +283,22 @@ func Build(ctx context.Context, astProgram ast.Program, checkedProgram core.Prog
 	return result, work, nil
 }
 
-type appendFunc func(functionID, coreID string, span diagnostic.Span, operationID, pointID, kind string) error
+type appendFunc func(module, functionID, coreID string, span diagnostic.Span, operationID, pointID, kind string) error
 
-func joinBindings(appendEntry appendFunc, functionID string, bindings []ast.Binding, resultSpan diagnostic.Span, operations []core.LinearOperation) error {
+func joinBindings(appendEntry appendFunc, module, functionID string, bindings []ast.Binding, resultSpan diagnostic.Span, operations []core.LinearOperation) error {
 	for index, binding := range bindings {
 		if index >= len(operations) {
 			break
 		}
 		operation := operations[index]
-		if err := appendEntry(functionID, functionID, binding.Span, operation.ID, operation.PointID, kindFor(operation.Kind)); err != nil {
+		if err := appendEntry(module, functionID, functionID, binding.Span, operation.ID, operation.PointID, kindFor(operation.Kind)); err != nil {
 			return err
 		}
 	}
 	if len(operations) > len(bindings) {
 		final := operations[len(operations)-1]
 		if final.Kind == core.OpReturn {
-			if err := appendEntry(functionID, functionID, resultSpan, final.ID, final.PointID, kindFor(final.Kind)); err != nil {
+			if err := appendEntry(module, functionID, functionID, resultSpan, final.ID, final.PointID, kindFor(final.Kind)); err != nil {
 				return err
 			}
 		}
