@@ -140,6 +140,7 @@ func TestPhase30GateUnitConsumerInventory(t *testing.T) {
 		"internal/compiler/session/session_admit.go",
 		"internal/compiler/session/session_app_verify.go",
 		"internal/compiler/session/session_entry.go",
+		"internal/compiler/session/session_modules.go",
 		"internal/compiler/session/session_phase5.go",
 		"internal/compiler/session/session_phase5_compare.go",
 		"internal/compiler/session/session_phase5_mismatch.go",

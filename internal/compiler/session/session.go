@@ -36,6 +36,9 @@ type CheckResult struct {
 	Program     core.Program
 	Diagnostics []diagnostic.Diagnostic
 	Work        int
+	// UnitTrees maps module name to its lossless tree for a loaded module
+	// program ("" is the entry); nil for single-file programs (Phase 30).
+	UnitTrees map[string]syntax.Tree
 }
 
 const MaxCheckWork = 100_000
@@ -826,11 +829,8 @@ func FormatCommandFile(path string, checkOnly bool) (protocol.Result, error) {
 }
 
 func CheckFile(path string) (CheckResult, error) {
-	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
-	if err != nil {
-		return CheckResult{}, err
-	}
-	return Check(source), nil
+	checked, _, err := checkSourcePath(path)
+	return checked, err
 }
 
 // peerRefusalUnnamedCode is 07-10's fail-closed fallback code (D-10 union
@@ -1110,7 +1110,10 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 }
 
 func RunInterpreter(source []byte) ([]interp.Execution, []diagnostic.Diagnostic, error) {
-	checked := Check(source)
+	return runInterpreterChecked(Check(source))
+}
+
+func runInterpreterChecked(checked CheckResult) ([]interp.Execution, []diagnostic.Diagnostic, error) {
 	if len(checked.Diagnostics) > 0 {
 		return nil, checked.Diagnostics, nil
 	}
@@ -1224,22 +1227,21 @@ func interpreterInputs(program core.Program) ([]string, bool) {
 }
 
 func RunInterpreterFile(path string) ([]interp.Execution, []diagnostic.Diagnostic, error) {
-	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
+	checked, _, err := checkSourcePath(path)
 	if err != nil {
 		return nil, nil, err
 	}
-	return RunInterpreter(source)
+	return runInterpreterChecked(checked)
 }
 
 // runInterpreterCommand is the command-file interpreter lane: Check,
 // admitProgram on the full program (never run what will be refused, D-09/D-18),
 // then entry resolution and the interpreter run on the pruned program.
 func runInterpreterCommand(path string) ([]interp.Execution, []diagnostic.Diagnostic, error) {
-	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
+	checked, _, err := checkSourcePath(path)
 	if err != nil {
 		return nil, nil, err
 	}
-	checked := Check(source)
 	if len(checked.Diagnostics) > 0 {
 		return nil, checked.Diagnostics, nil
 	}
