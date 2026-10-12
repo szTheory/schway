@@ -1036,3 +1036,101 @@ func TestPhase30DebugMapNoImportUnguarded(t *testing.T) {
 		}
 	})
 }
+
+// TestPhase30ErrorsNeverLeakAbsolutePaths is the route-level half of the
+// host-path hygiene claim (T-30-31): no refused-module result names the
+// TempDir path or its symlink-resolved form, and each message names modules.
+func TestPhase30ErrorsNeverLeakAbsolutePaths(t *testing.T) {
+	const importing = "module app.main\n\nimport lib {\n  fn twice\n}\n\nexport {\n  fn main\n}\n\nfn main(n: U64) -> U64 {\n  let r = twice(n)\n  r\n}\n"
+	rows := []struct {
+		name  string
+		code  string
+		names []string
+		build func(t *testing.T) string
+	}{
+		{"not-found", "module.not_found", []string{"lib"}, func(t *testing.T) string {
+			return writeModuleFixture(t, map[string]string{"main.schway": importing})
+		}},
+		{"path-mismatch", "module.path_mismatch", []string{"lib", "other"}, func(t *testing.T) string {
+			return writeModuleFixture(t, map[string]string{
+				"main.schway": importing,
+				"lib.schway":  strings.Replace(phase30TwiceLib, "module lib", "module other", 1),
+			})
+		}},
+		{"import-cycle", "module.import_cycle", []string{"a", "b"}, func(t *testing.T) string {
+			return writeModuleFixture(t, map[string]string{
+				"main.schway": "module app.main\n\nimport a {\n  fn fa\n}\n\nexport {\n  fn main\n}\n\nfn main(n: U64) -> U64 {\n  let r = fa(n)\n  r\n}\n",
+				"a.schway":    "module a\n\nimport b {\n  fn fb\n}\n\nexport {\n  fn fa\n}\n\nfn fa(n: U64) -> U64 {\n  let r = fb(n)\n  r\n}\n",
+				"b.schway":    "module b\n\nimport a {\n  fn fa\n}\n\nexport {\n  fn fb\n}\n\nfn fb(n: U64) -> U64 {\n  let r = fa(n)\n  r\n}\n",
+			})
+		}},
+	}
+	if os.PathSeparator == '/' {
+		rows = append(rows, struct {
+			name  string
+			code  string
+			names []string
+			build func(t *testing.T) string
+		}{"symlink", "module.symlink", []string{"lib"}, func(t *testing.T) string {
+			entry := writeModuleFixture(t, map[string]string{"main.schway": importing, "real.schway": phase30TwiceLib})
+			if err := os.Symlink(filepath.Join(filepath.Dir(entry), "real.schway"), filepath.Join(filepath.Dir(entry), "lib.schway")); err != nil {
+				t.Skipf("symlinks unavailable: %v", err)
+			}
+			return entry
+		}})
+	}
+
+	hostPaths := func(t *testing.T, entry string) []string {
+		dir := filepath.Dir(entry)
+		paths := []string{dir}
+		if resolved, err := filepath.EvalSymlinks(dir); err == nil && resolved != dir {
+			paths = append(paths, resolved)
+		}
+		return paths
+	}
+	leaks := func(text string, paths []string) bool {
+		for _, path := range paths {
+			if strings.Contains(text, path) {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, row := range rows {
+		t.Run(row.name, func(t *testing.T) {
+			entry := row.build(t)
+			result, err := session.CheckCommandFile(entry)
+			if err != nil {
+				t.Fatal(err)
+			}
+			found, ok := phase30FindCode(result.Diagnostics, row.code)
+			if !ok {
+				t.Fatalf("no %s diagnostic: %s", row.code, phase30ResultJSON(t, result))
+			}
+			jsonText, humanText := phase30ResultJSON(t, result), phase30ResultHuman(t, result)
+			paths := hostPaths(t, entry)
+			if leaks(jsonText, paths) || leaks(humanText, paths) {
+				t.Fatalf("result leaks a host path %v:\n%s\n%s", paths, jsonText, humanText)
+			}
+			for _, name := range row.names {
+				if !strings.Contains(found.Message, name) {
+					t.Errorf("message %q does not name module %q", found.Message, name)
+				}
+			}
+		})
+	}
+
+	t.Run("control-format-error-text", func(t *testing.T) {
+		entry := rows[0].build(t)
+		restore := modload.SetFormatErrorTextForTest(true)
+		defer restore()
+		result, err := session.CheckCommandFile(entry)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !leaks(phase30ResultJSON(t, result), hostPaths(t, entry)) {
+			t.Fatalf("control: with the error-text leak mutant engaged the module.not_found result must contain the TempDir path: %s", phase30ResultJSON(t, result))
+		}
+	})
+}
