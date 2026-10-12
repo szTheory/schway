@@ -26,19 +26,19 @@ rejected. M005's acceptance record is preserved at
 ### Checksum applications
 
 - [x] **APP-10**: An `adler32` function written in ordinary Schway computes RFC 1950 Adler-32 over a byte view using only checked addition, comparison, and remainder. Interpreter and native results equal pinned literals for empty input, one `0x00` byte, `a`, `Wikipedia`, 4,096 `0x00` bytes, and 5,552 `0xFF` bytes.
-- [ ] **APP-11**: A caller can run the `checksum` application on one file path through the public application route and get the Adler-32 value as bare decimal plus a newline. Pinned cases: an empty file gives `1`, `Wikipedia` gives `300286872`, and exactly 65,536 `0xFF` bytes gives `2006388466`. The 65,536-byte case passes on every engine.
-- [ ] **APP-12**: `checksum` refuses a file of 65,537 bytes or more with its own named oversize outcome. Missing, unreadable, and non-regular files (directory, FIFO, device) share one named outcome. Every error leaves stdout empty, uses fixed stderr text that never echoes the path, and releases the owned buffer exactly once on every path. The size check uses a bounded limit+1 read and never trusts the reported file size.
+- [x] **APP-11**: A caller can run the `checksum` application on one file path through the public application route and get the Adler-32 value as bare decimal plus a newline. Pinned cases: an empty file gives `1`, `Wikipedia` gives `300286872`, and exactly 65,536 `0xFF` bytes gives `2006388466`. The 65,536-byte case passes on every engine.
+- [x] **APP-12**: `checksum` refuses a file of 65,537 bytes or more with its own named oversize outcome. Missing, unreadable, and non-regular files (directory, FIFO, device) share one named outcome. Every error leaves stdout empty, uses fixed stderr text that never echoes the path, and releases the owned buffer exactly once on every path. The size check uses a bounded limit+1 read and never trusts the reported file size.
 
 ### Local modules
 
 - [x] **MOD-03**: A Schway program can import another local source file as a module through an explicit import declaration. Each file is one module, and the declared `module` name must match its path under the entry directory. Resolution never leaves the entry directory: no search path, `..`, absolute path, or symlink escape. *Amended 2026-10-12 (Phase 30 CONTEXT D-06):* the header/path check applies to imported modules. The entry module's own header is exempt, so existing programs without imports keep their headers and their generated C unchanged.
 - [x] **MOD-04**: Only names listed in a module's `export` list are usable from importing modules. Using a private name is refused with a stable code, and an independent validator re-derives visibility. Cross-module calls are admitted from signatures alone, without reading the callee's body.
 - [x] **MOD-05**: Each of these module-graph errors is refused with its own named, source-attributed diagnostic: import cycles (self, length 2, and length 3), missing modules, duplicate modules, header/path mismatch, and name collisions. A diamond import loads and emits its shared module once. A program without imports produces byte-identical C, and diagnostics in imported files name that file.
-- [ ] **MOD-06**: A second application imports the same `adler32` library and prints a different pinned result, without a copy of the library source. Mutating the library flips both applications' pinned outputs, and both build identities and evidence records hash every module in sorted order.
+- [x] **MOD-06**: A second application imports the same `adler32` library and prints a different pinned result, without a copy of the library source. Mutating the library flips both applications' pinned outputs, and both build identities and evidence records hash every module in sorted order.
 
 ### Independent evidence and usability
 
-- [ ] **EVD-14**: Checksum and byte-view results are compared with independently pinned answers from Python `zlib.adler32`, with the generating command recorded. Every reached control is seen to fail:
+- [x] **EVD-14**: Checksum and byte-view results are compared with independently pinned answers from Python `zlib.adler32`, with the generating command recorded. Every reached control is seen to fail:
   - a wrong modulus
   - wrong initial state
   - swapped halves
@@ -88,13 +88,13 @@ Each M006 requirement has one phase owner (see [ROADMAP.md](ROADMAP.md)).
 | BYTE-02 | Phase 29 | Complete |
 | BYTE-03 | Phase 29 | Complete |
 | APP-10 | Phase 29 | Complete |
-| APP-11 | Phase 31 | Pending |
-| APP-12 | Phase 31 | Pending |
+| APP-11 | Phase 31 | Complete |
+| APP-12 | Phase 31 | Complete |
 | MOD-03 | Phase 30 | Complete |
 | MOD-04 | Phase 30 | Complete |
 | MOD-05 | Phase 30 | Complete |
-| MOD-06 | Phase 31 | Pending |
-| EVD-14 | Phase 31 | Pending |
+| MOD-06 | Phase 31 | Complete |
+| EVD-14 | Phase 31 | Complete |
 | EVD-15 | Phase 32 | Pending |
 | DX-19 | Phase 32 | Pending |
 

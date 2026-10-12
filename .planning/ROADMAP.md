@@ -57,7 +57,7 @@ preserving the acceptance behavior below.
 - [x] **Phase 28: Exit Classes, Verify Report, and Entry Pruning** - Source refusals share one exit class across commands and engines, programs with unused functions run, and `app verify` keeps the named capacity reason at every input. (completed 2026-10-10)
 - [x] **Phase 29: Byte Views and the Adler-32 Library** - Ordinary Schway source reads a bounds-checked byte view in a scalar loop and computes RFC 1950 Adler-32 with pinned answers on both engines. (completed 2026-10-11)
 - [x] **Phase 30: Local Modules** - A program imports the Adler-32 library from another local file through an explicit import and export list, with closed resolution and named module-graph refusals. (completed 2026-10-12)
-- [ ] **Phase 31: Bounded File Checksum and Second Consumer** - A caller runs `checksum FILE` with an exact result and error matrix, and a second application imports the same library without copying it.
+- [x] **Phase 31: Bounded File Checksum and Second Consumer** - A caller runs `checksum FILE` with an exact result and error matrix, and a second application imports the same library without copying it. (completed 2026-10-12)
 - [ ] **Phase 32: Clean-Checkout Guide and Final Receipts** - A developer can follow the documented commands from a clean checkout, and hosted macOS/Linux receipts bind the final M006 revision.
 
 ## Phase Details
@@ -223,7 +223,7 @@ Plans:
 
 **Research flag**: Moderate. Choose the exit code for each file-error outcome and record it in the Phase 28 exit-class table; extend public CLI input from bounded U64 to one path through `app run`. The file adapter is a new copy-local generalization under `examples/checksum/`; the Phase 23 adapter, its receipts, and its observer tests stay untouched. The unreadable-file control uses a named skip when running as root.
 
-**Plans**: 10/10 plans executed (at the Phase 30 ceiling; plan-count witness in 31-01)
+**Plans**: 10/10 plans complete (at the Phase 30 ceiling; plan-count witness in 31-01)
 
 Plans:
 **Wave 1**
@@ -277,7 +277,7 @@ Plans:
 | 28. Exit Classes, Verify Report, and Entry Pruning | 8/8 | Complete    | 2026-10-11 |
 | 29. Byte Views and the Adler-32 Library | 13/13 | Complete    | 2026-10-11 |
 | 30. Local Modules | 10/10 | Complete    | 2026-10-12 |
-| 31. Bounded File Checksum and Second Consumer | 10/10 | In Progress | - |
+| 31. Bounded File Checksum and Second Consumer | 10/10 | Complete    | 2026-10-12 |
 | 32. Clean-Checkout Guide and Final Receipts | 0/TBD | Not started | - |
 
 **Coverage:** 16/16 M006 requirements have exactly one phase owner. MOD-06
