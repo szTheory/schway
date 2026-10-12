@@ -359,7 +359,7 @@ func TestPhase32GuideCleanCheckout(t *testing.T) {
 	}
 
 	// D-04 anti-vacuity: enough marked blocks and all three programs present.
-	if phase32AntiVacuity && len(guide.Blocks) < 4 {
+	if len(guide.Blocks) < 4 {
 		t.Fatalf("guide has %d marked blocks, want at least 4", len(guide.Blocks))
 	}
 	apps := map[string]bool{}
@@ -377,7 +377,7 @@ func TestPhase32GuideCleanCheckout(t *testing.T) {
 		}
 	}
 	for _, app := range []string{"checksum", "adler_low", "adler32_cli"} {
-		if phase32AntiVacuity && !apps[app] {
+		if !apps[app] {
 			t.Fatalf("guide has no run fence for app %q", app)
 		}
 	}
@@ -429,7 +429,7 @@ func TestPhase32GuideCleanCheckout(t *testing.T) {
 				if err != nil {
 					t.Fatalf("%s %s: %v", app, row.Case, err)
 				}
-				input := testsupport.MaterializeChecksumCase(t, inputs, c)
+				input := testsupport.MaterializeChecksumCase(t, filepath.Join(inputs, app), c)
 				line, err := phase32Substitute(template, "PATH", input)
 				if err != nil {
 					t.Fatal(err)
@@ -444,20 +444,35 @@ func TestPhase32GuideCleanCheckout(t *testing.T) {
 					t.Fatalf("%s %s: stderr echoes the private path segment: %q", app, row.Case, result.Stderr)
 				}
 			}
+		case "adler32_cli":
+			for _, row := range guide.Fixture {
+				if _, err := strconv.ParseUint(row.Case, 10, 64); err != nil {
+					t.Fatalf("fixture case id %q: %v", row.Case, err)
+				}
+				exit, stdout, stderr, _, err := phase32Expect(row.Cells[0], guide.ErrorExit)
+				if err != nil {
+					t.Fatalf("adler32_cli %s: %v", row.Case, err)
+				}
+				line, err := phase32Substitute(template, "CASE", row.Case)
+				if err != nil {
+					t.Fatal(err)
+				}
+				result := phase32RunLine(t, copyDir, line)
+				executed++
+				if result.Exit != exit || string(result.Stdout) != stdout || string(result.Stderr) != stderr {
+					t.Fatalf("adler32_cli %s: exit=%d stdout=%q stderr=%q, want exit=%d stdout=%q stderr=%q",
+						row.Case, result.Exit, result.Stdout, result.Stderr, exit, stdout, stderr)
+				}
+			}
 		default:
 			t.Fatalf("unknown run app %q", app)
 		}
 	}
-	want := len(guide.Results)
-	if phase32AntiVacuity {
-		want = len(guide.Results)*2 + len(guide.Fixture)
-	}
+	want := len(guide.Results)*2 + len(guide.Fixture)
 	if executed != want {
 		t.Fatalf("executed %d rows, want %d", executed, want)
 	}
 }
-
-const phase32AntiVacuity = false
 
 // phase32ExpectedJSON mirrors the TestPhase31ExpectedMatrixJSON struct.
 type phase32ExpectedJSON struct {
@@ -477,4 +492,117 @@ type phase32ExpectedJSON struct {
 	} `json:"cases"`
 }
 
-var _ = json.Unmarshal
+// phase32GuideJSONProblems cross-checks the parsed guide against the expected
+// JSON, the independent oracle rows and the Phase 29 fixture table. Empty means
+// consistent.
+func phase32GuideJSONProblems(guide phase32Guide, doc phase32ExpectedJSON) []string {
+	var problems []string
+	if guide.Limit != doc.Limit {
+		problems = append(problems, fmt.Sprintf("README limit %d != json limit %d", guide.Limit, doc.Limit))
+	}
+	if guide.RefusedSize != doc.Limit+1 {
+		problems = append(problems, fmt.Sprintf("README refused size %d != limit+1 (%d)", guide.RefusedSize, doc.Limit+1))
+	}
+	if guide.ErrorExit != doc.ErrorExit.Code {
+		problems = append(problems, fmt.Sprintf("README error exit %d != json error_exit %d", guide.ErrorExit, doc.ErrorExit.Code))
+	}
+	byName := map[string]int{}
+	for i, c := range doc.Cases {
+		byName[c.Name] = i
+	}
+	inputs := map[string][]byte{}
+	for _, c := range testsupport.ChecksumCaseMatrix() {
+		inputs[c.Name] = c.Content
+	}
+	oracleLow := map[string]uint64{}
+	for _, row := range testsupport.ChecksumOracleRows() {
+		if row.App == "adler_low" && row.Outcome == "returned" {
+			oracleLow[string(row.Input)] = row.Want
+		}
+	}
+	inTable := map[string]bool{}
+	for _, row := range guide.Results {
+		inTable[row.Case] = true
+		i, ok := byName[row.Case]
+		if !ok {
+			problems = append(problems, fmt.Sprintf("table case %q is not in json cases", row.Case))
+			continue
+		}
+		c := doc.Cases[i]
+		exit, stdout, stderr, _, err := phase32Expect(row.Cells[0], guide.ErrorExit)
+		if err != nil {
+			problems = append(problems, fmt.Sprintf("case %q checksum cell: %v", row.Case, err))
+			continue
+		}
+		if exit != c.Exit || stdout != c.Stdout || stderr != c.Stderr {
+			problems = append(problems, fmt.Sprintf("case %q checksum cell gives exit=%d stdout=%q stderr=%q, json has exit=%d stdout=%q stderr=%q",
+				row.Case, exit, stdout, stderr, c.Exit, c.Stdout, c.Stderr))
+		}
+		if c.Exit == 0 {
+			sum, convErr := strconv.ParseUint(row.Cells[0], 10, 64)
+			low, lowErr := strconv.ParseUint(row.Cells[1], 10, 64)
+			if convErr != nil || lowErr != nil {
+				problems = append(problems, fmt.Sprintf("case %q has a non-decimal success cell", row.Case))
+				continue
+			}
+			if low != sum%65536 {
+				problems = append(problems, fmt.Sprintf("case %q adler_low %d != checksum %d %% 65536", row.Case, low, sum))
+			}
+			if want, ok := oracleLow[string(inputs[row.Case])]; !ok || want != low {
+				problems = append(problems, fmt.Sprintf("case %q adler_low %d disagrees with the oracle (%d, found=%v)", row.Case, low, want, ok))
+			}
+		} else if row.Cells[1] != row.Cells[0] {
+			problems = append(problems, fmt.Sprintf("case %q adler_low error cell %q != checksum cell %q", row.Case, row.Cells[1], row.Cells[0]))
+		}
+	}
+	for _, name := range []string{"empty", "zero", "wikipedia", "ff65536", "ff65537", "missing", "directory"} {
+		if _, ok := byName[name]; !ok {
+			problems = append(problems, fmt.Sprintf("json has no case %q", name))
+		} else if !inTable[name] {
+			problems = append(problems, fmt.Sprintf("json case %q is missing from the table", name))
+		}
+	}
+	for _, row := range guide.Fixture {
+		id, err := strconv.ParseUint(row.Case, 10, 64)
+		if err != nil {
+			problems = append(problems, fmt.Sprintf("fixture id %q is not a number", row.Case))
+			continue
+		}
+		want, ok := testsupport.Phase29FixtureExpected(id)
+		if row.Cells[0] == "refused, no output" {
+			if ok {
+				problems = append(problems, fmt.Sprintf("fixture id %d is refused in the README but Phase29FixtureExpected has %d", id, want))
+			}
+			continue
+		}
+		got, convErr := strconv.ParseUint(row.Cells[0], 10, 64)
+		if convErr != nil || !ok || got != want {
+			problems = append(problems, fmt.Sprintf("fixture id %d cell %q != Phase29FixtureExpected %d (found=%v)", id, row.Cells[0], want, ok))
+		}
+	}
+	return problems
+}
+
+// TestPhase32GuideMatchesExpectedJSON is clang-free: every number in the guide
+// agrees with checksum.expected.json and the independent oracle.
+func TestPhase32GuideMatchesExpectedJSON(t *testing.T) {
+	guide := phase32ReadGuide(t)
+	data, err := os.ReadFile(testsupport.ProjectPath("examples", "checksum", "checksum.expected.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc phase32ExpectedJSON
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatal(err)
+	}
+	if problems := phase32GuideJSONProblems(guide, doc); len(problems) != 0 {
+		t.Fatalf("guide disagrees with the expected data:\n%s", strings.Join(problems, "\n"))
+	}
+	t.Run("armed-json", func(t *testing.T) {
+		mutated := doc
+		mutated.Limit = 65535
+		if len(phase32GuideJSONProblems(guide, mutated)) == 0 {
+			t.Fatal("a mutated json limit produced no problem")
+		}
+	})
+}

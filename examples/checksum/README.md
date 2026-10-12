@@ -57,10 +57,8 @@ reports.
 
 ## adler_low
 
-```sh
-./schway build examples/checksum/adler_low.schway \
-  --manifest examples/checksum/file_bytes.bindings.json --output ./adler_low
-./schway app run ./adler_low -- PATH
+```sh doc-test=run app=adler_low
+./schway app run .schway/checksum/adler_low -- PATH
 ```
 
 `adler_low` calls the same `adler32` and then a trailing `low16` call that keeps
@@ -103,6 +101,8 @@ stderr line. The path is never echoed (`TestPhase31CaseMatrix`).
 | `FileUnavailable` | `FileError.FileUnavailable` | missing file, directory, FIFO, `/dev/null`, mode 000, or a read, stat or close failure |
 | `AllocFailed` | `FileError.AllocFailed` | the buffer could not be allocated |
 
+Other unreadable inputs give `FileError.FileUnavailable`, exit 65; FIFO, mode-000, `/dev/null`, read-error and allocation-failure cases are pinned by the Phase 31 matrix tests, not executed by this guide.
+
 The adapter releases its buffer exactly once on success, on oversize, on
 `AllocFailed` and on a read error (`TestPhase31ReleaseExactlyOnce`). The bounded
 limit-plus-one read is pinned by `TestPhase31BoundedReadMutants`. The shape
@@ -124,15 +124,28 @@ before. The moved library bytes are pinned by `TestPhase31MovedLibraryIdentity`.
 It keeps the Phase 29 `foreign C` owner and `data FixtureError`, and builds with
 the Phase 29 manifest.
 
-```sh
-./schway build examples/checksum/adler32_cli.schway \
-  --manifest examples/phase29/fixture_bytes.bindings.json --output ./adler32-module
-./schway app run ./adler32-module -- 3
+```sh doc-test=run app=adler32_cli
+./schway app run .schway/checksum/adler32-module -- CASE
 ```
+
+| Case id | adler32_cli |
+| --- | --- |
+| `3` | 300286872 |
+| `10` | refused, no output |
 
 Case 3 prints `300286872`; case 10 is outside the table and exits 65. The tests
 are `TestPhase30AdlerModuleAppCLI`, `TestPhase30AdlerModuleInterpreter` and
 `TestPhase30LibraryIsSingleCopy`.
+
+## Earlier programs
+
+`sum_to_n` and FizzBuzz keep their own doc pins in [`../phase27/README.md`](../phase27/README.md). The Adler-32 fixture (`adler32_fixture`) and the out-of-bounds control (`byte_index_oob`) keep theirs in [`../phase29/README.md`](../phase29/README.md) (`TestPhase29ExampleReadmeCaseTable`) and are receipt programs in a later Phase 32 plan. This guide does not run them.
+
+## Known limits
+
+- `schway run` on a parameterised `main` is unsupported; use `build` plus `app run`
+  ([todo](../../.planning/todos/pending/2026-10-12-run-parameterised-main-reports-operational-failure.md)).
+- The example sources are not claimed to be format-canonical.
 
 ## Resolution rules
 
