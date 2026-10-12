@@ -228,6 +228,22 @@ Phase 32. N4 and R1b stay tracked but unscheduled.
 
 **Current three recommendations re-checked:** recommendation 2 (bounded byte utility and local modules) is partly delivered: byte views and the Adler-32 library exist, while local modules (Phase 30) and the `checksum FILE` consumer with the measured cap (Phase 31) remain. Recommendations 1 and 3 are unchanged. Reprioritize if a consumer needs bitwise operators first or needs files above the 65,536-byte cap.
 
+### Phase 30 transition amendment — 2026-10-12
+
+**What 30 changed:** local modules exist as whole-program composition. An entry imports named functions from files under its own directory; the loader merges them into one program that is checked, interpreted and emitted together, with the module carried in identity, `unit=` diagnostics and native C names. The new refusal frontier is the `module.*` code family. The runnable gain is the Phase 29 Adler-32 program with the library imported from `examples/phase30/adler32.schway`: `schway build examples/phase30/adler32_cli.schway --manifest examples/phase29/fixture_bytes.bindings.json --output ART` plus `schway app run ART -- N` prints the pinned checksums, and the interpreter gives the same ten answers through the session API. Witnesses (newly executed locally, focused): TestPhase30AdlerModuleAppCLI, TestPhase30AdlerModuleInterpreter, TestPhase30LibraryIsSingleCopy.
+
+**Non-claims:** this is not separate compilation, it does not establish B1/DX-06, and modules are not hashed in build identity or evidence until Phase 31 (MOD-06). Hosted CI for Phase 30 has not run; it runs at the phase gate and its run IDs go in 30-VERIFICATION.md. M006 receipts belong to Phase 32 (EVD-15).
+
+**Seed transition check:**
+
+| Seed | Disposition | Reason |
+|------|-------------|--------|
+| SEED-261008-trz | retain dormant | Every Phase 30 failure was diagnosed from refusal codes, `unit=` diagnostics and focused tests. |
+| SEED-261008-z1g | retain dormant | Cross-file callers were found by ordinary search plus TestPhase30SameBareNameTwoModules and the debug-map unit; no measured reviewer gap. Re-check when a second consumer exists. |
+| SEED-261008-z1s | retain dormant | No reviewer contested the import surface syntax. |
+
+**Current three recommendations re-checked:** recommendation 2 (bounded byte utility and local modules) now has byte views, the Adler-32 library and local modules; the `checksum FILE` consumer with the measured cap and the second application importing the library (Phase 31, including MOD-06 module hashing) remain. Recommendations 1 and 3 are unchanged. Full check: [30-TRANSITION-CHECK.md](phases/30-local-modules/30-TRANSITION-CHECK.md).
+
 ### Phase 26 discussion — 2026-10-02 (historical planning snapshot)
 
 The user adopted the specialist fan-out recommendations for Phase 26: use
