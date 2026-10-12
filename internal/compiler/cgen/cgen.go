@@ -1591,6 +1591,34 @@ func cName(name string) string {
 	return "SCHWAY_" + out.String()
 }
 
+// plainJoinModuleNameForTest makes moduleCName return the rejected naive join
+// (dots to underscores, then cName). Gate tests engage it to observe the
+// collision the length-prefixed form avoids; it is false in production.
+var plainJoinModuleNameForTest bool
+
+// moduleCName maps a (module path, function name) pair into the closed
+// "SCHWAY_" namespace injectively (D-12). Each dot-separated module segment and
+// then the function name contribute "_<byte length>_<UPPERCASE>", so a_b.c and
+// a.b_c can never meet. Lengths count source bytes before uppercasing. Inputs
+// are D-18 admissible (segments match [a-z][a-z0-9]*(_[a-z0-9]+)*), which keeps
+// the result free of "__" and inside ^SCHWAY_[A-Z0-9_]*$. Function names that
+// differ only by case collapse under ToUpper; the caller resolves those through
+// cNames.allocate. Emission does not use this function until plan 30-07.
+func moduleCName(module, function string) string {
+	if plainJoinModuleNameForTest {
+		return cName(strings.ReplaceAll(module, ".", "_") + "_" + function)
+	}
+	var out strings.Builder
+	out.WriteString("SCHWAY_M")
+	for _, part := range append(strings.Split(module, "."), function) {
+		out.WriteByte('_')
+		out.WriteString(strconv.Itoa(len(part)))
+		out.WriteByte('_')
+		out.WriteString(strings.ToUpper(part))
+	}
+	return out.String()
+}
+
 // cLocal maps a source place name into the "schway_value_" namespace. INVARIANT
 // (enforced by TestGeneratedIdentifierNamespacesStayConfined): the result
 // always matches ^schway_value_[A-Za-z0-9_]*$. No fixed identifier emitted by any
