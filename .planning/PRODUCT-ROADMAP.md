@@ -264,6 +264,19 @@ recommendations. The 2026-09-27 decision integrates product/DX, compiler and
 resource architecture, FFI/security, verification, portability, and delivery
 reviews. Research and dissent: [M004 research](research/M004/SUMMARY.md).
 
+
+### Phase 31 transition amendment — 2026-10-12
+
+**What 31 changed:** a file can now be checksummed. The runnable gain: `schway build examples/checksum/checksum.schway --manifest examples/checksum/file_bytes.bindings.json --output ART` plus `schway app run ART -- PATH` prints the Adler-32 of a file of at most 65,536 bytes (Wikipedia gives 300286872), and the same build and run with `examples/checksum/adler_low.schway` prints the low 16 bits (920) from the one shared library. The new refusal frontier is the `FileError` outcomes (`FileTooLarge`, `FileUnavailable`, `AllocFailed`, all exit 65, path-free stderr) and the file-bytes shape codes such as `check.file_bytes_owner_shape_unsupported`. Build identity, receipt and evidence now carry sorted `modules` rows when a program imports (MOD-06). Witnesses (newly executed locally, focused): TestPhase31ChecksumPublicRoute, TestPhase31AdlerLowPublicRoute, TestPhase31CaseMatrix, TestPhase31ReleaseExactlyOnce, TestPhase31BoundedReadMutants, TestPhase31ModuleDigests, TestPhase31SingleCopyAndDualFlip, TestPhase31Controls.
+
+**Non-claims:** modules stay whole-program composition and B1/DX-06 stays open. The provisional `examples/checksum.schway` frontier, the M006 receipts (EVD-15) and the clean-checkout guide belong to Phase 32. Hosted CI for Phase 31 has not run; it runs at the phase gate and its run IDs go in 31-VERIFICATION.md.
+
+**Three most useful next capabilities** (full entries in [31-TRANSITION-CHECK.md](phases/31-bounded-file-checksum-and-second-consumer/31-TRANSITION-CHECK.md)):
+
+1. Phase 32: retire the provisional checksum frontier and record M006 hosted receipts and the guide. User-visible program: the `checksum FILE` clean-checkout guide. Blocker: hosted macOS and Linux receipts. Smallest slice: the receipt gate plus guide. Priority changes if hosted CI cannot be reached or a Phase 31 hosted run fails.
+2. Bounded JSON configuration consumer once a tool is named. User-visible program: validate a size-limited config against a fixed schema. Blocker: no aggregates or parser stack. Smallest slice: one schema with byte and depth limits. Priority changes if a named consumer appears or aggregates land first.
+3. Bitwise U64 operators with independent evidence (CRC-32). User-visible program: CRC-32 output over the same file bytes, in its own module. Blocker: no xor, shift or and operator. Smallest slice: one operator set with a pinned CRC-32 vector set. Priority changes if a consumer needs interop Adler-32 cannot give or files above the 65,536 limit are needed first.
+
 ## Horizons
 
 | Horizon | User-visible result | Dependencies and scope | Exit observation |
