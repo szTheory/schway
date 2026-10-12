@@ -183,6 +183,9 @@ type DebugMapEntry struct {
 	PointID      string `json:"point_id,omitempty"`
 	Kind         string `json:"kind,omitempty"`
 	Availability string `json:"availability"`
+	// Unit is the dotted module name an entry belongs to; empty means the
+	// entry module and the field is omitted (D-11).
+	Unit string `json:"unit,omitempty"`
 }
 
 // DebugMapSummary is the `debug-map` command projection.
@@ -614,6 +617,10 @@ func Human(result Result) (string, error) {
 	return "", fmt.Errorf("command output size did not converge")
 }
 
+// alwaysPrintUnitForTest is a negative-control seam: it makes the human
+// projection print unit= even for the entry module. Never set outside tests.
+var alwaysPrintUnitForTest bool
+
 func human(result Result) string {
 	var output strings.Builder
 	fmt.Fprintf(&output, "%s %s %s", result.ID, result.Command, result.Status)
@@ -622,6 +629,10 @@ func human(result Result) string {
 	}
 	output.WriteByte('\n')
 	for _, problem := range result.Diagnostics {
+		if problem.Unit != "" || alwaysPrintUnitForTest {
+			fmt.Fprintf(&output, "%s %s unit=%s [%d:%d]: %s\n", problem.ID, problem.Code, problem.Unit, problem.Primary.Start, problem.Primary.End, problem.Message)
+			continue
+		}
 		fmt.Fprintf(&output, "%s %s [%d:%d]: %s\n", problem.ID, problem.Code, problem.Primary.Start, problem.Primary.End, problem.Message)
 	}
 	for _, execution := range result.Executions {

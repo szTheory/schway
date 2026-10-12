@@ -22,6 +22,9 @@ type Cause struct {
 	Kind   string `json:"kind"`
 	Detail string `json:"detail,omitempty"`
 	Span   *Span  `json:"span,omitempty"`
+	// Unit names the module (dotted name, never a filesystem path) the cause
+	// belongs to. Empty means the diagnostic's own unit (D-11).
+	Unit string `json:"unit,omitempty"`
 }
 
 type Repair struct {
@@ -35,6 +38,10 @@ type Repair struct {
 	Span          *Span  `json:"span,omitempty"`
 	Replacement   string `json:"replacement,omitempty"`
 	Applicability string `json:"applicability,omitempty"`
+	// Unit names the module the repair's Span is relative to (D-11). Empty
+	// means the diagnostic's own unit. It is NON-identity-bearing on the
+	// repair: the owning diagnostic's Unit carries identity.
+	Unit string `json:"unit,omitempty"`
 }
 
 // The closed Applicability vocabulary (D-06-24), modeled on rustc's
@@ -103,18 +110,90 @@ type Diagnostic struct {
 	Message  string   `json:"message"`
 	Causes   []Cause  `json:"causes,omitempty"`
 	Repairs  []Repair `json:"repairs,omitempty"`
+	// Unit is the dotted module name the diagnostic's spans are file-local to.
+	// Empty means the entry module (D-11); Span stays file-local.
+	Unit string `json:"unit,omitempty"`
 }
 
-func Error(code string, span Span, message string, causes ...Cause) Diagnostic {
+// unitOutOfIdentityForTest is a negative-control seam: when set, the unit is
+// left out of the identity hash so a test can observe the collision the real
+// identity prevents. Never set outside tests.
+var unitOutOfIdentityForTest bool
+
+func identityUnit(unit string) string {
+	if unitOutOfIdentityForTest {
+		return ""
+	}
+	return unit
+}
+
+func errorID(code string, span Span, causes []Cause, unit string) string {
 	identity := struct {
 		Schema string
 		Code   string
 		Span   Span
 		Causes []Cause
-	}{Schema: Schema, Code: code, Span: span, Causes: causes}
+		Unit   string `json:",omitempty"`
+	}{Schema: Schema, Code: code, Span: span, Causes: causes, Unit: identityUnit(unit)}
 	encoded, _ := json.Marshal(identity)
 	sum := sha256.Sum256(encoded)
-	return Diagnostic{Schema: Schema, ID: "diagnostic:" + hex.EncodeToString(sum[:12]), Code: code, Severity: "error", Primary: span, Message: message, Causes: causes}
+	return "diagnostic:" + hex.EncodeToString(sum[:12])
+}
+
+func errorWithRepairsID(code string, span Span, causes []Cause, repairKinds []string, unit string) string {
+	identity := struct {
+		Schema      string
+		Code        string
+		Span        Span
+		Causes      []Cause
+		RepairKinds []string
+		Unit        string `json:",omitempty"`
+	}{Schema: Schema1, Code: code, Span: span, Causes: causes, RepairKinds: repairKinds, Unit: identityUnit(unit)}
+	encoded, _ := json.Marshal(identity)
+	sum := sha256.Sum256(encoded)
+	return "diagnostic:" + hex.EncodeToString(sum[:12])
+}
+
+func Error(code string, span Span, message string, causes ...Cause) Diagnostic {
+	return Diagnostic{Schema: Schema, ID: errorID(code, span, causes, ""), Code: code, Severity: "error", Primary: span, Message: message, Causes: causes}
+}
+
+// InUnit attributes the diagnostic to a module and recomputes its ID from the
+// unit-bearing identity, so the same code and span in two units never share an
+// ID. An empty unit returns the receiver unchanged (the entry module keeps its
+// pre-phase ID).
+func (d Diagnostic) InUnit(unit string) Diagnostic {
+	if unit == "" {
+		return d
+	}
+	out := d
+	out.Unit = unit
+	if d.Schema == Schema1 {
+		kinds := make([]string, len(d.Repairs))
+		for index, repair := range d.Repairs {
+			kinds[index] = repair.Kind
+		}
+		out.ID = errorWithRepairsID(d.Code, d.Primary, d.Causes, kinds, unit)
+	} else {
+		out.ID = errorID(d.Code, d.Primary, d.Causes, unit)
+	}
+	return out
+}
+
+// EffectiveUnit returns the cause's own unit, else the diagnostic's (D-11).
+func (c Cause) EffectiveUnit(diagnosticUnit string) string {
+	if c.Unit != "" {
+		return c.Unit
+	}
+	return diagnosticUnit
+}
+
+// EffectiveUnit returns the repair's own unit, else the diagnostic's (D-11).
+func (r Repair) EffectiveUnit(diagnosticUnit string) string {
+	if r.Unit != "" {
+		return r.Unit
+	}
+	return diagnosticUnit
 }
 
 // ErrorWithRepairs constructs the feature-specific diagnostic/1 record used by
@@ -136,21 +215,15 @@ func ErrorWithRepairs(code string, span Span, message string, causes []Cause, re
 	for index, repair := range repairs {
 		repairKinds[index] = repair.Kind
 	}
-	identity := struct {
-		Schema      string
-		Code        string
-		Span        Span
-		Causes      []Cause
-		RepairKinds []string
-	}{Schema: Schema1, Code: code, Span: span, Causes: causes, RepairKinds: repairKinds}
-	encoded, _ := json.Marshal(identity)
-	sum := sha256.Sum256(encoded)
 	return Diagnostic{
-		Schema: Schema1, ID: "diagnostic:" + hex.EncodeToString(sum[:12]), Code: code,
+		Schema: Schema1, ID: errorWithRepairsID(code, span, causes, repairKinds, ""), Code: code,
 		Severity: "error", Primary: span, Message: message, Causes: causes, Repairs: repairs,
 	}
 }
 
 func (d Diagnostic) String() string {
+	if d.Unit != "" {
+		return fmt.Sprintf("%s unit=%s [%d:%d]: %s", d.Code, d.Unit, d.Primary.Start, d.Primary.End, d.Message)
+	}
 	return fmt.Sprintf("%s [%d:%d]: %s", d.Code, d.Primary.Start, d.Primary.End, d.Message)
 }

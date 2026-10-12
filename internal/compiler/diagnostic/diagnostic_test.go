@@ -173,7 +173,9 @@ func TestRepairSpanShiftDoesNotChangeDiagnosticID(t *testing.T) {
 // doing so changes every diagnostic ID that carries a repair with this field
 // set. Only then update the expected field list below.
 func TestRepairFieldEnumerationIsExhaustive(t *testing.T) {
-	expected := []string{"Applicability", "Detail", "Kind", "Replacement", "Span"}
+	// Unit is non-identity-bearing on a Repair: the owning Diagnostic's Unit
+	// carries identity (D-11), so it stays out of repairKinds.
+	expected := []string{"Applicability", "Detail", "Kind", "Replacement", "Span", "Unit"}
 
 	typ := reflect.TypeOf(Repair{})
 	got := make([]string, typ.NumField())
