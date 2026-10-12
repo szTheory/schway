@@ -1,0 +1,159 @@
+{
+  "schema": "schway.checksum-expected/1",
+  "limit": 65536,
+  "error_exit": {
+    "code": 65,
+    "name": "AppInputRefused"
+  },
+  "outcomes": [
+    "FileTooLarge",
+    "FileUnavailable",
+    "AllocFailed"
+  ],
+  "cases": [
+    {
+      "name": "empty",
+      "kind": "file",
+      "exit": 0,
+      "stdout": "1\n",
+      "stderr": "",
+      "outcome": "returned",
+      "engines": [
+        "native",
+        "interpreter"
+      ]
+    },
+    {
+      "name": "zero",
+      "kind": "file",
+      "exit": 0,
+      "stdout": "65537\n",
+      "stderr": "",
+      "outcome": "returned",
+      "engines": [
+        "native",
+        "interpreter"
+      ]
+    },
+    {
+      "name": "wikipedia",
+      "kind": "file",
+      "exit": 0,
+      "stdout": "300286872\n",
+      "stderr": "",
+      "outcome": "returned",
+      "engines": [
+        "native",
+        "interpreter"
+      ]
+    },
+    {
+      "name": "ff65536",
+      "kind": "file",
+      "exit": 0,
+      "stdout": "2006388466\n",
+      "stderr": "",
+      "outcome": "returned",
+      "engines": [
+        "native",
+        "interpreter"
+      ]
+    },
+    {
+      "name": "ff65537",
+      "kind": "file",
+      "exit": 65,
+      "stdout": "",
+      "stderr": "FileError.FileTooLarge\n",
+      "outcome": "FileTooLarge",
+      "engines": [
+        "native",
+        "interpreter"
+      ]
+    },
+    {
+      "name": "missing",
+      "kind": "missing",
+      "exit": 65,
+      "stdout": "",
+      "stderr": "FileError.FileUnavailable\n",
+      "outcome": "FileUnavailable",
+      "engines": [
+        "native",
+        "interpreter"
+      ]
+    },
+    {
+      "name": "directory",
+      "kind": "directory",
+      "exit": 65,
+      "stdout": "",
+      "stderr": "FileError.FileUnavailable\n",
+      "outcome": "FileUnavailable",
+      "engines": [
+        "native",
+        "interpreter"
+      ]
+    },
+    {
+      "name": "fifo",
+      "kind": "fifo",
+      "exit": 65,
+      "stdout": "",
+      "stderr": "FileError.FileUnavailable\n",
+      "outcome": "FileUnavailable",
+      "engines": [
+        "native",
+        "interpreter"
+      ]
+    },
+    {
+      "name": "devnull",
+      "kind": "devnull",
+      "exit": 65,
+      "stdout": "",
+      "stderr": "FileError.FileUnavailable\n",
+      "outcome": "FileUnavailable",
+      "engines": [
+        "native",
+        "interpreter"
+      ]
+    },
+    {
+      "name": "mode000",
+      "kind": "mode000",
+      "exit": 65,
+      "stdout": "",
+      "stderr": "FileError.FileUnavailable\n",
+      "outcome": "FileUnavailable",
+      "engines": [
+        "native",
+        "interpreter"
+      ]
+    },
+    {
+      "name": "alloc-failed",
+      "kind": "alloc-failed",
+      "exit": 65,
+      "stdout": "",
+      "stderr": "FileError.AllocFailed\n",
+      "outcome": "AllocFailed",
+      "engines": [
+        "native"
+      ],
+      "witness": "TestPhase31ReleaseExactlyOnce"
+    },
+    {
+      "name": "read-eio",
+      "kind": "read-eio",
+      "exit": 65,
+      "stdout": "",
+      "stderr": "FileError.FileUnavailable\n",
+      "outcome": "FileUnavailable",
+      "engines": [
+        "native"
+      ],
+      "witness": "TestPhase31ReleaseExactlyOnce"
+    }
+  ]
+}

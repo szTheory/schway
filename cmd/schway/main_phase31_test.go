@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -116,4 +117,110 @@ func TestPhase31ChecksumPublicRoute(t *testing.T) {
 			t.Fatal("mutated library still printed the pinned value; the tracer answer is not coming from the library")
 		}
 	})
+	const unavailable = "FileError.FileUnavailable\n"
+	runArg := func(t *testing.T, arg string) (int, string, string) {
+		t.Helper()
+		return captureLangRun(t, []string{"app", "run", artifact, "--", arg})
+	}
+	for _, row := range testsupport.ChecksumOracleRows() {
+		if row.App != "checksum" || row.Outcome != "returned" {
+			continue
+		}
+		switch row.Name {
+		case "empty", "0x00", "Wikipedia", "65536x0xFF":
+		default:
+			continue
+		}
+		name := map[string]string{"empty": "oracle-empty", "0x00": "oracle-zero", "Wikipedia": "oracle-wikipedia", "65536x0xFF": "oracle-ff65536"}[row.Name]
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "in.bin")
+			if err := os.WriteFile(path, row.Input, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			want := strconv.FormatUint(row.Want, 10) + "\n"
+			code, stdout, stderr := runArg(t, path)
+			if code != 0 || stdout != want || stderr != "" {
+				t.Fatalf("%s code=%d stdout=%q stderr=%q, want 0 %q empty", name, code, stdout, stderr, want)
+			}
+		})
+	}
+	t.Run("oversize-65537", func(t *testing.T) {
+		var data []byte
+		for _, row := range testsupport.ChecksumOracleRows() {
+			if row.App == "checksum" && row.Outcome == "FileTooLarge" {
+				data = row.Input
+			}
+		}
+		path := filepath.Join(t.TempDir(), testsupport.ChecksumSecretSegment, "big.bin")
+		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, data, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		code, stdout, stderr := runArg(t, path)
+		if code != 65 || stdout != "" || stderr != "FileError.FileTooLarge\n" {
+			t.Fatalf("oversize code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+	})
+	t.Run("leading-dash", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(dir, "-leading.bin"), []byte("Wikipedia"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		t.Chdir(dir)
+		code, stdout, stderr := runArg(t, "-leading.bin")
+		if code != 0 || stdout != "300286872\n" || stderr != "" {
+			t.Fatalf("leading-dash code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+	})
+	t.Run("path-4096", func(t *testing.T) {
+		code, stdout, stderr := runArg(t, strings.Repeat("a", 4096))
+		if code != 65 || stdout != "" || stderr != unavailable {
+			t.Fatalf("path-4096 code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+	})
+	t.Run("path-4097", func(t *testing.T) {
+		code, stdout, stderr := runArg(t, strings.Repeat("a", 4097))
+		if code != 65 || stdout != "" || stderr != phase31OverLongStderr || strings.Contains(stderr, "aaaa") {
+			t.Fatalf("path-4097 code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+	})
+	t.Run("empty-argument", func(t *testing.T) {
+		// Named silent-by-design exception: the generated C main returns 65
+		// before any output (cgen_program.go:1064).
+		code, stdout, stderr := runArg(t, "")
+		if code != 65 || stdout != "" || stderr != "" {
+			t.Fatalf("empty-argument code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+	})
+	t.Run("path-free-stderr", func(t *testing.T) {
+		dir := t.TempDir()
+		secretDir := filepath.Join(dir, testsupport.ChecksumSecretSegment)
+		if err := os.MkdirAll(secretDir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Mkdir(filepath.Join(secretDir, "dir.bin"), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		t.Chdir(dir)
+		for _, arg := range []string{
+			filepath.Join(secretDir, "absent.bin"),
+			filepath.Join(secretDir, "dir.bin"),
+			"-leading-absent.bin",
+			strings.Repeat("a", 4097),
+		} {
+			code, stdout, stderr := runArg(t, arg)
+			if code != 65 || stdout != "" || stderr == "" {
+				t.Fatalf("arg %.20q code=%d stdout=%q stderr=%q", arg, code, stdout, stderr)
+			}
+			if strings.Contains(stderr, testsupport.ChecksumSecret) || strings.Contains(stderr, "-leading") || strings.Contains(stderr, "aaaa") {
+				t.Fatalf("arg %.20q stderr names the argument: %q", arg, stderr)
+			}
+		}
+	})
 }
+
+// phase31OverLongStderr is the fixed host refusal for an over-length argument
+// (cmd/schway appRunExitCode); it never contains the argument.
+const phase31OverLongStderr = "schway app run: native.input_too_long: argument is 4097 bytes; limit is 4096\n"
