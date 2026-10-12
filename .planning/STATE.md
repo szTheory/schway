@@ -5,16 +5,16 @@ milestone_name: Bounded Byte Utility and Local Modules
 current_phase: 30
 current_phase_name: Local Modules
 status: executing
-stopped_at: Completed 30-07-PLAN.md
-last_updated: "2026-10-12T15:46:15.131Z"
+stopped_at: Completed 30-08-PLAN.md
+last_updated: "2026-10-12T16:07:18.693Z"
 last_activity: 2026-10-12
 last_activity_desc: Phase 30 execution started
-state_head: 375dba6a5e179d27a9ceb468186ebc96878344e9
+state_head: 75c1a71d950f151075f90e5a1ed2158879873b1e
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 31
-  completed_plans: 29
+  completed_plans: 30
   percent: 40
 ---
 
@@ -124,7 +124,7 @@ plans.
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
 Phase: 30 (Local Modules) — EXECUTING
-Plan: 9 of 10
+Plan: 10 of 10
 Status: Ready to execute
 Last activity: 2026-10-12 — Phase 30 execution started
 
@@ -527,6 +527,7 @@ subset alone.
 | Phase 30 P04 | 20 min | 3 tasks | 7 files |
 | Phase 30 P06 | 25 min | 3 tasks | 9 files |
 | Phase 30 P07 | 20 min | 2 tasks | 3 files |
+| Phase 30 P08 | 26 min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -678,6 +679,8 @@ decision history; they no longer describe current status.
 - [Phase 30]: 30-06: corevalidate visibility law is written from core facts only (visibilityAllows at both OpCall replay sites); a coordinated Exported+Imports lie is the documented frontend trust boundary
 - [Phase 30]: 30-06: EntryFunction, interp.findFunction and debugmap.Build are keyed on the entry module / (module, name); TestNoCoreProgramEntryField admits only the omitempty Exported visibility fact
 - [Phase 30]: 30-07: entry functions allocate C names first (ordinal = position among entry functions); imported functions allocate second in canonical (Module, Name) order via moduleCName
+- [Phase 30]: 30-08: buildApplicationChecked takes ENTRY bytes so the receipt SourceDigest stays the entry digest; module hashing is Phase 31
+- [Phase 30]: 30-08: env:symlink, env:mkfifo, env:case-insensitive-fs added to the closed environmental witness set (host capabilities, not debt)
 
 ### Pending Todos
 
@@ -908,8 +911,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-12T15:46:15.053Z
-Stopped at: Completed 30-07-PLAN.md
+Last session: 2026-10-12T16:07:18.610Z
+Stopped at: Completed 30-08-PLAN.md
 Resume file: None
 Next action: Phase 28 complete and verified (4/4, 2026-10-10). Optional: /gsd-code-review 28 --fix --all for the 6 open review findings (WR-02 exit-3-on-write-failure, WR-04 latent entryErr). Then /gsd-discuss-phase 29.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
