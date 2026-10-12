@@ -510,6 +510,18 @@ Verifier 4/4, threats 36/36 closed, UAT 6/6 automated. Hosted run 38283564836 (b
 on ubuntu and macOS. A formatter defect carried over from Phase 29 is tracked as a
 todo.
 
+Phase 32 (2026-10-12) closed DX-19 and EVD-15, and with them M006.
+`examples/checksum/README.md` is now an executable guide. `TestPhase32GuideCleanCheckout` copies the
+tracked files into a temp dir and runs the guide's commands, matching exit code, stdout and stderr. The
+provisional `examples/checksum.schway` is retired (see the dated amendment above).
+Hosted run 38315799626 (headSha 6c304271) passed on ubuntu and macOS. Its receipts
+(`32-RECEIPT.json`: 7 programs, 39 cases per host) are bound to codedigest
+`c1b4e85d…`, which covers the code paths and excludes `.planning` and `*.md`. Edits to living docs
+therefore keep the receipt current, and a later code change reopens it (D-10a). The formatter
+defect is fixed, and the hosted macOS aggregate now has a 20-minute test budget. Verifier
+3/3, UAT 0 human items. The 7 code-review findings (2 Warning, 5 Info) all fail closed and
+are deferred past the freeze in one todo.
+
 Atomic IDs and acceptance for M005 are archived in
 [milestones/M005-REQUIREMENTS.md](milestones/M005-REQUIREMENTS.md).
 
@@ -703,4 +715,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-12 after Phase 30*
+*Last updated: 2026-10-12 after Phase 32*
