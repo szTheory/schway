@@ -62,3 +62,9 @@ func TestPhase30FIFORefusedWithoutBlocking(t *testing.T) {
 		openBeforeLstatForTest = false
 	})
 }
+
+// makeFIFO creates root/pipe.schway and reports whether it could.
+func makeFIFO(t *testing.T, root string) bool {
+	t.Helper()
+	return syscall.Mkfifo(filepath.Join(root, "pipe.schway"), 0o644) == nil
+}

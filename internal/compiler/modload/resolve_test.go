@@ -1,6 +1,8 @@
 package modload
 
 import (
+	"encoding/json"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -149,7 +151,11 @@ func TestPhase30CaseExactMatch(t *testing.T) {
 	})
 }
 
-const maxModuleBytes = 1 << 20
+// The per-module cap boundary, spelled as the decimal literals D-13 names.
+const (
+	maxModuleBytes  = 1048576
+	overModuleBytes = 1048577
+)
 
 // padModule returns a module-shaped file of exactly size bytes.
 func padModule(size int) []byte {
@@ -183,7 +189,7 @@ func TestPhase30FakeFSToctouAndStatSize(t *testing.T) {
 
 	t.Run("Stat lies about size", func(t *testing.T) {
 		fsys := newFakeFileSystem()
-		entry := fsys.addBytes("lib.schway", padModule(maxModuleBytes+1), 7)
+		entry := fsys.addBytes("lib.schway", padModule(overModuleBytes), 7)
 		entry.statSize = 10
 		r := newFakeResolver(fsys)
 		diags := func() []diagnostic.Diagnostic {
@@ -207,7 +213,7 @@ func TestPhase30PerModuleByteCap(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(rootDir, "exact.schway"), padModule(maxModuleBytes), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(rootDir, "over.schway"), padModule(maxModuleBytes+1), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(rootDir, "over.schway"), padModule(overModuleBytes), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	r := gateOpen(t, rootDir)
@@ -288,4 +294,115 @@ func TestPhase30DirectoryListingBounded(t *testing.T) {
 			t.Fatalf("max 3: %v truncated %v err %v", names, truncated, err)
 		}
 	})
+}
+
+// TestPhase30SegmentGrammar covers D-07 and D-18: the grammar is enforced
+// before any filesystem access.
+func TestPhase30SegmentGrammar(t *testing.T) {
+	accepted := []string{"a", "adler32", "a_b", "x1", "a.b.c", strings.Repeat("a", 64), "a." + strings.Repeat("b", 64)}
+	refused := []string{"A", "Lib", "a__b", "a_", "_a", "1a", "café", strings.Repeat("a", 65), "a..b", "", ".a", "a.", "a-b", "a b", "a/b", "a\x00b"}
+	for _, module := range accepted {
+		if !validateModulePath(module) {
+			t.Errorf("%q refused, want accepted", module)
+		}
+	}
+	for _, module := range refused {
+		if validateModulePath(module) {
+			t.Errorf("%q accepted, want refused", module)
+		}
+	}
+
+	fsys := newFakeFileSystem()
+	fsys.addFile("lib.schway", gateModuleSource, 2)
+	r := newFakeResolver(fsys)
+	for _, module := range refused {
+		if source, code := resolveCode(t, r, module); code != CodeInvalidSegment || source.Bytes != nil {
+			t.Errorf("%q: code %q, want %q", module, code, CodeInvalidSegment)
+		}
+	}
+	if fsys.opens != 0 {
+		t.Errorf("refused modules caused %d opens, want 0", fsys.opens)
+	}
+	if _, code := resolveCode(t, r, "lib"); code != "" {
+		t.Errorf("control: lib refused with %q", code)
+	}
+}
+
+// TestPhase30ErrorsNeverLeakAbsolutePaths covers D-10's information boundary:
+// diagnostics carry module names and root-relative paths only.
+func TestPhase30ErrorsNeverLeakAbsolutePaths(t *testing.T) {
+	base := t.TempDir()
+	rootDir := filepath.Join(base, "root")
+	gateWrite(t, filepath.Join(rootDir, "real.schway"), gateModuleSource)
+	gateWrite(t, filepath.Join(rootDir, "Cased.schway"), gateModuleSource)
+	gateWrite(t, filepath.Join(base, "outside", "secret.schway"), gateModuleSource)
+	if err := os.WriteFile(filepath.Join(rootDir, "over.schway"), padModule(overModuleBytes), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join("..", "outside", "secret.schway"), filepath.Join(rootDir, "esc.schway")); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	modules := []string{"esc", "cased", "gone", "over", "Bad"}
+	if pipe := makeFIFO(t, rootDir); pipe {
+		modules = append(modules, "pipe")
+	}
+	r := gateOpen(t, rootDir)
+
+	forms := []string{base}
+	if resolved, err := filepath.EvalSymlinks(base); err == nil {
+		forms = append(forms, resolved)
+	}
+	check := func(label string, diags []diagnostic.Diagnostic, module string) {
+		t.Helper()
+		if len(diags) != 1 {
+			t.Fatalf("%s: %d diagnostics, want 1", label, len(diags))
+		}
+		encoded, err := json.Marshal(diags[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, form := range forms {
+			if strings.Contains(string(encoded), form) {
+				t.Errorf("%s: diagnostic leaks %q: %s", label, form, encoded)
+			}
+		}
+		if diags[0].Code != "syntax.input_limit" && !strings.Contains(diags[0].Message, module) {
+			t.Errorf("%s: message %q does not name the module", label, diags[0].Message)
+		}
+	}
+	for _, module := range modules {
+		_, diags := r.read(module, resolveImporter, resolveAt)
+		check(module, diags, module)
+	}
+
+	// The escape and read_failed paths render an operating-system error; a fake
+	// filesystem whose errors carry the temp path proves production strips it.
+	leaky := &leakyFileSystem{dir: base}
+	lr := &resolver{fsys: leaky, sameFile: fakeSameFile}
+	_, diags := lr.read("lib", resolveImporter, resolveAt)
+	check("leaky production", diags, "lib")
+	if diags[0].Code != CodeEscape {
+		t.Fatalf("leaky Lstat: code %q, want %q", diags[0].Code, CodeEscape)
+	}
+
+	t.Run("control format error text", func(t *testing.T) {
+		formatErrorTextForTest = true
+		defer func() { formatErrorTextForTest = false }()
+		_, diags := lr.read("lib", resolveImporter, resolveAt)
+		encoded, _ := json.Marshal(diags)
+		if !strings.Contains(string(encoded), base) {
+			t.Fatalf("control must observe the temp path leak, got %s", encoded)
+		}
+	})
+}
+
+// leakyFileSystem fails Lstat with an error whose text names an absolute path.
+type leakyFileSystem struct{ dir string }
+
+func (l *leakyFileSystem) Lstat(name string) (fs.FileInfo, error) {
+	return nil, &fs.PathError{Op: "lstat", Path: filepath.Join(l.dir, name), Err: errors.New("denied")}
+}
+func (l *leakyFileSystem) Open(string) (moduleFile, error) { return nil, errors.New("unused") }
+func (l *leakyFileSystem) ListDir(string, int) ([]string, bool, error) {
+	return nil, false, errors.New("unused")
 }

@@ -62,6 +62,10 @@ var (
 	sizeFromStatForTest bool
 	// byteCapOffByOneForTest refuses a module of exactly the maximum size.
 	byteCapOffByOneForTest bool
+	// formatErrorTextForTest appends the operating-system error text to
+	// escape and read_failed messages, reproducing the leak anti-pattern.
+	// Production leaves it false.
+	formatErrorTextForTest bool
 )
 
 // moduleFile is the opened module file the resolver reads.
@@ -163,7 +167,7 @@ func (r *resolver) close() error {
 
 // validateModulePath reports whether module is a dotted name whose every
 // segment is 1..64 ASCII bytes matching [a-z][a-z0-9]*(_[a-z0-9]+)* (D-07,
-// D-18). It is a byte loop on purpose: no regexp, no unicode tables.
+// D-18). It is a byte loop on purpose: no pattern engine, no unicode tables.
 func validateModulePath(module string) bool {
 	if module == "" {
 		return false
@@ -272,6 +276,9 @@ func (r *resolver) diagnose(refused *refusal, module, importer string, at diagno
 		message = "module \"" + module + "\" is in a directory with more entries than the listing limit" + where
 	default:
 		message = "module \"" + module + "\" could not be read" + where
+	}
+	if formatErrorTextForTest && refused.err != nil {
+		message += ": " + refused.err.Error()
 	}
 	return []diagnostic.Diagnostic{diagnostic.Error(refused.code, at, message).InUnit(importer)}
 }
