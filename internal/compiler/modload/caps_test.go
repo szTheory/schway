@@ -262,3 +262,42 @@ func TestPhase30MergeCanonicalOrder(t *testing.T) {
 		}
 	})
 }
+
+// TestPhase30EntrySelfImportIsNotCountedTowardCap pins WR-01: an import that
+// names the entry file is an alias for the entry, so it must not push a
+// 16-module program over the module cap. The armed control restores the
+// count-at-enqueue behaviour and must show the false refusal.
+func TestPhase30EntrySelfImportIsNotCountedTowardCap(t *testing.T) {
+	names := []string{"main"}
+	files := map[string]string{}
+	for index := 1; index <= 15; index++ {
+		name := fmt.Sprintf("m%d", index)
+		names = append(names, name)
+		files[name+".schway"] = libSource(name)
+	}
+	files["main.schway"] = entryUsing(names...)
+	dir := writeModules(t, files)
+
+	_, diags, err := Load(dir + "/main.schway")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hasCode(diags, "module.count_limit") {
+		t.Fatalf("a 16-module program with a self-import was refused as over the cap: %v", codesOf(diags))
+	}
+	if !hasCode(diags, "module.import_cycle") {
+		t.Fatalf("the self-import must still be an import cycle through the entry: %v", codesOf(diags))
+	}
+
+	t.Run("count-at-enqueue-control", func(t *testing.T) {
+		entryAliasAtProcessForTest = true
+		defer func() { entryAliasAtProcessForTest = false }()
+		_, diags, err := Load(dir + "/main.schway")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !hasCode(diags, "module.count_limit") {
+			t.Fatalf("the pre-fix counting must show the false refusal: %v", codesOf(diags))
+		}
+	})
+}

@@ -101,6 +101,10 @@ type Set struct {
 	Work int
 }
 
+// entryAliasAtProcessForTest restores the pre-fix behaviour where an import of
+// the entry file is counted at enqueue time and uncounted only when processed.
+var entryAliasAtProcessForTest bool
+
 func capExceeded(n, limit int) bool {
 	if capOffByOneForTest {
 		return n >= limit
@@ -284,6 +288,12 @@ func (l *graphLoader) enqueueImports(importer string, module parsedModule, depth
 		}
 		target := decl.Module
 		l.edges[importer] = append(l.edges[importer], importEdge{from: importer, to: target, decl: decl})
+		if l.namesEntry(target) && !entryAliasAtProcessForTest {
+			// The import names the entry file itself: an edge to the entry,
+			// never a module, so it must not count toward the module cap.
+			l.alias[target] = ""
+			continue
+		}
 		if l.visited[target] && !(diamondTwiceForTest && !l.reloaded[target]) {
 			continue
 		}
@@ -307,6 +317,14 @@ func (l *graphLoader) enqueueImports(importer string, module parsedModule, depth
 		l.visited[target] = true
 		l.queue = append(l.queue, workItem{name: target, depth: next, importer: importer, decl: decl, ordinal: l.count})
 	}
+}
+
+// namesEntry reports whether module is the path-derived name of the entry
+// file, which resolves to the entry itself. Aliases that only the file identity
+// reveals (a hard link) are still caught by process.
+func (l *graphLoader) namesEntry(module string) bool {
+	name, ok := strings.CutSuffix(l.entry.source.RelPath, ".schway")
+	return ok && name != "" && name == module
 }
 
 // validImportName reports whether an imported name is free of a leading
