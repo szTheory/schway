@@ -223,14 +223,14 @@ Plans:
 
 **Research flag**: Moderate. Choose the exit code for each file-error outcome and record it in the Phase 28 exit-class table; extend public CLI input from bounded U64 to one path through `app run`. The file adapter is a new copy-local generalization under `examples/checksum/`; the Phase 23 adapter, its receipts, and its observer tests stay untouched. The unreadable-file control uses a named skip when running as root.
 
-**Plans**: 1/10 plans executed (at the Phase 30 ceiling; plan-count witness in 31-01)
+**Plans**: 2/10 plans executed (at the Phase 30 ceiling; plan-count witness in 31-01)
 
 Plans:
 **Wave 1**
 - [x] 31-00-PLAN.md — Atomic D-01 move of the library and CLI into examples/checksum/ with every live re-pin
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 31-01-PLAN.md — Tracer: Wikipedia file through build --manifest + app run on native; third owner shape with the D-16 trailing call in every peer; FileError stderr table
+- [x] 31-01-PLAN.md — Tracer: Wikipedia file through build --manifest + app run on native; third owner shape with the D-16 trailing call in every peer; FileError stderr table
 
 **Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 31-02-PLAN.md — Interpreter RunWithFileBytes with an independent host reader; oracle rows with generating commands
@@ -277,7 +277,7 @@ Plans:
 | 28. Exit Classes, Verify Report, and Entry Pruning | 8/8 | Complete    | 2026-10-11 |
 | 29. Byte Views and the Adler-32 Library | 13/13 | Complete    | 2026-10-11 |
 | 30. Local Modules | 10/10 | Complete    | 2026-10-12 |
-| 31. Bounded File Checksum and Second Consumer | 1/10 | In Progress | - |
+| 31. Bounded File Checksum and Second Consumer | 2/10 | In Progress | - |
 | 32. Clean-Checkout Guide and Final Receipts | 0/TBD | Not started | - |
 
 **Coverage:** 16/16 M006 requirements have exactly one phase owner. MOD-06

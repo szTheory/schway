@@ -5,16 +5,16 @@ milestone_name: Bounded Byte Utility and Local Modules
 current_phase: 31
 current_phase_name: Bounded File Checksum and Second Consumer
 status: executing
-stopped_at: Completed 31-00-PLAN.md
-last_updated: "2026-10-12T18:39:06.489Z"
+stopped_at: Completed 31-01-PLAN.md
+last_updated: "2026-10-12T18:54:08.915Z"
 last_activity: 2026-10-12
 last_activity_desc: Phase 31 execution started
-state_head: "0ba57a55291f8724dcf2d5e1fc5e989b7a9d0ec3"
+state_head: 673d8906ae820164e869c4ffc0910baf0b2fdc5a
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 41
-  completed_plans: 32
+  completed_plans: 33
   percent: 60
 ---
 
@@ -124,7 +124,7 @@ plans.
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
 Phase: 31 (Bounded File Checksum and Second Consumer) — EXECUTING
-Plan: 2 of 10
+Plan: 3 of 10
 Status: Ready to execute
 Last activity: 2026-10-12 — Phase 31 execution started
 
@@ -531,6 +531,7 @@ subset alone.
 | Phase 30 P08 | 26 min | 3 tasks | 17 files |
 | Phase 30 P09 | 38 min | 3 tasks | 12 files |
 | Phase 31 P00 | 15min | 2 tasks | 13 files |
+| Phase 31 P01 | 60min | 2 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -686,6 +687,7 @@ decision history; they no longer describe current status.
 - [Phase 30]: 30-08: env:symlink, env:mkfifo, env:case-insensitive-fs added to the closed environmental witness set (host capabilities, not debt)
 - [Phase 30]: 30-09: examples/phase30 .schway files committed verbatim from the Phase 29 fixture because schway format mangles the trailing r expression (pre-existing defect)
 - [Phase 31]: D-01: Adler-32 library and CLI moved to examples/checksum/ with bytes unchanged
+- [Phase 31]: 31-01: trailing-call core layout uses an unread place:4 placeholder because call targets must be place:<op index+1> and places contiguous
 
 ### Pending Todos
 
@@ -928,8 +930,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-12T18:39:06.423Z
-Stopped at: Completed 31-00-PLAN.md
+Last session: 2026-10-12T18:54:08.848Z
+Stopped at: Completed 31-01-PLAN.md
 Resume file: None
 Next action: Phase 28 complete and verified (4/4, 2026-10-10). Optional: /gsd-code-review 28 --fix --all for the 6 open review findings (WR-02 exit-3-on-write-failure, WR-04 latent entryErr). Then /gsd-discuss-phase 29.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
