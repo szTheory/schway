@@ -273,6 +273,37 @@ drives D-01.
   `go test` lane running in hosted CI on macOS and ubuntu. The unreadable-file
   and ASan lanes skip only with cited `env:` reasons.
 
+### Amendments after research (2026-10-12, auto-followed; resolves 31-RESEARCH open questions)
+- **D-16 (amends D-03; resolves research Q1):** `adler32(view) % 65536` cannot be
+  written in a scalar body today. User calls are not admitted there
+  (`parser.go:715-762`), and a `let x = f(view)` body is refused with
+  `check.unexecutable_shape`. Research option A is adopted. The new third
+  owner shape (D-06) admits **one optional trailing `U64 -> U64` call** on the
+  library result, e.g. `low16`, defined in the entry. That gives:
+  - `checksum`: acquire, view, `adler32`, release, return (5 operations);
+  - `adler_low`: the same plus `low16(sum)` (6 operations).
+
+  It widens a closed shape, adds no language surface, and is decided in the
+  tracer plan, so every matcher learns it at once. Each refused neighbour,
+  such as a second trailing call or a call taking the view, gets a named
+  refusal pin.
+- **D-17 (amends D-09; resolves research finding 2):** There is no generic
+  `Type.Alternative` stderr emitter. The new cgen emitter for the third shape
+  prints `FileError.<Alternative>\n` itself, and the C adapter stays silent.
+  The interpreter prints the same bytes from the same alternative name. The
+  three stderr byte strings are pinned exactly as given in 31-RESEARCH.md.
+- **D-18 (amends D-05; resolves research Q2):** The `app run` usage text is
+  unchanged, because the CLI cannot know the entry type before reading the
+  receipt. PATH input is documented in `examples/checksum/README.md`.
+- **D-19 (amends D-11; resolves research Q3):** `Modules` lists **every**
+  module, including the entry, sorted by module name. This satisfies MOD-06's
+  "hash every module in sorted order" literally. `SourceDigest` is kept
+  unchanged, and the redundancy is accepted. The list is populated only when
+  the program has imports, so no-import bytes are unchanged.
+- **D-20:** The mode-000 root skip uses a new closed-set `env:` token (for
+  example `root`), added to the allow-list at `session_test.go:~2797` in the
+  same change.
+
 ### Claude's Discretion
 - The exact module, file and symbol names of the adapter triple and the
   owner type (`FileBytes` is suggested).
