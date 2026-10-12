@@ -17,6 +17,10 @@ import (
 // claim that the no-import path keeps its pre-change, unguarded behavior.
 var debugMapGuardNoImportForTest bool
 
+// peerDetailAttributionForTest is the armed control for WR-05: when set, a
+// peer refusal is attributed from the first ID in its detail text again.
+var peerDetailAttributionForTest bool
+
 // loadSourcePath loads the entry at path and every module it imports. The
 // error is non-nil only when the entry itself cannot be read, which keeps the
 // operational class of a missing entry file.

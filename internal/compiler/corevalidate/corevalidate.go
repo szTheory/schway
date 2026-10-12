@@ -84,6 +84,11 @@ func LinearWorkLimit(facts int) int { return 17*facts + 17 }
 type Problem struct {
 	Code   string `json:"code"`
 	Detail string `json:"detail,omitempty"`
+	// FunctionID is the structured ID of the function whose code is at fault,
+	// set only for the cross-module visibility codes (the caller). It is never
+	// serialized; consumers attribute a unit from it instead of re-parsing
+	// Detail.
+	FunctionID string `json:"-"`
 }
 
 type Result struct {
@@ -282,6 +287,21 @@ func (v *validator) check(ok bool, code, detail string) bool {
 	}
 	if len(v.problems) == 0 {
 		v.problems = append(v.problems, Problem{Code: code, Detail: detail})
+	}
+	return false
+}
+
+// checkVisibility applies the cross-module visibility law to one call and, on
+// refusal, records the CALLER as the offending function: the visibility
+// violation is in the caller's code, even though Detail names the callee.
+func (v *validator) checkVisibility(caller, callee core.Function) bool {
+	code, allowed := visibilityAllows(caller, callee, v.importFacts())
+	before := len(v.problems)
+	if v.check(allowed, code, callee.ID) {
+		return true
+	}
+	if before == 0 && len(v.problems) == 1 {
+		v.problems[0].FunctionID = caller.ID
 	}
 	return false
 }
@@ -2911,7 +2931,7 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 				if !v.check(peerCallable(&callee), core.CalleeNotCallable, operation.CalleeID) {
 					return false
 				}
-				if code, allowed := visibilityAllows(*function, callee, v.importFacts()); !v.check(allowed, code, callee.ID) {
+				if !v.checkVisibility(*function, callee) {
 					return false
 				}
 				if !v.checkCallTypeContract(callee, source, operation, places, types) {
@@ -3308,7 +3328,7 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 					return false
 				}
 				// See replayStraightLine's identical case (Phase 30, MOD-04).
-				if code, allowed := visibilityAllows(*function, callee, v.importFacts()); !v.check(allowed, code, callee.ID) {
+				if !v.checkVisibility(*function, callee) {
 					return false
 				}
 				// See replayStraightLine's identical case (07-09).

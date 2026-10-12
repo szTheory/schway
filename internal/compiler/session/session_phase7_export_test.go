@@ -66,3 +66,11 @@ func SetInterfacePeerRefusalSeamForTest(disable bool) (restore func()) {
 	interfacePeerRefusalSeam = disable
 	return func() { interfacePeerRefusalSeam = previous }
 }
+
+// SetPeerDetailAttributionForTest re-enables detail-text unit attribution for
+// peer refusals (the WR-05 control).
+func SetPeerDetailAttributionForTest(on bool) (restore func()) {
+	previous := peerDetailAttributionForTest
+	peerDetailAttributionForTest = on
+	return func() { peerDetailAttributionForTest = previous }
+}

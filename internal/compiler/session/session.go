@@ -854,12 +854,21 @@ const peerRefusalUnnamedCode = "core.peer_refusal_unnamed"
 func peerRefusalDiagnostic(validated corevalidate.Result, moduleID string) diagnostic.Diagnostic {
 	code := peerRefusalUnnamedCode
 	detail := fmt.Sprintf("corevalidate refused module %s", moduleID)
+	functionID := ""
 	if len(validated.Problems) > 0 {
 		code = validated.Problems[0].Code
 		detail = validated.Problems[0].Detail
+		functionID = validated.Problems[0].FunctionID
 	}
 	// D-11/D-23: a refusal about an imported function names that module; the
 	// entry module (and an unparseable detail) keeps an empty unit.
+	if functionID != "" && !peerDetailAttributionForTest {
+		// A structured offender (the caller of a visibility refusal) wins over
+		// the first ID that happens to appear in the detail text.
+		if entryModule := moduleOfSemanticID(moduleID); entryModule != "" {
+			return diagnostic.Error(code, diagnostic.Span{}, detail).InUnit(unitOfFunctionID(functionID, entryModule))
+		}
+	}
 	return diagnostic.Error(code, diagnostic.Span{}, detail).InUnit(unitOfDetail(detail, moduleID))
 }
 

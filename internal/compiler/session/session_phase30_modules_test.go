@@ -457,6 +457,40 @@ func TestPhase30PeerRefusalNamesUnit(t *testing.T) {
 		}
 	})
 
+	t.Run("visibility-refusal-names-the-caller-unit", func(t *testing.T) {
+		forgeUnexported := func(t *testing.T, fixture, calleeID string) (core.Program, corevalidate.Result) {
+			checked, err := session.CheckFile(fixture)
+			if err != nil || len(checked.Diagnostics) != 0 {
+				t.Fatalf("fixture check: %+v %v", checked.Diagnostics, err)
+			}
+			forged := phase30CloneProgram(t, checked.Program)
+			forged.Functions[phase30FunctionIndex(t, forged, calleeID)].Exported = false
+			validated := corevalidate.Validate(forged)
+			if validated.Valid || len(validated.Problems) == 0 || validated.Problems[0].Code != "core.callee_not_exported" {
+				t.Fatalf("forged export was not refused as core.callee_not_exported: %+v", validated.Problems)
+			}
+			return forged, validated
+		}
+		// The entry calls the private-looking lib function: the caller is the
+		// entry, so the diagnostic carries no unit.
+		forged, validated := forgeUnexported(t, phase30SameNameFixture(t), "s1:lib:fn:run")
+		if unit := session.PeerRefusalDiagnosticForTest(validated, forged.ModuleID).Unit; unit != "" {
+			t.Fatalf("an entry caller was blamed on unit %q, want the entry (empty)", unit)
+		}
+		// A library caller into another library: the caller's unit, not the callee's.
+		forged, validated = forgeUnexported(t, phase30DiamondFixture(t), "s1:c:fn:cf")
+		if unit := session.PeerRefusalDiagnosticForTest(validated, forged.ModuleID).Unit; unit != "a" && unit != "b" {
+			t.Fatalf("a library caller was blamed on unit %q, want its own module (a or b)", unit)
+		}
+		t.Run("detail-attribution-control", func(t *testing.T) {
+			defer session.SetPeerDetailAttributionForTest(true)()
+			forged, validated := forgeUnexported(t, phase30SameNameFixture(t), "s1:lib:fn:run")
+			if unit := session.PeerRefusalDiagnosticForTest(validated, forged.ModuleID).Unit; unit != "lib" {
+				t.Fatalf("the control must reproduce the callee blame, got unit %q", unit)
+			}
+		})
+	})
+
 	t.Run("unit-of-function-id", func(t *testing.T) {
 		for _, row := range []struct{ id, entry, want string }{
 			{"s1:lib:fn:helper", "app.main", "lib"},
