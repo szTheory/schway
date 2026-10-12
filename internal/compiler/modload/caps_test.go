@@ -301,3 +301,40 @@ func TestPhase30EntrySelfImportIsNotCountedTowardCap(t *testing.T) {
 		}
 	})
 }
+
+// TestPhase30CapRefusalIsReportedOncePerTarget pins WR-02: a cap-refused module
+// imported from several places is reported once. The armed control restores
+// the repeated reporting.
+func TestPhase30CapRefusalIsReportedOncePerTarget(t *testing.T) {
+	names := make([]string, 0, 16)
+	files := map[string]string{"x.schway": libSource("x")}
+	for index := 1; index <= 15; index++ {
+		name := fmt.Sprintf("m%d", index)
+		names = append(names, name)
+		files[name+".schway"] = libSource(name)
+	}
+	files["m1.schway"] = libSource("m1", "x")
+	files["m2.schway"] = libSource("m2", "x")
+	entry := entryUsing(append(names, "x")...)
+
+	count := func() int {
+		_, diags, _ := fakeLoad(t, entry, files)
+		total := 0
+		for _, d := range diags {
+			if d.Code == "module.count_limit" {
+				total++
+			}
+		}
+		return total
+	}
+	if got := count(); got != 1 {
+		t.Fatalf("module.count_limit reported %d times for one refused module, want 1", got)
+	}
+	t.Run("repeat-control", func(t *testing.T) {
+		repeatCapDiagForTest = true
+		defer func() { repeatCapDiagForTest = false }()
+		if got := count(); got < 3 {
+			t.Fatalf("pre-fix reporting produced %d diagnostics, want the repeats (>=3)", got)
+		}
+	})
+}

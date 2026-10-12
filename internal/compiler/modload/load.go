@@ -105,6 +105,10 @@ type Set struct {
 // the entry file is counted at enqueue time and uncounted only when processed.
 var entryAliasAtProcessForTest bool
 
+// repeatCapDiagForTest restores the pre-fix behaviour where every import of a
+// cap-refused target repeats the cap diagnostic.
+var repeatCapDiagForTest bool
+
 func capExceeded(n, limit int) bool {
 	if capOffByOneForTest {
 		return n >= limit
@@ -189,6 +193,7 @@ type graphLoader struct {
 	edges     map[string][]importEdge
 	alias     map[string]string
 	visited   map[string]bool
+	refused   map[string]bool
 	processed map[string]bool
 	reloaded  map[string]bool
 	queue     []workItem
@@ -214,6 +219,7 @@ func loadGraph(entry parsedModule, entryInfo fs.FileInfo, resolve *resolver) (Se
 		edges:     map[string][]importEdge{},
 		alias:     map[string]string{},
 		visited:   map[string]bool{},
+		refused:   map[string]bool{},
 		processed: map[string]bool{"": true},
 		reloaded:  map[string]bool{},
 		count:     1,
@@ -300,17 +306,22 @@ func (l *graphLoader) enqueueImports(importer string, module parsedModule, depth
 		if l.visited[target] {
 			l.reloaded[target] = true
 		}
+		if l.refused[target] && !repeatCapDiagForTest {
+			continue // already reported once; do not repeat the cap diagnostic
+		}
 		next := depth + 1
 		if !countAfterOpenForTest && capExceeded(l.count+1, MaxModules) {
 			l.capDiags = append(l.capDiags, diagnostic.Error(codeCountLimit, decl.Span,
 				"the program exceeds the limit of 16 modules, the entry included",
 			).InUnit(importer))
+			l.refused[target] = true
 			continue
 		}
 		if capExceeded(next, MaxImportDepth) {
 			l.capDiags = append(l.capDiags, diagnostic.Error(codeDepthLimit, decl.Span,
 				"the import chain exceeds the limit of 8 modules below the entry",
 			).InUnit(importer))
+			l.refused[target] = true
 			continue
 		}
 		l.count++
