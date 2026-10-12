@@ -3,6 +3,7 @@ package cgen
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -3077,6 +3078,12 @@ func emitProgramFileBytesFunction(out *strings.Builder, dataTypes []core.DataTyp
 	}
 	if failure == nil {
 		return fmt.Errorf("function %q: file-bytes owner failure type %q is not declared", function.ID, acquire.Foreign.Fails)
+	}
+	// The adapter statuses 1..3 are emitted positionally below, so the
+	// declaration must be exactly the closed ordered table (WR-02). This is
+	// cgen's own copy of check's refusal, not an import of it.
+	if !slices.Equal(failure.Alternatives, []string{"FileTooLarge", "FileUnavailable", "AllocFailed"}) {
+		return fmt.Errorf("function %q: file-bytes owner failure type %q must declare exactly FileTooLarge, FileUnavailable, AllocFailed in that order, got %v", function.ID, failure.Name, failure.Alternatives)
 	}
 	places := make(map[string]core.Place, len(function.Linear.Places))
 	for _, place := range function.Linear.Places {

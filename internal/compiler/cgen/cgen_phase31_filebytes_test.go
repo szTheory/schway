@@ -194,36 +194,44 @@ func TestPhase31FileErrorStderrTable(t *testing.T) {
 			}
 		}
 	})
+	// WR-02: the status-to-name mapping is positional (adapter status N is
+	// Alternatives[N-1]), so cgen refuses any FileError that is not exactly the
+	// ordered closed table instead of printing a wrong or missing name. The
+	// derived table above stays the faithful control.
 	t.Run("reversed-alternatives", func(t *testing.T) {
-		program := phase31PeerChecked(t, false)
-		reversed := false
-		for index := range program.DataTypes {
-			if program.DataTypes[index].Name != "FileError" {
-				continue
-			}
-			alternatives := program.DataTypes[index].Alternatives
-			for left, right := 0, len(alternatives)-1; left < right; left, right = left+1, right-1 {
-				alternatives[left], alternatives[right] = alternatives[right], alternatives[left]
-			}
-			details := program.DataTypes[index].AlternativeDetails
-			for left, right := 0, len(details)-1; left < right; left, right = left+1, right-1 {
-				details[left], details[right] = details[right], details[left]
-			}
-			reversed = true
-		}
-		if !reversed {
-			t.Fatal("program has no FileError data type")
-		}
-		c, err := cgen.EmitApplication(program)
-		if err != nil {
-			t.Fatal(err)
-		}
-		first := `.status == 1) { fputs("FileError.AllocFailed", stderr); fputc('\n', stderr); exit(65); }`
-		if !strings.Contains(c, first) {
-			t.Fatalf("status-1 branch does not name AllocFailed after reversing the alternatives:\n%s", c)
-		}
-		if strings.Contains(c, `.status == 1) { fputs("FileError.FileTooLarge"`) {
-			t.Fatal("status-1 branch still names FileTooLarge: the table is not derived from DataTypes")
+		for name, mutate := range map[string]func([]string) []string{
+			"reversed": func(a []string) []string {
+				for left, right := 0, len(a)-1; left < right; left, right = left+1, right-1 {
+					a[left], a[right] = a[right], a[left]
+				}
+				return a
+			},
+			"too-few":  func(a []string) []string { return a[:2] },
+			"too-many": func(a []string) []string { return append(a, "Extra") },
+			"renamed":  func(a []string) []string { a[2] = "OutOfMemory"; return a },
+		} {
+			t.Run(name, func(t *testing.T) {
+				program := phase31PeerChecked(t, false)
+				mutated := false
+				for index := range program.DataTypes {
+					if program.DataTypes[index].Name != "FileError" {
+						continue
+					}
+					program.DataTypes[index].Alternatives = mutate(append([]string(nil), program.DataTypes[index].Alternatives...))
+					program.DataTypes[index].AlternativeDetails = nil
+					mutated = true
+				}
+				if !mutated {
+					t.Fatal("program has no FileError data type")
+				}
+				_, err := cgen.EmitApplication(program)
+				if err == nil {
+					t.Fatal("cgen accepted a FileError declaration that is not FileTooLarge, FileUnavailable, AllocFailed")
+				}
+				if !strings.Contains(err.Error(), "file-bytes owner failure type") || !strings.Contains(err.Error(), "FileTooLarge, FileUnavailable, AllocFailed in that order") {
+					t.Fatalf("error = %v, want the named file-bytes failure-type refusal", err)
+				}
+			})
 		}
 	})
 }

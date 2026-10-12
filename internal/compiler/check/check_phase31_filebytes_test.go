@@ -214,3 +214,37 @@ func TestPhase31FileBytesNeighborRefusals(t *testing.T) {
 		})
 	}
 }
+
+// TestPhase31FileErrorDeclarationIsPinned arms WR-02: the adapter statuses map
+// onto FileError by position, so check refuses every declaration other than
+// FileTooLarge, FileUnavailable, AllocFailed in that order. The faithful row is
+// the control; each mutant is the same program with only the declaration
+// changed.
+func TestPhase31FileErrorDeclarationIsPinned(t *testing.T) {
+	declared := "data FileError =\n  | FileTooLarge\n  | FileUnavailable\n  | AllocFailed\n"
+	source := func(declaration string) []byte {
+		text := string(phase31PeerSource("PathToken", "FileError", phase31PeerTail5))
+		if strings.Count(text, declared) != 1 {
+			t.Fatalf("FileError declaration anchor occurs %d times", strings.Count(text, declared))
+		}
+		return []byte(strings.Replace(text, declared, declaration, 1))
+	}
+	if _, codes := phase31PeerCheckedMain(t, source(declared)); len(codes) != 0 {
+		t.Fatalf("faithful FileError refused: %v", codes)
+	}
+	for name, declaration := range map[string]string{
+		"reversed":  "data FileError =\n  | AllocFailed\n  | FileUnavailable\n  | FileTooLarge\n",
+		"swapped":   "data FileError =\n  | FileUnavailable\n  | FileTooLarge\n  | AllocFailed\n",
+		"too-few":   "data FileError =\n  | FileTooLarge\n  | FileUnavailable\n",
+		"too-many":  "data FileError =\n  | FileTooLarge\n  | FileUnavailable\n  | AllocFailed\n  | Extra\n",
+		"renamed":   "data FileError =\n  | FileTooLarge\n  | FileUnavailable\n  | OutOfMemory\n",
+		"duplicate": "data FileError =\n  | FileTooLarge\n  | FileTooLarge\n  | AllocFailed\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, codes := phase31PeerCheckedMain(t, source(declaration))
+			if phase31PeerFirst(codes) != "check.file_bytes_error_alternatives" {
+				t.Fatalf("codes = %v, want check.file_bytes_error_alternatives first", codes)
+			}
+		})
+	}
+}

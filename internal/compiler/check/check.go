@@ -2,6 +2,7 @@ package check
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -4160,7 +4161,7 @@ func checkFallibleLinear(functionID string, function ast.FuncDecl, foreignSymbol
 	parameterType := coreType(function.Parameter.Type)
 	returnType := coreType(function.ReturnType)
 	if fileBytesEntryCandidate(function) {
-		return checkFileBytesEntry(functionID, function, foreignSymbols, calleeContracts)
+		return checkFileBytesEntry(functionID, function, foreignSymbols, calleeContracts, dataTypes)
 	}
 	if fixtureBytesEntryCandidate(function) {
 		return checkFixtureBytesEntry(functionID, function, foreignSymbols, calleeContracts)
@@ -4781,6 +4782,10 @@ func checkFixtureOwnerPostAssembly(function core.Function) []diagnostic.Diagnost
 	return nil
 }
 
+// fileBytesErrorAlternatives is the ordered FileError declaration the bounded
+// file-bytes adapter status codes 1..3 map onto positionally (WR-02).
+var fileBytesErrorAlternatives = []string{"FileTooLarge", "FileUnavailable", "AllocFailed"}
+
 // fileBytesEntryCandidate keys the Phase 31 bounded file-bytes owner shape
 // (D-06) on the schway_file_bytes_acquire symbol alone, with the plural prefix
 // so the Phase 23 schway_file_byte_ matchers can never capture it. It is a
@@ -4800,7 +4805,7 @@ func fileBytesEntryCandidate(function ast.FuncDecl) bool {
 // owner with the compiler-minted release, then optionally make exactly one
 // trailing U64 -> U64 call to a function defined in the entry module, and
 // return the last result. The source contains no release call.
-func checkFileBytesEntry(functionID string, function ast.FuncDecl, symbols map[string]foreignSymbolInfo, callees map[string]calleeContract) (core.Function, []diagnostic.Diagnostic, int) {
+func checkFileBytesEntry(functionID string, function ast.FuncDecl, symbols map[string]foreignSymbolInfo, callees map[string]calleeContract, dataTypes map[string]core.DataType) (core.Function, []diagnostic.Diagnostic, int) {
 	body := function.Body.Linear
 	refuse := func(code, message string, span diagnostic.Span) (core.Function, []diagnostic.Diagnostic, int) {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(code, span, message)}, 1
@@ -4828,6 +4833,13 @@ func checkFileBytesEntry(functionID string, function ast.FuncDecl, symbols map[s
 		!localForeignPolicy(view, "borrow", "schway_file_bytes_view_fn", "") ||
 		!localForeignPolicy(release, "consume", "schway_file_bytes_release_fn", "") || release.Allocator != "libc_malloc" {
 		return refuse("check.file_bytes_owner_contract_invalid", "file bytes operations require explicit per-operation ABI, mode, failure, allocator, and release facts", body.Span)
+	}
+	// The adapter reports failures as status 1..3 and the generated program maps
+	// them to alternatives by position, so the declaration must be exactly the
+	// ordered closed table (WR-02). Any other FileError would print the wrong
+	// name, print none, or leave alternatives unreachable.
+	if failure, declared := dataTypes[acquire.Fails]; !declared || !slices.Equal(failure.Alternatives, fileBytesErrorAlternatives) {
+		return refuse("check.file_bytes_error_alternatives", "the file bytes failure type FileError must declare exactly FileTooLarge, FileUnavailable, AllocFailed in that order", body.Span)
 	}
 	pathType, ownerType, viewType, u64Type := core.TypeRef{Constructor: "PathToken"}, core.TypeRef{Constructor: "FileBytes"}, core.TypeRef{Constructor: "ByteView"}, core.TypeRef{Constructor: "U64"}
 	shapes := []core.TypeRef{pathType, ownerType, viewType, u64Type}
