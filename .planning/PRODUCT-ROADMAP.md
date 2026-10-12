@@ -269,7 +269,7 @@ reviews. Research and dissent: [M004 research](research/M004/SUMMARY.md).
 
 **What 31 changed:** a file can now be checksummed. The runnable gain: `schway build examples/checksum/checksum.schway --manifest examples/checksum/file_bytes.bindings.json --output ART` plus `schway app run ART -- PATH` prints the Adler-32 of a file of at most 65,536 bytes (Wikipedia gives 300286872), and the same build and run with `examples/checksum/adler_low.schway` prints the low 16 bits (920) from the one shared library. The new refusal frontier is the `FileError` outcomes (`FileTooLarge`, `FileUnavailable`, `AllocFailed`, all exit 65, path-free stderr) and the file-bytes shape codes such as `check.file_bytes_owner_shape_unsupported`. Build identity, receipt and evidence now carry sorted `modules` rows when a program imports (MOD-06). Witnesses (newly executed locally, focused): TestPhase31ChecksumPublicRoute, TestPhase31AdlerLowPublicRoute, TestPhase31CaseMatrix, TestPhase31ReleaseExactlyOnce, TestPhase31BoundedReadMutants, TestPhase31ModuleDigests, TestPhase31SingleCopyAndDualFlip, TestPhase31Controls.
 
-**Non-claims:** modules stay whole-program composition and B1/DX-06 stays open. The provisional `examples/checksum.schway` frontier, the M006 receipts (EVD-15) and the clean-checkout guide belong to Phase 32. Hosted CI for Phase 31 has not run; it runs at the phase gate and its run IDs go in 31-VERIFICATION.md.
+**Non-claims:** modules stay whole-program composition and B1/DX-06 stays open. The provisional `examples/checksum.schway` frontier (retired 2026-10-12, Phase 32 amendment), the M006 receipts (EVD-15) and the clean-checkout guide belong to Phase 32. Hosted CI for Phase 31 has not run; it runs at the phase gate and its run IDs go in 31-VERIFICATION.md.
 
 **Three most useful next capabilities** (full entries in [31-TRANSITION-CHECK.md](phases/31-bounded-file-checksum-and-second-consumer/31-TRANSITION-CHECK.md)):
 
@@ -295,8 +295,8 @@ need not introduce separately verified binary contracts.
 The former M003-era forecast (M004 loops, M005 aggregates, M006 modules) is
 superseded prospectively. M005 now targets `sum_to_n` and FizzBuzz, with phase
 numbering continuing at Phase 26. The next milestone will be scoped from a
-named byte-oriented consumer. `examples/checksum.schway` remains a provisional
-integration target; no unsupported syntax is treated as settled.
+named byte-oriented consumer. `examples/checksum.schway` was retired on 2026-10-12
+(see the PROJECT.md Phase 32 amendment); no unsupported syntax is treated as settled.
 
 ## Decisions and alternatives
 

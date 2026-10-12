@@ -294,10 +294,9 @@ evidence aggregates. Model-only replay continues to report
 bounded Phase 24 contract; they do not admit general cleanup or broader pointer
 mutation, forwarding, retention, or escape shapes.
 
-`examples/checksum.schway` is a refused integration target with provisional syntax.
-Its Phase 20 test pins the `loop` refusal; moving that diagnostic does not by
-itself demonstrate a checksum, file IO, or output. `wiki/example-tour.md` remains
-design exploration, not a supported language specification.
+`examples/checksum.schway` was retired on 2026-10-12; see the PROJECT.md Phase 32
+amendment. `wiki/example-tour.md` remains design exploration, not a supported
+language specification.
 
 ## Corpus and guard census
 
@@ -409,8 +408,9 @@ hashing: build identity, the receipt and the evidence report carry sorted
 `modules` rows when a program imports. The runnable gain is in
 `examples/checksum/README.md`. Explicit non-claims: modules remain whole-program
 composition, not separate compilation, and do not close B1/DX-06; the
-`examples/checksum.schway` frontier, the M006 receipts and the guide belong to
-Phase 32; hosted CI for Phase 31 has not run. Full check:
+`examples/checksum.schway` frontier was retired on 2026-10-12 (see the PROJECT.md
+Phase 32 amendment); the M006 receipts and the guide belong to Phase 32; hosted
+CI for Phase 31 has not run. Full check:
 [31-TRANSITION-CHECK.md](phases/31-bounded-file-checksum-and-second-consumer/31-TRANSITION-CHECK.md).
 
 ## Refresh triggers

@@ -137,6 +137,6 @@ is `..`, an absolute path and a symlink are all refused.
   repeated in each entry.
 - There is no `schway run --engine` path input; files are read through
   `build --manifest` plus `app run`.
-- The provisional `examples/checksum.schway` frontier is unchanged and owned by
-  Phase 32, as are the hosted receipts and the clean-checkout guide. Hosted CI
-  has not run for Phase 31.
+- The provisional `examples/checksum.schway` frontier was retired on 2026-10-12;
+  see the PROJECT.md Phase 32 amendment. The guide below is executed by a test,
+  and hosted receipts are recorded by the Phase 32 receipt plan.

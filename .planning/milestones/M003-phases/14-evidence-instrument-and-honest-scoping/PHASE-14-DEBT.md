@@ -3,7 +3,7 @@ phase: 14-evidence-instrument-and-honest-scoping
 recorded: 2026-09-18
 status: accepted
 disposition: phase-in-progress
-items: 100
+items: 102
 blocking: 0
 ---
 
@@ -152,6 +152,8 @@ finding).
 | D-14-142 | public identity migration: 14-VALIDATION.md:62 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `14-VALIDATION.md:62` preserves the recorded pre-public command and maps it to the current Schway package path (see Detail section). |
 | D-14-143 | public identity migration: 14-VALIDATION.md:63 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `14-VALIDATION.md:63` preserves the recorded pre-public command and maps it to the current Schway package path (see Detail section). |
 | D-14-144 | public identity migration: 23-VALIDATION.md:40 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `23-VALIDATION.md:40` preserves the recorded pre-public command and maps it to the current Schway package path (see Detail section). |
+| D-14-145 | Phase 32 frontier retirement: 20-VALIDATION.md:37 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `20-VALIDATION.md:37` preserves the recorded `TestPhase20ChecksumFrontier` pin and maps it to `TestPhase32ChecksumFrontierRetired` (see Detail section). |
+| D-14-146 | Phase 32 frontier retirement: 20-VALIDATION.md:38 | EVD-03 | info | P14 | DEFINED | n/a | RECONCILIATION (R2) — `20-VALIDATION.md:38` preserves the recorded `TestPhase20ChecksumFrontier` pin and maps it to `TestPhase32ChecksumFrontierRetired` (see Detail section). |
 
 ## Detail
 
@@ -1908,6 +1910,48 @@ replacement: go test ./cmd/schway ./internal/compiler/native -run '^TestPhase23P
 The recorded command remains historical evidence. The public Schway migration
 renamed the current command package; this entry maps the old package path to
 its current equivalent without rewriting the validation or research record.
+
+### D-14-145 — `20-VALIDATION.md:37` cites the retired checksum frontier pin
+
+first-recorded: M006
+
+```reconciliation
+file: .planning/milestones/M003-phases/20-nyquist-d-13-34-and-the-frontier-fixture/20-VALIDATION.md
+line: 37
+command: go test ./internal/compiler/session -run '^TestPhase20ChecksumFrontier$' -count=1
+classification: R2
+verdict: superseded
+superseding-phase: P32
+superseding-commit: 75d4d21b
+covering-command: go test ./internal/compiler/session -run '^TestPhase32ChecksumFrontierRetired$' -count=1
+```
+
+The recorded command remains historical evidence. Phase 32 (DX-19) retired
+`examples/checksum.schway` with a dated amendment and replaced
+`TestPhase20ChecksumFrontier` with `TestPhase32ChecksumFrontierRetired`; this
+entry maps the retired pin to its replacement without rewriting the validation
+record.
+
+### D-14-146 — `20-VALIDATION.md:38` cites the retired checksum frontier pin
+
+first-recorded: M006
+
+```reconciliation
+file: .planning/milestones/M003-phases/20-nyquist-d-13-34-and-the-frontier-fixture/20-VALIDATION.md
+line: 38
+command: go test ./internal/compiler/session -run '^TestPhase20ChecksumFrontier$' -count=1
+classification: R2
+verdict: superseded
+superseding-phase: P32
+superseding-commit: 75d4d21b
+covering-command: go test ./internal/compiler/session -run '^TestPhase32ChecksumFrontierRetired$' -count=1
+```
+
+The recorded command remains historical evidence. Phase 32 (DX-19) retired
+`examples/checksum.schway` with a dated amendment and replaced
+`TestPhase20ChecksumFrontier` with `TestPhase32ChecksumFrontierRetired`; this
+entry maps the retired pin to its replacement without rewriting the validation
+record.
 
 *Dated amendment: 2026-09-29, Schway public repository preparation.*
 *Register: PHASE-14-DEBT.md*

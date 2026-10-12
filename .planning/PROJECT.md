@@ -350,12 +350,19 @@ capability order. The M003-era M004–M006 forecast is superseded prospectively:
 | Mid term | Reusable byte-oriented libraries, arity-N/aggregates as needed, local modules, bounded JSON; HTTP as a separate branch | A consumer needs each abstraction; untrusted byte/error/resource behavior is specified |
 | Long term | Separate compilation/contracts, ecosystem, richer generics/effects/concurrency | Concrete clients and measured limits justify the added semantic surface |
 
-`examples/checksum.schway` remains a refused integration target. Its syntax is
-provisional; advancing its first diagnostic alone does not establish a usable
-program. Small runnable witnesses precede it. D-12-43 already became
-constructible in Phase 18; aggregates are not its reopening gate. DX-06 remains
-tied to a separately checked user-declared contract, without a speculative
-milestone number.
+**Amended 2026-10-12 (Phase 32, DX-19): the provisional checksum frontier is retired.**
+`examples/checksum.schway` was retired and deleted; its tombstone sha256 is
+`ae95e550df67114c3464dda9cc24779f8a2efd69bd2b99dd0ccb2acc235cc154`. Its last
+pinned refusal was `syntax.expected_rbrace` at 521-527. The supported route is
+`examples/checksum/checksum.schway`, and the guide is
+`examples/checksum/README.md`. The frozen goldens keep the path through the
+dated retired-path allow-lists `phase28RetiredEntries` and `phase30RetiredPaths`
+(absence allowed, re-appearance a failure), and `TestPhase32ChecksumFrontierRetired`
+guards the retirement.
+
+D-12-43 already became constructible in Phase 18; aggregates are not its
+reopening gate. DX-06 remains tied to a separately checked user-declared
+contract, without a speculative milestone number.
 
 ## Requirements
 

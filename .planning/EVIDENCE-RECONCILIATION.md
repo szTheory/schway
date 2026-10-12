@@ -1,5 +1,5 @@
 ---
-entries: 69
+entries: 71
 ---
 
 # Evidence Reconciliation
@@ -91,3 +91,5 @@ obligation on every run (D-14-12).
 | D-14-142 | .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md | 62 | `cmd: go test ./cmd/lang-repair/... -run 'TestUnrepairableAlwaysCarriesDiagnosis' -count=1 -v` | renamed | replacement: go test ./cmd/schway-repair/... -run 'TestUnrepairableAlwaysCarriesDiagnosis' -count=1 -v |
 | D-14-143 | .planning/milestones/M003-phases/14-evidence-instrument-and-honest-scoping/14-VALIDATION.md | 63 | `cmd: go test ./cmd/lang-repair/... -run 'TestUnrepairableDiagnosisGuardIsNotInert' -count=1 -v` | renamed | replacement: go test ./cmd/schway-repair/... -run 'TestUnrepairableDiagnosisGuardIsNotInert' -count=1 -v |
 | D-14-144 | .planning/milestones/M004-phases/23-live-local-allocation-and-discharge/23-VALIDATION.md | 40 | `cmd: go test ./cmd/lang ./internal/compiler/native -run '^TestPhase23PublicFileByte' -count=1` | renamed | replacement: go test ./cmd/schway ./internal/compiler/native -run '^TestPhase23PublicFileByte' -count=1 |
+| D-14-145 | .planning/milestones/M003-phases/20-nyquist-d-13-34-and-the-frontier-fixture/20-VALIDATION.md | 37 | `cmd: go test ./internal/compiler/session -run '^TestPhase20ChecksumFrontier$' -count=1` | superseded | phase P32, commit 75d4d21b, covers: go test ./internal/compiler/session -run '^TestPhase32ChecksumFrontierRetired$' -count=1 |
+| D-14-146 | .planning/milestones/M003-phases/20-nyquist-d-13-34-and-the-frontier-fixture/20-VALIDATION.md | 38 | `cmd: go test ./internal/compiler/session -run '^TestPhase20ChecksumFrontier$' -count=1` | superseded | phase P32, commit 75d4d21b, covers: go test ./internal/compiler/session -run '^TestPhase32ChecksumFrontierRetired$' -count=1 |
