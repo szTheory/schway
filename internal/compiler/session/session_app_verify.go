@@ -20,7 +20,6 @@ import (
 	"github.com/szTheory/schway/internal/compiler/execution"
 	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/native"
-	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 const (
@@ -208,7 +207,7 @@ func VerifyApplicationCasesFile(ctx context.Context, sourcePath, casesPath, repo
 	if err := removeStaleVerificationReport(reportPath, sourcePath, casesPath); err != nil {
 		return ReplayReport{}, err
 	}
-	source, err := readBoundedFile(sourcePath, syntax.MaxSourceBytes)
+	checked, source, err := checkSourcePath(sourcePath)
 	if err != nil {
 		return ReplayReport{}, fmt.Errorf("read source: %w", err)
 	}
@@ -220,7 +219,7 @@ func VerifyApplicationCasesFile(ctx context.Context, sourcePath, casesPath, repo
 	if err != nil {
 		return ReplayReport{}, err
 	}
-	report, verifyErr := VerifyApplicationCases(ctx, source, cases, runner)
+	report, verifyErr := verifyApplicationCases(ctx, source, &checked, cases, runner)
 	if err := writeApplicationVerificationReport(reportPath, report); err != nil {
 		// Keep the verification error visible (errors.As still finds a
 		// *SourceRefusalError, so the CLI keeps exit 2) alongside the
@@ -276,6 +275,14 @@ func (e *SourceRefusalError) Error() string { return "source refused: " + e.Code
 // inputs through the interpreter and generated-C conformance shell at O0/O3,
 // and compares all tiers to the independently authored expected value.
 func VerifyApplicationCases(ctx context.Context, source []byte, cases ReplayCases, runner native.Runner) (ReplayReport, error) {
+	return verifyApplicationCases(ctx, source, nil, cases, runner)
+}
+
+// verifyApplicationCases is VerifyApplicationCases over an optional
+// pre-computed check: the file route hands in the module-aware result, the
+// byte-taking API passes nil and checks source itself. source is the ENTRY
+// bytes either way (the report SourceDigest stays the entry digest).
+func verifyApplicationCases(ctx context.Context, source []byte, precomputed *CheckResult, cases ReplayCases, runner native.Runner) (ReplayReport, error) {
 	sourceDigest := replayDigest(source)
 	caseBytes, _ := json.Marshal(cases)
 	report := ReplayReport{
@@ -297,7 +304,12 @@ func VerifyApplicationCases(ctx context.Context, source []byte, cases ReplayCase
 	// D-21: the same Check -> admitProgram -> resolveEntry steps as every other
 	// command; any source refusal is a typed *SourceRefusalError (exit 2). The
 	// fail report is still returned (and written by the file route).
-	checked := Check(source)
+	var checked CheckResult
+	if precomputed != nil {
+		checked = *precomputed
+	} else {
+		checked = Check(source)
+	}
 	if len(checked.Diagnostics) > 0 {
 		return report, &SourceRefusalError{Diagnostics: checked.Diagnostics}
 	}

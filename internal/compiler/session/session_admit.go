@@ -46,7 +46,7 @@ func admitProgram(checked CheckResult) (core.Program, []diagnostic.Diagnostic) {
 		// alias fact can be silently absent (D-04-28), so every published
 		// origin is recomputed from the typed core, not trusted from the
 		// checker.
-		return program, []diagnostic.Diagnostic{originPeerRefusalDiagnostic(problems[0], program, checked.Tree)}
+		return program, []diagnostic.Diagnostic{originPeerRefusalDiagnosticIn(problems[0], program, checked.Tree, checked.UnitTrees)}
 	}
 	observeCheckCommandPeer("pathoracle")
 	if err := pathoracle.ValidateLocalOwnerPaths(program); err != nil {

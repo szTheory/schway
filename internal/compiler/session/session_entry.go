@@ -26,9 +26,11 @@ func entryOf(program core.Program) (core.Function, error) {
 // functions reachable from that entry (D-05) so every engine, including the
 // independent execution peer, sees exactly one in-degree-zero root (D-19).
 //
-// Phase 30 composition point (D-06, informational; nothing module-specific is
-// built here): entry candidates come from the root module only, library
-// exports are never roots, and unused exports are pruned but still checked.
+// Phase 30 (D-06, implemented): entry candidates come from the root module
+// only, library exports are never roots, and unused exports are pruned but
+// still checked. The filter lives inside callgraph.EntryFunction, so this
+// function and every other EntryFunction caller see the same module-aware
+// entry; nothing module-specific is needed here.
 func resolveEntry(program core.Program) (core.Function, core.Program, []diagnostic.Diagnostic, error) {
 	entry, err := entryOf(program)
 	if err != nil {

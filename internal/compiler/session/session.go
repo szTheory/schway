@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/szTheory/schway/internal/compiler/ast"
 	"github.com/szTheory/schway/internal/compiler/cgen"
 	"github.com/szTheory/schway/internal/compiler/check"
 	"github.com/szTheory/schway/internal/compiler/core"
@@ -857,12 +858,25 @@ func peerRefusalDiagnostic(validated corevalidate.Result, moduleID string) diagn
 		code = validated.Problems[0].Code
 		detail = validated.Problems[0].Detail
 	}
-	return diagnostic.Error(code, diagnostic.Span{}, detail)
+	// D-11/D-23: a refusal about an imported function names that module; the
+	// entry module (and an unparseable detail) keeps an empty unit.
+	return diagnostic.Error(code, diagnostic.Span{}, detail).InUnit(unitOfDetail(detail, moduleID))
 }
 
 func originPeerRefusalDiagnostic(problem originvalidate.Problem, program core.Program, tree syntax.Tree) diagnostic.Diagnostic {
+	return originPeerRefusalDiagnosticIn(problem, program, tree, nil)
+}
+
+// originPeerRefusalDiagnosticIn is originPeerRefusalDiagnostic over a loaded
+// module program: the unit comes from the function's module and the span is
+// located in that unit's own tree (unitTrees), never in the entry tree.
+func originPeerRefusalDiagnosticIn(problem originvalidate.Problem, program core.Program, tree syntax.Tree, unitTrees map[string]syntax.Tree) diagnostic.Diagnostic {
+	unit := unitOfFunctionID(problem.FunctionID, program.Module)
+	if unitTree, ok := unitTrees[unit]; ok && unit != "" {
+		tree = unitTree
+	}
 	fallback := func() diagnostic.Diagnostic {
-		return diagnostic.Error(problem.Code, diagnostic.Span{}, problem.Detail)
+		return diagnostic.Error(problem.Code, diagnostic.Span{}, problem.Detail).InUnit(unit)
 	}
 	if problem.FunctionID == "" || problem.ReturnOperationID == "" {
 		return fallback()
@@ -943,7 +957,7 @@ func originPeerRefusalDiagnostic(problem originvalidate.Problem, program core.Pr
 		Kind:   "borrow_created_here",
 		Detail: "borrow that created the escaped result",
 		Span:   &cause,
-	})
+	}).InUnit(unit)
 }
 
 func sourceFunctionTokenBounds(tokens []syntax.Token, functionName string) (int, int, bool) {
@@ -1273,7 +1287,10 @@ func RunInterpreterCommandFile(path string) (protocol.Result, error) {
 // runNative is the exported-lane native run: Check, corevalidate, entry
 // resolution, then runNativeChecked. It runs no origin admission (D-19).
 func runNative(ctx context.Context, source []byte, runner NativeRunner, fixture string) (NativeResult, []diagnostic.Diagnostic, error) {
-	checked := Check(source)
+	return runNativeFromChecked(ctx, Check(source), runner, fixture)
+}
+
+func runNativeFromChecked(ctx context.Context, checked CheckResult, runner NativeRunner, fixture string) (NativeResult, []diagnostic.Diagnostic, error) {
 	if len(checked.Diagnostics) > 0 {
 		return NativeResult{}, checked.Diagnostics, nil
 	}
@@ -1387,7 +1404,13 @@ func RunNative(ctx context.Context, source []byte, runner NativeRunner) (NativeR
 // BuildApplication checks and independently validates source, then emits and
 // compiles a retained U64 application without executing its entry point.
 func BuildApplication(ctx context.Context, source []byte, outputPath string, runner native.Runner, manifestPath ...string) (native.BuildReceipt, []diagnostic.Diagnostic, error) {
-	checked := Check(source)
+	return buildApplicationChecked(ctx, Check(source), source, outputPath, runner, manifestPath...)
+}
+
+// buildApplicationChecked is everything BuildApplication does after its
+// check. source is the ENTRY bytes: the receipt SourceDigest stays the entry
+// digest, and module hashing is not claimed (Phase 31).
+func buildApplicationChecked(ctx context.Context, checked CheckResult, source []byte, outputPath string, runner native.Runner, manifestPath ...string) (native.BuildReceipt, []diagnostic.Diagnostic, error) {
 	if len(checked.Diagnostics) > 0 {
 		return native.BuildReceipt{}, checked.Diagnostics, nil
 	}
@@ -1481,11 +1504,11 @@ func validateLocalOperationBindings(program core.Program, manifest native.Bindin
 }
 
 func BuildApplicationFile(ctx context.Context, sourcePath, outputPath string, runner native.Runner, manifestPath ...string) (native.BuildReceipt, []diagnostic.Diagnostic, error) {
-	source, err := readBoundedFile(sourcePath, syntax.MaxSourceBytes)
+	checked, entryBytes, err := checkSourcePath(sourcePath)
 	if err != nil {
 		return native.BuildReceipt{}, nil, err
 	}
-	return BuildApplication(ctx, source, outputPath, runner, manifestPath...)
+	return buildApplicationChecked(ctx, checked, entryBytes, outputPath, runner, manifestPath...)
 }
 
 // runNativeInputs is task 04-07-03's own bug fix, discovered by driving the
@@ -1543,11 +1566,11 @@ func expectForOutcomeKind(kind string) native.TerminalOutcome {
 }
 
 func RunNativeFile(ctx context.Context, path string, runner NativeRunner) (NativeResult, []diagnostic.Diagnostic, error) {
-	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
+	checked, _, err := checkSourcePath(path)
 	if err != nil {
 		return NativeResult{}, nil, err
 	}
-	return runNative(ctx, source, runner, filepath.ToSlash(path))
+	return runNativeFromChecked(ctx, checked, runner, filepath.ToSlash(path))
 }
 
 // runNativeCommand is the command-file native lane: Check, admitProgram on
@@ -1557,11 +1580,10 @@ func RunNativeFile(ctx context.Context, path string, runner NativeRunner) (Nativ
 // read it); no path arithmetic may precede Check so relative and absolute
 // paths behave identically (G-28-3).
 func runNativeCommand(ctx context.Context, path string, runner NativeRunner) (NativeResult, []diagnostic.Diagnostic, error) {
-	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
+	checked, _, err := checkSourcePath(path)
 	if err != nil {
 		return NativeResult{}, nil, err
 	}
-	checked := Check(source)
 	if len(checked.Diagnostics) > 0 {
 		return NativeResult{}, checked.Diagnostics, nil
 	}
@@ -1818,18 +1840,34 @@ func InterfaceCheckCommandFile(summaryPath, coreBytesPath string) (protocol.Resu
 // only in-process; an empty query returns the full joined map.
 func DebugMapCommandFile(path, query string) (protocol.Result, error) {
 	started := time.Now()
-	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
+	set, loadDiagnostics, err := loadSourcePath(path)
 	if err != nil {
 		return protocol.Result{}, err
 	}
-	parsed := syntax.Parse(source)
 	result := protocol.New("debug-map", protocol.StatusPass)
-	if len(parsed.Diagnostics) > 0 {
-		result.Status = protocol.StatusInvalid
-		result.Diagnostics = parsed.Diagnostics
-		return completeCommand(result, started, 1), nil
+	var checked check.Result
+	var parsedProgram ast.Program
+	if len(set.Program.Imports) == 0 {
+		// D-15: the no-import path is byte-for-byte the pre-change code, with
+		// no MaxCheckWork guard.
+		parsed := syntax.Parse(set.Sources[0].Bytes)
+		if len(parsed.Diagnostics) > 0 {
+			result.Status = protocol.StatusInvalid
+			result.Diagnostics = parsed.Diagnostics
+			return completeCommand(result, started, 1), nil
+		}
+		parsedProgram = parsed.Program
+		checked = check.Program(parsed.Program)
+		if debugMapGuardNoImportForTest && len(parsed.Tree.Tokens)+checked.Work > MaxCheckWork {
+			checked.Diagnostics = append(checked.Diagnostics, diagnostic.Error("check.work_limit", diagnostic.Span{}, "checking exceeds the declared work limit"))
+		}
+	} else {
+		// D-22/D-21: a module program is checked as one merged program with
+		// Work summed across modules, under the MaxCheckWork guard.
+		merged := checkLoaded(set, loadDiagnostics)
+		parsedProgram = set.Program
+		checked = check.Result{Program: merged.Program, Diagnostics: merged.Diagnostics, Work: merged.Work}
 	}
-	checked := check.Program(parsed.Program)
 	if len(checked.Diagnostics) > 0 {
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = checked.Diagnostics
@@ -1843,7 +1881,7 @@ func DebugMapCommandFile(path, query string) (protocol.Result, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	built, work, buildErr := debugmap.Build(ctx, parsed.Program, program)
+	built, work, buildErr := debugmap.Build(ctx, parsedProgram, program)
 	if buildErr != nil {
 		code := "debugmap.build_failed"
 		var debugErr *debugmap.Error
@@ -1863,7 +1901,7 @@ func DebugMapCommandFile(path, query string) (protocol.Result, error) {
 	for _, entry := range entries {
 		protocolEntries = append(protocolEntries, protocol.DebugMapEntry{
 			ID: entry.ID, CoreID: entry.CoreID, OperationID: entry.OperationID, PointID: entry.PointID,
-			Kind: entry.Kind, Availability: string(entry.Availability),
+			Kind: entry.Kind, Availability: string(entry.Availability), Unit: entry.Unit,
 		})
 	}
 	result.DebugMap = &protocol.DebugMapSummary{Schema: built.Schema, Entries: protocolEntries}
