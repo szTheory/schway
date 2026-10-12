@@ -5,16 +5,16 @@ milestone_name: Bounded Byte Utility and Local Modules
 current_phase: 30
 current_phase_name: Local Modules
 status: executing
-stopped_at: Completed 30-00-PLAN.md
-last_updated: "2026-10-12T15:00:11.356Z"
+stopped_at: Completed 30-01-PLAN.md
+last_updated: "2026-10-12T15:08:49.779Z"
 last_activity: 2026-10-12
 last_activity_desc: Phase 30 execution started
-state_head: e2cf70e301735d083a88145553ad6f5501fbec42
+state_head: 44866fe27eba1a37577d2d53ede7bc4a188103a8
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 31
-  completed_plans: 22
+  completed_plans: 23
   percent: 40
 ---
 
@@ -124,7 +124,7 @@ plans.
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
 Phase: 30 (Local Modules) — EXECUTING
-Plan: 2 of 10
+Plan: 3 of 10
 Status: Ready to execute
 Last activity: 2026-10-12 — Phase 30 execution started
 
@@ -520,6 +520,7 @@ subset alone.
 | Phase 29 P11 | 15min | 2 tasks | 4 files |
 | Phase 29 P12 | n/a (checkpointed) | 3 tasks | 6 files |
 | Phase 30 P00 | 40 min | 3 tasks | 11 files |
+| Phase 30 P01 | 22 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -662,6 +663,7 @@ decision history; they no longer describe current status.
 - [Phase 29]: 29-11: all seeds retained dormant; z1s superseded wording after byte-read syntax settled
 - [Phase 29]: Spike 008 VALIDATED: byte view cap kept at 65,536 (hosted run 38186068052, both hosts, plain and -race)
 - [Phase 30]: 30-00 gate verdict PROCEED: flags a-f passed with armed controls; golden pinned at 4ea05fd with 160 entries
+- [Phase 30]: 30-01: stray tokens in an import item list are refused with syntax.expected_import_name (no new code); late imports stay in Program.Imports for recovery; duplicate-import delete repair is subset-only against the first declaration.
 
 ### Pending Todos
 
@@ -892,8 +894,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-12T15:00:11.249Z
-Stopped at: Completed 30-00-PLAN.md
+Last session: 2026-10-12T15:08:49.655Z
+Stopped at: Completed 30-01-PLAN.md
 Resume file: None
 Next action: Phase 28 complete and verified (4/4, 2026-10-10). Optional: /gsd-code-review 28 --fix --all for the 6 open review findings (WR-02 exit-3-on-write-failure, WR-04 latent entryErr). Then /gsd-discuss-phase 29.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
