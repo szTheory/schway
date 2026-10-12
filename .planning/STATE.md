@@ -5,16 +5,16 @@ milestone_name: Bounded Byte Utility and Local Modules
 current_phase: 30
 current_phase_name: Local Modules
 status: executing
-stopped_at: Completed 30-04-PLAN.md
-last_updated: "2026-10-12T15:37:15.593Z"
+stopped_at: Completed 30-06-PLAN.md
+last_updated: "2026-10-12T15:42:24.885Z"
 last_activity: 2026-10-12
 last_activity_desc: Phase 30 execution started
-state_head: c2bb013fefb61d78150b8e121655078f6af9fa27
+state_head: cea06cdf907354e535491381d0af4ef2a236357d
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 31
-  completed_plans: 27
+  completed_plans: 28
   percent: 40
 ---
 
@@ -124,7 +124,7 @@ plans.
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
 Phase: 30 (Local Modules) — EXECUTING
-Plan: 7 of 10
+Plan: 8 of 10
 Status: Ready to execute
 Last activity: 2026-10-12 — Phase 30 execution started
 
@@ -525,6 +525,7 @@ subset alone.
 | Phase 30 P03 | 25 min | 3 tasks | 9 files |
 | Phase 30 P05 | 20 min | 3 tasks | 4 files |
 | Phase 30 P04 | 20 min | 3 tasks | 7 files |
+| Phase 30 P06 | 25 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -673,6 +674,8 @@ decision history; they no longer describe current status.
 - [Phase 30]: 30-05: IDs derive from idModule (defining module or entry header); libraries see an empty foreign table and isEntryMain requires Module == empty; Callable flips are signature changes while pre-body contracts stay body-blind
 - [Phase 30]: 30-04: module depth is breadth-first shortest depth from the entry; cycle attribution comes from the DFS closing edge with a rotation-normalized message
 - [Phase 30]: 30-04: merge owns the canonical module sort and receives modules in first-import order; failed modules are reported but not merged
+- [Phase 30]: 30-06: corevalidate visibility law is written from core facts only (visibilityAllows at both OpCall replay sites); a coordinated Exported+Imports lie is the documented frontend trust boundary
+- [Phase 30]: 30-06: EntryFunction, interp.findFunction and debugmap.Build are keyed on the entry module / (module, name); TestNoCoreProgramEntryField admits only the omitempty Exported visibility fact
 
 ### Pending Todos
 
@@ -903,8 +906,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-12T15:37:15.538Z
-Stopped at: Completed 30-04-PLAN.md
+Last session: 2026-10-12T15:42:24.825Z
+Stopped at: Completed 30-06-PLAN.md
 Resume file: None
 Next action: Phase 28 complete and verified (4/4, 2026-10-10). Optional: /gsd-code-review 28 --fix --all for the 6 open review findings (WR-02 exit-3-on-write-failure, WR-04 latent entryErr). Then /gsd-discuss-phase 29.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
