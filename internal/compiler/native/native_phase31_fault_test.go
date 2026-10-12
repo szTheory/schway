@@ -148,16 +148,92 @@ func phase31FaultWrite(t *testing.T, data []byte) string {
 	return path
 }
 
+func phase31FaultOracle(t *testing.T, name string) (data []byte, want string) {
+	t.Helper()
+	for _, row := range testsupport.ChecksumOracleRows() {
+		if row.App == "checksum" && row.Name == name {
+			return row.Input, fmt.Sprintf("%d\n", row.Want)
+		}
+	}
+	t.Fatalf("oracle row %q missing", name)
+	return nil, ""
+}
+
 func TestPhase31ReleaseExactlyOnce(t *testing.T) {
 	artifact := phase31FaultBuild(t, true, nil)
-	t.Run("success", func(t *testing.T) {
-		path := phase31FaultWrite(t, []byte("Wikipedia"))
-		outcome, stdout, stderr, receipt := phase31FaultRun(t, artifact, path, "none")
-		if outcome.Kind != native.RunExited || outcome.ExitCode != 0 || stdout != "300286872\n" || stderr != "" {
-			t.Fatalf("outcome=%+v stdout=%q stderr=%q", outcome, stdout, stderr)
-		}
-		if receipt.Allocations != receipt.Frees || receipt.Frees < 1 || receipt.Doubles != 0 {
-			t.Fatalf("receipt=%+v, want allocations==frees>=1 and no double free", receipt)
-		}
-	})
+	wiki, wikiWant := phase31FaultOracle(t, "Wikipedia")
+	capData, capWant := phase31FaultOracle(t, "65536x0xFF")
+	over, _ := phase31FaultOracle(t, "65537x0xFF")
+	type row struct {
+		name   string
+		data   []byte
+		fault  string
+		stdout string // success rows
+		stderr string // error rows
+		check  func(t *testing.T, r phase31FaultReceipt)
+	}
+	const (
+		tooLarge    = "FileError.FileTooLarge\n"
+		allocFailed = "FileError.AllocFailed\n"
+		unavailable = "FileError.FileUnavailable\n"
+	)
+	rows := []row{
+		{name: "success", data: wiki, fault: "none", stdout: wikiWant, check: func(t *testing.T, r phase31FaultReceipt) {
+			if r.Frees < 1 {
+				t.Errorf("frees=%d, want >=1", r.Frees)
+			}
+		}},
+		{name: "oversize", data: over, fault: "none", stderr: tooLarge, check: func(t *testing.T, r phase31FaultReceipt) {
+			if r.Frees != 1 {
+				t.Errorf("frees=%d, want 1", r.Frees)
+			}
+		}},
+		{name: "malloc-null", data: wiki, fault: "malloc-null", stderr: allocFailed, check: func(t *testing.T, r phase31FaultReceipt) {
+			if r.Allocations != 0 {
+				t.Errorf("allocations=%d, want 0", r.Allocations)
+			}
+		}},
+		{name: "realloc-null", data: wiki, fault: "realloc-null", stderr: allocFailed, check: func(t *testing.T, r phase31FaultReceipt) {
+			if r.Frees != 1 {
+				t.Errorf("frees=%d, want 1", r.Frees)
+			}
+		}},
+		{name: "fstat-fail", data: wiki, fault: "fstat-fail", stderr: unavailable},
+		{name: "read-eio", data: wiki, fault: "read-eio", stderr: unavailable, check: func(t *testing.T, r phase31FaultReceipt) {
+			if r.Frees != 1 {
+				t.Errorf("frees=%d, want 1", r.Frees)
+			}
+		}},
+		{name: "close-fail", data: wiki, fault: "close-fail", stderr: unavailable, check: func(t *testing.T, r phase31FaultReceipt) {
+			if r.Frees != 1 {
+				t.Errorf("frees=%d, want 1", r.Frees)
+			}
+		}},
+		{name: "read-eintr-once", data: wiki, fault: "read-eintr-once", stdout: wikiWant},
+		{name: "read-one-byte", data: wiki, fault: "read-one-byte", stdout: wikiWant},
+		{name: "cap-65536", data: capData, fault: "none", stdout: capWant},
+		{name: "one-mebibyte", data: bytes.Repeat([]byte{0xFF}, 1<<20), fault: "none", stderr: tooLarge, check: func(t *testing.T, r phase31FaultReceipt) {
+			if r.BytesRead > 65537 {
+				t.Errorf("bytes_read=%d, want <= 65537", r.BytesRead)
+			}
+		}},
+	}
+	for _, tc := range rows {
+		t.Run(tc.name, func(t *testing.T) {
+			outcome, stdout, stderr, receipt := phase31FaultRun(t, artifact, phase31FaultWrite(t, tc.data), tc.fault)
+			if tc.stderr == "" {
+				if outcome.Kind != native.RunExited || outcome.ExitCode != 0 || stdout != tc.stdout || stderr != "" {
+					t.Fatalf("outcome=%+v stdout=%q stderr=%q, want exit 0 %q", outcome, stdout, stderr, tc.stdout)
+				}
+			} else if outcome.Kind != native.RunExited || outcome.ExitCode != 65 || stdout != "" || stderr != tc.stderr {
+				t.Fatalf("outcome=%+v stdout=%q stderr=%q, want exit 65 empty stdout %q", outcome, stdout, stderr, tc.stderr)
+			}
+			if receipt.Allocations != receipt.Frees || receipt.Doubles != 0 {
+				t.Fatalf("receipt=%+v, want allocations==frees and no double free", receipt)
+			}
+			if tc.check != nil {
+				tc.check(t, receipt)
+			}
+		})
+	}
 }
