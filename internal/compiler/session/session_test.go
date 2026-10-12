@@ -2797,6 +2797,12 @@ var debtRegisterEscapeRegistry = map[string]string{
 var debtRegisterEnvironmentalSet = map[string]bool{
 	"clang": true,
 	"otool": true,
+	// Phase 30 module-loader host preconditions: the host cannot create
+	// symlinks or FIFOs for a test, or its filesystem folds case. Each skip
+	// is a capability of the machine, never debt.
+	"symlink":             true,
+	"mkfifo":              true,
+	"case-insensitive-fs": true,
 }
 
 // debtRegisterModuleTestNames scans every *_test.go file in the module

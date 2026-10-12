@@ -1074,7 +1074,7 @@ func TestPhase30ErrorsNeverLeakAbsolutePaths(t *testing.T) {
 		}{"symlink", "module.symlink", []string{"lib"}, func(t *testing.T) string {
 			entry := writeModuleFixture(t, map[string]string{"main.schway": importing, "real.schway": phase30TwiceLib})
 			if err := os.Symlink(filepath.Join(filepath.Dir(entry), "real.schway"), filepath.Join(filepath.Dir(entry), "lib.schway")); err != nil {
-				t.Skipf("symlinks unavailable: %v", err)
+				t.Fatalf("symlink creation failed on a unix host: %v", err)
 			}
 			return entry
 		}})

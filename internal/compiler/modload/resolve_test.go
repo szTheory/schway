@@ -57,7 +57,7 @@ func TestPhase30SymlinkAndEscapeRefused(t *testing.T) {
 	}
 	for name, target := range links {
 		if err := os.Symlink(target, filepath.Join(rootDir, name)); err != nil {
-			t.Skipf("symlinks unavailable: %v", err)
+			t.Skipf("env:symlink unavailable on this host: %v", err)
 		}
 	}
 	r := gateOpen(t, rootDir)
@@ -136,13 +136,13 @@ func TestPhase30CaseExactMatch(t *testing.T) {
 		gateWrite(t, filepath.Join(dir, "Lib.schway"), "upper")
 		lower := filepath.Join(dir, "lib.schway")
 		if _, err := os.Stat(lower); err == nil {
-			t.Skip("case-insensitive filesystem")
+			t.Skip("env:case-insensitive-fs host filesystem folds case")
 		}
 		if err := os.WriteFile(lower, []byte("lower"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 		if entries, _ := os.ReadDir(dir); len(entries) != 2 {
-			t.Skip("case-insensitive filesystem")
+			t.Skip("env:case-insensitive-fs host filesystem folds case")
 		}
 		source, code := resolveCode(t, gateOpen(t, dir), "lib")
 		if code != "" || string(source.Bytes) != "lower" {
@@ -340,7 +340,7 @@ func TestPhase30ErrorsNeverLeakAbsolutePaths(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := os.Symlink(filepath.Join("..", "outside", "secret.schway"), filepath.Join(rootDir, "esc.schway")); err != nil {
-		t.Skipf("symlinks unavailable: %v", err)
+		t.Skipf("env:symlink unavailable on this host: %v", err)
 	}
 	modules := []string{"esc", "cased", "gone", "over", "Bad"}
 	if pipe := makeFIFO(t, rootDir); pipe {

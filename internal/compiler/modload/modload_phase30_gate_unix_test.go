@@ -1,4 +1,4 @@
-//go:build unix
+//go:build darwin || linux
 
 package modload
 
@@ -19,7 +19,7 @@ func TestPhase30GateFIFONonBlocking(t *testing.T) {
 	rootDir := t.TempDir()
 	pipe := filepath.Join(rootDir, "pipe.schway")
 	if err := syscall.Mkfifo(pipe, 0o644); err != nil {
-		t.Skipf("mkfifo unavailable: %v", err)
+		t.Skipf("env:mkfifo unavailable on this host: %v", err)
 	}
 	r := gateOpen(t, rootDir)
 

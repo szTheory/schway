@@ -56,7 +56,7 @@ func TestPhase30GateRootEscapesAndSymlinks(t *testing.T) {
 	}
 	for name, target := range links {
 		if err := os.Symlink(target, filepath.Join(rootDir, name)); err != nil {
-			t.Skipf("symlinks unavailable: %v", err)
+			t.Skipf("env:symlink unavailable on this host: %v", err)
 		}
 	}
 	r := gateOpen(t, rootDir)
