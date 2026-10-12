@@ -8,7 +8,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/session"
@@ -236,4 +238,143 @@ func TestPhase31ReleaseExactlyOnce(t *testing.T) {
 			}
 		})
 	}
+}
+
+type phase31FaultCase struct {
+	outcome native.RunOutcome
+	stdout  string
+	stderr  string
+}
+
+func phase31FaultResult(t *testing.T, artifact, path, fault string) phase31FaultCase {
+	t.Helper()
+	outcome, stdout, stderr, _ := phase31FaultRun(t, artifact, path, fault)
+	return phase31FaultCase{outcome, stdout, stderr}
+}
+
+func (c phase31FaultCase) is(stdout, stderr string, exit int) bool {
+	return c.outcome.Kind == native.RunExited && c.outcome.ExitCode == exit && c.stdout == stdout && c.stderr == stderr
+}
+
+func (c phase31FaultCase) String() string {
+	return fmt.Sprintf("outcome=%+v stdout=%q stderr=%q", c.outcome, c.stdout, c.stderr)
+}
+
+func phase31FaultMkfifo(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "pipe")
+	if err := syscall.Mkfifo(path, 0o600); err != nil {
+		t.Skipf("env:mkfifo unavailable on this host: %v", err)
+	}
+	return path
+}
+
+// TestPhase31BoundedReadMutants arms each adapter claim with a mutant that must
+// differ from the faithful adapter on the same input (D-13).
+func TestPhase31BoundedReadMutants(t *testing.T) {
+	const (
+		tooLarge    = "FileError.FileTooLarge\n"
+		unavailable = "FileError.FileUnavailable\n"
+	)
+	faithful := phase31FaultBuild(t, true, nil)
+	capData, capWant := phase31FaultOracle(t, "65536x0xFF")
+
+	t.Run("growth-after-fstat", func(t *testing.T) {
+		path := func() string { return phase31FaultWrite(t, capData) }
+		got := phase31FaultResult(t, faithful, path(), "grow-after-first-read")
+		if !got.is("", tooLarge, 65) {
+			t.Fatalf("faithful growth row: %s, want FileTooLarge exit 65", got)
+		}
+		mutant := phase31FaultBuild(t, true, func(a string) string {
+			return phase31FaultReplaceOnce(t, a, "while (received < (size_t)SCHWAY_FILE_BYTES_LIMIT + 1u) {", "while (received < (size_t)details.st_size) {")
+		})
+		m := phase31FaultResult(t, mutant, path(), "grow-after-first-read")
+		if m.is("", tooLarge, 65) || m.outcome.ExitCode != 0 || m.stdout == "" {
+			t.Fatalf("stat-size mutant on growth row: %s, want a printed checksum that differs from faithful", m)
+		}
+	})
+
+	t.Run("stat-size-mutant", func(t *testing.T) {
+		mutant := phase31FaultBuild(t, true, func(a string) string {
+			return phase31FaultReplaceOnce(t, a, "while (received < (size_t)SCHWAY_FILE_BYTES_LIMIT + 1u) {", "while (received < (size_t)details.st_size) {")
+		})
+		path := phase31FaultWrite(t, capData)
+		if got := phase31FaultResult(t, mutant, path, "grow-after-first-read"); got.is("", tooLarge, 65) {
+			t.Fatalf("stat-size mutant was not observed to fail: %s", got)
+		}
+		if got := phase31FaultResult(t, faithful, phase31FaultWrite(t, capData), "grow-after-first-read"); !got.is("", tooLarge, 65) {
+			t.Fatalf("faithful control: %s", got)
+		}
+	})
+
+	t.Run("limit-ge-mutant", func(t *testing.T) {
+		if got := phase31FaultResult(t, faithful, phase31FaultWrite(t, capData), "none"); !got.is(capWant, "", 0) {
+			t.Fatalf("faithful 65,536-byte file: %s, want %q", got, capWant)
+		}
+		mutant := phase31FaultBuild(t, true, func(a string) string {
+			return phase31FaultReplaceOnce(t, a, "if (received > (size_t)SCHWAY_FILE_BYTES_LIMIT) {", "if (received >= (size_t)SCHWAY_FILE_BYTES_LIMIT) {")
+		})
+		if got := phase31FaultResult(t, mutant, phase31FaultWrite(t, capData), "none"); !got.is("", tooLarge, 65) {
+			t.Fatalf("limit mutant: %s, want FileTooLarge refusing the 65,536-byte file", got)
+		}
+	})
+
+	t.Run("regular-file-mutant", func(t *testing.T) {
+		mutant := phase31FaultBuild(t, true, func(a string) string {
+			return phase31FaultReplaceOnce(t, a, " || !S_ISREG(details.st_mode)", "")
+		})
+		fifo := phase31FaultMkfifo(t)
+		for name, path := range map[string]string{"dev-null": "/dev/null", "fifo": fifo} {
+			if got := phase31FaultResult(t, faithful, path, "none"); !got.is("", unavailable, 65) {
+				t.Fatalf("%s faithful: %s, want FileUnavailable", name, got)
+			}
+			if got := phase31FaultResult(t, mutant, path, "none"); !got.is("1\n", "", 0) {
+				t.Fatalf("%s mutant: %s, want the bogus checksum 1", name, got)
+			}
+		}
+	})
+
+	t.Run("nonblocking-mutant", func(t *testing.T) {
+		fifo := phase31FaultMkfifo(t)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		outcome, stdout, stderr, _, err := phase31FaultRunCtx(t, ctx, faithful, fifo, "none")
+		if err != nil || ctx.Err() != nil || outcome.Kind != native.RunExited || outcome.ExitCode != 65 || stdout != "" || stderr != unavailable {
+			t.Fatalf("faithful FIFO: outcome=%+v stdout=%q stderr=%q ctx=%v err=%v, want prompt FileUnavailable", outcome, stdout, stderr, ctx.Err(), err)
+		}
+		mutant := phase31FaultBuild(t, true, func(a string) string {
+			return phase31FaultReplaceOnce(t, a, "O_RDONLY | O_NONBLOCK", "O_RDONLY")
+		})
+		mctx, mcancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer mcancel()
+		outcome, _, _, _, err = phase31FaultRunCtx(t, mctx, mutant, fifo, "none")
+		if err != nil || mctx.Err() == nil || outcome.Kind != native.RunTimedOut {
+			t.Fatalf("blocking mutant: outcome=%+v ctx=%v err=%v, want the 5 s context deadline to fire", outcome, mctx.Err(), err)
+		}
+	})
+
+	t.Run("double-release-asan", func(t *testing.T) {
+		phase29RequireASan(t)
+		flags := append(append([]string(nil), phase29BaseFlags...), "-O0", "-fsanitize=address", "-fno-sanitize-ignorelist", "-fno-omit-frame-pointer")
+		build := func(mutate func(string) string) string {
+			restore := native.SetApplicationFlagsForTest(flags)
+			defer restore()
+			return phase31FaultBuild(t, false, mutate)
+		}
+		t.Setenv("ASAN_OPTIONS", phase29LeakOption(0))
+		over, _ := phase31FaultOracle(t, "65537x0xFF")
+		clean := build(nil)
+		if got := phase31FaultResult(t, clean, phase31FaultWrite(t, over), "none"); !got.is("", tooLarge, 65) {
+			t.Fatalf("faithful under ASan: %s, want exactly FileTooLarge", got)
+		}
+		doubled := build(func(a string) string {
+			return phase31FaultReplaceOnce(t, a,
+				"return acquire_cleanup_failure(descriptor, data, SCHWAY_FILE_BYTES_TOO_LARGE);",
+				"SCHWAY_FILE_BYTES_FREE(data);\n    return acquire_cleanup_failure(descriptor, data, SCHWAY_FILE_BYTES_TOO_LARGE);")
+		})
+		got := phase31FaultResult(t, doubled, phase31FaultWrite(t, over), "none")
+		if got.stderr == tooLarge || !strings.Contains(got.stderr, "AddressSanitizer: attempting double-free") {
+			t.Fatalf("double-release mutant: %s, want an AddressSanitizer: attempting double-free report", got)
+		}
+	})
 }
