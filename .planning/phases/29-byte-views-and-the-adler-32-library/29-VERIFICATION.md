@@ -84,7 +84,7 @@ All four IDs are declared in PLAN frontmatter and in REQUIREMENTS.md (marked Com
 
 | Check | Result |
 |-------|--------|
-| Focused `go test -count=1 -run Phase29` on native, interp, executionpeer, cgen, pathoracle, syntax, originvalidate, check, corevalidate, session and cmd/schway | All pass (local; the full suite was not run, per project policy) |
+| Focused `go test ./internal/compiler/native ./internal/compiler/interp ./internal/compiler/executionpeer ./internal/compiler/cgen ./internal/compiler/pathoracle ./internal/compiler/syntax ./internal/compiler/originvalidate ./internal/compiler/check ./internal/compiler/corevalidate ./internal/compiler/session ./cmd/schway -run 'Phase29' -count=1` | All pass (local; the full suite was not run, per project policy) |
 | Hosted run 38186068052 at 906d648 (spike008_strict=true) | `go test ./...`, `-race`, evidence aggregate and the strict budget passed on ubuntu and macos (from the task brief, not re-fetched) |
 | `git diff --name-only 906d648 HEAD` | Docs, spike README/MANIFEST, and the text-only `session/qlt01_registry.json`. No implementation changes after the hosted run. |
 | Spike 008 | VALIDATED, cap kept at 65,536 |
