@@ -1,0 +1,1446 @@
+{
+  "schema": "phase30.prechange-corpus/1",
+  "revision": "4ea05fd7e2f8dec830fb6392331e44c86bda0e8a",
+  "entries": [
+    {
+      "path": "examples/checksum.schway",
+      "check_sha256": "72e88275f75a1439c82433e563ba5df00d7e59bc7e795525a7abb616449bade3",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "ff09a96de5e987d85c18c645612ac63c8d8ecd30b649fae8ac00ef940615ea1d",
+      "format_sha256": "7654167564456ea2dba7772895c3ffd496470298b6bff92388b83b6279e9aaad"
+    },
+    {
+      "path": "examples/fizzbuzz.schway",
+      "check_sha256": "784d22dde734306867634e425aeca81bcccb5890cf9309048e51b34ae1251ef2",
+      "core_sha256": "ef212ac184f70c389248405232f6342a71befe057008c8453f96e24abb0de564",
+      "emit_application": "536e5aed54093774a4e602a44c3bf44e680b77f36194362328195dd506d8b236",
+      "control_native_c": "error: function \"s1:examples.fizzbuzz:fn:main\": Unit C return is supported only by the application shell",
+      "debug_map": "43b970fe3fc26d13737c2c65cb150ccaaf782e914e912f97810e1101587cc3c4",
+      "format_sha256": "977d6e92d984cd54f329fd5cb70b10a87d45cd921c44913cb191dc175ec3a1ac"
+    },
+    {
+      "path": "examples/phase22/identity.schway",
+      "check_sha256": "57840f5be74dd1b0973025fa62269f1bfe16cf7f140f65d96fc5177f6f2b1294",
+      "core_sha256": "d36c4004cdf5a7624f96e50bc51b594fb553f0ef14efc34e448dbcf46265de51",
+      "emit_application": "5c5940e92d4e69841b241fa8b5a818a9ee7d268ccbd4667424024c1d51035a32",
+      "control_native_c": "7cb7de472e0e2dd0ed4558fba7a7b94207cace971c13d61506ac69e70ddbd133",
+      "debug_map": "bef8d290dbbc3eed52ab26fa937ac0dbaa2755b747bb1803009dc2f30f67764f",
+      "format_sha256": "236025e4c73f0ab86de52f769367cc5324d0fc0d4fa20b54e8a2cdf207318222"
+    },
+    {
+      "path": "examples/phase23/file_byte.schway",
+      "check_sha256": "dacdf24375245107f7a14f3b0c81895c269ce105fc039a9ac96136d74a3547dd",
+      "core_sha256": "78ce7623e4c933bac285f4e7e3e7937790e8cfa884c054e093ed506596d2ea5b",
+      "emit_application": "d8cac138da43eb3c703c290961609a1e4dbe9c5a1568a1a9addef7c5de13ac09",
+      "control_native_c": "2230b75ed1881e648a441fe0ae448fd77a19fd71451f38851ce199cb28d68dd0",
+      "debug_map": "424fc6f3987cbea13e65fdf40505322b7c050f7481bc1e29c9b9751d1a27ec1d",
+      "format_sha256": "c509a28583a887e02f885be75d2be7eee345766640104116db78c07728afe82c"
+    },
+    {
+      "path": "examples/phase24/error.schway",
+      "check_sha256": "4a205f96198aa14399fc60e0044d09b08f3dce09c4fd1b590098ee74fd68b3c7",
+      "core_sha256": "3797d6c37a868ef087239fd61bf1e94f7cea78b17f6c21f64cd82a21ae30880a",
+      "emit_application": "196db7c2a81c1f9f33945c69238b444dad6bd05bfdf3f518bf2f7904442a7565",
+      "control_native_c": "error: cgen.phase24_error_application_shell_unsupported",
+      "debug_map": "7a7520d36beb9582549cf4aa4d7b074e4ab793efb3e6f4d34757467592b61e9b",
+      "format_sha256": "2bc576f8530857f774ee854305c1511bf3a18079010957685acaf54123e24f78"
+    },
+    {
+      "path": "examples/phase24/transfer.schway",
+      "check_sha256": "f214de158d714ebbd4633af248584a9abf78c24e004746e59f6b096a007e3f49",
+      "core_sha256": "9aa08bc0bf48f42701f50951c6449279f40a03b9b6542962b9f0ff4b75d92dc5",
+      "emit_application": "fae577d9cd68c38b1235050623c7fcba79e092b36952467ac8e03f451788eb98",
+      "control_native_c": "535eed9a5be5f3e2bfd520768f37163f9a97b278b12b89e7fb5ea30137a797d5",
+      "debug_map": "7ffc345233d1c17effc78eefa9104cdbb8bd3460d9abf586f4668495db7240d5",
+      "format_sha256": "403da4623d4ab065d134b9cb9824700ebb212e6a2d1dc53036d57cb27818168e"
+    },
+    {
+      "path": "examples/phase26/checked_add_overflow.schway",
+      "check_sha256": "52ab854f6c0d8da4fd657bcc6d110fcb84af3416b0d85c52ba3c4dc475ff40c8",
+      "core_sha256": "21d95c66288a2afb5d91c5ddb06bdaa42dab1fcbdfa9b45f2d79594ed08493dd",
+      "emit_application": "5e99aacf026ad3dff0d232d40b29842917dbd4089fa7ccd25830b79b9d430852",
+      "control_native_c": "e1b610fe1d89d410152b916793efe0b084263fb27961f95dbeeb6ee0491c7dbd",
+      "debug_map": "e0ea78fb25d14fcfd96c236788546a83630f618920dcde63ddc0c8fe72775112",
+      "format_sha256": "9de83cd19b2728277d4edc5cd910e1f2b5ddd2f9bb220b5b1deaf49ecd31e446"
+    },
+    {
+      "path": "examples/phase272/straight_line_copy.schway",
+      "check_sha256": "db4dd4d767c74f1c81ad7561730c19f2370f526acdae84a80bf6a51c2c970b35",
+      "core_sha256": "f2dc9757dfcbdf710ca1d3d0c76bd40102c10b12ed740a8bd60177380c39fec5",
+      "emit_application": "24787955f1c3307b6f43bb2f98d5028c9d37536f86945c3ae221da38fa15a73d",
+      "control_native_c": "83bb66c858a1e975dbf504ff780ef2ee5fc6d90f43a086a79f7724702c0b831a",
+      "debug_map": "1a87b4e2191349fa4c4210226a27ffcc7d54dc2f2b6375c20a798f05123484a9",
+      "format_sha256": "10632de45dbccfb4211c356cedd3d5f0d5a5f3db4b84940c21cf35ff93f4864e"
+    },
+    {
+      "path": "examples/phase28/unused_function.schway",
+      "check_sha256": "3241d21fe565a281c79b8d6a68830f8f560326e08bded5675e3c93fd182d38a6",
+      "core_sha256": "8f6ad349b8929b56776d4241baa4ad60b7174cab352f4f450bcda9f8f1efa592",
+      "emit_application": "c530a244f063ba5d030746afbbb141a5c70d596549b3a4ac7847d892eb97d422",
+      "control_native_c": "482eec8f1dded949e3bce14557cae8398227650895fea0c662614a846787d15a",
+      "debug_map": "cab76f9602120aa4d1919c2a83fa83f96f54d1b1fd36251e08ee05635f871420",
+      "format_sha256": "7cf935ccd2123842ba75f46d48b93f10cf76b056e61860e614eb843d979074e1"
+    },
+    {
+      "path": "examples/phase29/adler32_fixture.schway",
+      "check_sha256": "45934bfcf29683c6d19cb8c30ee24c12d22fb3d129c9a87cd5f4d8e1e59ddf03",
+      "core_sha256": "b8ec732b4831bedf8214439a1cdb087a1542dfec829afd55fc43a5cd076e41be",
+      "emit_application": "70fd2514761a50d28450d52d894b915b55063015c5906062e4380ae053c1cc73",
+      "control_native_c": "error: cgen.fixture_owner_shell_unsupported: function \"s1:examples.phase29.adler32_fixture:fn:main\" is lowered only by the application shell",
+      "debug_map": "edbd60752d56a4ed3e7566a3d991cf214a420315ca8dd8b05a08d6fb4c2d683f",
+      "format_sha256": "3ab27d75b23606c04da49aef31a1dcd80aa4b97de20d1c13b1b64679d45c9177"
+    },
+    {
+      "path": "examples/phase29/byte_index_oob.schway",
+      "check_sha256": "dc56fd2e073d91f81ba6a74443460e48cc2d3afc2a58d71ac124cc2aadee6e0c",
+      "core_sha256": "2be499b3ace2273f2e3ffbda88167d8bfb2ad45cb9de076fee3098170ee6560f",
+      "emit_application": "e1f46df4cb466ada358c591edbce92df0c5cca0e52d2d45f5d2b29b1d8f6ac55",
+      "control_native_c": "error: cgen.fixture_owner_shell_unsupported: function \"s1:examples.phase29.byte_index_oob:fn:main\" is lowered only by the application shell",
+      "debug_map": "76315ff1e888b75707e0346eb78009a951959fc67dd84e903a36f5bb456bc6dc",
+      "format_sha256": "03753a963f4068ed4b61aaf0a7fab18641fff95439a10be848c05ee31415b5fa"
+    },
+    {
+      "path": "examples/sum_to_n.schway",
+      "check_sha256": "f84edbbd07eb9607aad363b8e1462b1f8bb3d964daad55a5a1ba01619c2a5fd1",
+      "core_sha256": "b149a1761f25983ae17d817bc034bc03da8a3f12e5a699c236deb929a0055b36",
+      "emit_application": "75887480ab27546acd3343c07235ced80221ee29414cbf50e12a34f58e47b7b6",
+      "control_native_c": "163eb1d42ad269797fb0ea95be9252c643fb495e1f10d4bba372979186bed02c",
+      "debug_map": "1a31309e0b120749cbe591e9fda413d8f7c3075bffcece0776ae7b4c5fb9321c",
+      "format_sha256": "9eca52beb9ef3c8f415640c666afe9434f4c907712830e15ee72db7df21adbd4"
+    },
+    {
+      "path": "generated:phase30/no-import-over-work",
+      "check_sha256": "437e9bcd30aaa352d3f80bd513c25689744cf600211642747f0f38af9a335ecf",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "fee5a04751743b55334468b0431e27ad6f1a761a7f72e7b716071dc3f2186dd9",
+      "format_sha256": "0981d9a3857dbd70d40d521857deae3b9d901fea1ffa29fcdcc3dd5420e7de30"
+    },
+    {
+      "path": "testdata/distinctness/arithmetic.schway",
+      "check_sha256": "b083de00a7ae0ebb714a9769ec5220c4f79b4699080d846ae3533bea65df5cc5",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "0110bd7a2aa2f1637da63d0b0856e7a3520b62a8461c9447de760725f16a2c61",
+      "format_sha256": "246e966e6c1cc5e8081f41df879f1fa3afd367b88fafd2af719e52b044bfe602"
+    },
+    {
+      "path": "testdata/distinctness/dangling_pipe.schway",
+      "check_sha256": "0faa06f90c189ff72275b154e723bc1c51c8ec329605bdc0adcbd6a54fa90265",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "ed789dc3fe2c7b80e960447bed46a749f8033af299e3308f4896006fdadcae06",
+      "format_sha256": "db8edbd4159bc54d9beeb74e2db2b8b8593699e73d9dbd73dbfc34b4c1f8a620"
+    },
+    {
+      "path": "testdata/distinctness/empty_file.schway",
+      "check_sha256": "b37e9b0d3f2409696e4ae793abf77f9809656b89608d60b8b3e5c1f56860b066",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "ce01026ac83a1a193242c873bdf9a2f928447c478aefa08d8f5aac1377db49b0",
+      "format_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "testdata/distinctness/for_range.schway",
+      "check_sha256": "146aa1edc05ef932b46a10484a285742e0fcf29616b198340debeb91a8f4f5e9",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "993e1d1472a45416330255cf5fa5b90b05c5a674293538f310f188c19142ba11",
+      "format_sha256": "983d9673a83b563b43dd57c0706c056d217cb0878837fdc393df98732218e51f"
+    },
+    {
+      "path": "testdata/distinctness/lone_else.schway",
+      "check_sha256": "b2dd30f40860d1b978f1cb682594cd0e6dc763e94ab8e313462aa92f3f0fb974",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "52e887a61b3ab0cb64a98746abd3109cbf8fe4798203fb4b70a7598e6a58449d",
+      "format_sha256": "bcf2ddb5efbf6700cfad1e1972ebe1ac945a3f696cff286135a45056ccc9ef21"
+    },
+    {
+      "path": "testdata/distinctness/one_token_hard_case.schway",
+      "check_sha256": "77d8275bc32ff54e0c268aa1e62ce25b3186f1ebdb471fa278b74bac41e85bb1",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "f67aeab1fc0630fcbbb102523967e95f062c6bb62f8c7040f2c08b58f314487c",
+      "format_sha256": "94f0ec7a1a4df335aa2a2935f22c6d70f7f368f7938e03b127b59d96eacdd740"
+    },
+    {
+      "path": "testdata/distinctness/spiral_bare.schway",
+      "check_sha256": "ba5310c278badea04df7c0b5d886be37680a58bc90e26ca583bf941b2beb7599",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "3298fa38aea0b3236b9494f09d9080de91cb1b74941f338be1dbfe2aa518af62",
+      "format_sha256": "28062b8ea14cc389d0c52b183fe8bb2fbef5a63491cdc5817e8db25a354ab78a"
+    },
+    {
+      "path": "testdata/distinctness/spiral_full.schway",
+      "check_sha256": "7f683b898d3ac79b762fa3661fb6b41b9f4ff2a2ecc3e0b6d27139fce9b225c8",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "73269b7a7f5709a61c347122aade5b644652f53394e5fe3444443d2477219a09",
+      "format_sha256": "1c9ea75136d5b4c96871da98a5e4417e2ea0191ddd9bee69ab121947f748de53"
+    },
+    {
+      "path": "testdata/distinctness/spiral_narrow.schway",
+      "check_sha256": "54e9e5e66f13fdbd4b61387faf6e6152a5566813f1e8e9ff339048ea0ae64317",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "30a7d320e8efc15daf7471c827fdab0791939a60d2ee8cccbf755ae74dbe0b9c",
+      "format_sha256": "fd32527fdf54a166976890c4173bec4d848991e039b253203488863ffe24b7f6"
+    },
+    {
+      "path": "testdata/distinctness/stray_semicolon.schway",
+      "check_sha256": "3e5aabbccd3f03aa8c18df9354e4cc59ebd129eb2bc7746e23d8a5de42aa15e8",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "d466d043f062a0a70c8f992d888958f6a878b56f8091fba16b95bfd75c85a384",
+      "format_sha256": "4f61cc24037bdfb44056983ff9cc8a1dc7246e34d1eb96b05f93b9f0f666236f"
+    },
+    {
+      "path": "testdata/distinctness/unclosed_brace.schway",
+      "check_sha256": "b497ef449917a1bd7651cb69de4cd15fddcab9ab779d3fb4e573983d2dd663e2",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "52ebe12fd0b98204c673d68fb90fa69772559d3c56744869bb2e9c533608841b",
+      "format_sha256": "e5006360b1bc595a886ebf03302da2838cfc11a1791dd24e62d7703cc4013a4c"
+    },
+    {
+      "path": "testdata/phase07/call_argument_used_once.schway",
+      "check_sha256": "3584a9b52feb3ed4b045dd91987fe7d1f260ac4f82c87022a47ba62e2f53fbc4",
+      "core_sha256": "7046819e0236902d42f98c180859c9419f2ed6acbee8dc73c3ca5d755166bb8c",
+      "emit_application": "error: application entry \"s1:phase07.call_argument_used_once:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "ffbf1ef9b39bb37b2d8ebea300604f481b7b5d007448a8d5a5a4f6f8cb931c38",
+      "debug_map": "d81828bd8d718d753d227cdeaf7c7ba597be06cb4e5e8ae1443eb79d48c1ef77",
+      "format_sha256": "7274dbce4693b091ae42d80a0c91aca1b65588f3294619c02cf514335eb89e73"
+    },
+    {
+      "path": "testdata/phase07/call_argument_used_twice.schway",
+      "check_sha256": "1c6a35c8c9b801e7300f29e1f70db530ef896ed2106376597d0cf5c675de2028",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "21a3645be585a22b54fecc4867a3d0f4d28a4689969a387a8b76777e49c8b9e5",
+      "format_sha256": "ea5e97ce9526c4c6a0cc73d10802964711899c64f5ea023e422f9d15f906bcd4"
+    },
+    {
+      "path": "testdata/phase07/call_basic.schway",
+      "check_sha256": "8f092564bf8f70713837f3dcc1f8bf4c4e9dd38c7fe29c04c3c1187f55b33e78",
+      "core_sha256": "8fb76ed09ed1999e1291a90b1863a83dd70fb5b6ae5c62d4688c0c37fd888f8d",
+      "emit_application": "error: application entry \"s1:phase07.call_basic:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "ec7b671152f58bc799c8c8265b5a1eb6f705988376f8eae2bd984604c206d174",
+      "debug_map": "a9f6479079d8258ce78076f899fd4bee4de95a755599be8741e26bd2c33c1257",
+      "format_sha256": "7690426c3e5694903abef40d9bc8ddfa294581e0317957441c8cb1e073353ba5"
+    },
+    {
+      "path": "testdata/phase07/call_fallible_foreign_reach.schway",
+      "check_sha256": "09a5388fd68e82c6039de18c62c07e449a7ea8906e9a144e2ea001678afaa680",
+      "core_sha256": "0bcfab609bdff91274756527f31ff80bfea43808cf30a935e42082d32bffdb3f",
+      "emit_application": "error: application entry \"s1:phase07.call_fallible_foreign_reach:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase07.call_fallible_foreign_reach:fn:tracer\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "9c460cac984cb920038374bc57457aad32bb10fb4f8289746661a49767998482",
+      "format_sha256": "5d5aa435b2cfc35d39e63d286d3f857fe9b821111eb019b2392bfd3500de07c1"
+    },
+    {
+      "path": "testdata/phase07/call_from_both_match_arms.schway",
+      "check_sha256": "4e1fb03fb387c0c6944ad2c72affc580bad96d2398a1d1497c83a1c49cc108a0",
+      "core_sha256": "369bd8ee23c8697da9cb25731c841fd590dd6ed8d0401a22dd5469cedf2cc436",
+      "emit_application": "error: application entry \"s1:phase07.call_from_both_match_arms:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "b6ee333d057cea8b5ffa452b1d1bd10f25a0c65b383db3c63d2d8ae271e89c23",
+      "debug_map": "ee1f1e7eddca2ff4dcc29e146152c459792d7c731015bc028e97aa72ea5379e3",
+      "format_sha256": "3f576af8d09ff03a18373f6368857c02d73d4cb58852f6c381a6ba1a64863f2a"
+    },
+    {
+      "path": "testdata/phase07/call_two_fallible_callees_disagree.schway",
+      "check_sha256": "0508fbff081c96e46133c2e3d79ff355fcc7a0c255482cd74d7f12bdebe8f200",
+      "core_sha256": "b398c2aef74a5412a6f2f5da07f6179f8ea85d08709be367fb2b105c22962089",
+      "emit_application": "error: application entry \"s1:phase07.call_two_fallible_callees_disagree:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase07.call_two_fallible_callees_disagree:fn:tracer_b\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "0d719a9776f920114597471ca47d780231cc3b3c25725439600494bd33bc7b2b",
+      "format_sha256": "d0b7dfa0a96147d31511b28896c6222a4b57aeedc2da9f96c7de1a1d97b19d20"
+    },
+    {
+      "path": "testdata/phase07/call_type_mismatch.schway",
+      "check_sha256": "b1674e511ec345cca2aff2c807bc27b9bb5c44144288f36745321b4167ad1c6e",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "645b17f42138338235d1c677f7bd67c93a08395beab71b47be424fa6cd139f80",
+      "format_sha256": "8193a696a6ea4568349794341e7011e737ad3cdbf6c7ba24ad1a870fff9f191e"
+    },
+    {
+      "path": "testdata/phase07/call_uncallable_callee.schway",
+      "check_sha256": "1277c671152049355ceefe51a1bb69e2478b0449bd94b34e97f6da9ef631d3af",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "6d89c38df870e7b6c0b27f24125d5818d31ad816d370204350ec5080fe82f2c1",
+      "format_sha256": "6df7b5c1c17886b2220542e7800ac9043ba4f50da9cd8857e73899c9ade0072d"
+    },
+    {
+      "path": "testdata/phase07/clean_but_unpublishable.schway",
+      "check_sha256": "6aba69d40913716f7feb1c7c4425e49930620d177d2cbe32cb5ee5464306b905",
+      "core_sha256": "9ad63e2a020033f118e2c13388f598af71e6343eaef57317af0621557b729cea",
+      "emit_application": "error: application entry \"s1:phase07.clean_but_unpublishable:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "5836b50aa04f2bd013e1e4da213b829c944d35df6d290078925e1bc073c1c221",
+      "debug_map": "16db3c46a068c600b746bae503537b28f08a9e866223f6802d35cbfa84565d83",
+      "format_sha256": "8e721ff8f1794b83ec02a3f4417bcda01c0fbe90c3cdbda008fa5d1369fe997d"
+    },
+    {
+      "path": "testdata/phase07/cycle_indirect.schway",
+      "check_sha256": "306e26f6771c9b95e70953cf991e39ce5e4e3474ec552bcd55b17ed600ba269d",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "820c22f6846cb8e41b118344479da994d54e2961bd6a72d9d1c5fe7200d5af4e",
+      "format_sha256": "fbd889a26b4bbf3fc7684dc1a89c3dea05362e7603c9c9824d2777692d6b48bc"
+    },
+    {
+      "path": "testdata/phase07/cycle_mutual.schway",
+      "check_sha256": "e8f81d36938047c5ffc944cc0aa5b14c4747816598ef35770864ecc232757e0c",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "9d28668d19d5550f5b78a2089c6082ec9920d0d5c9c879ca7ecc85669c64da49",
+      "format_sha256": "6befc9064eeabd81ba0605b331dcec6729b7f63e9af3f5a13bafc05b40ee388e"
+    },
+    {
+      "path": "testdata/phase07/cycle_self.schway",
+      "check_sha256": "9e2427d6e827fb1f5c2f5414e2ff64990bec8361916edbe170aa497e09194066",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "36bbef48ca355709fcd94af867dac55598508767d17fb7365f2f6cbe6d6cf6e1",
+      "format_sha256": "24056a33819d637c877ed84d9ad1f004d7f7fa2614ff1cea1bc519e4fb3d2fe3"
+    },
+    {
+      "path": "testdata/phase07/cycle_through_match_arm.schway",
+      "check_sha256": "a743178694469b713f61b18bc07a695d16d2b1181b1db213064fd8d86ec2cbd1",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "e03d3969915dec5f5e9e57e2e0c651f3ce7f29a40e2f20851f09ad21328c7a09",
+      "format_sha256": "077367884dbb7b5368f59d95e42d53d49a330f1061fa7a823315ce951310da57"
+    },
+    {
+      "path": "testdata/phase07/cycle_unreachable.schway",
+      "check_sha256": "82e4d514b5dd2d307167c50599a9c12a6d7a53d36c00ebf028cb06eafbbc71a5",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "fed2d1041c814bb82f259a2001b8b371d408dc1779ecb552ca0cc66d26a643d2",
+      "format_sha256": "f28222e026d5da03000eedf8822749fa3aec74fb0437b9de8f428aa98105523a"
+    },
+    {
+      "path": "testdata/phase07/deep_diamond_acyclic.schway",
+      "check_sha256": "4d82c283d92d04b55fc7b6ad9c841ec19dfe198353427d71e4c1e158ecf01235",
+      "core_sha256": "a5a2f4ff8fea4c184d2b1dde5296012784e5603fa2f583c84d0cf8d4ee29b58f",
+      "emit_application": "error: application entry \"s1:phase07.deep_diamond_acyclic:fn:top4\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "adbde6b19126550d8a9837f2fe8b637df7c49d71d87c1e3f9a2241ee8fdcf85f",
+      "debug_map": "13256de24fab65d6f7c5e067c8e2a703657d3679561504135cf5ab7e0633f417",
+      "format_sha256": "adf2fe74e502b6f8559756d9c7f163b214cb1b46751d71db4124790a491b4835"
+    },
+    {
+      "path": "testdata/phase07/duplicate_function_name.schway",
+      "check_sha256": "17beb5715b843e4ae510c4d8791d9ca70a28f0f9889cc5e0c551942107847a12",
+      "core_sha256": "47804516df2329437a8a188f7431d4b0b7962b3356984b45172af8cbb6923705",
+      "emit_application": "error: core validation failed: core.duplicate_function_id",
+      "control_native_c": "error: core validation failed: core.duplicate_function_id",
+      "debug_map": "error: core validation failed: core.duplicate_function_id",
+      "format_sha256": "8ca738cebbd5a59d15041cb48b9074be40059f91efc430097c75f54694d2d20a"
+    },
+    {
+      "path": "testdata/phase07/foreign_symbol_shadowing.schway",
+      "check_sha256": "dafbc16052b19da619045f0acde30ecd1dd824ec746134cc3557e1230144f35c",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "a21a354b86d079f4f48b5450596d13e4fa36a7fb7867d4e3d204b89a66e099df",
+      "format_sha256": "230da523fcc440adc6e3a570acf786d15b932de1e5ae3348bbfa9fe2a370e5e1"
+    },
+    {
+      "path": "testdata/phase07/relay_escort_witness.schway",
+      "check_sha256": "b7549b1382b59ac7fa4e7410674dcb318ec2d0ea132f2038d8f76284e9e182fb",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "afc63b9a54df7bba5a92e55133d06ffbe89aa212043c2b67a1c1d132e8c47c54",
+      "format_sha256": "eb4a0711f4792c25313e48a63257a9a561379c210631ab819ad833cd6cc0749a"
+    },
+    {
+      "path": "testdata/phase08/match_arm_call.schway",
+      "check_sha256": "59114c6b0078098c31fd6cdd3be861408dd1d98fe40d243f42a8a1481068ec15",
+      "core_sha256": "c127a65f0cccd106f5357610e5aa154240cb87dc8c8a4fc7d8925ddf0c803f87",
+      "emit_application": "error: application entry \"s1:phase08.match_arm_call:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "8f7f9b71fee4e4c726fc668aba7b746554881fece01e9b630103aadc9f7976db",
+      "debug_map": "252a1d6ba2bc7de660ec9257cafd02164aa914f2fff237b0637dff46590ce47a",
+      "format_sha256": "089da058e2f999cdc3f7d6dc11de69c598bd62318eb750e4c167a25706b5635e"
+    },
+    {
+      "path": "testdata/phase08/negative_control_fails.schway",
+      "check_sha256": "c2030dbbf59d41fe52f1a5885de9b761209e472416abb08675fccb7d122d315b",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "2a52f25837a569ee3aa075396ac203ec4d1039c70fba56bb5e17d834ac9c5378",
+      "format_sha256": "3db2bd9f4d8f55aa9623ee0d4d768b6fd6f2b3e7b2fc867af3d6fa9aec750972"
+    },
+    {
+      "path": "testdata/phase08/negative_control_infallible.schway",
+      "check_sha256": "66bc0562ec547625c8085a0a72a209433a7b1c7b493786da90fca2b6d904e948",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "9054d32c712d5e86e8d8b55ad503004797a109c7cfb0d6e1343b66543b4e9e3f",
+      "format_sha256": "877005fe03cf36a6365bbac3ea8e10f3c6d93ac9d7f2e554ba1a17829da7046a"
+    },
+    {
+      "path": "testdata/phase08/relay_depth2_accept.schway",
+      "check_sha256": "ef198638fbda902b45eeb1ccd7a4fcca3fe7ce4b305dcff29df3965210e9962c",
+      "core_sha256": "a6f6753b395fade4895fb9e3c5a26e70296977b16aee4d502b69f56271cfba11",
+      "emit_application": "error: application entry \"s1:phase08.relay_depth2_accept:fn:caller\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "9d18ed6610fa8d620b2429ed3835c41e44286b19f787466d7e09cce0f86a263c",
+      "debug_map": "3ed21fef5986a10299a5060649f50160036e6a9f2aeb4462d727331f6fc80875",
+      "format_sha256": "0d682c4183e057e9cad8f7bdce7f79e4b34de373884500804e40acc6a9897852"
+    },
+    {
+      "path": "testdata/phase08/relay_depth2_refuse.schway",
+      "check_sha256": "0cf190dcf2a812cff2e6dcf700e8bd6bdcfbfd084b63a3f853fc5c93b5823f6b",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "5262f6a014fe91eccfe0b27e6757553338d8b8f4deec70e87fec48c3424e147e",
+      "format_sha256": "e6eed6c05535cde3554b6cc946089136bc2f42cdc24fff7546dcd0ef07992f37"
+    },
+    {
+      "path": "testdata/phase08/twin_a_accept.schway",
+      "check_sha256": "c5397967c409b3f712eb055b44ef1db702c57698b9b93e740df647501547a235",
+      "core_sha256": "2533a5adf137ae324dfe2f155858c4cf26ccd5ae7a7daa9b6cf668f768a6ba3b",
+      "emit_application": "error: application entry \"s1:phase08.twin_a_accept:fn:escort\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "279873b2fe144e0ff630a40ea7531ae243c133772f48ff4752682d22e8ab585b",
+      "debug_map": "ded90a09386520434c8153b04852f25344a20c1233177be6056731be82294a6e",
+      "format_sha256": "f0e262bc655f2877baf5c100a936dc7991e5431b86487dffd2c227107a3e9f7d"
+    },
+    {
+      "path": "testdata/phase08/twin_a_refuse.schway",
+      "check_sha256": "22f78cf2dc5c8acfce7ff851ab0bbb4b6f953130e6cc2516dc5860c484d54ab2",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "88a5ed569e359c78c2d3f8cfd84bb132585a7a1cf124447f43b29d0a3b3de31d",
+      "format_sha256": "dc6679f2f2cc0481217c49f9821b2ab1675442cb0c8a41ae201342d073d03325"
+    },
+    {
+      "path": "testdata/phase08/twin_b_accept.schway",
+      "check_sha256": "51f0285cf5f109229c33b85f2e31f229151c24b7536c817ddf15ffa3b9df5553",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "a1bb08135d72433e21ed02edba97c7d35dc4ca99711e5b88d6773cc1a05e70a6",
+      "format_sha256": "a8856c1348d7b278a5e318d7925862948f816481bee64c45b6ea8a22c1c9944c"
+    },
+    {
+      "path": "testdata/phase08/twin_b_refuse.schway",
+      "check_sha256": "b26a9fa4655d0d4b83ef361e5b1841162af040e067cc5e6e2eb99c292f755c2d",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "54804a0804dbe01144894b8ec619c03dfe403545da9193ef3a42fdf9ec101f85",
+      "format_sha256": "a4bec477992a44392fd4b8da8c51c69f6cfb551fcb7a11e69a983efea88d8f0b"
+    },
+    {
+      "path": "testdata/phase1/comments.schway",
+      "check_sha256": "06f4c0f69ec068757f8eb2aa185b72fd93ec9cada23d8ccf8909af857424144c",
+      "core_sha256": "360ea735017fa302661e578be8d79512aa9aaeb85549958fa862deafdc02b4fb",
+      "emit_application": "error: application entry \"s1:examples.switch:fn:toggle\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "303a48995217b96495505d2bf90d3ed26d0ce723f42a794748dc64b1ac9412df",
+      "debug_map": "panic: runtime error: invalid memory address or nil pointer dereference",
+      "format_sha256": "5c377c6b9dbc4425ec9d1db72f598ce9e0a5de32738cf4e587227e614b07f77b"
+    },
+    {
+      "path": "testdata/phase1/malformed.schway",
+      "check_sha256": "68d6464896c15cc9fd83d58560ab26469a66ca2f624a76a293c3cdae2b0c6f38",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "db185d2299c521b7903b4eb8788dd6b4272097ac2eb3a826f6b7fc4e49a37285",
+      "format_sha256": "669119526afc989fdfb90d7dcfda9afb81c9fa5bda1fa7c1d5cf8b6c5f12e390"
+    },
+    {
+      "path": "testdata/phase1/non_exhaustive.schway",
+      "check_sha256": "3f85973c25b653e39d2cca12aa3bc96cbac65a86a80275f31434e959fff2b7c2",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "ed9c05dd1993cdc3b241f2dec3ffb6a29dc95a080a232567c840edc0c797e235",
+      "format_sha256": "62c4f12a8fba2f3f8b78862aa092479c5728f9d8d4b1c90ab435b9e3be86d66d"
+    },
+    {
+      "path": "testdata/phase1/toggle.schway",
+      "check_sha256": "d41e0fa2c9277aa07e79133475801817ee60eb45be32a1deea2a7dab7c8e8dc7",
+      "core_sha256": "5fc207e1a572c3a9e6ef04aa85010e1b842782e92635ae3f09949a3fb1353658",
+      "emit_application": "error: application entry \"s1:examples.switch:fn:toggle\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "303a48995217b96495505d2bf90d3ed26d0ce723f42a794748dc64b1ac9412df",
+      "debug_map": "panic: runtime error: invalid memory address or nil pointer dereference",
+      "format_sha256": "89390bbbbec8f69f8d17d926b5b8ba598dec70927fd5639f6dd5ab7446c2b55a"
+    },
+    {
+      "path": "testdata/phase10/compose_per_path_borrow_callee_accept.schway",
+      "check_sha256": "f1f83cf33e519a1def425946cbd4cbd051527098c61560e06255249e84c59a6a",
+      "core_sha256": "0246f777188a26261b6979ab5cb65d6257442c97c4c19522c75d059d7e3a8253",
+      "emit_application": "error: application entry \"s1:phase10.compose_per_path_borrow_callee:fn:callee\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "813cc6ca1a1b00af2d645e2e875ce1349391d766371cde06539812b9bce5c8e6",
+      "debug_map": "ce3d6fc0adc8b7829b23cc1bf154846ebe1071b2023b915ee7a071de44522be5",
+      "format_sha256": "ac525ebeafd281e96a620f384ccd089fe6c4958b5548f5507edd4e7f7654345b"
+    },
+    {
+      "path": "testdata/phase10/compose_per_path_borrow_caller_accept.schway",
+      "check_sha256": "d5c995dc3f84119a6887c47ab974130ca566d236618da3cf9f53e064f429e288",
+      "core_sha256": "bbcc9bfb22c1d9a22fa4750534bcb6de25227411f8b5436221af8fb8040780cb",
+      "emit_application": "error: application entry \"s1:phase10.compose_per_path_borrow_caller:fn:caller\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "c5ee904bc5fba54cca61a5e35077a7c14ae7e9beb06fdb510b639437c5bbf779",
+      "debug_map": "9f112255fb2150304c29e76d04d7f8165b471908295747448406946057ffe062",
+      "format_sha256": "7145d8f4bb5da2d05bedc1ac6046539dfe16f23ab40a180a43028455ad22740e"
+    },
+    {
+      "path": "testdata/phase10/relay_depth3_accept.schway",
+      "check_sha256": "b5c9341859716eddae1232b1c69166a83d5f796c4c2470d9ccc3a2e0be157b83",
+      "core_sha256": "edcb2fc3dfceea7066026dba12d11c340fd157386a4c8c7094823cafed083ffd",
+      "emit_application": "error: application entry \"s1:phase10.relay_depth3_accept:fn:caller\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "80f26b14e5476e6ad582caf7a5daece1f40da8ec452319a2d7f904d6e3836693",
+      "debug_map": "b66049d0add102bb07be649977403ae577d47f22ed3f37f8dd77dd25bb465d47",
+      "format_sha256": "0d30c39796d4d763ce2b2e7380689849ea3d30cec95ebe1bfa3cbdf796ba863b"
+    },
+    {
+      "path": "testdata/phase10/relay_depth3_refuse.schway",
+      "check_sha256": "ec77bd7d79a72bb75ceb2d3a020e40f77ca21757b1f461db5ebdfbad307cb039",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "40aabee7448e90ae423fc3d9ec97b68e298c5f8ab7907711573b6b0eb758c136",
+      "format_sha256": "429c04d5c9ca0a4a5f5a88cf02b90d22b479442d2ef9505a4fd086f4c5ad1c9f"
+    },
+    {
+      "path": "testdata/phase11/multi_function_diamond_call.schway",
+      "check_sha256": "f60a745a4cebd082fb4e89047a2ef6e07e05c66d66d37d21358073ad14733eab",
+      "core_sha256": "aecf57f5171339745a51d11e92abbcfe8438e344736b24a7b40ab788f78942ee",
+      "emit_application": "error: application entry \"s1:phase11.multi_function_diamond_call:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "2c542a9d63e46dc92886efeb3b813d22504093b0e721b0c0914790684e5cc228",
+      "debug_map": "075414f13bdaaf249970070056fecf529c7bdaef035b8d859804edfd04a17d48",
+      "format_sha256": "74efa991284d7fc6509c9085ffc6aa46f715001bcfa1d94624aa08928d91665e"
+    },
+    {
+      "path": "testdata/phase11/multi_function_entry_basic.schway",
+      "check_sha256": "bde05cb6953ad121f190a9e61f09ed955abbf9738ac82248961f16d81c20f734",
+      "core_sha256": "0b2aefc56efcae679d5df4e856a38c212c17c71fac0f1f7aa09d6b0651353f01",
+      "emit_application": "error: application entry \"s1:phase11.multi_function_entry_basic:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "f1c1a861f1d20e57ae6067fb4db28829e0ac3ba4942fe4f52b60e2cda0c28756",
+      "debug_map": "c1a4ccb4542066dd34453327e9d160f1f28a45e9719628e728230e9de239a5e8",
+      "format_sha256": "f5f7d4125ba070100922d236271b34e1d65319f1f5a0d24da4a455399d4daea8"
+    },
+    {
+      "path": "testdata/phase11/multi_function_forward_callee.schway",
+      "check_sha256": "b74d189ba251b0ed4dba0d1bc3da75e57a0f483f1ea94ea78da5a075bb546f16",
+      "core_sha256": "f5007c6b35ecd4b50e45172a5499cdf0a6896874c09b639ac2eb3f78db7d7afb",
+      "emit_application": "error: application entry \"s1:phase11.multi_function_forward_callee:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "cf9c7023bd2fdac141192b8e6a505ec4cf1d9c678aed7a53f44351dd35a61aa5",
+      "debug_map": "044ee621f45ff13f60a7d6a344c9f7145dbdd5b103bd9d82fc69f57e75f233dc",
+      "format_sha256": "30a5ecf9aa70b2baf9af6400a12ef4ea94c4f6ae01fae32b1cff55d650cebde0"
+    },
+    {
+      "path": "testdata/phase11/multi_function_gate_corpus.schway",
+      "check_sha256": "5063fb3d545f6f2589bb889cb73e52664153b07b602d0fdc8f95ec6adfa5e39e",
+      "core_sha256": "fede66e6d64c3ec989c842ca8d4dc15be1ba824e4d6b2574ccb34af971b6fa2a",
+      "emit_application": "error: application entry \"s1:phase11.multi_function_gate_corpus:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase11.multi_function_gate_corpus:fn:touch\": by-pointer bodies are not supported by whole-program native emission this phase",
+      "debug_map": "8e2ea77c7a066cca7de0c1e91ae2ebc808aece3af78e663b38a1b883e23eeb5e",
+      "format_sha256": "07d4f26de0f3c6674592d4c97d6962049727a9bb9f7457c6cf21b31d68393daa"
+    },
+    {
+      "path": "testdata/phase11/multi_function_reduce_gate.schway",
+      "check_sha256": "21d1ef66c6fd92456aeb014a19b6da1963aa5fc3e4bfff69845c76044a067664",
+      "core_sha256": "24b9036ef595c821db6c61552e3e593bae4f53fd3449b9b0a08592e8ff3247b4",
+      "emit_application": "error: application entry \"s1:phase11.reduce_gate:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "8ad5dc34f332d810d2873816d248e5004fd3036289ae659469576706bed25f10",
+      "debug_map": "0b6eed6dbee75caa69b4bcfc1abaefc6a363ec4ddf5f8673b6aa7b36260a7c46",
+      "format_sha256": "2d2d55e03efcd4d95e36961be39ecbcba56b19cd7fe2116e59e91304a5b098ab"
+    },
+    {
+      "path": "testdata/phase11/multi_function_relay_depth2.schway",
+      "check_sha256": "5423b54ba0f67910d997924bfeba438fe1c29e5fc768ec240de43521ff89c88e",
+      "core_sha256": "5521a95d6336f5ab602fb7fe7a8d5f28738f98e9ff0d9c5b0da1b249da39a99c",
+      "emit_application": "error: application entry \"s1:phase11.multi_function_relay_depth2:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "bcf94aa9e7e80e83d7886ca52a23fa006beff226fd8bf8525254c873111da56d",
+      "debug_map": "e9a1f6bc417ff57015b444136c04f6e411675205426fd039e798c1e824eed80c",
+      "format_sha256": "48af91eb64ae27bdad5222a51681f59263bfa2fc8110b0cb771523fabb5e2472"
+    },
+    {
+      "path": "testdata/phase11/multi_function_unreachable.schway",
+      "check_sha256": "001f671a8c24794a07aa1fe7fe9868d896f537abd32413bbd800269048ea119d",
+      "core_sha256": "4d5f58f3a2969f0b2b4faf2097da410fdf954374c305913fe5345b6878c78dae",
+      "emit_application": "error: application entry \"s1:phase11.multi_function_unreachable:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "48340b5b006b9b87214601ec6873275d7b31354e16c82ca72597ef94ecda4c97",
+      "debug_map": "17ae38ea9b79e124668845b7c7bad474a84c02b42eda0586e11d041627bff95a",
+      "format_sha256": "91229f99d91151e7c9388c314b4a7d55281b2e8d0f9f7efb44ea1cb9ee2fcfc7"
+    },
+    {
+      "path": "testdata/phase11/multi_function_zero_call.schway",
+      "check_sha256": "88d556a345cb6681c523d8e137efcb62e8af1ab16b4729ed996b85581c3f3737",
+      "core_sha256": "6d8425d66c7d8a65dffccb6564c94e2b113b12752a7011220b63714dbf03b8ae",
+      "emit_application": "error: application entry \"s1:phase11.multi_function_zero_call:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "6652285100a4cf459a9e6ff53cf84b444ad403b88245229fb211994d49b8f058",
+      "debug_map": "858128df0e200ab785a5db623cbb2ac822f0c0ada436f9ae186a3c4248727c3a",
+      "format_sha256": "4fc842f1c6059c27840475cbd0ac299b137683e12b6f5706759c0c57dad5c2ae"
+    },
+    {
+      "path": "testdata/phase12/payload_arity_mismatch.schway",
+      "check_sha256": "105538761c252411726020757525b2fcdf94ec0955af001316e7722b79bd2163",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "515af2d7d22ce3da1bcecf1a772fde107c03905dd749bc5e6378f2473d3e3529",
+      "format_sha256": "18673c1f9d12492db9f6a596a46250277179fdcd6dfd1c451d7aac1ab993d226"
+    },
+    {
+      "path": "testdata/phase12/payload_binder_on_nullary.schway",
+      "check_sha256": "4f26c81c156ca50078fa2774babfc5d2284eb6d172086338cc40bd1c3e406b67",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "8fc5ae026b67f80f3631e4ef05d1041a82b42537b9511b789d45bc4a79a06007",
+      "format_sha256": "a9c6243d4901e73f2bbcea357df45ec1a19163a794b8d60c581bce11dc86e436"
+    },
+    {
+      "path": "testdata/phase12/payload_borrow_interaction.schway",
+      "check_sha256": "4840e800694de514685ae678534d73081b597fcd29091fd50cb63c33cc002664",
+      "core_sha256": "30943d91d182865353190905f46aca0bca8d6accbd318db438ef8ede4ac6e052",
+      "emit_application": "error: callgraph.entry_ambiguous: program has 2 in-degree-zero root(s), expected exactly one: [s1:result.payload_borrow_interaction:fn:choose s1:result.payload_borrow_interaction:fn:identity]",
+      "control_native_c": "error: callgraph.entry_ambiguous: program has 2 in-degree-zero root(s), expected exactly one: [s1:result.payload_borrow_interaction:fn:choose s1:result.payload_borrow_interaction:fn:identity]",
+      "debug_map": "29568c072a90559a4ccbe8f9c2b214e7765e0310cfc549cd0159c6f06a4f76c4",
+      "format_sha256": "91532bc3535621fac5294ac11668a92f6b1e0ee0136c2ff0bdbba9a1bfe15629"
+    },
+    {
+      "path": "testdata/phase12/payload_drop_obligation.schway",
+      "check_sha256": "fb202f15e1599358aa45a84455333975da50dbc43190564ed516de69e1bde7ae",
+      "core_sha256": "17002fbece88c9d0220b242ada81a687e9a2196b7b50096721a79c475b8cbe29",
+      "emit_application": "error: application entry \"s1:result.payload_drop_obligation:fn:identity\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "8a07c511454f9fda73d9a6488d4f55aedc865820b75032083fac09f04c8e39ec",
+      "debug_map": "51461f5a86949e2e78fe008c17f91b872abb219ab83da3a17964799591b481b5",
+      "format_sha256": "da5dc4309ed2c31281ee260216f4293cd6276902c87c26937154f9b275436a17"
+    },
+    {
+      "path": "testdata/phase12/payload_duplicate_payload_type.schway",
+      "check_sha256": "f033562dfcde15b4ec444011ff1fb867ee407189c91f19c000d1026dced1e03c",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "e0c938bc602c952fe399c7fac3484cb222a80e72f15234a0e527e029d3ce7979",
+      "format_sha256": "38504d820a146d3e5ba7dc409716c1f6b519b0e5bee2f8390fa0e90d328ecf6d"
+    },
+    {
+      "path": "testdata/phase12/payload_missing_binder.schway",
+      "check_sha256": "791febe4ca6253ebf9483c28007dc346c2655effb3cd6d149c7c7b956af46e8a",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "8e44e8c78ead542cfa4b20025e454bd9c7530644aec642d881092fdffb87699b",
+      "format_sha256": "ef74e0e704cabdba4affe930bc79dcc3ec681022fe2b84c54f43b93d6586f8b1"
+    },
+    {
+      "path": "testdata/phase12/payload_resource_refused.schway",
+      "check_sha256": "4e4fcbeb98be8f5ecda18631f35acd28814faa76ee300e77c61f71c66c976926",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "a0472736aedc761d5998d422ceac97867bb74aaa86331873df5aed0dbf720d11",
+      "format_sha256": "842d587a93950def0104660a8ad9327debe51e3913d36f08e84f4700a6653368"
+    },
+    {
+      "path": "testdata/phase12/payload_tracer.schway",
+      "check_sha256": "767ae9576f4bc6d9a19a49c50431d96a66538ab4d8bc5dd0b4d7a6e45d7b286e",
+      "core_sha256": "4eae037919699e42f33e0de5658c9a3d59c26f2790407b8cae22b5763bc8a7ad",
+      "emit_application": "error: application entry \"s1:result.payload_tracer:fn:identity\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "6b61d0805ed4f1200dfe0fd57837fe4f5174f0c272243c225fe8e7196207bf6b",
+      "debug_map": "51461f5a86949e2e78fe008c17f91b872abb219ab83da3a17964799591b481b5",
+      "format_sha256": "9fe6e45a899deb59982963b945fa3acd8a72a321ef225d3c576ca0385789bf0b"
+    },
+    {
+      "path": "testdata/phase13/derivation_call_argument_mismatch.schway",
+      "check_sha256": "1f6363896321cacfa740179491cbed5e00cabd207723b800bdbb8a46b8f24f27",
+      "core_sha256": "076be9aafde39ab7503f9684ebcde1deca243348a5ca35447ac4f78526a9cc7e",
+      "emit_application": "error: application entry \"s1:phase13.derivation_call_argument_mismatch:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "181650c7a8d7aa9cca646c4d0e9296adc6a112f9a43da4563e477ef8dceef147",
+      "debug_map": "b17e8faede405b7b33fb1fde1f4eece3c857875f21b7376d59441d11b194a8de",
+      "format_sha256": "b85a808f2dcfb6c41a5f1828d91654a350e4758de4af81d6cd770b5e9a6f1acb"
+    },
+    {
+      "path": "testdata/phase13/derivation_fallible_call_unconsumed.schway",
+      "check_sha256": "2ea6807fb0ff606d36a697d39490db3352baf47f59f734e17ed1ec0b578a0af1",
+      "core_sha256": "dd5d2ba038765a97fe4cf46089ebfc5334d57965d17b2994551f5b4b199c5fb4",
+      "emit_application": "error: application entry \"s1:phase13.derivation_fallible_call_unconsumed:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase13.derivation_fallible_call_unconsumed:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "2d8f0d339bce92b4821e6ab8fc053be8bbb892a99569d258e7730c381278e24a",
+      "format_sha256": "cd972859779d912d69a1055fd241d0869e72981d57f9f12bbd62bc3d20ccba2a"
+    },
+    {
+      "path": "testdata/phase13/derivation_interprocedural_loan_defect.schway",
+      "check_sha256": "9af8275423c0aba2b2778a0cddc0b68003f19cbdcb986adf73d0ea13d164e478",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "bf2b71400074b98b8e0f5c8a9be948034c3e7af3d4a79d867d17feafe9c049ed",
+      "format_sha256": "43767c2860cbf7f959547d59164f58d6eb52da6b61cb5902c8f991e8c264534f"
+    },
+    {
+      "path": "testdata/phase13/explain_three_function_chain.schway",
+      "check_sha256": "691d25b0d3983d9a3f84f4c3b47580a4e527a8bf89fdaeee1f758dd42a87c777",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "7b3131d8d07ae0f857f9a3cf907afe55818979e5ec16fe05db3847026d4fd310",
+      "format_sha256": "ad155720092c31ee32f42c813b4e4c5328efea45da6ba85015c14657e5b2c489"
+    },
+    {
+      "path": "testdata/phase13/explain_three_function_chain_reordered.schway",
+      "check_sha256": "692df8792c19a1dd33a2e06282b6cb4dd6228d789c2c3d2a9375dc71e2c24c86",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "3482797b38e3300ae98d4bbc6c2315b3fbf9dc916b625a5a77b6b807b0e973f4",
+      "format_sha256": "0f3b25fc4a71cd8e566fd38a1ab42843532fc1d3186ca3675d9b514b0e9da700"
+    },
+    {
+      "path": "testdata/phase13/heldout_call_argument_ambiguous.schway",
+      "check_sha256": "3eea544cc9e30bc3be1e29fed751ac1885bd2c1005d5b3b62c55d61ddd7624ea",
+      "core_sha256": "a0ba7ce5307b4c2c7f9125424fdf20f304b6f6fbaaedea24743d68ebe8a31979",
+      "emit_application": "error: application entry \"s1:phase13.heldout_call_argument_ambiguous:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "0df4fcf3c8ca23fb283a3564a634ed4312adca3807b6052888675b60c7d2a269",
+      "debug_map": "0dd2b0e5a9898753fd88cfce9bd375a1e8850d3f41b87ea51f9e8b8e467d90d1",
+      "format_sha256": "43c2ab44cb5c58b5ed3020cce431b6b71a2e68c9ce68b7eff147bfdedf0939c5"
+    },
+    {
+      "path": "testdata/phase13/heldout_call_argument_mismatch.schway",
+      "check_sha256": "c480dd32e316c1af762a997458bf4c1d9fa6e8fba4b37624c9029afb611beef8",
+      "core_sha256": "e7cf0c8116e659d7ac3a37e570dfeb2a3b77276dc8588ea2f25f326c1e952f69",
+      "emit_application": "error: application entry \"s1:phase13.heldout_call_argument_mismatch:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "7389fc6cfea9778edd6cd2f708a6903fc0f3af5e64e76b755f6cc4da7cad5b9f",
+      "debug_map": "43d32afa57aec9e9f159d26ff354ca6a9f8b15ab936df3a77f77bb79365a13ef",
+      "format_sha256": "42d0c1d2e8d57b8b7dd22d9b8cfb19a1464149b639b5373a4ed0dd82e8a3fd6f"
+    },
+    {
+      "path": "testdata/phase13/heldout_fallible_call_unconsumed.schway",
+      "check_sha256": "70c08abf2e280faf71af323af98ddcac3d372d192d6fd8464f2ce37c80d141d2",
+      "core_sha256": "c918c929e44589ab0b90471e7baaabd037a94acc18a787193231bcd00d134ab0",
+      "emit_application": "error: application entry \"s1:phase13.heldout_fallible_call_unconsumed:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase13.heldout_fallible_call_unconsumed:fn:acquire\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "404c92ad8b7705026c1f4eb7c5b9a1c01794938bcf4364680bfd1c1e394d0caf",
+      "format_sha256": "91bd610882ff44b35769fd9dcde0d7bdd6185bb562ca1f5940daecf4cf7b1116"
+    },
+    {
+      "path": "testdata/phase13/heldout_shared_callee_twin_alpha.schway",
+      "check_sha256": "88a175e2dcad6628cc408864852505079dabb4fe21ad542a456be09e37db9edc",
+      "core_sha256": "2d7a6bdd498aa8fc71f951d2922da2a2e1568c34e500262b49cadd128d3bfd3b",
+      "emit_application": "error: application entry \"s1:phase13.heldout_shared_callee_twin_alpha:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "1ca4a9d7b555ef9a827c9fbce57608e06561640a3689c698e03e9c7ae0e8a227",
+      "debug_map": "59be2d76b023a64c77bd3133cd374173c450961dfbb0dce0f6aec9c2e5a0c6fc",
+      "format_sha256": "834f396181e5a4656e66a5e20e214c583bb3fe675b5f583b3c2315b5d974f4fd"
+    },
+    {
+      "path": "testdata/phase13/heldout_shared_callee_twin_mirror.schway",
+      "check_sha256": "87e934750506ab0801f0cf2fe9b5a28a461bdaefc994002c931c8c64e6adb6cb",
+      "core_sha256": "f364ed0fb534fa2fa1e57db4f855a9c78b7897de46bee10fac0761576c74005e",
+      "emit_application": "error: application entry \"s1:phase13.heldout_shared_callee_twin_mirror:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "950627f8494123010337307e611c25ddb92d102022753c84a9d881d1155b8028",
+      "debug_map": "34f678fee72c84c4aee30cac121d67bc9855c50103702a96ac9e75e6c8049443",
+      "format_sha256": "b2c49f864dc1ec6ae06c11448d8b1e4ca27c93536b928d05184da2e77c24f8b9"
+    },
+    {
+      "path": "testdata/phase14/blame_unreachable_admission_refusal.schway",
+      "check_sha256": "8fdc853bcd2d3b1a23ef8ffdc85f42b8df2c434fbfaa1dfd2cc62cb0434ca8ea",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "42b60a0cda9b630df8d304a53fa1517597630a68e7c7ddd667c14038026e7b63",
+      "format_sha256": "09ed936fee5ebb6b73aaaf5ac11ceacecd1ec386e1f6abba7e2182fb1adb42e9"
+    },
+    {
+      "path": "testdata/phase14/multi_function_match_refusal.schway",
+      "check_sha256": "be837954647af56301a42a88a40c93a7490f88fb9b37b9f706d013147e4e7c45",
+      "core_sha256": "795fe389032c039c1a1237708dff8793981da26bc4370aab1be576b0e5bdc51b",
+      "emit_application": "error: application entry \"s1:phase14.multi_function_match_refusal:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "5755b3951b46676aea0843189015b220d40c0b0446fa9d8450a06c5871eca10c",
+      "debug_map": "ee4225b626ffbdca080598a3247fb6d02e8d0c733762742a326de37cab22ee75",
+      "format_sha256": "a86d9e90be4866cb20626961fc3757604bea7ac68ffff27f4eab64cc51f3e556"
+    },
+    {
+      "path": "testdata/phase17/call_argument_type_mismatch.schway",
+      "check_sha256": "501cb3a0d8f6e59219e44e68f818aa480ca7a3b86f2b9ec7c0357aa4db7e8eb5",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "4fa8a77a88a097f7507776e10de618e2c218535fe8a57f00b368afea3591efb9",
+      "format_sha256": "64c413b662e70220f9eed730dd4e026ce0095fabbd790441e9b9139c3a6aaf52"
+    },
+    {
+      "path": "testdata/phase17/call_return_type_unrepresentable.schway",
+      "check_sha256": "86918d9cc8fb4060cd8f77e1afc5246b099a463456679412620837b74b201a57",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "84eaf1ba0e4008fc9bfcd7c3c9d1ae807daceab06cc4f38a406930621c8860b0",
+      "format_sha256": "60a5223682c6ac5a587764b58699b73ba1b340c2532dc9a2f9a2301ab39607d6"
+    },
+    {
+      "path": "testdata/phase17/derivation_call_argument_mismatch.schway",
+      "check_sha256": "1fe0a155d8f619e3b57ee4518041fbe025e8195856403f5af2a89f5288e784df",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "47758cc913af2527dc8fcc90543e64b0f3474c739e3058bbc095bf56bf54e719",
+      "format_sha256": "e3e299ff40bf1dd647f4031f0753edf90f9b884b54e5e108713185f42b280b28"
+    },
+    {
+      "path": "testdata/phase17/heldout_call_argument_mismatch.schway",
+      "check_sha256": "22b29e8ae4a6177e54fde89e73bfcf20b9bb69d8842026478fe7a55befd56a9d",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "bb0ac0816daeb95723a04d179434da64d57136e3f9e96f9fde1c0904a09f6429",
+      "format_sha256": "b822b2ca0ae5ab9d0a2cd6a85bd7c76608cec1983e9c0e7cdb50ebc9f699477f"
+    },
+    {
+      "path": "testdata/phase17/return_type_tracer.schway",
+      "check_sha256": "e05f24ddb69b1103b0214028bf9fcbc51a3af24347aa19293be4d7a6e523a703",
+      "core_sha256": "988ac427d7bff420857dbe3b56509192808fc31b1ec215cc19036ee4c86d2deb",
+      "emit_application": "error: application entry \"s1:phase17.return_type_tracer:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "c88511d463c1e2b645fcd4d1d615fea2d87789bb79c7bd4e1193f3adb30ec81c",
+      "debug_map": "panic: runtime error: invalid memory address or nil pointer dereference",
+      "format_sha256": "f8eb9689df29e19992ff7bfc3a26e0cc7a140beb45336df87c486c3029eb9a2a"
+    },
+    {
+      "path": "testdata/phase18/computed_match.schway",
+      "check_sha256": "7cfd779a0619e3ffc81bf6f3c809ff200d73f185b016703d6bcd7b59e2993549",
+      "core_sha256": "7fddbd45a7eb393c52294c89fe75d734d555435fc9bcdebf2061cb49a791c099",
+      "emit_application": "error: application entry \"s1:phase18.computed_match:fn:select\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "ef9f82f44857a68a07c5c69929bbe66bb08d6120caae3a84dea9634d4ee0f6a3",
+      "debug_map": "51461f5a86949e2e78fe008c17f91b872abb219ab83da3a17964799591b481b5",
+      "format_sha256": "6c75c3d71f52709210ec492944c7f60f407c530e524b84db59f8f5020e6a4c67"
+    },
+    {
+      "path": "testdata/phase18/loan_across_branch.schway",
+      "check_sha256": "9e66757262e7bb887bd8c0d9d0dd9d8e775c927c57bc68cbfa5fd8da5adedeff",
+      "core_sha256": "8fcac06a6f238d64334cc20b45e79d0220bc8f51a1e4e76fbed15ec424130c15",
+      "emit_application": "error: application entry \"s1:phase18.loan_across_branch:fn:select\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "8200b045fc031e430fcbcaf692e68c7dd0672c914a3241ae6dbd30f6d9735477",
+      "debug_map": "51461f5a86949e2e78fe008c17f91b872abb219ab83da3a17964799591b481b5",
+      "format_sha256": "00bcca66cc55e85e1346507a8b6aa96a89fde803ed3ab071b9f28d271f44be4a"
+    },
+    {
+      "path": "testdata/phase18/long_payload_return.schway",
+      "check_sha256": "d2396c9cc722d56fdbfd36b75fb42b72dfccb98c0e2aede87deb9d2a27ce9308",
+      "core_sha256": "49c3430750371c0ef6f9eb8129b9be2a534b1028741b61097b1ef42e42c3872f",
+      "emit_application": "error: application entry \"s1:phase18.long_payload_return:fn:return_payload\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "23ac6abe8dc358707d34f0bcc7d57efbb179ecb1a562c42daf9771e0e2793cb2",
+      "debug_map": "51461f5a86949e2e78fe008c17f91b872abb219ab83da3a17964799591b481b5",
+      "format_sha256": "77743dbef12daab78509dc5de16c7ab76026276fb13c5c353ca041e75b13460e"
+    },
+    {
+      "path": "testdata/phase18/payload_return.schway",
+      "check_sha256": "12382001d7fe1a7e773aee3830b5884eaddddcf1548f06493571cc338e5184da",
+      "core_sha256": "154957ed514f7f164c71e10bf574d2008d29712fbf11074b0c1c9350b2de2f00",
+      "emit_application": "error: application entry \"s1:phase18.payload_return:fn:return_payload\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "29b9f49c3963b7488535ec6c06c904b5ad9726500cc543a84cc1fdf478a7b295",
+      "debug_map": "51461f5a86949e2e78fe008c17f91b872abb219ab83da3a17964799591b481b5",
+      "format_sha256": "9c70831fdbb5450572ee5e45ba76b115b8e932483213998b92a2b23b70a7d18b"
+    },
+    {
+      "path": "testdata/phase18/result_computed_match.schway",
+      "check_sha256": "a6173cc365767e99be47b78bf5cab7d2d5aafb1fda1ed650bbbcffc97dc2f093",
+      "core_sha256": "2ebe8cba1c82c9ea9d3b07f67b04e77dd1097739513b54ac8a33987cde9c4c74",
+      "emit_application": "error: application entry \"s1:phase18.result_computed_match:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "ef44106628e361f80fafc24ba438eac40b5afa367d1124d6cb4f3819ab675116",
+      "debug_map": "51461f5a86949e2e78fe008c17f91b872abb219ab83da3a17964799591b481b5",
+      "format_sha256": "824aa9ee991624333af0d02937ca61cc38c7c385902641edd86bc098d4033ea3"
+    },
+    {
+      "path": "testdata/phase19/literal_malformed.schway",
+      "check_sha256": "c1160ccc39c0753f5fc172edbd1879e72e3e1263ee010455e83c77f0734f6add",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "35cbe88c6b5791dcfa365dd898553ee57b5d261cfeee0982424c97c06fd206b9",
+      "format_sha256": "8c8475afc06b497c469fc0fe34b42bfb5b11d8606c74da14ca31d2919ea05d93"
+    },
+    {
+      "path": "testdata/phase19/literal_overflow.schway",
+      "check_sha256": "1264eec6e2f6c0dbd358262780decd0e2fa2182e25f533a96aa044f0b36b7965",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "09bca3f3a80876312d86749fbbf5cd9fdbcf489ee2dfea1d3123f595c803f0b9",
+      "format_sha256": "b4be4127e7b1f3e281cf2896b00a19b59f4ef75c737de90cc5e52d15fea0ad6c"
+    },
+    {
+      "path": "testdata/phase19/literal_tracer.schway",
+      "check_sha256": "1d0bfe33580e66ab6dfc37eb50881c3dc034b4dc53d1abcf6c2e0dd0e3d53539",
+      "core_sha256": "61ef5336f5b3578b36d8984497782d7bc7ef575e1808f05b54ccbde31e60790b",
+      "emit_application": "error: application entry \"s1:phase19.literal_tracer:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "f1e834dc34596d24d33f37be7e6e54312163a06506c984f33fbeb5df8e5af695",
+      "debug_map": "6f7006e393cf0b41fc009b28ceef16cba499f1d7f5da508fb5266e9b5001fb01",
+      "format_sha256": "d3c6ce03158569981809feb98c5849a3f2d6032b9b32ad22bb8993c57918b402"
+    },
+    {
+      "path": "testdata/phase2/ability_shapes.schway",
+      "check_sha256": "69b46e197f7090b70d69f2f845a1c07b6de0ab5e8dca1587ea0ae95a04948e17",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "066545fa840eeee5db31bfb524430ca8253315c217a0b7daf54f8f6355b656d0",
+      "format_sha256": "d75b1105b1e2f1a0296ce77cd4829b88b76aad319f4002477320717ce51eefdd"
+    },
+    {
+      "path": "testdata/phase2/implicit_copy.schway",
+      "check_sha256": "9351817a56decdc4362c0baad3c86a942ec05c9529a149487709a77ffc2ea9f6",
+      "core_sha256": "5e2010f1331206d4610ca6a1b10ce686092a6884a8d4fc014cac3b44e4c36b2a",
+      "emit_application": "error: application entry \"s1:owned.copy:fn:retain\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "9f79754cdd4f4bbd8f42d4be2ab519fca37910efa972387079b4250599a75170",
+      "debug_map": "b00fd9ed96cc17332ac60db2db228dcd59c642c36633ff598acbda3919d1949c",
+      "format_sha256": "6feec5992bde66bcf22b599b6b2fae9b6b09d086cd41147e9c1d8f1954b5d4e1"
+    },
+    {
+      "path": "testdata/phase2/implicit_noncopy.schway",
+      "check_sha256": "736f4b16e920e796cd2e97092df55e98de921618f04537c2a108e08d99222533",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "58bddaeb35b6d3ce0e48bad7b469c5e57823e4423e121c3dfe8304d5b06b4fad",
+      "format_sha256": "f2e40dadca09f2db5a4c661bc25eba314ba4b7e3d711a3d5a3601f1d09790ac2"
+    },
+    {
+      "path": "testdata/phase2/move_while_borrowed.schway",
+      "check_sha256": "29901637223b6c60787db0637f0f7aadfba36a3bb6dc7ed2b1488905bef0f1ce",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "ed3a1dfb5dca0531086c80e5992c4d2d16d598afa8985ef9ecfc1a2edbc600f5",
+      "format_sha256": "0a519d741122ded19cba8e75d9a3388a8c8cb57128bd17190388c8f2d03c3b05"
+    },
+    {
+      "path": "testdata/phase2/owned_transfer.schway",
+      "check_sha256": "a130b32ffc8a0cf0644aee1b4e9998c6e6b72bdfa4573364288d1fe82ca2af6b",
+      "core_sha256": "e17fe549a50beb20c99e0172856d5df5c1736e97dce76d79c2d693c17d22fd20",
+      "emit_application": "error: application entry \"s1:owned.transfer:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "332d7f6336c78feec2d8912a8b88c768351df201162864a3a89c6227dd847740",
+      "debug_map": "669715e3892704e9b7aae63664c4110d1df8142f1be85f9043fa23853321176c",
+      "format_sha256": "237c1587a7366b97472fff4115858706e659cd1cd951656bcb73f1d1e887d90f"
+    },
+    {
+      "path": "testdata/phase2/reborrow_while_moved.schway",
+      "check_sha256": "f80ab88cdaee7eb3fa98239d0086900f39e8fde6ab0690c41b1b9f8f511f5000",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "3a19522cef894b676152eff843396fbbc3cbe8b4d3ef3d453423820dc993ec59",
+      "format_sha256": "918fc90a68538be900b2860a4c2c6ef32aec475469b7164fe122b237aadfef11"
+    },
+    {
+      "path": "testdata/phase2/use_after_move.schway",
+      "check_sha256": "9328de4855b5ec594cebfad05be3aec86490688be24209406ddbe17f713095f6",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "3ccf989b29296ae1e1311cab4ea488877d3f447c1e0a597e94911ce97ddd357b",
+      "format_sha256": "eae7dc2659af980f1ae14c69ce2ff1d24b89f63abacc24d4b9087711850d1d7a"
+    },
+    {
+      "path": "testdata/phase23/discard_owner.schway",
+      "check_sha256": "a38f50a65c01eb30bc969856c85d4adaeb21a865293ea058de0cbe232dfa0333",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "7481955118f734a302e4c68f1d72aea27496fa475eccbb4be6928f4d6eeb8a6e",
+      "format_sha256": "f1e198cda0f733f7c7520069f83213f49207d77501b9c392d38958174b958a1f"
+    },
+    {
+      "path": "testdata/phase25/exclusive_conflict_reject.schway",
+      "check_sha256": "6217396297843dba3dfaaa5f4b360dfe002561926696e129a66d3391e2880966",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "cbf0795d54f2d3ac971530d6c71ac76746f959558146c52c71a6558ae8c4bbc9",
+      "format_sha256": "201a47fb520d9173cbf74c2e1de39b74c71b24bbbf5483402e7a52aab97c6e9b"
+    },
+    {
+      "path": "testdata/phase25/exclusive_copy_accept.schway",
+      "check_sha256": "d72ae5af6e73e961de594e5d5a4c7329c1fa94d8924040189918c6fa4ce82d4b",
+      "core_sha256": "6b21147944ea67f29f1ce612712f3bb363e541a02e760de90c185902234b7edf",
+      "emit_application": "4b27f45448b32576e804bf5a9a3ecdda8d8ec540bc48c3c4c73569447feb4cb5",
+      "control_native_c": "e9473391c52c7f2176241bcba20743e8decdf8712b6cfe5eb362cc12839a36ed",
+      "debug_map": "7535886cff25cfb3dd753ee4f4c1f9e1b3c3e9fd07e322566d23e11321571868",
+      "format_sha256": "dc08c9a7a8f2745119d3f34fab8205a9c1412a15395edaf408f539416aaf485a"
+    },
+    {
+      "path": "testdata/phase25/exclusive_escape_reject.schway",
+      "check_sha256": "e6b61237c87cee839499c591fcb59b2840ec6d31fdc85abe26161cafdae7ecc7",
+      "core_sha256": "9e0964e3cf2da6dc457b01bd1de57418aa636b0bf8628b1050f2936ca6d12f76",
+      "emit_application": "error: application entry \"s1:phase25.exclusive_escape_reject:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase25.exclusive_escape_reject:fn:relay\": by-pointer bodies are not supported by whole-program native emission this phase",
+      "debug_map": "fe081908a573081a441dba7e7f7b7184b6c40cfc822fa77f6031cb489a06cfbe",
+      "format_sha256": "95936955e4d2cbd2c37421d744882534d16810b0d225f3620a0ef205082e7d8c"
+    },
+    {
+      "path": "testdata/phase25/shared_copy_accept.schway",
+      "check_sha256": "4b61f5857d265cfc8c672e7a62389a0965a91badce907e11780c302471f12ed2",
+      "core_sha256": "c8b3fdbc8e472b3acf010c9d729a304afb23c97adcf908ead056b45b7968089f",
+      "emit_application": "444350078401ce25c32a5dd1ce8e9ca93f81bf87efbac886c614e0d59ba703a2",
+      "control_native_c": "2858b0136ad29d29c606c5d03aec1e049b500cac7ec091dab6f0402925433a0c",
+      "debug_map": "e2430bd383d5e3bc55b703a6cbe1bd787436d01529ffa4ccfbc5f8d6289c710c",
+      "format_sha256": "586acccba9e06d2591a0e54b501e57d8c9cfe28dd480caf35f8e9b167888c55e"
+    },
+    {
+      "path": "testdata/phase29/adler32_library.schway",
+      "check_sha256": "857d9c610759027bcb0065e32b6c6317c83b80742750c8265051f621c996919e",
+      "core_sha256": "23c5d43db474cd6dc100831c70ae41c7d8106a142562fcd8458cd2e7532028e2",
+      "emit_application": "e421282dd01c82d66f5d6d590244187ac45da1a06ff750c87cf925f321da00eb",
+      "control_native_c": "e94f8dc8ac76bb2fd00e27381a4225e229c401deb0117ebf27395c7d8b104e93",
+      "debug_map": "d1133ab8769af3a3fa7f879d4c245a303e511aa26ada3a15846a501585c9b3e3",
+      "format_sha256": "b5106015c9d888113ae9b96da8549ef73e0317a5a6cd1ffe4f1bffa0df3642e3"
+    },
+    {
+      "path": "testdata/phase3/borrowed_view.schway",
+      "check_sha256": "03690bd61ed04e1528d646a0c2634f561da04ac2883f53a189c793d47855a03d",
+      "core_sha256": "696bf2e1c2ec73411ed8b091d753bef6e6504026cc43dc3b248ae62febba438f",
+      "emit_application": "error: application entry \"s1:owned.borrowed_view:fn:choose\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "7e6fc8f8ff178579d9412521beef13f2114563381822682349563d5c3cf7a0b3",
+      "debug_map": "4bc56e583c1af76f9a0b29841f0fe13e7cab58ce5d4ddb199d0709b71c0d7dba",
+      "format_sha256": "5002c9e969ace81079d6d53d1184eae2ca5f031bdcb529751f3b55b3b2a96e06"
+    },
+    {
+      "path": "testdata/phase3/branch_one_arm_shared_accept.schway",
+      "check_sha256": "7b4d5d84ae0499f0463526f2b71c6252f8ce794b7faffbadce421cee3913731d",
+      "core_sha256": "c7ebef76cd22b510aec1a8509bcc89c78883f13dac4f1b94d0e217238a094118",
+      "emit_application": "error: application entry \"s1:owned.branch_one_arm_shared_accept:fn:choose\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "5f12ef8426fbf1e4b28dac10f2c1ceb37f63ab72e240bf8f6150e01ef7dc46f4",
+      "debug_map": "5923aadef939ae542b3be09fcc4de30a350ddfc6446177918fc0fd06040d809a",
+      "format_sha256": "fca7e3e3b07d0943bc6b7d4e1f11de9271f974212425f9bb6d3c17ef65695ce9"
+    },
+    {
+      "path": "testdata/phase3/branch_one_arm_shared_reject.schway",
+      "check_sha256": "82748ce731271d3f5a74b49a7366e8c56c2789d254f02aff945187bccb05a47d",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "8eca4d889d127eb8a1e50dfe4c276710351dff49854187a5b0c7a30b9e0d5369",
+      "format_sha256": "599e9cc71d0cbfa01aadc72654e756e4d9fe7575231c19075f08691cc563a919"
+    },
+    {
+      "path": "testdata/phase3/branch_view.schway",
+      "check_sha256": "6a6370ea9f8a6e376dbc4c1d1933ad7149bd4c2c3172957059adf23a529934e6",
+      "core_sha256": "3ec55ec5717e6760e5d3d006c2a5020f953a21fbf41e0adf406132e202365d9c",
+      "emit_application": "error: application entry \"s1:owned.branch_view:fn:direction\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "260709dab83b9cd39bceb19d451a98d3989d6803318cfeefc09dfd53ae4e2312",
+      "debug_map": "eacb3f5a3615938f8f589143c2bbc878083072a4ca4a24ce5101f49d478df3a3",
+      "format_sha256": "85d92fedeb37118c6ddd72d5e9e37bf777426b6171d05933801b6a7ca419f108"
+    },
+    {
+      "path": "testdata/phase3/exclusive_exclusive_reject.schway",
+      "check_sha256": "c740e175fe9cb747903d5779228f5675f95330aef154fe750066a8f285757e3d",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "13d77b6d033f3efe438bd7742e5359f1bef1b34c44ce58f093a35341b3c93bbf",
+      "format_sha256": "a2d9818c5a40ca76478c336fb9debcdf00b6544d07a2990d035bba6f5bdde8c5"
+    },
+    {
+      "path": "testdata/phase3/exclusive_move_reject.schway",
+      "check_sha256": "0fbf4bd1cd915b7347c74f0dc14098e11edb4a83ba3465311b8f1e21ec5d1757",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "1d61c88e18166c5623db5dd5916d54aa316348efc252e4bd1c11b92dfc55b7be",
+      "format_sha256": "84db7afcb2d42e873cddfeb2a31dc5066da631747212b4737eb5b48c8d7d79ad"
+    },
+    {
+      "path": "testdata/phase3/public_view.schway",
+      "check_sha256": "6d994c01ea531f2b473df9981ddf7edcd8491187b607e672d5b5f352b3f90b6e",
+      "core_sha256": "b2b6ba18f5fc89ccbf983e15767ed71d27a9c9cfae907edf2e6cf09dac15452f",
+      "emit_application": "error: application entry \"s1:owned.public_view:fn:view\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "1d02cccb284738f5f3d911aea3b1789f49085d1a58951c7b56806d91bc1e9adb",
+      "debug_map": "e312ad2d278859770b56ec1f915c6bda7c42e723bacf1cb1e988e0090d4e5195",
+      "format_sha256": "b056c23f998918e0725d8644bc14b1435b7861561017eefac6499ec90b14c83f"
+    },
+    {
+      "path": "testdata/phase3/public_view_impossible.schway",
+      "check_sha256": "515fe1008c503d4ab69658e6cdf6d2939e19dad74f1f40099316b47b09159694",
+      "core_sha256": "331a5b2d81849cfbfc31ba9430ff988d060874386bc93ad574f9429a516c493b",
+      "emit_application": "error: application entry \"s1:owned.public_view_impossible:fn:view\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "0ac763ab8aabb079d8982925140530d79e4f898b357241943762699c121bab6e",
+      "debug_map": "559e1b9b18642772fa472c00016c806910ca4f58df0086040909645cca482bf8",
+      "format_sha256": "edd5abeb40aaa32169cad8379ee2a821b8c38f17d59cbd664f910cadc2f62b5b"
+    },
+    {
+      "path": "testdata/phase3/public_view_mixed_access.schway",
+      "check_sha256": "4d1a61c92a9b1cc89eeb2123e30860110040bdb951b81c51db09a9986e8e3050",
+      "core_sha256": "b2665aa3d0cc9ed49d542a923878b4936e378c870c229638d0549b4feefa9e52",
+      "emit_application": "error: application entry \"s1:owned.public_view_mixed_access:fn:view\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "d0fb589b04cc7bef42459a6fbe9919ca127476b5af7f9b835503bcebe2472551",
+      "debug_map": "84c3e5faab191fc054126b5d7c17ed81e5fb47ea83bd42c71d52904b1631d33d",
+      "format_sha256": "b7c8cc59e736f18f137c298cbfa7564001dd0ce00b26cb233dcde0b7509790b3"
+    },
+    {
+      "path": "testdata/phase3/public_view_multi_arm_access_conflict.schway",
+      "check_sha256": "f19ddbfbc619dc9281e69e4cbf9edaf9d0b28e9983f52e28f8bdb0600a0397fb",
+      "core_sha256": "e35c719e6b1ef7c246cb9635c1a8f656dbde3c6df3ed19d8211ea70be3758a6f",
+      "emit_application": "error: application entry \"s1:owned.public_view_multi_arm_access_conflict:fn:choose\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "9e2dc8ecf453c9cba2f655b21ec8b4b135663fde7330895827bf212869e19224",
+      "debug_map": "4e7f69ec4c6342dbe583a52b7b9fa75227dedf1f6645aef90b14dd5cd547643c",
+      "format_sha256": "294f2a7ffab8c2cea03692bfdf78a2d0969a1f2e039a833d7c3b6d24540dd8be"
+    },
+    {
+      "path": "testdata/phase3/public_view_multi_arm_omitted.schway",
+      "check_sha256": "5e27268014cc8dba4a43af340042723ac399aac4ad2e8dc5e0edc753d7157369",
+      "core_sha256": "5c323c009c0d06132167fbe1c72be37cf3e6710a465159c6980544915a5a8ebd",
+      "emit_application": "error: application entry \"s1:owned.public_view_multi_arm_omitted:fn:choose\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "dc9ae5ae5d8c81f280de503d3fa4a8fb999fd687f1438d7905144f17d5ae3bb3",
+      "debug_map": "a040ab73b063b195d9fc469623ac00179c4b4e98bf525062841c19e0a0e4c8a7",
+      "format_sha256": "f0708828f9da5908982adc4d1007dba982c123edf79286ab1fcc5c6e856c60c0"
+    },
+    {
+      "path": "testdata/phase3/public_view_omitted.schway",
+      "check_sha256": "0178bd204314ab92b50ed49c1e500cc2b1fb08648a1f2a24c8c249dcdaf1d57b",
+      "core_sha256": "f09350cfab25d9e527c6feee9f8c2fc89b22e8eaf530d016cf8421151c0c2cfc",
+      "emit_application": "error: application entry \"s1:owned.public_view_omitted:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "9ae2a2b35c8051c1717dcac569158584fa93632ba57dc634a26243d8614a102b",
+      "debug_map": "f556ea67f1204c36b91b4e3f546365bfb9c8c921eddd7a7de58e36e527c500e1",
+      "format_sha256": "e68e8610a07adc90f80e7af966f2229530c25be18c6383574aa30a9c2fef1e93"
+    },
+    {
+      "path": "testdata/phase3/public_view_understated.schway",
+      "check_sha256": "f83a03d86da5a4b909c19a9e1f3375110f59c666b3928a02c6efac2e9bea312c",
+      "core_sha256": "b45496eb4292454be7a919c1f63a7768060f383a1dc61f3f0a77f7aba65d8574",
+      "emit_application": "error: application entry \"s1:owned.public_view_understated:fn:view\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "994f55821fa0ec168033a54205adaabbea8b038dc62a93ba6f5c1ee4b6b0df48",
+      "debug_map": "239e30ee0f43246919ee710d69f0321b05bf2cbb6186edcba62603f74d5f979b",
+      "format_sha256": "1c4aa62d5ebe06535f2f4bfc430859a12bf7bae13783374a3ad62ff63179897e"
+    },
+    {
+      "path": "testdata/phase3/sequential_shared_then_exclusive_accept.schway",
+      "check_sha256": "fbd15087ea31996f0e4ee56e81bce4fc8a0af4eee0726434505a9cb808c2d44c",
+      "core_sha256": "56d20794f8a43822f4483d2da39e870b4cb036c262f5e9289d32f5859bed20bd",
+      "emit_application": "error: application entry \"s1:owned.sequential_shared_then_exclusive_accept:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "69ca5b55a71b1e1994a20a5af0753f153c1c6acc21867ab82ce0a092f1ced200",
+      "debug_map": "98d6f27184011753fddfca4b49b4bdbbf391334764ef571da68f259a2fc09025",
+      "format_sha256": "27813afdef9cc583710aba3a156fecaf86dc4e8f85e379c213b6c41042e44275"
+    },
+    {
+      "path": "testdata/phase3/shared_exclusive_reject.schway",
+      "check_sha256": "4c49bcd1af3f89570fb15b74297829633e2ac07a9e52e18aa666aca292ea6eae",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "d369ffce92a5374a8b17afa572ba7f78a8af03328f1c92c339b82c42da270f42",
+      "format_sha256": "0adc9793938d64b9aec8bee8f0e3891a4b5faf101e653b8c40d2bf9af155ed3c"
+    },
+    {
+      "path": "testdata/phase3/shared_shared_accept.schway",
+      "check_sha256": "b752f0c2876eb4a37ddbb1f858db69b0817b721e9e36c67340581c6318a11afa",
+      "core_sha256": "ecc14ac0c851b90546fb41502b8915ac325ba322d3a3a7d4887b86961ed231b4",
+      "emit_application": "error: application entry \"s1:owned.shared_shared_accept:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "b2226c53b5622d503aa647a14782e8932e5a5d3c76b3f0cd77ac0c254e145f23",
+      "debug_map": "cf532dc68741be3c82f84b0a923df17f6010047e0cf38273bc3d55ae49cdf049",
+      "format_sha256": "c1182300b5478a32ae5dc1eb7e740cf1caab85dc8d9e546063ed36d45eda8907"
+    },
+    {
+      "path": "testdata/phase4/acquire_three_fail_second.schway",
+      "check_sha256": "db345d7872b75a73c2f7a4e0b359fad594ddbb0fc6dbfeab4828683a9bc5e8c9",
+      "core_sha256": "a4b13c10d60b35ff60251cb95b92a0064b783983d68e766969430876893da8fe",
+      "emit_application": "error: application entry \"s1:phase4.acquire_three_fail_second:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase4.acquire_three_fail_second:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "d57e0a824dca5f14aa7fa56cea56651a45b0e53797b4c44207aca8af16c1bd06",
+      "format_sha256": "ce63c2a910af3ae6f45154fea2cea3af1aee1772293f372c09351113afd1d596"
+    },
+    {
+      "path": "testdata/phase4/acquire_three_fail_third.schway",
+      "check_sha256": "e6c518bbd2cb28de9ce6f303249fc67aa9b8eba9733d81ba689b61adf33000d3",
+      "core_sha256": "34313217e6de96c72506cb4c286fa96568493b19bf96a4a5efafb926cb23e0b4",
+      "emit_application": "error: application entry \"s1:phase4.acquire_three_fail_third:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase4.acquire_three_fail_third:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "d6ad2b5e4b2a7b168f2d622f92781d7f592d7371bee938126e9767b8facdbfcb",
+      "format_sha256": "f6958321765b0793ad919875c2528c21b6dfe7b5ff916b8943e478d883d319dd"
+    },
+    {
+      "path": "testdata/phase4/acquire_three_success.schway",
+      "check_sha256": "22f04b566336fbd2566cf8962e28a9c49005f703311c2dce08fc44fc67ac85f1",
+      "core_sha256": "9c7d6282fb5364ac79538c3da4fbe6a966b2280a0c2cade09de393eb707b8ab2",
+      "emit_application": "error: application entry \"s1:phase4.acquire_three_success:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase4.acquire_three_success:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "b6c0b859ab4b66b104e124c7165a5eb7012fb9155d4d186a3bc2134ea01dccd7",
+      "format_sha256": "be62a50ecc048174f220cc3775c7abe34dcb856d835377e1059413d345ddbe75"
+    },
+    {
+      "path": "testdata/phase4/defect_terminal.schway",
+      "check_sha256": "744a999ca0277f36b5df774062e8c7aa2a3240816f7b6dc0ebbbd988b31b3d4c",
+      "core_sha256": "4f348119f72c9d8aa1b3dc1cb91942176d74727297142ca940d44c08737bab0f",
+      "emit_application": "error: application entry \"s1:fallible.defect_terminal:fn:triage\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "ed69f37a30096850c1fd6fda801343dcd424f2f9ae215f32ce72e1e200e975df",
+      "debug_map": "b44b42edb1a9fcd9db3957b3466b69bd0b3a8611b140d5ddd145091849df8015",
+      "format_sha256": "40f0c3fd20299758eec65abc424b9248c6a715a54986bbd5a0db41e4280972cd"
+    },
+    {
+      "path": "testdata/phase4/discard_because.schway",
+      "check_sha256": "e1afd098eb9330aa923db3b1155171cbd40c2bea8e4956842a16b45f39076367",
+      "core_sha256": "fb206a1c820a26d8bc5628e9d2b902afb4df0170744cd63f41869d2d25a49599",
+      "emit_application": "error: application entry \"s1:phase4.discard_because:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase4.discard_because:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "9052f0f28f54772f73fadb22c8eec63679b086527c66aeac889feb921124cd4e",
+      "format_sha256": "82333d63e8cfb679ac2fb5c3d47d4b51ce6bc9ebfae5b230f3a29a54a9614288"
+    },
+    {
+      "path": "testdata/phase4/fallible_call_unconsumed.schway",
+      "check_sha256": "1af777dfedf9cef0e0712fd353931ddd4d8906ed3e10a3e9cf762ad2727e5bd8",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "f2140fbdfc61f2baf69b1bca4c5bbf0778b74db616eb1c4e954300306b8da9a8",
+      "format_sha256": "901660c9a0d7c0c27bec25466546e4c8144954a1921e317b97fe71a9dc81a6fe"
+    },
+    {
+      "path": "testdata/phase4/foreign_acquire_one.schway",
+      "check_sha256": "50cfcfc6ae16e7af7f36ead92788bc38a11e07300a9c00a7cd97d434f21c4da1",
+      "core_sha256": "011e1d90e47628c6473cde1fdcde7e3948ce6170b7bb54f2e98f54f5464e5a84",
+      "emit_application": "error: application entry \"s1:phase4.foreign_acquire_one:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase4.foreign_acquire_one:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "e3e95f630e0475021075044e280f27654395d2b964d1e8e4cf7c08256a1787f6",
+      "format_sha256": "f66c55e4cf0b1dab45408c805c131848acf5f5ae1e11fa8ba2746181be409130"
+    },
+    {
+      "path": "testdata/phase4/foreign_call_target_not_foreign.schway",
+      "check_sha256": "23d81498b5fd809625d657ad08ece40b62f472b1fb88458bcb3d1c4dd09c95ee",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "ee0791a4405ff4610a062f379268b28c5bba83d6b67733625bc46ee255e3aecf",
+      "format_sha256": "3748f15268f21591b5fb6639ca91700508d7d37a7881d66a25a9af09ec125008"
+    },
+    {
+      "path": "testdata/phase4/foreign_origin_omitted.schway",
+      "check_sha256": "d3b9fc49a7e5f7740e19ca731c7743ebb5190dff757e7ad62527108850b78fad",
+      "core_sha256": "fa5ade93351937d1d7ccd923518ebb13e6ad56525eb4c18d8f973dddd6b22ca3",
+      "emit_application": "error: application entry \"s1:phase4.foreign_origin_omitted:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase4.foreign_origin_omitted:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "9d793a44a84796dcf0f177694718eeabe9cc1df5df8dec98334b47f4d09e518d",
+      "format_sha256": "abbc103f54ea27b285b16ce92accbf8ee757917620ad34b145d0c4b060dae3e7"
+    },
+    {
+      "path": "testdata/phase4/foreign_policy_value_injection.schway",
+      "check_sha256": "0589f987549ed2c4b375d95936ad6e69d2f1949f0dc2cd0edc84ce3efc4f30b1",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "b79c1460e025aea944f330b446f750ae7851618f8e925f5ea5bcf9444ca47f9f",
+      "format_sha256": "96c32f9f4f10ce3256a07a0794e0c1e2b1ab8b32a6235bac9bca7f8c7a98f1fe"
+    },
+    {
+      "path": "testdata/phase4/foreign_unwind_undeclared.schway",
+      "check_sha256": "49262cb5f1a887511fc161d464732337222fc05b8868d55b12b3dfa5b1a0486f",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "09c3939650185a966f046d5be1d20e1aafda6334ee8a3666914d291997643e5c",
+      "format_sha256": "428d0e10c5ec45fc80a777133b833ac5b1be1536320d7cb15ba1edefcbe8a73c"
+    },
+    {
+      "path": "testdata/phase4/nonlocal_exit_probe.schway",
+      "check_sha256": "9a85f2097a21c12102b82809b68b9be4b96a995ce5c7d29a249f52199d1002f5",
+      "core_sha256": "448e34fe028ec35218b3207d57091d285badf659a77c73fb73e372df20ce871e",
+      "emit_application": "error: application entry \"s1:phase4.nonlocal_exit_probe:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase4.nonlocal_exit_probe:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "b4c869c70912278feddf89da090d282f402ba1e217fd4e62c66f1657582322ca",
+      "format_sha256": "92bd1a98a22fc50d5a5c07127187d0d1c4292f60508321d269ab30db595c36ae"
+    },
+    {
+      "path": "testdata/phase5/allocator_mismatch.schway",
+      "check_sha256": "6bcc3738503b7df70843369075181e945a1e38a64c85715c2212f147f2267de2",
+      "core_sha256": "d983488512ef2b9b399fb525bc2d8343d18f89799aa91143beaf6fe79bc9b533",
+      "emit_application": "error: application entry \"s1:phase5.allocator_mismatch:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase5.allocator_mismatch:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "dda500e4350f9e4e6b1ed6eeb63270ad4d927cada07b8e4a696157864f9e617f",
+      "format_sha256": "526b3a791ff0870aafc64a56efdd0d98a562a1236d634eacf3251c1ae33f34ef"
+    },
+    {
+      "path": "testdata/phase5/coordinated_lie.schway",
+      "check_sha256": "ae2d4004a1e2a9a0563e446c7d842993c56c892f6b27bc5aca21c604a04e2a54",
+      "core_sha256": "e2ec9dcd4a2c7769cb45e35122af8bfd2f6d613ca25e081aeaa8dc8fa1194ae6",
+      "emit_application": "error: application entry \"s1:phase5.coordinated_lie:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "26098921244e9433f12c0664e0e67730c02df12122161c87132abf4d9e3b1b55",
+      "debug_map": "970f5e2884b4f3b762dcc4340e24b78f57aac5febb01e1c38968fb9196b345f6",
+      "format_sha256": "b0c07e8d8503ae0a79c0256c4cb8bd10ed1d9bb30fa2d8dd52068331183f83df"
+    },
+    {
+      "path": "testdata/phase5/dead_store_unused_acquire.schway",
+      "check_sha256": "dff4d3eb653bdb04e320a516eaaa9510a45cc61c0b3e54573648aa025e257a19",
+      "core_sha256": "31440397a59feb2a706434de33842c7aefa240a3d04499a31e9bed4a9a18d200",
+      "emit_application": "error: application entry \"s1:phase5.dead_store_unused_acquire:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase5.dead_store_unused_acquire:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "adc8fc78801429fbc2bed559fd739db09106b78474c73fc087442392082a7a36",
+      "format_sha256": "72a15141995def39442128590b10f585b4ce22c72f0fa1e275d9ca49616801be"
+    },
+    {
+      "path": "testdata/phase5/defect_dies_by_signal.schway",
+      "check_sha256": "d647a71722b31c9c3ff339813d5deefa2838367bb4ccff47ba76a66cfabb1b03",
+      "core_sha256": "488f2f4dcd596626b6b82ddd9a2857c0068a53a37485c7e90104957b2607761a",
+      "emit_application": "error: application entry \"s1:phase5.defect_dies_by_signal:fn:triage\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "934cd031b3bfbc5ebfb391ecc25a62def8961f9e0b9ac638b39357ded1f1b27b",
+      "debug_map": "dc83f86577684fc4b1eac14e5a79deba1914e5d4378d25f241976c486d1ceb53",
+      "format_sha256": "a35ee95850280571374383ed04d125f0cd812d8b8d54131efc9312e876a20186"
+    },
+    {
+      "path": "testdata/phase5/explain_use_after_move.schway",
+      "check_sha256": "db4a6b46fa4b8441aa48e6e6482c52f3b310609ea5bce0b17389e369b5ea3bb9",
+      "core_sha256": "skipped: check diagnostics",
+      "emit_application": "skipped: check diagnostics",
+      "control_native_c": "skipped: check diagnostics",
+      "debug_map": "bca71c92d06dfd0463cfbe5ce5e003cb6cb577713d7b2d42b427b9c0ac0c538a",
+      "format_sha256": "b39fe6e8de575c599bfe8622377c92776bd10e3ae8ad50f3420e479008158b84"
+    },
+    {
+      "path": "testdata/phase5/false_restrict_hoist.schway",
+      "check_sha256": "f3fa69d0d39eb44b3fa3a2d34b40a12151de8aba587422ae054475111c034529",
+      "core_sha256": "805e4a8f93a545c7fe480695d08dd8d14a0e5dc633705c60a2e2ae72b837237d",
+      "emit_application": "error: application entry \"s1:phase5.false_restrict_hoist:fn:touch\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase5.false_restrict_hoist:fn:touch\": by-pointer bodies are not supported by whole-program native emission this phase",
+      "debug_map": "fb422b961a6c1916097de82215a494aadeafeed6a0a20d28a38b003640c84871",
+      "format_sha256": "c33cd8d2941f409d1deeafeff489a7c14948aed788af47f0a0aede4c3b25ee82"
+    },
+    {
+      "path": "testdata/phase5/inline_across_foreign.schway",
+      "check_sha256": "7c2b03e04a89c3d6067d9dcaddb2041e7ec49e5f41c6ac77032e9745ba82bbce",
+      "core_sha256": "72fef86428dade289e837fd51dc9294bc9294c99d11f4c7f7b5f2ddf64943229",
+      "emit_application": "error: application entry \"s1:phase5.inline_across_foreign:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase5.inline_across_foreign:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "b121a7a77dab85fbd690f4838bb404a52df9ad7a8d62f3cdccce8246258536fc",
+      "format_sha256": "7d2ff2d799196b1a8b28025fc8081bd0675591c38c5485a998744c1fc47d95f4"
+    },
+    {
+      "path": "testdata/phase5/reorder_two_events.schway",
+      "check_sha256": "393d0506d089b70bee4ea41e0e8105463e349cd1e0995ff66b12acecba8dbbcc",
+      "core_sha256": "2be6e33c8685cb2f86c87e81427ef5da94d2fb528de0dae33ac10cc60e21532d",
+      "emit_application": "error: application entry \"s1:phase5.reorder_two_events:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase5.reorder_two_events:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "a92001acc3b8c6e82ae076d7bf6cecee488eced93fcfe4b5146ed9ddff608055",
+      "format_sha256": "95c1847b29cb6382d1cea1d791dc5496f604ac10bc4ce1ba7239645ceac80fd3"
+    },
+    {
+      "path": "testdata/phase5/restrict_borrow.schway",
+      "check_sha256": "f22a46079dd219336608dc81cc0c3773e3e1cd17d4b614db8bbbdb0f77cc2b95",
+      "core_sha256": "07d661b8e89fc651cddbd92f56dcd8530d756168dd910e5ae44a1168592ac58b",
+      "emit_application": "error: application entry \"s1:phase5.restrict_borrow:fn:touch\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase5.restrict_borrow:fn:touch\": by-pointer bodies are not supported by whole-program native emission this phase",
+      "debug_map": "5adbb63d23182a3cbdb26e721c32538eb7f2f2f2da1666ffbb95eb1cbff95ab3",
+      "format_sha256": "0370266cb28c488059f423106b7a06bf042e002b62df642716ed670cdb6fef04"
+    },
+    {
+      "path": "testdata/phase5/retained_pointer.schway",
+      "check_sha256": "d4d0e449802e8990ff9fd2a00a4611c107786b0e3c8fe0c57dfc19c390841b5e",
+      "core_sha256": "7fc95194fce966b97d59f21bcbf15668cffe33f9c307e21fe6d2b5e8225920d6",
+      "emit_application": "error: application entry \"s1:phase5.retained_pointer:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase5.retained_pointer:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "ca55afb59b9520acc2caf85e5c6b8cbf468ddf77ddca130403cec35eb13ecfbf",
+      "format_sha256": "5136960f513341e8a5167bb80ee0de1228887b038e42f6befa5faf763e853957"
+    },
+    {
+      "path": "testdata/phase5/tail_collapse_release_ladder.schway",
+      "check_sha256": "0cc75afeb4009146d61af5f4011169614f12379824b9ee7dc9461d776d2e6049",
+      "core_sha256": "9be0c6179ffe348772a54802281a4988d343dc000e728455582a28b04fe45f33",
+      "emit_application": "error: application entry \"s1:phase5.tail_collapse_release_ladder:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase5.tail_collapse_release_ladder:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "d6330a658a3cb65b61954476852ef8b64f0d4568ad7dc09ad7b0abd40f17ad51",
+      "format_sha256": "5061e8a878058f29d43c7b8039deecd35062d5b69b6c96e07fd4b621e85b5525"
+    },
+    {
+      "path": "testdata/phase5/typed_failure_truncated_stdout.schway",
+      "check_sha256": "f335baae05e21b06f690e21f038f9ae86cdea608233eb307c2f8e7152015ec8a",
+      "core_sha256": "0d608061478bf8773433b0011a3522b0eb2e8b7b3c2eaa1730d8ebe6c6495319",
+      "emit_application": "error: application entry \"s1:phase5.typed_failure_truncated_stdout:fn:main\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "error: function \"s1:phase5.typed_failure_truncated_stdout:fn:main\": multi-function foreign-call bodies are not supported by native emission this phase",
+      "debug_map": "7336ce8507462b3242d7c12149df65a040b7bfe914728c6305a057b7d3bb1f74",
+      "format_sha256": "21442368cd2f2a13f1094aa15aded0dfda0923b20d5b682188e4b5038f85a06e"
+    },
+    {
+      "path": "testdata/phase6/derivation_borrow_defect.schway",
+      "check_sha256": "c30b2c6965d83b8a236daa53f89a254dc270dc6ba045598de51c8810d7ee392c",
+      "core_sha256": "15c5a77e0a13c6f0c0503c84129a2c6ad56d0d51f780f6b20d325e307ff33061",
+      "emit_application": "error: application entry \"s1:phase6.derivation_borrow_defect:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "0485885e749371b652ca7ef17644555843f45ed743c05dd8af07d6e388678bbd",
+      "debug_map": "c2c1ebaf97d96bb9269199584e25361c384603acc6cd1539d240b14c8650b2c7",
+      "format_sha256": "961a8763cfc3ce591bca99ef42ca29319d6e02a249041a3dbb86fa5733ec2ffa"
+    },
+    {
+      "path": "testdata/phase6/derivation_match_defect.schway",
+      "check_sha256": "5ab46dd99c521e1473856c4fa744ea5b4e9435926e6475425f4c874f927a6330",
+      "core_sha256": "7e6cec247eb19fc2d7a1a0b49f09f4fbcd4512b92d7b07ee80494c4bf3e5411b",
+      "emit_application": "error: application entry \"s1:phase6.derivation_match_defect:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "0c7962038abe4d3c3dd6cde166fafbaab3253ae294294b1e3699f50f599b978b",
+      "debug_map": "panic: runtime error: invalid memory address or nil pointer dereference",
+      "format_sha256": "972ffeeef22c10a66512c1f5db187183a5bc192398781e974d1ecfabb43dcc6f"
+    },
+    {
+      "path": "testdata/phase6/derivation_move_defect.schway",
+      "check_sha256": "4b32c73443a4e962389468feaecb12827cb8032c7db1beeb08d753d07f872b6e",
+      "core_sha256": "bb022965045a8e14c53b0ea4f8149b4b6a4b354e1820c26f26ee69af1d999a15",
+      "emit_application": "error: application entry \"s1:phase6.derivation_move_defect:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "bc1664383dfc7fa32824c5b1e9f085bcbecbf653699f8c2a47943f543727b732",
+      "debug_map": "949da2504933e45f7d468160dce3f4c0e09adb5c5847d763d9941cdfc00310bc",
+      "format_sha256": "5a50191db1e38d607578acbe4a4cd170d955011e8393456c72fa84f02b864df9"
+    },
+    {
+      "path": "testdata/phase6/heldout_borrow_defect.schway",
+      "check_sha256": "a1d8e62ab4c2155a1cd8535f8ecef54445c8173702be98b7cc1dab5fa5928221",
+      "core_sha256": "836a8070c5d119f4ee304c8c9524af30130a1b8b0bfb5a37be8b7b089e39ea06",
+      "emit_application": "error: application entry \"s1:phase6.heldout_borrow_defect:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "457c079724abf41fecd0e156a03de400c1cdee6f789d7625c2f7402f6155cfb7",
+      "debug_map": "5efb0ba88ba130474ed919ec97e781714f0755d3c9cc196106e71809cddf537d",
+      "format_sha256": "ca02744b1e2361940dd7ab72752e41909d6a14ea57546dee2cac61937c7c7a5d"
+    },
+    {
+      "path": "testdata/phase6/heldout_match_defect.schway",
+      "check_sha256": "ac81e456ba0884595dc939772edad4134eebf79ae286c192eb805e4511e99ef7",
+      "core_sha256": "322d98cf6768ff1c16a6d24d48c6d8abf800d0c47dbb2866c99431d82d9314f1",
+      "emit_application": "error: application entry \"s1:phase6.heldout_match_defect:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "aa0a9cc5ec937e1b9a7f86466becca286d9a55fef641815dc2b08c4848991ff1",
+      "debug_map": "panic: runtime error: invalid memory address or nil pointer dereference",
+      "format_sha256": "ec61d896485ddb8a15f1757834125ef92e60bd88d50f116a7f158f7ab7632358"
+    },
+    {
+      "path": "testdata/phase6/heldout_move_defect.schway",
+      "check_sha256": "8b5ff604517a433e7f4f9ff50ca0760ef17ea1e7b1060a57f861bbf61a00bde1",
+      "core_sha256": "4953f5e12f3f0daf66039f80c8513e258a8cc1b470cb619f8d612342355c947c",
+      "emit_application": "error: application entry \"s1:phase6.heldout_move_defect:fn:relay\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "d659d86422ac64a7ca9afd4cb4d34c94d2d2b485d21ba3baeac5377c1c4a11f4",
+      "debug_map": "79d4a35f086af64425a5b4843ff656100d0ca5587e50ffa0758e1557df65e8b9",
+      "format_sha256": "e67498f51a9f67f20f2eeb5f9244e4f2976d8b25527a4199bfbdb0ab2ba42295"
+    },
+    {
+      "path": "testdata/phase6/stale_evidence_subject.schway",
+      "check_sha256": "9dbbfaa40afdd064bf8110821c382d0bdb7e4ef8665e8ef14036d8a2b24687ad",
+      "core_sha256": "99e5c69b278283838aadaa10ee0c99e5d12c256c6e4d5dacedb57d60165a3f3d",
+      "emit_application": "error: application entry \"s1:phase6.stale_evidence_subject:fn:identity\": only a linear U64-to-U64 or U64-to-Unit entry is supported",
+      "control_native_c": "2e5ad75ac2704812fb09be202733679d9ccaca99a9e97cbfde54546fa5beafbc",
+      "debug_map": "c9394dcd69bfd5bc4ba93a2cb9eb113393eab3bb8be7cae63c55d5b2aab7f31e",
+      "format_sha256": "ed618564889b0c2c49294e4e17c74c152ff95b7993c48fb19fb681c6ea1a72d4"
+    }
+  ]
+}
