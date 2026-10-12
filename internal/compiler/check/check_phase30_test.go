@@ -2,6 +2,7 @@ package check
 
 import (
 	"encoding/json"
+	"os"
 	"sort"
 	"strings"
 	"testing"
@@ -416,4 +417,142 @@ func TestPhase30ImportItemOrderIrrelevant(t *testing.T) {
 	if phase30JSON(t, result.Program.Imports) != phase30JSON(t, want) {
 		t.Fatalf("Program.Imports must be sorted, got %s", phase30JSON(t, result.Program.Imports))
 	}
+}
+
+// phase30LocalFileByteEntry is the Phase 23 local-file-byte entry program
+// (a corpus program whose `main` checkLocalFileByteEntry admits) with one
+// import added, so the entry has a real unit scope beside its foreign table.
+func phase30LocalFileByteEntry(t *testing.T) []byte {
+	t.Helper()
+	source, err := os.ReadFile("../../../examples/phase23/file_byte.schway")
+	if err != nil {
+		t.Fatal(err)
+	}
+	const header = "module phase23.file_byte\n"
+	if !strings.HasPrefix(string(source), header) {
+		t.Fatalf("unexpected corpus header %q", source[:40])
+	}
+	return []byte(header + "\nimport lib {\n  fn twice\n}\n" + strings.TrimPrefix(string(source), header))
+}
+
+// TestPhase30LibraryPrivateMainNotEntryShaped pins D-29 / D-20: a library
+// module may define a private `main`; it is an ordinary non-entry function.
+// Entry-unit diagnostics and the entry result are identical with and without
+// it, it is never an entry root, and no refusal code exists for defining it.
+func TestPhase30LibraryPrivateMainNotEntryShaped(t *testing.T) {
+	entry := phase30LocalFileByteEntry(t)
+	entryID := "s1:phase23.file_byte:fn:main"
+	libBase := "module lib\n\nexport {\n  fn twice\n}\n\n" + phase30Fn("twice")
+	pathMain := "\nfn main(path: PathToken) -> U64 {\n  let owner = try schway_file_byte_acquire(path)\n  let value = try schway_file_byte_use(owner)\n  value\n}\n"
+	ordinaryMain := "\nfn main(value: Byte) -> Byte {\n  value\n}\n"
+
+	entryUnit := func(diagnostics []diagnostic.Diagnostic) string {
+		kept := []diagnostic.Diagnostic{}
+		for _, d := range diagnostics {
+			if d.Unit == "" {
+				kept = append(kept, d)
+			}
+		}
+		return phase30JSON(t, kept)
+	}
+	check := func(libSource string) Result {
+		return Program(mergeForTest(t, entry, map[string][]byte{"lib": []byte(libSource)}))
+	}
+	entryMainJSON := func(result Result) string {
+		return phase30JSON(t, phase30FunctionByID(t, result.Program, entryID))
+	}
+
+	without := check(libBase)
+	if len(without.Diagnostics) != 0 {
+		t.Fatalf("the baseline must check clean, got %+v", without.Diagnostics)
+	}
+	for _, variant := range []struct{ name, source string }{
+		{"ordinary private main", libBase + ordinaryMain},
+		{"path token main in the acquire/use shape", libBase + pathMain},
+	} {
+		t.Run(variant.name, func(t *testing.T) {
+			with := check(variant.source)
+			if entryUnit(with.Diagnostics) != entryUnit(without.Diagnostics) {
+				t.Fatalf("entry-unit diagnostics changed:\n%s\n%s", entryUnit(with.Diagnostics), entryUnit(without.Diagnostics))
+			}
+			if entryMainJSON(with) != entryMainJSON(without) {
+				t.Fatalf("the entry main's core function changed:\n%s\n%s", entryMainJSON(with), entryMainJSON(without))
+			}
+			// The only function treated as the entry `main` is the entry's.
+			for _, function := range with.Program.Functions {
+				if function.Name == "main" && function.ID != entryID && function.Linear != nil {
+					for _, operation := range function.Linear.Operations {
+						if operation.Kind == core.OpForeignCall {
+							t.Fatalf("%s was lowered as an entry-shaped foreign main", function.ID)
+						}
+					}
+				}
+			}
+			// D-29: there is no refusal code for defining a library main.
+			for _, d := range with.Diagnostics {
+				if strings.HasPrefix(d.Code, "module.") {
+					t.Fatalf("defining a library main must not produce a module.* refusal, got %+v", d)
+				}
+			}
+		})
+	}
+
+	t.Run("an ordinary private main checks clean with its own ID", func(t *testing.T) {
+		with := check(libBase + ordinaryMain)
+		if len(with.Diagnostics) != 0 {
+			t.Fatalf("expected a clean check, got %+v", with.Diagnostics)
+		}
+		libMain := phase30FunctionByID(t, with.Program, "s1:lib:fn:main")
+		if libMain.Module != "lib" || libMain.Exported {
+			t.Fatalf("lib main must be a private lib function, got %+v", libMain)
+		}
+	})
+
+	t.Run("control: program-wide recognizer scope makes lib main entry-shaped", func(t *testing.T) {
+		defer func() { programWideRecognizerScopeForTest = false }()
+		defaultResult := check(libBase + pathMain)
+		entryShaped := func(result Result) []string {
+			ids := []string{}
+			for _, function := range result.Program.Functions {
+				if function.Name != "main" || function.Linear == nil {
+					continue
+				}
+				for _, operation := range function.Linear.Operations {
+					if operation.Kind == core.OpForeignCall {
+						ids = append(ids, function.ID)
+						break
+					}
+				}
+			}
+			sort.Strings(ids)
+			return ids
+		}
+		if got := entryShaped(defaultResult); len(got) != 1 || got[0] != entryID {
+			t.Fatalf("by default exactly the entry main is entry-shaped, got %v", got)
+		}
+		programWideRecognizerScopeForTest = true
+		wide := check(libBase + pathMain)
+		got := entryShaped(wide)
+		if len(got) != 2 {
+			t.Fatalf("the control must let lib main be recognized as an entry shape, got %v", got)
+		}
+		// The control moves the entry RESULT (the set of entry-shaped core
+		// functions grows from the entry main alone to include lib main) and
+		// the lib-unit diagnostics (lib main is admitted instead of refused as
+		// a non-entry PathToken function). It does not move the entry-unit
+		// diagnostics, which are empty in both: lib main never reaches the
+		// entry's own checks, so the entry-result difference is the observable.
+		libRefusals := func(result Result) int {
+			count := 0
+			for _, d := range result.Diagnostics {
+				if d.Unit == "lib" {
+					count++
+				}
+			}
+			return count
+		}
+		if libRefusals(defaultResult) == 0 || libRefusals(wide) != 0 {
+			t.Fatalf("the control must change how lib main is treated: default lib diagnostics %d, program-wide %d", libRefusals(defaultResult), libRefusals(wide))
+		}
+	})
 }
