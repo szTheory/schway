@@ -53,6 +53,8 @@ jobs:
     name: checks (${{ matrix.os }})
     if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.record_validation_corpus && !inputs.phase26_focused) }}
     runs-on: ${{ matrix.os }}
+    env:
+      SCHWAY_REQUIRE_NATIVE: "1"
     strategy:
       fail-fast: false
       matrix:
@@ -91,6 +93,8 @@ jobs:
     name: current evidence aggregate (${{ matrix.os }})
     if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.record_validation_corpus && !inputs.phase26_focused) }}
     runs-on: ${{ matrix.os }}
+    env:
+      SCHWAY_REQUIRE_NATIVE: "1"
     strategy:
       fail-fast: false
       matrix:
@@ -133,6 +137,8 @@ jobs:
       - name: scripts/verify-phase23.sh
         run: sh scripts/verify-phase23.sh
       - name: scripts/verify-phase6.sh
+        env:
+          GOFLAGS: -timeout=20m
         run: sh scripts/verify-phase6.sh
       - name: Phase 15 native admission seam
         run: go test ./internal/compiler/native -run 'TestDecodeExecutionSchema2AdmissionSeam' -count=1 -v
