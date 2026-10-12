@@ -303,6 +303,24 @@ drives D-01.
 - **D-20:** The mode-000 root skip uses a new closed-set `env:` token (for
   example `root`), added to the allow-list at `session_test.go:~2797` in the
   same change.
+- **D-21 (2026-10-12, amends D-11's import-order control; plan-check
+  revision 1):** D-11's control "reversing the import order gives an
+  identical `BuildID`" cannot hold as written. Reversing the import
+  declarations changes the entry file's bytes. Under D-11 `SourceDigest` is
+  the entry digest, and under D-19 the entry row of `Modules` carries the
+  same digest; both feed `BuildIdentityInputs.ID()`, so the `BuildID` must
+  change. The control is replaced by these assertions (plan 31-05):
+  - **Set function.** `moduleDigests` over one loaded `modload.Set`, with
+    the imported sources (`Sources[1:]`) presented in reversed order and the
+    entry kept first, returns a slice identical to the unreversed call.
+  - **Two real builds.** Two entries that differ only in import declaration
+    order are built. Their real receipts (`<artifact>.schway-build.json`)
+    have identical library rows (every `modules` row except the entry row),
+    identical row order, and identical `EmittedCDigest` and
+    `ExecutableDigest`.
+  - **Identity.** After zeroing exactly `SourceDigest` and the entry row's
+    `Digest` in both receipts' `Identity`, the two `ID()` values are equal.
+    No other field, `ExecutableDigest` included, is zeroed.
 
 ### Claude's Discretion
 - The exact module, file and symbol names of the adapter triple and the

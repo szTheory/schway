@@ -223,7 +223,30 @@ Plans:
 
 **Research flag**: Moderate. Choose the exit code for each file-error outcome and record it in the Phase 28 exit-class table; extend public CLI input from bounded U64 to one path through `app run`. The file adapter is a new copy-local generalization under `examples/checksum/`; the Phase 23 adapter, its receipts, and its observer tests stay untouched. The unreadable-file control uses a named skip when running as root.
 
-**Plans**: TBD
+**Plans**: 10 plans (at the Phase 30 ceiling; plan-count witness in 31-01)
+
+Plans:
+**Wave 1**
+- [ ] 31-00-PLAN.md — Atomic D-01 move of the library and CLI into examples/checksum/ with every live re-pin
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 31-01-PLAN.md — Tracer: Wikipedia file through build --manifest + app run on native; third owner shape with the D-16 trailing call in every peer; FileError stderr table
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 31-02-PLAN.md — Interpreter RunWithFileBytes with an independent host reader; oracle rows with generating commands
+- [ ] 31-03-PLAN.md — Per-peer seeded faults and named neighbour refusals for the third shape
+- [ ] 31-05-PLAN.md — Module digests (sorted, every module) in build identity, receipt and evidence
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 31-04-PLAN.md — Native fault harness: release exactly once, EINTR, alloc/EIO/close failures, bounded-read and ASan double-release mutants
+- [ ] 31-06-PLAN.md — Shared cross-engine case matrix, public-route answers, argv boundaries, expected-matrix JSON, env:root
+- [ ] 31-07-PLAN.md — adler_low second consumer, single-copy scan, dual flip and reverse control
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 31-08-PLAN.md — EVD-14: oracle cross-check, eight armed controls, -fsigned-char lane, control inventory
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 31-09-PLAN.md — Closure: checksum README, exit-65 outcome names, registers, transition check, VALIDATION finalized
 
 ### Phase 32: Clean-Checkout Guide and Final Receipts
 
@@ -254,7 +277,7 @@ Plans:
 | 28. Exit Classes, Verify Report, and Entry Pruning | 8/8 | Complete    | 2026-10-11 |
 | 29. Byte Views and the Adler-32 Library | 13/13 | Complete    | 2026-10-11 |
 | 30. Local Modules | 10/10 | Complete    | 2026-10-12 |
-| 31. Bounded File Checksum and Second Consumer | 0/TBD | Not started | - |
+| 31. Bounded File Checksum and Second Consumer | 0/10 | Planned | - |
 | 32. Clean-Checkout Guide and Final Receipts | 0/TBD | Not started | - |
 
 **Coverage:** 16/16 M006 requirements have exactly one phase owner. MOD-06

@@ -308,11 +308,11 @@ No external moving parts. `zlib.adler32` semantics (RFC 1950) are stable `[CITED
 | A5 | New `phase28NewlyAddedEntries` values for checksum.schway/adler_low.schway follow the adler32_cli pattern (check exit 0, build 3, run 3) | Pitfall 5 | Observed values may differ; record what the test observes |
 | A6 | Hosted ubuntu has working ASan; local macOS ASan probe compiled and ran this session | Harness | Lane skips with `env:clang`; EVD-14 deleted-bounds-check evidence then only runs locally |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Option A vs amending D-03** (see A1) - recommend surfacing at plan start; tracer plan carries the gate.
-2. **Usage text for PATH** - leave strings unchanged (pitfall 10) unless the user wants the text changed.
-3. **Include the entry in `Modules`?** Recommend no (A4).
+1. **Option A vs amending D-03** (see A1) - recommend surfacing at plan start; tracer plan carries the gate. RESOLVED: option A adopted, 31-CONTEXT D-16.
+2. **Usage text for PATH** - leave strings unchanged (pitfall 10) unless the user wants the text changed. RESOLVED: usage text unchanged, PATH documented in the README, 31-CONTEXT D-18.
+3. **Include the entry in `Modules`?** Recommend no (A4). RESOLVED: the orchestrator chose yes (every module, entry included), 31-CONTEXT D-19.
 
 ## Environment Availability
 
