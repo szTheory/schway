@@ -282,13 +282,14 @@ var phase28NewlyAddedEntries = map[string]phase28ManifestEntry{
 		EntryShape:     "single-root",
 		Entry:          "main",
 	},
+	// 2026-10-12 (Phase 31, plan 31-00, D-01): moved into examples/checksum/.
 	// 2026-10-12 (Phase 30, plan 30-09, D-27): the Adler-32 library module.
 	// The walker reads each file alone, so the library is a one-root program
 	// whose only function is adler32; build and run need an entry with main
 	// and fail the same operational way the Phase 29 fixture does without a
 	// manifest.
-	"examples/phase30/adler32.schway": {
-		Path:           "examples/phase30/adler32.schway",
+	"examples/checksum/adler32.schway": {
+		Path:           "examples/checksum/adler32.schway",
 		Check:          phase28Class{},
 		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
 		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
@@ -300,8 +301,8 @@ var phase28NewlyAddedEntries = map[string]phase28ManifestEntry{
 	// byte-taking walker refuses imports (module.imports_not_loaded) so the
 	// shape is unchecked; the module-aware route is pinned by
 	// TestPhase30AdlerModuleAppCLI and TestPhase30AdlerModuleInterpreter.
-	"examples/phase30/adler32_cli.schway": {
-		Path:           "examples/phase30/adler32_cli.schway",
+	"examples/checksum/adler32_cli.schway": {
+		Path:           "examples/checksum/adler32_cli.schway",
 		Check:          phase28Class{},
 		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
 		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},

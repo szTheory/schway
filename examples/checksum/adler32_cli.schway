@@ -1,5 +1,5 @@
 // Phase 30 entry (D-01): imports the Adler-32 library from its own module file.
-module examples.phase30.adler32_cli
+module examples.checksum.adler32_cli
 
 import adler32 {
   fn adler32

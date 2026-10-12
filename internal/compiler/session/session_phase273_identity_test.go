@@ -64,7 +64,7 @@ var phase273NewlyAcceptedPaths = map[string]bool{
 	// 2026-10-12 (Phase 30, plan 30-09, D-27): the Adler-32 library module;
 	// golden stays frozen (D-23). The importing entry is refused by the
 	// byte-taking Check (module.imports_not_loaded) and never joins this walk.
-	"examples/phase30/adler32.schway": true,
+	"examples/checksum/adler32.schway": true,
 }
 
 // phase273EntryPrecedencePaths lists the only golden entries whose

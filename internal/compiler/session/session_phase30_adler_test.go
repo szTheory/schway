@@ -23,7 +23,7 @@ const phase30AdlerLibraryName = "adler32.schway"
 const phase30AdlerEntryName = "adler32_cli.schway"
 
 func phase30AdlerDir() string {
-	return testsupport.ProjectPath("examples", "phase30")
+	return testsupport.ProjectPath("examples", "checksum")
 }
 
 // phase30CopyDir copies every file of src into a fresh TempDir and returns it.

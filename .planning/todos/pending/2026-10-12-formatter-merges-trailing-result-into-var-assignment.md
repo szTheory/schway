@@ -6,7 +6,7 @@ severity: major
 files:
   - internal/compiler/syntax/format.go
   - examples/phase29/adler32_fixture.schway
-  - examples/phase30/adler32.schway
+  - examples/checksum/adler32.schway
 ---
 
 ## Problem
@@ -28,7 +28,7 @@ verbatim and are not format-canonical. Nothing tracked it as work until now.
 TBD. Likely the formatter's newline handling between the last assignment
 statement and the trailing result expression in a `var`-body block. Before the
 fix, add a format round-trip test over `examples/phase29/adler32_fixture.schway`
-and `examples/phase30/adler32.schway`, asserting that the formatted output parses
+and `examples/checksum/adler32.schway`, asserting that the formatted output parses
 and checks to the same core. Then format both files canonically. Consider
 extending the existing generated-program and lossless lanes to cover var-bodies
 ending in a bare result.

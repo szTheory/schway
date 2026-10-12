@@ -64,8 +64,8 @@ var phase30NewCommittedPaths = map[string]bool{
 	// 2026-10-12 (Phase 30, D-27): the adler32 module library and its CLI
 	// entry are new committed examples added after the golden was generated;
 	// the golden stays frozen (D-15).
-	"examples/phase30/adler32.schway":     true,
-	"examples/phase30/adler32_cli.schway": true,
+	"examples/checksum/adler32.schway":     true,
+	"examples/checksum/adler32_cli.schway": true,
 }
 
 type phase30PreChangeGolden struct {

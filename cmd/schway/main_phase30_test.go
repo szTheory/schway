@@ -11,10 +11,10 @@ import (
 	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
-// phase30CopyExampleDir copies the files of examples/phase30 into a TempDir.
+// phase30CopyExampleDir copies the files of examples/checksum into a TempDir.
 func phase30CopyExampleDir(t *testing.T) string {
 	t.Helper()
-	src := testsupport.ProjectPath("examples", "phase30")
+	src := testsupport.ProjectPath("examples", "checksum")
 	dst := t.TempDir()
 	entries, err := os.ReadDir(src)
 	if err != nil {
@@ -45,7 +45,7 @@ func TestPhase30AdlerModuleAppCLI(t *testing.T) {
 	if _, err := exec.LookPath("clang"); err != nil {
 		t.Skip("env:clang toolchain unavailable on this host")
 	}
-	source := testsupport.ProjectPath("examples", "phase30", "adler32_cli.schway")
+	source := testsupport.ProjectPath("examples", "checksum", "adler32_cli.schway")
 	manifest := testsupport.ProjectPath("examples", "phase29", "fixture_bytes.bindings.json")
 	artifact := filepath.Join(t.TempDir(), "adler32")
 	code, stdout, stderr := captureLangRun(t, []string{"build", source, "--manifest", manifest, "--output", artifact})

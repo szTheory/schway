@@ -1,4 +1,4 @@
-# Phase 30 local modules: the Adler-32 library as its own file
+# Checksum examples: the Adler-32 library and the Phase 30 fixture CLI
 
 The Phase 29 Adler-32 program with the library moved into its own module file
 and imported by the entry (D-17). The checksum code exists in exactly one place.
@@ -9,7 +9,7 @@ and imported by the entry (D-17). The checksum code exists in exactly one place.
   list is `fn adler32`, and it is pure scalar: no data type, no foreign block,
   no `main`.
 - `adler32_cli.schway` is the entry. Its header is
-  `module examples.phase30.adler32_cli`. It imports `fn adler32` from `adler32`,
+  `module examples.checksum.adler32_cli`. It imports `fn adler32` from `adler32`,
   keeps the Phase 29 `foreign C` owner and `data FixtureError`, and exports
   `fn main`.
 
@@ -33,7 +33,7 @@ names its adapter files relative to itself and carries no module name.
 
 ```sh
 go build -o ./schway ./cmd/schway
-./schway build examples/phase30/adler32_cli.schway \
+./schway build examples/checksum/adler32_cli.schway \
   --manifest examples/phase29/fixture_bytes.bindings.json --output ./adler32-module
 ./schway app run ./adler32-module -- 3
 ./schway app run ./adler32-module -- 10
