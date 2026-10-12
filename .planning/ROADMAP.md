@@ -313,3 +313,18 @@ Plans:
 library-mutation control flips the `checksum` application's pinned output and
 its consumers are path-input applications; both depend on the Phase 31 file
 adapter and public path input.
+
+### Phase 32.1: Address tech debt: CLI exit classes and module-aware routes (INSERTED)
+
+**Goal:** Every public CLI route reports its outcome under the DX-17 exit table:
+- `run` on an unbindable entry refuses with usage/64 `tool.run_input_required`;
+- a `ByteView` entry is refused at `check`;
+- interpreter defect parity holds on the fixture route.
+
+The module boundary of every route is named once and pinned by the route audit, and the usage text lists every route. The execution peer's entry rule matches `main` precedence. Hosted receipts are re-taken at the final M006 revision. Source: [M006 audit](M006-MILESTONE-AUDIT.md).
+**Requirements**: DX-17, DX-18, MOD-03, EVD-15 (re-take)
+**Depends on:** Phase 32
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 32.1 to break down)

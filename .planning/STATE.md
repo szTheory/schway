@@ -2,19 +2,19 @@
 gsd_state_version: "1.0"
 milestone: M006
 milestone_name: Bounded Byte Utility and Local Modules
-current_phase: 32
-status: completed
-stopped_at: Phase 32 complete — all phases complete
-last_updated: "2026-10-12T22:50:06.895Z"
+current_phase: "32.1"
+status: in_progress
+stopped_at: Phase 32.1 inserted (M006 audit tech debt); not planned
+last_updated: "2026-10-12T23:32:32.164Z"
 last_activity: 2026-10-12
-last_activity_desc: Phase 32 complete
-state_head: 8854245b3ccd485a4d1125c4b3449f6db3adc19e
+last_activity_desc: Phase 32.1 inserted after M006 audit (tech_debt)
+state_head: 558cbbae1e8fda0309ebf4209eccf4d0a0896b10
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 5
   total_plans: 52
   completed_plans: 52
-  percent: 100
+  percent: 83
 ---
 
 <!-- schway-current:start -->
@@ -55,7 +55,7 @@ See: .planning/PROJECT.md (updated 2026-10-12)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 32 — Clean-Checkout Guide and Final Receipts
+**Current focus:** Phase 32.1 — Address tech debt: CLI exit classes and module-aware routes
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -122,12 +122,12 @@ plans.
 ## Current Position
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
-Phase: 32
+Phase: 32.1
 Plan: Not started
-Status: All phases complete
-Last activity: 2026-10-12 — Phase 32 complete
+Status: in_progress
+Last activity: 2026-10-12 — Phase 32.1 inserted after M006 audit (tech_debt)
 
-Progress: [██████████] 100% (3/5 M006 phases)
+Progress: [████████░░] 83% (3/5 M006 phases)
 
 M006 final hosted receipts: bound to codedigest c1b4e85df4d7723659c62e8338c0c961c0fd930fb45f84b7c25de1fa718cd227 (run 38315799626)
 
@@ -901,6 +901,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 - Phase 27.1 inserted after Phase 27: Address tech debt: build-route origin validation and receipt-gate docs (URGENT)
 - Phase 27.2 inserted after Phase 27.1: Address tech debt: straight-line scalar let admission (R1) (URGENT)
 - Phase 27.3 inserted after Phase 27: Address tech debt: app verify capacity abort and guide clean-tree outputs (W1, W4) (URGENT)
+- Phase 32.1 inserted after Phase 32: Address tech debt: CLI exit classes and module-aware routes (from M006 audit, 558cbbae) (URGENT)
 
 ### Quick Tasks Completed
 
@@ -965,9 +966,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-10-12T22:42:35.903Z
-Stopped at: Phase 32 complete — all phases complete
+Stopped at: Phase 32.1 inserted (M006 audit tech debt); not planned
 Resume file: None
-Next action: Phase 28 complete and verified (4/4, 2026-10-10). Optional: /gsd-code-review 28 --fix --all for the 6 open review findings (WR-02 exit-3-on-write-failure, WR-04 latent entryErr). Then /gsd-discuss-phase 29.
+Next action: /gsd-discuss-phase 32.1 (fan-out + auto-follow), then /gsd-plan-phase 32.1
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
