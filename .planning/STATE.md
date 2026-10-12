@@ -5,16 +5,16 @@ milestone_name: Bounded Byte Utility and Local Modules
 current_phase: 31
 current_phase_name: Bounded File Checksum and Second Consumer
 status: executing
-stopped_at: Completed 31-07-PLAN.md
-last_updated: "2026-10-12T19:15:25.681Z"
+stopped_at: Completed 31-08-PLAN.md
+last_updated: "2026-10-12T19:19:24.973Z"
 last_activity: 2026-10-12
 last_activity_desc: Phase 31 execution started
-state_head: 7de1a3eeaa390c47983f6bd0d76e72ab745050ed
+state_head: d26be97191992af93318fc909a6c6b642c7f482a
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 41
-  completed_plans: 39
+  completed_plans: 40
   percent: 60
 ---
 
@@ -124,7 +124,7 @@ plans.
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
 Phase: 31 (Bounded File Checksum and Second Consumer) — EXECUTING
-Plan: 9 of 10
+Plan: 10 of 10
 Status: Ready to execute
 Last activity: 2026-10-12 — Phase 31 execution started
 
@@ -538,6 +538,7 @@ subset alone.
 | Phase 31 P04 | 20min | 3 tasks | 2 files |
 | Phase 31 P06 | 25min | 3 tasks | 8 files |
 | Phase 31 P07 | ~25min | 3 tasks | 6 files |
+| Phase 31 P08 | 25min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -700,6 +701,7 @@ decision history; they no longer describe current status.
 - [Phase 31]: 31-04: adapter hooks applied only to TempDir copies; ASan double-release lane built without observer hooks
 - [Phase 31]: 31-06: 4097-byte argv refusal pinned as fixed host line (length only, never the argument); empty argument is silent exit 65
 - [Phase 31]: 31-07: dual-flip asserts receipt Modules rows, BuildID inequality and evidence Modules, never cross-build ExecutableDigest equality
+- [Phase 31]: 31-08: off-by-one mutant is n = n + 1 (no <= operator); interp file route exempts byte-index defect
 
 ### Pending Todos
 
@@ -942,8 +944,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-12T19:15:25.634Z
-Stopped at: Completed 31-07-PLAN.md
+Last session: 2026-10-12T19:19:24.891Z
+Stopped at: Completed 31-08-PLAN.md
 Resume file: None
 Next action: Phase 28 complete and verified (4/4, 2026-10-10). Optional: /gsd-code-review 28 --fix --all for the 6 open review findings (WR-02 exit-3-on-write-failure, WR-04 latent entryErr). Then /gsd-discuss-phase 29.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
