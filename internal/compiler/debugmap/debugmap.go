@@ -116,6 +116,9 @@ type Entry struct {
 	PointID      string          `json:"point_id,omitempty"`
 	Kind         string          `json:"kind"`
 	Availability Availability    `json:"availability"`
+	// Unit is the dotted module name the entry belongs to; empty means the
+	// entry module and the field is omitted (D-11). Plan 30-06 sets it.
+	Unit string `json:"unit,omitempty"`
 }
 
 // Map is the schema-versioned side table Build produces.

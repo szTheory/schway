@@ -59,11 +59,18 @@ type jsonRepair struct {
 	Span          *jsonSpan `json:"span,omitempty"`
 	Replacement   string    `json:"replacement,omitempty"`
 	Applicability string    `json:"applicability,omitempty"`
+	// Unit is structural attribution, not prose (D-11, D-23): the dotted
+	// module name the repair's span is relative to. Empty inherits the
+	// diagnostic's unit.
+	Unit string `json:"unit,omitempty"`
 }
 
 type jsonDiagnostic struct {
 	Code    string       `json:"code"`
 	Repairs []jsonRepair `json:"repairs,omitempty"`
+	// Unit is the module the diagnostic (and its file-local spans) belong to.
+	// Empty means the entry module, the only file the driver may write.
+	Unit string `json:"unit,omitempty"`
 }
 
 type checkResult struct {
@@ -341,6 +348,12 @@ func maxApplicability(a, b string) string {
 func selectRepair(result checkResult) (jsonRepair, string, bool) {
 	for _, d := range result.Diagnostics {
 		for _, r := range d.Repairs {
+			// A repair attributed to another unit carries a span relative to
+			// a file the driver was never given; splicing it into the entry
+			// path would corrupt the entry file (D-23, T-30-07). Decline it.
+			if !ignoreUnitForTest && effectiveUnit(r, d) != "" {
+				continue
+			}
 			if driverEligible(r) {
 				return r, d.Code, true
 			}
@@ -348,6 +361,20 @@ func selectRepair(result checkResult) (jsonRepair, string, bool) {
 	}
 	return jsonRepair{}, "", false
 }
+
+// effectiveUnit is the repair's own unit, else the owning diagnostic's. Empty
+// means the entry module.
+func effectiveUnit(r jsonRepair, d jsonDiagnostic) string {
+	if r.Unit != "" {
+		return r.Unit
+	}
+	return d.Unit
+}
+
+// ignoreUnitForTest is a negative-control seam: it makes selectRepair ignore
+// unit attribution so a test can observe the entry file being patched by a
+// cross-unit repair. Never set outside a test.
+var ignoreUnitForTest bool
 
 // classifyDecline walks the same document selectRepair just found no
 // driver-eligible repair in, and reconstructs the classification that was
