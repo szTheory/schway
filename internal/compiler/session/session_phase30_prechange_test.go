@@ -410,4 +410,17 @@ func TestPhase30PreChangeGoldenIsNotInert(t *testing.T) {
 			t.Fatal("a phase30FormatChanges entry equal to the golden was not reported stale")
 		}
 	})
+	t.Run("retired-observed-again", func(t *testing.T) {
+		again := append([]phase30PreChangeEntry(nil), observed...)
+		again = append(again, phase30PreChangeEntry{Path: "examples/checksum.schway"})
+		found := false
+		for _, problem := range phase30Compare(golden, again) {
+			if strings.Contains(problem, "retired path observed again") {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatal("a retired path observed again was not reported")
+		}
+	})
 }

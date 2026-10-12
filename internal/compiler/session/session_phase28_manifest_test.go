@@ -631,3 +631,70 @@ func phase28Compare(golden phase28Manifest, observed []phase28ManifestEntry) []s
 	sort.Strings(problems)
 	return problems
 }
+
+func TestPhase28EntryExitClassManifestIsNotInert(t *testing.T) {
+	raw, err := os.ReadFile(phase28ManifestPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var golden phase28Manifest
+	if err := json.Unmarshal(raw, &golden); err != nil {
+		t.Fatal(err)
+	}
+	if len(golden.Entries) == 0 {
+		t.Fatal("golden has no entries")
+	}
+	observed := phase28ObserveCorpus(t)
+	if problems := phase28Compare(golden, observed); len(problems) != 0 {
+		t.Fatalf("baseline comparison must be clean before the controls: %v", problems)
+	}
+	hasProblem := func(problems []string, needle string) bool {
+		for _, problem := range problems {
+			if strings.Contains(problem, needle) {
+				return true
+			}
+		}
+		return false
+	}
+
+	t.Run("mutated-class", func(t *testing.T) {
+		mutated := append([]phase28ManifestEntry(nil), observed...)
+		mutated[0].Check = phase28Class{Exit: 99, Code: "control.mutated"}
+		if problems := phase28Compare(golden, mutated); len(problems) == 0 {
+			t.Fatal("mutating one observed class was not reported: the comparison is inert")
+		}
+	})
+	t.Run("retired-observed-again", func(t *testing.T) {
+		again := append(append([]phase28ManifestEntry(nil), observed...), phase28ManifestEntry{Path: "examples/checksum.schway"})
+		if problems := phase28Compare(golden, again); !hasProblem(problems, "retired entry observed again") {
+			t.Fatalf("a retired path observed again was not reported: %v", problems)
+		}
+	})
+	t.Run("unretired-missing", func(t *testing.T) {
+		var missing []phase28ManifestEntry
+		dropped := false
+		for _, entry := range observed {
+			if !dropped && !phase28RetiredEntries[entry.Path] {
+				if _, inGolden := phase28GoldenIndex(golden)[entry.Path]; inGolden {
+					dropped = true
+					continue
+				}
+			}
+			missing = append(missing, entry)
+		}
+		if !dropped {
+			t.Fatal("no golden path available to drop")
+		}
+		if problems := phase28Compare(golden, missing); !hasProblem(problems, "no longer observed") {
+			t.Fatalf("a missing non-retired golden path was not reported: %v", problems)
+		}
+	})
+}
+
+func phase28GoldenIndex(golden phase28Manifest) map[string]phase28ManifestEntry {
+	index := map[string]phase28ManifestEntry{}
+	for _, entry := range golden.Entries {
+		index[entry.Path] = entry
+	}
+	return index
+}
