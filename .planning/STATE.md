@@ -5,16 +5,16 @@ milestone_name: Bounded Byte Utility and Local Modules
 current_phase: 30
 current_phase_name: Local Modules
 status: executing
-stopped_at: Completed 30-03-PLAN.md
-last_updated: "2026-10-12T15:16:53.685Z"
+stopped_at: Completed 30-05-PLAN.md
+last_updated: "2026-10-12T15:28:46.934Z"
 last_activity: 2026-10-12
 last_activity_desc: Phase 30 execution started
-state_head: 5b01a5d7ea0d0e31121d7da9353b15efd0742532
+state_head: b67de84a0f6459bc77aa2cccaeb79931f26d4ea6
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 31
-  completed_plans: 25
+  completed_plans: 26
   percent: 40
 ---
 
@@ -124,7 +124,7 @@ plans.
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
 Phase: 30 (Local Modules) — EXECUTING
-Plan: 5 of 10
+Plan: 6 of 10
 Status: Ready to execute
 Last activity: 2026-10-12 — Phase 30 execution started
 
@@ -523,6 +523,7 @@ subset alone.
 | Phase 30 P01 | 22 min | 3 tasks | 7 files |
 | Phase 30 P02 | 8 min | 2 tasks | 9 files |
 | Phase 30 P03 | 25 min | 3 tasks | 9 files |
+| Phase 30 P05 | 20 min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -668,6 +669,7 @@ decision history; they no longer describe current status.
 - [Phase 30]: 30-01: stray tokens in an import item list are refused with syntax.expected_import_name (no new code); late imports stay in Program.Imports for recovery; duplicate-import delete repair is subset-only against the first declaration.
 - [Phase 30]: 30-02: Unit is the dotted module name on Diagnostic/Cause/Repair (omitempty); spans stay file-local; repair driver declines cross-unit repairs
 - [Phase 30]: 30-03: resolver read() validates D-18 grammar then calls readSegments; any listing over 65,536 entries is module.directory_limit
+- [Phase 30]: 30-05: IDs derive from idModule (defining module or entry header); libraries see an empty foreign table and isEntryMain requires Module == empty; Callable flips are signature changes while pre-body contracts stay body-blind
 
 ### Pending Todos
 
@@ -898,8 +900,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-12T15:16:53.630Z
-Stopped at: Completed 30-03-PLAN.md
+Last session: 2026-10-12T15:28:46.876Z
+Stopped at: Completed 30-05-PLAN.md
 Resume file: None
 Next action: Phase 28 complete and verified (4/4, 2026-10-10). Optional: /gsd-code-review 28 --fix --all for the 6 open review findings (WR-02 exit-3-on-write-failure, WR-04 latent entryErr). Then /gsd-discuss-phase 29.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
