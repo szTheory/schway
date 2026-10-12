@@ -179,7 +179,7 @@ Plans:
 
 **Research flag**: Deeper research plus a spike. Settle `os.Root` symlink and macOS case-insensitivity behavior, the `import` and `export` surface and formatter, the reach of `Diagnostic.Unit` (protocol, debug map, human output, repair patches), injective C name mangling, and module count/size/depth caps with exact-N and N+1 controls. Keep a plan-count checkpoint: this phase has the widest blast radius in M006. Modules are whole-program composition; do not describe them as separate compilation or as closing B1/DX-06.
 
-**Plans**: 9/10 plans executed (at the D-16 ceiling; 30-00 gate verdict decides PROCEED or SPLIT into 30 / 30.1)
+**Plans**: 10/10 plans executed (at the D-16 ceiling; 30-00 gate verdict decides PROCEED or SPLIT into 30 / 30.1)
 
 Plans:
 **Wave 1**
@@ -202,7 +202,7 @@ Plans:
 - [x] 30-08-PLAN.md — session routes through modload, unit-attributed peers, single IO site, single-file refusals
 
 **Wave 6** *(blocked on Wave 5 completion)*
-- [ ] 30-09-PLAN.md — runnable gain: Adler-32 imported from its own module on both engines; registers, validation, transition read
+- [x] 30-09-PLAN.md — runnable gain: Adler-32 imported from its own module on both engines; registers, validation, transition read
 
 ### Phase 31: Bounded File Checksum and Second Consumer
 
@@ -253,7 +253,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 28. Exit Classes, Verify Report, and Entry Pruning | 8/8 | Complete    | 2026-10-11 |
 | 29. Byte Views and the Adler-32 Library | 13/13 | Complete    | 2026-10-11 |
-| 30. Local Modules | 9/10 | In Progress | - |
+| 30. Local Modules | 10/10 | In Progress | - |
 | 31. Bounded File Checksum and Second Consumer | 0/TBD | Not started | - |
 | 32. Clean-Checkout Guide and Final Receipts | 0/TBD | Not started | - |
 

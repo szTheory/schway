@@ -4,17 +4,17 @@ milestone: M006
 milestone_name: Bounded Byte Utility and Local Modules
 current_phase: 30
 current_phase_name: Local Modules
-status: executing
-stopped_at: Completed 30-08-PLAN.md
-last_updated: "2026-10-12T16:07:18.693Z"
+status: verifying
+stopped_at: Completed 30-09-PLAN.md
+last_updated: "2026-10-12T16:17:09.413Z"
 last_activity: 2026-10-12
 last_activity_desc: Phase 30 execution started
-state_head: 75c1a71d950f151075f90e5a1ed2158879873b1e
+state_head: 6e98b9b159a91f1f8497a7bf9eb18e437f5affe0
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 31
-  completed_plans: 30
+  completed_plans: 31
   percent: 40
 ---
 
@@ -125,7 +125,7 @@ plans.
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
 Phase: 30 (Local Modules) — EXECUTING
 Plan: 10 of 10
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-12 — Phase 30 execution started
 
 Progress: [████░░░░░░] 40% (2/5 M006 phases)
@@ -528,6 +528,7 @@ subset alone.
 | Phase 30 P06 | 25 min | 3 tasks | 9 files |
 | Phase 30 P07 | 20 min | 2 tasks | 3 files |
 | Phase 30 P08 | 26 min | 3 tasks | 17 files |
+| Phase 30 P09 | 38 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -681,6 +682,7 @@ decision history; they no longer describe current status.
 - [Phase 30]: 30-07: entry functions allocate C names first (ordinal = position among entry functions); imported functions allocate second in canonical (Module, Name) order via moduleCName
 - [Phase 30]: 30-08: buildApplicationChecked takes ENTRY bytes so the receipt SourceDigest stays the entry digest; module hashing is Phase 31
 - [Phase 30]: 30-08: env:symlink, env:mkfifo, env:case-insensitive-fs added to the closed environmental witness set (host capabilities, not debt)
+- [Phase 30]: 30-09: examples/phase30 .schway files committed verbatim from the Phase 29 fixture because schway format mangles the trailing r expression (pre-existing defect)
 
 ### Pending Todos
 
@@ -911,8 +913,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-12T16:07:18.610Z
-Stopped at: Completed 30-08-PLAN.md
+Last session: 2026-10-12T16:17:09.267Z
+Stopped at: Completed 30-09-PLAN.md
 Resume file: None
 Next action: Phase 28 complete and verified (4/4, 2026-10-10). Optional: /gsd-code-review 28 --fix --all for the 6 open review findings (WR-02 exit-3-on-write-failure, WR-04 latent entryErr). Then /gsd-discuss-phase 29.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
