@@ -5,16 +5,16 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 33
 current_phase_name: Carried Debt, Bounded Capture Read, and Generic Freeze Gate
 status: executing
-stopped_at: Completed 33-02-PLAN.md
-last_updated: "2026-10-13T17:06:23.583Z"
+stopped_at: Completed 33-03-PLAN.md
+last_updated: "2026-10-13T17:25:46.719Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 33 execution started
-state_head: d4e6282b2c964cf737da2234967407505cf415dc
+state_head: c56cdf3b09ff55a5b06fc0b38e5e453206adfc58
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 5
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -125,7 +125,7 @@ plans.
 ## Current Position
 
 Phase: 33 (Carried Debt, Bounded Capture Read, and Generic Freeze Gate) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-10-13 — Phase 33 execution started
 
@@ -585,6 +585,7 @@ subset alone.
 | Phase 32.1 P09 | 15min | 2 tasks | 1 files |
 | Phase 33 P01 | 5min | 3 tasks | 10 files |
 | Phase 33 P02 | 11min | 3 tasks | 10 files |
+| Phase 33 P03 | 20min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -766,6 +767,9 @@ decision history; they no longer describe current status.
 - [Phase 33]: Copy the accepted coverage-kind enum into the Go test without adding a dependency.
 - [Phase 33]: Keep abort-like acceptance limited to the exact acquired owner, the event function operation, and that operation kind exact reason.
 - [Phase 33]: Centralize fixed defect reasons in execution while preserving emitted C bytes.
+- [Phase 33]: Keep each generic gate POSIX-only with its own manifest reader.
+- [Phase 33]: Honor EXPECTED_CODEDIGEST when provided and report whether it was env-supplied or computed.
+- [Phase 33]: Derive digest width from the active hasher output for empty input.
 
 ### Pending Todos
 
@@ -1011,8 +1015,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-13T17:06:23.560Z
-Stopped at: Completed 33-02-PLAN.md
+Last session: 2026-10-13T17:25:46.694Z
+Stopped at: Completed 33-03-PLAN.md
 Resume file: None
 Next action: /gsd-discuss-phase 33
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
