@@ -5,16 +5,16 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 34
 current_phase_name: Agent Diagnostics Floor and Surface Manifest
 status: executing
-stopped_at: Completed 34-04-PLAN.md
-last_updated: "2026-10-13T22:49:43.728Z"
+stopped_at: Completed 34-05-PLAN.md
+last_updated: "2026-10-13T23:30:24.445Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 33 complete, transitioned to Phase 34
-state_head: 58dc7b85913f02b7d266cdd02ea0d1760c248832
+state_head: 4ab415501f0477ba61fd4c64332556fb09350359
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 13
-  completed_plans: 9
+  completed_plans: 10
   percent: 17
 ---
 
@@ -125,7 +125,7 @@ plans.
 ## Current Position
 
 Phase: 34 (Agent Diagnostics Floor and Surface Manifest) — READY TO EXECUTE
-Plan: 5 of 8
+Plan: 6 of 8
 Status: Ready to execute
 Last activity: 2026-10-13 — Phase 33 complete, transitioned to Phase 34
 
@@ -593,6 +593,7 @@ subset alone.
 | Phase 34 P02 | 19 min | 3 tasks | 24 files |
 | Phase 34 P03 | 14 min | 2 tasks | 13 files |
 | Phase 34 P04 | 16 min | 2 tasks | 13 files |
+| Phase 34 P05 | 35m | 3 tasks | 43 files |
 
 ## Accumulated Context
 
@@ -793,6 +794,9 @@ decision history; they no longer describe current status.
 - [Phase 34]: Task 2 required no additional production code because the Task 1 sidecar and Phase 34-02 projector already satisfied its behavior contract.
 - [Phase 34]: Recovery owns exact parser spans and caller boundaries; unrelated lexer diagnostics and independent missing closers remain visible.
 - [Phase 34]: Keep the immutable before-state unchanged and record only measured current outputs in the separate after-state.
+- [Phase 34]: Keep true and false available as ordinary parameter, local, and imported function names; classify only an unbound final result name in a known result-type context.
+- [Phase 34]: Keep final-result byte spans in the syntax AST for contextual diagnostics without adding a core field or changing stable semantic IDs.
+- [Phase 34]: Keep refusal hints as independently tested prose and avoid bitwise, hex, or dynamic-shift promises owned by later work.
 
 ### Pending Todos
 
@@ -1038,8 +1042,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-13T22:49:43.690Z
-Stopped at: Completed 34-04-PLAN.md
+Last session: 2026-10-13T23:30:24.406Z
+Stopped at: Completed 34-05-PLAN.md
 Resume file: None
 Next action: $gsd-execute-phase 34
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
