@@ -96,7 +96,7 @@ Phase 35 under BIT-02, registered in the Phase 34 manifest as a
 Phase 34 then forces Phases 35 and 36 to register every newly admitted
 construct, so the manifest cannot drift.
 
-- [ ] **Phase 33: Carried Debt, Bounded Capture Read, and Generic Freeze Gate** - The native capture file is read through a limit+1 bound before allocation, the 32.1 and Phase 29 review findings are closed or dispositioned, Phase 28 gains VALIDATION/SECURITY, and one milestone-agnostic freeze/receipt gate replaces `check-phase32-*`.
+- [x] **Phase 33: Carried Debt, Bounded Capture Read, and Generic Freeze Gate** - The native capture file is read through a limit+1 bound before allocation, the 32.1 and Phase 29 review findings are closed or dispositioned, Phase 28 gains VALIDATION/SECURITY, and one milestone-agnostic freeze/receipt gate replaces `check-phase32-*`. (completed 2026-10-13)
 - [ ] **Phase 34: Agent Diagnostics Floor and Surface Manifest** - Diagnostics carry line:col and a caret snippet, a syntax error yields one diagnostic, absent constructs get `surface.unsupported_*` hints, and `schway surface --json` prints a meta-tested manifest of the admitted surface.
 - [ ] **Phase 35: Bitwise Operators, Literal Shifts, and Hex Literals** - U64 `^ & |`, literal-amount `<< >>` and hex literals run with identical answers on both engines at every optimization level, and `adler32` uses `b << 16` with byte-identical pinned answers.
 - [ ] **Phase 36: Scalar Helper Calls** - A scalar function calls another scalar function (one U64/Bool argument, including imported module functions), with independent peer derivation and callee defects surfacing on both engines.
@@ -124,7 +124,7 @@ construct, so the manifest cannot drift.
 
 **Research flag**: Standard. Capped at 5 plans and binds no hosted receipt. WR-02 touches byte-op parity: pin the current interpreter/native abort-like parity rows before narrowing the predicate. The generic gate must keep the M006 `check-phase32-*` refusal behavior byte-for-byte before the scripts are deleted.
 
-**Plans**: 5/5 plans executed (cap 5)
+**Plans**: 5/5 plans complete (cap 5)
 
 Plans:
 **Wave 1**
@@ -251,7 +251,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 33. Carried Debt, Bounded Capture Read, and Generic Freeze Gate | 5/5 | In Progress | - |
+| 33. Carried Debt, Bounded Capture Read, and Generic Freeze Gate | 5/5 | Complete    | 2026-10-13 |
 | 34. Agent Diagnostics Floor and Surface Manifest | 0/TBD | Not started | - |
 | 35. Bitwise Operators, Literal Shifts, and Hex Literals | 0/TBD | Not started | - |
 | 36. Scalar Helper Calls | 0/TBD | Not started | - |
