@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -14,6 +15,8 @@ import (
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/exitcode"
+	"github.com/szTheory/schway/internal/compiler/session"
 	"github.com/szTheory/schway/internal/compiler/syntax"
 	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
@@ -41,11 +44,27 @@ var phase32ReceiptPrograms = []string{
 
 // phase32RouteRow is one audit row. A row with Programs is covered by the
 // final receipts; any other row must carry a Reason naming a Test function.
+//
+// Modules classifies how the route treats an import-bearing entry (D-13, D-23):
+// "module-aware" loads imports, "refuses-imports" reads a single file and
+// refuses an import-bearing source naming RefusalCode (default
+// module.imports_not_loaded), and "no-entry-source" takes no entry source.
+// ReportsRefusalAsPass marks the routes (explain, query) that surface the
+// refusal diagnostic as a passing lookup, so they exit 0 rather than 2.
 type phase32RouteRow struct {
-	Key      string
-	Programs []string
-	Reason   string
+	Key                  string
+	Programs             []string
+	Reason               string
+	Modules              string
+	RefusalCode          string
+	ReportsRefusalAsPass bool
 }
+
+const (
+	phase32ModuleAware    = "module-aware"
+	phase32RefusesImports = "refuses-imports"
+	phase32NoEntrySource  = "no-entry-source"
+)
 
 var phase32AllSeven = phase32ReceiptPrograms
 
@@ -426,6 +445,170 @@ func phase32UsageProblems(usage string, routes []string, omissions []string) []s
 	return problems
 }
 
+// phase32ModuleCommandWord reduces a module-aware route key to the command
+// word ModuleAwareRoutes names: the run and build variants collapse.
+func phase32ModuleCommandWord(key string) string {
+	switch {
+	case strings.HasPrefix(key, "run "):
+		return "run"
+	case strings.HasPrefix(key, "build "):
+		return "build"
+	}
+	return key
+}
+
+func phase32IsEntryKey(key string) bool { return strings.HasPrefix(key, "examples/") }
+
+func phase32RefusalCode(row phase32RouteRow) string {
+	if row.RefusalCode != "" {
+		return row.RefusalCode
+	}
+	return "module.imports_not_loaded"
+}
+
+// phase32ModuleProblems classifies the routes (D-13, D-23). Rows are walked in
+// declared order and the problems are sorted. observe, when non-nil, runs a
+// classified route on the import-bearing fixture and returns its exit code and
+// combined output.
+func phase32ModuleProblems(rows []phase32RouteRow, moduleAware []string, observe func(row phase32RouteRow) (int, string)) []string {
+	problems := []string{}
+	words := map[string]bool{}
+	for _, row := range rows {
+		if phase32IsEntryKey(row.Key) {
+			continue
+		}
+		switch row.Modules {
+		case phase32ModuleAware:
+			words[phase32ModuleCommandWord(row.Key)] = true
+		case phase32RefusesImports, phase32NoEntrySource:
+		default:
+			problems = append(problems, "unclassified_route "+row.Key)
+		}
+	}
+	got := []string{}
+	for word := range words {
+		got = append(got, word)
+	}
+	sort.Strings(got)
+	want := append([]string(nil), moduleAware...)
+	sort.Strings(want)
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		problems = append(problems, "module_aware_set_drift got="+strings.Join(got, ",")+" want="+strings.Join(want, ","))
+	}
+	if observe != nil {
+		for _, row := range rows {
+			if phase32IsEntryKey(row.Key) {
+				continue
+			}
+			switch row.Modules {
+			case phase32RefusesImports:
+				code, output := observe(row)
+				wantExit := exitcode.Invalid
+				if row.ReportsRefusalAsPass {
+					wantExit = exitcode.Success
+				}
+				if code != wantExit || !strings.Contains(output, phase32RefusalCode(row)) {
+					problems = append(problems, "misclassified_route "+row.Key)
+				}
+			case phase32ModuleAware:
+				code, output := observe(row)
+				if strings.Contains(output, "module.imports_not_loaded") {
+					problems = append(problems, "misclassified_route "+row.Key)
+				} else if (row.Key == "check" || row.Key == "debug-map") && code != exitcode.Success {
+					problems = append(problems, "misclassified_route "+row.Key)
+				}
+			}
+		}
+	}
+	sort.Strings(problems)
+	return problems
+}
+
+// phase32ModuleObserver runs one classified route on the import-bearing fixture
+// examples/checksum/adler32_cli.schway. It never runs in parallel: the import
+// seam is process-global.
+type phase32ModuleObserver struct {
+	t        *testing.T
+	fixture  string
+	bindings string
+	manifest string
+	refusal  string
+	dir      string
+}
+
+func newPhase32ModuleObserver(t *testing.T) *phase32ModuleObserver {
+	t.Helper()
+	fixture := testsupport.ProjectPath("examples", "checksum", "adler32_cli.schway")
+	source, err := os.ReadFile(fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	refusal := ""
+	for _, diagnostic := range session.Check(source).Diagnostics {
+		if diagnostic.Code == "module.imports_not_loaded" {
+			refusal = diagnostic.ID
+		}
+	}
+	if refusal == "" {
+		t.Fatal("single-file Check did not fail closed on the fixture's import")
+	}
+	dir := t.TempDir()
+	product, _, err := session.EvidenceCommandFile(context.Background(), testsupport.ProjectPath("examples", "sum_to_n.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := filepath.Join(dir, "sum_to_n.evidence.json")
+	if err := os.WriteFile(manifest, product.ManifestBytes, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return &phase32ModuleObserver{
+		t: t, fixture: fixture, manifest: manifest, refusal: refusal, dir: dir,
+		bindings: testsupport.ProjectPath("examples", "phase29", "fixture_bytes.bindings.json"),
+	}
+}
+
+func (o *phase32ModuleObserver) observe(row phase32RouteRow) (int, string) {
+	o.t.Helper()
+	out := func(name string) string {
+		return filepath.Join(o.dir, strings.NewReplacer(" ", "_", "=", "_", "-", "_").Replace(row.Key)+"."+name)
+	}
+	var args []string
+	switch row.Key {
+	case "check":
+		args = []string{"check", o.fixture}
+	case "debug-map":
+		args = []string{"debug-map", o.fixture}
+	case "run --engine= interpreter":
+		args = []string{"run", "--engine=interpreter", o.fixture}
+	case "run --engine= native":
+		args = []string{"run", "--engine=native", o.fixture}
+	case "build --output":
+		args = []string{"build", o.fixture, "--output", out("bin")}
+	case "build --output --manifest":
+		args = []string{"build", o.fixture, "--output", out("bin"), "--manifest", o.bindings}
+	case "build --manifest --output":
+		args = []string{"build", o.fixture, "--manifest", o.bindings, "--output", out("bin")}
+	case "app verify":
+		args = []string{"app", "verify", o.fixture, "--cases", testsupport.ProjectPath("examples", "phase22", "identity.cases.json"), "--report", out("report.json")}
+	case "evidence":
+		args = []string{"evidence", o.fixture}
+	case "evidence --validate":
+		args = []string{"evidence", "--validate", o.manifest, o.fixture}
+	case "interface export":
+		args = []string{"interface", "export", o.fixture, out("summary.json")}
+	case "interface core":
+		args = []string{"interface", "core", o.fixture, out("core.json")}
+	case "explain":
+		args = []string{"explain", o.fixture, o.refusal}
+	case "query":
+		args = []string{"query", o.fixture, o.refusal}
+	default:
+		o.t.Fatalf("no observation recipe for route %q", row.Key)
+	}
+	code, stdout, stderr := captureLangRun(o.t, args)
+	return code, stdout + stderr
+}
+
 var phase32ProducerProgramsLine = regexp.MustCompile(`(?m)^phase32_programs=(.*)$`)
 
 // phase32ProducerPrograms reads the `phase32_programs=` line of the receipt
@@ -463,6 +646,15 @@ func phase32WithoutRow(rows []phase32RouteRow, key string) []phase32RouteRow {
 		}
 	}
 	return out
+}
+
+func phase32HasPrefix(problems []string, prefix string) bool {
+	for _, problem := range problems {
+		if strings.HasPrefix(problem, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func phase32Contains(problems []string, want string) bool {
@@ -573,6 +765,80 @@ func TestPhase32PublicRouteAudit(t *testing.T) {
 				t.Errorf("usage text does not name module-aware route %q: %s", route, usage)
 			}
 		}
+	})
+	t.Run("module-classification", func(t *testing.T) {
+		observer := newPhase32ModuleObserver(t)
+		aware := check.ModuleAwareRoutes()
+		if problems := phase32ModuleProblems(phase32RouteRows, aware, observer.observe); len(problems) > 0 {
+			t.Fatalf("module classification problems:\n%s", strings.Join(problems, "\n"))
+		}
+		t.Run("unclassified", func(t *testing.T) {
+			rows := append([]phase32RouteRow(nil), phase32RouteRows...)
+			for index := range rows {
+				if rows[index].Key == "stats" {
+					rows[index].Modules = ""
+				}
+			}
+			if problems := phase32ModuleProblems(rows, aware, nil); !phase32Contains(problems, "unclassified_route stats") {
+				t.Fatalf("problems = %v, want unclassified_route stats", problems)
+			}
+		})
+		t.Run("set-drift", func(t *testing.T) {
+			if problems := phase32ModuleProblems(phase32RouteRows, aware[1:], nil); !phase32HasPrefix(problems, "module_aware_set_drift") {
+				t.Fatalf("problems = %v, want module_aware_set_drift", problems)
+			}
+			rows := append([]phase32RouteRow(nil), phase32RouteRows...)
+			for index := range rows {
+				if rows[index].Key == "debug-map" {
+					rows[index].Modules = phase32RefusesImports
+				}
+			}
+			if problems := phase32ModuleProblems(rows, aware, nil); !phase32HasPrefix(problems, "module_aware_set_drift") {
+				t.Fatalf("problems = %v, want module_aware_set_drift after reclassifying debug-map", problems)
+			}
+		})
+		t.Run("misclassified", func(t *testing.T) {
+			swap := func(key, class string) []phase32RouteRow {
+				rows := append([]phase32RouteRow(nil), phase32RouteRows...)
+				for index := range rows {
+					if rows[index].Key == key {
+						rows[index].Modules = class
+					}
+				}
+				return rows
+			}
+			if problems := phase32ModuleProblems(swap("evidence", phase32ModuleAware), aware, observer.observe); !phase32Contains(problems, "misclassified_route evidence") {
+				t.Fatalf("problems = %v, want misclassified_route evidence (a refusing route labelled module-aware)", problems)
+			}
+			if problems := phase32ModuleProblems(swap("check", phase32RefusesImports), aware, observer.observe); !phase32Contains(problems, "misclassified_route check") {
+				t.Fatalf("problems = %v, want misclassified_route check (a module-aware route labelled refusing)", problems)
+			}
+		})
+		t.Run("import-seam", func(t *testing.T) {
+			restore := check.SetIgnoreUnloadedImportsForTest(true)
+			t.Cleanup(restore)
+			problems := phase32ModuleProblems(phase32RouteRows, aware, observer.observe)
+			for _, row := range phase32RouteRows {
+				if row.Modules == phase32RefusesImports && phase32RefusalCode(row) == "module.imports_not_loaded" {
+					if !phase32Contains(problems, "misclassified_route "+row.Key) {
+						t.Errorf("with the import guard ignored, %q still refused; problems = %v", row.Key, problems)
+					}
+				}
+			}
+			restore()
+			if problems := phase32ModuleProblems(phase32RouteRows, aware, observer.observe); len(problems) > 0 {
+				t.Fatalf("restoring the import guard did not restore the classification: %v", problems)
+			}
+		})
+		t.Run("adjacency-no-imports", func(t *testing.T) {
+			noImports := testsupport.ProjectPath("examples", "sum_to_n.schway")
+			for _, args := range [][]string{{"evidence", noImports}, {"check", noImports}} {
+				code, stdout, stderr := captureLangRun(t, args)
+				if code != exitcode.Success || strings.Contains(stdout+stderr, "module.imports_not_loaded") {
+					t.Fatalf("%v on a source without imports: code=%d stdout=%q stderr=%q", args, code, stdout, stderr)
+				}
+			}
+		})
 	})
 	t.Run("usage-cross-check", func(t *testing.T) {
 		usage := usageResult().Diagnostics[0].Message
