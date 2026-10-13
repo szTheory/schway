@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 3
+open_count: 2
 waived_count: 0
-fixed_count: 2
+fixed_count: 3
 total_count: 5
-last_updated: 2026-10-13T17:23:51.848Z
+last_updated: 2026-10-13T17:26:32.776Z
 ---
 
 # Broken Windows Ledger
@@ -19,7 +19,7 @@ last_updated: 2026-10-13T17:23:51.848Z
 | 2 | 16 | unrun-verify | internal/compiler/cgen/cgen_n1_convergence_test.go |  | Package-wide cgen verification remains red until Plan 16-06 flips its intentional pre-cutover expectations. | fixed |  | 2026-09-19T21:48:08.202Z | 2026-09-24T06:37:27.070Z |
 | 3 | 16 | unrun-verify | .planning/phases/16-branch-match-emitter-port/16-19-PLAN.md |  | Full go test ./... ran but failed on pre-existing Phase 11 fixture, corpus, and validation-groundedness drift outside this plan scope. | fixed |  | 2026-09-23T22:41:36.175Z | 2026-09-24T06:37:27.152Z |
 | 4 | 33 | deviation | internal/compiler/interp/interp.go |  | Plan 33-02 acceptance expected two live-resource error strings; source has three because RunWithForeignOutcomes and both routed callers retain the same required text. | open |  | 2026-10-13T17:04:15.066Z |  |
-| 5 | 33 | deviation | scripts/check-receipts.sh |  | Preserved first-failure refusal ordering by resolving the expected digest before manifest-content checks. | open |  | 2026-10-13T17:23:51.848Z |  |
+| 5 | 33 | deviation | scripts/check-receipts.sh |  | Preserved first-failure refusal ordering by resolving the expected digest before manifest-content checks. | fixed |  | 2026-10-13T17:23:51.848Z | 2026-10-13T17:26:32.776Z |
 
 ````json
 [
@@ -81,10 +81,10 @@ last_updated: 2026-10-13T17:23:51.848Z
     "file": "scripts/check-receipts.sh",
     "line": null,
     "description": "Preserved first-failure refusal ordering by resolving the expected digest before manifest-content checks.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-10-13T17:23:51.848Z",
-    "resolved_at": null,
+    "resolved_at": "2026-10-13T17:26:32.776Z",
     "milestone": null
   }
 ]
