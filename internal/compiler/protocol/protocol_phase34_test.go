@@ -32,6 +32,18 @@ func phase34Presented(t *testing.T, source []byte, problem diagnostic.Diagnostic
 	return string(encoded), wire.Diagnostics[0]
 }
 
+func phase34Human(t *testing.T, label string, source []byte, problem diagnostic.Diagnostic) string {
+	t.Helper()
+	result := protocol.New("check", protocol.StatusInvalid)
+	result.Diagnostics = []diagnostic.Diagnostic{problem}
+	result = protocol.WithPresentation(result, protocol.PresentationContext{Sources: map[string]protocol.CapturedSource{"": {Label: label, Bytes: source}}})
+	output, err := protocol.Human(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return output
+}
+
 func TestPhase34DiagnosticLocations(t *testing.T) {
 	t.Run("exact coordinate goldens", func(t *testing.T) {
 		cases := []struct {
@@ -209,4 +221,112 @@ func TestPhase34DiagnosticLocations(t *testing.T) {
 			t.Fatal("presentation changed diagnostic ID")
 		}
 	})
+}
+
+func TestPhase34HumanSnippetRendering(t *testing.T) {
+	t.Run("tab and escaped source keep caret aligned", func(t *testing.T) {
+		source := append([]byte("a\t\x1b\\é\u202e"), 0xff, 'Z')
+		start := len(source) - 1
+		problem := diagnostic.Error("source.hostile", diagnostic.Span{Start: start, End: start + 1}, "unsafe source byte")
+		output := phase34Human(t, "draft.swy", source, problem)
+		lines := strings.Split(strings.TrimSuffix(output, "\n"), "\n")
+		if len(lines) != 5 {
+			t.Fatalf("escaped source emitted unexpected lines: %q", output)
+		}
+		wantSnippet := "a   \\x1B\\\\\\u{E9}\\u{202E}\\xFFZ"
+		if lines[2] != wantSnippet {
+			t.Fatalf("snippet = %q, want %q", lines[2], wantSnippet)
+		}
+		const renderedStart = 28
+		if lines[3] != strings.Repeat(" ", renderedStart)+"^" {
+			t.Fatalf("marker = %q, want caret at rendered column %d", lines[3], renderedStart)
+		}
+		assertPrintableASCII(t, output)
+	})
+
+	t.Run("hostile labels and messages remain one escaped line", func(t *testing.T) {
+		label := "bad\nname\x1b\u202e\xff"
+		message := "bad\rmessage\t\x1b\u202e\xff"
+		output := phase34Human(t, label, []byte("x"), diagnostic.Error("source.hostile", diagnostic.Span{Start: 0, End: 1}, message))
+		lines := strings.Split(strings.TrimSuffix(output, "\n"), "\n")
+		if len(lines) != 5 {
+			t.Fatalf("hostile label/message added output lines: %q", output)
+		}
+		for _, want := range []string{`bad\x0Aname\x1B\u{202E}\xFF:1:1`, `bad\x0Dmessage\x09\x1B\u{202E}\xFF`} {
+			if !strings.Contains(output, want) {
+				t.Errorf("output omitted escaped %q: %q", want, output)
+			}
+		}
+		assertPrintableASCII(t, output)
+	})
+
+	t.Run("long source crop bounds snippet and excludes omission marker from caret", func(t *testing.T) {
+		source := []byte(strings.Repeat("a", 200))
+		problem := diagnostic.Error("source.long", diagnostic.Span{Start: 116, End: 200}, "long range")
+		output := phase34Human(t, "long.swy", source, problem)
+		lines := strings.Split(strings.TrimSuffix(output, "\n"), "\n")
+		if len(lines) != 5 {
+			t.Fatalf("long source emitted unexpected lines: %q", output)
+		}
+		snippet, marker := lines[2], lines[3]
+		if len(snippet) > 120 || !strings.HasPrefix(snippet, "...") || !strings.HasSuffix(snippet, "...") {
+			t.Fatalf("snippet crop is not bounded with visible omission markers: len=%d %q", len(snippet), snippet)
+		}
+		contentEnd := len(snippet) - 3
+		caret := strings.IndexByte(marker, '^')
+		markerEnd := caret + 1 + strings.Count(marker[caret+1:], "~")
+		if caret < 0 || markerEnd > contentEnd {
+			t.Fatalf("caret overlaps the suffix omission marker: snippet=%q marker=%q", snippet, marker)
+		}
+		if strings.Count(marker, "^") != 1 || strings.Contains(marker, " [continues]") {
+			t.Fatalf("single-line range marker changed: %q", marker)
+		}
+	})
+
+	t.Run("hostile text crops at escape boundaries", func(t *testing.T) {
+		label := strings.Repeat("é", 80) + "tail\n"
+		message := strings.Repeat("\\\x1b", 90) + "end"
+		output := phase34Human(t, label, []byte("x"), diagnostic.Error("source.crop", diagnostic.Span{Start: 0, End: 1}, message))
+		lines := strings.Split(strings.TrimSuffix(output, "\n"), "\n")
+		if len(lines) != 5 {
+			t.Fatalf("cropped details emitted unexpected lines: %q", output)
+		}
+		start := strings.Index(lines[1], " source.crop ") + len(" source.crop ")
+		delimiter := ":1:1 [0:1]: "
+		end := strings.Index(lines[1][start:], delimiter)
+		if start < len(" source.crop ") || end < 0 {
+			t.Fatalf("could not isolate escaped filename/message fields: %q", lines[1])
+		}
+		filename := lines[1][start : start+end]
+		messageProjection := lines[1][start+end+len(delimiter):]
+		if len(filename) > 120 || len(messageProjection) > 120 || !strings.HasSuffix(filename, "...") || !strings.HasSuffix(messageProjection, "...") {
+			t.Fatalf("escaped detail projections not bounded with omission markers: filename=%d %q message=%d %q", len(filename), filename, len(messageProjection), messageProjection)
+		}
+		assertPrintableASCII(t, output)
+	})
+
+	t.Run("multiline CRLF range and EOF insertion", func(t *testing.T) {
+		cross := phase34Human(t, "cross.swy", []byte("foo\r\nbar"), diagnostic.Error("source.cross", diagnostic.Span{Start: 1, End: 6}, "crosses line"))
+		if !strings.Contains(cross, " ^~ [continues]\n") {
+			t.Fatalf("cross-line marker did not stop on first line: %q", cross)
+		}
+		eof := phase34Human(t, "eof.swy", []byte("abc"), diagnostic.Error("source.insert", diagnostic.Span{Start: 3, End: 3}, "insert here").AtSource())
+		if !strings.Contains(eof, "eof.swy:1:4 [3:3]: insert here\nabc\n   ^\n") {
+			t.Fatalf("EOF insertion lost its caret: %q", eof)
+		}
+		assertPrintableASCII(t, cross)
+		assertPrintableASCII(t, eof)
+	})
+}
+
+func assertPrintableASCII(t *testing.T, value string) {
+	t.Helper()
+	for index, character := range []byte(value) {
+		if character == '\n' {
+			continue
+		}
+		if character < 0x20 || character > 0x7e {
+			t.Fatalf("output byte at %d is not printable ASCII: 0x%02X in %q", index, character, value)
+		}
+	}
 }

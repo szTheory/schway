@@ -1,0 +1,13 @@
+<testsuites tests="2" failures="2"><testsuite name="github.com/szTheory/schway/internal/compiler/protocol" tests="2" failures="2" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34HumanSnippetRendering" time="0"><failure message="go test reported failure">=== RUN   TestPhase34HumanSnippetRendering
+--- FAIL: TestPhase34HumanSnippetRendering (0.00s)
+</failure><system-out>=== RUN   TestPhase34HumanSnippetRendering
+--- FAIL: TestPhase34HumanSnippetRendering (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34HumanSnippetRendering/long_source_crop_bounds_snippet_and_excludes_omission_marker_from_caret" time="0"><failure message="go test reported failure">=== RUN   TestPhase34HumanSnippetRendering/long_source_crop_bounds_snippet_and_excludes_omission_marker_from_caret
+    protocol_phase34_test.go:279: caret overlaps the suffix omission marker: snippet="...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..." marker="                                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    --- FAIL: TestPhase34HumanSnippetRendering/long_source_crop_bounds_snippet_and_excludes_omission_marker_from_caret (0.00s)
+</failure><system-out>=== RUN   TestPhase34HumanSnippetRendering/long_source_crop_bounds_snippet_and_excludes_omission_marker_from_caret
+    protocol_phase34_test.go:279: caret overlaps the suffix omission marker: snippet="...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..." marker="                                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    --- FAIL: TestPhase34HumanSnippetRendering/long_source_crop_bounds_snippet_and_excludes_omission_marker_from_caret (0.00s)
+</system-out></testcase><system-out>FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/protocol	0.006s
+</system-out></testsuite></testsuites>
