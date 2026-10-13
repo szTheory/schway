@@ -1,6 +1,6 @@
 ---
 phase: 33-carried-debt-bounded-capture-read-and-generic-freeze-gate
-reviewed: 2026-10-13T18:00:00Z
+reviewed: 2026-10-13T18:12:29Z
 depth: standard
 files_reviewed: 23
 files_reviewed_list:
@@ -28,41 +28,32 @@ files_reviewed_list:
   - scripts/verify-phase32.sh
   - testdata/receipts/M006.manifest
 findings:
-  critical: 1
+  critical: 0
   warning: 0
   info: 0
-  total: 1
-status: issues_found
+  total: 0
+status: clean
 ---
 
 # Phase 33: Code Review Report
 
-**Reviewed:** 2026-10-13T18:00:00Z  
+**Reviewed:** 2026-10-13T18:12:29Z  
 **Depth:** standard  
 **Files Reviewed:** 23  
-**Status:** issues_found
+**Status:** clean
 
 ## Summary
 
-Reviewed the 23 files in the canonical Phase 33 scope, including the interpreter/native boundary and the generic receipt and freeze gates. The receipt gate can accept a log with an arbitrary control row when the manifest declares an empty controls list, so malformed future milestone manifests can bypass the control checks.
+Re-reviewed the canonical Phase 33 scope and the receipt-control repair. `check-receipts.sh` now rejects an absent controls declaration and rejects empty or whitespace-only entries before deriving the expected control count. `TestReceiptGateMalformedControls` covers empty, delimiter-only, leading, trailing, interior, and whitespace-only lists with arbitrary control rows. The prior CR-01 is fixed; no residual verified issues were found in the scoped source.
 
-## Critical Issues
+All reviewed files meet quality standards. No issues found.
 
-### CR-01: Empty manifest controls bypass receipt control validation
+## Narrative Findings (AI reviewer)
 
-**Classification:** BLOCKER  
-**File:** `scripts/check-receipts.sh:39-44`
-**Issue:** `control_count` is calculated with `awk -F, '{print NF}'`. For an empty `controls=` value, awk still reports one field, while the validation loop at lines 99-101 iterates over no declared control names. The gate then requires exactly one row beginning with the manifest label's `control ` prefix but never checks its name, package, or tests. A two-host receipt pair with any single control row can therefore pass without running any declared control. The current M006 manifest has nonempty controls, but this generic gate is intended for later milestones and should reject an empty declaration rather than silently waive the controls.
+No findings.
 
-**Fix:** Reject an empty `controls` value before deriving the count, and reject empty entries in the comma-separated list before checking rows. For example:
+---
 
-```sh
-[ -n "$controls" ] || reject controls_line_missing
-control_count=$(printf '%s' "$controls" | awk -F, 'NF { for (i=1; i<=NF; i++) if ($i == "") exit 1; print NF }') || reject controls_line_malformed
-```
-
-## Footer
-
-_Reviewed: 2026-10-13T18:00:00Z_  
+_Reviewed: 2026-10-13T18:12:29Z_  
 _Reviewer: the agent (gsd-code-reviewer)_  
 _Depth: standard_
