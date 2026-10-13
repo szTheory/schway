@@ -2,9 +2,14 @@
 gsd_state_version: "1.0"
 milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
+current_phase: 33
+current_phase_name: Carried Debt, Bounded Capture Read, and Generic Freeze Gate
 status: planning
-last_updated: "2026-10-13T15:00:00.000Z"
+stopped_at: Phase 33 context gathered
+last_updated: "2026-10-13T14:46:36.528Z"
 last_activity: 2026-10-13
+last_activity_desc: M007 roadmap created (6 phases, 19/19 requirements mapped)
+state_head: f6ea288c90e198014128296dfe7fd8a01ac93045
 progress:
   total_phases: 6
   completed_phases: 0
@@ -996,9 +1001,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-13T15:00:00.000Z
-Stopped at: M007 roadmap created (Phases 33–38, 19/19 requirements mapped)
-Resume file: None
+Last session: 2026-10-13T14:46:36.501Z
+Stopped at: Phase 33 context gathered
+Resume file: .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CONTEXT.md
 Next action: /gsd-discuss-phase 33
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
