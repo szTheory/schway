@@ -5,6 +5,7 @@ import (
 
 	"github.com/szTheory/schway/internal/compiler/ast"
 	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/surface"
 )
 
 const (
@@ -737,6 +738,14 @@ func (p *parser) scalarBinaryExpr(minPrecedence int) *ast.Expr {
 	left := p.scalarExprAtom()
 	for {
 		operator := p.peek()
+		if operator.Kind == TokenUnknown && operator.Text == "&&" {
+			p.advance()
+			p.reportSurfaceRefusal("surface.unsupported_logical_and", operator)
+			if !isCallerOwnedBoundary(p.peek().Kind) {
+				p.scalarBinaryExpr(minPrecedence)
+			}
+			return left
+		}
 		precedence := scalarBinaryOperator(operator.Kind)
 		if precedence < minPrecedence || precedence == 0 {
 			return left
@@ -756,6 +765,14 @@ func (p *parser) scalarBinaryExpr(minPrecedence int) *ast.Expr {
 		}
 		left = &ast.Expr{Kind: kind, Left: left, Right: right, Span: diagnostic.Span{Start: left.Span.Start, End: right.Span.End}}
 	}
+}
+
+func (p *parser) reportSurfaceRefusal(code string, token Token) {
+	refusal, ok := surface.LookupRefusal(code)
+	if !ok {
+		panic("syntax parser requested an unknown surface refusal: " + code)
+	}
+	p.problem(refusal.Code, token, refusal.Hint)
 }
 
 func (p *parser) scalarExprAtom() *ast.Expr {

@@ -164,6 +164,9 @@ func lex(source []byte) ([]Token, []diagnostic.Diagnostic, bool) {
 		kind, width := punctuation(source[offset:])
 		if width == 0 {
 			width = size
+			if source[offset] == '&' && offset+1 < len(source) && source[offset+1] == '&' {
+				width = 2
+			}
 			kind = TokenUnknown
 			problem(diagnostic.Error("syntax.unexpected_byte", diagnostic.Span{Start: start, End: start + width}, "unexpected source character"))
 		}
