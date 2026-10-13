@@ -10,6 +10,7 @@ files:
   - internal/compiler/session/session_phase32_receipt_test.go
   - internal/compiler/syntax/syntax_phase32_format_test.go
   - internal/compiler/session/evidence_grade_test.go
+resolved: 2026-10-12 (Phase 32.1, plan 32.1-06)
 ---
 
 ## Problem

@@ -5,6 +5,7 @@ area: cmd/schway run
 severity: minor
 files:
   - cmd/schway/main.go
+resolved: 2026-10-12 (Phase 32.1, plan 32.1-02)
 ---
 
 ## Problem
