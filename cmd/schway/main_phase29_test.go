@@ -49,13 +49,15 @@ func TestPhase29FixtureAppCLI(t *testing.T) {
 		}
 	})
 	for _, test := range []struct{ engine, code string }{
-		{"interpreter", "tool.run_failed"},
-		{"native", "native.tool_failure"},
+		{"interpreter", "tool.run_input_required"},
+		{"native", "tool.run_input_required"},
 	} {
-		t.Run("run-"+test.engine+"-unchanged", func(t *testing.T) {
+		// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry
+		// parameter as usage (64) before any engine work.
+		t.Run("run-"+test.engine+"-input-required", func(t *testing.T) {
 			code, stdout, stderr := captureLangRun(t, []string{"run", "--engine=" + test.engine, source})
-			if code != 3 || !strings.Contains(stdout+stderr, test.code) {
-				t.Fatalf("run --engine=%s code=%d stdout=%q stderr=%q; want exit 3 and %s (D-06 unchanged)", test.engine, code, stdout, stderr, test.code)
+			if code != 64 || !strings.Contains(stdout+stderr, test.code) {
+				t.Fatalf("run --engine=%s code=%d stdout=%q stderr=%q; want exit 64 and %s", test.engine, code, stdout, stderr, test.code)
 			}
 		})
 	}

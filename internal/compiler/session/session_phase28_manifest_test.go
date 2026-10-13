@@ -226,31 +226,123 @@ var phase28ClassChanges = map[string]phase28ManifestEntry{
 		EntryShape:     "multi-root-no-main",
 		EntryError:     "core.entry_ambiguous",
 	},
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
+	"examples/fizzbuzz.schway": {
+		Path:           "examples/fizzbuzz.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.tool_missing"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		EntryShape:     "single-root",
+		Entry:          "main",
+	},
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
+	"examples/phase22/identity.schway": {
+		Path:           "examples/phase22/identity.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.tool_missing"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		EntryShape:     "single-root",
+		Entry:          "main",
+	},
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
+	"examples/phase23/file_byte.schway": {
+		Path:           "examples/phase23/file_byte.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		EntryShape:     "single-root",
+		Entry:          "main",
+	},
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
+	"examples/phase24/error.schway": {
+		Path:           "examples/phase24/error.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		EntryShape:     "single-root",
+		Entry:          "main",
+	},
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
+	"examples/phase24/transfer.schway": {
+		Path:           "examples/phase24/transfer.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		EntryShape:     "single-root",
+		Entry:          "main",
+	},
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
+	"examples/phase26/checked_add_overflow.schway": {
+		Path:           "examples/phase26/checked_add_overflow.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.tool_missing"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		EntryShape:     "single-root",
+		Entry:          "main",
+	},
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
+	"examples/phase272/straight_line_copy.schway": {
+		Path:           "examples/phase272/straight_line_copy.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.tool_missing"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		EntryShape:     "single-root",
+		Entry:          "main",
+	},
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
+	"examples/sum_to_n.schway": {
+		Path:           "examples/sum_to_n.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.tool_missing"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		EntryShape:     "single-root",
+		Entry:          "main",
+	},
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
+	"testdata/phase25/exclusive_copy_accept.schway": {
+		Path:           "testdata/phase25/exclusive_copy_accept.schway",
+		Check:          phase28Class{},
+		Build:          phase28Class{Exit: 3, Code: "native.tool_missing"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		EntryShape:     "single-root",
+		Entry:          "exclusive_copy",
+	},
 }
 
 // phase28NewlyAddedEntries lists the only paths allowed to be absent from the
 // golden (sources added after generation), with their expected entry.
 var phase28NewlyAddedEntries = map[string]phase28ManifestEntry{
 	// 2026-10-10 (Phase 28, D-04, ROADMAP SC3): new runnable example with an
-	// uncalled function; Build and native run stop at the missing clang.
+	// uncalled function; Build stops at the missing clang; run later became a 32.1 usage refusal.
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
 	"examples/phase28/unused_function.schway": {
 		Path:           "examples/phase28/unused_function.schway",
 		Check:          phase28Class{},
 		Build:          phase28Class{Exit: 3, Code: "native.tool_missing"},
-		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
-		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_failure"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
 		EntryShape:     "multi-root-main",
 		Entry:          "main",
 		DeadFunctions:  []string{"s1:examples.phase28.unused_function:fn:unused"},
 	},
 	// 2026-10-11 (Phase 29, plan 29-00): the adler32 byte-view library; its
 	// adler32 function is dead from main and pruned per engine.
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
 	"testdata/phase29/adler32_library.schway": {
 		Path:           "testdata/phase29/adler32_library.schway",
 		Check:          phase28Class{},
 		Build:          phase28Class{Exit: 3, Code: "native.tool_missing"},
-		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
-		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_failure"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
 		EntryShape:     "multi-root-main",
 		Entry:          "main",
 		DeadFunctions:  []string{"s1:testdata.phase29.adler32_library:fn:adler32"},
@@ -261,25 +353,27 @@ var phase28NewlyAddedEntries = map[string]phase28ManifestEntry{
 	// this walker invokes build and run: Build stops at native.build_failed
 	// because the fixture owner needs its manifest (the manifest-bearing
 	// `schway build --manifest` plus `app run` route is the runnable gain,
-	// pinned by TestPhase29FixtureAppCLI), and `schway run` is unchanged for
-	// this program (D-06/D-16).
+	// pinned by TestPhase29FixtureAppCLI), and `schway run` now refuses
+	// this program as usage (64), see the Phase 32.1 note below.
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
 	"examples/phase29/adler32_fixture.schway": {
 		Path:           "examples/phase29/adler32_fixture.schway",
 		Check:          phase28Class{},
 		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
-		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
-		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_failure"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
 		EntryShape:     "single-root",
 		Entry:          "main",
 	},
 	// 2026-10-11 (Phase 29, plan 29-10): the out-of-bounds control; same
 	// manifest-less observations as the fixture program it is cut from.
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
 	"examples/phase29/byte_index_oob.schway": {
 		Path:           "examples/phase29/byte_index_oob.schway",
 		Check:          phase28Class{},
 		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
-		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
-		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_failure"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
 		EntryShape:     "single-root",
 		Entry:          "main",
 	},
@@ -289,12 +383,13 @@ var phase28NewlyAddedEntries = map[string]phase28ManifestEntry{
 	// whose only function is adler32; build and run need an entry with main
 	// and fail the same operational way the Phase 29 fixture does without a
 	// manifest.
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
 	"examples/checksum/adler32.schway": {
 		Path:           "examples/checksum/adler32.schway",
 		Check:          phase28Class{},
 		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
-		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
-		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_failure"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
 		EntryShape:     "single-root",
 		Entry:          "adler32",
 	},
@@ -302,34 +397,37 @@ var phase28NewlyAddedEntries = map[string]phase28ManifestEntry{
 	// byte-taking walker refuses imports (module.imports_not_loaded) so the
 	// shape is unchecked; the module-aware route is pinned by
 	// TestPhase30AdlerModuleAppCLI and TestPhase30AdlerModuleInterpreter.
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
 	"examples/checksum/adler32_cli.schway": {
 		Path:           "examples/checksum/adler32_cli.schway",
 		Check:          phase28Class{},
 		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
-		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
-		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_failure"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
 		EntryShape:     "unchecked",
 	},
 	// 2026-10-12 (Phase 31, plan 31-01): the bounded file checksum entry. The
 	// byte-taking walker refuses imports, so every plain engine class matches
 	// adler32_cli; the file route is pinned by TestPhase31ChecksumPublicRoute.
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
 	"examples/checksum/checksum.schway": {
 		Path:           "examples/checksum/checksum.schway",
 		Check:          phase28Class{},
 		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
-		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
-		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_failure"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
 		EntryShape:     "unchecked",
 	},
 	// 2026-10-12 (Phase 31, plan 31-07): the second consumer of the adler32
 	// library; plain engine classes match checksum, the file route is pinned
 	// by TestPhase31AdlerLowPublicRoute.
+	// 2026-10-12 (Phase 32.1, D-01/D-04): run refuses an unbindable entry parameter as usage (64) before any engine work.
 	"examples/checksum/adler_low.schway": {
 		Path:           "examples/checksum/adler_low.schway",
 		Check:          phase28Class{},
 		Build:          phase28Class{Exit: 3, Code: "native.build_failed"},
-		InterpreterRun: phase28Class{Exit: 3, Code: "tool.run_failed"},
-		NativeRun:      phase28Class{Exit: 3, Code: "native.tool_failure"},
+		InterpreterRun: phase28Class{Exit: 64, Code: "tool.run_input_required"},
+		NativeRun:      phase28Class{Exit: 64, Code: "tool.run_input_required"},
 		EntryShape:     "unchecked",
 	},
 }
