@@ -1,0 +1,13 @@
+<testsuites tests="2" failures="2"><testsuite name="github.com/szTheory/schway/internal/compiler/protocol" tests="2" failures="2" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34HumanSnippetRendering" time="0"><failure message="go test reported failure">=== RUN   TestPhase34HumanSnippetRendering
+--- FAIL: TestPhase34HumanSnippetRendering (0.00s)
+</failure><system-out>=== RUN   TestPhase34HumanSnippetRendering
+--- FAIL: TestPhase34HumanSnippetRendering (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34HumanSnippetRendering/literal_ellipsis_remains_source_content" time="0"><failure message="go test reported failure">=== RUN   TestPhase34HumanSnippetRendering/literal_ellipsis_remains_source_content
+    protocol_phase34_test.go:299: literal source ellipsis was mistaken for a crop marker: "result:87a5234e9d7e858b3414b073 check invalid\ndiagnostic:b75c8101d9be3d168abe525f source.ellipsis dots.swy:1:21 [20:23]: literal dots\naaaaaaaaaaaaaaaaaaaa...\n                    ^\nmetrics elapsed_ns=0 peak_rss=unavailable output_bytes=257 recomputed_work=0\n"
+    --- FAIL: TestPhase34HumanSnippetRendering/literal_ellipsis_remains_source_content (0.00s)
+</failure><system-out>=== RUN   TestPhase34HumanSnippetRendering/literal_ellipsis_remains_source_content
+    protocol_phase34_test.go:299: literal source ellipsis was mistaken for a crop marker: "result:87a5234e9d7e858b3414b073 check invalid\ndiagnostic:b75c8101d9be3d168abe525f source.ellipsis dots.swy:1:21 [20:23]: literal dots\naaaaaaaaaaaaaaaaaaaa...\n                    ^\nmetrics elapsed_ns=0 peak_rss=unavailable output_bytes=257 recomputed_work=0\n"
+    --- FAIL: TestPhase34HumanSnippetRendering/literal_ellipsis_remains_source_content (0.00s)
+</system-out></testcase><system-out>FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/protocol	0.012s
+</system-out></testsuite></testsuites>

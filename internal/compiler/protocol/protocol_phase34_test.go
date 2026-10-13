@@ -225,7 +225,7 @@ func TestPhase34DiagnosticLocations(t *testing.T) {
 
 func TestPhase34HumanSnippetRendering(t *testing.T) {
 	t.Run("tab and escaped source keep caret aligned", func(t *testing.T) {
-		source := append([]byte("a\t\x1b\\é\u202e"), 0xff, 'Z')
+		source := append([]byte("a\t\x1b[31m\\é\u202e"), 0xff, 'Z')
 		start := len(source) - 1
 		problem := diagnostic.Error("source.hostile", diagnostic.Span{Start: start, End: start + 1}, "unsafe source byte")
 		output := phase34Human(t, "draft.swy", source, problem)
@@ -233,13 +233,17 @@ func TestPhase34HumanSnippetRendering(t *testing.T) {
 		if len(lines) != 5 {
 			t.Fatalf("escaped source emitted unexpected lines: %q", output)
 		}
-		wantSnippet := "a   \\x1B\\\\\\u{E9}\\u{202E}\\xFFZ"
+		wantSnippet := "a   \\x1B[31m\\\\\\u{E9}\\u{202E}\\xFFZ"
 		if lines[2] != wantSnippet {
 			t.Fatalf("snippet = %q, want %q", lines[2], wantSnippet)
 		}
-		const renderedStart = 28
+		const renderedStart = 32
 		if lines[3] != strings.Repeat(" ", renderedStart)+"^" {
 			t.Fatalf("marker = %q, want caret at rendered column %d", lines[3], renderedStart)
+		}
+		byteOffsetMutation := strings.Repeat(" ", start) + "^"
+		if byteOffsetMutation == lines[3] {
+			t.Fatalf("byte-offset mapping mutation did not change the escaped-column golden: %q", lines[3])
 		}
 		assertPrintableASCII(t, output)
 	})
@@ -274,12 +278,25 @@ func TestPhase34HumanSnippetRendering(t *testing.T) {
 		}
 		contentEnd := len(snippet) - 3
 		caret := strings.IndexByte(marker, '^')
+		if caret < 0 {
+			t.Fatalf("long-range marker omitted its caret: %q", marker)
+		}
 		markerEnd := caret + 1 + strings.Count(marker[caret+1:], "~")
-		if caret < 0 || markerEnd > contentEnd {
+		if markerEnd > contentEnd {
 			t.Fatalf("caret overlaps the suffix omission marker: snippet=%q marker=%q", snippet, marker)
 		}
 		if strings.Count(marker, "^") != 1 || strings.Contains(marker, " [continues]") {
 			t.Fatalf("single-line range marker changed: %q", marker)
+		}
+	})
+
+	t.Run("literal ellipsis remains source content", func(t *testing.T) {
+		source := []byte(strings.Repeat("a", 20) + "...")
+		problem := diagnostic.Error("source.ellipsis", diagnostic.Span{Start: 20, End: 23}, "literal dots")
+		output := phase34Human(t, "dots.swy", source, problem)
+		lines := strings.Split(strings.TrimSuffix(output, "\n"), "\n")
+		if len(lines) != 5 || lines[2] != string(source) || lines[3] != strings.Repeat(" ", 20)+"^~~" {
+			t.Fatalf("literal source ellipsis was mistaken for a crop marker: %q", output)
 		}
 	})
 
