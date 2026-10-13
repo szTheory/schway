@@ -45,7 +45,7 @@ func summaryCoverageProblems(markdown string, knownTests map[string]bool) []stri
 	}
 	type entry struct {
 		id, judgment, rationale string
-		refs, statuses          []string
+		refs, statuses, kinds   []string
 	}
 	var entries []*entry
 	for _, line := range lines[start:] {
@@ -72,6 +72,8 @@ func summaryCoverageProblems(markdown string, knownTests map[string]bool) []stri
 			e.refs = append(e.refs, value)
 		case "status":
 			e.statuses = append(e.statuses, value)
+		case "kind":
+			e.kinds = append(e.kinds, value)
 		}
 	}
 	if len(entries) == 0 {
@@ -79,6 +81,14 @@ func summaryCoverageProblems(markdown string, knownTests map[string]bool) []stri
 	}
 	var problems []string
 	for _, e := range entries {
+		// This enum mirrors gsd-core/bin/lib/coverage.cjs:65-67 (VALID_KINDS).
+		for _, kind := range e.kinds {
+			switch kind {
+			case "unit", "integration", "e2e", "automated_ui", "manual_procedural", "other":
+			default:
+				problems = append(problems, e.id+": unknown verification kind "+kind)
+			}
+		}
 		switch e.judgment {
 		case "true":
 			if e.rationale == "" {
