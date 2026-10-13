@@ -332,6 +332,76 @@ intraprocedurally still holds across a function boundary.
 - Notable: three audit/insert cycles roughly doubled the milestone's planning-doc
   churn relative to its code change.
 
+## Milestone: M006 — Bounded Byte Utility and Local Modules
+
+**Shipped:** 2026-10-12
+**Phases:** 6 (28–32, 32.1 inserted) | **Plans:** 63 | **Tasks:** 158 | **Commits:** 373 | **Timeline:** 3 days (2026-10-10 → 2026-10-12)
+**Close:** `override_closeout` — 16/16 requirements satisfied; audit `tech_debt`; phases 28–32 have passing reports made stale by 32.1's verified changes
+
+### What Was Built
+
+- **Phase 28** gave every command one exit-class table, `main` entry precedence
+  with pruning, and an `app verify` report that keeps the named capacity reason.
+- **Phase 29** admitted a read-only `ByteView` in scalar loops with a bounds
+  check that survives -O3/LTO and pinned an ordinary-source Adler-32.
+- **Phase 30** added local modules with closed in-root `os.Root` resolution,
+  export-list visibility re-derived by corevalidate, and named graph refusals.
+- **Phase 31** shipped `checksum FILE` with an exact result/error matrix, a
+  second consumer, module digests in identity, and a `zlib.adler32` oracle with
+  eight armed controls.
+- **Phases 32 and 32.1** executed the clean-checkout guide as a test, retired
+  the provisional frontier, closed the audit's CLI debt, and bound two-host
+  receipts to a code digest.
+
+### What Worked
+
+- **Wave-0 gates with written verdicts** (29-00, 30-00) settled the riskiest
+  questions (bounds check under LTO, `os.Root` behavior) before any production
+  code depended on them.
+- **No-import byte-identity golden committed first** made Phase 30's wide blast
+  radius safe: every existing program provably kept its generated C.
+- **Code-digest-bound receipts** turned "is the hosted evidence current?" into a
+  mechanical check instead of a judgment call.
+
+### What Was Inefficient
+
+- **Receipts were taken twice.** Phase 32 froze and dispatched, then the audit's
+  debt became Phase 32.1, which reopened and re-took them. Running the audit
+  before the Phase 32 freeze would have saved one hosted cycle.
+- **Summary frontmatter drift.** Most M006 summaries lack `one_liner` and
+  `requirements-completed`, so tooling under-counted tasks (34 vs 158) and the
+  audit had to verify Phase 31 requirements by hand.
+- **Successor phases stale earlier verifications.** Closing needed an override
+  even though every report passed.
+
+### Patterns Established
+
+- A code digest that excludes `.planning` and `*.md`, so docs-only work keeps
+  receipts live and any code commit reopens them.
+- One accessor (`check.ModuleAwareRoutes`) naming each route's module boundary,
+  pinned by a route-classification audit.
+- Post-freeze work is `.planning`-only; a needed code pin is reverted
+  byte-for-byte and deferred rather than reopening receipts.
+
+### Key Lessons
+
+1. **Audit before the freeze, not after.** The final-receipt plan should be
+   the last step after the milestone audit, or the audit's debt reopens it.
+2. **Keep summary frontmatter machine-readable.** Close tooling and audits rely
+   on `one_liner` and `requirements-completed`.
+3. **Archival can drop live claims.** `milestone complete` rewrote STATE.md's
+   Current Position and removed the receipt-bound line that
+   `TestPhase32ReceiptLivingClaims` reads; it was restored and the planning
+   meta-tests re-run before committing.
+
+### Cost Observations
+
+- Sessions: many short GSD steps across 3 days; adaptive model profile.
+- Notable: 63 plans in 3 days — the highest plan throughput so far — with the
+  largest single phase (29, 13 plans) driven by per-peer seeded-fault coverage.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -341,6 +411,7 @@ intraprocedurally still holds across a function boundary.
 | M001 | 335 | 6 | 62 | Established vertical slicing, independent re-derivation at trust crossings, and mutation-killed controls as standing rules |
 | M002 | 386 | 7 | 61 | Added gate-driven phase cuts, requirement splitting against overclaim, and "escalate a defect in the criterion" over downgrading an assertion |
 | M005 | ~252 | 5 | 25 | Audit-driven decimal phases before close; pre-fix byte-identity goldens for emitter changes |
+| M006 | 373 | 6 | 63 | Wave-0 gate verdicts, code-digest-bound hosted receipts, `.planning`-only post-freeze work |
 
 ### Cumulative Quality
 
@@ -349,6 +420,7 @@ intraprocedurally still holds across a function boundary.
 | M001 | 28/28 | 6/6 | 3/6 (partial) | 0 |
 | M002 | 29/31 (2 ratified partial) | 7/7 | 2/7 (partial) | 0 |
 | M005 | 9/9 | 5/5 | 5/5 (compliant) | 0 |
+| M006 | 16/16 | 6/6 (28–32 stale-by-successor) | 4/5 (28 missing) | 0 |
 
 ### Top Lessons (Verified Across Milestones)
 
