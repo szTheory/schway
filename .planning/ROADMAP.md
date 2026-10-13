@@ -324,11 +324,11 @@ adapter and public path input.
 The module boundary of every route is named once and pinned by the route audit, and the usage text lists every route. The execution peer's entry rule matches `main` precedence. Hosted receipts are re-taken at the final M006 revision. Source: [M006 audit](M006-MILESTONE-AUDIT.md).
 **Requirements**: DX-17, DX-18, MOD-03, EVD-15 (re-take)
 **Depends on:** Phase 32
-**Plans:** 11 plans
+**Plans:** 1/11 plans executed
 
 Plans:
 **Wave 1**
-- [ ] 32.1-01-PLAN.md — Reopen the three M006 receipt markers before any digest-moving commit (D-21)
+- [x] 32.1-01-PLAN.md — Reopen the three M006 receipt markers before any digest-moving commit (D-21)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 32.1-02-PLAN.md — run on an unbindable entry refuses usage/64 tool.run_input_required; 17 dated manifest re-pins; docs; emitter inventory re-pin last (D-01..D-07, D-24)

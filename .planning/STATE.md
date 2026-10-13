@@ -5,16 +5,16 @@ milestone_name: Bounded Byte Utility and Local Modules
 current_phase: "32.1"
 current_phase_name: "Address tech debt: CLI exit classes and module-aware routes"
 status: executing
-stopped_at: Phase 32.1 planned (11 plans, 7 waves; checker passed)
-last_updated: "2026-10-13T01:25:40.623Z"
+stopped_at: Completed 32.1-01-PLAN.md
+last_updated: "2026-10-13T01:26:38.734Z"
 last_activity: 2026-10-12
 last_activity_desc: Phase 32.1 execution started
-state_head: 5baf1c6c8cb163568af3f533a838c5db984c9a98
+state_head: 539b482873e5e2d2a829b0dea609499f59b54c72
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 63
-  completed_plans: 52
+  completed_plans: 53
   percent: 83
 ---
 
@@ -124,8 +124,8 @@ plans.
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
 Phase: 32.1 (Address tech debt: CLI exit classes and module-aware routes) — EXECUTING
-Plan: 1 of 11
-Status: Executing Phase 32.1
+Plan: 2 of 11
+Status: Ready to execute
 Last activity: 2026-10-12 — Phase 32.1 execution started
 
 Progress: [████████░░] 83% (3/5 M006 phases)
@@ -556,6 +556,7 @@ subset alone.
 | Phase 32 P08 | 4 min | 2 tasks | 4 files |
 | Phase 32 P09 | 15min | 3 tasks | 4 files |
 | Phase 32 P11 | 20min | 2 tasks | 9 files |
+| Phase 32.1 P01 | 5 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -723,6 +724,7 @@ decision history; they no longer describe current status.
 - [Phase 32]: 32-01: var-body formatter guard excludes match context; 3 frozen Phase 30 format hashes carried by dated phase30FormatChanges allow-list (golden stays frozen)
 - [Phase 32]: Phase 32-03: archived 20-VALIDATION rows reconciled via PHASE-14 register D-14-145/146; hosted corpus receipt refresh deferred
 - [Phase 32]: 32-08: receipt gate reads case table and phase32_programs from verify-phase32.sh; log_digest_differs is checked before per-log digest_mismatch
+- [Phase 32.1]: Reopen M006 receipt markers before first digest-moving 32.1 commit (D-21)
 
 ### Pending Todos
 
@@ -966,9 +968,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-12T23:36:40.360Z
-Stopped at: Phase 32.1 planned (11 plans, 7 waves; checker passed)
-Resume file: .planning/phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/32.1-01-PLAN.md
+Last session: 2026-10-13T01:26:38.658Z
+Stopped at: Completed 32.1-01-PLAN.md
+Resume file: None
 Next action: /gsd-execute-phase 32.1
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
