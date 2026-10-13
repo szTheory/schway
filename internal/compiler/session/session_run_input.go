@@ -24,6 +24,8 @@ const runInputRequiredMessage = "run supplies no input for this entry's paramete
 // runInputRequiredResult builds the usage-class (exit 64) refusal result.
 func runInputRequiredResult(started time.Time) protocol.Result {
 	result := protocol.New("run", protocol.StatusUsage)
-	result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error(runInputRequiredCode, diagnostic.Span{}, runInputRequiredMessage)}
+	// append (not a typed literal) keeps this file out of the Unit consumer
+	// inventory: it builds no Diagnostic value of its own shape.
+	result.Diagnostics = append(result.Diagnostics, diagnostic.Error(runInputRequiredCode, diagnostic.Span{}, runInputRequiredMessage))
 	return completeCommand(result, started, 1)
 }

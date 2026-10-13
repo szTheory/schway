@@ -143,8 +143,8 @@ are `TestPhase30AdlerModuleAppCLI`, `TestPhase30AdlerModuleInterpreter` and
 
 ## Known limits
 
-- `schway run` on a parameterised `main` is unsupported; use `build` plus `app run`
-  ([todo](../../.planning/todos/pending/2026-10-12-run-parameterised-main-reports-operational-failure.md)).
+- `schway run` refuses a parameterised `main` with `tool.run_input_required` (exit 64);
+  use `build` plus `app run -- INPUT`.
 - The example sources are not claimed to be format-canonical.
 
 ## Resolution rules

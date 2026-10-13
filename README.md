@@ -84,7 +84,7 @@ Compiler and repair commands:
 | `Invalid` | 2 | Source refusal: checker, core validator, origin validator, path oracle or entry resolution. |
 | `Operational` | 3 | Tool, IO or timeout failure; also an unsupported `app verify` case such as exhausted event capacity. |
 | `Mismatch` | 4 | The interpreter and native engines disagree. |
-| `Usage` | 64 | Bad command line. |
+| `Usage` | 64 | Bad command line; also `run` on a program whose entry parameter `run` cannot bind (`tool.run_input_required`; use `build` plus `app run`). |
 
 `schway app run`:
 

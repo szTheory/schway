@@ -14,7 +14,9 @@ const (
 	Operational = 3
 	// Mismatch means a comparison or verification mismatch (compiler domain).
 	Mismatch = 4
-	// Usage means a command-line usage error (all domains).
+	// Usage means a command-line usage error (all domains); it also covers
+	// `run` refusing an entry whose parameter it cannot bind
+	// (tool.run_input_required).
 	Usage = 64
 	// AppInputRefused means app run refused its input argument (app-run
 	// domain). Published contract baked into generated C and
