@@ -93,10 +93,10 @@ func TestPhase29InterpreterFixtureUnknownCase(t *testing.T) {
 	}
 }
 
-// TestPhase29InterpreterDefectWithLiveOwner pins D-19 and D-20: only the
-// byte-index defect may terminate with the fixture owner live. A `defect`
-// statement and an overflow defect, each raised with the owner live, stay
-// rejected, so the exception cannot widen silently.
+// TestPhase29InterpreterDefectWithLiveOwner pins D-19, D-20 and (2026-10-12,
+// Phase 32.1, D-09/D-25) the abort-like widening: the byte-index, user defect,
+// overflow and remainder-by-zero defects may each terminate with the fixture
+// owner live, because native aborts with exit 65 and the OS reclaims the owner.
 func TestPhase29InterpreterDefectWithLiveOwner(t *testing.T) {
 	run := func(t *testing.T, callee, input string) (execution.Outcome, []execution.Event, []string, error) {
 		t.Helper()
@@ -106,6 +106,26 @@ func TestPhase29InterpreterDefectWithLiveOwner(t *testing.T) {
 		}
 		result, err := interp.RunWithFixtureBytes(checked.Program, "main", input, testsupport.Phase29FixtureBytes)
 		return result.Outcome, result.Events, result.LiveResources, err
+	}
+	requireAbortLike := func(t *testing.T, callee, input, reason string) {
+		t.Helper()
+		outcome, events, live, err := run(t, callee, input)
+		if err != nil {
+			t.Fatalf("abort-like defect with live owner rejected: %v", err)
+		}
+		if outcome.Kind != execution.OutcomeDefect || outcome.Value != "" {
+			t.Fatalf("outcome = %+v, want empty defect", outcome)
+		}
+		if len(events) == 0 {
+			t.Fatal("defect recorded no event")
+		}
+		final := events[len(events)-1]
+		if final.Kind != "function.defected" || final.Output != reason {
+			t.Fatalf("final event = %+v, want function.defected %q", final, reason)
+		}
+		if len(live) != 1 {
+			t.Fatalf("live resources = %v, want exactly the fixture owner", live)
+		}
 	}
 
 	t.Run("byte index defect is abort-like with the owner live", func(t *testing.T) {
@@ -133,8 +153,8 @@ func TestPhase29InterpreterDefectWithLiveOwner(t *testing.T) {
 		}
 	})
 
-	t.Run("defect statement with the owner live stays rejected", func(t *testing.T) {
-		_, _, _, err := run(t, `fn adler32(bytes: ByteView) -> U64 {
+	t.Run("defect statement with the owner live yields a defect execution", func(t *testing.T) {
+		requireAbortLike(t, `fn adler32(bytes: ByteView) -> U64 {
   var n = byte_len(bytes)
   if n < 1000 {
     defect "boom"
@@ -143,22 +163,25 @@ func TestPhase29InterpreterDefectWithLiveOwner(t *testing.T) {
   }
   n
 }
-`, "2")
-		if err == nil || !strings.Contains(err.Error(), "live local resources") {
-			t.Fatalf("err = %v, want the live-resources rejection", err)
-		}
+`, "2", "boom")
 	})
 
-	t.Run("overflow defect with the owner live stays rejected", func(t *testing.T) {
-		_, _, _, err := run(t, `fn adler32(bytes: ByteView) -> U64 {
+	t.Run("overflow defect with the owner live yields a defect execution", func(t *testing.T) {
+		requireAbortLike(t, `fn adler32(bytes: ByteView) -> U64 {
   var m = 18446744073709551615
   var n = byte_len(bytes)
   m = m + n
   m
 }
-`, "2")
-		if err == nil || !strings.Contains(err.Error(), "live local resources") {
-			t.Fatalf("err = %v, want the live-resources rejection", err)
-		}
+`, "2", "U64 addition overflow")
+	})
+
+	t.Run("remainder by zero defect with the owner live yields a defect execution", func(t *testing.T) {
+		requireAbortLike(t, `fn adler32(bytes: ByteView) -> U64 {
+  var n = byte_len(bytes)
+  var z = n % n
+  z
+}
+`, "0", "U64 remainder by zero")
 	})
 }
