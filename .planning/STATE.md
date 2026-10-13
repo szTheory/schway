@@ -4,17 +4,17 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 33
 current_phase_name: Carried Debt, Bounded Capture Read, and Generic Freeze Gate
-status: executing
-stopped_at: Completed 33-04-PLAN.md
-last_updated: "2026-10-13T17:41:14.408Z"
+status: verifying
+stopped_at: Completed 33-05-PLAN.md
+last_updated: "2026-10-13T17:59:35.993Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 33 execution started
-state_head: a414dea1af6f171b00791d77bc382e0ee31cf931
+state_head: 590e578741dab77d2fb2d328bb9f48eca98ca02f
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -126,7 +126,7 @@ plans.
 
 Phase: 33 (Carried Debt, Bounded Capture Read, and Generic Freeze Gate) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-13 — Phase 33 execution started
 
 Progress: [░░░░░░░░░░] 0%
@@ -587,6 +587,7 @@ subset alone.
 | Phase 33 P02 | 11min | 3 tasks | 10 files |
 | Phase 33 P03 | 20min | 3 tasks | 7 files |
 | Phase 33 P04 | 12min | 3 tasks | 11 files |
+| Phase 33 P05 | 18min | 3 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -773,6 +774,9 @@ decision history; they no longer describe current status.
 - [Phase 33]: Derive digest width from the active hasher output for empty input.
 - [Phase 33]: Keep M006 program and case data in the manifest shared by the producer and consumer tests.
 - [Phase 33]: Normalize generated fixture commit IDs as @SHA@ in pass-line goldens, alongside temporary paths as @TMP@.
+- [Phase 33]: Keep the receipt checker M006-compatible by default and pass an explicit milestone spec for M007 controls.
+- [Phase 33]: Treat Phase 28 validation and security as retroactive records; make no claim of a new test suite or hosted run.
+- [Phase 33]: PROJECT.md Key Decisions row near line 787 is a standing design rule, not a debt claim, so it remains unchanged.
 
 ### Pending Todos
 
@@ -1018,8 +1022,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-13T17:41:14.268Z
-Stopped at: Completed 33-04-PLAN.md
+Last session: 2026-10-13T17:59:35.959Z
+Stopped at: Completed 33-05-PLAN.md
 Resume file: None
 Next action: /gsd-discuss-phase 33
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.

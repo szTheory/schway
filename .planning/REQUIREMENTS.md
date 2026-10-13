@@ -19,7 +19,7 @@ acceptance record is kept at
   - WR-01: the freeze gate gives the same verdict from any working directory, with a subdirectory test.
   - WR-02: `isAbortLikeDefect` accepts only the abort-like defect reasons it names, with the live owner checked, and a mutant that widens it is caught.
   - IN-01..03 and the deferred coverage-`kind` pin are each fixed or dispositioned in writing.
-- [ ] **QLT-15**: Phase 29 WR-02 and WR-03 are triaged, and each is either fixed with a test or recorded with a reason. Phase 28 gains VALIDATION.md and SECURITY.md built from existing evidence.
+- [x] **QLT-15**: Phase 29 WR-02 and WR-03 are triaged, and each is either fixed with a test or recorded with a reason. Phase 28 gains VALIDATION.md and SECURITY.md built from existing evidence.
 - [x] **EVD-16**: One milestone-agnostic freeze and receipt gate replaces the phase-specific `check-phase32-*` scripts. It takes the milestone's program list and codedigest as input, keeps all existing refusal behaviour, and needs no per-phase copy in later milestones.
 
 ### Diagnostics for agent authoring
@@ -90,7 +90,7 @@ acceptance record is kept at
 |-------------|-------|--------|
 | QLT-13 | Phase 33 | Complete |
 | QLT-14 | Phase 33 | Complete |
-| QLT-15 | Phase 33 | Pending |
+| QLT-15 | Phase 33 | Complete |
 | EVD-16 | Phase 33 | Complete |
 | DX-20 | Phase 34 | Pending |
 | DX-21 | Phase 34 | Pending |
