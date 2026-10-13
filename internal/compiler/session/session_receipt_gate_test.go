@@ -23,6 +23,42 @@ func TestReceiptGate(t *testing.T) {
 	testPortedPhase32ReceiptGate(t)
 }
 
+func TestReceiptGateMalformedControls(t *testing.T) {
+	root := testsupport.ProjectPath()
+	base := string(mustRead(t, testsupport.ProjectPath("testdata", "receipts", "M006.manifest")))
+	for _, row := range []struct{ name, controls, reason string }{
+		{"empty", "", "controls_line_missing"},
+		{"delimiter-only", ",", "controls_line_malformed"},
+		{"leading-empty", ",guide", "controls_line_malformed"},
+		{"trailing-empty", "guide,", "controls_line_malformed"},
+		{"interior-empty", "guide,,codedigest", "controls_line_malformed"},
+		{"whitespace-only", " ", "controls_line_malformed"},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			manifest := filepath.Join(t.TempDir(), "controls.manifest")
+			data := strings.Replace(base, "controls=guide,route-audit,codedigest,receipt-rules", "controls="+row.controls, 1)
+			if err := os.WriteFile(manifest, []byte(data), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			logs := make([]string, 2)
+			for i, host := range []string{"macOS", "Linux"} {
+				log := dropReceiptRows(t, phase32ReceiptLog(t, host, phase32GateDigest), "phase32 control ")
+				count := strings.Count(row.controls, ",") + 1
+				log = strings.Replace(log, "controls=4", fmt.Sprintf("controls=%d", count), 1)
+				// Delimiter-only declarations used to accept these arbitrary rows
+				// because the count matched but no declared name was checked.
+				unknown := strings.Repeat("phase32 control arbitrary-row\n", count)
+				logs[i] = strings.Replace(log, "phase32 host result ", unknown+"phase32 host result ", 1)
+			}
+			got := runGenericReceiptPair(t, root, manifest, logs[0], logs[1], phase32GateDigest)
+			want := "phase32 receipt gate: status=fail reason=" + row.reason + "\n"
+			if got.exit != 1 || got.stdout != "" || got.stderr != want {
+				t.Fatalf("malformed controls verdict: got=%#v want exit=1 stderr=%q", got, want)
+			}
+		})
+	}
+}
+
 func testReceiptGatePlan03(t *testing.T) {
 	root := testsupport.ProjectPath()
 	dir := t.TempDir()
