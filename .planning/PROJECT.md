@@ -174,6 +174,8 @@ Go-level only; `evidence`/`interface`/`query` refuse import-bearing sources by
 name; Phase 32.1 review warnings WR-01/WR-02 and a coverage-`kind` pin wait for
 the next code-moving phase.
 
+Amended 2026-10-13: Hosted run 38335175306 (headSha 9f8f878f) receipts were bound to codedigest b9253457705a224a0580d74896e8e5bd3821446a1d467626b7d611ca0d1c4b5c and are now historical; Phase 33 code changes reopened them. Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
+
 **2026-10-10 M005 Practical Computation shipped** (5 phases, 25 plans; archive
 `.planning/milestones/M005-*`, tag `vM005`). Ordinary Schway source now sums
 bounded U64 input (`examples/sum_to_n.schway`: 0/55/500500, 1,001 refused, checked
@@ -610,6 +612,8 @@ usage text lists every route. Hosted run 38335175306 (headSha 9f8f878f) passed o
 The receipts are re-bound at freeze codedigest `b9253457…`. Verifier 6/6, threats 21/21 closed,
 UAT 31/31 automated with 0 human items. Review warnings WR-01/WR-02 and a coverage-`kind` pin are
 deferred to the next code-moving phase, because any code commit reopens the receipts.
+
+Amended 2026-10-13: Hosted run 38335175306 (headSha 9f8f878f) receipts were bound to codedigest b9253457705a224a0580d74896e8e5bd3821446a1d467626b7d611ca0d1c4b5c and are now historical; Phase 33 code changes reopened them. Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
 Atomic IDs and acceptance for M005 are archived in
 [milestones/M005-REQUIREMENTS.md](milestones/M005-REQUIREMENTS.md).

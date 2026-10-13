@@ -20,6 +20,8 @@ Known verification overrides: 5 phases stale-by-successor (28, 29, 30, 31, 32), 
 receipts bound to codedigest `b9253457…`; run 38315799626 kept as historical.
 Any later code commit reopens the receipts.
 
+Amended 2026-10-13: Hosted run 38335175306 (headSha 9f8f878f) receipts were bound to codedigest b9253457705a224a0580d74896e8e5bd3821446a1d467626b7d611ca0d1c4b5c and are now historical; Phase 33 code changes reopened them. Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
+
 **Remaining debt:** Phase 32.1 review warnings WR-01/WR-02 and the coverage-`kind`
 pin (deferred to the next code-moving phase); interpreter file-bytes parity is
 Go-level only; `evidence`, `interface` and `query` are not module-aware

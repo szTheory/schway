@@ -3,13 +3,13 @@ gsd_state_version: "1.0"
 milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 33
-current_phase_name: carried-debt-bounded-capture-read-and-generic-freeze-gate
-status: planning
+current_phase_name: Carried Debt, Bounded Capture Read, and Generic Freeze Gate
+status: executing
 stopped_at: Phase 33 context gathered
-last_updated: "2026-10-13T16:41:14.312Z"
+last_updated: "2026-10-13T16:44:10.220Z"
 last_activity: 2026-10-13
-last_activity_desc: Switched OpenGSD to Codex with 6.1 Sol top tier and audited model settings
-state_head: e232484ac981cf6cf1a0093c9838d560aaf6e5bd
+last_activity_desc: Phase 33 execution started
+state_head: 795feefaac3f9201aea366d2b510d5645e324745
 progress:
   total_phases: 6
   completed_phases: 0
@@ -56,7 +56,9 @@ See: .planning/PROJECT.md (updated 2026-10-12)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** M007 Bitwise Checksum and Composable Scalar Helpers — Phase 33 (Carried Debt, Bounded Capture Read, and Generic Freeze Gate)
+**Current focus:** Phase 33 — Carried Debt, Bounded Capture Read, and Generic Freeze Gate
+
+Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -122,10 +124,10 @@ plans.
 
 ## Current Position
 
-Phase: 33 (carried-debt-bounded-capture-read-and-generic-freeze-gate) — READY TO EXECUTE
-Plan: — (not planned; cap 5 plans)
-Status: Ready to discuss/plan
-Last activity: 2026-10-13 — Completed quick task 261013-hht: switched OpenGSD to Codex with 6.1 Sol top tier and audited model settings; Phase 33 context remains gathered.
+Phase: 33 (Carried Debt, Bounded Capture Read, and Generic Freeze Gate) — EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 33
+Last activity: 2026-10-13 — Phase 33 execution started
 
 Progress: [░░░░░░░░░░] 0%
 

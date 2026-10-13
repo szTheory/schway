@@ -1,3 +1,7 @@
+---
+verification_role: proposal
+---
+
 # Phase 33: Carried Debt, Bounded Capture Read, and Generic Freeze Gate - Research
 
 **Researched:** 2026-10-13
@@ -817,17 +821,20 @@ Static checks (no Go test): `git diff --stat -- go.mod go.sum` is empty; `sh -n 
 | A3 | Non-capture allocation of one `RunApplicationWithEvidence` call is well under 1 MiB | Bounded Capture Read | a spurious failure on correct code; mitigated by measuring once and recording the number |
 | A4 | No test pins the exact "live local resources" error text for the new D-13 refusal | Defect Parity | an unexpected red test; mitigate by `grep -rn 'live local resources' --include='*_test.go'` before editing |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Zero-argument label fallback for `check-freeze.sh` / `check-receipts.sh`.**
    - Known: with no manifest arg there is no label; the old scripts always printed `phase32 …`.
    - Unclear: whether an empty-label line (`freeze gate: status=fail reason=usage`) or a fixed word (`gate`) is preferred.
    - Recommendation: empty label, no leading space; it has no M006 parity obligation. Pin it with one golden.
+   - RESOLVED: empty label, no leading space (`freeze gate: status=fail reason=usage`, and `manifest_missing` renders the same way); pinned by golden in plan 33-03 Task 1.
 
 2. **Where `33-CARRIED-DEBT-DISPOSITION.md` marks IN-01 `covered`.**
    - The archived 32.1 file's documented vocabulary lacks `covered`. Recommendation above uses `fixed` plus a Source cell. If the user prefers the literal word `covered`, it is harmless because no test parses the file, but the generating gate may reject it on a re-run.
+   - RESOLVED: IN-01 is recorded as `fixed` with Source `Covered by TestPhase32PublicRouteAudit (no code change needed)`, in the archived file's `open|fixed|skipped|deferred` vocabulary; plan 33-05 Task 3.
 
 3. **Real-repo freeze rows and branch history.** The pinned SHAs are reachable from tag `vM006` and from `phase26-validation`, not from `main`. Recommendation: fail loudly (not skip) with the `git fetch --tags` remedy, and keep fixture-repo twins of every row.
+   - RESOLVED: real-repo freeze rows fail loudly (t.Fatalf naming the SHA and the `git fetch --tags` remedy), never skip, and every row has a fixture-repo twin; plan 33-03 Task 1.
 
 ## Project Constraints (from CLAUDE.md and AGENTS.md)
 
