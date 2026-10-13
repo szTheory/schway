@@ -1,0 +1,1073 @@
+{
+  "schema": "phase34.draft-baseline/1",
+  "revision": "a788aa8371716b35aa6cb25d609e8b6476c38f22",
+  "drafts": [
+    {
+      "id": "logical-and",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.logical_and\nexport { fn main }\nfn main(flag: Bool) -\u003e Bool { flag \u0026\u0026 true }\n",
+      "source_bytes": 90,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 4,
+      "diagnostics": [
+        {
+          "id": "diagnostic:3217b2dd47ecf3e36c804e72",
+          "code": "syntax.unexpected_byte",
+          "message": "unexpected source character",
+          "primary_span": {
+            "start": 80,
+            "end": 81
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:673efa075c7186ea8fd3b7ed",
+          "code": "syntax.unexpected_byte",
+          "message": "unexpected source character",
+          "primary_span": {
+            "start": 81,
+            "end": 82
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:a6a09185b7cc067c2e804809",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 80,
+            "end": 81
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:2693fe0eb58b0d1bae18258b",
+          "code": "syntax.expected_declaration",
+          "message": "expected `data` or `fn` declaration",
+          "primary_span": {
+            "start": 81,
+            "end": 82
+          },
+          "causes": [
+            {
+              "kind": "skipped_region",
+              "span": {
+                "start": 83,
+                "end": 89
+              }
+            }
+          ]
+        }
+      ],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "logical-or",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.logical_or\nexport { fn main }\nfn main(flag: Bool) -\u003e Bool { flag || false }\n",
+      "source_bytes": 90,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 2,
+      "diagnostics": [
+        {
+          "id": "diagnostic:7a44c178fc7e725075289f45",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 79,
+            "end": 80
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:7b5136de30474a6e9b6b053b",
+          "code": "syntax.expected_declaration",
+          "message": "expected `data` or `fn` declaration",
+          "primary_span": {
+            "start": 80,
+            "end": 81
+          },
+          "causes": [
+            {
+              "kind": "skipped_region",
+              "span": {
+                "start": 82,
+                "end": 89
+              }
+            }
+          ]
+        }
+      ],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "logical-not",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.logical_not\nexport { fn main }\nfn main(flag: Bool) -\u003e Bool { !flag }\n",
+      "source_bytes": 83,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 4,
+      "diagnostics": [
+        {
+          "id": "diagnostic:e983b220b41638b8fa359e16",
+          "code": "syntax.unexpected_byte",
+          "message": "unexpected source character",
+          "primary_span": {
+            "start": 75,
+            "end": 76
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:28a19959fd315c0f6766e179",
+          "code": "syntax.expected_linear_result",
+          "message": "expected `identifier`",
+          "primary_span": {
+            "start": 75,
+            "end": 76
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:12b9edb679c23fc239ce70df",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 76,
+            "end": 80
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:019d532d8bf48d7e8b2c5612",
+          "code": "syntax.expected_declaration",
+          "message": "expected `data` or `fn` declaration",
+          "primary_span": {
+            "start": 81,
+            "end": 82
+          },
+          "causes": []
+        }
+      ],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "schway-arity-two",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.schway_arity\nexport { fn main }\nfn combine(left: U64, right: U64) -\u003e U64 { left }\nfn main(n: U64) -\u003e U64 { let answer = combine(n, n) answer }\n",
+      "source_bytes": 157,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 7,
+      "diagnostics": [
+        {
+          "id": "diagnostic:cfb1ba8512b78947a00d06fa",
+          "code": "syntax.expected_rparen",
+          "message": "expected `)`",
+          "primary_span": {
+            "start": 66,
+            "end": 67
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:dc6c0e6042ddc83283930c63",
+          "code": "syntax.expected_arrow",
+          "message": "expected `-\u003e`",
+          "primary_span": {
+            "start": 68,
+            "end": 73
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:97f00c416c0578685d9ae3e5",
+          "code": "syntax.expected_type",
+          "message": "expected `identifier`",
+          "primary_span": {
+            "start": 73,
+            "end": 74
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:bdc2345fa7d3ba2869a0b784",
+          "code": "syntax.expected_lbrace",
+          "message": "expected `{`",
+          "primary_span": {
+            "start": 75,
+            "end": 78
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:7d057f3484c9d1c8ebf54816",
+          "code": "syntax.expected_linear_result",
+          "message": "expected `identifier`",
+          "primary_span": {
+            "start": 78,
+            "end": 79
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:9e462ca712112c752882d2f2",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 80,
+            "end": 82
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:96cf20fa3ee95d2881134164",
+          "code": "syntax.expected_declaration",
+          "message": "expected `data` or `fn` declaration",
+          "primary_span": {
+            "start": 83,
+            "end": 86
+          },
+          "causes": [
+            {
+              "kind": "skipped_region",
+              "span": {
+                "start": 87,
+                "end": 95
+              }
+            }
+          ]
+        }
+      ],
+      "recovered_sibling_names": [
+        "main"
+      ]
+    },
+    {
+      "id": "foreign-arity-two",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.foreign_arity\nexport { fn main }\nforeign C { fn combine(left: U64) -\u003e U64 { abi: \"C\" } }\nfn main(n: U64) -\u003e U64 { let answer = combine(n, n) answer }\n",
+      "source_bytes": 164,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 0,
+      "diagnostics": [],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "if-no-else",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.if_no_else\nexport { fn main }\nfn main(n: U64) -\u003e U64 { if n \u003c 1 { n } n }\n",
+      "source_bytes": 88,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 8,
+      "diagnostics": [
+        {
+          "id": "diagnostic:92c97e1557c4919ae972ce61",
+          "code": "syntax.expected_equal",
+          "message": "expected `=`",
+          "primary_span": {
+            "start": 82,
+            "end": 83
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:7aee348373847585d7da2685",
+          "code": "syntax.expected_scalar_operand",
+          "message": "expected a scalar operand",
+          "primary_span": {
+            "start": 82,
+            "end": 83
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:539c10b11341745916c3807f",
+          "code": "syntax.expected_equal",
+          "message": "expected `=`",
+          "primary_span": {
+            "start": 86,
+            "end": 87
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:e12a89bcafe31e9d26beac57",
+          "code": "syntax.expected_scalar_operand",
+          "message": "expected a scalar operand",
+          "primary_span": {
+            "start": 86,
+            "end": 87
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:78d0bd933d7353a8b6ae2ebb",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 88,
+            "end": 88
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:051e0829f8791859e9bf01f4",
+          "code": "syntax.expected_else",
+          "message": "if requires an else block",
+          "primary_span": {
+            "start": 88,
+            "end": 88
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:2d6d7c13640e5366b5faf403",
+          "code": "syntax.expected_linear_result",
+          "message": "expected a scalar result",
+          "primary_span": {
+            "start": 88,
+            "end": 88
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:78d0bd933d7353a8b6ae2ebb",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 88,
+            "end": 88
+          },
+          "causes": []
+        }
+      ],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "bool-tail-unbound",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.bool_tail\nexport { fn main }\nfn main(n: U64) -\u003e Bool { true }\n",
+      "source_bytes": 76,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 0,
+      "diagnostics": [],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "subtraction",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.subtraction\nexport { fn main }\nfn main(n: U64) -\u003e U64 { n - 1 }\n",
+      "source_bytes": 78,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 3,
+      "diagnostics": [
+        {
+          "id": "diagnostic:56a02e1775c1e632c9e629c2",
+          "code": "syntax.unexpected_byte",
+          "message": "unexpected source character",
+          "primary_span": {
+            "start": 72,
+            "end": 73
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:6c606b91c08ebf8b01c39409",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 72,
+            "end": 73
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:43d478fa0f1eb1f07ef3c850",
+          "code": "syntax.expected_declaration",
+          "message": "expected `data` or `fn` declaration",
+          "primary_span": {
+            "start": 74,
+            "end": 75
+          },
+          "causes": [
+            {
+              "kind": "skipped_region",
+              "span": {
+                "start": 76,
+                "end": 77
+              }
+            }
+          ]
+        }
+      ],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "malformed-nested-paren",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.nested_paren\nexport { fn main }\nfn main(n: U64) -\u003e U64 { let value = combine(n, (n) value }\n",
+      "source_bytes": 106,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 5,
+      "diagnostics": [
+        {
+          "id": "diagnostic:194e555eca56ea8cccfbec9d",
+          "code": "syntax.expected_call_argument",
+          "message": "expected `identifier`",
+          "primary_span": {
+            "start": 94,
+            "end": 95
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:1b0e35f04c17961e47241a09",
+          "code": "syntax.expected_rparen",
+          "message": "expected `)`",
+          "primary_span": {
+            "start": 95,
+            "end": 96
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:313bd07b384c48d423cc02e6",
+          "code": "syntax.expected_linear_result",
+          "message": "expected `identifier`",
+          "primary_span": {
+            "start": 96,
+            "end": 97
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:cd999f45ca26cdad4865bacf",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 98,
+            "end": 103
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:fc9885fff0d231fb8a6bb8cc",
+          "code": "syntax.expected_declaration",
+          "message": "expected `data` or `fn` declaration",
+          "primary_span": {
+            "start": 104,
+            "end": 105
+          },
+          "causes": []
+        }
+      ],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "malformed-nested-block",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.nested_block\nexport { fn main }\nfn main(n: U64) -\u003e U64 { if n \u003c 2 { let value = n value } n }\n",
+      "source_bytes": 108,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 8,
+      "diagnostics": [
+        {
+          "id": "diagnostic:0713a2a108af53ecef5299b1",
+          "code": "syntax.expected_equal",
+          "message": "expected `=`",
+          "primary_span": {
+            "start": 102,
+            "end": 103
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:84897d5371a3b949a42b8e61",
+          "code": "syntax.expected_scalar_operand",
+          "message": "expected a scalar operand",
+          "primary_span": {
+            "start": 102,
+            "end": 103
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:279c6196bcd61ef5fcc1b71b",
+          "code": "syntax.expected_equal",
+          "message": "expected `=`",
+          "primary_span": {
+            "start": 106,
+            "end": 107
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:fb34dc485f4fa719d203ca0f",
+          "code": "syntax.expected_scalar_operand",
+          "message": "expected a scalar operand",
+          "primary_span": {
+            "start": 106,
+            "end": 107
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:d7fcdbb404e3a5613b01984a",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 108,
+            "end": 108
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:1b22381e2dbbdf9b55564ac1",
+          "code": "syntax.expected_else",
+          "message": "if requires an else block",
+          "primary_span": {
+            "start": 108,
+            "end": 108
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:c91cce3fe3044bd5eb9c4415",
+          "code": "syntax.expected_linear_result",
+          "message": "expected a scalar result",
+          "primary_span": {
+            "start": 108,
+            "end": 108
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:d7fcdbb404e3a5613b01984a",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 108,
+            "end": 108
+          },
+          "causes": []
+        }
+      ],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "sibling-after-error",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.sibling\nexport { fn kept }\n@ discarded words\nfn kept(n: U64) -\u003e U64 { n }\n",
+      "source_bytes": 88,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 2,
+      "diagnostics": [
+        {
+          "id": "diagnostic:82650c3ecdfef68534dd8f17",
+          "code": "syntax.unexpected_byte",
+          "message": "unexpected source character",
+          "primary_span": {
+            "start": 41,
+            "end": 42
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:4329af076d2d0b1a79687337",
+          "code": "syntax.expected_declaration",
+          "message": "expected `data` or `fn` declaration",
+          "primary_span": {
+            "start": 41,
+            "end": 42
+          },
+          "causes": [
+            {
+              "kind": "skipped_region",
+              "span": {
+                "start": 43,
+                "end": 58
+              }
+            }
+          ]
+        }
+      ],
+      "recovered_sibling_names": [
+        "kept"
+      ]
+    },
+    {
+      "id": "two-independent-causes",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.two_causes\nexport { fn between fn after }\n@ first discarded region\nfn between(n: U64) -\u003e U64 { n }\n? second discarded region\nfn after(n: U64) -\u003e U64 { n }\n",
+      "source_bytes": 169,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 4,
+      "diagnostics": [
+        {
+          "id": "diagnostic:c40d5b6e97ba3f708414e1b7",
+          "code": "syntax.unexpected_byte",
+          "message": "unexpected source character",
+          "primary_span": {
+            "start": 56,
+            "end": 57
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:d57f4fb3f8ecdc9564c552e4",
+          "code": "syntax.unexpected_byte",
+          "message": "unexpected source character",
+          "primary_span": {
+            "start": 113,
+            "end": 114
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:e1eeeef26f3a99d24ef94466",
+          "code": "syntax.expected_declaration",
+          "message": "expected `data` or `fn` declaration",
+          "primary_span": {
+            "start": 56,
+            "end": 57
+          },
+          "causes": [
+            {
+              "kind": "skipped_region",
+              "span": {
+                "start": 58,
+                "end": 80
+              }
+            }
+          ]
+        },
+        {
+          "id": "diagnostic:b36fa9ab949ef81f1539b723",
+          "code": "syntax.expected_declaration",
+          "message": "expected `data` or `fn` declaration",
+          "primary_span": {
+            "start": 113,
+            "end": 114
+          },
+          "causes": [
+            {
+              "kind": "skipped_region",
+              "span": {
+                "start": 115,
+                "end": 138
+              }
+            }
+          ]
+        }
+      ],
+      "recovered_sibling_names": [
+        "between",
+        "after"
+      ]
+    },
+    {
+      "id": "independent-missing-closer",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.missing_closer\nexport { fn main }\nfn main(n: U64 -\u003e U64 { n\n",
+      "source_bytes": 74,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 6,
+      "diagnostics": [
+        {
+          "id": "diagnostic:455b86156facd7b8905fce7b",
+          "code": "syntax.expected_rparen",
+          "message": "expected `)`",
+          "primary_span": {
+            "start": 63,
+            "end": 65
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:a29bf23bd15392e1ed590eeb",
+          "code": "syntax.expected_arrow",
+          "message": "expected `-\u003e`",
+          "primary_span": {
+            "start": 66,
+            "end": 69
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:2bb13747e6dedcdd050770b8",
+          "code": "syntax.expected_type",
+          "message": "expected `identifier`",
+          "primary_span": {
+            "start": 70,
+            "end": 71
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:0a524c21c099935655f35576",
+          "code": "syntax.expected_lbrace",
+          "message": "expected `{`",
+          "primary_span": {
+            "start": 72,
+            "end": 73
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:a5557fa2d1dc112712feae23",
+          "code": "syntax.expected_linear_result",
+          "message": "expected `identifier`",
+          "primary_span": {
+            "start": 74,
+            "end": 74
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:664e29a2dbda28aa0cdd8895",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 74,
+            "end": 74
+          },
+          "causes": []
+        }
+      ],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "eof-empty",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "",
+      "source_bytes": 0,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 5,
+      "diagnostics": [
+        {
+          "id": "diagnostic:6066b146034f117761fc66fa",
+          "code": "syntax.expected_module",
+          "message": "expected `module`",
+          "primary_span": {
+            "start": 0,
+            "end": 0
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:6277aedeed295b3c9f3126cb",
+          "code": "syntax.expected_module_name",
+          "message": "expected `identifier`",
+          "primary_span": {
+            "start": 0,
+            "end": 0
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:dde599be9332bca6107a3974",
+          "code": "syntax.expected_export",
+          "message": "expected `export`",
+          "primary_span": {
+            "start": 0,
+            "end": 0
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:d2ef494e371855aea668f5cd",
+          "code": "syntax.expected_lbrace",
+          "message": "expected `{`",
+          "primary_span": {
+            "start": 0,
+            "end": 0
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:aacee0a14f7304d3284a8178",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 0,
+            "end": 0
+          },
+          "causes": []
+        }
+      ],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "eof-unclosed",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.eof\nexport { fn main }\nfn main(n: U64) -\u003e U64 { n",
+      "source_bytes": 63,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 1,
+      "diagnostics": [
+        {
+          "id": "diagnostic:bc56afe7bf3d7c0bd423fd87",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 63,
+            "end": 63
+          },
+          "causes": []
+        }
+      ],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "comments-strings-arrows",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.comments // -\u003e \"quoted text\"\nexport { fn main } // \"string -\u003e text\"\nfn main(n: U64) -\u003e U64 { n } // final -\u003e comment\n",
+      "source_bytes": 131,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 0,
+      "diagnostics": [],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "admitted-ownership",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.ownership\nexport { fn main }\nfn main(n: Buffer) -\u003e Buffer { let owned = take n owned }\n",
+      "source_bytes": 101,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 0,
+      "diagnostics": [],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "malformed-near-miss",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.near_miss\nexport { fn kept }\nfn broken(n: U64 -\u003e U64 { n }\nfn kept(n: U64) -\u003e U64 { n }\n",
+      "source_bytes": 102,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 5,
+      "diagnostics": [
+        {
+          "id": "diagnostic:636d0b6ed0f0dd9209de9679",
+          "code": "syntax.expected_rparen",
+          "message": "expected `)`",
+          "primary_span": {
+            "start": 60,
+            "end": 62
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:446f3c0e56f09bd295933bb3",
+          "code": "syntax.expected_arrow",
+          "message": "expected `-\u003e`",
+          "primary_span": {
+            "start": 63,
+            "end": 66
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:ac57d2907c610c5a706905b5",
+          "code": "syntax.expected_type",
+          "message": "expected `identifier`",
+          "primary_span": {
+            "start": 67,
+            "end": 68
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:3b75d55b65f0af9170c41670",
+          "code": "syntax.expected_lbrace",
+          "message": "expected `{`",
+          "primary_span": {
+            "start": 69,
+            "end": 70
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:ecfb9232b55f7150f295bdd9",
+          "code": "syntax.expected_linear_result",
+          "message": "expected `identifier`",
+          "primary_span": {
+            "start": 71,
+            "end": 72
+          },
+          "causes": []
+        }
+      ],
+      "recovered_sibling_names": [
+        "kept"
+      ]
+    },
+    {
+      "id": "crc32-reconstructed",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.crc32\nexport { fn crc32 }\nfn crc32(bytes: ByteView) -\u003e U64 {\n  var crc = 0xffffffff\n  var index = 0\n  while index \u003c byte_len(bytes) {\n    let bit = byte_at(bytes, index) ^ crc\n    crc = (crc \u003e\u003e 1) ^ bit\n    index = index + 1\n  }\n  crc\n}\n",
+      "source_bytes": 251,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 5,
+      "diagnostics": [
+        {
+          "id": "diagnostic:e3ac47f79962d16770d1e475",
+          "code": "syntax.unexpected_byte",
+          "message": "unexpected source character",
+          "primary_span": {
+            "start": 184,
+            "end": 185
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:4a0f35f648e04957464a47bf",
+          "code": "syntax.unexpected_byte",
+          "message": "unexpected source character",
+          "primary_span": {
+            "start": 211,
+            "end": 212
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:34394b5ae5e3cd715ec4ad14",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 184,
+            "end": 185
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:c9914990956616f1356ba6e9",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 194,
+            "end": 197
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:72a06b90ea232dc76b9b7aca",
+          "code": "syntax.expected_declaration",
+          "message": "expected `data` or `fn` declaration",
+          "primary_span": {
+            "start": 198,
+            "end": 199
+          },
+          "causes": [
+            {
+              "kind": "skipped_region",
+              "span": {
+                "start": 200,
+                "end": 250
+              }
+            }
+          ]
+        }
+      ],
+      "recovered_sibling_names": []
+    },
+    {
+      "id": "word-counter-reconstructed",
+      "provenance": "reconstructed-2026-10-13",
+      "source": "module drafts.word_counter\nexport { fn count_words }\nfn count_words(bytes: ByteView) -\u003e U64 {\n  var index = 0\n  var words = 0\n  var in_word = false\n  while index \u003c byte_len(bytes) {\n    let byte = byte_at(bytes, index)\n    if byte == 32 || byte == 9 { in_word = false } else { if !in_word { words = words + 1 } in_word = true }\n    index = index + 1\n  }\n  words\n}\n",
+      "source_bytes": 364,
+      "tree_bytes_equal": true,
+      "diagnostic_count": 8,
+      "diagnostics": [
+        {
+          "id": "diagnostic:9912e11203bd637a24f0329c",
+          "code": "syntax.unexpected_byte",
+          "message": "unexpected source character",
+          "primary_span": {
+            "start": 280,
+            "end": 281
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:b0e44a6ac71c6e007013279b",
+          "code": "syntax.expected_lbrace",
+          "message": "expected `{`",
+          "primary_span": {
+            "start": 237,
+            "end": 238
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:eb859c2a295796fc3dd6aa2a",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 238,
+            "end": 239
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:88bc978faa85a9e0989e2319",
+          "code": "syntax.expected_else",
+          "message": "if requires an else block",
+          "primary_span": {
+            "start": 240,
+            "end": 244
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:785f36bcfacdff8c2c1f6855",
+          "code": "syntax.expected_equal",
+          "message": "expected `=`",
+          "primary_span": {
+            "start": 245,
+            "end": 247
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:20824c4a930786d6a5e53018",
+          "code": "syntax.expected_rbrace",
+          "message": "expected `}`",
+          "primary_span": {
+            "start": 250,
+            "end": 251
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:1beded391e3c920bbbb7e329",
+          "code": "syntax.expected_linear_result",
+          "message": "expected a scalar result",
+          "primary_span": {
+            "start": 268,
+            "end": 269
+          },
+          "causes": []
+        },
+        {
+          "id": "diagnostic:ab26295959ff95f97cc9ced5",
+          "code": "syntax.expected_declaration",
+          "message": "expected `data` or `fn` declaration",
+          "primary_span": {
+            "start": 270,
+            "end": 274
+          },
+          "causes": [
+            {
+              "kind": "skipped_region",
+              "span": {
+                "start": 275,
+                "end": 363
+              }
+            }
+          ]
+        }
+      ],
+      "recovered_sibling_names": []
+    }
+  ]
+}
