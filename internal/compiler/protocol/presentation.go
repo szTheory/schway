@@ -194,23 +194,26 @@ func renderSourceLine(source []byte, span diagnostic.Span) (string, string, bool
 	if endColumn < startColumn {
 		endColumn = startColumn
 	}
-	snippet, visibleStart, prefixWidth := cropRenderedLine(rendered, startColumn)
-	caretColumn := prefixWidth + startColumn - visibleStart
+	snippet, visibleStart, visibleEnd, prefixWidth := cropRenderedLine(rendered, startColumn)
+	if visibleEnd < visibleStart {
+		visibleEnd = visibleStart
+	}
+	caretStart := startColumn
+	if caretStart < visibleStart {
+		caretStart = visibleStart
+	}
+	if caretStart > visibleEnd {
+		caretStart = visibleEnd
+	}
+	caretColumn := prefixWidth + caretStart - visibleStart
 	caretWidth := endColumn - startColumn
 	if caretWidth < 1 {
 		caretWidth = 1
 	}
-	visibleEnd := visibleStart + len(snippet) - prefixWidth
-	if len(snippet) >= 3 && strings.HasSuffix(snippet, "...") {
-		visibleEnd -= 3
-	}
-	if caretColumn >= len(snippet) {
+	if caretStart >= visibleEnd {
 		caretWidth = 1
-	} else if available := len(snippet) - caretColumn; caretWidth > available {
+	} else if available := visibleEnd - caretStart; caretWidth > available {
 		caretWidth = available
-	}
-	if visibleEnd < startColumn {
-		caretWidth = 1
 	}
 	marker := strings.Repeat(" ", caretColumn) + "^" + strings.Repeat("~", caretWidth-1)
 	if continues {
@@ -344,9 +347,9 @@ func renderColumnAt(source []byte, offset int) int {
 	return column
 }
 
-func cropRenderedLine(rendered string, startColumn int) (snippet string, visibleStart int, prefixWidth int) {
+func cropRenderedLine(rendered string, startColumn int) (snippet string, visibleStart int, visibleEnd int, prefixWidth int) {
 	if len(rendered) <= diagnosticSnippetColumns {
-		return rendered, 0, 0
+		return rendered, 0, len(rendered), 0
 	}
 	if startColumn < 0 {
 		startColumn = 0
@@ -383,7 +386,7 @@ func cropRenderedLine(rendered string, startColumn int) (snippet string, visible
 	if suffix {
 		output.WriteString("...")
 	}
-	return output.String(), leftColumn, prefixWidth
+	return output.String(), leftColumn, rightColumn, prefixWidth
 }
 
 func boolWidth(value bool) int {

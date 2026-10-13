@@ -31,7 +31,7 @@
 </system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestDiagnosticZeroBytesUnchanged" time="0"><system-out>=== RUN   TestDiagnosticZeroBytesUnchanged
 --- PASS: TestDiagnosticZeroBytesUnchanged (0.00s)
 </system-out></testcase><system-out>PASS
-ok  	github.com/szTheory/schway/internal/compiler/diagnostic	0.005s
+ok  	github.com/szTheory/schway/internal/compiler/diagnostic	0.006s
 </system-out></testsuite><testsuite name="github.com/szTheory/schway/internal/compiler/protocol" tests="34" failures="0" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase30UnitProjection" time="0"><system-out>=== RUN   TestPhase30UnitProjection
 --- PASS: TestPhase30UnitProjection (0.00s)
 </system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase30UnitProjection/control:_always_printing_unit_changes_the_empty-unit_line" time="0"><system-out>=== RUN   TestPhase30UnitProjection/control:_always_printing_unit_changes_the_empty-unit_line
@@ -101,5 +101,5 @@ ok  	github.com/szTheory/schway/internal/compiler/diagnostic	0.005s
 </system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestHumanJSONProjectionParity" time="0"><system-out>=== RUN   TestHumanJSONProjectionParity
 --- PASS: TestHumanJSONProjectionParity (0.00s)
 </system-out></testcase><system-out>PASS
-ok  	github.com/szTheory/schway/internal/compiler/protocol	0.006s
+ok  	github.com/szTheory/schway/internal/compiler/protocol	0.008s
 </system-out></testsuite></testsuites>

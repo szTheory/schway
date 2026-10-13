@@ -1,0 +1,17 @@
+<testsuites tests="7" failures="0"><testsuite name="github.com/szTheory/schway/internal/compiler/protocol" tests="7" failures="0" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34HumanSnippetRendering" time="0"><system-out>=== RUN   TestPhase34HumanSnippetRendering
+--- PASS: TestPhase34HumanSnippetRendering (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34HumanSnippetRendering/tab_and_escaped_source_keep_caret_aligned" time="0"><system-out>=== RUN   TestPhase34HumanSnippetRendering/tab_and_escaped_source_keep_caret_aligned
+    --- PASS: TestPhase34HumanSnippetRendering/tab_and_escaped_source_keep_caret_aligned (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34HumanSnippetRendering/hostile_labels_and_messages_remain_one_escaped_line" time="0"><system-out>=== RUN   TestPhase34HumanSnippetRendering/hostile_labels_and_messages_remain_one_escaped_line
+    --- PASS: TestPhase34HumanSnippetRendering/hostile_labels_and_messages_remain_one_escaped_line (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34HumanSnippetRendering/long_source_crop_bounds_snippet_and_excludes_omission_marker_from_caret" time="0"><system-out>=== RUN   TestPhase34HumanSnippetRendering/long_source_crop_bounds_snippet_and_excludes_omission_marker_from_caret
+    --- PASS: TestPhase34HumanSnippetRendering/long_source_crop_bounds_snippet_and_excludes_omission_marker_from_caret (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34HumanSnippetRendering/literal_ellipsis_remains_source_content" time="0"><system-out>=== RUN   TestPhase34HumanSnippetRendering/literal_ellipsis_remains_source_content
+    --- PASS: TestPhase34HumanSnippetRendering/literal_ellipsis_remains_source_content (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34HumanSnippetRendering/hostile_text_crops_at_escape_boundaries" time="0"><system-out>=== RUN   TestPhase34HumanSnippetRendering/hostile_text_crops_at_escape_boundaries
+    --- PASS: TestPhase34HumanSnippetRendering/hostile_text_crops_at_escape_boundaries (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34HumanSnippetRendering/multiline_CRLF_range_and_EOF_insertion" time="0"><system-out>=== RUN   TestPhase34HumanSnippetRendering/multiline_CRLF_range_and_EOF_insertion
+    --- PASS: TestPhase34HumanSnippetRendering/multiline_CRLF_range_and_EOF_insertion (0.00s)
+</system-out></testcase><system-out>PASS
+ok  	github.com/szTheory/schway/internal/compiler/protocol	0.006s
+</system-out></testsuite></testsuites>
