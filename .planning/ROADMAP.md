@@ -324,7 +324,7 @@ adapter and public path input.
 The module boundary of every route is named once and pinned by the route audit, and the usage text lists every route. The execution peer's entry rule matches `main` precedence. Hosted receipts are re-taken at the final M006 revision. Source: [M006 audit](M006-MILESTONE-AUDIT.md).
 **Requirements**: DX-17, DX-18, MOD-03, EVD-15 (re-take)
 **Depends on:** Phase 32
-**Plans:** 9/11 plans executed
+**Plans:** 10/11 plans executed
 
 Plans:
 **Wave 1**
@@ -347,7 +347,7 @@ Plans:
 - [x] 32.1-09-PLAN.md — Code freeze: full local suite, session meta set, local producer, armed freeze gate (D-19)
 
 **Wave 6** *(blocked on Wave 5 completion)*
-- [ ] 32.1-10-PLAN.md — Human checkpoint: one push-and-dispatch line naming the freeze commit (D-18)
+- [x] 32.1-10-PLAN.md — Human checkpoint: one push-and-dispatch line naming the freeze commit (D-18)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 - [ ] 32.1-11-PLAN.md — .planning-only re-take of the hosted macOS/Linux receipts; run 38315799626 kept historical (D-17)
