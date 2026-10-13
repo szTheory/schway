@@ -104,6 +104,27 @@ func TestPhase34RecoveryCorpus(t *testing.T) {
 		t.Fatalf("recovered functions = %v, want %v", siblings, want.RecoveredSiblingNames)
 	}
 
+	var malformedParenSource string
+	for _, draft := range corpus.Drafts {
+		if draft.ID == "malformed-nested-paren" {
+			malformedParenSource = draft.Source
+			break
+		}
+	}
+	if malformedParenSource == "" {
+		t.Fatal("reconstructed malformed-nested-paren fixture is missing")
+	}
+	malformedParen := syntax.Parse([]byte(malformedParenSource))
+	if !bytes.Equal(malformedParen.Tree.Bytes(), []byte(malformedParenSource)) {
+		t.Fatal("nested-delimiter recovery changed the lossless source bytes")
+	}
+	if len(malformedParen.Diagnostics) != 1 {
+		t.Fatalf("malformed-nested-paren recovery emitted %d diagnostics, want one cause: %+v", len(malformedParen.Diagnostics), malformedParen.Diagnostics)
+	}
+	if got := malformedParen.Diagnostics[0]; got.Code != "syntax.expected_linear_result" || got.Primary.Start != 96 || got.Primary.End != 97 {
+		t.Fatalf("malformed-nested-paren primary = %s@%d:%d, want syntax.expected_linear_result@96:97", got.Code, got.Primary.Start, got.Primary.End)
+	}
+
 	checked := session.Check([]byte(source))
 	if len(checked.Diagnostics) == 0 {
 		t.Fatal("session.Check accepted a source tree with parser recovery diagnostics")

@@ -3,6 +3,19 @@
   "baseline_revision": "a788aa8371716b35aa6cb25d609e8b6476c38f22",
   "drafts": [
     {
+      "id": "malformed-nested-paren",
+      "provenance": "reconstructed-2026-10-13",
+      "diagnostic_count": 1,
+      "recovered_sibling_names": [],
+      "diagnostics": [
+        {
+          "code": "syntax.expected_linear_result",
+          "primary_span": {"start": 96, "end": 97},
+          "causes": []
+        }
+      ]
+    },
+    {
       "id": "sibling-after-error",
       "provenance": "reconstructed-2026-10-13",
       "diagnostic_count": 1,

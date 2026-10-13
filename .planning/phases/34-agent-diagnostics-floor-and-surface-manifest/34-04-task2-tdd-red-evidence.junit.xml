@@ -1,0 +1,9 @@
+<testsuites tests="1" failures="1"><testsuite name="github.com/szTheory/schway/internal/compiler/syntax" tests="1" failures="1" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/syntax" name="TestPhase34RecoveryCorpus" time="0"><failure message="go test reported failure">=== RUN   TestPhase34RecoveryCorpus
+    parser_phase34_recovery_test.go:122: malformed-nested-paren recovery emitted 5 diagnostics, want one cause: [syntax.expected_call_argument [94:95]: expected `identifier` syntax.expected_rparen [95:96]: expected `)` syntax.expected_linear_result [96:97]: expected `identifier` syntax.expected_rbrace [98:103]: expected `}` syntax.expected_declaration [104:105]: expected `data` or `fn` declaration]
+--- FAIL: TestPhase34RecoveryCorpus (0.00s)
+</failure><system-out>=== RUN   TestPhase34RecoveryCorpus
+    parser_phase34_recovery_test.go:122: malformed-nested-paren recovery emitted 5 diagnostics, want one cause: [syntax.expected_call_argument [94:95]: expected `identifier` syntax.expected_rparen [95:96]: expected `)` syntax.expected_linear_result [96:97]: expected `identifier` syntax.expected_rbrace [98:103]: expected `}` syntax.expected_declaration [104:105]: expected `data` or `fn` declaration]
+--- FAIL: TestPhase34RecoveryCorpus (0.00s)
+</system-out></testcase><system-out>FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/syntax	0.006s
+</system-out></testsuite></testsuites>
