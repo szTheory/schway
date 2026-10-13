@@ -283,6 +283,22 @@ reviews. Research and dissent: [M004 research](research/M004/SUMMARY.md).
 2. Bounded JSON configuration consumer once a tool is named. User-visible program: validate a size-limited config against a fixed schema. Blocker: no aggregates or parser stack. Smallest slice: one schema with byte and depth limits. Priority changes if a named consumer appears or aggregates land first.
 3. Bitwise U64 operators with independent evidence (CRC-32). User-visible program: CRC-32 output over the same file bytes, in its own module. Blocker: no xor, shift or and operator. Smallest slice: one operator set with a pinned CRC-32 vector set. Priority changes if a consumer needs interop Adler-32 cannot give or files above the 65,536 limit are needed first.
 
+### M007 kickoff amendment — 2026-10-13
+
+Recommendations 1 (FizzBuzz/cross-host evidence, M005) and 2 (bounded byte
+utility and local modules, M006) below have shipped and are historical. A
+five-lens fan-out (product, compiler/PL, security, devops/evidence, DX) chose
+M007 "Bitwise Checksum and Composable Scalar Helpers": `crc32 FILE`
+(CRC-32/ISO-HDLC, bare decimal) from an ordinary `crc32` module, admitting U64
+`^ & |`, literal-amount shifts (< 64, no C17 shift UB), hex literals and
+arity-1 scalar→scalar calls, with a debt-first Phase 33, an agent diagnostics
+floor plus `schway surface --json`, an interpreter file-bytes CLI route, and
+receipts bound once after audit (Phases 33–38; see ROADMAP.md and
+research/M007/SUMMARY.md). The JSON path is now staged: M008 arity-N,
+scalar-only records and exported types via a `wc` + `longest_line` pair, then a
+bounded key=value config parser, then recommendation 3's JSON validator. HTTP
+remains a separate, later branch.
+
 ## Horizons
 
 | Horizon | User-visible result | Dependencies and scope | Exit observation |
