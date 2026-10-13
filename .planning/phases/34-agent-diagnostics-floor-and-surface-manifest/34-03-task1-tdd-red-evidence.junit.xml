@@ -1,8 +1,8 @@
 <testsuites tests="1" failures="1"><testsuite name="github.com/szTheory/schway/internal/compiler/session" tests="1" failures="1" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase34ImportedDiagnosticPresentation" time="0"><failure message="go test reported failure">=== RUN   TestPhase34ImportedDiagnosticPresentation
-    session_phase34_presentation_test.go:54: imported primary location = 0:0, want 8:13
+    session_phase34_presentation_test.go:54: imported primary location = 0:0, want 8:15
 --- FAIL: TestPhase34ImportedDiagnosticPresentation (0.00s)
 </failure><system-out>=== RUN   TestPhase34ImportedDiagnosticPresentation
-    session_phase34_presentation_test.go:54: imported primary location = 0:0, want 8:13
+    session_phase34_presentation_test.go:54: imported primary location = 0:0, want 8:15
 --- FAIL: TestPhase34ImportedDiagnosticPresentation (0.00s)
 </system-out></testcase><system-out>FAIL
 FAIL	github.com/szTheory/schway/internal/compiler/session	0.007s

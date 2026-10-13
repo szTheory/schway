@@ -50,8 +50,8 @@ func TestPhase34ImportedDiagnosticPresentation(t *testing.T) {
 	if problem.Unit != "lib" {
 		t.Fatalf("JSON unit = %q, want dotted module name lib: %s", problem.Unit, encoded)
 	}
-	if problem.PrimarySpan.Line != 8 || problem.PrimarySpan.Col != 13 {
-		t.Fatalf("imported primary location = %d:%d, want 8:13", problem.PrimarySpan.Line, problem.PrimarySpan.Col)
+	if problem.PrimarySpan.Line != 8 || problem.PrimarySpan.Col != 15 {
+		t.Fatalf("imported primary location = %d:%d, want 8:15", problem.PrimarySpan.Line, problem.PrimarySpan.Col)
 	}
 	line := "  let d = n + @"
 	wantStart := strings.Index(line, "@")
