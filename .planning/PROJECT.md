@@ -522,6 +522,16 @@ defect is fixed, and the hosted macOS aggregate now has a 20-minute test budget.
 3/3, UAT 0 human items. The 7 code-review findings (2 Warning, 5 Info) all fail closed and
 are deferred past the freeze in one todo.
 
+Phase 32.1 (2026-10-12, inserted from the M006 audit) tightened DX-17, DX-18 and MOD-03 and
+re-took EVD-15. `run` on an unbindable entry refuses usage/64 `tool.run_input_required` on both
+engines. `check` refuses a `ByteView` `main`. The interpreter matches native on abort-like
+defects. The execution peer adopts `main` precedence independently. One accessor
+(`check.ModuleAwareRoutes`) names each route's module boundary, the route audit pins it, and the
+usage text lists every route. Hosted run 38335175306 (headSha 9f8f878f) passed on ubuntu and macOS.
+The receipts are re-bound at freeze codedigest `b9253457…`. Verifier 6/6, threats 21/21 closed,
+UAT 31/31 automated with 0 human items. Review warnings WR-01/WR-02 and a coverage-`kind` pin are
+deferred to the next code-moving phase, because any code commit reopens the receipts.
+
 Atomic IDs and acceptance for M005 are archived in
 [milestones/M005-REQUIREMENTS.md](milestones/M005-REQUIREMENTS.md).
 
@@ -694,6 +704,7 @@ Canonical planning inputs:
 | Name generated-C event-capacity exhaustion (exit 69 + exact stderr) instead of aborting | A signal hid a bounded-evidence limit as a crash; a named outcome lets app verify report `unsupported` without masking a mismatch | ✓ Phase 27.3 — n=14 passes, n=15 unsupported, wrong expected stays fail; one-level exhaustion fails as divergence (WR-01) |
 | Insert decimal tech-debt phases from the milestone audit before closing | Audit warnings W1/W4 and R1 were concrete user-facing defects, not cosmetic | ✓ Good — 27.1–27.3 closed R1, W1, W4 with hosted evidence; residual N1–N4 tracked |
 | Compose local modules as one merged whole program with closed in-root resolution | Separate compilation and per-module interfaces are not needed for a second consumer, and a closed resolver (no search path, no symlinks, exact case, one IO site) keeps the import surface a non-escalating boundary | ✓ Phase 30 — imported Adler-32 gives identical answers on both engines; no-import bytes unchanged against a pre-change golden; module digests in identity are Phase 31 (MOD-06) |
+| Keep post-freeze work `.planning`-only while hosted receipts bind the code digest | `scripts/codedigest.sh` hashes the HEAD listing of the code paths, so even a test-only commit makes the living claims `stale_bound_claim` and forces a re-dispatch | ✓ Phase 32.1 UAT — a test pin (31d71e94) was reverted byte-for-byte (7ab2f48e) and deferred; the digest returned to `b9253457…` |
 
 ## Evolution
 
@@ -715,4 +726,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-12 after Phase 32*
+*Last updated: 2026-10-12 after Phase 32.1*
