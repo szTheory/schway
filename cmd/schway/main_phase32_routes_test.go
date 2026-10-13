@@ -87,7 +87,7 @@ var phase32RouteRows = []phase32RouteRow{
 	{Key: "evidence", Modules: "refuses-imports", Reason: "not covered because it is owned by TestEvidenceCLI"},
 	{Key: "evidence --validate", Modules: "refuses-imports", RefusalCode: "evidence.source_invalid", Reason: "not covered because it is owned by TestEvidenceCLI"},
 	{Key: "verify", Modules: "no-entry-source", Reason: "not covered because corpus verification is owned by TestVerifyCLI and TestVerifyPhase2CLI"},
-	{Key: "stats", Modules: "no-entry-source", Reason: "not covered because the CLI computes statistics from stdin and is owned by TestStatsCLIComputesGoStatistics; usage text omits this route; tracked by the 2026-10-12 usage-text todo"},
+	{Key: "stats", Modules: "no-entry-source", Reason: "not covered because the CLI computes statistics from stdin and is owned by TestStatsCLIComputesGoStatistics"},
 	{Key: "interface export", Modules: "refuses-imports", Reason: "not covered because it is owned by TestInterfaceCheckIsBodyBlindCLI"},
 	{Key: "interface core", Modules: "refuses-imports", Reason: "not covered because it is owned by TestInterfaceCheckIsBodyBlindCLI"},
 	{Key: "interface check", Modules: "no-entry-source", Reason: "not covered because it is owned by TestInterfaceCheckIsBodyBlindCLI"},
@@ -115,8 +115,9 @@ var phase32RouteRows = []phase32RouteRow{
 }
 
 // phase32UsageOmissions is the recorded set of routes present in dispatch but
-// absent from the usage text (D-10d). The usage text is not edited here.
-var phase32UsageOmissions = []string{"build --manifest --output", "build --output --manifest", "stats"}
+// absent from the usage text (D-10d). D-14: the usage text lists every route, so
+// the set is empty.
+var phase32UsageOmissions = []string{}
 
 // phase32ArgIndex reports N for an `args[N]` expression with a literal index.
 func phase32ArgIndex(expr ast.Expr) (int, bool) {
@@ -850,8 +851,21 @@ func TestPhase32PublicRouteAudit(t *testing.T) {
 		if problems := phase32UsageProblems(mutated, routes, phase32UsageOmissions); !phase32Contains(problems, "usage_names_missing_route frobnicate") {
 			t.Fatalf("problems = %v, want usage_names_missing_route frobnicate", problems)
 		}
-		if problems := phase32UsageProblems(usage, routes, nil); len(problems) == 0 {
-			t.Fatal("dropping the recorded omissions did not fail the cross-check")
+		// Armed controls: removing a route's words from a copy of the usage must
+		// be reported against the (empty) recorded omission set.
+		withoutStats := strings.Replace(usage, " | stats", "", 1)
+		if withoutStats == usage {
+			t.Fatal("usage text has no \" | stats\" alternative to remove")
+		}
+		if problems := phase32UsageProblems(withoutStats, routes, phase32UsageOmissions); !phase32HasPrefix(problems, "usage_omissions_changed got=stats") {
+			t.Fatalf("problems = %v, want usage_omissions_changed got=stats", problems)
+		}
+		withoutManifest := strings.ReplaceAll(usage, "--manifest", "")
+		problems := phase32UsageProblems(withoutManifest, routes, phase32UsageOmissions)
+		if !phase32HasPrefix(problems, "usage_omissions_changed") ||
+			!strings.Contains(strings.Join(problems, "\n"), "build --manifest --output") ||
+			!strings.Contains(strings.Join(problems, "\n"), "build --output --manifest") {
+			t.Fatalf("problems = %v, want usage_omissions_changed naming both build-manifest routes", problems)
 		}
 	})
 }
