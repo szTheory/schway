@@ -361,8 +361,8 @@ func (r Runner) RunApplicationWithEvidence(parent context.Context, artifactPath,
 	}
 	if mode == EvidenceEvents {
 		report.CaptureStatus = EvidenceStatusIncomplete
-		data, readErr := os.ReadFile(capturePath)
 		limit := r.evidenceCapacityLimit()
+		data, readErr := readApplicationCapture(capturePath, limit)
 		switch {
 		case readErr == nil && len(data) > limit:
 			report.CaptureStatus = EvidenceStatusCapacityExhausted
@@ -689,6 +689,15 @@ func readApplicationReceipt(path string) (BuildReceipt, error) {
 		return BuildReceipt{}, &ToolError{Code: "native.receipt_invalid", Err: errors.New("build identity is missing")}
 	}
 	return receipt, nil
+}
+
+func readApplicationCapture(path string, limit int) ([]byte, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	return io.ReadAll(io.LimitReader(file, int64(limit)+1))
 }
 
 // validateReceiptModules refuses a malformed module list (T-31-15, T-31-16).
