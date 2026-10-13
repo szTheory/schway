@@ -5,16 +5,16 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 33
 current_phase_name: Carried Debt, Bounded Capture Read, and Generic Freeze Gate
 status: executing
-stopped_at: Completed 33-03-PLAN.md
-last_updated: "2026-10-13T17:25:46.719Z"
+stopped_at: Completed 33-04-PLAN.md
+last_updated: "2026-10-13T17:41:14.408Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 33 execution started
-state_head: c56cdf3b09ff55a5b06fc0b38e5e453206adfc58
+state_head: a414dea1af6f171b00791d77bc382e0ee31cf931
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -125,7 +125,7 @@ plans.
 ## Current Position
 
 Phase: 33 (Carried Debt, Bounded Capture Read, and Generic Freeze Gate) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-10-13 — Phase 33 execution started
 
@@ -586,6 +586,7 @@ subset alone.
 | Phase 33 P01 | 5min | 3 tasks | 10 files |
 | Phase 33 P02 | 11min | 3 tasks | 10 files |
 | Phase 33 P03 | 20min | 3 tasks | 7 files |
+| Phase 33 P04 | 12min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -770,6 +771,8 @@ decision history; they no longer describe current status.
 - [Phase 33]: Keep each generic gate POSIX-only with its own manifest reader.
 - [Phase 33]: Honor EXPECTED_CODEDIGEST when provided and report whether it was env-supplied or computed.
 - [Phase 33]: Derive digest width from the active hasher output for empty input.
+- [Phase 33]: Keep M006 program and case data in the manifest shared by the producer and consumer tests.
+- [Phase 33]: Normalize generated fixture commit IDs as @SHA@ in pass-line goldens, alongside temporary paths as @TMP@.
 
 ### Pending Todos
 
@@ -1015,8 +1018,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-13T17:25:46.694Z
-Stopped at: Completed 33-03-PLAN.md
+Last session: 2026-10-13T17:41:14.268Z
+Stopped at: Completed 33-04-PLAN.md
 Resume file: None
 Next action: /gsd-discuss-phase 33
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.

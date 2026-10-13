@@ -124,7 +124,7 @@ construct, so the manifest cannot drift.
 
 **Research flag**: Standard. Capped at 5 plans and binds no hosted receipt. WR-02 touches byte-op parity: pin the current interpreter/native abort-like parity rows before narrowing the predicate. The generic gate must keep the M006 `check-phase32-*` refusal behavior byte-for-byte before the scripts are deleted.
 
-**Plans**: 3/5 plans executed (cap 5)
+**Plans**: 4/5 plans executed (cap 5)
 
 Plans:
 **Wave 1**
@@ -135,7 +135,7 @@ Plans:
 - [x] 33-03-PLAN.md — generic gate step 1: codedigest flags, M006 manifest, check-freeze.sh / check-receipts.sh, differential and archived-M006 tests, WR-01, IN-03 (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 33-04-PLAN.md — generic gate step 2: test renames, goldens, old scripts deleted, producer reads the manifest, no-caller test (wave 3)
+- [x] 33-04-PLAN.md — generic gate step 2: test renames, goldens, old scripts deleted, producer reads the manifest, no-caller test (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 33-05-PLAN.md — living-claim check by milestone label, Phase 28 VALIDATION/SECURITY, Phase 29 verify, disposition records (wave 4)
@@ -251,7 +251,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 33. Carried Debt, Bounded Capture Read, and Generic Freeze Gate | 3/5 | In Progress | - |
+| 33. Carried Debt, Bounded Capture Read, and Generic Freeze Gate | 4/5 | In Progress | - |
 | 34. Agent Diagnostics Floor and Surface Manifest | 0/TBD | Not started | - |
 | 35. Bitwise Operators, Literal Shifts, and Hex Literals | 0/TBD | Not started | - |
 | 36. Scalar Helper Calls | 0/TBD | Not started | - |
