@@ -45,7 +45,7 @@ func summaryCoverageProblems(markdown string, knownTests map[string]bool) []stri
 	}
 	type entry struct {
 		id, judgment, rationale string
-		refs, statuses          []string
+		refs, statuses, kinds   []string
 	}
 	var entries []*entry
 	for _, line := range lines[start:] {
@@ -72,6 +72,8 @@ func summaryCoverageProblems(markdown string, knownTests map[string]bool) []stri
 			e.refs = append(e.refs, value)
 		case "status":
 			e.statuses = append(e.statuses, value)
+		case "kind":
+			e.kinds = append(e.kinds, value)
 		}
 	}
 	if len(entries) == 0 {
@@ -79,6 +81,15 @@ func summaryCoverageProblems(markdown string, knownTests map[string]bool) []stri
 	}
 	var problems []string
 	for _, e := range entries {
+		// The verification kinds `uat classify-coverage` accepts; any other kind
+		// makes it drop the entry back to a human checkpoint (validation_failed).
+		for _, kind := range e.kinds {
+			switch kind {
+			case "unit", "integration", "e2e", "automated_ui", "manual_procedural", "other":
+			default:
+				problems = append(problems, e.id+": unknown verification kind "+kind)
+			}
+		}
 		switch e.judgment {
 		case "true":
 			if e.rationale == "" {
@@ -122,6 +133,7 @@ func TestSummaryCoverageGroundedness(t *testing.T) {
 		"failing":      strings.Replace(good, "status: pass", "status: fail", 1),
 		"no-rationale": strings.Replace(good, "human_judgment: false", "human_judgment: true", 1),
 		"no-judgment":  strings.Replace(good, "    human_judgment: false\n", "", 1),
+		"bad-kind":     strings.Replace(good, "kind: unit", "kind: manual", 1),
 	} {
 		if len(summaryCoverageProblems(bad, known)) == 0 {
 			t.Fatalf("seeded %s control was accepted", name)
