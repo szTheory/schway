@@ -5,16 +5,16 @@ milestone_name: Bounded Byte Utility and Local Modules
 current_phase: "32.1"
 current_phase_name: "Address tech debt: CLI exit classes and module-aware routes"
 status: executing
-stopped_at: Completed 32.1-03-PLAN.md
-last_updated: "2026-10-13T01:36:43.531Z"
+stopped_at: Completed 32.1-04-PLAN.md
+last_updated: "2026-10-13T01:43:19.503Z"
 last_activity: 2026-10-12
 last_activity_desc: Phase 32.1 execution started
-state_head: c3baa33820947b377c6223c4c08b2fa673646f9a
+state_head: 248180caac6184415841853c9c905e1597094610
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 63
-  completed_plans: 55
+  completed_plans: 56
   percent: 83
 ---
 
@@ -124,7 +124,7 @@ plans.
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
 Phase: 32.1 (Address tech debt: CLI exit classes and module-aware routes) — EXECUTING
-Plan: 4 of 11
+Plan: 5 of 11
 Status: Ready to execute
 Last activity: 2026-10-12 — Phase 32.1 execution started
 
@@ -559,6 +559,7 @@ subset alone.
 | Phase 32.1 P01 | 5 min | 2 tasks | 3 files |
 | Phase 32.1 P02 | 25 min | 3 tasks | 11 files |
 | Phase 32.1 P03 | 12min | 2 tasks | 3 files |
+| Phase 32.1 P04 | 20 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -729,6 +730,7 @@ decision history; they no longer describe current status.
 - [Phase 32.1]: Reopen M006 receipt markers before first digest-moving 32.1 commit (D-21)
 - [Phase 32.1]: 32.1-02: run refuses an unbindable entry as usage (64) tool.run_input_required via ErrRunInputRequired; no new exit constant
 - [Phase 32.1]: ByteView entry gate keys on entry-module main (Module empty), before Body.Linear fork; no new diagnostic code
+- [Phase 32.1]: Abort-like defect predicate is a closed set of four op kinds plus :event:defected suffix, shared by fixture and file routes
 
 ### Pending Todos
 
@@ -972,8 +974,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-13T01:36:43.461Z
-Stopped at: Completed 32.1-03-PLAN.md
+Last session: 2026-10-13T01:43:19.435Z
+Stopped at: Completed 32.1-04-PLAN.md
 Resume file: None
 Next action: /gsd-execute-phase 32.1
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
