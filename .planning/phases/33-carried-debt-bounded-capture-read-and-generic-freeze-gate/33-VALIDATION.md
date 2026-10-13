@@ -54,6 +54,7 @@ created: "2026-10-13"
 | QLT-15 | Phase 28 VALIDATION/SECURITY accepted; planning-doc meta-tests pass | meta | `go test ./internal/compiler/session -run 'TestPhase20ValidationLifecycle|TestVerificationGroundedness|TestValidationRowGradesAreEarnedOverArchivedCorpus|TestStaticTestIndexMatchesGoTestList' -count=1` | ✅ | ✅ green |
 | EVD-16 | generic gates preserve the catalog through literal goldens (migration step 2) | integration | `go test ./internal/compiler/session -run 'TestReceiptGateDifferential|TestFreezeGateDifferential' -count=1` | ✅ | ✅ green |
 | EVD-16 | archived M006 receipts accepted; armed controls reject | integration | `go test ./internal/compiler/session -run 'TestReceiptGateArchivedM006|TestReceiptGate' -count=1` | ✅ | ✅ green |
+| EVD-16 | malformed control lists cannot waive required control names | integration | `go test ./internal/compiler/session -run 'TestReceiptGateMalformedControls' -count=1` | ✅ | ✅ green |
 | EVD-16 | manifest sha256 pinned and rows grounded in archived logs | unit | `go test ./internal/compiler/session -run 'TestPhase32ProducerCaseTable' -count=1` | ✅ | ✅ green |
 | EVD-16 | no `check-phase32-*` caller; both scripts absent | static | `go test ./internal/compiler/session -run 'TestNoCheckPhase32Caller' -count=1` | ✅ | ✅ green |
 | EVD-16 | living-claim marker check generalized by label | unit | `go test ./internal/compiler/session -run 'TestPhase32ReceiptLivingClaims' -count=1` | ✅ | ✅ green |

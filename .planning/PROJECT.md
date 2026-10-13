@@ -816,4 +816,8 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-13 after M007 kickoff (new-milestone)*
+*Last updated: 2026-10-13 after Phase 33 execution and evidence review*
+
+### Phase 33 execution amendment — 2026-10-13
+
+QLT-13, QLT-14, QLT-15 and EVD-16 have focused implementation witnesses: bounded capture ingestion, closed live-owner terminal outcomes, paid carried review debt, reconstructed Phase 28 records and one reusable freeze/receipt boundary. Exact source witnesses and current next capabilities are recorded in `phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-TRANSITION-CHECK.md`. No new language feature or hosted receipt is claimed. The review repair explicitly rejects missing/empty control-list entries; consistency gates continue to make no authenticity claim.

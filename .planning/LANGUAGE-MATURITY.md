@@ -437,3 +437,11 @@ syntax/core operations to the necessary checker/evidence obligations. Keep
 historical receipts scoped to their revision, host, compiler, and exercised
 paths. AGENTS.md specifies this agent-executed review; no background automation
 is implied.
+
+## Phase 33 transition amendment — 2026-10-13
+
+Phase 33 implements bounded capture ingestion, owner/reason-scoped interpreter defects, generic freeze/receipt gates, and grounded carried-debt dispositions. Focused current checks and reached mutants are recorded in its five summaries; the review follow-up refuses malformed control lists. Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
+
+The current three capabilities are: agent diagnostics plus `schway surface --json` (Phase 34), bitwise/literal-shift/hex computation for CRC-32 (Phase 35), and scalar helper calls used by the CRC-32 module (Phase 36; integrated consumer Phase 37). Their named programs, blockers, smallest slices, checker obligations, evidence owners and reprioritization observations are in [33-TRANSITION-CHECK.md](phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-TRANSITION-CHECK.md). Earlier recommendation sections remain historical; this dated amendment owns the current order.
+
+All three conditional seeds remain dormant. The capture-allocation concern in the Dashbit source appraisal is resolved by `readApplicationCapture`, `TestPhase33CaptureReadBounded`, and the reached unbounded-read mutant. Current source search, capture, observers and replay supplied the diagnosis; no broader query, observability or source-form experiment is promoted.

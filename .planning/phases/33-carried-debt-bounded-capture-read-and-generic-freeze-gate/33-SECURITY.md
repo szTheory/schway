@@ -77,3 +77,7 @@ Both gates anchor the repository root. Manifest labels appear as data arguments,
 - [x] `status: verified` set.
 
 **Approval:** verified 2026-10-13
+
+## Review Follow-Up — 2026-10-13
+
+CR-01 exposed a malformed-control-list acceptance gap within T-33-08. A delimiter-only or whitespace-only list accepted arbitrary control rows before the fix; an empty list was already refused downstream. The gate now refuses missing and empty entries before inspecting logs. `TestReceiptGateMalformedControls` preserves six regression cases; the broader focused compatibility run passed (28.712s). No open blocking threat remains.
