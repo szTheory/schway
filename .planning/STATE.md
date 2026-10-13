@@ -6,10 +6,10 @@ current_phase: 33
 current_phase_name: carried-debt-bounded-capture-read-and-generic-freeze-gate
 status: planning
 stopped_at: Phase 33 context gathered
-last_updated: "2026-10-13T16:25:42.374Z"
+last_updated: "2026-10-13T16:41:14.312Z"
 last_activity: 2026-10-13
-last_activity_desc: M007 roadmap created (6 phases, 19/19 requirements mapped)
-state_head: 7f33f2d1ec7d4f0cdab8db51d5b1edc497d56608
+last_activity_desc: Switched OpenGSD to Codex with 6.1 Sol top tier and audited model settings
+state_head: e232484ac981cf6cf1a0093c9838d560aaf6e5bd
 progress:
   total_phases: 6
   completed_phases: 0
@@ -125,7 +125,7 @@ plans.
 Phase: 33 (carried-debt-bounded-capture-read-and-generic-freeze-gate) — READY TO EXECUTE
 Plan: — (not planned; cap 5 plans)
 Status: Ready to discuss/plan
-Last activity: 2026-10-13 — M007 roadmap created (6 phases, 19/19 requirements mapped)
+Last activity: 2026-10-13 — Completed quick task 261013-hht: switched OpenGSD to Codex with 6.1 Sol top tier and audited model settings; Phase 33 context remains gathered.
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -973,6 +973,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 | 261002-fab | Repair Phase 25 threat-ID collisions and finalize M004 handoff | 2026-10-02 | 7a8ed47 | Verified | [261002-fab-repair-duplicate-phase-25-security-threa](./quick/261002-fab-repair-duplicate-phase-25-security-threa/) |
 | 261002-gz6 | Repair Phase 25 verification commands flagged by groundedness audit | 2026-10-02 | 88f39a8 | passed | [261002-gz6-repair-phase-25-verification-commands-fl](./quick/261002-gz6-repair-phase-25-verification-commands-fl/) |
 | 261008-lfw | Critically assess Dashbit AI-era ideas and plant three dormant planning seeds | 2026-10-08 | 13c03ad | passed | [261008-lfw-critically-assess-dashbit-ai-era-languag](./quick/261008-lfw-critically-assess-dashbit-ai-era-languag/) |
+| 261013-hht | Switch OpenGSD to Codex with 6.1 Sol top tier and audit project model settings | 2026-10-13 | e232484a | passed | [261013-hht-switch-opengsd-runtime-from-claude-to-co](./quick/261013-hht-switch-opengsd-runtime-from-claude-to-co/) |
 
 ## Deferred Items
 
