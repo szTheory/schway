@@ -9,6 +9,7 @@ import (
 	"github.com/szTheory/schway/internal/compiler/ast"
 	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/diagnostic"
+	"github.com/szTheory/schway/internal/compiler/surface"
 )
 
 type scalarBuilder struct {
@@ -80,7 +81,11 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 	} else if len(b.diagnostics) == 0 {
 		resultID, ok := b.names[function.Body.Linear.Result]
 		if !ok {
-			b.diagnostics = append(b.diagnostics, diagnostic.Error("name.unknown_place", function.Body.Linear.Span, "scalar result is not an initialized local"))
+			if refusal := unsupportedBoolTail(function.Body.Linear.Result, function.Body.Linear.ResultSpan, false, function.ReturnType.Constructor); refusal != nil {
+				b.diagnostics = append(b.diagnostics, *refusal)
+			} else {
+				b.diagnostics = append(b.diagnostics, diagnostic.Error("name.unknown_place", function.Body.Linear.Span, "scalar result is not an initialized local"))
+			}
 		} else if !b.initialized[resultID] {
 			b.refuse("name.uninitialized_place", function.Body.Linear.Span, "scalar result is not definitely initialized")
 		} else {
@@ -108,6 +113,18 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(refusal, function.Span, "scalar CFG analysis did not converge or found an uninitialized read")}, b.work
 	}
 	return checked, nil, b.work
+}
+
+func unsupportedBoolTail(resultName string, resultSpan diagnostic.Span, bound bool, resultType string) *diagnostic.Diagnostic {
+	if bound || resultType == "" || resultSpan.End <= resultSpan.Start || (resultName != "true" && resultName != "false") {
+		return nil
+	}
+	refusal, ok := surface.LookupRefusal("surface.unsupported_bool_literal_tail")
+	if !ok {
+		panic("checker requested an unknown surface refusal: surface.unsupported_bool_literal_tail")
+	}
+	problem := diagnostic.Error(refusal.Code, resultSpan, refusal.Hint)
+	return &problem
 }
 
 func scalarBackEdgeDiagnostic(functionID, category string, span diagnostic.Span) diagnostic.Diagnostic {

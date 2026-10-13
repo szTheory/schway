@@ -193,6 +193,10 @@ type LinearBody struct {
 	// flattened into ownership moves.
 	Statements []Statement
 	Result     string
+	// ResultSpan preserves the final identifier's source extent for
+	// checker-only contextual diagnostics. It is source metadata and is not
+	// copied into core IR or semantic identity.
+	ResultSpan diagnostic.Span
 	// TerminalMatch is Phase 18's sole extension to a linear function body:
 	// after its ordered prefix, the body may end in the existing match form.
 	// It is nil for ordinary straight-line and match-arm bodies.

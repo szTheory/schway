@@ -1,0 +1,30 @@
+<testsuites tests="4" failures="3"><testsuite name="github.com/szTheory/schway/internal/compiler/check" tests="4" failures="3" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/check" name="TestPhase34UnsupportedSurfaceRefusals" time="0"><failure message="go test reported failure">=== RUN   TestPhase34UnsupportedSurfaceRefusals
+    check_phase34_refusal_test.go:70: unbound-true-linear-tail result = [name.unknown [72:76]: linear result is unknown], want the exact unbound Bool-tail refusal at [72:76]
+    check_phase34_refusal_test.go:70: unbound-false-linear-tail result = [name.unknown [73:78]: linear result is unknown], want the exact unbound Bool-tail refusal at [73:78]
+    check_phase34_refusal_test.go:70: unbound-true-scalar-tail result = [name.unknown_place [79:98]: scalar result is not an initialized local], want the exact unbound Bool-tail refusal at [94:98]
+    check_phase34_refusal_test.go:70: unbound-bool-match-arm-tail result = [name.unknown [146:150]: linear result is unknown], want the exact unbound Bool-tail refusal at [146:150]
+--- FAIL: TestPhase34UnsupportedSurfaceRefusals (0.00s)
+</failure><system-out>=== RUN   TestPhase34UnsupportedSurfaceRefusals
+    check_phase34_refusal_test.go:70: unbound-true-linear-tail result = [name.unknown [72:76]: linear result is unknown], want the exact unbound Bool-tail refusal at [72:76]
+    check_phase34_refusal_test.go:70: unbound-false-linear-tail result = [name.unknown [73:78]: linear result is unknown], want the exact unbound Bool-tail refusal at [73:78]
+    check_phase34_refusal_test.go:70: unbound-true-scalar-tail result = [name.unknown_place [79:98]: scalar result is not an initialized local], want the exact unbound Bool-tail refusal at [94:98]
+    check_phase34_refusal_test.go:70: unbound-bool-match-arm-tail result = [name.unknown [146:150]: linear result is unknown], want the exact unbound Bool-tail refusal at [146:150]
+--- FAIL: TestPhase34UnsupportedSurfaceRefusals (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/check" name="TestPhase34BoolSpellingsRemainIdentifiers" time="0"><system-out>=== RUN   TestPhase34BoolSpellingsRemainIdentifiers
+--- PASS: TestPhase34BoolSpellingsRemainIdentifiers (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/check" name="TestPhase34CallArityBoundaries" time="0"><failure message="go test reported failure">=== RUN   TestPhase34CallArityBoundaries
+    check_phase34_refusal_test.go:133: byte_at(view, index) lost its admitted builtin arity: diagnostics=[check.unexecutable_shape [50:55]: entry parameter shape has no execution lowering this phase] program={Schema:lang.core/0 Module:phase34.byte_at ModuleID:s1:phase34.byte_at:module:phase34.byte_at DataTypes:[] Functions:[] Imports:[]}
+--- FAIL: TestPhase34CallArityBoundaries (0.00s)
+</failure><system-out>=== RUN   TestPhase34CallArityBoundaries
+    check_phase34_refusal_test.go:133: byte_at(view, index) lost its admitted builtin arity: diagnostics=[check.unexecutable_shape [50:55]: entry parameter shape has no execution lowering this phase] program={Schema:lang.core/0 Module:phase34.byte_at ModuleID:s1:phase34.byte_at:module:phase34.byte_at DataTypes:[] Functions:[] Imports:[]}
+--- FAIL: TestPhase34CallArityBoundaries (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/check" name="TestPhase34RefusalHintsHaveNoRepairs" time="0"><failure message="go test reported failure">=== RUN   TestPhase34RefusalHintsHaveNoRepairs
+    check_phase34_refusal_test.go:184: bool-tail diagnostic = name.unknown [69:73]: linear result is unknown, want independent code "surface.unsupported_bool_literal_tail", hint "Bool literals are unsupported in result tails; return an initialized value allowed by the declared result type.", and no repairs
+--- FAIL: TestPhase34RefusalHintsHaveNoRepairs (0.00s)
+</failure><system-out>=== RUN   TestPhase34RefusalHintsHaveNoRepairs
+    check_phase34_refusal_test.go:184: bool-tail diagnostic = name.unknown [69:73]: linear result is unknown, want independent code "surface.unsupported_bool_literal_tail", hint "Bool literals are unsupported in result tails; return an initialized value allowed by the declared result type.", and no repairs
+--- FAIL: TestPhase34RefusalHintsHaveNoRepairs (0.00s)
+</system-out></testcase><system-out>FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/check	0.008s
+</system-out></testsuite></testsuites>
+

@@ -3865,6 +3865,9 @@ func analyzeArmBody(functionID string, startIndex int, parameterName, parameterP
 	}
 	returned, ok := places[body.Result]
 	if !ok {
+		if refusal := unsupportedBoolTail(body.Result, body.ResultSpan, false, declaredReturnType.Constructor); refusal != nil {
+			return fail(*refusal)
+		}
 		return fail(diagnostic.Error("name.unknown", body.Span, "linear result is unknown"))
 	}
 	if !returned.initialized {
@@ -3975,7 +3978,13 @@ func checkLinear(module, functionID string, function ast.FuncDecl, calleeContrac
 	linear.Types = ensureLiteralTypeFact(functionID, linear.Types, function.Body.Linear)
 	support := analyzeStraightLine(functionID, function.Parameter.Name, function.Parameter.Span, linear.Types[0], function.Body.Linear, calleeContracts, foreignSymbols, linear.Types)
 	if support.Diagnostic != nil {
-		return core.Function{}, []diagnostic.Diagnostic{*support.Diagnostic}, support.Work, nil
+		problem := *support.Diagnostic
+		if problem.Code == "name.unknown" && problem.Message == "linear result is unknown" {
+			if refusal := unsupportedBoolTail(function.Body.Linear.Result, function.Body.Linear.ResultSpan, false, function.ReturnType.Constructor); refusal != nil {
+				problem = *refusal
+			}
+		}
+		return core.Function{}, []diagnostic.Diagnostic{problem}, support.Work, nil
 	}
 	linear.Places = support.Places
 	linear.Operations = support.Operations

@@ -604,6 +604,7 @@ func (p *parser) scalarLinearBody(unitResult bool) ast.LinearBody {
 	} else if p.peek().Kind == TokenIdentifier {
 		result := p.advance()
 		body.Result = result.Text
+		body.ResultSpan = result.Span
 		body.Span.End = result.Span.End
 		if !p.atAny(TokenRBrace, TokenEOF, TokenData, TokenFn, TokenForeign, TokenImport) {
 			p.problem("syntax.expected_rbrace", p.peek(), "expected `}` after the scalar result")
@@ -1070,6 +1071,7 @@ func (p *parser) linearBody(allowTerminalMatch bool) ast.LinearBody {
 	}
 	p.advance()
 	body.Result = result.Text
+	body.ResultSpan = result.Span
 	body.Span.End = result.Span.End
 	if operator, code, ok := p.consumeUnsupportedBinaryOperator(); ok {
 		p.reportSurfaceRefusal(code, operator)
