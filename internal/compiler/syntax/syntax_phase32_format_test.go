@@ -54,6 +54,32 @@ func TestPhase32FormatVarBody(t *testing.T) {
 		})
 	}
 
+	// 32-REVIEW IN-03: contexts the bare-result guard must not break.
+	t.Run("in03-a-after-while", func(t *testing.T) {
+		canonical := assertRoundTrip(t, phase29Source("  var i = 0\n  var r = 1\n  while i < 3 {\n    r = r + i\n    i = i + 1\n  }\n  r\n"))
+		if !strings.HasSuffix(string(canonical), "  }\n  r\n}\n") {
+			t.Fatalf("canonical = %q", canonical)
+		}
+	})
+	t.Run("in03-a-after-if-else", func(t *testing.T) {
+		canonical := assertRoundTrip(t, phase29Source("  var r = 1\n  if r < 3 {\n    r = r + 1\n  } else {\n    r = r + 2\n  }\n  r\n"))
+		if !strings.HasSuffix(string(canonical), "  }\n  r\n}\n") {
+			t.Fatalf("canonical = %q", canonical)
+		}
+	})
+	switchModule := func(arms string) []byte {
+		return []byte("module phase32.in03\n\nexport {\n  type Switch\n  fn pick\n}\n\ndata Switch =\n  | On\n  | Off\n\nfn pick(flag: Switch) -> Switch {\n  match flag {\n" + arms + "  }\n}\n")
+	}
+	t.Run("in03-b-ident-arm-then-arm", func(t *testing.T) {
+		canonical := assertRoundTrip(t, switchModule("    On => flag\n    Off => flag\n"))
+		if !strings.Contains(string(canonical), "    On => flag\n    Off => flag\n") {
+			t.Fatalf("identifier-valued arm fused with the next arm: %q", canonical)
+		}
+	})
+	t.Run("in03-c-arm-body-result", func(t *testing.T) {
+		assertRoundTrip(t, switchModule("    On => {\n      let held = take flag\n      held\n    }\n    Off => {\n      let held = take flag\n      held\n    }\n"))
+	})
+
 	t.Run("pre-fix-output-rejected", func(t *testing.T) {
 		input := syntax.Parse(phase29Source("  var a = 1\n  var r = 1\n  r = r + a\n  r\n"))
 		preFix := syntax.Parse(phase29Source("  var a = 1\n  var r = 1\n  r = r + ar\n"))

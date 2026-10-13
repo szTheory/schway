@@ -81,7 +81,10 @@ func buildTestIndex(t testing.TB) *testIndex {
 }
 
 // phase32IndexCache holds the one per-process parse of the untagged index.
-// Callers only ever receive deep copies; tagged variants stay uncached.
+// Callers only ever receive deep copies; tagged variants stay uncached. The
+// cache is not keyed per root: the project root is treated as read-only for the
+// lifetime of the test process, so a test must not create or delete _test.go
+// files under it (32-REVIEW IN-05).
 var phase32IndexCache struct {
 	once  sync.Once
 	index *testIndex

@@ -34,6 +34,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -405,24 +406,37 @@ func retiredTestsCitedBy(evidence string) []string {
 	return cited
 }
 
-// retiredCitationProblem requires every cited retired name to carry a
-// `superseded` row in EVIDENCE-RECONCILIATION.md, so a retirement can never be
-// absorbed silently by the grade scan.
-func retiredCitationProblem(cited []string) string {
+// retiredCitationProblem requires every cited retired name, for the specific
+// citing row (validation doc path relative to the project root plus the row's
+// source line), to carry a `superseded` row in EVIDENCE-RECONCILIATION.md that
+// is keyed on that same doc and line and cites the name. An unrelated
+// superseded line mentioning the name does not satisfy it, so a retirement can
+// never be absorbed silently by the grade scan (32-REVIEW IN-04).
+func retiredCitationProblem(doc string, line int, cited []string) string {
 	data, err := os.ReadFile(testsupport.ProjectPath(".planning", "EVIDENCE-RECONCILIATION.md"))
 	if err != nil {
 		return fmt.Sprintf("read EVIDENCE-RECONCILIATION.md: %v", err)
 	}
+	rel := doc
+	if r, relErr := filepath.Rel(testsupport.ProjectPath(), doc); relErr == nil {
+		rel = r
+	}
+	rel = filepath.ToSlash(rel)
 	for _, name := range cited {
 		found := false
-		for _, line := range strings.Split(string(data), "\n") {
-			if strings.Contains(line, name) && strings.Contains(line, "| superseded |") {
+		for _, text := range strings.Split(string(data), "\n") {
+			cells := strings.Split(text, "|")
+			if len(cells) < 7 {
+				continue
+			}
+			if strings.TrimSpace(cells[2]) == rel && strings.TrimSpace(cells[3]) == strconv.Itoa(line) &&
+				strings.Contains(cells[4], name) && strings.TrimSpace(cells[5]) == "superseded" {
 				found = true
 				break
 			}
 		}
 		if !found {
-			return fmt.Sprintf("cites retired test %s with no `superseded` row in EVIDENCE-RECONCILIATION.md", name)
+			return fmt.Sprintf("cites retired test %s with no `superseded` row for %s:%d in EVIDENCE-RECONCILIATION.md", name, rel, line)
 		}
 	}
 	return ""
@@ -2106,11 +2120,20 @@ func TestCorpusRetiredTestsAllowListIsNotInert(t *testing.T) {
 	})
 	t.Run("a row citing a retired test needs a superseded reconciliation", func(t *testing.T) {
 		cited := retiredTestsCitedBy("go test ./internal/compiler/session -run '^TestPhase20ChecksumFrontier$' -count=1")
-		if len(cited) != 1 || retiredCitationProblem(cited) != "" {
-			t.Fatalf("control: cited=%v problem=%q", cited, retiredCitationProblem(cited))
+		archived := testsupport.ProjectPath(".planning", "milestones", "M003-phases", "20-nyquist-d-13-34-and-the-frontier-fixture", "20-VALIDATION.md")
+		if len(cited) != 1 || retiredCitationProblem(archived, 37, cited) != "" {
+			t.Fatalf("control: cited=%v problem=%q", cited, retiredCitationProblem(archived, 37, cited))
 		}
-		if retiredCitationProblem([]string{"TestUnreconciledRetiredName"}) == "" {
+		if retiredCitationProblem(archived, 37, []string{"TestUnreconciledRetiredName"}) == "" {
 			t.Fatal("an unreconciled retired citation was accepted")
+		}
+		// IN-04 armed control: other superseded rows mention the name, but the
+		// citing row (a different line, or a different doc) is not reconciled.
+		if retiredCitationProblem(archived, 36, cited) == "" {
+			t.Fatal("a citing row with no superseded reconciliation of its own was accepted via another row's line")
+		}
+		if retiredCitationProblem(testsupport.ProjectPath(".planning", "milestones", "M003-phases", "other", "21-VALIDATION.md"), 37, cited) == "" {
+			t.Fatal("a different validation doc was accepted via another doc's superseded row")
 		}
 		if got := retiredTestsCitedBy("go test -run '^TestPhase20ChecksumFrontierX$'"); len(got) != 0 {
 			t.Fatalf("identifier-prefix match accepted: %v", got)
@@ -2297,7 +2320,7 @@ func TestValidationRowGradesAreEarnedOverArchivedCorpus(t *testing.T) {
 				// and the retirement must be reconciled `superseded`.
 				gradeIndex := index
 				if cited := retiredTestsCitedBy(evidence); len(cited) > 0 {
-					if problem := retiredCitationProblem(cited); problem != "" {
+					if problem := retiredCitationProblem(doc, row.Line, cited); problem != "" {
 						t.Fatalf("%s: row %s: %s", name, taskID, problem)
 					}
 					gradeIndex = receiptIndex
