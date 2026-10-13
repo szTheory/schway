@@ -1,0 +1,21 @@
+<testsuites tests="1" failures="1"><testsuite name="github.com/szTheory/schway/internal/compiler/syntax" tests="1" failures="1" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/syntax" name="TestPhase34UnsupportedSurfaceRefusals" time="0"><failure message="go test reported failure">=== RUN   TestPhase34UnsupportedSurfaceRefusals
+    parser_phase34_refusal_test.go:117: logical-and-result-tail diagnostics = [syntax.expected_rbrace [78:80]: expected `}`], want only surface.unsupported_logical_and at [78:80] with hint "Logical &amp;&amp; is unsupported; use explicit if/else control flow."
+    parser_phase34_refusal_test.go:117: logical-or-result-tail diagnostics = [syntax.expected_rbrace [77:78]: expected `}`], want only surface.unsupported_logical_or at [77:79] with hint "Logical || is unsupported; use explicit if/else control flow."
+    parser_phase34_refusal_test.go:117: logical-not-result-tail diagnostics = [syntax.expected_linear_result [73:74]: expected `identifier`], want only surface.unsupported_logical_not at [73:74] with hint "Logical ! is unsupported; use explicit if/else control flow."
+    parser_phase34_refusal_test.go:117: subtraction-expression diagnostics = [syntax.expected_rbrace [73:74]: expected `}`], want only surface.unsupported_subtraction at [62:63] with hint "Subtraction is unsupported; no unchecked emulation is recommended."
+    parser_phase34_refusal_test.go:117: schway-declaration-arity diagnostics = [syntax.expected_rparen [67:68]: expected `)`], want only surface.unsupported_parameter_arity at [69:79] with hint "Declarations require exactly one parameter; pass one admitted value."
+    parser_phase34_refusal_test.go:117: foreign-declaration-arity diagnostics = [syntax.expected_rparen [80:81]: expected `)`], want only surface.unsupported_parameter_arity at [82:92] with hint "Declarations require exactly one parameter; pass one admitted value."
+    parser_phase34_refusal_test.go:117: if-without-else diagnostics = [syntax.expected_else [109:115]: if requires an else block], want only surface.unsupported_if_without_else at [85:108] with hint "An if statement requires an else block."
+--- FAIL: TestPhase34UnsupportedSurfaceRefusals (0.00s)
+</failure><system-out>=== RUN   TestPhase34UnsupportedSurfaceRefusals
+    parser_phase34_refusal_test.go:117: logical-and-result-tail diagnostics = [syntax.expected_rbrace [78:80]: expected `}`], want only surface.unsupported_logical_and at [78:80] with hint "Logical &amp;&amp; is unsupported; use explicit if/else control flow."
+    parser_phase34_refusal_test.go:117: logical-or-result-tail diagnostics = [syntax.expected_rbrace [77:78]: expected `}`], want only surface.unsupported_logical_or at [77:79] with hint "Logical || is unsupported; use explicit if/else control flow."
+    parser_phase34_refusal_test.go:117: logical-not-result-tail diagnostics = [syntax.expected_linear_result [73:74]: expected `identifier`], want only surface.unsupported_logical_not at [73:74] with hint "Logical ! is unsupported; use explicit if/else control flow."
+    parser_phase34_refusal_test.go:117: subtraction-expression diagnostics = [syntax.expected_rbrace [73:74]: expected `}`], want only surface.unsupported_subtraction at [62:63] with hint "Subtraction is unsupported; no unchecked emulation is recommended."
+    parser_phase34_refusal_test.go:117: schway-declaration-arity diagnostics = [syntax.expected_rparen [67:68]: expected `)`], want only surface.unsupported_parameter_arity at [69:79] with hint "Declarations require exactly one parameter; pass one admitted value."
+    parser_phase34_refusal_test.go:117: foreign-declaration-arity diagnostics = [syntax.expected_rparen [80:81]: expected `)`], want only surface.unsupported_parameter_arity at [82:92] with hint "Declarations require exactly one parameter; pass one admitted value."
+    parser_phase34_refusal_test.go:117: if-without-else diagnostics = [syntax.expected_else [109:115]: if requires an else block], want only surface.unsupported_if_without_else at [85:108] with hint "An if statement requires an else block."
+--- FAIL: TestPhase34UnsupportedSurfaceRefusals (0.00s)
+</system-out></testcase><system-out>FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/syntax	0.008s
+</system-out></testsuite></testsuites>

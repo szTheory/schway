@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
 	"github.com/szTheory/schway/internal/compiler/session"
 	"github.com/szTheory/schway/internal/compiler/surface"
 	"github.com/szTheory/schway/internal/compiler/syntax"
@@ -53,5 +54,93 @@ func TestPhase34UnsupportedSurfaceRefusals(t *testing.T) {
 	}
 	if !reflect.DeepEqual(checked.Program, core.Program{}) {
 		t.Fatalf("session.Check admitted rejected syntax: %+v", checked.Program)
+	}
+
+	tests := []struct {
+		name   string
+		source string
+		form   string
+		code   string
+		hint   string
+	}{
+		{
+			name:   "logical-and-result-tail",
+			source: "module phase34.and_tail\nexport { fn main }\nfn main(flag: Bool) -> Bool { flag && true }\n",
+			form:   "&&", code: "surface.unsupported_logical_and",
+			hint: "Logical && is unsupported; use explicit if/else control flow.",
+		},
+		{
+			name:   "logical-or-result-tail",
+			source: "module phase34.or_tail\nexport { fn main }\nfn main(flag: Bool) -> Bool { flag || false }\n",
+			form:   "||", code: "surface.unsupported_logical_or",
+			hint: "Logical || is unsupported; use explicit if/else control flow.",
+		},
+		{
+			name:   "logical-not-result-tail",
+			source: "module phase34.not_tail\nexport { fn main }\nfn main(flag: Bool) -> Bool { !flag }\n",
+			form:   "!", code: "surface.unsupported_logical_not",
+			hint: "Logical ! is unsupported; use explicit if/else control flow.",
+		},
+		{
+			name:   "subtraction-expression",
+			source: "module phase34.subtraction\nexport { fn main }\nfn main(n: U64) -> U64 { n - 1 }\n",
+			form:   "-", code: "surface.unsupported_subtraction",
+			hint: "Subtraction is unsupported; no unchecked emulation is recommended.",
+		},
+		{
+			name:   "schway-declaration-arity",
+			source: "module phase34.schway_arity\nexport { fn main }\nfn combine(left: U64, right: U64) -> U64 { left }\nfn main(n: U64) -> U64 { n }\n",
+			form:   "right: U64", code: "surface.unsupported_parameter_arity",
+			hint: "Declarations require exactly one parameter; pass one admitted value.",
+		},
+		{
+			name:   "foreign-declaration-arity",
+			source: "module phase34.foreign_arity\nexport { fn main }\nforeign C { fn combine(left: U64, right: U64) -> U64 { abi: \"C\" } }\nfn main(n: U64) -> U64 { n }\n",
+			form:   "right: U64", code: "surface.unsupported_parameter_arity",
+			hint: "Declarations require exactly one parameter; pass one admitted value.",
+		},
+		{
+			name:   "if-without-else",
+			source: "module phase34.if_no_else\nexport { fn main }\nfn main(n: U64) -> U64 { var result = n if n < 1 { result = n } result }\n",
+			form:   "if n < 1 { result = n }", code: "surface.unsupported_if_without_else",
+			hint: "An if statement requires an else block.",
+		},
+	}
+	for _, test := range tests {
+		parsed := syntax.Parse([]byte(test.source))
+		if !bytes.Equal(parsed.Tree.Bytes(), []byte(test.source)) {
+			t.Errorf("%s changed lossless source bytes", test.name)
+		}
+		start := strings.Index(test.source, test.form)
+		want := diagnostic.Span{Start: start, End: start + len(test.form)}
+		if start < 0 || len(parsed.Diagnostics) != 1 || parsed.Diagnostics[0].Code != test.code || parsed.Diagnostics[0].Message != test.hint || parsed.Diagnostics[0].Primary != want {
+			t.Errorf("%s diagnostics = %+v, want only %s at [%d:%d] with hint %q", test.name, parsed.Diagnostics, test.code, want.Start, want.End, test.hint)
+		}
+	}
+
+	nearMisses := []struct {
+		name   string
+		source string
+	}{
+		{
+			name:   "spaced-ampersands",
+			source: "module phase34.spaced_and\nexport { fn main }\nfn main(n: U64) -> U64 { var result = n if n < 2 & & n < 3 { result = n } else { result = n } result }\n",
+		},
+		{
+			name:   "spaced-pipes",
+			source: "module phase34.spaced_or\nexport { fn main }\nfn main(flag: Bool) -> Bool { flag | | false }\n",
+		},
+		{
+			name:   "strings-comments-arrows-and-ownership",
+			source: "module phase34.controls // && || ! - ->\nexport { fn main }\ndata Choice = Left | Right\nfn main(buffer: Buffer) -> Buffer { defect \"&& || ! - -> & & | |\" }\n",
+		},
+	}
+	for _, test := range nearMisses {
+		parsed := syntax.Parse([]byte(test.source))
+		for _, problem := range parsed.Diagnostics {
+			if strings.HasPrefix(problem.Code, "surface.unsupported_") {
+				t.Errorf("%s was reclassified as a surface refusal: %+v", test.name, problem)
+			}
+		}
 	}
 }

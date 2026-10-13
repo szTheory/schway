@@ -1,0 +1,5 @@
+<testsuites tests="1" failures="0"><testsuite name="github.com/szTheory/schway/internal/compiler/syntax" tests="1" failures="0" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/syntax" name="TestPhase34UnsupportedSurfaceRefusals" time="0"><system-out>=== RUN   TestPhase34UnsupportedSurfaceRefusals
+--- PASS: TestPhase34UnsupportedSurfaceRefusals (0.00s)
+</system-out></testcase><system-out>PASS
+ok  	github.com/szTheory/schway/internal/compiler/syntax	0.006s
+</system-out></testsuite></testsuites>
