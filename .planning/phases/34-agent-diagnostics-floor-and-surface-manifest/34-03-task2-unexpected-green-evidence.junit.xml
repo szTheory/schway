@@ -1,0 +1,11 @@
+<testsuites tests="4" failures="0"><testsuite name="github.com/szTheory/schway/internal/compiler/session" tests="4" failures="0" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase34ImportedDiagnosticPresentation" time="0"><system-out>=== RUN   TestPhase34ImportedDiagnosticPresentation
+--- PASS: TestPhase34ImportedDiagnosticPresentation (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase34PresentationUsesCapturedSource" time="0"><system-out>=== RUN   TestPhase34PresentationUsesCapturedSource
+--- PASS: TestPhase34PresentationUsesCapturedSource (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase34PresentationUsesCapturedSource/path_mismatch_and_nested_effective_units" time="0"><system-out>=== RUN   TestPhase34PresentationUsesCapturedSource/path_mismatch_and_nested_effective_units
+    --- PASS: TestPhase34PresentationUsesCapturedSource/path_mismatch_and_nested_effective_units (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase34PresentationUsesCapturedSource/origin_peer_and_synthetic_nested_spans" time="0"><system-out>=== RUN   TestPhase34PresentationUsesCapturedSource/origin_peer_and_synthetic_nested_spans
+    --- PASS: TestPhase34PresentationUsesCapturedSource/origin_peer_and_synthetic_nested_spans (0.00s)
+</system-out></testcase><system-out>PASS
+ok  	github.com/szTheory/schway/internal/compiler/session	0.013s
+</system-out></testsuite></testsuites>
