@@ -21,6 +21,7 @@ import (
 	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/protocol"
 	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/surfacemanifest"
 )
 
 const (
@@ -35,6 +36,12 @@ func main() { os.Exit(run(os.Args[1:])) }
 func run(args []string) int {
 	// Route the application command before global flag extraction so the token
 	// after `--` stays opaque, even when it is spelled like a lang flag.
+	if len(args) > 0 && args[0] == "surface" {
+		return runSurface(args)
+	}
+	if len(args) > 1 && args[0] == "--json" && args[1] == "surface" {
+		return runSurface(args)
+	}
 	if len(args) > 0 && args[0] == "app" {
 		return runApplication(args)
 	}
@@ -122,6 +129,27 @@ func run(args []string) int {
 		}
 	}
 	return emit(usageResult(), jsonMode, false)
+}
+
+func runSurface(raw []string) int {
+	valid := len(raw) == 2 && (raw[0] == "surface" && raw[1] == "--json" || raw[0] == "--json" && raw[1] == "surface")
+	if !valid {
+		jsonMode := false
+		for _, arg := range raw {
+			if arg == "--json" {
+				jsonMode = true
+			}
+		}
+		return emit(usageResult(), jsonMode, false)
+	}
+	data, err := surfacemanifest.JSON(surfacemanifest.Current())
+	if err != nil {
+		return emit(problemResult("surface", protocol.StatusOperational, "tool.encode_failed", "unable to encode current surface"), true, false)
+	}
+	if _, err := os.Stdout.Write(data); err != nil {
+		return exitOperational
+	}
+	return exitSuccess
 }
 
 func runFormat(path string, checkOnly, jsonMode bool) int {
@@ -677,5 +705,5 @@ func problemResult(command, status, code, message string) protocol.Result {
 }
 
 func usageResult() protocol.Result {
-	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] build SOURCE --output ARTIFACT [--manifest MANIFEST] | build SOURCE --manifest MANIFEST --output ARTIFACT | app run ARTIFACT [--report REPORT] [--evidence=events] -- INPUT | app verify SOURCE --cases CASES --report REPORT | format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE [--expand] | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE | debug-map SRC [QUERY] | stats | explain SRC ID [--depth=N] | query SRC ID_OR_PATTERN [--kind=symbol|type|ownership|dependency|test] [--depth=N] [--cursor=C]; imports load only in: "+strings.Join(check.ModuleAwareRoutes(), ", "))
+	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] surface --json | build SOURCE --output ARTIFACT [--manifest MANIFEST] | build SOURCE --manifest MANIFEST --output ARTIFACT | app run ARTIFACT [--report REPORT] [--evidence=events] -- INPUT | app verify SOURCE --cases CASES --report REPORT | format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE [--expand] | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE | debug-map SRC [QUERY] | stats | explain SRC ID [--depth=N] | query SRC ID_OR_PATTERN [--kind=symbol|type|ownership|dependency|test] [--depth=N] [--cursor=C]; imports load only in: "+strings.Join(check.ModuleAwareRoutes(), ", "))
 }

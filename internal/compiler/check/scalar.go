@@ -32,6 +32,8 @@ type scalarBuilder struct {
 // so tests can prove exhaustion without constructing adversarial source.
 var scalarAnalysisBudgetForTest int
 
+const ScalarAnalysisWorkLimit = 65536
+
 func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Function, []diagnostic.Diagnostic, int) {
 	byteView := function.Parameter.Type.Constructor == "ByteView" && len(function.Parameter.Type.Arguments) == 0
 	if (function.Parameter.Type.Constructor != "U64" && !byteView) || (function.ReturnType.Constructor != "U64" && function.ReturnType.Constructor != "Unit") {
@@ -168,7 +170,7 @@ func checkScalarFixedPointDetailed(function core.Function) (int, string, string)
 	work := 0
 	budget := scalarAnalysisBudgetForTest
 	if budget <= 0 {
-		budget = 65536
+		budget = ScalarAnalysisWorkLimit
 	}
 	for sweep := 0; ; sweep++ {
 		changed := false

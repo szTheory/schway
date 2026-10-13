@@ -1,0 +1,30 @@
+{
+  "command": "GOCACHE=/tmp/ai-lang-verification-gocache /opt/homebrew/opt/python@3.14/bin/python3.14 /tmp/schway-go-junit.py --record .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-task1-green-route.json --target TestPhase34SurfaceRoute --target-file cmd/schway/main_phase34_surface_test.go --expected 'Both exact source-free route placements emit the same standalone ten-field schema document; raw extra, missing and stripped flags fail with usage.' -- go test -json ./cmd/schway -run '^TestPhase34SurfaceRoute$' -count=1 -v",
+  "exitCode": 0,
+  "output": "<testsuites tests=\"1\" failures=\"0\"><testsuite name=\"github.com/szTheory/schway/cmd/schway\" tests=\"1\" failures=\"0\" skipped=\"0\"><testcase classname=\"github.com/szTheory/schway/cmd/schway\" name=\"TestPhase34SurfaceRoute\" time=\"0\"><system-out>=== RUN   TestPhase34SurfaceRoute\n--- PASS: TestPhase34SurfaceRoute (0.00s)\n</system-out></testcase><system-out>PASS\nok  \tgithub.com/szTheory/schway/cmd/schway\t0.007s\n</system-out></testsuite></testsuites>\n",
+  "targetTest": "TestPhase34SurfaceRoute",
+  "targetFile": "cmd/schway/main_phase34_surface_test.go",
+  "expected": "Both exact source-free route placements emit the same standalone ten-field schema document; raw extra, missing and stripped flags fail with usage.",
+  "actual": "=== RUN   TestPhase34SurfaceRoute\n--- PASS: TestPhase34SurfaceRoute (0.00s)\n",
+  "reportPath": "/Users/jon/projects/schway/.planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-task1-green-route.junit.xml",
+  "runStartedAt": "2026-10-13T23:39:58.034591+00:00",
+  "reportModifiedAt": "2026-10-13T23:39:58.364015+00:00",
+  "durationMs": 329.0348329755943,
+  "rawGoJSON": "{\"Time\":\"2026-10-13T19:39:58.349338-04:00\",\"Action\":\"start\",\"Package\":\"github.com/szTheory/schway/cmd/schway\"}\n{\"Time\":\"2026-10-13T19:39:58.354024-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/cmd/schway\",\"Test\":\"TestPhase34SurfaceRoute\"}\n{\"Time\":\"2026-10-13T19:39:58.354081-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/cmd/schway\",\"Test\":\"TestPhase34SurfaceRoute\",\"Output\":\"=== RUN   TestPhase34SurfaceRoute\\n\"}\n{\"Time\":\"2026-10-13T19:39:58.355888-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/cmd/schway\",\"Test\":\"TestPhase34SurfaceRoute\",\"Output\":\"--- PASS: TestPhase34SurfaceRoute (0.00s)\\n\"}\n{\"Time\":\"2026-10-13T19:39:58.355903-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/cmd/schway\",\"Test\":\"TestPhase34SurfaceRoute\",\"Elapsed\":0}\n{\"Time\":\"2026-10-13T19:39:58.355911-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/cmd/schway\",\"Output\":\"PASS\\n\"}\n{\"Time\":\"2026-10-13T19:39:58.356286-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/cmd/schway\",\"Output\":\"ok  \\tgithub.com/szTheory/schway/cmd/schway\\t0.007s\\n\"}\n{\"Time\":\"2026-10-13T19:39:58.356304-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/cmd/schway\",\"Elapsed\":0.007}\n",
+  "rawStderr": "",
+  "reporter": "/private/tmp/schway-go-junit.py",
+  "reporterSource": {
+    "path": "/tmp/schway-go-junit.py",
+    "sha256": "69752666215dd93d8d1a65b6dbd8544e205c2aacb7cb95c7f408101f0b7f5106",
+    "kind": "standard-library execution reporter"
+  },
+  "freshness": {
+    "runStartedAt": "2026-10-13T23:39:58.034591+00:00",
+    "reportModifiedAt": "2026-10-13T23:39:58.364015+00:00",
+    "reportNewerThanRunStart": true
+  },
+  "semanticAssessment": {
+    "result": "valid_green",
+    "reason": "The intended target ran once and passed both allowed route placements, repeated output equality, top-level schema shape, empty-directory check and strict malformed raw arguments."
+  }
+}

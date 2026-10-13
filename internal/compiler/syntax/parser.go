@@ -71,6 +71,26 @@ const (
 	maxTypeNodes = 4096
 )
 
+// AuthoringBounds exposes the parser's current structural caps to a named
+// source-free authoring consumer without making those private checks mutable.
+type AuthoringBounds struct {
+	PrimaryDiagnostics int
+	TypeDepth          int
+	TypeNodes          int
+	Alternatives       int
+	LinearBindings     int
+}
+
+func CurrentAuthoringBounds() AuthoringBounds {
+	return AuthoringBounds{
+		PrimaryDiagnostics: maxPrimaryDiagnostics,
+		TypeDepth:          maxTypeDepth,
+		TypeNodes:          maxTypeNodes,
+		Alternatives:       maxAlternatives,
+		LinearBindings:     maxLinearBindings,
+	}
+}
+
 func Parse(source []byte) ParseResult {
 	if len(source) > MaxSourceBytes {
 		return ParseResult{Diagnostics: []diagnostic.Diagnostic{inputLimit(MaxSourceBytes)}}
