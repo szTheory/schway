@@ -3,8 +3,8 @@
 # schway command from this checkout, builds the receipt programs once each at
 # the default build, runs the shared case table on THIS host only and prints a
 # provenance-bearing log. A local run is a one-host observation, not a receipt:
-# scripts/check-phase32-receipts.sh is the only gate that can accept a macOS +
-# Linux pair, and it reads the case table and the program list below.
+# scripts/check-receipts.sh testdata/receipts/M006.manifest is the gate for a
+# macOS + Linux pair and the manifest is the single source for cases and programs.
 #
 # The revision in every row is the codedigest (scripts/codedigest.sh), not a
 # commit: headsha is recorded for traceability only.
@@ -20,50 +20,6 @@
 # whole remainder of the line (compared as that text plus a newline).
 set -eu
 
-phase32_programs=checksum,adler_low,adler32_cli,adler32_fixture,byte_index_oob,sum_to_n,fizzbuzz
-
-# phase32-cases-begin
-# case checksum empty 0 1 -
-# case checksum zero 0 65537 -
-# case checksum wikipedia 0 300286872 -
-# case checksum ff65536 0 2006388466 -
-# case checksum ff65537 65 - FileError.FileTooLarge
-# case checksum missing 65 - FileError.FileUnavailable
-# case checksum directory 65 - FileError.FileUnavailable
-# case adler_low empty 0 1 -
-# case adler_low zero 0 1 -
-# case adler_low wikipedia 0 920 -
-# case adler_low ff65536 0 3826 -
-# case adler_low ff65537 65 - FileError.FileTooLarge
-# case adler_low missing 65 - FileError.FileUnavailable
-# case adler_low directory 65 - FileError.FileUnavailable
-# case adler32_cli 3 0 300286872 -
-# case adler32_cli 10 65 - -
-# case adler32_fixture 0 0 1 -
-# case adler32_fixture 1 0 65537 -
-# case adler32_fixture 2 0 6422626 -
-# case adler32_fixture 3 0 300286872 -
-# case adler32_fixture 4 0 268435457 -
-# case adler32_fixture 5 0 4052720524 -
-# case adler32_fixture 6 0 33620352 -
-# case adler32_fixture 7 0 2170679522 -
-# case adler32_fixture 8 0 2967061426 -
-# case adler32_fixture 9 0 2006388466 -
-# case adler32_fixture 10 65 - -
-# case byte_index_oob 0 65 - schway: byte index out of bounds
-# case byte_index_oob 2 65 - schway: byte index out of bounds
-# case sum_to_n 0 0 0 -
-# case sum_to_n 1 0 1 -
-# case sum_to_n 15 0 120 -
-# case sum_to_n 1000 0 500500 -
-# case sum_to_n 1001 65 - schway app: input exceeds 1000
-# case fizzbuzz 0 0 - -
-# case fizzbuzz 1 0 1 -
-# case fizzbuzz 15 0 @examples/phase27/fizzbuzz-15.out -
-# case fizzbuzz 1000 0 @examples/phase27/fizzbuzz-1000.out -
-# case fizzbuzz 1001 65 - schway app: input exceeds 1000
-# phase32-cases-end
-
 fail() {
 	echo "phase32 verify: $1" >&2
 	printf 'phase32 host result status=fail reason=%s\n' "$2"
@@ -78,10 +34,13 @@ done
 
 verify_root=$(CDPATH= cd "$(dirname "$0")/.." && pwd -P)
 cd "$verify_root"
+receipt_manifest="$verify_root/testdata/receipts/M006.manifest"
+receipt_programs=$(sed -n 's/^programs=//p' "$receipt_manifest" | sed -n '1p')
+[ -n "$receipt_programs" ] || fail "programs line is missing" "programs_line_missing"
 verify_tmp=$(mktemp -d "${TMPDIR:-/tmp}/schway-phase32.XXXXXX")
 trap 'rm -rf "$verify_tmp"' EXIT HUP INT TERM
 
-digest_paths="cmd internal examples native scripts testdata go.mod .github/workflows/ci.yml"
+digest_paths=$(sh scripts/codedigest.sh --paths | tr '\n' ' ')
 tree_state() {
 	# shellcheck disable=SC2086
 	if [ -z "$(git status --porcelain -- $digest_paths)" ]; then printf 'clean'; else printf 'modified'; fi
@@ -109,7 +68,7 @@ printf 'phase32 host identity host=%s arch=%s go=%s clang_target=%s headsha=%s c
 	"$host_name" "$host_arch" "$go_host" "$clang_target" "$headsha" "$codedigest" "$tree_start"
 printf 'phase32 toolchain go="%s" clang="%s"\n' "$go_version" "$clang_version"
 
-case_table=$(sed -n '/^# phase32-cases-begin$/,/^# phase32-cases-end$/p' "$verify_root/scripts/verify-phase32.sh" | grep '^# case ' || true)
+case_table=$(grep '^# case ' "$receipt_manifest" || true)
 [ -n "$case_table" ] || fail "case table is empty" "case_table_empty"
 table_count=$(printf '%s\n' "$case_table" | grep -c '^# case ')
 
@@ -209,4 +168,4 @@ tree_end=$(tree_state)
 [ "$tree_end" = "$tree_start" ] || fail "tree moved during the run" "tree_moved"
 [ "$case_count" = "$table_count" ] || fail "incomplete case count: $case_count of $table_count" "incomplete_cases"
 printf 'phase32 host result host=%s codedigest=%s tree=%s cases=%s controls=%s programs=%s status=pass\n' \
-	"$host_name" "$codedigest" "$tree_end" "$case_count" "$control_count" "$phase32_programs"
+	"$host_name" "$codedigest" "$tree_end" "$case_count" "$control_count" "$receipt_programs"

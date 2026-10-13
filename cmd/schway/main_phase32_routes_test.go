@@ -611,10 +611,10 @@ func (o *phase32ModuleObserver) observe(row phase32RouteRow) (int, string) {
 	return code, stdout + stderr
 }
 
-var phase32ProducerProgramsLine = regexp.MustCompile(`(?m)^phase32_programs=(.*)$`)
+var phase32ProducerProgramsLine = regexp.MustCompile(`(?m)^programs=(.*)$`)
 
-// phase32ProducerPrograms reads the `phase32_programs=` line of the receipt
-// producer script text (D-10b). It returns nil when the line is absent.
+// phase32ProducerPrograms reads the `programs=` line from a milestone manifest.
+// It returns nil when the line is absent.
 func phase32ProducerPrograms(scriptText string) []string {
 	match := phase32ProducerProgramsLine.FindStringSubmatch(scriptText)
 	if match == nil {
@@ -624,7 +624,7 @@ func phase32ProducerPrograms(scriptText string) []string {
 }
 
 // phase32ProducerProgramProblems compares the covered program set with the
-// producer's line. The producer line is the hub of the coupling.
+// manifest's line. The producer line is the hub of the coupling.
 func phase32ProducerProgramProblems(scriptText string, covered []string) []string {
 	want := phase32ProducerPrograms(scriptText)
 	if want == nil {
@@ -701,19 +701,20 @@ func TestPhase32PublicRouteAudit(t *testing.T) {
 		t.Fatalf("covered program set = %v, want %v (D-09a)", got, want)
 	}
 
-	producer, err := os.ReadFile(testsupport.ProjectPath("scripts", "verify-phase32.sh"))
+	manifest, err := os.ReadFile(testsupport.ProjectPath("testdata", "receipts", "M006.manifest"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if problems := phase32ProducerProgramProblems(string(producer), got); len(problems) > 0 {
-		t.Fatalf("covered set differs from scripts/verify-phase32.sh phase32_programs= (D-10b): %v", problems)
+	manifestText := string(manifest)
+	if problems := phase32ProducerProgramProblems(manifestText, got); len(problems) > 0 {
+		t.Fatalf("covered set differs from testdata/receipts/M006.manifest programs= (D-10b): %v", problems)
 	}
 	t.Run("programs-line-drift", func(t *testing.T) {
-		original := "phase32_programs=" + strings.Join(phase32ReceiptPrograms, ",")
-		if !strings.Contains(string(producer), "\n"+original+"\n") {
-			t.Fatalf("producer lacks the line %q", original)
+		original := "programs=" + strings.Join(phase32ReceiptPrograms, ",")
+		if !strings.Contains(manifestText, "\n"+original+"\n") {
+			t.Fatalf("manifest lacks the line %q", original)
 		}
-		drifted := strings.Replace(string(producer), original, "phase32_programs="+strings.Join(phase32ReceiptPrograms[:len(phase32ReceiptPrograms)-1], ","), 1)
+		drifted := strings.Replace(manifestText, original, "programs="+strings.Join(phase32ReceiptPrograms[:len(phase32ReceiptPrograms)-1], ","), 1)
 		if problems := phase32ProducerProgramProblems(drifted, got); len(problems) == 0 {
 			t.Fatal("a producer line without fizzbuzz did not report a problem")
 		}

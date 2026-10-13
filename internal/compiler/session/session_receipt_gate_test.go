@@ -3,6 +3,7 @@ package session_test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -299,59 +300,14 @@ func TestReceiptGateArchivedM006(t *testing.T) {
 			}
 		})
 	}
-	manifestBytes, err := os.ReadFile(manifest)
-	if err != nil {
-		t.Fatal(err)
-	}
-	producer, err := os.ReadFile(testsupport.ProjectPath("scripts", "verify-phase32.sh"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	rows := func(s string) string {
-		var out []string
-		begin := strings.Index(s, "# phase32-cases-begin")
-		end := strings.Index(s, "# phase32-cases-end")
-		if begin >= 0 || end >= 0 {
-			if begin < 0 || end <= begin {
-				t.Fatal("producer case table markers are malformed")
-			}
-			s = s[begin:end]
-		}
-		for _, line := range strings.Split(s, "\n") {
-			if strings.HasPrefix(line, "# case ") {
-				out = append(out, line)
-			}
-		}
-		return strings.Join(out, "\n")
-	}
-	manifestLines := string(manifestBytes)
-	if rows(manifestLines) != rows(string(producer)) {
-		t.Fatal("manifest case rows differ from producer")
-	}
-	programLine := func(s string) string {
-		for _, line := range strings.Split(s, "\n") {
-			if strings.HasPrefix(line, "phase32_programs=") {
-				return strings.TrimPrefix(line, "phase32_programs=")
-			}
-		}
-		return ""
-	}
-	manifestProgram := ""
-	for _, line := range strings.Split(manifestLines, "\n") {
-		if strings.HasPrefix(line, "programs=") {
-			manifestProgram = strings.TrimPrefix(line, "programs=")
-			break
-		}
-	}
-	if manifestProgram != programLine(string(producer)) {
-		t.Fatal("manifest programs differ from producer")
-	}
 	t.Run("manifest-equals-producer-table", func(t *testing.T) {
-		if rows(manifestLines) != rows(string(producer)) {
-			t.Fatal("manifest case rows differ from producer")
+		producer, err := os.ReadFile(testsupport.ProjectPath("scripts", "verify-phase32.sh"))
+		if err != nil {
+			t.Fatal(err)
 		}
-		if manifestProgram != programLine(string(producer)) {
-			t.Fatal("manifest programs differ from producer")
+		producerText := string(producer)
+		if !strings.Contains(producerText, "testdata/receipts/M006.manifest") || phase32ProducerHasInlineTable(producerText) {
+			t.Fatal("producer does not read manifest or retains a second case/program table")
 		}
 	})
 	if got, err := os.ReadFile(matches[0]); err != nil || !bytes.Equal(got, data) {
@@ -693,19 +649,13 @@ type phase32TableEntry struct {
 	Stderr       string
 }
 
-var phase32ProgramsLine = regexp.MustCompile(`(?m)^phase32_programs=(.*)$`)
+var phase32ProgramsLine = regexp.MustCompile(`(?m)^programs=(.*)$`)
 
-// phase32ParseCaseTable reads the entries between the table markers of the
-// producer script text.
-func phase32ParseCaseTable(t *testing.T, script string) []phase32TableEntry {
+// phase32ParseCaseTable reads every case row from the milestone manifest.
+func phase32ParseCaseTable(t *testing.T, manifest string) []phase32TableEntry {
 	t.Helper()
-	begin := strings.Index(script, "\n# phase32-cases-begin\n")
-	end := strings.Index(script, "\n# phase32-cases-end\n")
-	if begin < 0 || end < begin {
-		t.Fatal("case table markers not found")
-	}
 	var entries []phase32TableEntry
-	for _, line := range strings.Split(script[begin:end], "\n") {
+	for _, line := range strings.Split(manifest, "\n") {
 		rest, ok := strings.CutPrefix(line, "# case ")
 		if !ok {
 			continue
@@ -730,13 +680,27 @@ func phase32NotationOf(text string) string {
 	return strings.TrimSuffix(text, "\n")
 }
 
+func phase32ProducerHasInlineTable(producer string) bool {
+	for _, line := range strings.Split(producer, "\n") {
+		if strings.HasPrefix(line, "# case ") || strings.HasPrefix(line, "phase32_programs=") {
+			return true
+		}
+	}
+	return false
+}
+
 func TestPhase32ProducerCaseTable(t *testing.T) {
-	data, err := os.ReadFile(testsupport.ProjectPath("scripts", "verify-phase32.sh"))
+	data, err := os.ReadFile(testsupport.ProjectPath("testdata", "receipts", "M006.manifest"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	script := string(data)
-	table := phase32ParseCaseTable(t, script)
+	manifest := string(data)
+	producerData, err := os.ReadFile(testsupport.ProjectPath("scripts", "verify-phase32.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	producer := string(producerData)
+	table := phase32ParseCaseTable(t, manifest)
 	byProgram := map[string][]phase32TableEntry{}
 	for _, entry := range table {
 		byProgram[entry.Program] = append(byProgram[entry.Program], entry)
@@ -754,12 +718,12 @@ func TestPhase32ProducerCaseTable(t *testing.T) {
 	wantCounts := map[string]int{"checksum": 7, "adler_low": 7, "adler32_cli": 2, "adler32_fixture": 11, "byte_index_oob": 2, "sum_to_n": 5, "fizzbuzz": 5}
 
 	t.Run("program-set", func(t *testing.T) {
-		match := phase32ProgramsLine.FindStringSubmatch(script)
+		match := phase32ProgramsLine.FindStringSubmatch(manifest)
 		if match == nil {
-			t.Fatal("phase32_programs= line not found")
+			t.Fatal("programs= line not found")
 		}
 		if got := strings.Split(match[1], ","); !slices.Equal(got, phase32ReceiptPrograms) {
-			t.Fatalf("phase32_programs = %v, want phase32ReceiptPrograms %v", got, phase32ReceiptPrograms)
+			t.Fatalf("programs = %v, want phase32ReceiptPrograms %v", got, phase32ReceiptPrograms)
 		}
 		if len(table) != 39 {
 			t.Fatalf("table has %d entries, want 39", len(table))
@@ -772,6 +736,38 @@ func TestPhase32ProducerCaseTable(t *testing.T) {
 		for program := range byProgram {
 			if _, ok := wantCounts[program]; !ok {
 				t.Errorf("table names unknown program %q", program)
+			}
+		}
+	})
+
+	t.Run("manifest-sha256-pinned", func(t *testing.T) {
+		const want = "9b6906304a74b67df57e930b297c91c6c7115ecc1e4d98dac563bdaaf446e9c7"
+		got := fmt.Sprintf("%x", sha256.Sum256(data))
+		if got != want {
+			t.Fatalf("manifest sha256=%s want %s", got, want)
+		}
+	})
+	t.Run("producer-reads-manifest", func(t *testing.T) {
+		if !strings.Contains(producer, "testdata/receipts/M006.manifest") || phase32ProducerHasInlineTable(producer) {
+			t.Fatal("producer does not read the manifest or retains a second table")
+		}
+	})
+	t.Run("rows-in-archived-logs", func(t *testing.T) {
+		logs, err := phaseArtifactGlob("32-*", "32-RECEIPT.json")
+		if err != nil || len(logs) != 1 {
+			t.Fatalf("archived receipt lookup: %v %v", logs, err)
+		}
+		base := filepath.Join(filepath.Dir(logs[0]), "receipts")
+		for _, name := range []string{"receipt-macos-latest.log", "receipt-ubuntu-latest.log"} {
+			content, err := os.ReadFile(filepath.Join(base, name))
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, c := range table {
+				want := fmt.Sprintf("phase32 case program=%s input=%s expected_exit=%d actual_exit=%d stdout=exact stderr=exact status=pass", c.Program, c.Key, c.Exit, c.Exit)
+				if strings.Count(string(content), want) != 1 {
+					t.Errorf("%s: row %q occurs %d times", name, want, strings.Count(string(content), want))
+				}
 			}
 		}
 	})
@@ -925,7 +921,7 @@ func TestPhase32ProducerCaseTable(t *testing.T) {
 	})
 
 	t.Run("dropping-a-program-is-detected", func(t *testing.T) {
-		mutated := strings.ReplaceAll(script, "# case byte_index_oob ", "# dropped byte_index_oob ")
+		mutated := strings.ReplaceAll(manifest, "# case byte_index_oob ", "# dropped byte_index_oob ")
 		count := 0
 		for _, entry := range phase32ParseCaseTable(t, mutated) {
 			if entry.Program == "byte_index_oob" {
