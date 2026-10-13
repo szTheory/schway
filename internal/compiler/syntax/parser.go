@@ -49,13 +49,19 @@ type ParseResult struct {
 }
 
 type parser struct {
-	source      []byte
-	tokens      []Token
-	position    int
-	diagnostics []diagnostic.Diagnostic
-	truncated   bool
-	typeDepth   int
-	typeNodes   int
+	source               []byte
+	tokens               []Token
+	position             int
+	diagnostics          []diagnostic.Diagnostic
+	truncated            bool
+	typeDepth            int
+	typeNodes            int
+	claimedRecoverySpans map[recoveryTokenSpan]struct{}
+}
+
+type recoveryTokenSpan struct {
+	start int
+	end   int
 }
 
 const (
@@ -79,7 +85,13 @@ func Parse(source []byte) ParseResult {
 		// its pre-normalization diagnostic cap is not a real truncation.
 		truncated = false
 	}
-	p := parser{source: source, tokens: tokens, diagnostics: diagnostics, truncated: truncated}
+	p := parser{
+		source:               source,
+		tokens:               tokens,
+		diagnostics:          diagnostics,
+		truncated:            truncated,
+		claimedRecoverySpans: make(map[recoveryTokenSpan]struct{}),
+	}
 	program := p.parseProgram()
 	if limit := programLimit(program); limit != "" {
 		p.diagnostics = []diagnostic.Diagnostic{inputLimit(len(source))}
@@ -88,7 +100,25 @@ func Parse(source []byte) ParseResult {
 	if p.truncated {
 		p.diagnostics = append(p.diagnostics, tooManyErrors(len(source)))
 	}
+	p.diagnostics = filterClaimedUnexpectedBytes(p.diagnostics, p.claimedRecoverySpans)
 	return ParseResult{Tree: Tree{Source: append([]byte(nil), source...), Tokens: tokens}, Program: program, Diagnostics: p.diagnostics}
+}
+
+func filterClaimedUnexpectedBytes(diagnostics []diagnostic.Diagnostic, claimed map[recoveryTokenSpan]struct{}) []diagnostic.Diagnostic {
+	if len(claimed) == 0 {
+		return diagnostics
+	}
+	kept := diagnostics[:0]
+	for _, problem := range diagnostics {
+		if problem.Code == "syntax.unexpected_byte" {
+			key := recoveryTokenSpan{start: problem.Primary.Start, end: problem.Primary.End}
+			if _, ok := claimed[key]; ok {
+				continue
+			}
+		}
+		kept = append(kept, problem)
+	}
+	return kept
 }
 
 func programLimit(program ast.Program) string {
@@ -1130,7 +1160,16 @@ func (p *parser) problem(code string, token Token, message string, causes ...dia
 		p.truncated = true
 		return
 	}
+	p.claimRecoveryToken(token)
 	p.diagnostics = append(p.diagnostics, diagnostic.Error(code, token.Span, message, causes...).AtSource())
+}
+
+func (p *parser) claimRecoveryToken(token Token) {
+	if token.Kind != TokenUnknown {
+		return
+	}
+	span := recoveryTokenSpan{start: token.Span.Start, end: token.Span.End}
+	p.claimedRecoverySpans[span] = struct{}{}
 }
 
 func (p *parser) atAny(kinds ...Kind) bool {
