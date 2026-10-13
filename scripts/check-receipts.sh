@@ -16,11 +16,6 @@ case $1 in /*) manifest=$1 ;; *) manifest=$PWD/$1 ;; esac
 mf_get() { sed -n "s/^$1=//p" "$manifest" | sed -n '1p'; }
 label=$(mf_get label)
 [ -n "$label" ] || reject manifest_missing
-want_programs=$(mf_get programs)
-controls=$(mf_get controls)
-case_table=$(grep '^# case ' "$manifest" || true)
-[ -n "$case_table" ] || reject case_table_empty
-[ -n "$want_programs" ] || reject programs_line_missing
 shift
 [ "$#" -eq 2 ] || reject usage_two_logs_required
 
@@ -40,6 +35,11 @@ else
 	expected_digest=$(sh "$root/scripts/codedigest.sh") || reject expected_codedigest_unknown
 fi
 [ -n "$expected_digest" ] || reject expected_codedigest_unknown
+want_programs=$(mf_get programs)
+controls=$(mf_get controls)
+case_table=$(grep '^# case ' "$manifest" || true)
+[ -n "$case_table" ] || reject case_table_empty
+[ -n "$want_programs" ] || reject programs_line_missing
 table_count=$(printf '%s\n' "$case_table" | grep -c '^# case ')
 control_count=$(printf '%s' "$controls" | awk -F, '{print NF}')
 

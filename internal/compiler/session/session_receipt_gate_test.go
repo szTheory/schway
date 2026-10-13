@@ -115,6 +115,10 @@ func TestReceiptGate(t *testing.T) {
 		if zero.exit != 1 || zero.stdout != "" || zero.stderr != "receipt gate: status=fail reason=usage_two_logs_required\n" {
 			t.Fatalf("usage bytes: %#v", zero)
 		}
+		one := phase33RunAt(t, root, "scripts/check-receipts.sh", testsupport.ProjectPath("testdata", "receipts", "M006.manifest"))
+		if one.exit != 1 || one.stderr != "phase32 receipt gate: status=fail reason=usage_two_logs_required\n" {
+			t.Fatalf("manifest-prefixed usage bytes: %#v", one)
+		}
 		missing := phase33RunAt(t, root, "scripts/check-receipts.sh", "/nonexistent.manifest", "a", "b")
 		if missing.exit != 1 || missing.stderr != "receipt gate: status=fail reason=manifest_missing\n" {
 			t.Fatalf("manifest bytes: %#v", missing)
