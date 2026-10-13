@@ -17,15 +17,30 @@ import (
 func phase321Program(kinds map[string]core.OperationKind) core.Program {
 	operations := []core.LinearOperation{}
 	for id, kind := range kinds {
-		operations = append(operations, core.LinearOperation{ID: id, Kind: kind})
+		operation := core.LinearOperation{ID: id, Kind: kind}
+		switch kind {
+		case core.OpBytesAt:
+			operation.Reason = execution.DefectReasonByteIndexOutOfBounds
+		case core.OpAddChecked:
+			operation.Reason = execution.DefectReasonU64AddOverflow
+		case core.OpRemainderU64:
+			operation.Reason = execution.DefectReasonU64RemainderByZero
+		case core.OpDefect:
+			operation.Reason = "boom"
+		}
+		operations = append(operations, operation)
 	}
-	return core.Program{Functions: []core.Function{{Linear: &core.LinearBody{Operations: operations}}}}
+	return core.Program{Functions: []core.Function{{ID: "f", Name: "f", Linear: &core.LinearBody{Operations: operations}}}}
 }
 
 func phase321Defect(finalID, output string) Execution {
 	return Execution{
 		Outcome: execution.Outcome{Kind: execution.OutcomeDefect},
-		Events:  []Event{{Kind: "foreign.called", ID: "x:event"}, {Kind: "function.defected", ID: finalID, Output: output}},
+		Events: []Event{
+			{Kind: "foreign.called", ID: "x:event"},
+			{Kind: "function.defected", ID: finalID, FunctionID: "f", Output: output},
+		},
+		LiveResources: []string{"main:op:0"},
 	}
 }
 
@@ -44,7 +59,7 @@ func TestPhase321AbortLikeDefectPredicate(t *testing.T) {
 		{"op:defect:event:defected", "boom"},
 	}
 	for _, row := range accepted {
-		if !isAbortLikeDefect(program, phase321Defect(row.id, row.output)) {
+		if !isAbortLikeDefect(program, phase321Defect(row.id, row.output), "main:op:0") {
 			t.Errorf("%s should be abort-like", row.id)
 		}
 	}
@@ -63,7 +78,7 @@ func TestPhase321AbortLikeDefectPredicate(t *testing.T) {
 		{"empty events", Execution{Outcome: execution.Outcome{Kind: execution.OutcomeDefect}}},
 	}
 	for _, row := range refused {
-		if isAbortLikeDefect(program, row.result) {
+		if isAbortLikeDefect(program, row.result, "main:op:0") {
 			t.Errorf("%s must stay refused", row.name)
 		}
 	}
@@ -225,7 +240,7 @@ func TestPhase321AbortLikeDefectFileRoute(t *testing.T) {
 		if len(result.LiveResources) != 0 {
 			t.Fatalf("live resources = %v, want the owner already released", result.LiveResources)
 		}
-		if isAbortLikeDefect(program, result) {
+		if isAbortLikeDefect(program, result, "main:op:0") {
 			t.Fatal("call-depth defect must not be classified abort-like")
 		}
 	})

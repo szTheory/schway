@@ -7,6 +7,8 @@ import (
 	"github.com/szTheory/schway/internal/compiler/execution"
 )
 
+const phase33OwnerOperationID = "main:op:0"
+
 func phase33AbortLikeRow(kind core.OperationKind, reason string) (core.Program, Execution) {
 	const operationID = "f:op:1"
 	return core.Program{Functions: []core.Function{{ID: "f", Name: "f", Linear: &core.LinearBody{
@@ -17,7 +19,7 @@ func phase33AbortLikeRow(kind core.OperationKind, reason string) (core.Program, 
 				{Kind: "foreign.called", ID: "owner:event"},
 				{Kind: "function.defected", ID: operationID + ":event:defected", FunctionID: "f", Output: reason},
 			},
-			LiveResources: []string{"main:op:0"},
+			LiveResources: []string{phase33OwnerOperationID},
 		}
 }
 
@@ -35,7 +37,7 @@ func TestPhase33AbortLikeNarrowed(t *testing.T) {
 	for _, row := range accepted {
 		t.Run("accept/"+row.name, func(t *testing.T) {
 			program, result := phase33AbortLikeRow(row.kind, row.reason)
-			if !isAbortLikeDefect(program, result) {
+			if !isAbortLikeDefect(program, result, phase33OwnerOperationID) {
 				t.Fatal("valid abort-like defect refused")
 			}
 		})
@@ -105,9 +107,46 @@ func TestPhase33AbortLikeNarrowed(t *testing.T) {
 	}
 	for _, row := range refused {
 		t.Run("refuse/"+row.name, func(t *testing.T) {
-			if isAbortLikeDefect(row.program, row.result) {
+			if isAbortLikeDefect(row.program, row.result, phase33OwnerOperationID) {
 				t.Fatal("invalid abort-like defect accepted")
 			}
 		})
 	}
+}
+
+func TestPhase33AbortLikeWideningMutantKilled(t *testing.T) {
+	t.Run("live resource acceptance", func(t *testing.T) {
+		program, result := phase33AbortLikeRow(core.OpAddChecked, execution.DefectReasonU64AddOverflow)
+		result.LiveResources = []string{phase33OwnerOperationID, "x:op:9"}
+		if isAbortLikeDefect(program, result, phase33OwnerOperationID) {
+			t.Fatal("production predicate accepted the extra live resource before mutation")
+		}
+		original := abortLikeAcceptLive
+		defer func() { abortLikeAcceptLive = original }()
+		abortLikeAcceptLive = func([]string, string) bool { return true }
+		if !isAbortLikeDefect(program, result, phase33OwnerOperationID) {
+			t.Fatal("widening abortLikeAcceptLive did not accept the extra-resource row")
+		}
+		abortLikeAcceptLive = original
+		if isAbortLikeDefect(program, result, phase33OwnerOperationID) {
+			t.Fatal("restored production live-resource rule accepted the extra-resource row")
+		}
+	})
+
+	t.Run("reason matching", func(t *testing.T) {
+		program, result := phase33AbortLikeRow(core.OpAddChecked, execution.DefectReasonU64AddOverflow+"!")
+		if isAbortLikeDefect(program, result, phase33OwnerOperationID) {
+			t.Fatal("production predicate accepted the wrong reason before mutation")
+		}
+		original := abortLikeReasonMatches
+		defer func() { abortLikeReasonMatches = original }()
+		abortLikeReasonMatches = func(string, string) bool { return true }
+		if !isAbortLikeDefect(program, result, phase33OwnerOperationID) {
+			t.Fatal("widening abortLikeReasonMatches did not accept the wrong-reason row")
+		}
+		abortLikeReasonMatches = original
+		if isAbortLikeDefect(program, result, phase33OwnerOperationID) {
+			t.Fatal("restored production reason matcher accepted the wrong-reason row")
+		}
+	})
 }

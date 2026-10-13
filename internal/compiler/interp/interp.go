@@ -292,6 +292,7 @@ func RunWithFixtureBytes(program core.Program, functionName, input string, bytes
 		return Execution{}, fmt.Errorf("fixture bytes route requires the checked U64-to-U64 fixture-owner entry")
 	}
 	acquires, borrows := 0, 0
+	ownerOpID := ""
 	for _, operation := range function.Linear.Operations {
 		if operation.Kind != core.OpForeignCall || operation.Foreign == nil {
 			continue
@@ -299,6 +300,7 @@ func RunWithFixtureBytes(program core.Program, functionName, input string, bytes
 		switch {
 		case operation.Foreign.Mode == "acquire" && operation.Foreign.ParameterType == "U64" && operation.Foreign.Fails != "":
 			acquires++
+			ownerOpID = operation.ID
 		case operation.Foreign.Mode == "borrow" && operation.Foreign.ResultType == "ByteView":
 			borrows++
 		}
@@ -316,7 +318,7 @@ func RunWithFixtureBytes(program core.Program, functionName, input string, bytes
 	if err != nil {
 		return Execution{}, err
 	}
-	if len(result.LiveResources) != 0 && !isAbortLikeDefect(program, result) {
+	if len(result.LiveResources) != 0 && !isAbortLikeDefect(program, result, ownerOpID) {
 		return Execution{}, fmt.Errorf("model execution reached a terminal outcome with live local resources %v", result.LiveResources)
 	}
 	return result, nil
@@ -344,6 +346,7 @@ func RunWithFileBytes(program core.Program, functionName, path string, read func
 		return Execution{}, fmt.Errorf("file bytes route requires the checked PathToken-to-U64 file-owner entry")
 	}
 	acquires, borrows := 0, 0
+	ownerOpID := ""
 	for _, operation := range function.Linear.Operations {
 		if operation.Kind != core.OpForeignCall || operation.Foreign == nil {
 			continue
@@ -351,6 +354,7 @@ func RunWithFileBytes(program core.Program, functionName, path string, read func
 		switch {
 		case operation.Foreign.Mode == "acquire" && operation.Foreign.ParameterType == "PathToken" && operation.Foreign.ResultType == "FileBytes":
 			acquires++
+			ownerOpID = operation.ID
 		case operation.Foreign.Mode == "borrow" && operation.Foreign.ResultType == "ByteView":
 			borrows++
 		}
@@ -368,7 +372,7 @@ func RunWithFileBytes(program core.Program, functionName, path string, read func
 	if err != nil {
 		return Execution{}, err
 	}
-	if len(result.LiveResources) != 0 && !isAbortLikeDefect(program, result) {
+	if len(result.LiveResources) != 0 && !isAbortLikeDefect(program, result, ownerOpID) {
 		return Execution{}, fmt.Errorf("model execution reached a terminal outcome with live local resources %v", result.LiveResources)
 	}
 	return result, nil
@@ -429,35 +433,55 @@ func fileForeignCall(program core.Program, top *frame, operation core.LinearOper
 	return Execution{}, false, nil
 }
 
-// isAbortLikeDefect is the D-20 predicate widened by Phase 32.1 (D-09, D-25):
-// a defect outcome whose final event is a function.defected event attributed to
-// one of the four abort-like operations -- OpBytesAt, OpAddChecked,
-// OpRemainderU64 or OpDefect. Native aborts with exit 65 on each of them and
-// the OS reclaims the owner, so a live fixture or file owner is accepted. The
-// nonlocal-exit, call-depth and output-limit defects carry different final
-// event IDs and stay refused, as do returned and typed_failure terminals.
-func isAbortLikeDefect(program core.Program, result Execution) bool {
+// abortLikeAcceptLive is an unexported D-13 test seam. Production accepts only
+// the exact single acquired owner; same-package mutation tests temporarily
+// widen this rule and restore it with defer.
+var abortLikeAcceptLive = func(live []string, ownerOpID string) bool {
+	return len(live) == 1 && live[0] == ownerOpID
+}
+
+// abortLikeReasonMatches is an unexported D-12 test seam for exact reason-byte
+// matching. Production uses Go string equality without normalization.
+var abortLikeReasonMatches = func(got, want string) bool { return got == want }
+
+// isAbortLikeDefect narrows the Phase 32.1 WR-02 exception (D-12, D-13):
+// accept only a defect attributed to an abort-like operation in the final
+// event's function, with that operation's exact reason and exactly the one
+// acquired owner still live. Other resources and terminal kinds remain errors.
+func isAbortLikeDefect(program core.Program, result Execution, ownerOpID string) bool {
 	if result.Outcome.Kind != execution.OutcomeDefect || len(result.Events) == 0 {
+		return false
+	}
+	if !abortLikeAcceptLive(result.LiveResources, ownerOpID) {
 		return false
 	}
 	final := result.Events[len(result.Events)-1]
 	if final.Kind != "function.defected" || !strings.HasSuffix(final.ID, ":event:defected") {
 		return false
 	}
+	function, ok := findFunctionByID(program, final.FunctionID)
+	if !ok || function.Linear == nil {
+		return false
+	}
 	operationID := strings.TrimSuffix(final.ID, ":event:defected")
-	for _, function := range program.Functions {
-		if function.Linear == nil {
+	for _, operation := range function.Linear.Operations {
+		if operation.ID != operationID {
 			continue
 		}
-		for _, operation := range function.Linear.Operations {
-			if operation.ID == operationID {
-				switch operation.Kind {
-				case core.OpBytesAt, core.OpAddChecked, core.OpRemainderU64, core.OpDefect:
-					return true
-				}
-				return false
-			}
+		var want string
+		switch operation.Kind {
+		case core.OpBytesAt:
+			want = execution.DefectReasonByteIndexOutOfBounds
+		case core.OpAddChecked:
+			want = execution.DefectReasonU64AddOverflow
+		case core.OpRemainderU64:
+			want = execution.DefectReasonU64RemainderByZero
+		case core.OpDefect:
+			want = operation.Reason
+		default:
+			return false
 		}
+		return abortLikeReasonMatches(final.Output, want)
 	}
 	return false
 }
