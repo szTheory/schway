@@ -5,16 +5,16 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 34
 current_phase_name: Agent Diagnostics Floor and Surface Manifest
 status: executing
-stopped_at: Completed 34-03-PLAN.md
-last_updated: "2026-10-13T22:27:13.695Z"
+stopped_at: Completed 34-04-PLAN.md
+last_updated: "2026-10-13T22:49:43.728Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 33 complete, transitioned to Phase 34
-state_head: 506f469a69d348bcffedc19d0a4228a803a968ee
+state_head: 58dc7b85913f02b7d266cdd02ea0d1760c248832
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 13
-  completed_plans: 8
+  completed_plans: 9
   percent: 17
 ---
 
@@ -125,7 +125,7 @@ plans.
 ## Current Position
 
 Phase: 34 (Agent Diagnostics Floor and Surface Manifest) — READY TO EXECUTE
-Plan: 4 of 8
+Plan: 5 of 8
 Status: Ready to execute
 Last activity: 2026-10-13 — Phase 33 complete, transitioned to Phase 34
 
@@ -592,6 +592,7 @@ subset alone.
 | Phase 34 P01 | 13 min | 3 tasks | 7 files |
 | Phase 34 P02 | 19 min | 3 tasks | 24 files |
 | Phase 34 P03 | 14 min | 2 tasks | 13 files |
+| Phase 34 P04 | 16 min | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -790,6 +791,8 @@ decision history; they no longer describe current status.
 - [Phase 34]: Keep presentation invocation-local and reuse the loader snapshots without another read or parse.
 - [Phase 34]: Choose source bytes independently for primary, cause, and repair EffectiveUnit while preserving byte authority and IDs.
 - [Phase 34]: Task 2 required no additional production code because the Task 1 sidecar and Phase 34-02 projector already satisfied its behavior contract.
+- [Phase 34]: Recovery owns exact parser spans and caller boundaries; unrelated lexer diagnostics and independent missing closers remain visible.
+- [Phase 34]: Keep the immutable before-state unchanged and record only measured current outputs in the separate after-state.
 
 ### Pending Todos
 
@@ -1035,8 +1038,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-13T22:27:13.663Z
-Stopped at: Completed 34-03-PLAN.md
+Last session: 2026-10-13T22:49:43.690Z
+Stopped at: Completed 34-04-PLAN.md
 Resume file: None
 Next action: $gsd-execute-phase 34
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
