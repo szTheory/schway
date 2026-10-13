@@ -40,7 +40,7 @@ func lex(source []byte) ([]Token, []diagnostic.Diagnostic, bool) {
 	truncated := false
 	problem := func(value diagnostic.Diagnostic) {
 		if len(diagnostics) < maxPrimaryDiagnostics {
-			diagnostics = append(diagnostics, value)
+			diagnostics = append(diagnostics, value.AtSource())
 		} else {
 			truncated = true
 		}

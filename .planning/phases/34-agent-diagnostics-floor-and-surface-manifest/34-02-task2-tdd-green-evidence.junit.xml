@@ -1,0 +1,105 @@
+<testsuites tests="50" failures="0"><testsuite name="github.com/szTheory/schway/internal/compiler/diagnostic" tests="16" failures="0" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestPhase30UnitIdentity" time="0"><system-out>=== RUN   TestPhase30UnitIdentity
+--- PASS: TestPhase30UnitIdentity (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestPhase30UnitIdentity/diagnostic/0" time="0"><system-out>=== RUN   TestPhase30UnitIdentity/diagnostic/0
+    --- PASS: TestPhase30UnitIdentity/diagnostic/0 (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestPhase30UnitIdentity/diagnostic/1" time="0"><system-out>=== RUN   TestPhase30UnitIdentity/diagnostic/1
+    --- PASS: TestPhase30UnitIdentity/diagnostic/1 (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestPhase30UnitIdentity/control:_unit_left_out_of_identity_collides" time="0"><system-out>=== RUN   TestPhase30UnitIdentity/control:_unit_left_out_of_identity_collides
+    --- PASS: TestPhase30UnitIdentity/control:_unit_left_out_of_identity_collides (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestPhase34DiagnosticIdentityProjection" time="0"><system-out>=== RUN   TestPhase34DiagnosticIdentityProjection
+--- PASS: TestPhase34DiagnosticIdentityProjection (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestPhase34DiagnosticIdentityProjection/error-nil-causes" time="0"><system-out>=== RUN   TestPhase34DiagnosticIdentityProjection/error-nil-causes
+    --- PASS: TestPhase34DiagnosticIdentityProjection/error-nil-causes (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestPhase34DiagnosticIdentityProjection/error-nested-cause-span" time="0"><system-out>=== RUN   TestPhase34DiagnosticIdentityProjection/error-nested-cause-span
+    --- PASS: TestPhase34DiagnosticIdentityProjection/error-nested-cause-span (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestPhase34DiagnosticIdentityProjection/error-with-repairs-nil-causes" time="0"><system-out>=== RUN   TestPhase34DiagnosticIdentityProjection/error-with-repairs-nil-causes
+    --- PASS: TestPhase34DiagnosticIdentityProjection/error-with-repairs-nil-causes (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestPhase34DiagnosticIdentityProjection/error-with-repairs-nested-causes" time="0"><system-out>=== RUN   TestPhase34DiagnosticIdentityProjection/error-with-repairs-nested-causes
+    --- PASS: TestPhase34DiagnosticIdentityProjection/error-with-repairs-nested-causes (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestPhase34DiagnosticIdentityProjection/error-with-repairs-shifted-coordinates" time="0"><system-out>=== RUN   TestPhase34DiagnosticIdentityProjection/error-with-repairs-shifted-coordinates
+    --- PASS: TestPhase34DiagnosticIdentityProjection/error-with-repairs-shifted-coordinates (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestPhase34DiagnosticIdentityProjection/error-with-repairs-different-kind" time="0"><system-out>=== RUN   TestPhase34DiagnosticIdentityProjection/error-with-repairs-different-kind
+    --- PASS: TestPhase34DiagnosticIdentityProjection/error-with-repairs-different-kind (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestPhase34DiagnosticIdentityProjection/in-unit-source" time="0"><system-out>=== RUN   TestPhase34DiagnosticIdentityProjection/in-unit-source
+    --- PASS: TestPhase34DiagnosticIdentityProjection/in-unit-source (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestPhase34DiagnosticIdentityProjection/in-unit-other" time="0"><system-out>=== RUN   TestPhase34DiagnosticIdentityProjection/in-unit-other
+    --- PASS: TestPhase34DiagnosticIdentityProjection/in-unit-other (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestRepairIdentityUsesKindOnly" time="0"><system-out>=== RUN   TestRepairIdentityUsesKindOnly
+--- PASS: TestRepairIdentityUsesKindOnly (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestRepairSpanShiftDoesNotChangeDiagnosticID" time="0"><system-out>=== RUN   TestRepairSpanShiftDoesNotChangeDiagnosticID
+--- PASS: TestRepairSpanShiftDoesNotChangeDiagnosticID (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/diagnostic" name="TestDiagnosticZeroBytesUnchanged" time="0"><system-out>=== RUN   TestDiagnosticZeroBytesUnchanged
+--- PASS: TestDiagnosticZeroBytesUnchanged (0.00s)
+</system-out></testcase><system-out>PASS
+ok  	github.com/szTheory/schway/internal/compiler/diagnostic	0.005s
+</system-out></testsuite><testsuite name="github.com/szTheory/schway/internal/compiler/protocol" tests="34" failures="0" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase30UnitProjection" time="0"><system-out>=== RUN   TestPhase30UnitProjection
+--- PASS: TestPhase30UnitProjection (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase30UnitProjection/control:_always_printing_unit_changes_the_empty-unit_line" time="0"><system-out>=== RUN   TestPhase30UnitProjection/control:_always_printing_unit_changes_the_empty-unit_line
+    --- PASS: TestPhase30UnitProjection/control:_always_printing_unit_changes_the_empty-unit_line (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase30UnitProjection/debug_map_entry_unit_is_omitempty" time="0"><system-out>=== RUN   TestPhase30UnitProjection/debug_map_entry_unit_is_omitempty
+    --- PASS: TestPhase30UnitProjection/debug_map_entry_unit_is_omitempty (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations
+--- PASS: TestPhase34DiagnosticLocations (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens
+    --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/adjacent_first" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/adjacent_first
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/adjacent_first (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/adjacent_second" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/adjacent_second
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/adjacent_second (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/cross_line" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/cross_line
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/cross_line (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/known_zero_start" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/known_zero_start
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/known_zero_start (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/synthetic_zero" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/synthetic_zero
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/synthetic_zero (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/synthetic_zero_at_EOF" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/synthetic_zero_at_EOF
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/synthetic_zero_at_EOF (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/known_zero_at_EOF" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/known_zero_at_EOF
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/known_zero_at_EOF (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/empty_source_EOF" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/empty_source_EOF
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/empty_source_EOF (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/CR_byte" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/CR_byte
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/CR_byte (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/LF_byte" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/LF_byte
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/LF_byte (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/after_CRLF" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/after_CRLF
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/after_CRLF (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/before_LF" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/before_LF
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/before_LF (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/after_LF" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/after_LF
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/after_LF (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/tab_is_one_scalar" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/tab_is_one_scalar
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/tab_is_one_scalar (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/lone_CR_is_content" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/lone_CR_is_content
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/lone_CR_is_content (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/inside_UTF-8_scalar" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/inside_UTF-8_scalar
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/inside_UTF-8_scalar (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/after_UTF-8_scalar" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/after_UTF-8_scalar
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/after_UTF-8_scalar (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/after_invalid_byte" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/after_invalid_byte
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/after_invalid_byte (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/last_line_EOF" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/last_line_EOF
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/last_line_EOF (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/final_newline_EOF" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/final_newline_EOF
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/final_newline_EOF (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/negative_span_refused" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/negative_span_refused
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/negative_span_refused (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/inverted_span_refused" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/inverted_span_refused
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/inverted_span_refused (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/exact_coordinate_goldens/out_of_bounds_refused" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/exact_coordinate_goldens/out_of_bounds_refused
+        --- PASS: TestPhase34DiagnosticLocations/exact_coordinate_goldens/out_of_bounds_refused (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/nested_nil_and_effective_units" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/nested_nil_and_effective_units
+    --- PASS: TestPhase34DiagnosticLocations/nested_nil_and_effective_units (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/parser_marks_real_empty_EOF_and_limits_stay_synthetic" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/parser_marks_real_empty_EOF_and_limits_stay_synthetic
+    --- PASS: TestPhase34DiagnosticLocations/parser_marks_real_empty_EOF_and_limits_stay_synthetic (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/lexer_source_errors_carry_provenance" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/lexer_source_errors_carry_provenance
+    --- PASS: TestPhase34DiagnosticLocations/lexer_source_errors_carry_provenance (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/InUnit_before_and_after_presentation_keeps_identity" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/InUnit_before_and_after_presentation_keeps_identity
+    --- PASS: TestPhase34DiagnosticLocations/InUnit_before_and_after_presentation_keeps_identity (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/Result.Finalize_ignores_presentation" time="0"><system-out>=== RUN   TestPhase34DiagnosticLocations/Result.Finalize_ignores_presentation
+    --- PASS: TestPhase34DiagnosticLocations/Result.Finalize_ignores_presentation (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestHumanJSONProjectionParity" time="0"><system-out>=== RUN   TestHumanJSONProjectionParity
+--- PASS: TestHumanJSONProjectionParity (0.00s)
+</system-out></testcase><system-out>PASS
+ok  	github.com/szTheory/schway/internal/compiler/protocol	0.006s
+</system-out></testsuite></testsuites>

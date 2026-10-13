@@ -46,6 +46,8 @@ func TestPhase34DiagnosticLocations(t *testing.T) {
 			{"cross line", []byte("a\nbc"), diagnostic.Span{Start: 0, End: 4}, false, `{"start":0,"end":4,"line":1,"col":1}`},
 			{"known zero start", []byte("abc"), diagnostic.Span{Start: 0, End: 0}, true, `{"start":0,"end":0,"line":1,"col":1}`},
 			{"synthetic zero", []byte("abc"), diagnostic.Span{Start: 0, End: 0}, false, `{"start":0,"end":0}`},
+			{"synthetic zero at EOF", []byte("abc"), diagnostic.Span{Start: 3, End: 3}, false, `{"start":3,"end":3}`},
+			{"known zero at EOF", []byte("abc"), diagnostic.Span{Start: 3, End: 3}, true, `{"start":3,"end":3,"line":1,"col":4}`},
 			{"empty source EOF", []byte{}, diagnostic.Span{Start: 0, End: 0}, true, `{"start":0,"end":0,"line":1,"col":1}`},
 			{"CR byte", []byte("a\r\nb"), diagnostic.Span{Start: 1, End: 1}, true, `{"start":1,"end":1,"line":1,"col":2}`},
 			{"LF byte", []byte("a\r\nb"), diagnostic.Span{Start: 2, End: 2}, true, `{"start":2,"end":2,"line":1,"col":2}`},
@@ -94,6 +96,7 @@ func TestPhase34DiagnosticLocations(t *testing.T) {
 			[]diagnostic.Cause{{Kind: "nil"}, {Kind: "default", Span: &causeDefault}, {Kind: "library", Unit: "lib.a", Span: &causeLibrary}},
 			diagnostic.Repair{Kind: "default", Span: &repairDefault},
 			diagnostic.Repair{Kind: "library", Unit: "lib.a", Span: &repairLibrary},
+			diagnostic.Repair{Kind: "nil"},
 		).InUnit("main")
 		result := protocol.New("check", protocol.StatusInvalid)
 		result.Diagnostics = []diagnostic.Diagnostic{problem}
@@ -140,7 +143,7 @@ func TestPhase34DiagnosticLocations(t *testing.T) {
 		if string(problemWire.Causes[1].Span) != `{"start":1,"end":2,"line":1,"col":2}` || string(problemWire.Causes[2].Span) != `{"start":3,"end":4,"line":2,"col":1}` {
 			t.Fatalf("cause effective units or coordinates changed: %+v", problemWire.Causes)
 		}
-		if len(problemWire.Repairs) != 2 || string(problemWire.Repairs[0].Span) != `{"start":2,"end":3,"line":1,"col":3}` || string(problemWire.Repairs[1].Span) != `{"start":0,"end":1,"line":1,"col":1}` {
+		if len(problemWire.Repairs) != 3 || string(problemWire.Repairs[0].Span) != `{"start":2,"end":3,"line":1,"col":3}` || string(problemWire.Repairs[1].Span) != `{"start":0,"end":1,"line":1,"col":1}` || len(problemWire.Repairs[2].Span) != 0 {
 			t.Fatalf("repair effective units or order changed: %+v", problemWire.Repairs)
 		}
 		if strings.Contains(string(first), "main.swy") || strings.Contains(string(first), "lib/a.swy") || strings.Contains(string(first), "abcd") {
@@ -194,17 +197,16 @@ func TestPhase34DiagnosticLocations(t *testing.T) {
 			}
 		}
 	})
-}
-
-func TestPhase34ResultFinalizeIgnoresPresentation(t *testing.T) {
-	result := protocol.New("check", protocol.StatusInvalid)
-	result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error("test.presentation", diagnostic.Span{Start: 1, End: 2}, "message")}
-	plainID := result.Finalize().ID
-	withSource := protocol.WithPresentation(result, protocol.PresentationContext{Sources: map[string]protocol.CapturedSource{"": {Label: "x", Bytes: []byte("abc")}}})
-	if got := withSource.Finalize().ID; got != plainID {
-		t.Fatalf("Result.Finalize included presentation source: got %s, want %s", got, plainID)
-	}
-	if fmt.Sprint(withSource.Diagnostics[0].ID) != result.Diagnostics[0].ID {
-		t.Fatal("presentation changed diagnostic ID")
-	}
+	t.Run("Result.Finalize ignores presentation", func(t *testing.T) {
+		result := protocol.New("check", protocol.StatusInvalid)
+		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error("test.presentation", diagnostic.Span{Start: 1, End: 2}, "message")}
+		plainID := result.Finalize().ID
+		withSource := protocol.WithPresentation(result, protocol.PresentationContext{Sources: map[string]protocol.CapturedSource{"": {Label: "x", Bytes: []byte("abc")}}})
+		if got := withSource.Finalize().ID; got != plainID {
+			t.Fatalf("Result.Finalize included presentation source: got %s, want %s", got, plainID)
+		}
+		if fmt.Sprint(withSource.Diagnostics[0].ID) != result.Diagnostics[0].ID {
+			t.Fatal("presentation changed diagnostic ID")
+		}
+	})
 }

@@ -95,7 +95,7 @@ func locatedSpan(span diagnostic.Span, source []byte, sourcePosition bool) diagn
 	if span.Start < 0 || span.End < span.Start || span.End > len(source) {
 		return span
 	}
-	if span.Start == 0 && span.End == 0 && !sourcePosition {
+	if span.Start == span.End && !sourcePosition {
 		return span
 	}
 	line, column, ok := positionAt(source, span.Start)

@@ -233,7 +233,7 @@ func (p *parser) report(value diagnostic.Diagnostic) {
 		p.truncated = true
 		return
 	}
-	p.diagnostics = append(p.diagnostics, value)
+	p.diagnostics = append(p.diagnostics, value.AtSource())
 }
 
 // importAfterExport refuses an import written after the export block (D-02).
@@ -1130,7 +1130,7 @@ func (p *parser) problem(code string, token Token, message string, causes ...dia
 		p.truncated = true
 		return
 	}
-	p.diagnostics = append(p.diagnostics, diagnostic.Error(code, token.Span, message, causes...))
+	p.diagnostics = append(p.diagnostics, diagnostic.Error(code, token.Span, message, causes...).AtSource())
 }
 
 func (p *parser) atAny(kinds ...Kind) bool {
