@@ -70,30 +70,30 @@ var phase32AllSeven = phase32ReceiptPrograms
 
 var phase32RouteRows = []phase32RouteRow{
 	// Routes covered by the final receipts.
-	{Key: "app", Programs: phase32AllSeven},
-	{Key: "app run", Programs: phase32AllSeven},
-	{Key: "build --manifest --output", Programs: []string{"checksum", "adler_low", "adler32_cli", "adler32_fixture", "byte_index_oob"}},
-	{Key: "build --output --manifest", Programs: []string{"checksum", "adler_low", "adler32_cli", "adler32_fixture", "byte_index_oob"}},
-	{Key: "build --output", Programs: []string{"sum_to_n", "fizzbuzz"}},
+	{Key: "app", Modules: "no-entry-source", Programs: phase32AllSeven},
+	{Key: "app run", Modules: "no-entry-source", Programs: phase32AllSeven},
+	{Key: "build --manifest --output", Modules: "module-aware", Programs: []string{"checksum", "adler_low", "adler32_cli", "adler32_fixture", "byte_index_oob"}},
+	{Key: "build --output --manifest", Modules: "module-aware", Programs: []string{"checksum", "adler_low", "adler32_cli", "adler32_fixture", "byte_index_oob"}},
+	{Key: "build --output", Modules: "module-aware", Programs: []string{"sum_to_n", "fizzbuzz"}},
 
 	// Routes the receipts do not exercise; each names the test that owns it.
-	{Key: "--json app", Reason: "not covered because it is a routing shim into runApplication; the application path is owned by TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus"},
-	{Key: "app verify", Reason: "not covered because replay verification is owned by TestPhase22AppVerifyIndependentIdentityCases and TestPhase273AppVerifyCapacityCLI"},
-	{Key: "explain", Reason: "not covered because it is owned by TestExplainCLIReturnsBoundedCauseDAG"},
-	{Key: "query", Reason: "not covered because it is owned by TestQueryCLIResolvesEveryStableIDVocabulary"},
-	{Key: "format", Reason: "not covered because it is owned by TestFormatIdempotent and TestConcurrentReadOnlyCommands"},
-	{Key: "format --check", Reason: "not covered because it is owned by TestFormatCheck and TestConcurrentReadOnlyCommands"},
-	{Key: "check", Reason: "not covered because it is owned by TestCLIExitTaxonomy and TestPhase30ModuleRefusalExitCodes"},
-	{Key: "evidence", Reason: "not covered because it is owned by TestEvidenceCLI"},
-	{Key: "evidence --validate", Reason: "not covered because it is owned by TestEvidenceCLI"},
-	{Key: "verify", Reason: "not covered because corpus verification is owned by TestVerifyCLI and TestVerifyPhase2CLI"},
-	{Key: "stats", Reason: "not covered because the CLI computes statistics from stdin and is owned by TestStatsCLIComputesGoStatistics; usage text omits this route; tracked by the 2026-10-12 usage-text todo"},
-	{Key: "interface export", Reason: "not covered because it is owned by TestInterfaceCheckIsBodyBlindCLI"},
-	{Key: "interface core", Reason: "not covered because it is owned by TestInterfaceCheckIsBodyBlindCLI"},
-	{Key: "interface check", Reason: "not covered because it is owned by TestInterfaceCheckIsBodyBlindCLI"},
-	{Key: "debug-map", Reason: "not covered because it is owned by TestDebugMapCLIAvailability"},
-	{Key: "run --engine= interpreter", Reason: "not covered because engine agreement is owned by TestPhase29AdlerBothEngines and TestPhase30ModuleRefusalExitCodes"},
-	{Key: "run --engine= native", Reason: "not covered because engine agreement is owned by TestPhase29AdlerBothEngines and TestPhase30ModuleRefusalExitCodes"},
+	{Key: "--json app", Modules: "no-entry-source", Reason: "not covered because it is a routing shim into runApplication; the application path is owned by TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus"},
+	{Key: "app verify", Modules: "module-aware", Reason: "not covered because replay verification is owned by TestPhase22AppVerifyIndependentIdentityCases and TestPhase273AppVerifyCapacityCLI"},
+	{Key: "explain", Modules: "refuses-imports", ReportsRefusalAsPass: true, Reason: "not covered because it is owned by TestExplainCLIReturnsBoundedCauseDAG"},
+	{Key: "query", Modules: "refuses-imports", ReportsRefusalAsPass: true, Reason: "not covered because it is owned by TestQueryCLIResolvesEveryStableIDVocabulary"},
+	{Key: "format", Modules: "no-entry-source", Reason: "not covered because it is owned by TestFormatIdempotent and TestConcurrentReadOnlyCommands"},
+	{Key: "format --check", Modules: "no-entry-source", Reason: "not covered because it is owned by TestFormatCheck and TestConcurrentReadOnlyCommands"},
+	{Key: "check", Modules: "module-aware", Reason: "not covered because it is owned by TestCLIExitTaxonomy and TestPhase30ModuleRefusalExitCodes"},
+	{Key: "evidence", Modules: "refuses-imports", Reason: "not covered because it is owned by TestEvidenceCLI"},
+	{Key: "evidence --validate", Modules: "refuses-imports", RefusalCode: "evidence.source_invalid", Reason: "not covered because it is owned by TestEvidenceCLI"},
+	{Key: "verify", Modules: "no-entry-source", Reason: "not covered because corpus verification is owned by TestVerifyCLI and TestVerifyPhase2CLI"},
+	{Key: "stats", Modules: "no-entry-source", Reason: "not covered because the CLI computes statistics from stdin and is owned by TestStatsCLIComputesGoStatistics; usage text omits this route; tracked by the 2026-10-12 usage-text todo"},
+	{Key: "interface export", Modules: "refuses-imports", Reason: "not covered because it is owned by TestInterfaceCheckIsBodyBlindCLI"},
+	{Key: "interface core", Modules: "refuses-imports", Reason: "not covered because it is owned by TestInterfaceCheckIsBodyBlindCLI"},
+	{Key: "interface check", Modules: "no-entry-source", Reason: "not covered because it is owned by TestInterfaceCheckIsBodyBlindCLI"},
+	{Key: "debug-map", Modules: "module-aware", Reason: "not covered because it is owned by TestDebugMapCLIAvailability"},
+	{Key: "run --engine= interpreter", Modules: "module-aware", Reason: "not covered because engine agreement is owned by TestPhase29AdlerBothEngines and TestPhase30ModuleRefusalExitCodes"},
+	{Key: "run --engine= native", Modules: "module-aware", Reason: "not covered because engine agreement is owned by TestPhase29AdlerBothEngines and TestPhase30ModuleRefusalExitCodes"},
 
 	// Entry programs: the seven receipt programs.
 	{Key: "examples/checksum/checksum.schway", Programs: []string{"checksum"}},
@@ -601,7 +601,8 @@ func (o *phase32ModuleObserver) observe(row phase32RouteRow) (int, string) {
 	case "explain":
 		args = []string{"explain", o.fixture, o.refusal}
 	case "query":
-		args = []string{"query", o.fixture, o.refusal}
+		// The text form of a query fact omits the diagnostic kind; JSON names it.
+		args = []string{"--json", "query", o.fixture, o.refusal}
 	default:
 		o.t.Fatalf("no observation recipe for route %q", row.Key)
 	}
