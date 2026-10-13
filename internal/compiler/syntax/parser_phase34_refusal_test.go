@@ -57,11 +57,13 @@ func TestPhase34UnsupportedSurfaceRefusals(t *testing.T) {
 	}
 
 	tests := []struct {
-		name   string
-		source string
-		form   string
-		code   string
-		hint   string
+		name       string
+		source     string
+		form       string
+		spanOffset int
+		spanLength int
+		code       string
+		hint       string
 	}{
 		{
 			name:   "logical-and-result-tail",
@@ -84,7 +86,7 @@ func TestPhase34UnsupportedSurfaceRefusals(t *testing.T) {
 		{
 			name:   "subtraction-expression",
 			source: "module phase34.subtraction\nexport { fn main }\nfn main(n: U64) -> U64 { n - 1 }\n",
-			form:   "-", code: "surface.unsupported_subtraction",
+			form:   "n - 1", spanOffset: 2, spanLength: 1, code: "surface.unsupported_subtraction",
 			hint: "Subtraction is unsupported; no unchecked emulation is recommended.",
 		},
 		{
@@ -112,7 +114,14 @@ func TestPhase34UnsupportedSurfaceRefusals(t *testing.T) {
 			t.Errorf("%s changed lossless source bytes", test.name)
 		}
 		start := strings.Index(test.source, test.form)
-		want := diagnostic.Span{Start: start, End: start + len(test.form)}
+		if start >= 0 {
+			start += test.spanOffset
+		}
+		spanLength := test.spanLength
+		if spanLength == 0 {
+			spanLength = len(test.form)
+		}
+		want := diagnostic.Span{Start: start, End: start + spanLength}
 		if start < 0 || len(parsed.Diagnostics) != 1 || parsed.Diagnostics[0].Code != test.code || parsed.Diagnostics[0].Message != test.hint || parsed.Diagnostics[0].Primary != want {
 			t.Errorf("%s diagnostics = %+v, want only %s at [%d:%d] with hint %q", test.name, parsed.Diagnostics, test.code, want.Start, want.End, test.hint)
 		}
@@ -129,6 +138,10 @@ func TestPhase34UnsupportedSurfaceRefusals(t *testing.T) {
 		{
 			name:   "spaced-pipes",
 			source: "module phase34.spaced_or\nexport { fn main }\nfn main(flag: Bool) -> Bool { flag | | false }\n",
+		},
+		{
+			name:   "missing-then-block-closer",
+			source: "module phase34.missing_then_closer\nexport { fn main }\nfn main(n: U64) -> U64 { if n < 1 { result = n }\n",
 		},
 		{
 			name:   "strings-comments-arrows-and-ownership",

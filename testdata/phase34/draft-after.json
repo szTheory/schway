@@ -5,43 +5,34 @@
     {
       "id": "logical-and",
       "provenance": "reconstructed-2026-10-13",
-      "delta": "The first unsupported operator byte owns the parser cause; the second byte remains its independent lexer diagnostic.",
-      "diagnostic_count": 2,
+      "delta": "Adjacent && is one exact two-byte refusal; its duplicate generic byte reports are suppressed and the main declaration is recovered.",
+      "diagnostic_count": 1,
       "recovered_sibling_names": ["main"],
-      "diagnostics": [
-        {"code": "syntax.unexpected_byte", "primary_span": {"start": 81, "end": 82}, "causes": []},
-        {"code": "syntax.expected_rbrace", "primary_span": {"start": 80, "end": 81}, "causes": []}
-      ]
+      "diagnostics": [{"code": "surface.unsupported_logical_and", "primary_span": {"start": 80, "end": 82}, "causes": []}]
     },
     {
       "id": "logical-or",
       "provenance": "reconstructed-2026-10-13",
-      "delta": "The parser-owned byte cause replaces the exact duplicate lexer report and recovery retains the function closer.",
+      "delta": "Adjacent || is recognized only in the result expression; the exact two-byte refusal preserves the main declaration.",
       "diagnostic_count": 1,
       "recovered_sibling_names": ["main"],
-      "diagnostics": [
-        {"code": "syntax.expected_rbrace", "primary_span": {"start": 79, "end": 80}, "causes": []}
-      ]
+      "diagnostics": [{"code": "surface.unsupported_logical_or", "primary_span": {"start": 79, "end": 81}, "causes": []}]
     },
     {
       "id": "logical-not",
       "provenance": "reconstructed-2026-10-13",
-      "delta": "The invalid leading byte owns one linear-result cause and the rest of the function body is skipped locally.",
+      "delta": "Prefix ! in the result context receives one exact single-byte refusal and preserves the main declaration.",
       "diagnostic_count": 1,
       "recovered_sibling_names": ["main"],
-      "diagnostics": [
-        {"code": "syntax.expected_linear_result", "primary_span": {"start": 75, "end": 76}, "causes": []}
-      ]
+      "diagnostics": [{"code": "surface.unsupported_logical_not", "primary_span": {"start": 75, "end": 76}, "causes": []}]
     },
     {
       "id": "schway-arity-two",
       "provenance": "reconstructed-2026-10-13",
-      "delta": "The malformed nested call retains its first missing-closer cause and resumes at the declaration sibling.",
+      "delta": "The first extra Schway parameter name-through-type span owns the declaration refusal; both declarations remain recoverable.",
       "diagnostic_count": 1,
       "recovered_sibling_names": ["combine", "main"],
-      "diagnostics": [
-        {"code": "syntax.expected_rparen", "primary_span": {"start": 66, "end": 67}, "causes": []}
-      ]
+      "diagnostics": [{"code": "surface.unsupported_parameter_arity", "primary_span": {"start": 68, "end": 78}, "causes": []}]
     },
     {
       "id": "foreign-arity-two",
@@ -54,13 +45,10 @@
     {
       "id": "if-no-else",
       "provenance": "reconstructed-2026-10-13",
-      "delta": "The malformed block statement and the missing else remain separately observable causes.",
+      "delta": "The completed then block receives an exact if-through-block refusal; the source draft's independent invalid bare block expression retains expected_equal.",
       "diagnostic_count": 2,
       "recovered_sibling_names": ["main"],
-      "diagnostics": [
-        {"code": "syntax.expected_equal", "primary_span": {"start": 82, "end": 83}, "causes": []},
-        {"code": "syntax.expected_else", "primary_span": {"start": 84, "end": 85}, "causes": []}
-      ]
+      "diagnostics": [{"code": "syntax.expected_equal", "primary_span": {"start": 82, "end": 83}, "causes": []}, {"code": "surface.unsupported_if_without_else", "primary_span": {"start": 69, "end": 83}, "causes": []}]
     },
     {
       "id": "bool-tail-unbound",
@@ -73,12 +61,10 @@
     {
       "id": "subtraction",
       "provenance": "reconstructed-2026-10-13",
-      "delta": "The unsupported operator byte owns the missing-closer cause and recovery skips the remaining body locally.",
+      "delta": "Binary subtraction after the left operand receives the exact minus-byte refusal and the right operand is consumed without cascades.",
       "diagnostic_count": 1,
       "recovered_sibling_names": ["main"],
-      "diagnostics": [
-        {"code": "syntax.expected_rbrace", "primary_span": {"start": 72, "end": 73}, "causes": []}
-      ]
+      "diagnostics": [{"code": "surface.unsupported_subtraction", "primary_span": {"start": 72, "end": 73}, "causes": []}]
     },
     {
       "id": "malformed-nested-paren",
@@ -93,13 +79,10 @@
     {
       "id": "malformed-nested-block",
       "provenance": "reconstructed-2026-10-13",
-      "delta": "The missing assignment token and the independently missing else remain visible while the block closer is preserved.",
+      "delta": "The malformed block assignment and completed if without else retain distinct exact causes; the branch closer and main function are preserved.",
       "diagnostic_count": 2,
       "recovered_sibling_names": ["main"],
-      "diagnostics": [
-        {"code": "syntax.expected_equal", "primary_span": {"start": 102, "end": 103}, "causes": []},
-        {"code": "syntax.expected_else", "primary_span": {"start": 104, "end": 105}, "causes": []}
-      ]
+      "diagnostics": [{"code": "syntax.expected_equal", "primary_span": {"start": 102, "end": 103}, "causes": []}, {"code": "surface.unsupported_if_without_else", "primary_span": {"start": 71, "end": 103}, "causes": []}]
     },
     {
       "id": "sibling-after-error",
@@ -193,17 +176,10 @@
     {
       "id": "word-counter-reconstructed",
       "provenance": "reconstructed-2026-10-13",
-      "delta": "Representative absent constructs remain multiple independent parser and lexer causes; no historic scratch counts are asserted.",
-      "diagnostic_count": 6,
+      "delta": "Logical ||, prefix !, and the completed if without else each receive their own exact refusal; the main declaration is retained.",
+      "diagnostic_count": 3,
       "recovered_sibling_names": ["count_words"],
-      "diagnostics": [
-        {"code": "syntax.unexpected_byte", "primary_span": {"start": 280, "end": 281}, "causes": []},
-        {"code": "syntax.expected_lbrace", "primary_span": {"start": 237, "end": 238}, "causes": []},
-        {"code": "syntax.expected_rbrace", "primary_span": {"start": 238, "end": 239}, "causes": []},
-        {"code": "syntax.expected_else", "primary_span": {"start": 356, "end": 361}, "causes": []},
-        {"code": "syntax.expected_equal", "primary_span": {"start": 362, "end": 363}, "causes": []},
-        {"code": "syntax.expected_linear_result", "primary_span": {"start": 364, "end": 364}, "causes": []}
-      ]
+      "diagnostics": [{"code": "surface.unsupported_logical_or", "primary_span": {"start": 237, "end": 239}, "causes": []}, {"code": "surface.unsupported_logical_not", "primary_span": {"start": 280, "end": 281}, "causes": []}, {"code": "surface.unsupported_if_without_else", "primary_span": {"start": 277, "end": 310}, "causes": []}]
     }
   ]
 }

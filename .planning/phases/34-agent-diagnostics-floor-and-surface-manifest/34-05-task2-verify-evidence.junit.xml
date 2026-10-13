@@ -1,0 +1,19 @@
+<testsuites tests="5" failures="0"><testsuite name="github.com/szTheory/schway/internal/compiler/syntax" tests="5" failures="0" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/syntax" name="TestPhase34RecoveryCorpus" time="0"><system-out>=== RUN   TestPhase34RecoveryCorpus
+--- PASS: TestPhase34RecoveryCorpus (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/syntax" name="TestPhase34RecoveryControls" time="0"><system-out>=== RUN   TestPhase34RecoveryControls
+    parser_phase34_recovery_test.go:147: restoreCascadeForTest reached cascade_count
+    parser_phase34_recovery_test.go:152: restoreCascadeForTest restored normal output
+    parser_phase34_recovery_test.go:158: swallowSiblingForTest reached missing_sibling
+    parser_phase34_recovery_test.go:163: swallowSiblingForTest restored normal output
+    parser_phase34_recovery_test.go:169: dropIndependentCauseForTest reached missing_independent_cause
+    parser_phase34_recovery_test.go:174: dropIndependentCauseForTest restored normal output
+--- PASS: TestPhase34RecoveryControls (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/syntax" name="TestPhase34RecoveryControls/bounded_nested_delimiters" time="0"><system-out>=== RUN   TestPhase34RecoveryControls/bounded_nested_delimiters
+    --- PASS: TestPhase34RecoveryControls/bounded_nested_delimiters (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/syntax" name="TestPhase34RecoveryControls/diagnostic_cap_retains_truncation_marker" time="0"><system-out>=== RUN   TestPhase34RecoveryControls/diagnostic_cap_retains_truncation_marker
+    --- PASS: TestPhase34RecoveryControls/diagnostic_cap_retains_truncation_marker (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/syntax" name="TestPhase34UnsupportedSurfaceRefusals" time="0"><system-out>=== RUN   TestPhase34UnsupportedSurfaceRefusals
+--- PASS: TestPhase34UnsupportedSurfaceRefusals (0.00s)
+</system-out></testcase><system-out>PASS
+ok  	github.com/szTheory/schway/internal/compiler/syntax	0.010s
+</system-out></testsuite></testsuites>

@@ -1,0 +1,23 @@
+<testsuites tests="1" failures="1"><testsuite name="github.com/szTheory/schway/internal/compiler/syntax" tests="1" failures="1" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/syntax" name="TestPhase34RecoveryCorpus" time="0"><failure message="go test reported failure">=== RUN   TestPhase34RecoveryCorpus
+    parser_phase34_recovery_test.go:88: logical-and recovery mismatch (missing_cause): diagnostics=[{Code:surface.unsupported_logical_and PrimarySpan:{Start:80 End:82} Causes:[]}] siblings=[main]
+    parser_phase34_recovery_test.go:88: logical-or recovery mismatch (diagnostic_mismatch): diagnostics=[{Code:surface.unsupported_logical_or PrimarySpan:{Start:79 End:81} Causes:[]}] siblings=[main]
+    parser_phase34_recovery_test.go:88: logical-not recovery mismatch (diagnostic_mismatch): diagnostics=[{Code:surface.unsupported_logical_not PrimarySpan:{Start:75 End:76} Causes:[]}] siblings=[main]
+    parser_phase34_recovery_test.go:88: schway-arity-two recovery mismatch (diagnostic_mismatch): diagnostics=[{Code:surface.unsupported_parameter_arity PrimarySpan:{Start:68 End:78} Causes:[]}] siblings=[combine main]
+    parser_phase34_recovery_test.go:88: if-no-else recovery mismatch (diagnostic_mismatch): diagnostics=[{Code:syntax.expected_equal PrimarySpan:{Start:82 End:83} Causes:[]} {Code:surface.unsupported_if_without_else PrimarySpan:{Start:69 End:83} Causes:[]}] siblings=[main]
+    parser_phase34_recovery_test.go:88: subtraction recovery mismatch (diagnostic_mismatch): diagnostics=[{Code:surface.unsupported_subtraction PrimarySpan:{Start:72 End:73} Causes:[]}] siblings=[main]
+    parser_phase34_recovery_test.go:88: malformed-nested-block recovery mismatch (diagnostic_mismatch): diagnostics=[{Code:syntax.expected_equal PrimarySpan:{Start:102 End:103} Causes:[]} {Code:surface.unsupported_if_without_else PrimarySpan:{Start:71 End:103} Causes:[]}] siblings=[main]
+    parser_phase34_recovery_test.go:88: word-counter-reconstructed recovery mismatch (missing_cause): diagnostics=[{Code:surface.unsupported_logical_or PrimarySpan:{Start:237 End:239} Causes:[]} {Code:surface.unsupported_logical_not PrimarySpan:{Start:280 End:281} Causes:[]} {Code:surface.unsupported_if_without_else PrimarySpan:{Start:277 End:310} Causes:[]}] siblings=[count_words]
+--- FAIL: TestPhase34RecoveryCorpus (0.00s)
+</failure><system-out>=== RUN   TestPhase34RecoveryCorpus
+    parser_phase34_recovery_test.go:88: logical-and recovery mismatch (missing_cause): diagnostics=[{Code:surface.unsupported_logical_and PrimarySpan:{Start:80 End:82} Causes:[]}] siblings=[main]
+    parser_phase34_recovery_test.go:88: logical-or recovery mismatch (diagnostic_mismatch): diagnostics=[{Code:surface.unsupported_logical_or PrimarySpan:{Start:79 End:81} Causes:[]}] siblings=[main]
+    parser_phase34_recovery_test.go:88: logical-not recovery mismatch (diagnostic_mismatch): diagnostics=[{Code:surface.unsupported_logical_not PrimarySpan:{Start:75 End:76} Causes:[]}] siblings=[main]
+    parser_phase34_recovery_test.go:88: schway-arity-two recovery mismatch (diagnostic_mismatch): diagnostics=[{Code:surface.unsupported_parameter_arity PrimarySpan:{Start:68 End:78} Causes:[]}] siblings=[combine main]
+    parser_phase34_recovery_test.go:88: if-no-else recovery mismatch (diagnostic_mismatch): diagnostics=[{Code:syntax.expected_equal PrimarySpan:{Start:82 End:83} Causes:[]} {Code:surface.unsupported_if_without_else PrimarySpan:{Start:69 End:83} Causes:[]}] siblings=[main]
+    parser_phase34_recovery_test.go:88: subtraction recovery mismatch (diagnostic_mismatch): diagnostics=[{Code:surface.unsupported_subtraction PrimarySpan:{Start:72 End:73} Causes:[]}] siblings=[main]
+    parser_phase34_recovery_test.go:88: malformed-nested-block recovery mismatch (diagnostic_mismatch): diagnostics=[{Code:syntax.expected_equal PrimarySpan:{Start:102 End:103} Causes:[]} {Code:surface.unsupported_if_without_else PrimarySpan:{Start:71 End:103} Causes:[]}] siblings=[main]
+    parser_phase34_recovery_test.go:88: word-counter-reconstructed recovery mismatch (missing_cause): diagnostics=[{Code:surface.unsupported_logical_or PrimarySpan:{Start:237 End:239} Causes:[]} {Code:surface.unsupported_logical_not PrimarySpan:{Start:280 End:281} Causes:[]} {Code:surface.unsupported_if_without_else PrimarySpan:{Start:277 End:310} Causes:[]}] siblings=[count_words]
+--- FAIL: TestPhase34RecoveryCorpus (0.00s)
+</system-out></testcase><system-out>FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/syntax	0.006s
+</system-out></testsuite></testsuites>

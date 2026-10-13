@@ -380,6 +380,7 @@ func (p *parser) foreignSymbol() ast.ForeignSymbol {
 	parameterName := p.identifier("syntax.expected_parameter_name")
 	p.expect(TokenColon, "syntax.expected_colon")
 	parameterType := p.typeRef()
+	p.refuseExtraDeclarationParameter()
 	p.expect(TokenRParen, "syntax.expected_rparen")
 	p.expect(TokenArrow, "syntax.expected_arrow")
 	returnType := p.typeRef()
@@ -526,6 +527,7 @@ func (p *parser) funcDecl() ast.FuncDecl {
 	parameterName := p.identifier("syntax.expected_parameter_name")
 	p.expect(TokenColon, "syntax.expected_colon")
 	parameterType := p.typeRef()
+	p.refuseExtraDeclarationParameter()
 	p.expect(TokenRParen, "syntax.expected_rparen")
 	p.expect(TokenArrow, "syntax.expected_arrow")
 	returnOrigin := p.borrowOrigin()
@@ -655,7 +657,7 @@ func (p *parser) scalarStatements(inBlock bool) []ast.Statement {
 		case TokenIf, TokenWhile:
 			p.advance()
 			expr := p.scalarExpr()
-			p.expect(TokenLBrace, "syntax.expected_lbrace")
+			thenStart := p.expect(TokenLBrace, "syntax.expected_lbrace")
 			thenBody := p.scalarStatements(true)
 			end := p.expect(TokenRBrace, "syntax.expected_rbrace")
 			statement := ast.Statement{Kind: map[Kind]string{TokenIf: "if", TokenWhile: "while"}[start.Kind], Expr: expr, Then: thenBody, Span: diagnostic.Span{Start: start.Span.Start, End: end.Span.End}}
@@ -665,6 +667,12 @@ func (p *parser) scalarStatements(inBlock bool) []ast.Statement {
 					statement.Else = p.scalarStatements(true)
 					elseEnd := p.expect(TokenRBrace, "syntax.expected_rbrace")
 					statement.Span.End = elseEnd.Span.End
+				} else if thenStart.Kind == TokenLBrace && end.Kind == TokenRBrace &&
+					!p.atAny(TokenEOF, TokenData, TokenFn, TokenForeign, TokenImport) {
+					p.reportSurfaceRefusal("surface.unsupported_if_without_else", Token{
+						Kind: TokenUnknown,
+						Span: diagnostic.Span{Start: start.Span.Start, End: end.Span.End},
+					})
 				} else {
 					p.problem("syntax.expected_else", p.peek(), "if requires an else block")
 				}
@@ -737,15 +745,14 @@ func scalarBinaryOperator(kind Kind) int {
 func (p *parser) scalarBinaryExpr(minPrecedence int) *ast.Expr {
 	left := p.scalarExprAtom()
 	for {
-		operator := p.peek()
-		if operator.Kind == TokenUnknown && operator.Text == "&&" {
-			p.advance()
-			p.reportSurfaceRefusal("surface.unsupported_logical_and", operator)
+		if operator, code, ok := p.consumeUnsupportedBinaryOperator(); ok {
+			p.reportSurfaceRefusal(code, operator)
 			if !isCallerOwnedBoundary(p.peek().Kind) {
 				p.scalarBinaryExpr(minPrecedence)
 			}
 			return left
 		}
+		operator := p.peek()
 		precedence := scalarBinaryOperator(operator.Kind)
 		if precedence < minPrecedence || precedence == 0 {
 			return left
@@ -767,6 +774,43 @@ func (p *parser) scalarBinaryExpr(minPrecedence int) *ast.Expr {
 	}
 }
 
+func (p *parser) consumeUnsupportedBinaryOperator() (Token, string, bool) {
+	operator := p.peek()
+	if operator.Kind == TokenUnknown {
+		switch operator.Text {
+		case "&&":
+			p.advance()
+			return operator, "surface.unsupported_logical_and", true
+		case "-":
+			p.advance()
+			return operator, "surface.unsupported_subtraction", true
+		}
+	}
+	if operator.Kind == TokenPipe {
+		second := p.peekNonTrivia(1)
+		if second.Kind == TokenPipe && operator.Span.End == second.Span.Start {
+			p.advance()
+			p.advance()
+			return Token{
+				Kind: TokenUnknown,
+				Text: "||",
+				Span: diagnostic.Span{Start: operator.Span.Start, End: second.Span.End},
+			}, "surface.unsupported_logical_or", true
+		}
+	}
+	return Token{}, "", false
+}
+
+func (p *parser) consumeUnsupportedLogicalNot() bool {
+	operator := p.peek()
+	if operator.Kind != TokenUnknown || operator.Text != "!" || p.peekNonTrivia(1).Kind != TokenIdentifier {
+		return false
+	}
+	p.advance()
+	p.reportSurfaceRefusal("surface.unsupported_logical_not", operator)
+	return true
+}
+
 func (p *parser) reportSurfaceRefusal(code string, token Token) {
 	refusal, ok := surface.LookupRefusal(code)
 	if !ok {
@@ -777,6 +821,9 @@ func (p *parser) reportSurfaceRefusal(code string, token Token) {
 
 func (p *parser) scalarExprAtom() *ast.Expr {
 	leftToken := p.peek()
+	if p.consumeUnsupportedLogicalNot() {
+		return p.scalarExprAtom()
+	}
 	if isCallerOwnedBoundary(leftToken.Kind) {
 		p.problemAtBoundary("syntax.expected_scalar_operand", leftToken, "expected a scalar operand")
 		return &ast.Expr{Kind: "name", Name: leftToken.Text, Span: leftToken.Span}
@@ -1004,6 +1051,12 @@ func (p *parser) linearBody(allowTerminalMatch bool) ast.LinearBody {
 		body.Span.End = end
 		return body
 	}
+	if p.consumeUnsupportedLogicalNot() {
+		if !isCallerOwnedBoundary(p.peek().Kind) {
+			p.scalarBinaryExpr(1)
+		}
+		return body
+	}
 	result := p.peek()
 	if result.Kind != TokenIdentifier {
 		p.problemAtBoundary("syntax.expected_linear_result", result, "expected `identifier`")
@@ -1018,7 +1071,36 @@ func (p *parser) linearBody(allowTerminalMatch bool) ast.LinearBody {
 	p.advance()
 	body.Result = result.Text
 	body.Span.End = result.Span.End
+	if operator, code, ok := p.consumeUnsupportedBinaryOperator(); ok {
+		p.reportSurfaceRefusal(code, operator)
+		if !isCallerOwnedBoundary(p.peek().Kind) {
+			p.scalarBinaryExpr(1)
+		}
+	}
 	return body
+}
+
+// refuseExtraDeclarationParameter consumes the first valid extra parameter
+// and refuses its name-through-type span. The declaration's closing paren
+// remains owned by funcDecl/foreignSymbol, and malformed parameter lists keep
+// their existing expectation diagnostics.
+func (p *parser) refuseExtraDeclarationParameter() {
+	if p.peek().Kind != TokenComma ||
+		p.peekNonTrivia(1).Kind != TokenIdentifier ||
+		p.peekNonTrivia(2).Kind != TokenColon ||
+		p.peekNonTrivia(3).Kind != TokenIdentifier {
+		return
+	}
+	p.advance() // comma after the declared parameter
+	name := p.advance()
+	p.advance() // colon before the extra parameter type
+	p.typeRef()
+	last := p.tokens[p.position-1]
+	span := diagnostic.Span{Start: name.Span.Start, End: last.Span.End}
+	p.reportSurfaceRefusal("surface.unsupported_parameter_arity", Token{Kind: TokenUnknown, Span: span})
+	if !p.atAny(TokenRParen, TokenEOF, TokenData, TokenFn, TokenForeign, TokenImport) {
+		p.recoverDelimited(TokenRParen, TokenData, TokenFn, TokenForeign, TokenImport, TokenEOF)
+	}
 }
 
 // tryCallBinding parses `try <callee>(<arg>, ...)` following a binding's `=`
