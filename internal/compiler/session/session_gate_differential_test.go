@@ -16,9 +16,13 @@ type phase33CommandResult struct {
 }
 
 func phase33RunAt(t *testing.T, cwd, script string, args ...string) phase33CommandResult {
+	return phase33RunAtEnv(t, cwd, script, nil, args...)
+}
+
+func phase33RunAtEnv(t *testing.T, cwd, script string, environment []string, args ...string) phase33CommandResult {
 	t.Helper()
 	full := append([]string{"-c", `cd "$0" && script=$1 && shift && exec sh "$script" "$@"`, cwd, script}, args...)
-	result, err := testsupport.RunCLIErr(context.Background(), "sh", nil, full...)
+	result, err := testsupport.RunCLIErr(context.Background(), "sh", environment, full...)
 	if err != nil && result.Exit == 0 {
 		t.Fatalf("spawn %s: %v", script, err)
 	}
