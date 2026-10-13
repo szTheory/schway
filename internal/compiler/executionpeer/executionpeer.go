@@ -389,7 +389,7 @@ func (i *index) validate(document execution.Execution) error {
 			return refusal("loop_event", n, event.Invocation, "", occ.functionID, "cyclic or repeated event is not an admitted scalar copy")
 		}
 		if checkedOverflow {
-			if event.Output != "U64 addition overflow" {
+			if event.Output != execution.DefectReasonU64AddOverflow {
 				return refusal("checked_add_attribution", n, event.Invocation, "", occ.functionID, "checked-add defect reason disagrees with fixed overflow reason")
 			}
 			if event.SourcePlace != op.value.SourceID {
@@ -406,7 +406,7 @@ func (i *index) validate(document execution.Execution) error {
 			}
 			checkedAddDefect = n
 		} else if checkedRemainderZero {
-			if event.Output != "U64 remainder by zero" {
+			if event.Output != execution.DefectReasonU64RemainderByZero {
 				return refusal("remainder_zero_attribution", n, event.Invocation, "", occ.functionID, "remainder defect reason disagrees with fixed zero-divisor reason")
 			}
 			if event.SourcePlace != op.value.SourceID {
@@ -423,7 +423,7 @@ func (i *index) validate(document execution.Execution) error {
 			}
 			checkedRemainderDefect = n
 		} else if checkedBytesAt {
-			if event.Output != "byte index out of bounds" {
+			if event.Output != execution.DefectReasonByteIndexOutOfBounds {
 				return refusal("byte_index_attribution", n, event.Invocation, "", occ.functionID, "byte-at defect reason disagrees with fixed bounds reason")
 			}
 			if event.SourcePlace != op.value.SourceID {

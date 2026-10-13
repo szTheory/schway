@@ -230,17 +230,17 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 				// Successful checked addition is event-free, but overflow emits a
 				// terminal defect with a fixed reason and operation attribution.
 				// Reserve its full representation before C serialization.
-				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", "U64 addition overflow"
+				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", execution.DefectReasonU64AddOverflow
 				event.TargetPlace = ""
 			case core.OpRemainderU64:
 				// A dynamic zero divisor emits this terminal defect before any C
 				// remainder expression is evaluated; reserve it in the evidence bound.
-				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", "U64 remainder by zero"
+				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", execution.DefectReasonU64RemainderByZero
 				event.TargetPlace = ""
 			case core.OpBytesAt:
 				// An index at or past the view length emits this terminal defect
 				// before any byte is loaded; reserve it in the evidence bound.
-				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", "byte index out of bounds"
+				event.ID, event.Kind, event.Output = operation.ID+":event:defected", "function.defected", execution.DefectReasonByteIndexOutOfBounds
 				event.TargetPlace = ""
 			case core.OpBytesLen, core.OpLessU64, core.OpEqualU64, core.OpScalarStore, core.OpBranch, core.OpWriteU64, core.OpWriteNewline, core.OpWriteText:
 				// Byte length, comparisons, stores, CFG control, and application writes are
@@ -2719,10 +2719,10 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 			case core.OpAddChecked:
 				fmt.Fprintf(out, "  if (UINT64_MAX - %s < %s) {\n", locals[op.SourceID], locals[op.RightID])
 				if shell == programApplicationShell {
-					out.WriteString("    fputs(\"schway: U64 addition overflow\\n\", stderr);\n    exit(65);\n")
+					out.WriteString("    fputs(\"schway: " + execution.DefectReasonU64AddOverflow + "\\n\", stderr);\n    exit(65);\n")
 				} else {
 					overflow := op
-					overflow.Reason = "U64 addition overflow"
+					overflow.Reason = execution.DefectReasonU64AddOverflow
 					emitProgramDefectTerminal(out, function, overflow)
 					out.WriteString("    exit(0);\n")
 				}
@@ -2735,10 +2735,10 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 			case core.OpRemainderU64:
 				fmt.Fprintf(out, "  if (%s == UINT64_C(0)) {\n", locals[op.RightID])
 				if shell == programApplicationShell {
-					out.WriteString("    fputs(\"schway: U64 remainder by zero\\n\", stderr);\n    exit(65);\n")
+					out.WriteString("    fputs(\"schway: " + execution.DefectReasonU64RemainderByZero + "\\n\", stderr);\n    exit(65);\n")
 				} else {
 					defect := op
-					defect.Reason = "U64 remainder by zero"
+					defect.Reason = execution.DefectReasonU64RemainderByZero
 					emitProgramDefectTerminal(out, function, defect)
 					out.WriteString("    exit(0);\n")
 				}
@@ -2751,10 +2751,10 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 				// shells: never assert, never elided, even under a loop guard.
 				fmt.Fprintf(out, "  if (%s >= %s.length) {\n", locals[op.RightID], locals[op.SourceID])
 				if shell == programApplicationShell {
-					out.WriteString("    fputs(\"schway: byte index out of bounds\\n\", stderr);\n    exit(65);\n")
+					out.WriteString("    fputs(\"schway: " + execution.DefectReasonByteIndexOutOfBounds + "\\n\", stderr);\n    exit(65);\n")
 				} else {
 					defect := op
-					defect.Reason = "byte index out of bounds"
+					defect.Reason = execution.DefectReasonByteIndexOutOfBounds
 					emitProgramDefectTerminal(out, function, defect)
 					out.WriteString("    exit(0);\n")
 				}

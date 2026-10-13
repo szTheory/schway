@@ -532,11 +532,11 @@ func ProjectExecutionSchema2(program core.Program, document execution.Execution)
 					defectReasons[operation.ID+":event:defected"] = operation.Reason
 				}
 			case core.OpAddChecked:
-				defectReasons[operation.ID+":event:defected"] = "U64 addition overflow"
+				defectReasons[operation.ID+":event:defected"] = execution.DefectReasonU64AddOverflow
 			case core.OpRemainderU64:
-				defectReasons[operation.ID+":event:defected"] = "U64 remainder by zero"
+				defectReasons[operation.ID+":event:defected"] = execution.DefectReasonU64RemainderByZero
 			case core.OpBytesAt:
-				defectReasons[operation.ID+":event:defected"] = "byte index out of bounds"
+				defectReasons[operation.ID+":event:defected"] = execution.DefectReasonByteIndexOutOfBounds
 			}
 		}
 	}
