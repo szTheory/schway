@@ -1,0 +1,365 @@
+{
+  "schema": "phase34.identity-baseline/1",
+  "revision": "14b44fa3102da99a916f12551a99363ecbb44b75",
+  "bool_cases": [
+    {
+      "id": "linear-true-parameter",
+      "source": "module draft.bool_linear_true\nexport { fn main }\nfn main(true: U64) -\u003e U64 { true }\n",
+      "check": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      },
+      "check_command_file": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "scalar-true-parameter",
+      "source": "module draft.bool_scalar_true\nexport { fn main }\nfn main(true: U64) -\u003e U64 { let result = true + 1 result }\n",
+      "check": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      },
+      "check_command_file": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "linear-false-binding",
+      "source": "module draft.bool_false_binding\nexport { fn main }\nfn main(n: U64) -\u003e U64 { let false = n false }\n",
+      "check": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      },
+      "check_command_file": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "false-parameter-true-binding",
+      "source": "module draft.bool_mixed_names\nexport { fn main }\nfn main(false: U64) -\u003e U64 { let true = false true }\n",
+      "check": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      },
+      "check_command_file": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "bound-true-tail",
+      "source": "module draft.bool_bound_true\nexport { fn main }\nfn main(n: U64) -\u003e U64 { let true = n true }\n",
+      "check": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      },
+      "check_command_file": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "bound-false-tail",
+      "source": "module draft.bool_bound_false\nexport { fn main }\nfn main(n: U64) -\u003e U64 { let false = n false }\n",
+      "check": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      },
+      "check_command_file": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "scalar-false-binding",
+      "source": "module draft.bool_scalar_false\nexport { fn main }\nfn main(n: U64) -\u003e U64 { let false = n + 1 false }\n",
+      "check": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      },
+      "check_command_file": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "imported-true-function",
+      "source": "module draft.bool_importer\nimport draft.bool_names { fn true }\nexport { fn main }\nfn main(n: U64) -\u003e U64 { let result = true(n) result }\n",
+      "module_source": "module draft.bool_names\nexport { fn true }\nfn true(value: U64) -\u003e U64 { value }\n",
+      "check": {
+        "outcome": "invalid",
+        "status": "invalid",
+        "diagnostics": [
+          {
+            "id": "diagnostic:777d4426e1dfa1d5c9c46705",
+            "code": "module.imports_not_loaded",
+            "primary_span": {
+              "start": 27,
+              "end": 62
+            },
+            "json": "{\"schema\":\"lang.diagnostic/0\",\"id\":\"diagnostic:777d4426e1dfa1d5c9c46705\",\"code\":\"module.imports_not_loaded\",\"severity\":\"error\",\"primary_span\":{\"start\":27,\"end\":62},\"message\":\"imports are resolved only by the module-aware commands (check, run, build, app verify, debug-map); this command reads a single file by design\"}"
+          }
+        ]
+      },
+      "check_command_file": {
+        "outcome": "pass",
+        "status": "pass",
+        "diagnostics": []
+      }
+    },
+    {
+      "id": "unbound-true-tail",
+      "source": "module draft.bool_unbound\nexport { fn main }\nfn main(n: U64) -\u003e U64 { true }\n",
+      "check": {
+        "outcome": "invalid",
+        "status": "invalid",
+        "diagnostics": [
+          {
+            "id": "diagnostic:1011f29e73cfb729d024dccd",
+            "code": "name.unknown",
+            "primary_span": {
+              "start": 70,
+              "end": 74
+            },
+            "json": "{\"schema\":\"lang.diagnostic/0\",\"id\":\"diagnostic:1011f29e73cfb729d024dccd\",\"code\":\"name.unknown\",\"severity\":\"error\",\"primary_span\":{\"start\":70,\"end\":74},\"message\":\"linear result is unknown\"}"
+          }
+        ]
+      },
+      "check_command_file": {
+        "outcome": "invalid",
+        "status": "invalid",
+        "diagnostics": [
+          {
+            "id": "diagnostic:1011f29e73cfb729d024dccd",
+            "code": "name.unknown",
+            "primary_span": {
+              "start": 70,
+              "end": 74
+            },
+            "json": "{\"schema\":\"lang.diagnostic/0\",\"id\":\"diagnostic:1011f29e73cfb729d024dccd\",\"code\":\"name.unknown\",\"severity\":\"error\",\"primary_span\":{\"start\":70,\"end\":74},\"message\":\"linear result is unknown\"}"
+          }
+        ]
+      }
+    }
+  ],
+  "identity_cases": [
+    {
+      "name": "error-nil-causes",
+      "schema": "lang.diagnostic/0",
+      "diagnostic_id": "diagnostic:621ef9f0df20f134b95f7501",
+      "causes_nil": true,
+      "marshaled_json": "{\"schema\":\"lang.diagnostic/0\",\"id\":\"diagnostic:621ef9f0df20f134b95f7501\",\"code\":\"compat.legacy\",\"severity\":\"error\",\"primary_span\":{\"start\":1,\"end\":2},\"message\":\"legacy error without causes\"}",
+      "repairs": []
+    },
+    {
+      "name": "error-nested-cause-span",
+      "schema": "lang.diagnostic/0",
+      "diagnostic_id": "diagnostic:73b49753bbdeba69b3edbb5d",
+      "causes_nil": false,
+      "marshaled_json": "{\"schema\":\"lang.diagnostic/0\",\"id\":\"diagnostic:73b49753bbdeba69b3edbb5d\",\"code\":\"compat.legacy\",\"severity\":\"error\",\"primary_span\":{\"start\":9,\"end\":10},\"message\":\"legacy error with cause\",\"causes\":[{\"kind\":\"nested_origin\",\"detail\":\"declared\",\"span\":{\"start\":3,\"end\":8}}]}",
+      "repairs": []
+    },
+    {
+      "name": "error-with-repairs-nil-causes",
+      "schema": "lang.diagnostic/1",
+      "diagnostic_id": "diagnostic:f5c3035eca5085f74a947135",
+      "causes_nil": true,
+      "marshaled_json": "{\"schema\":\"lang.diagnostic/1\",\"id\":\"diagnostic:f5c3035eca5085f74a947135\",\"code\":\"compat.identity\",\"severity\":\"error\",\"primary_span\":{\"start\":40,\"end\":45},\"message\":\"legacy repair diagnostic\",\"repairs\":[{\"kind\":\"insert_take\",\"detail\":\"ownership\",\"span\":{\"start\":12,\"end\":18},\"replacement\":\"take false\",\"applicability\":\"MachineApplicable\"},{\"kind\":\"replace_borrow\",\"detail\":\"borrow\",\"span\":{\"start\":28,\"end\":34},\"replacement\":\"borrow false\",\"applicability\":\"RequiresConfirmation\"}]}",
+      "repairs": [
+        {
+          "kind": "insert_take",
+          "span": {
+            "start": 12,
+            "end": 18
+          },
+          "replacement": "take false",
+          "applicability": "MachineApplicable",
+          "driver_eligible": true
+        },
+        {
+          "kind": "replace_borrow",
+          "span": {
+            "start": 28,
+            "end": 34
+          },
+          "replacement": "borrow false",
+          "applicability": "RequiresConfirmation",
+          "driver_eligible": false
+        }
+      ]
+    },
+    {
+      "name": "error-with-repairs-nested-causes",
+      "schema": "lang.diagnostic/1",
+      "diagnostic_id": "diagnostic:be600b37bfa4f526266d4682",
+      "causes_nil": false,
+      "marshaled_json": "{\"schema\":\"lang.diagnostic/1\",\"id\":\"diagnostic:be600b37bfa4f526266d4682\",\"code\":\"compat.identity\",\"severity\":\"error\",\"primary_span\":{\"start\":40,\"end\":45},\"message\":\"legacy repair diagnostic\",\"causes\":[{\"kind\":\"declared_here\",\"detail\":\"binding origin\",\"span\":{\"start\":3,\"end\":8}}],\"repairs\":[{\"kind\":\"insert_take\",\"detail\":\"ownership\",\"span\":{\"start\":12,\"end\":18},\"replacement\":\"take false\",\"applicability\":\"MachineApplicable\"},{\"kind\":\"replace_borrow\",\"detail\":\"borrow\",\"span\":{\"start\":28,\"end\":34},\"replacement\":\"borrow false\",\"applicability\":\"RequiresConfirmation\"}]}",
+      "repairs": [
+        {
+          "kind": "insert_take",
+          "span": {
+            "start": 12,
+            "end": 18
+          },
+          "replacement": "take false",
+          "applicability": "MachineApplicable",
+          "driver_eligible": true
+        },
+        {
+          "kind": "replace_borrow",
+          "span": {
+            "start": 28,
+            "end": 34
+          },
+          "replacement": "borrow false",
+          "applicability": "RequiresConfirmation",
+          "driver_eligible": false
+        }
+      ]
+    },
+    {
+      "name": "error-with-repairs-shifted-coordinates",
+      "schema": "lang.diagnostic/1",
+      "diagnostic_id": "diagnostic:be600b37bfa4f526266d4682",
+      "causes_nil": false,
+      "marshaled_json": "{\"schema\":\"lang.diagnostic/1\",\"id\":\"diagnostic:be600b37bfa4f526266d4682\",\"code\":\"compat.identity\",\"severity\":\"error\",\"primary_span\":{\"start\":40,\"end\":45},\"message\":\"legacy repair diagnostic\",\"causes\":[{\"kind\":\"declared_here\",\"detail\":\"binding origin\",\"span\":{\"start\":3,\"end\":8}}],\"repairs\":[{\"kind\":\"insert_take\",\"detail\":\"ownership\",\"span\":{\"start\":112,\"end\":118},\"replacement\":\"take false\",\"applicability\":\"MachineApplicable\"},{\"kind\":\"replace_borrow\",\"detail\":\"borrow\",\"span\":{\"start\":128,\"end\":134},\"replacement\":\"borrow false\",\"applicability\":\"RequiresConfirmation\"}]}",
+      "repairs": [
+        {
+          "kind": "insert_take",
+          "span": {
+            "start": 112,
+            "end": 118
+          },
+          "replacement": "take false",
+          "applicability": "MachineApplicable",
+          "driver_eligible": true
+        },
+        {
+          "kind": "replace_borrow",
+          "span": {
+            "start": 128,
+            "end": 134
+          },
+          "replacement": "borrow false",
+          "applicability": "RequiresConfirmation",
+          "driver_eligible": false
+        }
+      ]
+    },
+    {
+      "name": "error-with-repairs-different-kind",
+      "schema": "lang.diagnostic/1",
+      "diagnostic_id": "diagnostic:02ddeab29d1866a5524cd4ae",
+      "causes_nil": false,
+      "marshaled_json": "{\"schema\":\"lang.diagnostic/1\",\"id\":\"diagnostic:02ddeab29d1866a5524cd4ae\",\"code\":\"compat.identity\",\"severity\":\"error\",\"primary_span\":{\"start\":40,\"end\":45},\"message\":\"legacy repair diagnostic\",\"causes\":[{\"kind\":\"declared_here\",\"detail\":\"binding origin\",\"span\":{\"start\":3,\"end\":8}}],\"repairs\":[{\"kind\":\"different_repair_kind\",\"detail\":\"borrow\",\"span\":{\"start\":28,\"end\":34},\"replacement\":\"borrow false\",\"applicability\":\"RequiresConfirmation\"},{\"kind\":\"insert_take\",\"detail\":\"ownership\",\"span\":{\"start\":12,\"end\":18},\"replacement\":\"take false\",\"applicability\":\"MachineApplicable\"}]}",
+      "repairs": [
+        {
+          "kind": "different_repair_kind",
+          "span": {
+            "start": 28,
+            "end": 34
+          },
+          "replacement": "borrow false",
+          "applicability": "RequiresConfirmation",
+          "driver_eligible": false
+        },
+        {
+          "kind": "insert_take",
+          "span": {
+            "start": 12,
+            "end": 18
+          },
+          "replacement": "take false",
+          "applicability": "MachineApplicable",
+          "driver_eligible": true
+        }
+      ]
+    },
+    {
+      "name": "in-unit-source",
+      "schema": "lang.diagnostic/1",
+      "diagnostic_id": "diagnostic:d36d48c51b3f1190df7ef354",
+      "unit": "draft.identity",
+      "causes_nil": false,
+      "marshaled_json": "{\"schema\":\"lang.diagnostic/1\",\"id\":\"diagnostic:d36d48c51b3f1190df7ef354\",\"code\":\"compat.identity\",\"severity\":\"error\",\"primary_span\":{\"start\":40,\"end\":45},\"message\":\"legacy repair diagnostic\",\"causes\":[{\"kind\":\"declared_here\",\"detail\":\"binding origin\",\"span\":{\"start\":3,\"end\":8}}],\"repairs\":[{\"kind\":\"insert_take\",\"detail\":\"ownership\",\"span\":{\"start\":12,\"end\":18},\"replacement\":\"take false\",\"applicability\":\"MachineApplicable\"},{\"kind\":\"replace_borrow\",\"detail\":\"borrow\",\"span\":{\"start\":28,\"end\":34},\"replacement\":\"borrow false\",\"applicability\":\"RequiresConfirmation\"}],\"unit\":\"draft.identity\"}",
+      "repairs": [
+        {
+          "kind": "insert_take",
+          "span": {
+            "start": 12,
+            "end": 18
+          },
+          "replacement": "take false",
+          "applicability": "MachineApplicable",
+          "driver_eligible": true
+        },
+        {
+          "kind": "replace_borrow",
+          "span": {
+            "start": 28,
+            "end": 34
+          },
+          "replacement": "borrow false",
+          "applicability": "RequiresConfirmation",
+          "driver_eligible": false
+        }
+      ]
+    },
+    {
+      "name": "in-unit-other",
+      "schema": "lang.diagnostic/1",
+      "diagnostic_id": "diagnostic:bcea01ab70e440ebbe097c66",
+      "unit": "other.identity",
+      "causes_nil": false,
+      "marshaled_json": "{\"schema\":\"lang.diagnostic/1\",\"id\":\"diagnostic:bcea01ab70e440ebbe097c66\",\"code\":\"compat.identity\",\"severity\":\"error\",\"primary_span\":{\"start\":40,\"end\":45},\"message\":\"legacy repair diagnostic\",\"causes\":[{\"kind\":\"declared_here\",\"detail\":\"binding origin\",\"span\":{\"start\":3,\"end\":8}}],\"repairs\":[{\"kind\":\"insert_take\",\"detail\":\"ownership\",\"span\":{\"start\":12,\"end\":18},\"replacement\":\"take false\",\"applicability\":\"MachineApplicable\"},{\"kind\":\"replace_borrow\",\"detail\":\"borrow\",\"span\":{\"start\":28,\"end\":34},\"replacement\":\"borrow false\",\"applicability\":\"RequiresConfirmation\"}],\"unit\":\"other.identity\"}",
+      "repairs": [
+        {
+          "kind": "insert_take",
+          "span": {
+            "start": 12,
+            "end": 18
+          },
+          "replacement": "take false",
+          "applicability": "MachineApplicable",
+          "driver_eligible": true
+        },
+        {
+          "kind": "replace_borrow",
+          "span": {
+            "start": 28,
+            "end": 34
+          },
+          "replacement": "borrow false",
+          "applicability": "RequiresConfirmation",
+          "driver_eligible": false
+        }
+      ]
+    }
+  ],
+  "result_ids": {
+    "diagnostic-order-forward": "result:20be233cc41a46f15dedc307",
+    "diagnostic-order-reversed": "result:c63ba04cdd5f8a09d2607194",
+    "empty-pass": "result:32c03c3b5148895a9d452371",
+    "empty-pass-metrics-varied": "result:32c03c3b5148895a9d452371",
+    "with-legacy-diagnostic": "result:b1006c0a0a44314a4ebcdcd7",
+    "with-unit-diagnostic": "result:6ee36d09c94ea6f5138d53f7"
+  }
+}
