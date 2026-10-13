@@ -1,20 +1,16 @@
 ---
 gsd_state_version: "1.0"
-milestone: M006
-milestone_name: Bounded Byte Utility and Local Modules
-status: Awaiting next milestone
-stopped_at: Phase 32.1 complete — all phases complete
-last_updated: "2026-10-13T03:18:53.944Z"
-last_activity: 2026-10-12
-last_activity_desc: Milestone M006 completed and archived
-state_head: 7bf62bdf156b64b51715641dfbad652dfad40955
+milestone: M007
+milestone_name: Bitwise Checksum and Composable Scalar Helpers
+status: planning
+last_updated: "2026-10-13T14:10:01.247Z"
+last_activity: 2026-10-13
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 63
-  completed_plans: 63
-  percent: 100
-current_phase: "32.1"
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 <!-- schway-current:start -->
@@ -121,14 +117,10 @@ plans.
 
 ## Current Position
 
-Phase: Milestone M006 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-10-12 — Milestone M006 completed and archived
-
-M006 final hosted receipts: bound to codedigest b9253457705a224a0580d74896e8e5bd3821446a1d467626b7d611ca0d1c4b5c (run 38335175306)
-
-The hosted receipts cover the M006 programs (checksum, adler_low, the adler32 library demo, the Phase 29 Adler-32 fixture and out-of-bounds control) plus sum_to_n and FizzBuzz (N2 closed). Receipt rows are default-build only; the optimization matrix is bound by the same run's go test lanes. Receipts were re-taken after Phase 32.1 at the 32.1 freeze; run 38315799626 is kept as historical; any later code change reopens them.
+Status: Defining requirements
+Last activity: 2026-10-13 — Milestone M007 started
 
 ## M006 Planning
 

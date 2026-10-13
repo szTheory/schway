@@ -87,12 +87,43 @@ blocker: do not create an implementation gap plan or human UAT. Record the
 existing CI job as the next action, keep the phase incomplete, and resume its
 verifier after the receipt arrives without replaying completed plans.
 
-## Next Milestone
+## Current Milestone: M007 Bitwise Checksum and Composable Scalar Helpers
 
-Not yet defined. Run `/gsd-new-milestone` (questioning → research →
-requirements → roadmap). Candidate directions are ranked in
-[PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md); carried M006 debt is listed under
-Requirements → Active below. Phase numbering continues after 32.1.
+**Goal:** A developer can run an ordinary Schway `crc32` program that prints the
+exact CRC-32 of a size-limited file, built from a reusable `crc32` module
+written with real bitwise operators and small scalar helper functions, and an
+agent can author it without trial-and-error against cascading, offset-only
+diagnostics.
+
+**Target features:**
+- Pay carried debt first in one capped phase (≤5 plans): bound the
+  `os.ReadFile(capturePath)` read in `internal/compiler/native/native_app.go`
+  before allocation, 32.1 WR-01/WR-02 and IN-01..03, the coverage-`kind` pin,
+  29 WR-02/WR-03 triage, Phase 28 VALIDATION/SECURITY backfill, and a
+  milestone-agnostic freeze/receipt gate replacing the `check-phase32-*` scripts.
+- Diagnostic quality floor for agents: line:col plus snippet, one diagnostic
+  per syntax recovery point, a `surface.unsupported_*` hint family for
+  constructs that remain absent, and a `schway surface --json` capability
+  manifest.
+- U64 bitwise `^ & |`, shifts `<< >>` whose amount is a literal below 64
+  (anything else refused, so no C17 shift UB and no new defect path), and hex
+  integer literals, each with independent interpreter/native evidence surviving
+  -O3 and LTO. `adler32` re-expressed with `<< 16` keeps its pinned answers.
+- Scalar-to-scalar function calls (arity stays 1) so helpers such as a
+  per-byte CRC step can be factored out.
+- `crc32` consumer: CRC-32/ISO-HDLC (bit-at-a-time, no table) printed as bare
+  decimal, check value 0xCBF43926 for `123456789`, pinned against Python
+  `zlib.crc32` with armed controls, plus a second consumer importing the
+  module and an interpreter CLI route for file-bytes programs.
+- Hosted two-host receipts bound once, as the final step after the milestone
+  audit.
+
+**Decision method:** five-lens fan-out (product, compiler/PL, security,
+devops/evidence, DX) with adversarial passes, synthesized and auto-followed
+2026-10-13. Deferred with named landing: arity-N, scalar-only records and
+exported types (M008 `wc`/`longest_line` consumer), then a bounded key=value
+config parser, then JSON. HTTP stays out of scope. Copy-local code over new
+dependencies.
 
 ## Shipped Milestone: M006 Bounded Byte Utility and Local Modules (2026-10-12)
 
@@ -517,17 +548,14 @@ contract, without a speculative milestone number.
 
 ### Active
 
-No milestone is active; M006's acceptance record is archived in
-[milestones/M006-REQUIREMENTS.md](milestones/M006-REQUIREMENTS.md). Carried
-into the next milestone (owner chosen at kickoff):
-- Phase 32.1 review warnings WR-01/WR-02 and the deferred coverage-`kind` pin
-  (any code commit reopens the M006 receipts, so land them in the next
-  code-moving phase).
-- Interpreter CLI route for file-bytes programs (parity is Go-level only).
-- Module-aware `evidence`, `interface`, and `query` (today a named refusal).
-- Phase 28 VALIDATION.md/SECURITY.md backfill; test seams in production
-  packages (29 WR-04, 30 IN-01).
-- M005 residuals N4 (guide n ≤ 14 note), R1b, and the D-27.1-10 dispositions.
+M007 (Bitwise Checksum and Composable Scalar Helpers) — atomic IDs in
+[REQUIREMENTS.md](REQUIREMENTS.md). Carried M006 debt is owned by M007's first
+phase (see Current Milestone). Explicitly dispositioned at M007 kickoff
+(2026-10-13): N4 dropped as obsolete after EVD-13; D-27.1-10 set deferred;
+29 WR-04 / 30 IN-01 test-seam refactor deferred until those packages are
+rewritten; module-aware `interface`/`query` deferred (named refusal stays);
+module-aware `evidence` deferred unless an M007 evidence claim needs it;
+checked subtraction deferred until a consumer needs it.
 
 The per-phase record below is kept as the M006 closeout narrative.
 
@@ -780,4 +808,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-12 after M006 milestone*
+*Last updated: 2026-10-13 after M007 kickoff (new-milestone)*
