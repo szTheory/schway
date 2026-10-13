@@ -5,11 +5,11 @@ milestone_name: Bounded Byte Utility and Local Modules
 current_phase: "32.1"
 current_phase_name: "Address tech debt: CLI exit classes and module-aware routes"
 status: in_progress
-stopped_at: Phase 32.1 context gathered
-last_updated: "2026-10-13T01:24:18.076Z"
+stopped_at: Phase 32.1 planned (11 plans, 7 waves; checker passed)
+last_updated: "2026-10-13T01:24:34.803Z"
 last_activity: 2026-10-12
 last_activity_desc: Phase 32.1 inserted after M006 audit (tech_debt)
-state_head: 52059e07b114cdbefb2117f262bdc56335d4184f
+state_head: b8a12b73dafd6ef428de85e0a86926f53d579f30
 progress:
   total_phases: 6
   completed_phases: 5
@@ -967,9 +967,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-10-12T23:36:40.360Z
-Stopped at: Phase 32.1 context gathered
-Resume file: .planning/phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/32.1-CONTEXT.md
-Next action: /gsd-plan-phase 32.1
+Stopped at: Phase 32.1 planned (11 plans, 7 waves; checker passed)
+Resume file: .planning/phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/32.1-01-PLAN.md
+Next action: /gsd-execute-phase 32.1
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
