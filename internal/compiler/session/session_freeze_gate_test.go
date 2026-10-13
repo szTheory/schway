@@ -113,8 +113,13 @@ func TestFreezeGate(t *testing.T) {
 	})
 	t.Run("hash-length-derived", func(t *testing.T) {
 		got := phase32ShDigest(t, root)
-		if len(got) != 64 {
-			t.Fatalf("digest length=%d, want 64", len(got))
+		empty, err := testsupport.RunCLIErr(context.Background(), "sh", nil, "-c", `if command -v shasum >/dev/null 2>&1; then printf '' | shasum -a 256; else printf '' | sha256sum; fi`)
+		if err != nil || empty.Exit != 0 {
+			t.Fatalf("empty-input hash: exit=%d err=%v", empty.Exit, err)
+		}
+		emptyHash := strings.Fields(string(empty.Stdout))[0]
+		if len(got) != len(emptyHash) || len(got) != 64 {
+			t.Fatalf("digest length=%d, empty-input hasher length=%d, want 64", len(got), len(emptyHash))
 		}
 	})
 	t.Run("m006-real-repo", func(t *testing.T) {
@@ -188,6 +193,21 @@ func TestFreezeGate(t *testing.T) {
 		gate := phase33RunAt(t, dir, "scripts/check-freeze.sh", "testdata/receipts/M006.manifest", freeze, candidate)
 		if gate.exit != 0 || !strings.Contains(gate.stdout, "status=pass") {
 			t.Fatalf("markdown-only freeze rejected: %#v", gate)
+		}
+	})
+	t.Run("non-ascii-md-path-filtered", func(t *testing.T) {
+		dir, _, freeze, _ := build(t)
+		phase32Git(t, dir, "checkout", "-q", freeze)
+		path := filepath.Join(dir, "cmd", "résumé.md")
+		if err := os.WriteFile(path, []byte("documentation only\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		phase32Git(t, dir, "add", "-A")
+		phase32Git(t, dir, "commit", "-qm", "non-ascii markdown")
+		candidate := phase32GateHead(t, dir)
+		changed := phase33RunAt(t, dir, "scripts/codedigest.sh", "--changed", freeze, candidate)
+		if changed.exit != 0 || changed.stdout != "" {
+			t.Fatalf("non-ASCII markdown path was not filtered: %#v", changed)
 		}
 	})
 	t.Run("revert-inside-range-rejected", func(t *testing.T) {
