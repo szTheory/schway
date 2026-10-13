@@ -5,16 +5,16 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 34
 current_phase_name: Agent Diagnostics Floor and Surface Manifest
 status: executing
-stopped_at: Completed 34-02-PLAN.md
-last_updated: "2026-10-13T22:06:37.063Z"
+stopped_at: Completed 34-03-PLAN.md
+last_updated: "2026-10-13T22:27:13.695Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 33 complete, transitioned to Phase 34
-state_head: 72109da51256ce9b9ac43485d5f69608602a1336
+state_head: 506f469a69d348bcffedc19d0a4228a803a968ee
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 13
-  completed_plans: 7
+  completed_plans: 8
   percent: 17
 ---
 
@@ -125,7 +125,7 @@ plans.
 ## Current Position
 
 Phase: 34 (Agent Diagnostics Floor and Surface Manifest) — READY TO EXECUTE
-Plan: 3 of 8
+Plan: 4 of 8
 Status: Ready to execute
 Last activity: 2026-10-13 — Phase 33 complete, transitioned to Phase 34
 
@@ -591,6 +591,7 @@ subset alone.
 | Phase 33 P05 | 18min | 3 tasks | 16 files |
 | Phase 34 P01 | 13 min | 3 tasks | 7 files |
 | Phase 34 P02 | 19 min | 3 tasks | 24 files |
+| Phase 34 P03 | 14 min | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -786,6 +787,9 @@ decision history; they no longer describe current status.
 - [Phase 34]: Half-open byte offsets remain authoritative for identity and edits; coordinates derive only from captured, bounds-checked source.
 - [Phase 34]: A zero-width primary needs explicit source-origin provenance; synthetic operational zero spans stay unlocated.
 - [Phase 34]: Text rendering uses bounded printable ASCII while JSON carries coordinates without source bodies.
+- [Phase 34]: Keep presentation invocation-local and reuse the loader snapshots without another read or parse.
+- [Phase 34]: Choose source bytes independently for primary, cause, and repair EffectiveUnit while preserving byte authority and IDs.
+- [Phase 34]: Task 2 required no additional production code because the Task 1 sidecar and Phase 34-02 projector already satisfied its behavior contract.
 
 ### Pending Todos
 
@@ -1031,8 +1035,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-13T22:06:37.024Z
-Stopped at: Completed 34-02-PLAN.md
+Last session: 2026-10-13T22:27:13.663Z
+Stopped at: Completed 34-03-PLAN.md
 Resume file: None
 Next action: $gsd-execute-phase 34
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
