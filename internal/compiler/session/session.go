@@ -1162,7 +1162,7 @@ func runInterpreterResolved(program core.Program) ([]interp.Execution, []diagnos
 	}
 	inputs, ok := interpreterInputs(pruned)
 	if !ok {
-		return nil, nil, os.ErrInvalid
+		return nil, nil, ErrRunInputRequired
 	}
 	executions := make([]interp.Execution, 0, len(inputs))
 	for _, input := range inputs {
@@ -1278,6 +1278,9 @@ func runInterpreterCommand(path string) ([]interp.Execution, []diagnostic.Diagno
 func RunInterpreterCommandFile(path string) (protocol.Result, error) {
 	started := time.Now()
 	executions, diagnostics, err := runInterpreterCommand(path)
+	if errors.Is(err, ErrRunInputRequired) {
+		return runInputRequiredResult(started), nil
+	}
 	if err != nil {
 		result := protocol.New("run", protocol.StatusOperational)
 		result.Diagnostics = []diagnostic.Diagnostic{diagnostic.Error("tool.run_failed", diagnostic.Span{}, "interpreter operation failed")}
@@ -1327,7 +1330,7 @@ func runNativeChecked(ctx context.Context, checked CheckResult, entry core.Funct
 	checked.Program = pruned
 	inputs, ok := interpreterInputs(checked.Program)
 	if !ok {
-		return NativeResult{}, nil, os.ErrInvalid
+		return NativeResult{}, nil, ErrRunInputRequired
 	}
 	interpreted := make([]interp.Execution, 0, len(inputs))
 	for _, input := range inputs {
@@ -1619,6 +1622,9 @@ func RunNativeCommandFile(ctx context.Context, path string, runner NativeRunner)
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = diagnostics
 		return completeCommand(result, started, 1), nil
+	}
+	if errors.Is(err, ErrRunInputRequired) {
+		return runInputRequiredResult(started), nil
 	}
 	if err != nil {
 		result.Status = protocol.StatusOperational
