@@ -1,0 +1,13 @@
+<testsuites tests="2" failures="2"><testsuite name="github.com/szTheory/schway/internal/compiler/protocol" tests="2" failures="2" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations" time="0"><failure message="go test reported failure">=== RUN   TestPhase34DiagnosticLocations
+--- FAIL: TestPhase34DiagnosticLocations (0.00s)
+</failure><system-out>=== RUN   TestPhase34DiagnosticLocations
+--- FAIL: TestPhase34DiagnosticLocations (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/protocol" name="TestPhase34DiagnosticLocations/parser_marks_real_empty_EOF_and_limits_stay_synthetic" time="0"><failure message="go test reported failure">=== RUN   TestPhase34DiagnosticLocations/parser_marks_real_empty_EOF_and_limits_stay_synthetic
+    protocol_phase34_test.go:154: empty source EOF was not marked as a source position: [syntax.expected_module [0:0]: expected `module` syntax.expected_module_name [0:0]: expected `identifier` syntax.expected_export [0:0]: expected `export` syntax.expected_lbrace [0:0]: expected `{` syntax.expected_rbrace [0:0]: expected `}`]
+    --- FAIL: TestPhase34DiagnosticLocations/parser_marks_real_empty_EOF_and_limits_stay_synthetic (0.00s)
+</failure><system-out>=== RUN   TestPhase34DiagnosticLocations/parser_marks_real_empty_EOF_and_limits_stay_synthetic
+    protocol_phase34_test.go:154: empty source EOF was not marked as a source position: [syntax.expected_module [0:0]: expected `module` syntax.expected_module_name [0:0]: expected `identifier` syntax.expected_export [0:0]: expected `export` syntax.expected_lbrace [0:0]: expected `{` syntax.expected_rbrace [0:0]: expected `}`]
+    --- FAIL: TestPhase34DiagnosticLocations/parser_marks_real_empty_EOF_and_limits_stay_synthetic (0.00s)
+</system-out></testcase><system-out>FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/protocol	0.005s
+</system-out></testsuite></testsuites>
