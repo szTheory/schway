@@ -100,7 +100,7 @@ func Program(program ast.Program) Result {
 	if len(program.Imports) > 0 && len(program.Units) == 0 && !ignoreUnloadedImportsForTest {
 		result.Diagnostics = append(result.Diagnostics, diagnostic.Error(
 			"module.imports_not_loaded", program.Imports[0].Span,
-			"imports are resolved only by the module-aware commands (check, run, build, app verify, debug-map)",
+			importsNotLoadedMessage(),
 		))
 		return result
 	}

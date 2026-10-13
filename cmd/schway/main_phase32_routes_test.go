@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/szTheory/schway/internal/compiler/check"
 	"github.com/szTheory/schway/internal/compiler/syntax"
 	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
@@ -563,6 +564,14 @@ func TestPhase32PublicRouteAudit(t *testing.T) {
 		problems := phase32RouteAuditProblems(routes, entries, rows, testNames)
 		if !phase32Contains(problems, "unknown_program stats mystery") {
 			t.Fatalf("problems = %v, want unknown_program stats mystery", problems)
+		}
+	})
+	t.Run("usage-names-module-aware-set", func(t *testing.T) {
+		usage := usageResult().Diagnostics[0].Message
+		for _, route := range check.ModuleAwareRoutes() {
+			if !strings.Contains(usage, route) {
+				t.Errorf("usage text does not name module-aware route %q: %s", route, usage)
+			}
 		}
 	})
 	t.Run("usage-cross-check", func(t *testing.T) {

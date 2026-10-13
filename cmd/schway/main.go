@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/szTheory/schway/internal/compiler/check"
 	"github.com/szTheory/schway/internal/compiler/diagnostic"
 	"github.com/szTheory/schway/internal/compiler/evidence"
 	"github.com/szTheory/schway/internal/compiler/exitcode"
@@ -676,5 +677,5 @@ func problemResult(command, status, code, message string) protocol.Result {
 }
 
 func usageResult() protocol.Result {
-	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] build SOURCE --output ARTIFACT | app run ARTIFACT [--report REPORT] [--evidence=events] -- INPUT | app verify SOURCE --cases CASES --report REPORT | format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE [--expand] | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE | debug-map SRC [QUERY] | explain SRC ID [--depth=N] | query SRC ID_OR_PATTERN [--kind=symbol|type|ownership|dependency|test] [--depth=N] [--cursor=C]")
+	return problemResult("usage", protocol.StatusUsage, "tool.usage", "usage: lang [--json] build SOURCE --output ARTIFACT | app run ARTIFACT [--report REPORT] [--evidence=events] -- INPUT | app verify SOURCE --cases CASES --report REPORT | format [--check] FILE | check FILE | run --engine=interpreter|native FILE | evidence FILE | evidence --validate MANIFEST FILE [--expand] | verify CORPUS | interface export SRC OUT | interface core SRC OUT | interface check SUMMARY CORE | debug-map SRC [QUERY] | explain SRC ID [--depth=N] | query SRC ID_OR_PATTERN [--kind=symbol|type|ownership|dependency|test] [--depth=N] [--cursor=C]; imports load only in: "+strings.Join(check.ModuleAwareRoutes(), ", "))
 }
