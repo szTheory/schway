@@ -174,6 +174,15 @@ const phase32OptimizationMatrixNonClaim = "Receipt case rows are taken at the de
 
 var phase32ReceiptHosts = []string{"ubuntu-latest", "macos-latest"}
 
+type phaseReceiptSpec struct {
+	Milestone string
+	Schema    string
+	Programs  []string
+	Hosts     []string
+}
+
+var phase32ReceiptSpec = phaseReceiptSpec{Milestone: "M006", Schema: "schway.m006-receipt/1", Programs: phase32ReceiptPrograms, Hosts: phase32ReceiptHosts}
+
 type phase32ReceiptHost struct {
 	Name          string `json:"name"`
 	RunnerOS      string `json:"runnerOs"`
@@ -211,10 +220,25 @@ var (
 const phase32MarkerPrefix = "M006 final hosted receipts:"
 
 type phase32ReceiptInputs struct {
+	Spec           phaseReceiptSpec
 	Docs           map[string]string // living doc name -> text
 	Receipt        []byte            // nil when no 32-RECEIPT.json exists
 	Logs           map[string][]byte // host name -> committed log bytes
 	ComputedDigest string
+}
+
+func (s phaseReceiptSpec) withDefaults() phaseReceiptSpec {
+	if s.Milestone == "" {
+		return phase32ReceiptSpec
+	}
+	return s
+}
+
+func phaseReceiptMarkers(milestone string) (string, *regexp.Regexp, *regexp.Regexp) {
+	quoted := regexp.QuoteMeta(milestone)
+	return milestone + " final hosted receipts:",
+		regexp.MustCompile(`^` + quoted + ` final hosted receipts: bound to codedigest ([0-9a-f]{64}) \(run ([0-9]+)\)\.?$`),
+		regexp.MustCompile(`^` + quoted + ` final hosted receipts: reopened ([0-9]{4}-[0-9]{2}-[0-9]{2}) \(historical codedigest ([0-9a-f]{64})\)\.?$`)
 }
 
 // phase32LogRow returns the key=value fields of the first log line that starts
@@ -240,6 +264,8 @@ func phase32LogRows(log []byte, prefix string) []map[string]string {
 // reasons. No receipt and no marker is the freeze state and has no problems
 // (D-08c); a digest that merely drifted never fails on its own (D-10a).
 func phase32ReceiptProblems(in phase32ReceiptInputs) []string {
+	spec := in.Spec.withDefaults()
+	markerPrefix, boundMarker, reopenedMarker := phaseReceiptMarkers(spec.Milestone)
 	problems := map[string]bool{}
 	add := func(format string, args ...any) { problems[fmt.Sprintf(format, args...)] = true }
 
@@ -255,14 +281,14 @@ func phase32ReceiptProblems(in phase32ReceiptInputs) []string {
 			// IN-02: tolerate list/quote decoration before the marker, but keep
 			// the check a prefix check so prose that merely mentions it is ignored.
 			line = strings.TrimLeft(line, " \t>*-")
-			if !strings.HasPrefix(line, phase32MarkerPrefix) {
+			if !strings.HasPrefix(line, markerPrefix) {
 				continue
 			}
 			switch {
-			case phase32BoundMarker.MatchString(line):
+			case boundMarker.MatchString(line):
 				bound++
-				boundDigests = append(boundDigests, phase32BoundMarker.FindStringSubmatch(line)[1])
-			case phase32ReopenedMarker.MatchString(line):
+				boundDigests = append(boundDigests, boundMarker.FindStringSubmatch(line)[1])
+			case reopenedMarker.MatchString(line):
 				reopened++
 			default:
 				add("malformed_marker")
@@ -280,7 +306,7 @@ func phase32ReceiptProblems(in phase32ReceiptInputs) []string {
 	var receipt phase32Receipt
 	decoder := json.NewDecoder(bytes.NewReader(in.Receipt))
 	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&receipt); err != nil || receipt.Schema != "schway.m006-receipt/1" || !phase32Hex64.MatchString(receipt.Codedigest) {
+	if err := decoder.Decode(&receipt); err != nil || receipt.Schema != spec.Schema || !phase32Hex64.MatchString(receipt.Codedigest) {
 		add("schema_invalid")
 		return phase32SortedProblems(problems)
 	}
@@ -302,7 +328,7 @@ func phase32ReceiptProblems(in phase32ReceiptInputs) []string {
 		}
 		byName[host.Name] = host
 	}
-	for _, name := range phase32ReceiptHosts {
+	for _, name := range spec.Hosts {
 		host, ok := byName[name]
 		if !ok {
 			add("host_missing")
@@ -341,14 +367,14 @@ func phase32ReceiptProblems(in phase32ReceiptInputs) []string {
 				covered[row["program"]] = true
 			}
 		}
-		for _, program := range phase32ReceiptPrograms {
+		for _, program := range spec.Programs {
 			if !covered[program] {
 				add("program_missing_%s", program)
 			}
 		}
 	}
 	for _, host := range receipt.Hosts {
-		if !slices.Contains(phase32ReceiptHosts, host.Name) {
+		if !slices.Contains(spec.Hosts, host.Name) {
 			add("unexpected_host_%s", host.Name)
 		}
 	}
@@ -357,20 +383,20 @@ func phase32ReceiptProblems(in phase32ReceiptInputs) []string {
 	for _, program := range receipt.Programs {
 		declared[program.Name] = program
 	}
-	for _, program := range phase32ReceiptPrograms {
+	for _, program := range spec.Programs {
 		entry, ok := declared[program]
 		if !ok {
 			add("program_missing_%s", program)
 			continue
 		}
-		for _, host := range phase32ReceiptHosts {
+		for _, host := range spec.Hosts {
 			if entry.Hosts[host] != "pass" {
 				add("program_not_passing_%s_%s", program, host)
 			}
 		}
 	}
 	for name := range declared {
-		if !slices.Contains(phase32ReceiptPrograms, name) {
+		if !slices.Contains(spec.Programs, name) {
 			add("unexpected_program_%s", name)
 		}
 	}
@@ -437,9 +463,10 @@ func phase32Marshal(t *testing.T, receipt phase32Receipt) []byte {
 
 func TestPhase32ReceiptLivingClaims(t *testing.T) {
 	root := testsupport.ProjectPath()
-	t.Run("real-checkout", func(t *testing.T) {
+	loadCheckout := func(t *testing.T) phase32ReceiptInputs {
+		t.Helper()
 		docs := map[string]string{}
-		for _, name := range []string{"LANGUAGE-MATURITY.md", "PRODUCT-ROADMAP.md", "STATE.md"} {
+		for _, name := range []string{"LANGUAGE-MATURITY.md", "PRODUCT-ROADMAP.md", "STATE.md", "PROJECT.md", "MILESTONES.md"} {
 			data, err := os.ReadFile(filepath.Join(root, ".planning", name))
 			if err != nil {
 				t.Fatal(err)
@@ -475,13 +502,24 @@ func TestPhase32ReceiptLivingClaims(t *testing.T) {
 				}
 			}
 		}
+		return in
+	}
+	t.Run("real-checkout", func(t *testing.T) {
+		in := loadCheckout(t)
+		if problems := phase32ReceiptProblems(in); len(problems) != 0 {
+			t.Fatalf("receipt problems: %v", problems)
+		}
+	})
+	t.Run("real-checkout-drifted-digest", func(t *testing.T) {
+		in := loadCheckout(t)
+		in.ComputedDigest = strings.Repeat("f", 64)
 		if problems := phase32ReceiptProblems(in); len(problems) != 0 {
 			t.Fatalf("receipt problems: %v", problems)
 		}
 	})
 
 	boundLine := func(digest string) string {
-		return "M006 final hosted receipts: bound to codedigest " + digest + " (run 123456789)"
+		return phase32MarkerPrefix + " bound to codedigest " + digest + " (run 123456789)"
 	}
 	reopenedLine := "M006 final hosted receipts: reopened 2026-10-12 (historical codedigest " + strings.Repeat("ab", 32) + ")"
 	good := strings.Repeat("ab", 32)
@@ -577,6 +615,19 @@ func TestPhase32ReceiptLivingClaims(t *testing.T) {
 		{"schema-unknown-field", func(t *testing.T, r *phase32Receipt, l map[string][]byte, in *phase32ReceiptInputs) {
 			in.Receipt = bytes.Replace(phase32Marshal(t, *r), []byte("{"), []byte(`{"bogus":1,`), 1)
 		}, []string{"schema_invalid"}},
+		{"m007-bound-marker-parses", func(t *testing.T, r *phase32Receipt, l map[string][]byte, in *phase32ReceiptInputs) {
+			in.Spec = phaseReceiptSpec{Milestone: "M007", Schema: "schway.m007-receipt/1", Programs: phase32ReceiptPrograms, Hosts: phase32ReceiptHosts}
+			r.Schema = in.Spec.Schema
+			in.Docs["STATE.md"] = "M007 final hosted receipts: bound to codedigest " + good + " (run 123456789)"
+		}, nil},
+		{"m007-marker-ignored-by-m006-spec", func(t *testing.T, r *phase32Receipt, l map[string][]byte, in *phase32ReceiptInputs) {
+			in.Docs["STATE.md"] = "M007 final hosted receipts: bound to codedigest " + good + " (run 123456789)"
+		}, nil},
+		{"m007-stale-bound-claim", func(t *testing.T, r *phase32Receipt, l map[string][]byte, in *phase32ReceiptInputs) {
+			in.Spec = phaseReceiptSpec{Milestone: "M007", Schema: "schway.m007-receipt/1", Programs: phase32ReceiptPrograms, Hosts: phase32ReceiptHosts}
+			r.Schema = in.Spec.Schema
+			in.Docs["STATE.md"] = "M007 final hosted receipts: bound to codedigest " + other + " (run 123456789)"
+		}, []string{"stale_bound_claim"}},
 	}
 	for _, row := range rows {
 		t.Run(row.name, func(t *testing.T) {
