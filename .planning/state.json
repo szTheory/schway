@@ -1,43 +1,12 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "M006 — Bounded Byte Utility and Local Modules",
-  "phases": [
-    {
-      "number": "28",
-      "name": "Exit Classes, Verify Report, and Entry Pruning",
-      "status": "complete"
-    },
-    {
-      "number": "29",
-      "name": "Byte Views and the Adler-32 Library",
-      "status": "complete"
-    },
-    {
-      "number": "30",
-      "name": "Local Modules",
-      "status": "complete"
-    },
-    {
-      "number": "31",
-      "name": "Bounded File Checksum and Second Consumer",
-      "status": "complete"
-    },
-    {
-      "number": "32",
-      "name": "Clean-Checkout Guide and Final Receipts",
-      "status": "complete"
-    },
-    {
-      "number": "32.1",
-      "name": "Address tech debt: CLI exit classes and module-aware routes",
-      "status": "complete"
-    }
-  ],
+  "milestone": "M007",
+  "phases": [],
   "next": {
-    "command": "/gsd:progress",
-    "label": "Show progress",
-    "reason": "Unsure of state — showing progress"
+    "command": "/gsd:discuss-phase",
+    "label": "Discuss the first phase",
+    "reason": "Project initialized — plan your first phase"
   },
-  "updated_at": "2026-10-13T03:18:53.960Z"
+  "updated_at": "2026-10-13T14:10:01.250Z"
 }
