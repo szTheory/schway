@@ -124,7 +124,21 @@ construct, so the manifest cannot drift.
 
 **Research flag**: Standard. Capped at 5 plans and binds no hosted receipt. WR-02 touches byte-op parity: pin the current interpreter/native abort-like parity rows before narrowing the predicate. The generic gate must keep the M006 `check-phase32-*` refusal behavior byte-for-byte before the scripts are deleted.
 
-**Plans**: TBD (cap 5)
+**Plans**: 5 plans (cap 5)
+
+Plans:
+**Wave 1**
+- [ ] 33-01-PLAN.md — docs-only M006 receipt reopen (first commit), bounded capture read, IN-02 fixture and coverage-kind pin (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 33-02-PLAN.md — WR-02: parity pins on both routes, shared defect-reason constants, narrowed abort-like predicate and killed mutant (wave 2)
+- [ ] 33-03-PLAN.md — generic gate step 1: codedigest flags, M006 manifest, check-freeze.sh / check-receipts.sh, differential and archived-M006 tests, WR-01, IN-03 (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 33-04-PLAN.md — generic gate step 2: test renames, goldens, old scripts deleted, producer reads the manifest, no-caller test (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 33-05-PLAN.md — living-claim check by milestone label, Phase 28 VALIDATION/SECURITY, Phase 29 verify, disposition records (wave 4)
 
 ### Phase 34: Agent Diagnostics Floor and Surface Manifest
 
