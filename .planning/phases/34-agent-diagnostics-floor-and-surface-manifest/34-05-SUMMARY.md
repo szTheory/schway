@@ -126,6 +126,7 @@ status: complete
 6. **Task 3 implementation and tests:** `4ab41550`.
 
 The plan commit count is measured from `96863718cfeb2972eec95efe028f53a541276c63` to `4ab415501f0477ba61fd4c64332556fb09350359`: 6 commits.
+**Plan metadata:** `596b8cdd` (summary, registered STATE/ROADMAP, and state.json).
 
 ## Validation Evidence
 
