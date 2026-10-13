@@ -97,3 +97,7 @@ here checks for no sanitizer report and no use-after-free or overflow, and
 
 A host without AddressSanitizer records each lane as
 `PARTIAL (address sanitizer unavailable on <GOOS>/<GOARCH>, <clang version>)`.
+
+`schway run` refuses this fixture owner program with `tool.run_input_required`
+(exit 64); use `build` plus `app run` instead. `evidence` does not support the
+fixture owner.

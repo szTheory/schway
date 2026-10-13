@@ -5,37 +5,37 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: skipped
     title: "Fixture-owner admission is advertised as test-only but reachable from any user program and manifest"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "A `ByteView` entry passes `check` but cgen emits an ill-formed initializer and the interpreter cannot bind the input"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "Interpreter and native disagree on non-bounds defects with a live fixture owner"
   - id: WR-04
     severity: warning
-    disposition: open
+    disposition: deferred
     title: "New law-disable switches and a C-source rewrite hook live in production packages"
   - id: IN-01
     severity: info
-    disposition: open
+    disposition: fixed
     title: "Fixture admission code in check is unreachable defense"
   - id: IN-02
     severity: info
-    disposition: open
+    disposition: deferred
     title: "Check's scalar fixed point has no operand-type law for byte ops"
   - id: IN-03
     severity: info
-    disposition: open
+    disposition: deferred
     title: "The fixture lifecycle pin lives only in straight-line replay and flat-order laws assume program order"
   - id: IN-04
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The shipped `adler32_fixture.schway` check-passes but cannot be run through `run` or `evidence`"
-open: 8
+open: 0
 total: 8
 recorded: 2026-10-12T00:20:20.257Z
 ---
@@ -44,14 +44,14 @@ recorded: 2026-10-12T00:20:20.257Z
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
-| WR-04 | warning | open | - |
-| IN-01 | info | open | - |
-| IN-02 | info | open | - |
-| IN-03 | info | open | - |
-| IN-04 | info | open | - |
+| WR-01 | warning | skipped | Skipped (FFI trust class): a ByteView length is a trusted foreign fact, test-only is not a security boundary, and gating admission would add a new trust tier. |
+| WR-02 | warning | fixed | Fixed in 32.1-03: ByteView main refused at check; witnessed by TestPhase321ByteViewEntryRefused. |
+| WR-03 | warning | fixed | Fixed in 32.1-04: interpreter and native defect parity with a live owner; witnessed by TestPhase321DefectParityWithLiveOwner. |
+| WR-04 | warning | deferred | Deferred: cross-package refactor of the law-disable seams, pervasive in check and corevalidate. |
+| IN-01 | info | fixed | Fixed in 32.1-03: comment folded in with the ByteView entry refusal; witnessed by TestPhase321ByteViewEntryRefused. |
+| IN-02 | info | deferred | Deferred: no product path reaches it; validators and the builder gate it. |
+| IN-03 | info | deferred | Deferred: no product path reaches it; validators and the builder gate it. |
+| IN-04 | info | fixed | Fixed in 32.1-08: examples/phase29/README.md states the run and evidence limits; witnessed by TestPhase29ExampleReadmeCaseTable. |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
