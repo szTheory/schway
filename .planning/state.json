@@ -1,12 +1,43 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "M007",
-  "phases": [],
+  "milestone": "M007 — Bitwise Checksum and Composable Scalar Helpers",
+  "phases": [
+    {
+      "number": "33",
+      "name": "Carried Debt, Bounded Capture Read, and Generic Freeze Gate",
+      "status": "pending"
+    },
+    {
+      "number": "34",
+      "name": "Agent Diagnostics Floor and Surface Manifest",
+      "status": "pending"
+    },
+    {
+      "number": "35",
+      "name": "Bitwise Operators, Literal Shifts, and Hex Literals",
+      "status": "pending"
+    },
+    {
+      "number": "36",
+      "name": "Scalar Helper Calls",
+      "status": "pending"
+    },
+    {
+      "number": "37",
+      "name": "CRC-32 Consumer, Interpreter File Route, and Guide",
+      "status": "pending"
+    },
+    {
+      "number": "38",
+      "name": "Milestone Receipts",
+      "status": "pending"
+    }
+  ],
   "next": {
-    "command": "/gsd:discuss-phase",
-    "label": "Discuss the first phase",
-    "reason": "Project initialized — plan your first phase"
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step (plan phase 33)",
+    "reason": "Phase 33 of 6 — needs a plan"
   },
-  "updated_at": "2026-10-13T14:10:01.250Z"
+  "updated_at": "2026-10-13T16:25:42.390Z"
 }
