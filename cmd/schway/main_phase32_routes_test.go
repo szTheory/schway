@@ -78,6 +78,7 @@ var phase32RouteRows = []phase32RouteRow{
 
 	// Routes the receipts do not exercise; each names the test that owns it.
 	{Key: "--json app", Modules: "no-entry-source", Reason: "not covered because it is a routing shim into runApplication; the application path is owned by TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus"},
+	{Key: "--json surface", Modules: "no-entry-source", Reason: "not covered because it is the global JSON placement shim owned by TestPhase34SurfaceRoute"},
 	{Key: "app verify", Modules: "module-aware", Reason: "not covered because replay verification is owned by TestPhase22AppVerifyIndependentIdentityCases and TestPhase273AppVerifyCapacityCLI"},
 	{Key: "explain", Modules: "refuses-imports", ReportsRefusalAsPass: true, Reason: "not covered because it is owned by TestExplainCLIReturnsBoundedCauseDAG"},
 	{Key: "query", Modules: "refuses-imports", ReportsRefusalAsPass: true, Reason: "not covered because it is owned by TestQueryCLIResolvesEveryStableIDVocabulary"},
@@ -88,6 +89,7 @@ var phase32RouteRows = []phase32RouteRow{
 	{Key: "evidence --validate", Modules: "refuses-imports", RefusalCode: "evidence.source_invalid", Reason: "not covered because it is owned by TestEvidenceCLI"},
 	{Key: "verify", Modules: "no-entry-source", Reason: "not covered because corpus verification is owned by TestVerifyCLI and TestVerifyPhase2CLI"},
 	{Key: "stats", Modules: "no-entry-source", Reason: "not covered because the CLI computes statistics from stdin and is owned by TestStatsCLIComputesGoStatistics"},
+	{Key: "surface", Modules: "no-entry-source", Reason: "not covered because the source-free manifest route is owned by TestPhase34SurfaceRoute"},
 	{Key: "interface export", Modules: "refuses-imports", Reason: "not covered because it is owned by TestInterfaceCheckIsBodyBlindCLI"},
 	{Key: "interface core", Modules: "refuses-imports", Reason: "not covered because it is owned by TestInterfaceCheckIsBodyBlindCLI"},
 	{Key: "interface check", Modules: "no-entry-source", Reason: "not covered because it is owned by TestInterfaceCheckIsBodyBlindCLI"},
@@ -385,6 +387,7 @@ func phase32RouteAuditProblems(routes, entries []string, rows []phase32RouteRow,
 	for key := range observed {
 		if !rowKeys[key] {
 			problems = append(problems, "uncovered_route "+key)
+			problems = append(problems, "missing_route "+key)
 		}
 	}
 	sort.Strings(problems)
@@ -474,13 +477,21 @@ func phase32RefusalCode(row phase32RouteRow) string {
 func phase32ModuleProblems(rows []phase32RouteRow, moduleAware []string, observe func(row phase32RouteRow) (int, string)) []string {
 	problems := []string{}
 	words := map[string]bool{}
+	moduleSet := map[string]bool{}
+	for _, word := range moduleAware {
+		moduleSet[word] = true
+	}
 	for _, row := range rows {
 		if phase32IsEntryKey(row.Key) {
 			continue
 		}
+		word := phase32ModuleCommandWord(row.Key)
+		if (row.Modules == phase32ModuleAware) != moduleSet[word] {
+			problems = append(problems, "wrong_module_class "+row.Key)
+		}
 		switch row.Modules {
 		case phase32ModuleAware:
-			words[phase32ModuleCommandWord(row.Key)] = true
+			words[word] = true
 		case phase32RefusesImports, phase32NoEntrySource:
 		default:
 			problems = append(problems, "unclassified_route "+row.Key)

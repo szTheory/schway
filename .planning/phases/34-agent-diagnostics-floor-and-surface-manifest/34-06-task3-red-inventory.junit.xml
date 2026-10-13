@@ -1,0 +1,13 @@
+<testsuites tests="1" failures="1"><testsuite name="github.com/szTheory/schway/cmd/schway" tests="1" failures="1" skipped="0"><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34SurfaceRouteInventory" time="0.11"><failure message="go test reported failure">=== RUN   TestPhase34SurfaceRouteInventory
+    main_phase34_surface_test.go:133: wrong_module_class surface: row={Key: Programs:[] Reason: Modules: RefusalCode: ReportsRefusalAsPass:false} found=false
+    main_phase34_surface_test.go:133: wrong_module_class --json surface: row={Key: Programs:[] Reason: Modules: RefusalCode: ReportsRefusalAsPass:false} found=false
+    main_phase34_surface_test.go:137: closed route inventory problems: [uncovered_route --json surface uncovered_route surface]
+--- FAIL: TestPhase34SurfaceRouteInventory (0.11s)
+</failure><system-out>=== RUN   TestPhase34SurfaceRouteInventory
+    main_phase34_surface_test.go:133: wrong_module_class surface: row={Key: Programs:[] Reason: Modules: RefusalCode: ReportsRefusalAsPass:false} found=false
+    main_phase34_surface_test.go:133: wrong_module_class --json surface: row={Key: Programs:[] Reason: Modules: RefusalCode: ReportsRefusalAsPass:false} found=false
+    main_phase34_surface_test.go:137: closed route inventory problems: [uncovered_route --json surface uncovered_route surface]
+--- FAIL: TestPhase34SurfaceRouteInventory (0.11s)
+</system-out></testcase><system-out>FAIL
+FAIL	github.com/szTheory/schway/cmd/schway	0.116s
+</system-out></testsuite></testsuites>

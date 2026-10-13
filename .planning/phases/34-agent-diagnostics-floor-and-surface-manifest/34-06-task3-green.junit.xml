@@ -1,0 +1,37 @@
+<testsuites tests="17" failures="0"><testsuite name="github.com/szTheory/schway/cmd/schway" tests="17" failures="0" skipped="0"><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit" time="3.62"><system-out>=== RUN   TestPhase32PublicRouteAudit
+--- PASS: TestPhase32PublicRouteAudit (3.62s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/programs-line-drift" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/programs-line-drift
+    --- PASS: TestPhase32PublicRouteAudit/programs-line-drift (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/uncovered-route" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/uncovered-route
+    --- PASS: TestPhase32PublicRouteAudit/uncovered-route (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/deleted-row" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/deleted-row
+    --- PASS: TestPhase32PublicRouteAudit/deleted-row (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/stale-row" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/stale-row
+    --- PASS: TestPhase32PublicRouteAudit/stale-row (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/bad-reason" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/bad-reason
+    --- PASS: TestPhase32PublicRouteAudit/bad-reason (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/unknown-program" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/unknown-program
+    --- PASS: TestPhase32PublicRouteAudit/unknown-program (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/usage-names-module-aware-set" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/usage-names-module-aware-set
+    --- PASS: TestPhase32PublicRouteAudit/usage-names-module-aware-set (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/module-classification" time="3.55"><system-out>=== RUN   TestPhase32PublicRouteAudit/module-classification
+    --- PASS: TestPhase32PublicRouteAudit/module-classification (3.55s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/module-classification/unclassified" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/module-classification/unclassified
+        --- PASS: TestPhase32PublicRouteAudit/module-classification/unclassified (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/module-classification/set-drift" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/module-classification/set-drift
+        --- PASS: TestPhase32PublicRouteAudit/module-classification/set-drift (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/module-classification/misclassified" time="1.37"><system-out>=== RUN   TestPhase32PublicRouteAudit/module-classification/misclassified
+        --- PASS: TestPhase32PublicRouteAudit/module-classification/misclassified (1.37s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/module-classification/import-seam" time="1.45"><system-out>=== RUN   TestPhase32PublicRouteAudit/module-classification/import-seam
+        --- PASS: TestPhase32PublicRouteAudit/module-classification/import-seam (1.45s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/module-classification/adjacency-no-imports" time="0.04"><system-out>=== RUN   TestPhase32PublicRouteAudit/module-classification/adjacency-no-imports
+        --- PASS: TestPhase32PublicRouteAudit/module-classification/adjacency-no-imports (0.04s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/usage-cross-check" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/usage-cross-check
+    --- PASS: TestPhase32PublicRouteAudit/usage-cross-check (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34SurfaceRoute" time="0"><system-out>=== RUN   TestPhase34SurfaceRoute
+--- PASS: TestPhase34SurfaceRoute (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34SurfaceRouteInventory" time="0.1"><system-out>=== RUN   TestPhase34SurfaceRouteInventory
+--- PASS: TestPhase34SurfaceRouteInventory (0.10s)
+</system-out></testcase><system-out>PASS
+ok  	github.com/szTheory/schway/cmd/schway	3.734s
+</system-out></testsuite></testsuites>
