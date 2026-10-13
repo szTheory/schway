@@ -5,16 +5,16 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 34
 current_phase_name: Agent Diagnostics Floor and Surface Manifest
 status: executing
-stopped_at: Phase 34 context gathered; auto-advance to planning
-last_updated: "2026-10-13T19:48:43.772Z"
+stopped_at: Completed 34-01-PLAN.md
+last_updated: "2026-10-13T21:37:17.773Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 33 complete, transitioned to Phase 34
-state_head: a8984b023a88496f80a9308e220ae5245674bf4e
+state_head: 74fcfdd91449ea353f3857b124e1951ed10316cd
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 13
-  completed_plans: 5
+  completed_plans: 6
   percent: 17
 ---
 
@@ -125,7 +125,7 @@ plans.
 ## Current Position
 
 Phase: 34 (Agent Diagnostics Floor and Surface Manifest) — READY TO EXECUTE
-Plan: Not started
+Plan: 2 of 8
 Status: Ready to execute
 Last activity: 2026-10-13 — Phase 33 complete, transitioned to Phase 34
 
@@ -589,6 +589,7 @@ subset alone.
 | Phase 33 P03 | 20min | 3 tasks | 7 files |
 | Phase 33 P04 | 12min | 3 tasks | 11 files |
 | Phase 33 P05 | 18min | 3 tasks | 16 files |
+| Phase 34 P01 | 13 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -778,6 +779,9 @@ decision history; they no longer describe current status.
 - [Phase 33]: Keep the receipt checker M006-compatible by default and pass an explicit milestone spec for M007 controls.
 - [Phase 33]: Treat Phase 28 validation and security as retroactive records; make no claim of a new test suite or hosted run.
 - [Phase 33]: PROJECT.md Key Decisions row near line 787 is a standing design rule, not a debt claim, so it remains unchanged.
+- [Phase 34]: The pre-change source-to-C corpus stores full literal C and explicit per-emitter outcomes for all 162 tracked inputs; refusal diagnostics remain historical facts.
+- [Phase 34]: The twenty parser fixtures are labeled reconstructed-2026-10-13; CRC32 and word-counter sources are representative reconstructions, not recovered originals.
+- [Phase 34]: The Bool-name baseline records the imported true route distinction and unbound true-tail name.unknown before-state; legacy diagnostic and result identity remain a separate literal baseline.
 
 ### Pending Todos
 
@@ -1023,10 +1027,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-13T18:41:25.235Z
-Stopped at: Phase 34 context gathered; auto-advance to planning
-Resume file: .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-CONTEXT.md
-Next action: /gsd-discuss-phase 33
+Last session: 2026-10-13T21:36:55.180Z
+Stopped at: Completed 34-01-PLAN.md
+Resume file: None
+Next action: $gsd-execute-phase 34
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,

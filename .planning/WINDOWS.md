@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 3
+open_count: 4
 waived_count: 0
 fixed_count: 3
-total_count: 6
-last_updated: 2026-10-13T17:55:33.809Z
+total_count: 7
+last_updated: 2026-10-13T21:34:52.574Z
 ---
 
 # Broken Windows Ledger
@@ -21,6 +21,7 @@ last_updated: 2026-10-13T17:55:33.809Z
 | 4 | 33 | deviation | internal/compiler/interp/interp.go |  | Plan 33-02 acceptance expected two live-resource error strings; source has three because RunWithForeignOutcomes and both routed callers retain the same required text. | open |  | 2026-10-13T17:04:15.066Z |  |
 | 5 | 33 | deviation | scripts/check-receipts.sh |  | Preserved first-failure refusal ordering by resolving the expected digest before manifest-content checks. | fixed |  | 2026-10-13T17:23:51.848Z | 2026-10-13T17:26:32.776Z |
 | 6 | 33 | deviation | .planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/*-SUMMARY.md; .planning/milestones/M006-phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/*-SUMMARY.md |  | Historical Phase 32 and 32.1 coverage refs amended to the Phase 33-04 generic gate test names so groundedness resolves. | open |  | 2026-10-13T17:55:33.809Z |  |
+| 7 | 34 | deviation | internal/compiler/session/session_phase34_prechange_test.go |  | Comparator now compares not_emitted outcomes and reaches a status-mutation control. | open |  | 2026-10-13T21:34:52.574Z |  |
 
 ````json
 [
@@ -98,6 +99,19 @@ last_updated: 2026-10-13T17:55:33.809Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-10-13T17:55:33.809Z",
+    "resolved_at": null,
+    "milestone": null
+  },
+  {
+    "id": 7,
+    "kind": "deviation",
+    "phase": "34",
+    "file": "internal/compiler/session/session_phase34_prechange_test.go",
+    "line": null,
+    "description": "Comparator now compares not_emitted outcomes and reaches a status-mutation control.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-13T21:34:52.574Z",
     "resolved_at": null,
     "milestone": null
   }

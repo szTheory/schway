@@ -24,10 +24,10 @@ acceptance record is kept at
 
 ### Diagnostics for agent authoring
 
-- [ ] **DX-20**: Text diagnostics show `file:line:col` and a one-line source snippet with a caret. JSON diagnostics add 1-based `line` and `col` to each span, next to the existing byte offsets. Codes are unchanged.
-- [ ] **DX-21**: A single syntax error yields one diagnostic for its recovery point, not a cascade of follow-on `expected }` / `expected declaration` errors. A pinned corpus of agent-style drafts shows the reduction.
-- [ ] **DX-22**: Constructs that remain absent are refused with a dedicated `surface.unsupported_*` code and a one-line hint. They include `&&`/`||`/`!`, more than one parameter, if without else, Bool literal tails, subtraction and dynamic shift amounts. The previous misleading parse errors no longer appear.
-- [ ] **DX-23**: `schway surface --json` prints a versioned, deterministic manifest of the admitted surface: types, operators, statements, builtins, call rules and limits. A meta-test fails if an admitted construct or `surface.unsupported_*` code is missing from the manifest, or if the manifest names one that is not admitted.
+- [x] **DX-20**: Text diagnostics show `file:line:col` and a one-line source snippet with a caret. JSON diagnostics add 1-based `line` and `col` to each span, next to the existing byte offsets. Codes are unchanged.
+- [x] **DX-21**: A single syntax error yields one diagnostic for its recovery point, not a cascade of follow-on `expected }` / `expected declaration` errors. A pinned corpus of agent-style drafts shows the reduction.
+- [x] **DX-22**: Constructs that remain absent are refused with a dedicated `surface.unsupported_*` code and a one-line hint. They include `&&`/`||`/`!`, more than one parameter, if without else, Bool literal tails, subtraction and dynamic shift amounts. The previous misleading parse errors no longer appear.
+- [x] **DX-23**: `schway surface --json` prints a versioned, deterministic manifest of the admitted surface: types, operators, statements, builtins, call rules and limits. A meta-test fails if an admitted construct or `surface.unsupported_*` code is missing from the manifest, or if the manifest names one that is not admitted.
 
 ### Bitwise operators and literals
 
@@ -92,10 +92,10 @@ acceptance record is kept at
 | QLT-14 | Phase 33 | Complete |
 | QLT-15 | Phase 33 | Complete |
 | EVD-16 | Phase 33 | Complete |
-| DX-20 | Phase 34 | Pending |
-| DX-21 | Phase 34 | Pending |
-| DX-22 | Phase 34 | Pending |
-| DX-23 | Phase 34 | Pending |
+| DX-20 | Phase 34 | Complete |
+| DX-21 | Phase 34 | Complete |
+| DX-22 | Phase 34 | Complete |
+| DX-23 | Phase 34 | Complete |
 | BIT-01 | Phase 35 | Pending |
 | BIT-02 | Phase 35 | Pending |
 | BIT-03 | Phase 35 | Pending |
