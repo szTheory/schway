@@ -136,6 +136,48 @@ func TestFreezeGate(t *testing.T) {
 			t.Fatalf("code change accepted: %d %q", exit, stderr)
 		}
 	})
+	t.Run("md-only-change-after-freeze-accepted", func(t *testing.T) {
+		dir, _, freeze, _ := build(t)
+		phase32Git(t, dir, "checkout", "-q", freeze)
+		path := filepath.Join(dir, "cmd", "README.md")
+		if err := os.WriteFile(path, []byte("documentation only\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		phase32Git(t, dir, "add", "-A")
+		phase32Git(t, dir, "commit", "-qm", "markdown only")
+		candidate := phase32GateHead(t, dir)
+		changed := phase33RunAt(t, dir, "scripts/codedigest.sh", "--changed", freeze, candidate)
+		if changed.exit != 0 || changed.stdout != "" {
+			t.Fatalf("markdown-only changed paths: %#v", changed)
+		}
+		gate := phase33RunAt(t, dir, "scripts/check-freeze.sh", "testdata/receipts/M006.manifest", freeze, candidate)
+		if gate.exit != 0 || !strings.Contains(gate.stdout, "status=pass") {
+			t.Fatalf("markdown-only freeze rejected: %#v", gate)
+		}
+	})
+	t.Run("revert-inside-range-rejected", func(t *testing.T) {
+		dir, _, freeze, combined := build(t)
+		code := strings.Split(combined, "\n")[1]
+		file := filepath.Join(dir, "cmd", "a.go")
+		if err := os.WriteFile(file, []byte("package a // frozen\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		phase32Git(t, dir, "add", "-A")
+		phase32Git(t, dir, "commit", "-qm", "revert in range")
+		candidate := phase32GateHead(t, dir)
+		netDiff, err := testsupport.RunCLIErr(context.Background(), "git", nil, "-C", dir, "diff", "--quiet", freeze, candidate, "--", "cmd/a.go")
+		if err != nil || netDiff.Exit != 0 {
+			t.Fatalf("fixture should have an empty net code diff after %s: exit=%d err=%v", code, netDiff.Exit, err)
+		}
+		diff := phase33RunAt(t, dir, "scripts/codedigest.sh", "--changed", freeze, candidate)
+		if diff.exit != 0 || diff.stdout == "" {
+			t.Fatalf("reverted range was not observed in history: %#v", diff)
+		}
+		gate := phase33RunAt(t, dir, "scripts/check-freeze.sh", "testdata/receipts/M006.manifest", freeze, candidate)
+		if gate.exit == 0 || !strings.Contains(gate.stderr, "reason=digest_path_changed_after_freeze") {
+			t.Fatalf("reverted code change was accepted: %#v", gate)
+		}
+	})
 	t.Run("subdirectory", func(t *testing.T) {
 		phase32Git(t, f, "checkout", "-q", code)
 		exit, _, stderr := phase33FreezeRun(t, f+"/cmd", "../scripts/check-freeze.sh", "../testdata/receipts/M006.manifest", freeze, code)
