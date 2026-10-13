@@ -8,14 +8,34 @@
 - ✅ **M004 — Native Emission Ownership and Resource Discharge** — Phases 21–25 (completed 2026-10-02) — [archive](milestones/M004-ROADMAP.md)
 - ✅ **M005 — Practical Computation** — Phases 26–27.3 (shipped 2026-10-10) — [archive](milestones/M005-ROADMAP.md)
 - ✅ **M006 — Bounded Byte Utility and Local Modules** — Phases 28–32.1 (shipped 2026-10-12) — [archive](milestones/M006-ROADMAP.md)
+- 🚧 **M007 — Bitwise Checksum and Composable Scalar Helpers** — Phases 33–38 (in progress)
 
 ## Overview
 
-No milestone is active. Start the next one with `/gsd-new-milestone`; phase
-numbering continues after 32.1. The living
+M007 makes Schway able to express a real bitwise checksum from small, reusable
+scalar helpers, and makes the language cheaper for an agent to author. Phase 33
+pays the carried M006 debt in one capped phase: it bounds the native capture
+read before allocation, closes the 32.1 review warnings, and replaces the
+phase-specific freeze scripts with one milestone-agnostic gate. Phase 34 sets a
+diagnostic floor for agents (line:col with a snippet, one diagnostic per syntax
+recovery point, `surface.unsupported_*` hints, and a `schway surface --json`
+manifest) without changing semantics. Phase 35 adds U64 `^ & |`, literal-amount
+`<< >>` and hex literals, and re-expresses `adler32` with `<< 16` as a free
+differential witness. Phase 36 lets a scalar function call another scalar
+function. Phase 37 delivers the `crc32` module, the `crc32` program, a second
+consumer, the interpreter file-bytes CLI route, and the clean-checkout guide.
+Phase 38 binds hosted two-host receipts once, after `/gsd-audit-milestone`.
+
+The current requirements are in [REQUIREMENTS.md](REQUIREMENTS.md). The
+[M007 research synthesis](research/M007/SUMMARY.md) records the consumer choice
+(CRC-32/ISO-HDLC, not POSIX `cksum`), the compiler cost estimates and the M006
+lessons; treat them as settled unless a phase discussion records evidence to
+reopen one. The Go 1.24 standard-library host, interpreter oracle, single
+C17/Clang native route and application runner remain the implementation path;
+no new dependency or backend is required. The living
 [product roadmap](PRODUCT-ROADMAP.md) and
-[language-maturity record](LANGUAGE-MATURITY.md) hold the ranked successor
-candidates and the current refusal frontier.
+[language-maturity record](LANGUAGE-MATURITY.md) hold the ranked successors and
+the current refusal frontier.
 
 ## Phases
 
@@ -45,3 +65,188 @@ Requirements: [milestones/M006-REQUIREMENTS.md](milestones/M006-REQUIREMENTS.md)
 Requirements: [milestones/M005-REQUIREMENTS.md](milestones/M005-REQUIREMENTS.md) · Audit: [milestones/M005-MILESTONE-AUDIT.md](milestones/M005-MILESTONE-AUDIT.md) · Phase artifacts: `milestones/M005-phases/`
 
 </details>
+
+### 🚧 M007 Bitwise Checksum and Composable Scalar Helpers (Phases 33–38)
+
+Phase IDs continue from M006's Phase 32.1. Each phase names its runnable gain.
+Phase discussions choose surface syntax and implementation detail while
+preserving the acceptance behavior below.
+
+**Plan caps (M006 lesson):** Phase 33 is capped at 5 plans. Every other phase
+targets about 8 plans; table-driven per-peer seeded faults go in one plan, not
+one plan per peer. A phase that needs more plans than its cap records a
+plan-count checkpoint and splits into an inserted decimal phase rather than
+growing.
+
+**Evidence rule (M006 lesson):** No phase before 38 binds hosted receipts.
+Phases 33–37 close on local automated evidence and the existing recurring CI
+jobs. Phase 38 binds the hosted ubuntu and macOS receipts once, after
+`/gsd-audit-milestone` and after any audit gap-closure phase it inserts.
+
+**Ordering decision (diagnostics before bitwise):** Phase 34 runs before
+Phase 35 so that every later phase is authored against line:col diagnostics,
+recovery-point dedup and the manifest meta-test. To avoid churn, DX-22's hint
+set in Phase 34 covers only constructs that stay absent after M007 (`&&`, `||`,
+`!`, arity > 1, if without else, Bool literal tails, subtraction). Bitwise
+operators and hex literals are not given `surface.unsupported_*` hints in
+Phase 34, because Phase 35 admits them. The one listed DX-22 construct that
+depends on shifts existing, a dynamic shift amount, gets its named refusal in
+Phase 35 under BIT-02, registered in the Phase 34 manifest as a
+`surface.unsupported_*` code with a one-line hint. The manifest meta-test from
+Phase 34 then forces Phases 35 and 36 to register every newly admitted
+construct, so the manifest cannot drift.
+
+- [ ] **Phase 33: Carried Debt, Bounded Capture Read, and Generic Freeze Gate** - The native capture file is read through a limit+1 bound before allocation, the 32.1 and Phase 29 review findings are closed or dispositioned, Phase 28 gains VALIDATION/SECURITY, and one milestone-agnostic freeze/receipt gate replaces `check-phase32-*`.
+- [ ] **Phase 34: Agent Diagnostics Floor and Surface Manifest** - Diagnostics carry line:col and a caret snippet, a syntax error yields one diagnostic, absent constructs get `surface.unsupported_*` hints, and `schway surface --json` prints a meta-tested manifest of the admitted surface.
+- [ ] **Phase 35: Bitwise Operators, Literal Shifts, and Hex Literals** - U64 `^ & |`, literal-amount `<< >>` and hex literals run with identical answers on both engines at every optimization level, and `adler32` uses `b << 16` with byte-identical pinned answers.
+- [ ] **Phase 36: Scalar Helper Calls** - A scalar function calls another scalar function (one U64/Bool argument, including imported module functions), with independent peer derivation and callee defects surfacing on both engines.
+- [ ] **Phase 37: CRC-32 Consumer, Interpreter File Route, and Guide** - `crc32 FILE` prints exact CRC-32/ISO-HDLC from an ordinary-source module, a second consumer imports it, `schway run --engine=interpreter` runs file-bytes programs from the CLI, and an executable guide is test-run.
+- [ ] **Phase 38: Milestone Receipts** - Hosted ubuntu and macOS receipts for every M007 and earlier pinned program are bound once to the final M007 codedigest, after the milestone audit.
+
+## Phase Details
+
+### Phase 33: Carried Debt, Bounded Capture Read, and Generic Freeze Gate
+
+**Goal**: The carried M006 debt is paid before any feature work: a child-written capture file can no longer force an unbounded host allocation, the open review warnings are closed or recorded with reasons, Phase 28 has its missing validation and security records, and later milestones reuse one freeze/receipt gate instead of copying phase-specific scripts.
+
+**Depends on**: Completed M006 (Phase 32.1)
+
+**Requirements**: QLT-13, QLT-14, QLT-15, EVD-16
+
+**Success Criteria** (what must be TRUE):
+
+1. An oversize evidence capture file makes the native app report the named capacity outcome, and it does so without reading the whole file: the capture is read through a reader bounded at limit+1 bytes before any allocation. A focused Go test pins the outcome at exactly the limit and at limit+1, and a seeded mutant that restores the unbounded `os.ReadFile` read is caught by that test.
+2. Running the freeze gate from the repository root and from a subdirectory gives the same verdict, pinned by a subdirectory test (32.1 WR-01). `isAbortLikeDefect` accepts only the abort-like defect reasons it names, with the live owner checked, and a mutant that widens it is caught by a focused test (32.1 WR-02).
+3. Each of 32.1 IN-01..03, the coverage-`kind` pin, and Phase 29 WR-02/WR-03 is either fixed with a covering test or recorded in a written disposition with its reason, and the planning-doc meta-tests (inventory, groundedness, validation lifecycle) pass with those records in place. `milestones/M006-phases/` Phase 28 has a VALIDATION.md and a SECURITY.md built from existing evidence, accepted by the validation-lifecycle meta-test.
+4. One milestone-agnostic freeze/receipt gate takes the milestone's program list and codedigest as input and replaces the `check-phase32-*` scripts. Its armed controls reproduce every existing refusal (revision mismatch, digest mismatch, missing program, malformed receipt), it accepts the archived M006 receipts when given the M006 inputs, and a static test finds no remaining `check-phase32-*` caller.
+
+**Runnable gain**: The M006 receipts re-validate through the generic gate given only the M006 program list and codedigest, and an oversize capture is refused by name without a full-file allocation.
+
+**Research flag**: Standard. Capped at 5 plans and binds no hosted receipt. WR-02 touches byte-op parity: pin the current interpreter/native abort-like parity rows before narrowing the predicate. The generic gate must keep the M006 `check-phase32-*` refusal behavior byte-for-byte before the scripts are deleted.
+
+**Plans**: TBD (cap 5)
+
+### Phase 34: Agent Diagnostics Floor and Surface Manifest
+
+**Goal**: An agent drafting Schway gets one precise, locatable diagnostic per real cause and can ask the toolchain what surface is admitted, instead of guessing from cascading, offset-only or misleading errors.
+
+**Depends on**: Phase 33 (generic gate and debt cleared; no semantic dependency)
+
+**Requirements**: DX-20, DX-21, DX-22, DX-23
+
+**Success Criteria** (what must be TRUE):
+
+1. A text diagnostic shows `file:line:col` and a one-line source snippet with a caret under the span, and each JSON diagnostic span adds 1-based `line` and `col` next to the unchanged byte offsets. Golden tests pin both forms, including multi-byte UTF-8 and CRLF lines and a span on the last line without a newline, and a corpus test shows no diagnostic code changed.
+2. A pinned corpus of agent-style drafts (including the CRC-32 and word-counter scratch drafts from research) yields one diagnostic per real syntax cause, with no follow-on `expected }` or `expected declaration` cascade. A test pins the before/after diagnostic counts per draft.
+3. Each construct that stays absent after M007 (`&&`, `||`, `!`, more than one parameter, if without else, a Bool literal tail, subtraction) is refused with its own `surface.unsupported_*` code and a one-line hint. A test per construct asserts the code and hint and asserts that the previous misleading parse error (for example `expected )` for arity 2, `syntax.expected_equal` for a Bool tail) no longer appears.
+4. `schway surface --json` prints a versioned manifest of types, operators, statements, builtins, call rules and limits, and two runs give byte-identical output. A meta-test fails, with an armed control for each direction, when an admitted construct or a `surface.unsupported_*` code is missing from the manifest, or when the manifest names a construct that is not admitted.
+
+**Runnable gain**: `schway check` on a broken agent draft prints one `file:line:col` diagnostic with a caret and a hint, and `schway surface --json` tells the agent what it may write.
+
+**Research flag**: Standard. No semantics change: generated C for every existing program stays byte-identical, pinned by the corpus golden. Bitwise operators and hex literals receive no `surface.unsupported_*` hint here (Phase 35 admits them); the dynamic-shift-amount code lands with BIT-02 in Phase 35 (see the ordering decision above). Diagnostic JSON gains fields only; existing consumers and repair patches must keep parsing it.
+
+**Plans**: TBD (target ≈8)
+
+### Phase 35: Bitwise Operators, Literal Shifts, and Hex Literals
+
+**Goal**: Ordinary Schway scalar code can use U64 `^`, `&`, `|`, literal-amount `<<` and `>>`, and hex literals, with one defined meaning on every engine and optimization level, no C17 shift undefined behavior, and no new defect path.
+
+**Depends on**: Phase 34 (manifest meta-test and `surface.unsupported_*` family)
+
+**Requirements**: BIT-01, BIT-02, BIT-03, BIT-04
+
+**Success Criteria** (what must be TRUE):
+
+1. U64 `^`, `&` and `|` give the literal expected answers in the interpreter and in native code at `-O0`, `-O3` and `-O3` with LTO. Check, corevalidate, originvalidate and the execution peer each derive the ops independently, and a table-driven test with one wrong-result mutant per op per peer shows every mutant caught.
+2. `<<` and `>>` with literal amounts 0, 31, 32 and 63 give pinned answers on both engines at every optimization level, and `<<` drops high bits as the manifest and guide state. An amount of 64 or more, or a non-literal amount, is refused at check, core and origin with a named `surface.unsupported_*` code and hint registered in the manifest; a mutant removing each refusal is caught, and a static scan of generated C for the corpus finds no shift whose amount is not a literal below 64.
+3. Hex literals (`0x…`, case-insensitive digits) are admitted wherever decimal U64 literals are and evaluate identically on both engines. Overflowing and malformed hex is refused with named codes, and a formatter golden shows the source spelling preserved.
+4. `examples/checksum/adler32.schway` uses `b << 16` in place of 16 doublings, and the existing pinned answers plus the `checksum` and `adler_low` outputs stay byte-identical on both engines, proven by the existing Phase 29/31 answer tests passing unchanged.
+5. Every program without bitwise ops, shifts or hex literals keeps byte-identical generated C, pinned by a corpus golden committed before the change, and the Phase 34 manifest meta-test passes with every new operator and refusal code registered.
+
+**Runnable gain**: A Schway program computes `x ^ (y << 3) & 0xFF` and prints the same answer from `schway run --engine=interpreter` and `--engine=native`, and `checksum` keeps its outputs with a one-line shift.
+
+**Research flag**: Standard. Literal-only shift amounts keep the ops event-free (precedent: the static-zero refusal in `scalar.go`) and avoid C17 §6.5.7 UB. Non-defecting ops join the event-free lists only. Hex is lexer-only.
+
+**Plans**: TBD (target ≈8)
+
+### Phase 36: Scalar Helper Calls
+
+**Goal**: A scalar function can be factored into small helpers: it calls another scalar function with one U64 or Bool argument and uses the result, including calls into imported modules, with the same defect behavior on both engines and every peer re-deriving the call independently.
+
+**Depends on**: Phase 35 (helpers will be written with bitwise ops; manifest records the call rule)
+
+**Requirements**: CALL-01, CALL-02
+
+**Success Criteria** (what must be TRUE):
+
+1. A scalar function that calls another scalar function with one U64 or Bool argument and uses the result in an expression or assignment prints the pinned answer on both engines; the same holds for a call to a function imported from a local module. A recursive or mutually recursive scalar call is still refused by the call graph with its existing code.
+2. An overflow, remainder-by-zero or byte-bounds defect inside a callee surfaces with the callee's reason and exit 65 on both engines, pinned by one test row per defect kind.
+3. Check, corevalidate, originvalidate and the execution peer each derive scalar calls independently, and a table-driven test shows mutants that drop the argument, drop the result, or drop a callee defect are each caught.
+4. Every program without scalar-to-scalar calls keeps byte-identical generated C, pinned by a corpus golden committed before the change, and the manifest meta-test passes with the call rule (arity 1, no recursion) recorded.
+
+**Runnable gain**: A scalar `crc_step`-style helper is called from a loop function and from an importing module, and both engines print the same result.
+
+**Research flag**: Moderate. Arity stays exactly 1 (`core.Function.Parameter`), so the core IR JSON schema does not change. Cost lies in the callee defect path through cgen evidence reservation, interpreter defect events and the execution peer.
+
+**Plans**: TBD (target ≈8)
+
+### Phase 37: CRC-32 Consumer, Interpreter File Route, and Guide
+
+**Goal**: A developer can run `crc32` on one file and get the exact CRC-32/ISO-HDLC from an ordinary-source module written with bitwise ops and helper calls, a second application imports that module unchanged, both engines run file-bytes programs from the CLI with identical results, and a clean checkout reproduces it all from the guide.
+
+**Depends on**: Phase 36 (helper calls), Phase 35 (bitwise ops and shifts)
+
+**Requirements**: APP-13, MOD-07, APP-14, DX-24
+
+**Success Criteria** (what must be TRUE):
+
+1. `crc32 FILE`, built from an ordinary-source `crc32` module using a bit-at-a-time loop with no table, prints bare decimal: empty → `0`, one `0x00` byte → `3523407757`, `123456789` → `3421780262`, and 65,536 × `0xFF` → its pinned answer. A 65,537-byte file gets the existing oversize outcome, and a missing or unreadable file gets the shared outcome. Every answer comes from Python `zlib.crc32` with its generating command recorded, and armed controls (wrong polynomial, non-reflected variant, missing final xor, off-by-one loop bound, library mutation) are each observed to fail.
+2. A second consumer imports `crc32` from the module without copying it and prints its pinned answer on both engines; a single-copy scan finds one copy of the CRC loop, and the library mutation flips both applications' outputs.
+3. `schway run --engine=interpreter` runs `crc32` and `checksum` from the CLI and gives the same stdout, stderr and exit code as native for every pinned case, proven by one shared cross-engine case matrix test through the public CLI route rather than the Go-level `RunWithFileBytes` seam.
+4. `examples/crc32/README.md` states the expected results, the 65,536-byte limit, each error outcome, and that this is CRC-32/ISO-HDLC and not POSIX `cksum` (CRC-32/CKSUM). A clean-checkout guide test, built like `TestPhase32GuideCleanCheckout`, runs its commands in a temp copy of the tracked files and matches exit code, stdout and stderr.
+
+**Runnable gain**: `crc32 FILE` and the second consumer run on both engines from the CLI, and a fresh clone reproduces them by following the guide.
+
+**Research flag**: Moderate. Reuses the M006 file cap, ByteView, module and file adapter unchanged. The interpreter file-bytes CLI route is new public surface: record its exit classes in the Phase 28 exit table. The unreadable-file control uses a named skip when running as root. This is the last code-moving phase before the milestone audit.
+
+**Plans**: TBD (target ≈8)
+
+### Phase 38: Milestone Receipts
+
+**Goal**: Every native claim made in M007 and earlier milestones is bound to hosted ubuntu and macOS receipts at the final M007 source, taken once after the milestone audit so no later fix silently invalidates them.
+
+**Depends on**: Phase 37 and a completed `/gsd-audit-milestone` run (plus any audit gap-closure phase it inserts, for example 37.1)
+
+**Requirements**: EVD-17
+
+**Success Criteria** (what must be TRUE):
+
+1. Hosted ubuntu and macOS receipts cover every M007 program (`crc32`, the second `crc32` consumer, the bitwise and helper-call fixtures) and every earlier pinned program (`checksum`, `adler_low`, the Phase 29 fixture and OOB control, `sum_to_n`, FizzBuzz), with every pinned case per host.
+2. The Phase 33 generic freeze/receipt gate accepts the receipts given the M007 program list and the final M007 codedigest, and rejects them, through its armed controls, when the codedigest or revision differs from the checked-out source.
+3. The receipts are bound in the last plan of the milestone, after `/gsd-audit-milestone`; no per-phase hosted receipt binding exists in Phases 33–37, and the ingest plan touches only `.planning/`.
+
+**Runnable gain**: The milestone's native claims are reproducible on both hosts at the shipped revision, and any later code commit reopens them.
+
+**Research flag**: Standard. Hosted runs need explicit user approval for push and dispatch (one human checkpoint line naming the freeze commit); everything else is automated. Hosted runs take about 15–22 minutes and have failed transiently, so the plan allows one re-dispatch at the same freeze commit before treating a failure as real.
+
+**Plans**: TBD (expected 3: freeze, push-and-dispatch checkpoint, `.planning`-only ingest)
+
+## Progress
+
+**Execution order:** 33 → 34 → 35 → 36 → 37 → `/gsd-audit-milestone` → 38
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 33. Carried Debt, Bounded Capture Read, and Generic Freeze Gate | 0/TBD | Not started | - |
+| 34. Agent Diagnostics Floor and Surface Manifest | 0/TBD | Not started | - |
+| 35. Bitwise Operators, Literal Shifts, and Hex Literals | 0/TBD | Not started | - |
+| 36. Scalar Helper Calls | 0/TBD | Not started | - |
+| 37. CRC-32 Consumer, Interpreter File Route, and Guide | 0/TBD | Not started | - |
+| 38. Milestone Receipts | 0/TBD | Not started | - |
+
+**Coverage:** 19/19 M007 requirements have exactly one phase owner. DX-22 is
+owned by Phase 34; its dynamic-shift-amount item is delivered by Phase 35's
+BIT-02 refusal, which registers as a `surface.unsupported_*` code in the
+Phase 34 manifest (see the ordering decision). EVD-17 is its own phase rather
+than a final plan of Phase 37, so `/gsd-audit-milestone` can run against a
+complete Phase 37 and any inserted gap-closure phase lands before the receipts.

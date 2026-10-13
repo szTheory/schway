@@ -88,11 +88,36 @@ acceptance record is kept at
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| QLT-13 | Phase 33 | Pending |
+| QLT-14 | Phase 33 | Pending |
+| QLT-15 | Phase 33 | Pending |
+| EVD-16 | Phase 33 | Pending |
+| DX-20 | Phase 34 | Pending |
+| DX-21 | Phase 34 | Pending |
+| DX-22 | Phase 34 | Pending |
+| DX-23 | Phase 34 | Pending |
+| BIT-01 | Phase 35 | Pending |
+| BIT-02 | Phase 35 | Pending |
+| BIT-03 | Phase 35 | Pending |
+| BIT-04 | Phase 35 | Pending |
+| CALL-01 | Phase 36 | Pending |
+| CALL-02 | Phase 36 | Pending |
+| APP-13 | Phase 37 | Pending |
+| MOD-07 | Phase 37 | Pending |
+| APP-14 | Phase 37 | Pending |
+| DX-24 | Phase 37 | Pending |
+| EVD-17 | Phase 38 | Pending |
+
+DX-22's dynamic-shift-amount item is delivered by Phase 35's BIT-02 refusal,
+registered as a `surface.unsupported_*` code in the Phase 34 manifest; DX-22
+stays owned by Phase 34.
 
 **Coverage:**
-- M007 requirements: 20 total
-- Mapped to phases: 0 (roadmap pending)
+- M007 requirements: 19 total (corrected 2026-10-13 at roadmap creation; the
+  kickoff count of 20 was a miscount — 19 IDs are defined above)
+- Mapped to phases: 19
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-10-13*
-*Last updated: 2026-10-13 after M007 kickoff*
+*Last updated: 2026-10-13 after M007 roadmap creation*

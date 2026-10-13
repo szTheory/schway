@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 status: planning
-last_updated: "2026-10-13T14:10:01.247Z"
+last_updated: "2026-10-13T15:00:00.000Z"
 last_activity: 2026-10-13
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -51,7 +51,7 @@ See: .planning/PROJECT.md (updated 2026-10-12)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Planning next milestone (M006 shipped 2026-10-12, tag `vM006`)
+**Current focus:** M007 Bitwise Checksum and Composable Scalar Helpers — Phase 33 (Carried Debt, Bounded Capture Read, and Generic Freeze Gate)
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -117,10 +117,32 @@ plans.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-10-13 — Milestone M007 started
+Phase: 33 of 33–38 (Carried Debt, Bounded Capture Read, and Generic Freeze Gate)
+Plan: — (not planned; cap 5 plans)
+Status: Ready to discuss/plan
+Last activity: 2026-10-13 — M007 roadmap created (6 phases, 19/19 requirements mapped)
+
+Progress: [░░░░░░░░░░] 0%
+
+## M007 Planning
+
+Roadmap created 2026-10-13 from the M007 research synthesis's suggested order.
+Phase numbering continues after 32.1. Diagnostics (34) precede bitwise (35);
+DX-22's hint set covers only constructs still absent after M007, and the
+dynamic-shift-amount refusal lands with BIT-02 in Phase 35 as a registered
+`surface.unsupported_*` code, so no hint is rewritten. EVD-17 is its own final
+phase (38), run after `/gsd-audit-milestone` and any gap-closure phase it
+inserts. Phase 33 is capped at 5 plans; other phases target about 8. No hosted
+receipt binding before Phase 38.
+
+| Phase | Name | Requirements | Research |
+|-------|------|--------------|----------|
+| 33 | Carried Debt, Bounded Capture Read, and Generic Freeze Gate | QLT-13, QLT-14, QLT-15, EVD-16 | Standard (cap 5 plans) |
+| 34 | Agent Diagnostics Floor and Surface Manifest | DX-20, DX-21, DX-22, DX-23 | Standard |
+| 35 | Bitwise Operators, Literal Shifts, and Hex Literals | BIT-01, BIT-02, BIT-03, BIT-04 | Standard |
+| 36 | Scalar Helper Calls | CALL-01, CALL-02 | Moderate |
+| 37 | CRC-32 Consumer, Interpreter File Route, and Guide | APP-13, MOD-07, APP-14, DX-24 | Moderate |
+| 38 | Milestone Receipts (after audit) | EVD-17 | Standard |
 
 ## M006 Planning
 
@@ -910,6 +932,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 - Phase 27.2 inserted after Phase 27.1: Address tech debt: straight-line scalar let admission (R1) (URGENT)
 - Phase 27.3 inserted after Phase 27: Address tech debt: app verify capacity abort and guide clean-tree outputs (W1, W4) (URGENT)
 - Phase 32.1 inserted after Phase 32: Address tech debt: CLI exit classes and module-aware routes (from M006 audit, 558cbbae) (URGENT)
+- M007 roadmap (2026-10-13): Phases 33–38 from research/M007/SUMMARY.md order; EVD-17 split into its own post-audit Phase 38.
 
 ### Quick Tasks Completed
 
@@ -973,10 +996,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-13T02:55:07.000Z
-Stopped at: Phase 32.1 complete (UAT 31/31 automated) — M006 ready to close
+Last session: 2026-10-13T15:00:00.000Z
+Stopped at: M007 roadmap created (Phases 33–38, 19/19 requirements mapped)
 Resume file: None
-Next action: /gsd-execute-phase 32.1
+Next action: /gsd-discuss-phase 33
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
@@ -1156,4 +1179,4 @@ plans, or reopen Phase 25 implementation.
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Discuss M007 Phase 33 with /gsd-discuss-phase 33
