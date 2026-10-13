@@ -234,9 +234,9 @@ thresholds below reflect the later Phase 23 closeout.
 
 ## What exists
 
-M006 final hosted receipts: bound to codedigest c1b4e85df4d7723659c62e8338c0c961c0fd930fb45f84b7c25de1fa718cd227 (run 38315799626)
+M006 final hosted receipts: reopened 2026-10-12 (historical codedigest c1b4e85df4d7723659c62e8338c0c961c0fd930fb45f84b7c25de1fa718cd227)
 
-The hosted receipts cover the M006 programs (checksum, adler_low, the adler32 library demo, the Phase 29 Adler-32 fixture and out-of-bounds control) plus sum_to_n and FizzBuzz (N2 closed). Receipt rows are default-build only; the optimization matrix is bound by the same run's go test lanes. Any later code change reopens them.
+The hosted receipts cover the M006 programs (checksum, adler_low, the adler32 library demo, the Phase 29 Adler-32 fixture and out-of-bounds control) plus sum_to_n and FizzBuzz (N2 closed). Receipt rows are default-build only; the optimization matrix is bound by the same run's go test lanes. The Phase 32.1 code changes (D-01, D-08, D-09, D-15, D-20) reopen the receipts taken in run 38315799626; plan 32.1-11 re-takes them at the 32.1 freeze.
 
 | Capability | Observed boundary | Source / evidence anchor |
 |---|---|---|

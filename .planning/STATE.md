@@ -4,12 +4,12 @@ milestone: M006
 milestone_name: Bounded Byte Utility and Local Modules
 current_phase: "32.1"
 current_phase_name: "Address tech debt: CLI exit classes and module-aware routes"
-status: in_progress
+status: executing
 stopped_at: Phase 32.1 planned (11 plans, 7 waves; checker passed)
-last_updated: "2026-10-13T01:24:34.803Z"
+last_updated: "2026-10-13T01:25:40.623Z"
 last_activity: 2026-10-12
-last_activity_desc: Phase 32.1 inserted after M006 audit (tech_debt)
-state_head: b8a12b73dafd6ef428de85e0a86926f53d579f30
+last_activity_desc: Phase 32.1 execution started
+state_head: 5baf1c6c8cb163568af3f533a838c5db984c9a98
 progress:
   total_phases: 6
   completed_phases: 5
@@ -123,16 +123,16 @@ plans.
 ## Current Position
 
 Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
-Phase: 32.1 (Address tech debt: CLI exit classes and module-aware routes) — READY TO EXECUTE
-Plan: Not started
-Status: in_progress
-Last activity: 2026-10-12 — Phase 32.1 inserted after M006 audit (tech_debt)
+Phase: 32.1 (Address tech debt: CLI exit classes and module-aware routes) — EXECUTING
+Plan: 1 of 11
+Status: Executing Phase 32.1
+Last activity: 2026-10-12 — Phase 32.1 execution started
 
 Progress: [████████░░] 83% (3/5 M006 phases)
 
-M006 final hosted receipts: bound to codedigest c1b4e85df4d7723659c62e8338c0c961c0fd930fb45f84b7c25de1fa718cd227 (run 38315799626)
+M006 final hosted receipts: reopened 2026-10-12 (historical codedigest c1b4e85df4d7723659c62e8338c0c961c0fd930fb45f84b7c25de1fa718cd227)
 
-The hosted receipts cover the M006 programs (checksum, adler_low, the adler32 library demo, the Phase 29 Adler-32 fixture and out-of-bounds control) plus sum_to_n and FizzBuzz (N2 closed). Receipt rows are default-build only; the optimization matrix is bound by the same run's go test lanes. Any later code change reopens them.
+The hosted receipts cover the M006 programs (checksum, adler_low, the adler32 library demo, the Phase 29 Adler-32 fixture and out-of-bounds control) plus sum_to_n and FizzBuzz (N2 closed). Receipt rows are default-build only; the optimization matrix is bound by the same run's go test lanes. The Phase 32.1 code changes (D-01, D-08, D-09, D-15, D-20) reopen the receipts taken in run 38315799626; plan 32.1-11 re-takes them at the 32.1 freeze.
 
 ## M006 Planning
 
