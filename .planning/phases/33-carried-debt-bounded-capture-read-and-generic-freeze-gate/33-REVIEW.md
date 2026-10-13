@@ -37,9 +37,9 @@ status: clean
 
 # Phase 33: Code Review Report
 
-**Reviewed:** 2026-10-13T18:12:29Z  
-**Depth:** standard  
-**Files Reviewed:** 23  
+**Reviewed:** 2026-10-13T18:12:29Z
+**Depth:** standard
+**Files Reviewed:** 23
 **Status:** clean
 
 ## Summary
@@ -54,6 +54,6 @@ No findings.
 
 ---
 
-_Reviewed: 2026-10-13T18:12:29Z_  
-_Reviewer: the agent (gsd-code-reviewer)_  
+_Reviewed: 2026-10-13T18:12:29Z_
+_Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
