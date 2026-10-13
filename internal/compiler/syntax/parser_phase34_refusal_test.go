@@ -8,11 +8,30 @@ import (
 
 	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/surface"
 	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
 func TestPhase34UnsupportedSurfaceRefusals(t *testing.T) {
-	const source = "module phase34.logical_and\nexport { fn main }\nfn main(n: U64) -> U64 { if n < 2 && n < 3 { n } else { n } }\n"
+	wantCatalog := []surface.Refusal{
+		{Code: "surface.unsupported_logical_and", Form: "&&", Hint: "Logical && is unsupported; use explicit if/else control flow."},
+		{Code: "surface.unsupported_logical_or", Form: "||", Hint: "Logical || is unsupported; use explicit if/else control flow."},
+		{Code: "surface.unsupported_logical_not", Form: "!", Hint: "Logical ! is unsupported; use explicit if/else control flow."},
+		{Code: "surface.unsupported_parameter_arity", Form: "more than one declaration parameter", Hint: "Declarations require exactly one parameter; pass one admitted value."},
+		{Code: "surface.unsupported_if_without_else", Form: "if statement without else block", Hint: "An if statement requires an else block."},
+		{Code: "surface.unsupported_bool_literal_tail", Form: "unbound true or false in a result tail", Hint: "Bool literals are unsupported in result tails; return an initialized value allowed by the declared result type."},
+		{Code: "surface.unsupported_subtraction", Form: "-", Hint: "Subtraction is unsupported; no unchecked emulation is recommended."},
+	}
+	if got := surface.Refusals(); !reflect.DeepEqual(got, wantCatalog) {
+		t.Fatalf("surface.Refusals() = %+v, want the independent seven-entry catalog %+v", got, wantCatalog)
+	}
+	for _, want := range wantCatalog {
+		if got, ok := surface.LookupRefusal(want.Code); !ok || got != want {
+			t.Errorf("surface.LookupRefusal(%q) = %+v, %v; want %+v, true", want.Code, got, ok, want)
+		}
+	}
+
+	const source = "module phase34.logical_and\nexport { fn main }\nfn main(n: U64) -> U64 { var result = n if n < 2 && n < 3 { result = n } else { result = n } result }\n"
 	const hint = "Logical && is unsupported; use explicit if/else control flow."
 
 	parsed := syntax.Parse([]byte(source))
