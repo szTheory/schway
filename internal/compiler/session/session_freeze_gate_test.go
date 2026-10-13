@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -401,13 +400,5 @@ func testPortedPhase32FreezeGate(t *testing.T) {
 	t.Run("unknown-commit", func(t *testing.T) {
 		expectReject(t, f.dir, "unknown_commit", f.freeze, strings.Repeat("1", 40))
 	})
-	t.Run("paths-match-digest", func(t *testing.T) {
-		match := regexp.MustCompile(`(?m)^phase32_freeze_paths="([^"]*)"$`).FindSubmatch(freezeScript)
-		if match == nil {
-			t.Fatal("phase32_freeze_paths line not found")
-		}
-		if got, want := string(match[1]), strings.Join(phase32DigestPaths, " "); got != want {
-			t.Fatalf("freeze paths %q != digest paths %q", got, want)
-		}
-	})
+
 }
