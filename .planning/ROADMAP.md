@@ -160,6 +160,27 @@ Plans:
 **Research flag**: Standard. No semantics change: generated C for every existing program stays byte-identical, pinned by the corpus golden. Bitwise operators and hex literals receive no `surface.unsupported_*` hint here (Phase 35 admits them); the dynamic-shift-amount code lands with BIT-02 in Phase 35 (see the ordering decision above). Diagnostic JSON gains fields only; existing consumers and repair patches must keep parsing it.
 
 **Plans**: TBD (target ≈8)
+**Wave 1**
+- [ ] 34-01-PLAN.md
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 34-02-PLAN.md
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 34-03-PLAN.md
+- [ ] 34-04-PLAN.md
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 34-05-PLAN.md
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 34-06-PLAN.md
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 34-07-PLAN.md
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 34-08-PLAN.md
 
 ### Phase 35: Bitwise Operators, Literal Shifts, and Hex Literals
 
@@ -252,7 +273,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 33. Carried Debt, Bounded Capture Read, and Generic Freeze Gate | 5/5 | Complete    | 2026-10-13 |
-| 34. Agent Diagnostics Floor and Surface Manifest | 0/TBD | Not started | - |
+| 34. Agent Diagnostics Floor and Surface Manifest | 0/8 | Planned     | - |
 | 35. Bitwise Operators, Literal Shifts, and Hex Literals | 0/TBD | Not started | - |
 | 36. Scalar Helper Calls | 0/TBD | Not started | - |
 | 37. CRC-32 Consumer, Interpreter File Route, and Guide | 0/TBD | Not started | - |
