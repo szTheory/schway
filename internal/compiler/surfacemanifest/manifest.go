@@ -108,7 +108,7 @@ func limit(id, category, scope, unit string, value int, meaning string, routes .
 func Current() Manifest {
 	bounds := syntax.CurrentAuthoringBounds()
 	moduleRoutes := check.ModuleAwareRoutes()
-	parserRoutes := []string{"app verify", "build", "check", "debug-map", "evidence", "evidence --validate", "explain", "format", "interface core", "interface export", "query", "run"}
+	parserRoutes := []string{"app verify", "build", "check", "debug-map", "evidence", "evidence --validate", "explain", "format", "interface export", "query", "run", "verify"}
 	checkedRoutes := []string{"app verify", "build", "check", "run"}
 	refusals := surface.Refusals()
 	refusalEntries := make([]Refusal, 0, len(refusals))
@@ -200,7 +200,7 @@ func Current() Manifest {
 			limit("parser.declarations", "authoring parse bound", "one source file", "declarations", syntax.MaxDeclarations, "Maximum data and function declarations in one file.", parserRoutes...),
 			limit("parser.functions", "authoring parse bound", "one source file", "functions", syntax.MaxFunctions, "Maximum function declarations in one file.", parserRoutes...),
 			limit("parser.linear_bindings", "authoring parse bound", "one parsed linear body", "bindings", bounds.LinearBindings, "Maximum linear bindings accepted by the parser in a body.", parserRoutes...),
-			limit("parser.primary_diagnostics", "authoring diagnostic bound", "one parsed source", "diagnostics", bounds.PrimaryDiagnostics, "Maximum primary parser diagnostics; excess diagnostics are summarized by the named truncation diagnostic.", parserRoutes...),
+			limit("parser.primary_diagnostics", "authoring diagnostic bound", "one parsed source", "diagnostics", bounds.PrimaryDiagnostics, "Maximum primary parser diagnostics; further diagnostics are suppressed and reported as syntax.too_many_errors.", parserRoutes...),
 			limit("parser.source_bytes", "authoring parse bound", "one source file", "bytes", syntax.MaxSourceBytes, "Maximum bytes accepted by a source parser entry point.", parserRoutes...),
 			limit("parser.tokens", "authoring parse bound", "one source file", "tokens", syntax.MaxTokens, "Maximum tokens accepted from one parsed source file.", parserRoutes...),
 			limit("parser.type_depth", "authoring type bound", "one nested type expression", "levels", bounds.TypeDepth, "Maximum parser type-expression nesting depth.", parserRoutes...),

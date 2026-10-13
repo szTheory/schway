@@ -1,0 +1,30 @@
+{
+  "command": "GOCACHE=/tmp/ai-lang-verification-gocache /opt/homebrew/opt/python@3.14/bin/python3.14 /tmp/schway-go-junit.py --record .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-task2-green.json --target TestPhase34SurfaceDocument --target-file internal/compiler/surfacemanifest/manifest_test.go --expected 'Document and limits are independently pinned to current checked contexts, refusal literals and scoped finite bounds.' -- go test -json ./internal/compiler/surfacemanifest -run '^(TestPhase34SurfaceDocument|TestPhase34SurfaceLimits)$' -count=1 -v",
+  "exitCode": 0,
+  "output": "<testsuites tests=\"2\" failures=\"0\"><testsuite name=\"github.com/szTheory/schway/internal/compiler/surfacemanifest\" tests=\"2\" failures=\"0\" skipped=\"0\"><testcase classname=\"github.com/szTheory/schway/internal/compiler/surfacemanifest\" name=\"TestPhase34SurfaceDocument\" time=\"0\"><system-out>=== RUN   TestPhase34SurfaceDocument\n--- PASS: TestPhase34SurfaceDocument (0.00s)\n</system-out></testcase><testcase classname=\"github.com/szTheory/schway/internal/compiler/surfacemanifest\" name=\"TestPhase34SurfaceLimits\" time=\"0\"><system-out>=== RUN   TestPhase34SurfaceLimits\n--- PASS: TestPhase34SurfaceLimits (0.00s)\n</system-out></testcase><system-out>PASS\nok  \tgithub.com/szTheory/schway/internal/compiler/surfacemanifest\t0.006s\n</system-out></testsuite></testsuites>\n",
+  "targetTest": "TestPhase34SurfaceDocument",
+  "targetFile": "internal/compiler/surfacemanifest/manifest_test.go",
+  "expected": "Document and limits are independently pinned to current checked contexts, refusal literals and scoped finite bounds.",
+  "actual": "=== RUN   TestPhase34SurfaceDocument\n--- PASS: TestPhase34SurfaceDocument (0.00s)\n",
+  "reportPath": "/Users/jon/projects/schway/.planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-task2-green-initial.junit.xml",
+  "runStartedAt": "2026-10-13T23:45:47.169946+00:00",
+  "reportModifiedAt": "2026-10-13T23:45:47.780771+00:00",
+  "durationMs": 610.1196249946952,
+  "rawGoJSON": "{\"Time\":\"2026-10-13T19:45:47.764097-04:00\",\"Action\":\"start\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\"}\n{\"Time\":\"2026-10-13T19:45:47.768777-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceDocument\"}\n{\"Time\":\"2026-10-13T19:45:47.768832-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceDocument\",\"Output\":\"=== RUN   TestPhase34SurfaceDocument\\n\"}\n{\"Time\":\"2026-10-13T19:45:47.769391-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceDocument\",\"Output\":\"--- PASS: TestPhase34SurfaceDocument (0.00s)\\n\"}\n{\"Time\":\"2026-10-13T19:45:47.769404-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceDocument\",\"Elapsed\":0}\n{\"Time\":\"2026-10-13T19:45:47.76941-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceLimits\"}\n{\"Time\":\"2026-10-13T19:45:47.769412-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceLimits\",\"Output\":\"=== RUN   TestPhase34SurfaceLimits\\n\"}\n{\"Time\":\"2026-10-13T19:45:47.769432-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceLimits\",\"Output\":\"--- PASS: TestPhase34SurfaceLimits (0.00s)\\n\"}\n{\"Time\":\"2026-10-13T19:45:47.76944-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceLimits\",\"Elapsed\":0}\n{\"Time\":\"2026-10-13T19:45:47.769441-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Output\":\"PASS\\n\"}\n{\"Time\":\"2026-10-13T19:45:47.769856-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Output\":\"ok  \\tgithub.com/szTheory/schway/internal/compiler/surfacemanifest\\t0.006s\\n\"}\n{\"Time\":\"2026-10-13T19:45:47.769884-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Elapsed\":0.006}\n",
+  "rawStderr": "",
+  "reporter": "/private/tmp/schway-go-junit.py",
+  "reporterSource": {
+    "path": "/tmp/schway-go-junit.py",
+    "sha256": "69752666215dd93d8d1a65b6dbd8544e205c2aacb7cb95c7f408101f0b7f5106",
+    "kind": "standard-library execution reporter"
+  },
+  "freshness": {
+    "runStartedAt": "2026-10-13T23:45:47.169946+00:00",
+    "reportModifiedAt": "2026-10-13T23:45:47.780771+00:00",
+    "reportNewerThanRunStart": true
+  },
+  "semanticAssessment": {
+    "result": "valid_green",
+    "reason": "Both newly added manifest and limit selectors passed; this initial pass was superseded by further independent pinning added before the final task verification."
+  }
+}

@@ -1,0 +1,11 @@
+<testsuites tests="2" failures="1"><testsuite name="github.com/szTheory/schway/internal/compiler/surfacemanifest" tests="2" failures="1" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/surfacemanifest" name="TestPhase34SurfaceDocument" time="0"><failure message="go test reported failure">=== RUN   TestPhase34SurfaceDocument
+    manifest_test.go:51: Bool contexts overstate general literal/result admission
+--- FAIL: TestPhase34SurfaceDocument (0.00s)
+</failure><system-out>=== RUN   TestPhase34SurfaceDocument
+    manifest_test.go:51: Bool contexts overstate general literal/result admission
+--- FAIL: TestPhase34SurfaceDocument (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/surfacemanifest" name="TestPhase34SurfaceLimits" time="0"><system-out>=== RUN   TestPhase34SurfaceLimits
+--- PASS: TestPhase34SurfaceLimits (0.00s)
+</system-out></testcase><system-out>FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/surfacemanifest	0.006s
+</system-out></testsuite></testsuites>

@@ -1,0 +1,30 @@
+{
+  "command": "GOCACHE=/tmp/ai-lang-verification-gocache /opt/homebrew/opt/python@3.14/bin/python3.14 /tmp/schway-go-junit.py --record .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-task2-green-final.json --target TestPhase34SurfaceDocument --target-file internal/compiler/surfacemanifest/manifest_test.go --expected 'Document and limits independently pin current checked contexts, refusal literals and every scoped finite bound.' -- go test -json ./internal/compiler/surfacemanifest -run '^(TestPhase34SurfaceDocument|TestPhase34SurfaceLimits)$' -count=1 -v",
+  "exitCode": 1,
+  "output": "<testsuites tests=\"2\" failures=\"1\"><testsuite name=\"github.com/szTheory/schway/internal/compiler/surfacemanifest\" tests=\"2\" failures=\"1\" skipped=\"0\"><testcase classname=\"github.com/szTheory/schway/internal/compiler/surfacemanifest\" name=\"TestPhase34SurfaceDocument\" time=\"0\"><failure message=\"go test reported failure\">=== RUN   TestPhase34SurfaceDocument\n    manifest_test.go:51: Bool contexts overstate general literal/result admission\n--- FAIL: TestPhase34SurfaceDocument (0.00s)\n</failure><system-out>=== RUN   TestPhase34SurfaceDocument\n    manifest_test.go:51: Bool contexts overstate general literal/result admission\n--- FAIL: TestPhase34SurfaceDocument (0.00s)\n</system-out></testcase><testcase classname=\"github.com/szTheory/schway/internal/compiler/surfacemanifest\" name=\"TestPhase34SurfaceLimits\" time=\"0\"><system-out>=== RUN   TestPhase34SurfaceLimits\n--- PASS: TestPhase34SurfaceLimits (0.00s)\n</system-out></testcase><system-out>FAIL\nFAIL\tgithub.com/szTheory/schway/internal/compiler/surfacemanifest\t0.006s\n</system-out></testsuite></testsuites>\n",
+  "targetTest": "TestPhase34SurfaceDocument",
+  "targetFile": "internal/compiler/surfacemanifest/manifest_test.go",
+  "expected": "Document and limits independently pin current checked contexts, refusal literals and every scoped finite bound.",
+  "actual": "=== RUN   TestPhase34SurfaceDocument\n    manifest_test.go:51: Bool contexts overstate general literal/result admission\n--- FAIL: TestPhase34SurfaceDocument (0.00s)\n",
+  "reportPath": "/Users/jon/projects/schway/.planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-task2-assertion-attempt-4.junit.xml",
+  "runStartedAt": "2026-10-13T23:46:30.589848+00:00",
+  "reportModifiedAt": "2026-10-13T23:46:31.184507+00:00",
+  "durationMs": 594.041832984658,
+  "rawGoJSON": "{\"Time\":\"2026-10-13T19:46:31.167241-04:00\",\"Action\":\"start\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\"}\n{\"Time\":\"2026-10-13T19:46:31.172958-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceDocument\"}\n{\"Time\":\"2026-10-13T19:46:31.173077-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceDocument\",\"Output\":\"=== RUN   TestPhase34SurfaceDocument\\n\"}\n{\"Time\":\"2026-10-13T19:46:31.173234-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceDocument\",\"Output\":\"    manifest_test.go:51: Bool contexts overstate general literal/result admission\\n\"}\n{\"Time\":\"2026-10-13T19:46:31.173258-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceDocument\",\"Output\":\"--- FAIL: TestPhase34SurfaceDocument (0.00s)\\n\"}\n{\"Time\":\"2026-10-13T19:46:31.173263-04:00\",\"Action\":\"fail\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceDocument\",\"Elapsed\":0}\n{\"Time\":\"2026-10-13T19:46:31.173275-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceLimits\"}\n{\"Time\":\"2026-10-13T19:46:31.173276-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceLimits\",\"Output\":\"=== RUN   TestPhase34SurfaceLimits\\n\"}\n{\"Time\":\"2026-10-13T19:46:31.173285-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceLimits\",\"Output\":\"--- PASS: TestPhase34SurfaceLimits (0.00s)\\n\"}\n{\"Time\":\"2026-10-13T19:46:31.17329-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Test\":\"TestPhase34SurfaceLimits\",\"Elapsed\":0}\n{\"Time\":\"2026-10-13T19:46:31.173291-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Output\":\"FAIL\\n\"}\n{\"Time\":\"2026-10-13T19:46:31.173836-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Output\":\"FAIL\\tgithub.com/szTheory/schway/internal/compiler/surfacemanifest\\t0.006s\\n\"}\n{\"Time\":\"2026-10-13T19:46:31.173875-04:00\",\"Action\":\"fail\",\"Package\":\"github.com/szTheory/schway/internal/compiler/surfacemanifest\",\"Elapsed\":0.007}\n",
+  "rawStderr": "",
+  "reporter": "/private/tmp/schway-go-junit.py",
+  "reporterSource": {
+    "path": "/tmp/schway-go-junit.py",
+    "sha256": "69752666215dd93d8d1a65b6dbd8544e205c2aacb7cb95c7f408101f0b7f5106",
+    "kind": "standard-library execution reporter"
+  },
+  "freshness": {
+    "runStartedAt": "2026-10-13T23:46:30.589848+00:00",
+    "reportModifiedAt": "2026-10-13T23:46:31.184507+00:00",
+    "reportNewerThanRunStart": true
+  },
+  "semanticAssessment": {
+    "result": "invalid_test_expectation",
+    "reason": "The new assertion searched for a different phrase than the manifest uses for its Bool restriction; no implementation behavior failed."
+  }
+}

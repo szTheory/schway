@@ -1,0 +1,30 @@
+{
+  "command": "GOCACHE=/tmp/ai-lang-verification-gocache /opt/homebrew/opt/python@3.14/bin/python3.14 /tmp/schway-go-junit.py --record .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-task1-tracer-verify.json --target TestPhase34SurfaceRoute --target-file cmd/schway/main_phase34_surface_test.go --expected 'Post-commit tracer verification passes exact surface route acceptance end-to-end.' -- go test -json ./cmd/schway -run '^TestPhase34SurfaceRoute$' -count=1 -v",
+  "exitCode": 0,
+  "output": "<testsuites tests=\"1\" failures=\"0\"><testsuite name=\"github.com/szTheory/schway/cmd/schway\" tests=\"1\" failures=\"0\" skipped=\"0\"><testcase classname=\"github.com/szTheory/schway/cmd/schway\" name=\"TestPhase34SurfaceRoute\" time=\"0\"><system-out>=== RUN   TestPhase34SurfaceRoute\n--- PASS: TestPhase34SurfaceRoute (0.00s)\n</system-out></testcase><system-out>PASS\nok  \tgithub.com/szTheory/schway/cmd/schway\t0.009s\n</system-out></testsuite></testsuites>\n",
+  "targetTest": "TestPhase34SurfaceRoute",
+  "targetFile": "cmd/schway/main_phase34_surface_test.go",
+  "expected": "Post-commit tracer verification passes exact surface route acceptance end-to-end.",
+  "actual": "=== RUN   TestPhase34SurfaceRoute\n--- PASS: TestPhase34SurfaceRoute (0.00s)\n",
+  "reportPath": "/Users/jon/projects/schway/.planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-task1-tracer-verify.junit.xml",
+  "runStartedAt": "2026-10-13T23:40:27.110238+00:00",
+  "reportModifiedAt": "2026-10-13T23:40:27.698563+00:00",
+  "durationMs": 587.4865840014536,
+  "rawGoJSON": "{\"Time\":\"2026-10-13T19:40:27.6792-04:00\",\"Action\":\"start\",\"Package\":\"github.com/szTheory/schway/cmd/schway\"}\n{\"Time\":\"2026-10-13T19:40:27.685584-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/cmd/schway\",\"Test\":\"TestPhase34SurfaceRoute\"}\n{\"Time\":\"2026-10-13T19:40:27.685669-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/cmd/schway\",\"Test\":\"TestPhase34SurfaceRoute\",\"Output\":\"=== RUN   TestPhase34SurfaceRoute\\n\"}\n{\"Time\":\"2026-10-13T19:40:27.68792-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/cmd/schway\",\"Test\":\"TestPhase34SurfaceRoute\",\"Output\":\"--- PASS: TestPhase34SurfaceRoute (0.00s)\\n\"}\n{\"Time\":\"2026-10-13T19:40:27.687946-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/cmd/schway\",\"Test\":\"TestPhase34SurfaceRoute\",\"Elapsed\":0}\n{\"Time\":\"2026-10-13T19:40:27.68795-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/cmd/schway\",\"Output\":\"PASS\\n\"}\n{\"Time\":\"2026-10-13T19:40:27.688457-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/cmd/schway\",\"Output\":\"ok  \\tgithub.com/szTheory/schway/cmd/schway\\t0.009s\\n\"}\n{\"Time\":\"2026-10-13T19:40:27.688549-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/cmd/schway\",\"Elapsed\":0.009}\n",
+  "rawStderr": "",
+  "reporter": "/private/tmp/schway-go-junit.py",
+  "reporterSource": {
+    "path": "/tmp/schway-go-junit.py",
+    "sha256": "69752666215dd93d8d1a65b6dbd8544e205c2aacb7cb95c7f408101f0b7f5106",
+    "kind": "standard-library execution reporter"
+  },
+  "freshness": {
+    "runStartedAt": "2026-10-13T23:40:27.110238+00:00",
+    "reportModifiedAt": "2026-10-13T23:40:27.698563+00:00",
+    "reportNewerThanRunStart": true
+  },
+  "semanticAssessment": {
+    "result": "valid_green",
+    "reason": "Post-commit tracer selector passed the standalone exact route and malformed raw-argument checks."
+  }
+}
