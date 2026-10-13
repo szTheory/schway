@@ -1,0 +1,21 @@
+{
+  "schema": "phase34.draft-after/1",
+  "baseline_revision": "a788aa8371716b35aa6cb25d609e8b6476c38f22",
+  "drafts": [
+    {
+      "id": "sibling-after-error",
+      "provenance": "reconstructed-2026-10-13",
+      "diagnostic_count": 1,
+      "recovered_sibling_names": ["kept"],
+      "diagnostics": [
+        {
+          "code": "syntax.expected_declaration",
+          "primary_span": {"start": 41, "end": 42},
+          "causes": [
+            {"kind": "skipped_region", "span": {"start": 43, "end": 58}}
+          ]
+        }
+      ]
+    }
+  ]
+}

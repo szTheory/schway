@@ -1,0 +1,9 @@
+<testsuites tests="1" failures="1"><testsuite name="github.com/szTheory/schway/internal/compiler/syntax" tests="1" failures="1" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/syntax" name="TestPhase34RecoveryCorpus" time="0"><failure message="go test reported failure">=== RUN   TestPhase34RecoveryCorpus
+    parser_phase34_recovery_test.go:76: sibling-after-error diagnostic count = 2, want 1: [syntax.unexpected_byte [41:42]: unexpected source character syntax.expected_declaration [41:42]: expected `data` or `fn` declaration]
+--- FAIL: TestPhase34RecoveryCorpus (0.00s)
+</failure><system-out>=== RUN   TestPhase34RecoveryCorpus
+    parser_phase34_recovery_test.go:76: sibling-after-error diagnostic count = 2, want 1: [syntax.unexpected_byte [41:42]: unexpected source character syntax.expected_declaration [41:42]: expected `data` or `fn` declaration]
+--- FAIL: TestPhase34RecoveryCorpus (0.00s)
+</system-out></testcase><system-out>FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/syntax	0.006s
+</system-out></testsuite></testsuites>
