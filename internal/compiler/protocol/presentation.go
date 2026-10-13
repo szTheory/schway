@@ -163,7 +163,7 @@ func renderPresentedDiagnostic(problem diagnostic.Diagnostic, context *Presentat
 	if problem.Unit != "" {
 		fmt.Fprintf(&output, " unit=%s", unit)
 	}
-	fmt.Fprintf(&output, " %s:%d:%d [%d:%d]: %s\n%s\n%s\n", file, problem.Primary.Line, problem.Primary.Col, problem.Primary.Start, problem.Primary.End, message, snippet, marker)
+	fmt.Fprintf(&output, " [%d:%d] %s:%d:%d: %s\n%s\n%s\n", problem.Primary.Start, problem.Primary.End, file, problem.Primary.Line, problem.Primary.Col, message, snippet, marker)
 	return output.String(), true
 }
 

@@ -40,19 +40,33 @@ func checkSourcePath(path string) (CheckResult, []byte, error) {
 	}
 	entry := set.Sources[0].Bytes
 	if len(set.Program.Imports) == 0 {
-		return Check(entry), entry, nil
+		checked := Check(entry)
+		checked.Presentation = presentationFromLoaded(set, path)
+		return checked, entry, nil
 	}
-	return checkLoaded(set, diagnostics), entry, nil
+	checked := checkLoaded(set, diagnostics)
+	checked.Presentation = presentationFromLoaded(set, path)
+	return checked, entry, nil
 }
 
 // checkLoaded checks an import-bearing loaded set: loader diagnostics first,
 // otherwise check.Program over the merged program with Work summed across every
 // module (D-21) under the same MaxCheckWork refusal Check applies.
 func checkLoaded(set modload.Set, diagnostics []diagnostic.Diagnostic) CheckResult {
-	if len(diagnostics) > 0 {
-		return CheckResult{Tree: set.Trees[""], Diagnostics: append([]diagnostic.Diagnostic(nil), diagnostics...), Work: set.Work}
+	entryLabel := ""
+	if len(set.Sources) > 0 {
+		entryLabel = set.Sources[0].RelPath
 	}
-	result := CheckResult{Tree: set.Trees[""], UnitTrees: set.Trees, Work: set.Work}
+	result := CheckResult{
+		Tree:         set.Trees[""],
+		UnitTrees:    set.Trees,
+		Work:         set.Work,
+		Presentation: presentationFromLoaded(set, entryLabel),
+	}
+	if len(diagnostics) > 0 {
+		result.Diagnostics = append([]diagnostic.Diagnostic(nil), diagnostics...)
+		return result
+	}
 	checked := check.Program(set.Program)
 	result.Work += checked.Work
 	if result.Work > MaxCheckWork {

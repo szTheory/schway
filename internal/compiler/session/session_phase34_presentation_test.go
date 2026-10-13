@@ -36,7 +36,7 @@ func TestPhase34ImportedDiagnosticPresentation(t *testing.T) {
 	encoded := phase30ResultJSON(t, result)
 	var wire struct {
 		Diagnostics []struct {
-			Unit        string           `json:"unit"`
+			Unit        string          `json:"unit"`
 			PrimarySpan diagnostic.Span `json:"primary_span"`
 		} `json:"diagnostics"`
 	}

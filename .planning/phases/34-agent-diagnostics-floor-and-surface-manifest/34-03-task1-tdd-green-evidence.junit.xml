@@ -1,0 +1,27 @@
+<testsuites tests="12" failures="0"><testsuite name="github.com/szTheory/schway/internal/compiler/session" tests="12" failures="0" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase30SingleIOSite" time="0.03"><system-out>=== RUN   TestPhase30SingleIOSite
+--- PASS: TestPhase30SingleIOSite (0.03s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase30SingleIOSite/open-root-only-in-modload" time="0"><system-out>=== RUN   TestPhase30SingleIOSite/open-root-only-in-modload
+    --- PASS: TestPhase30SingleIOSite/open-root-only-in-modload (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase30SingleIOSite/bounded-reads-classified" time="0"><system-out>=== RUN   TestPhase30SingleIOSite/bounded-reads-classified
+    --- PASS: TestPhase30SingleIOSite/bounded-reads-classified (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase30SingleIOSite/os-calls-classified" time="0"><system-out>=== RUN   TestPhase30SingleIOSite/os-calls-classified
+    --- PASS: TestPhase30SingleIOSite/os-calls-classified (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase30SingleIOSite/negative-control-bounded-read" time="0"><system-out>=== RUN   TestPhase30SingleIOSite/negative-control-bounded-read
+    --- PASS: TestPhase30SingleIOSite/negative-control-bounded-read (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase30SingleIOSite/negative-control-open-root" time="0"><system-out>=== RUN   TestPhase30SingleIOSite/negative-control-open-root
+    --- PASS: TestPhase30SingleIOSite/negative-control-open-root (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase30SingleIOSite/negative-control-os-call" time="0"><system-out>=== RUN   TestPhase30SingleIOSite/negative-control-os-call
+    --- PASS: TestPhase30SingleIOSite/negative-control-os-call (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase30ImportedFileDiagnosticNamesFile" time="0"><system-out>=== RUN   TestPhase30ImportedFileDiagnosticNamesFile
+--- PASS: TestPhase30ImportedFileDiagnosticNamesFile (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase30ImportedFileDiagnosticNamesFile/type-error-in-lib" time="0"><system-out>=== RUN   TestPhase30ImportedFileDiagnosticNamesFile/type-error-in-lib
+    --- PASS: TestPhase30ImportedFileDiagnosticNamesFile/type-error-in-lib (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase30ImportedFileDiagnosticNamesFile/entry-error-has-no-unit" time="0"><system-out>=== RUN   TestPhase30ImportedFileDiagnosticNamesFile/entry-error-has-no-unit
+    --- PASS: TestPhase30ImportedFileDiagnosticNamesFile/entry-error-has-no-unit (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase30ImportedFileDiagnosticNamesFile/parse-error-in-lib" time="0"><system-out>=== RUN   TestPhase30ImportedFileDiagnosticNamesFile/parse-error-in-lib
+    --- PASS: TestPhase30ImportedFileDiagnosticNamesFile/parse-error-in-lib (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase34ImportedDiagnosticPresentation" time="0"><system-out>=== RUN   TestPhase34ImportedDiagnosticPresentation
+--- PASS: TestPhase34ImportedDiagnosticPresentation (0.00s)
+</system-out></testcase><system-out>PASS
+ok  	github.com/szTheory/schway/internal/compiler/session	0.043s
+</system-out></testsuite></testsuites>

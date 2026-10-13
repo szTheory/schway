@@ -40,6 +40,9 @@ type CheckResult struct {
 	// UnitTrees maps module name to its lossless tree for a loaded module
 	// program ("" is the entry); nil for single-file programs (Phase 30).
 	UnitTrees map[string]syntax.Tree
+	// Presentation retains the source snapshot and loader-confirmed labels for
+	// this invocation. It is a sidecar and never enters compiler identity.
+	Presentation *protocol.PresentationContext
 }
 
 const MaxCheckWork = 100_000
@@ -1107,9 +1110,7 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 		return protocol.Result{}, err
 	}
 	result := protocol.New("check", protocol.StatusPass)
-	result = protocol.WithPresentation(result, protocol.PresentationContext{Sources: map[string]protocol.CapturedSource{
-		"": {Label: path, Bytes: checked.Tree.Source},
-	}})
+	result = commandWithCheckedPresentation(result, checked)
 	if len(checked.Diagnostics) > 0 {
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = checked.Diagnostics
