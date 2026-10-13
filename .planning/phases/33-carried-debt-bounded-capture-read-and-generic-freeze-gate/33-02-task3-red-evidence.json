@@ -1,0 +1,10 @@
+{
+  "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test -json ./internal/compiler/interp -run '^TestPhase33AbortLikeNarrowed$' -count=1 | python3 /private/tmp/go-test-json-tap.py",
+  "exitCode": 1,
+  "output": "TAP version 13\n1..16\nok 1 - TestPhase33AbortLikeNarrowed/accept/byte_index\nok 2 - TestPhase33AbortLikeNarrowed/accept/checked_add\nok 3 - TestPhase33AbortLikeNarrowed/accept/remainder\nok 4 - TestPhase33AbortLikeNarrowed/accept/user_defect\nnot ok 5 - TestPhase33AbortLikeNarrowed/refuse/wrong_reason_bytes\nnot ok 6 - TestPhase33AbortLikeNarrowed/refuse/extra_live_resource\nnot ok 7 - TestPhase33AbortLikeNarrowed/refuse/missing_owner\nnot ok 8 - TestPhase33AbortLikeNarrowed/refuse/duplicate_owner\nnot ok 9 - TestPhase33AbortLikeNarrowed/refuse/wrong_function_adjacency\nok 10 - TestPhase33AbortLikeNarrowed/refuse/call\nok 11 - TestPhase33AbortLikeNarrowed/refuse/write\nok 12 - TestPhase33AbortLikeNarrowed/refuse/unknown_op\nok 13 - TestPhase33AbortLikeNarrowed/refuse/wrong_event_kind\nok 14 - TestPhase33AbortLikeNarrowed/refuse/returned_outcome\nok 15 - TestPhase33AbortLikeNarrowed/refuse/typed_failure\nok 16 - TestPhase33AbortLikeNarrowed/refuse/empty_events",
+  "targetTest": "TestPhase33AbortLikeNarrowed/refuse/extra_live_resource",
+  "targetFile": "internal/compiler/interp/interp_phase33_defect_test.go",
+  "expected": "The target refusal assertion fails because the unchanged predicate incorrectly accepts an add-overflow defect with the owner plus x:op:9.",
+  "actual": "The target subtest executed and failed at the intended invalid abort-like defect accepted assertion. Four accepted rows and seven other refused-terminal controls passed; four additional planned narrowing assertions also failed for wrong reason, missing/duplicate owner, and wrong function adjacency.",
+  "semanticAssessment": "Valid RED: the named target subtest failed on the precise extra-live-resource assertion. The Go JSON event stream was rendered by a local TAP reporter adapter; no test outcomes were inferred beyond Go's pass/fail/skip events."
+}
