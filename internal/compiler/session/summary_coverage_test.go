@@ -122,6 +122,7 @@ func TestSummaryCoverageGroundedness(t *testing.T) {
 		"failing":      strings.Replace(good, "status: pass", "status: fail", 1),
 		"no-rationale": strings.Replace(good, "human_judgment: false", "human_judgment: true", 1),
 		"no-judgment":  strings.Replace(good, "    human_judgment: false\n", "", 1),
+		"bad-kind":     strings.Replace(good, "kind: unit", "kind: manual", 1),
 	} {
 		if len(summaryCoverageProblems(bad, known)) == 0 {
 			t.Fatalf("seeded %s control was accepted", name)
