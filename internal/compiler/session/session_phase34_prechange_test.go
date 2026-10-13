@@ -195,14 +195,14 @@ func phase34CompareCorpus(want phase34PreChangeCorpus, observed []phase34PreChan
 }
 
 func phase34CompareEmission(problems *[]string, path, name string, want, got phase34Emission) {
-	if want.Outcome == "not_emitted" {
-		// The emitter was not reached because CheckFile rejected the source. A
-		// later diagnostic recovery can change this observation without changing
-		// the identity of any successful C emission.
-		return
-	}
 	if want.Outcome != got.Outcome {
 		*problems = append(*problems, fmt.Sprintf("%s: %s outcome changed: got %q want %q", path, name, got.Outcome, want.Outcome))
+		return
+	}
+	if want.Outcome == "not_emitted" {
+		// Preserve the explicit non-emission outcome while leaving its failed
+		// diagnostic reason, code and presentation as historical facts rather
+		// than treating them as C identity.
 		return
 	}
 	switch want.Outcome {
@@ -313,6 +313,8 @@ func TestPhase34PreChangeCGoldenIsNotInert(t *testing.T) {
 	if problems := phase34CompareCorpus(corpus, observed); len(problems) != 0 {
 		t.Fatalf("clean pre-change observation must pass before mutation: %s", strings.Join(problems, "; "))
 	}
+	byteMutationCaught := false
+byteMutation:
 	for index := range observed {
 		for _, emitter := range []struct {
 			name string
@@ -337,11 +339,49 @@ func TestPhase34PreChangeCGoldenIsNotInert(t *testing.T) {
 			needle := observed[index].Path + ": " + emitter.name + " C byte mismatch"
 			for _, problem := range problems {
 				if strings.HasPrefix(problem, needle) && strings.Contains(problem, "byte ") {
-					return
+					byteMutationCaught = true
+					break byteMutation
 				}
 			}
 			t.Fatalf("reached mutation was not named by the comparator; got %v", problems)
 		}
 	}
-	t.Fatal("no successful literal C emission was available for the comparator mutation")
+	if !byteMutationCaught {
+		t.Fatal("no successful literal C emission was available for the comparator mutation")
+	}
+
+	statusMutationCaught := false
+statusMutation:
+	for index := range observed {
+		for _, emitter := range []struct {
+			name string
+			get  func(*phase34PreChangeEntry) *phase34Emission
+		}{
+			{"emit_application", func(entry *phase34PreChangeEntry) *phase34Emission { return &entry.EmitApplication }},
+			{"control_native_c", func(entry *phase34PreChangeEntry) *phase34Emission { return &entry.ControlNativeC }},
+		} {
+			result := emitter.get(&observed[index])
+			if result.Outcome != "not_emitted" {
+				continue
+			}
+			original := result.Outcome
+			result.Outcome = "emitted"
+			problems := phase34CompareCorpus(corpus, observed)
+			result.Outcome = original
+			if clean := phase34CompareCorpus(corpus, observed); len(clean) != 0 {
+				t.Fatalf("restored non-emitting observation did not pass: %s", strings.Join(clean, "; "))
+			}
+			needle := observed[index].Path + ": " + emitter.name + " outcome changed"
+			for _, problem := range problems {
+				if strings.HasPrefix(problem, needle) {
+					statusMutationCaught = true
+					break statusMutation
+				}
+			}
+			t.Fatalf("non-emission mutation was not named by the comparator; got %v", problems)
+		}
+	}
+	if !statusMutationCaught {
+		t.Fatal("no non-emitting result was available for the explicit outcome mutation")
+	}
 }
