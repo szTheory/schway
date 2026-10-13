@@ -9,14 +9,14 @@ findings:
     title: "Empty manifest controls bypass receipt control validation"
 open: 0
 total: 1
-recorded: 2026-10-13T18:12:00.710Z
+recorded: 2026-10-13T18:13:18.045Z
 ---
 
 # Phase 33: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| CR-01 | critical | fixed | 33-REVIEW-FIX.md |
+| CR-01 | critical | fixed | 33-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
