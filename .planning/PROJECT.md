@@ -87,7 +87,14 @@ blocker: do not create an implementation gap plan or human UAT. Record the
 existing CI job as the next action, keep the phase incomplete, and resume its
 verifier after the receipt arrives without replaying completed plans.
 
-## Current Milestone: M006 Bounded Byte Utility and Local Modules
+## Next Milestone
+
+Not yet defined. Run `/gsd-new-milestone` (questioning → research →
+requirements → roadmap). Candidate directions are ranked in
+[PRODUCT-ROADMAP.md](PRODUCT-ROADMAP.md); carried M006 debt is listed under
+Requirements → Active below. Phase numbering continues after 32.1.
+
+## Shipped Milestone: M006 Bounded Byte Utility and Local Modules (2026-10-12)
 
 **Goal:** A developer can run an ordinary Schway `checksum` program that reads a
 size-limited file and prints one specified checksum with exact success and
@@ -116,6 +123,26 @@ is auto-followed. Copy-local code is preferred over new dependencies.
 
 ## Current State
 
+**2026-10-12 M006 Bounded Byte Utility and Local Modules shipped** (6 phases,
+63 plans, 158 tasks; archive `.planning/milestones/M006-*`, tag `vM006`).
+`examples/checksum/checksum.schway` reads a file of at most 65,536 bytes and
+prints its RFC 1950 Adler-32 as bare decimal, with a named oversize outcome,
+one shared outcome for missing/unreadable/non-regular files, path-free stderr,
+and the owned buffer released exactly once on every path. It is built from an
+ordinary-source `adler32` library in its own local module, which a second
+consumer (`adler_low`) imports without copying. The new language surface is a
+read-only `ByteView` (`byte_len`, `byte_at`, bounds-checked at every
+optimization level) read in scalar loops, and `import m { fn f }` with
+export-list visibility, closed in-root resolution, and named `module.*` graph
+refusals. Exit classes now come from one table (source refusal 2, tool 3,
+engine disagreement 4, usage 64). Answers are pinned against Python
+`zlib.adler32` with eight armed controls; the clean-checkout guide is executed
+by a test; hosted receipts (run 38335175306) bind codedigest `b9253457…` and
+any code change reopens them. Known limits: interpreter file-bytes parity is
+Go-level only; `evidence`/`interface`/`query` refuse import-bearing sources by
+name; Phase 32.1 review warnings WR-01/WR-02 and a coverage-`kind` pin wait for
+the next code-moving phase.
+
 **2026-10-10 M005 Practical Computation shipped** (5 phases, 25 plans; archive
 `.planning/milestones/M005-*`, tag `vM005`). Ordinary Schway source now sums
 bounded U64 input (`examples/sum_to_n.schway`: 0/55/500500, 1,001 refused, checked
@@ -130,8 +157,7 @@ straight-line scalar `let` admission (R1), a named
 instead of a signal (W1), and guide outputs under ignored `.schway/` (W4).
 Known limits: `app verify` on `sum_to_n` verifies only n ≤ 14 and loses the named
 reason above n ≈ 172 (report size limit, N1); hosted evidence (run 38091738463 at
-d7ffbcd) predates the final review fixes (N2). M006 started 2026-10-10 (see
-Current Milestone above).
+d7ffbcd) predates the final review fixes (N2), closed by M006 EVD-15.
 
 ### Historical state records (superseded by dated closeouts)
 
@@ -347,7 +373,8 @@ capability order. The M003-era M004–M006 forecast is superseded prospectively:
 | Horizon | Capability | Promotion gate |
 |---|---|---|
 | Shipped M005 | Defined scalar computation and loops; `sum_to_n` followed by FizzBuzz | Admit defined arithmetic and scalar loop state with independent interpreter/native evidence; keep resource and loan carries refused |
-| Mid term | Reusable byte-oriented libraries, arity-N/aggregates as needed, local modules, bounded JSON; HTTP as a separate branch | A consumer needs each abstraction; untrusted byte/error/resource behavior is specified |
+| Shipped M006 | Read-only byte views, local modules, bounded file `checksum` with a second consumer | Bounds checks survive every tier; closed in-root resolution; independent oracle answers and two-host receipts bound to a code digest |
+| Mid term | Further byte-oriented libraries, arity-N/aggregates as needed, bounded JSON; HTTP as a separate branch | A consumer needs each abstraction; untrusted byte/error/resource behavior is specified |
 | Long term | Separate compilation/contracts, ecosystem, richer generics/effects/concurrency | Concrete clients and measured limits justify the added semantic surface |
 
 **Amended 2026-10-12 (Phase 32, DX-19): the provisional checksum frontier is retired.**
@@ -471,14 +498,38 @@ contract, without a speculative milestone number.
 - ✓ Independently pinned cross-program and dual-host evidence, reached negative
   controls, and clean-checkout documentation — M005 Phase 27 (EVD-12, DX-16);
   guide outputs made clean-tree safe in Phase 27.3.
+- ✓ One exit-class table across check/build/run and both engines; `main`
+  precedence with pruning of unreachable functions; `app verify` keeps the named
+  capacity reason at any n — M006 Phases 28, 32.1 (DX-17, DX-18, EVD-13).
+- ✓ Read-only bounds-checked `ByteView` in scalar loops, with every unsound loop
+  neighbor refused by its existing code — M006 Phase 29 (BYTE-01..03).
+- ✓ Ordinary-source Adler-32 pinned on both engines — M006 Phase 29 (APP-10).
+- ✓ Local modules with explicit import/export, closed in-root resolution,
+  independent visibility re-derivation, and named graph refusals — M006 Phases
+  30, 32.1 (MOD-03..05).
+- ✓ Bounded `checksum FILE` with an exact result/error matrix, and a second
+  consumer importing the same library, with module digests in identity and
+  evidence — M006 Phase 31 (APP-11, APP-12, MOD-06).
+- ✓ Independent `zlib.adler32` oracle with eight reached controls — M006
+  Phase 31 (EVD-14).
+- ✓ Executable clean-checkout guide and two-host receipts bound to a code
+  digest — M006 Phases 32, 32.1 (DX-19, EVD-15).
 
 ### Active
 
-M006 requirements live in [REQUIREMENTS.md](REQUIREMENTS.md) (IDs are assigned
-at milestone kickoff). In scope: the bounded checksum byte utility, the local
-module boundary with a second consumer, and M005 carry-over N2.
-Tracked but not scheduled: N4 (guide n ≤ 14 note), R1b, and the D-27.1-10
-dispositions.
+No milestone is active; M006's acceptance record is archived in
+[milestones/M006-REQUIREMENTS.md](milestones/M006-REQUIREMENTS.md). Carried
+into the next milestone (owner chosen at kickoff):
+- Phase 32.1 review warnings WR-01/WR-02 and the deferred coverage-`kind` pin
+  (any code commit reopens the M006 receipts, so land them in the next
+  code-moving phase).
+- Interpreter CLI route for file-bytes programs (parity is Go-level only).
+- Module-aware `evidence`, `interface`, and `query` (today a named refusal).
+- Phase 28 VALIDATION.md/SECURITY.md backfill; test seams in production
+  packages (29 WR-04, 30 IN-01).
+- M005 residuals N4 (guide n ≤ 14 note), R1b, and the D-27.1-10 dispositions.
+
+The per-phase record below is kept as the M006 closeout narrative.
 
 Phase 28 (2026-10-10) closed N1 (EVD-13: `app verify` keeps the named capacity
 reason at any n via a fixed-size outcome digest, report schema
@@ -537,8 +588,9 @@ Atomic IDs and acceptance for M005 are archived in
 
 ### Deferred — Named Landing, Not Dropped
 
-- Byte views, bounds/indexing, arity-N, aggregates, and local modules → reusable
-  byte-oriented library consumers.
+- Arity-N, aggregates, writable views/slicing, bitwise operators, and module
+  re-exports/aliasing/exported types → the next byte-oriented library consumer
+  (read-only byte views and local modules shipped in M006).
 - DX-06 / B1 blame → the separate-compilation contract boundary (D-13-02b).
 - General strings, recursive data, collections, and generics → promote only
   the minimum needed by a selected library/program. FizzBuzz needs none of them.
@@ -705,6 +757,8 @@ Canonical planning inputs:
 | Insert decimal tech-debt phases from the milestone audit before closing | Audit warnings W1/W4 and R1 were concrete user-facing defects, not cosmetic | ✓ Good — 27.1–27.3 closed R1, W1, W4 with hosted evidence; residual N1–N4 tracked |
 | Compose local modules as one merged whole program with closed in-root resolution | Separate compilation and per-module interfaces are not needed for a second consumer, and a closed resolver (no search path, no symlinks, exact case, one IO site) keeps the import surface a non-escalating boundary | ✓ Phase 30 — imported Adler-32 gives identical answers on both engines; no-import bytes unchanged against a pre-change golden; module digests in identity are Phase 31 (MOD-06) |
 | Keep post-freeze work `.planning`-only while hosted receipts bind the code digest | `scripts/codedigest.sh` hashes the HEAD listing of the code paths, so even a test-only commit makes the living claims `stale_bound_claim` and forces a re-dispatch | ✓ Phase 32.1 UAT — a test pin (31d71e94) was reverted byte-for-byte (7ab2f48e) and deferred; the digest returned to `b9253457…` |
+| Admit byte reads only as a read-only view in loops that carry scalar state only | The checksum needs reads, not mutation; keeping loans/owners off loop back edges reuses the M005 scalar fixed point instead of widening authority | ✓ M006 Phase 29 — bounds check survives -O3/LTO; every unsound neighbor refused by an existing code |
+| Insert a decimal debt phase from the milestone audit, then close with an override for successor-staled verifications | The audit's DX-17/DX-18/MOD-03 warnings were user-facing; 32.1's verified changes legitimately move earlier phases' covered-file digests | ✓ M006 — 32.1 verified 6/6 and UAT 31/31; 28–32 recorded as stale-by-successor in MILESTONES.md |
 
 ## Evolution
 
@@ -726,4 +780,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-12 after Phase 32.1*
+*Last updated: 2026-10-12 after M006 milestone*

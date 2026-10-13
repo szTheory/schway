@@ -2,19 +2,19 @@
 gsd_state_version: "1.0"
 milestone: M006
 milestone_name: Bounded Byte Utility and Local Modules
-current_phase: "32.1"
-status: completed
+status: Awaiting next milestone
 stopped_at: Phase 32.1 complete — all phases complete
-last_updated: "2026-10-13T02:29:47.872Z"
+last_updated: "2026-10-13T03:18:53.944Z"
 last_activity: 2026-10-12
-last_activity_desc: Phase 32.1 complete
-state_head: 4b64a26387a4fdaee48cf9fff56844f4a13ed157
+last_activity_desc: Milestone M006 completed and archived
+state_head: 7bf62bdf156b64b51715641dfbad652dfad40955
 progress:
   total_phases: 6
   completed_phases: 6
   total_plans: 63
   completed_plans: 63
   percent: 100
+current_phase: "32.1"
 ---
 
 <!-- schway-current:start -->
@@ -55,7 +55,7 @@ See: .planning/PROJECT.md (updated 2026-10-12)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 32.1 — Address tech debt: CLI exit classes and module-aware routes
+**Current focus:** Planning next milestone (M006 shipped 2026-10-12, tag `vM006`)
 
 **Checkout location (2026-10-03):** This is the current, canonical `schway`
 checkout, renamed from `schway-public`. The active branch is
@@ -121,13 +121,10 @@ plans.
 
 ## Current Position
 
-Milestone: M006 Bounded Byte Utility and Local Modules (Phases 28–32)
-Phase: 32.1
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-10-12 — Phase 32.1 complete
-
-Progress: [██████████] 100% (3/5 M006 phases)
+Phase: Milestone M006 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-10-12 — Milestone M006 completed and archived
 
 M006 final hosted receipts: bound to codedigest b9253457705a224a0580d74896e8e5bd3821446a1d467626b7d611ca0d1c4b5c (run 38335175306)
 
@@ -1167,7 +1164,4 @@ plans, or reopen Phase 25 implementation.
 
 ## Operator Next Steps
 
-- Phase 28 complete 2026-10-10 (7/7 plans, verifier 4/4 passed locally; hosted CI not
-  yet run). Code review left 6 open findings (0 critical, 4 warnings, 2 info) in
-  28-REVIEW-DISPOSITION.md; run `/gsd-code-review 28 --fix --all` to close them.
-  Nothing is pushed; push 28-04 and 28-05 together. Next phase: `/gsd-discuss-phase 29`.
+- Start the next milestone with /gsd-new-milestone

@@ -1,5 +1,43 @@
 # Milestones
 
+## M006 Bounded Byte Utility and Local Modules (Shipped: 2026-10-12)
+
+**Phases completed:** 6 phases (28–32 plus inserted 32.1), 63 plans, 158 tasks
+
+**Closeout:** override closeout; audit status `tech_debt` (16/16 requirements,
+5/5 phases, 0 broken seams, 11/12 flows) with no requirement, integration, or
+flow gaps. Phase 32.1 was inserted to close audit debt (DX-17 `run` on an
+unbindable entry, `ByteView` `main` refusal, interpreter defect parity, DX-18
+peer `main` precedence, MOD-03 module-aware route set, usage text) and re-took
+EVD-15. Verification override: Phases 28–32 each have a passing
+VERIFICATION.md, but `init.manager` reports them `stale` because Phase 32.1
+changed source files their digests cover; Phase 32.1 itself passed
+verification (6/6) and UAT (31/31). Quick-task archival skipped.
+
+Known verification overrides: 5 phases stale-by-successor (28, 29, 30, 31, 32), 0 newly acknowledged artifacts, 6 carried forward from a prior close
+
+**Hosted evidence:** run 38335175306 (headSha 9f8f878f) on ubuntu and macOS,
+receipts bound to codedigest `b9253457…`; run 38315799626 kept as historical.
+Any later code commit reopens the receipts.
+
+**Remaining debt:** Phase 32.1 review warnings WR-01/WR-02 and the coverage-`kind`
+pin (deferred to the next code-moving phase); interpreter file-bytes parity is
+Go-level only; `evidence`, `interface` and `query` are not module-aware
+(named refusal); Phase 28 has no VALIDATION.md or SECURITY.md; Phase 29/30
+test seams in production packages (see `milestones/M006-MILESTONE-AUDIT.md`).
+
+**Git range:** 955a9fd0 (vM005) → vM006 — 373 commits, 202 code files changed (+31,319 / −577)
+
+**Key accomplishments:**
+- One named exit-code table: every source refusal exits 2 on check, build, and both run engines; `main` wins entry selection and functions it never calls are pruned; `app verify` keeps the named capacity reason at any n (Phase 28: DX-17, DX-18, EVD-13).
+- A read-only `ByteView` with `byte_len`/`byte_at`, read in a scalar loop with a bounds check that survives -O3 and LTO (exit 65), and an ordinary-source Adler-32 pinned on both engines (Phase 29: BYTE-01..03, APP-10).
+- Local modules: `import adler32 { fn adler32 }` resolved only to exact-case regular files under the entry directory via `os.Root`; export-list visibility re-derived independently by corevalidate; named `module.*` refusals for cycles, missing, mismatch, collision, and caps; no-import output byte-identical (Phase 30: MOD-03..05).
+- `checksum FILE` prints bare-decimal Adler-32 with an exact result and error matrix (65,536-byte limit via limit+1 read, path-free stderr, buffer released exactly once), and a second consumer `adler_low` imports the same library; module digests enter build identity and evidence (Phase 31: APP-11, APP-12, MOD-06, EVD-14).
+- Independent `zlib.adler32` oracle answers with eight armed controls (wrong modulus/state, swapped halves, off-by-one, `-fsigned-char`, ASan-observed deleted bounds check, loop neighbors, library mutation) (Phase 31: EVD-14).
+- An executable clean-checkout guide (`examples/checksum/README.md`, run by `TestPhase32GuideCleanCheckout`), the provisional `examples/checksum.schway` retired, and two-host receipts bound to a code digest that any code change reopens (Phase 32/32.1: DX-19, EVD-15).
+
+---
+
 ## M005 Practical Computation (Shipped: 2026-10-10)
 
 **Phases completed:** 5 phases, 25 plans, 29 tasks

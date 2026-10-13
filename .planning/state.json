@@ -6,33 +6,38 @@
     {
       "number": "28",
       "name": "Exit Classes, Verify Report, and Entry Pruning",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "29",
       "name": "Byte Views and the Adler-32 Library",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "30",
       "name": "Local Modules",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "31",
       "name": "Bounded File Checksum and Second Consumer",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "32",
       "name": "Clean-Checkout Guide and Final Receipts",
-      "status": "pending"
+      "status": "complete"
+    },
+    {
+      "number": "32.1",
+      "name": "Address tech debt: CLI exit classes and module-aware routes",
+      "status": "complete"
     }
   ],
   "next": {
-    "command": "/gsd:progress --next",
-    "label": "Advance to the next step (plan phase 28)",
-    "reason": "Phase 28 of 5 — needs a plan"
+    "command": "/gsd:progress",
+    "label": "Show progress",
+    "reason": "Unsure of state — showing progress"
   },
-  "updated_at": "2026-10-11T01:38:28.302Z"
+  "updated_at": "2026-10-13T03:18:53.960Z"
 }
