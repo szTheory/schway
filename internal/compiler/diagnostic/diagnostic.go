@@ -16,6 +16,42 @@ const (
 type Span struct {
 	Start int `json:"start"`
 	End   int `json:"end"`
+	Line  int `json:"line,omitempty"`
+	Col   int `json:"col,omitempty"`
+}
+
+// byteIdentitySpan is the immutable, pre-location shape used by diagnostic
+// identity. Line and Col are presentation coordinates; the original byte
+// offsets remain the only identity and edit coordinates.
+type byteIdentitySpan struct {
+	Start int `json:"start"`
+	End   int `json:"end"`
+}
+
+type byteIdentityCause struct {
+	Kind   string            `json:"kind"`
+	Detail string            `json:"detail,omitempty"`
+	Span   *byteIdentitySpan `json:"span,omitempty"`
+	Unit   string            `json:"unit,omitempty"`
+}
+
+func identitySpan(span Span) byteIdentitySpan {
+	return byteIdentitySpan{Start: span.Start, End: span.End}
+}
+
+func identityCauses(causes []Cause) []byteIdentityCause {
+	if causes == nil {
+		return nil
+	}
+	out := make([]byteIdentityCause, len(causes))
+	for index, cause := range causes {
+		out[index] = byteIdentityCause{Kind: cause.Kind, Detail: cause.Detail, Unit: cause.Unit}
+		if cause.Span != nil {
+			span := identitySpan(*cause.Span)
+			out[index].Span = &span
+		}
+	}
+	return out
 }
 
 type Cause struct {
@@ -113,6 +149,17 @@ type Diagnostic struct {
 	// Unit is the dotted module name the diagnostic's spans are file-local to.
 	// Empty means the entry module (D-11); Span stays file-local.
 	Unit string `json:"unit,omitempty"`
+	// SourcePosition distinguishes a real primary source position at byte zero
+	// from the synthetic Span{} used by source-less operational diagnostics.
+	// It is presentation provenance and is never serialized or hashed.
+	SourcePosition bool `json:"-"`
+}
+
+// AtSource marks the primary span as originating from a verified source
+// token or source EOF position. The returned value retains its byte-only ID.
+func (d Diagnostic) AtSource() Diagnostic {
+	d.SourcePosition = true
+	return d
 }
 
 // unitOutOfIdentityForTest is a negative-control seam: when set, the unit is
@@ -131,10 +178,10 @@ func errorID(code string, span Span, causes []Cause, unit string) string {
 	identity := struct {
 		Schema string
 		Code   string
-		Span   Span
-		Causes []Cause
+		Span   byteIdentitySpan
+		Causes []byteIdentityCause
 		Unit   string `json:",omitempty"`
-	}{Schema: Schema, Code: code, Span: span, Causes: causes, Unit: identityUnit(unit)}
+	}{Schema: Schema, Code: code, Span: identitySpan(span), Causes: identityCauses(causes), Unit: identityUnit(unit)}
 	encoded, _ := json.Marshal(identity)
 	sum := sha256.Sum256(encoded)
 	return "diagnostic:" + hex.EncodeToString(sum[:12])
@@ -144,11 +191,11 @@ func errorWithRepairsID(code string, span Span, causes []Cause, repairKinds []st
 	identity := struct {
 		Schema      string
 		Code        string
-		Span        Span
-		Causes      []Cause
+		Span        byteIdentitySpan
+		Causes      []byteIdentityCause
 		RepairKinds []string
 		Unit        string `json:",omitempty"`
-	}{Schema: Schema1, Code: code, Span: span, Causes: causes, RepairKinds: repairKinds, Unit: identityUnit(unit)}
+	}{Schema: Schema1, Code: code, Span: identitySpan(span), Causes: identityCauses(causes), RepairKinds: repairKinds, Unit: identityUnit(unit)}
 	encoded, _ := json.Marshal(identity)
 	sum := sha256.Sum256(encoded)
 	return "diagnostic:" + hex.EncodeToString(sum[:12])

@@ -1107,6 +1107,9 @@ func CheckCommandFile(path string) (protocol.Result, error) {
 		return protocol.Result{}, err
 	}
 	result := protocol.New("check", protocol.StatusPass)
+	result = protocol.WithPresentation(result, protocol.PresentationContext{Sources: map[string]protocol.CapturedSource{
+		"": {Label: path, Bytes: checked.Tree.Source},
+	}})
 	if len(checked.Diagnostics) > 0 {
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = checked.Diagnostics

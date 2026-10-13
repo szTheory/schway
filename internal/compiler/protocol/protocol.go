@@ -501,6 +501,7 @@ type Result struct {
 	Lanes           []Lane                  `json:"lanes"`
 	ExpectedEscapes []string                `json:"expected_escapes,omitempty"`
 	Metrics         Metrics                 `json:"metrics"`
+	Presentation    *PresentationContext    `json:"-"`
 }
 
 func New(command, status string) Result {
@@ -580,6 +581,7 @@ func (result Result) Finalize() Result {
 
 func JSON(result Result) ([]byte, error) {
 	result = result.Finalize()
+	result = enrichDiagnostics(result)
 	for attempts := 0; attempts < 4; attempts++ {
 		encoded, err := json.Marshal(result)
 		if err != nil {
@@ -607,6 +609,7 @@ func JSON(result Result) ([]byte, error) {
 // have refused to serve.
 func Human(result Result) (string, error) {
 	result = result.Finalize()
+	result = enrichDiagnostics(result)
 	for attempts := 0; attempts < 4; attempts++ {
 		output := human(result)
 		if result.Metrics.OutputBytes == len(output) {
@@ -629,6 +632,10 @@ func human(result Result) string {
 	}
 	output.WriteByte('\n')
 	for _, problem := range result.Diagnostics {
+		if rendered, ok := renderPresentedDiagnostic(problem, result.Presentation); ok {
+			output.WriteString(rendered)
+			continue
+		}
 		if problem.Unit != "" || alwaysPrintUnitForTest {
 			fmt.Fprintf(&output, "%s %s unit=%s [%d:%d]: %s\n", problem.ID, problem.Code, problem.Unit, problem.Primary.Start, problem.Primary.End, problem.Message)
 			continue
