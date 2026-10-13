@@ -66,13 +66,13 @@ coverage:
     description: Phase 28 validation rows resolve to existing focused tests and the retroactive security record matches archived evidence without claiming new tests.
     requirement: QLT-15
     verification:
-      - kind: meta
+      - kind: unit
         ref: internal/compiler/session/verification_groundedness_test.go#TestVerificationGroundedness
         status: pass
-      - kind: meta
+      - kind: unit
         ref: internal/compiler/session/verification_groundedness_test.go#TestVerificationGroundednessThreeClassesAreEmpty
         status: pass
-      - kind: meta
+      - kind: unit
         ref: internal/compiler/session/verification_groundedness_test.go#TestPhase20ValidationLifecycle
         status: pass
     human_judgment: false
@@ -111,7 +111,7 @@ coverage:
       - kind: integration
         ref: internal/compiler/session/session_freeze_gate_test.go#TestFreezeGate
         status: pass
-      - kind: meta
+      - kind: unit
         ref: internal/compiler/session/summary_coverage_test.go#TestSummaryCoverageGroundedness
         status: pass
     human_judgment: false
