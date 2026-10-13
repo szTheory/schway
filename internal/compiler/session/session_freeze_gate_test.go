@@ -79,6 +79,32 @@ func TestFreezeGate(t *testing.T) {
 			t.Fatalf("exit=%d stdout=%q stderr=%q", exit, out, stderr)
 		}
 	})
+	t.Run("label-less-manifest", func(t *testing.T) {
+		manifest := filepath.Join(t.TempDir(), "manifest")
+		if err := os.WriteFile(manifest, []byte("programs=x\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		exit, out, stderr := phase33FreezeRun(t, root, gate, manifest, strings.Repeat("0", 40), strings.Repeat("0", 40))
+		if exit != 1 || out != "" || stderr != "freeze gate: status=fail reason=manifest_missing\n" {
+			t.Fatalf("exit=%d stdout=%q stderr=%q", exit, out, stderr)
+		}
+	})
+	t.Run("no-repo-root", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(dir, "scripts"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "scripts", "check-freeze.sh"), script, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "manifest"), manifest, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		exit, out, stderr := phase33FreezeRun(t, dir, "scripts/check-freeze.sh", "manifest", strings.Repeat("0", 40), strings.Repeat("0", 40))
+		if exit != 1 || out != "" || stderr != "phase32 freeze gate: status=fail reason=no_repo_root\n" {
+			t.Fatalf("exit=%d stdout=%q stderr=%q", exit, out, stderr)
+		}
+	})
 	t.Run("paths-match-digest", func(t *testing.T) {
 		result, err := testsupport.RunCLIErr(context.Background(), "sh", nil, testsupport.ProjectPath("scripts", "codedigest.sh"), "--paths")
 		if err != nil || result.Exit != 0 || strings.Join(strings.Fields(string(result.Stdout)), " ") != strings.Join(phase32DigestPaths, " ") {

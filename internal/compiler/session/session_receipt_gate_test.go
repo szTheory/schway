@@ -32,6 +32,19 @@ func TestReceiptGate(t *testing.T) {
 	if result.Exit != 0 {
 		t.Fatalf("known-good receipt pair rejected: exit=%d stdout=%s stderr=%s", result.Exit, result.Stdout, result.Stderr)
 	}
+	t.Run("digest-source-computed", func(t *testing.T) {
+		digest := phase32CodeDigest(t, root)
+		a, b := filepath.Join(dir, "computed-a.log"), filepath.Join(dir, "computed-b.log")
+		for path, host := range map[string]string{a: "macOS", b: "Linux"} {
+			if err := os.WriteFile(path, []byte(phase32ReceiptLog(t, host, digest)), 0o600); err != nil {
+				t.Fatal(err)
+			}
+		}
+		got := phase33RunAtEnv(t, root, "scripts/check-receipts.sh", envWithout("EXPECTED_CODEDIGEST"), testsupport.ProjectPath("testdata", "receipts", "M006.manifest"), a, b)
+		if got.exit != 0 || !strings.Contains(got.stdout, "digest_source=computed") {
+			t.Fatalf("computed digest source rejected: %#v", got)
+		}
+	})
 
 	t.Run("second-label", func(t *testing.T) {
 		m006, err := os.ReadFile(testsupport.ProjectPath("testdata", "receipts", "M006.manifest"))
@@ -153,6 +166,16 @@ func envWith(key, value string) []string {
 		}
 	}
 	return append(env, key+"="+value)
+}
+
+func envWithout(key string) []string {
+	var env []string
+	for _, entry := range os.Environ() {
+		if !strings.HasPrefix(entry, key+"=") {
+			env = append(env, entry)
+		}
+	}
+	return env
 }
 
 func mustRead(t *testing.T, path string) []byte {
