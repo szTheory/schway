@@ -5,16 +5,16 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 33
 current_phase_name: Carried Debt, Bounded Capture Read, and Generic Freeze Gate
 status: executing
-stopped_at: Phase 33 context gathered
-last_updated: "2026-10-13T16:44:10.220Z"
+stopped_at: Completed 33-01-PLAN.md
+last_updated: "2026-10-13T16:51:25.160Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 33 execution started
-state_head: 795feefaac3f9201aea366d2b510d5645e324745
+state_head: 020e14edccd6c5a785259fa992740305ba5254cd
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 5
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -125,8 +125,8 @@ plans.
 ## Current Position
 
 Phase: 33 (Carried Debt, Bounded Capture Read, and Generic Freeze Gate) — EXECUTING
-Plan: 1 of 5
-Status: Executing Phase 33
+Plan: 2 of 5
+Status: Ready to execute
 Last activity: 2026-10-13 — Phase 33 execution started
 
 Progress: [░░░░░░░░░░] 0%
@@ -583,6 +583,7 @@ subset alone.
 | Phase 32.1 P07 | 25min | 3 tasks | 5 files |
 | Phase 32.1 P08 | 10min | 2 tasks | 9 files |
 | Phase 32.1 P09 | 15min | 2 tasks | 1 files |
+| Phase 33 P01 | 5min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -759,6 +760,9 @@ decision history; they no longer describe current status.
 - [Phase 32.1]: 32.1-07: module-aware route set lives in check.ModuleAwareRoutes(); explain/query report refusal as pass (exit 0)
 - [Phase 32.1]: 32.1-08: Phase 29 WR-01 skipped (FFI trust class), WR-04/IN-02/IN-03 deferred; Phase 32 findings all fixed
 - [Phase 32.1]: Phase 32.1 code frozen at 0aac0a7b (codedigest b9253457705a224a0580d74896e8e5bd3821446a1d467626b7d611ca0d1c4b5c)
+- [Phase 33]: Keep the archived receipt prose byte-for-byte and append dated amendments while changing only the two checked marker lines.
+- [Phase 33]: Read the capture through the opened handle with LimitReader(limit+1), avoiding a path-based Stat race.
+- [Phase 33]: Copy the accepted coverage-kind enum into the Go test without adding a dependency.
 
 ### Pending Todos
 
@@ -1004,9 +1008,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-13T14:46:36.501Z
-Stopped at: Phase 33 context gathered
-Resume file: .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CONTEXT.md
+Last session: 2026-10-13T16:51:25.133Z
+Stopped at: Completed 33-01-PLAN.md
+Resume file: None
 Next action: /gsd-discuss-phase 33
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans

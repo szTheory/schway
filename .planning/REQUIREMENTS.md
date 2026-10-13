@@ -14,8 +14,8 @@ acceptance record is kept at
 
 ### Carried debt and hardening (first code-moving phase)
 
-- [ ] **QLT-13**: The native app reads the evidence capture file through a reader bounded at limit+1 bytes, before it allocates anything. An oversize capture yields the named capacity outcome without allocating the full file. A seeded mutant that restores the unbounded read is caught.
-- [ ] **QLT-14**: The 32.1 review warnings are closed:
+- [x] **QLT-13**: The native app reads the evidence capture file through a reader bounded at limit+1 bytes, before it allocates anything. An oversize capture yields the named capacity outcome without allocating the full file. A seeded mutant that restores the unbounded read is caught.
+- [x] **QLT-14**: The 32.1 review warnings are closed:
   - WR-01: the freeze gate gives the same verdict from any working directory, with a subdirectory test.
   - WR-02: `isAbortLikeDefect` accepts only the abort-like defect reasons it names, with the live owner checked, and a mutant that widens it is caught.
   - IN-01..03 and the deferred coverage-`kind` pin are each fixed or dispositioned in writing.
@@ -88,8 +88,8 @@ acceptance record is kept at
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| QLT-13 | Phase 33 | Pending |
-| QLT-14 | Phase 33 | Pending |
+| QLT-13 | Phase 33 | Complete |
+| QLT-14 | Phase 33 | Complete |
 | QLT-15 | Phase 33 | Pending |
 | EVD-16 | Phase 33 | Pending |
 | DX-20 | Phase 34 | Pending |
