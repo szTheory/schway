@@ -55,6 +55,7 @@ func TestPhase33CaptureReadBounded(t *testing.T) {
 		if err != nil {
 			t.Fatalf("precondition: sparse capture construction: create: %v", err)
 		}
+		// D-16 sparse allocation control: file.Truncate(1<<30) constructs a 1 GiB sparse file.
 		if err := file.Truncate(1 << 30); err != nil {
 			_ = file.Close()
 			t.Fatalf("precondition: sparse capture construction: truncate: %v", err)
