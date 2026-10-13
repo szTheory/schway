@@ -110,6 +110,15 @@ func TestFreezeGate(t *testing.T) {
 				t.Fatalf("expected %s: %d %q", tc.reason, exit, stderr)
 			}
 		}
+		headResult, err := testsupport.RunCLIErr(context.Background(), "git", nil, "-C", root, "rev-parse", "HEAD")
+		if err != nil || headResult.Exit != 0 {
+			t.Fatalf("project HEAD: %v", err)
+		}
+		head := strings.TrimSpace(string(headResult.Stdout))
+		exit, _, stderr := phase33FreezeRun(t, root+"/cmd", "../scripts/check-freeze.sh", "../testdata/receipts/M006.manifest", shas[0], head)
+		if exit == 0 || !strings.Contains(stderr, "reason=digest_path_changed_after_freeze") {
+			t.Fatalf("M006 freeze to project HEAD from cmd: exit=%d stderr=%s", exit, stderr)
+		}
 	})
 	f, base, freeze, combined := build(t)
 	commits := strings.Split(combined, "\n")
