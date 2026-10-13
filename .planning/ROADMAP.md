@@ -324,7 +324,7 @@ adapter and public path input.
 The module boundary of every route is named once and pinned by the route audit, and the usage text lists every route. The execution peer's entry rule matches `main` precedence. Hosted receipts are re-taken at the final M006 revision. Source: [M006 audit](M006-MILESTONE-AUDIT.md).
 **Requirements**: DX-17, DX-18, MOD-03, EVD-15 (re-take)
 **Depends on:** Phase 32
-**Plans:** 4/11 plans executed
+**Plans:** 5/11 plans executed
 
 Plans:
 **Wave 1**
@@ -334,7 +334,7 @@ Plans:
 - [x] 32.1-02-PLAN.md — run on an unbindable entry refuses usage/64 tool.run_input_required; 17 dated manifest re-pins; docs; emitter inventory re-pin last (D-01..D-07, D-24)
 - [x] 32.1-03-PLAN.md — check refuses a ByteView entry-module main with check.unexecutable_shape; IN-01 comment (D-08, D-22)
 - [x] 32.1-04-PLAN.md — Interpreter abort-like defect parity with native on the fixture route (D-09, D-25)
-- [ ] 32.1-05-PLAN.md — Execution peer adopts main precedence independently; armed unpruned parity control (D-15, D-16, D-26)
+- [x] 32.1-05-PLAN.md — Execution peer adopts main precedence independently; armed unpruned parity control (D-15, D-16, D-26)
 - [ ] 32.1-06-PLAN.md — Phase 32 review hardening: freeze .md exclude, cwd-free codedigest, digest_source, marker scan, formatter/citation/cache fixes (D-20)
 
 **Wave 3** *(blocked on Wave 2 completion)*
