@@ -3,8 +3,10 @@ package syntax_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/core"
@@ -13,128 +15,225 @@ import (
 	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
-type phase34RecoveryDraft struct {
-	ID                    string   `json:"id"`
-	Source                string   `json:"source"`
-	DiagnosticCount       int      `json:"diagnostic_count"`
-	RecoveredSiblingNames []string `json:"recovered_sibling_names"`
-	Diagnostics           []struct {
-		Code        string `json:"code"`
-		PrimarySpan struct {
-			Start int `json:"start"`
-			End   int `json:"end"`
-		} `json:"primary_span"`
-		Causes []struct {
-			Kind string `json:"kind"`
-			Span *struct {
-				Start int `json:"start"`
-				End   int `json:"end"`
-			} `json:"span"`
-		} `json:"causes"`
-	} `json:"diagnostics"`
+type phase34RecoverySpan struct {
+	Start int `json:"start"`
+	End   int `json:"end"`
 }
 
+type phase34RecoveryCause struct {
+	Kind string               `json:"kind"`
+	Span *phase34RecoverySpan `json:"span"`
+}
+
+type phase34RecoveryDiagnostic struct {
+	Code        string                 `json:"code"`
+	PrimarySpan phase34RecoverySpan    `json:"primary_span"`
+	Causes      []phase34RecoveryCause `json:"causes"`
+}
+
+type phase34RecoveryDraft struct {
+	ID                    string                      `json:"id"`
+	Provenance            string                      `json:"provenance"`
+	Delta                 string                      `json:"delta"`
+	DiagnosticCount       int                         `json:"diagnostic_count"`
+	RecoveredSiblingNames []string                    `json:"recovered_sibling_names"`
+	Diagnostics           []phase34RecoveryDiagnostic `json:"diagnostics"`
+}
+
+type phase34RecoveryObservation struct {
+	Diagnostics           []phase34RecoveryDiagnostic
+	RecoveredSiblingNames []string
+}
+
+// These observation-level seams exercise the corpus comparator's specific
+// failure classifications. They are local to this test, default off, and
+// never alter parser behavior or production output.
+var (
+	restoreCascadeForTest       bool
+	swallowSiblingForTest       bool
+	dropIndependentCauseForTest bool
+)
+
 func TestPhase34RecoveryCorpus(t *testing.T) {
+	corpus, after := loadPhase34RecoveryCorpus(t)
+	if len(corpus.Drafts) != len(after.Drafts) {
+		t.Fatalf("draft-after rows = %d, want one exact row for each of %d drafts", len(after.Drafts), len(corpus.Drafts))
+	}
+	wants := make(map[string]phase34RecoveryDraft, len(after.Drafts))
+	for _, want := range after.Drafts {
+		if want.Provenance != "reconstructed-2026-10-13" {
+			t.Errorf("%s provenance = %q, want reconstructed-2026-10-13", want.ID, want.Provenance)
+		}
+		if strings.TrimSpace(want.Delta) == "" {
+			t.Errorf("%s has no intentional-delta explanation", want.ID)
+		}
+		if _, duplicate := wants[want.ID]; duplicate {
+			t.Errorf("draft-after.json repeats %q", want.ID)
+		}
+		wants[want.ID] = want
+	}
+
+	for _, draft := range corpus.Drafts {
+		want, ok := wants[draft.ID]
+		if !ok {
+			t.Errorf("draft-after.json has no row for %q", draft.ID)
+			continue
+		}
+		parsed := syntax.Parse([]byte(draft.Source))
+		if !bytes.Equal(parsed.Tree.Bytes(), []byte(draft.Source)) {
+			t.Errorf("%s recovery changed the lossless source bytes", draft.ID)
+		}
+		got := observePhase34Recovery(parsed)
+		if reason := comparePhase34Recovery(want, got); reason != "" {
+			t.Errorf("%s recovery mismatch (%s): diagnostics=%+v siblings=%v", draft.ID, reason, got.Diagnostics, got.RecoveredSiblingNames)
+		}
+	}
+
+	malformed := fixtureByID(t, corpus.Drafts, "malformed-nested-paren")
+	malformedParse := syntax.Parse([]byte(malformed.Source))
+	checked := session.Check([]byte(malformed.Source))
+	if len(checked.Diagnostics) == 0 {
+		t.Fatal("session.Check accepted malformed nested syntax")
+	}
+	if !reflect.DeepEqual(checked.Program, core.Program{}) {
+		t.Fatalf("session.Check admitted rejected syntax to core: %+v", checked.Program)
+	}
+	if !bytes.Equal(checked.Tree.Bytes(), malformedParse.Tree.Bytes()) {
+		t.Fatal("session.Check changed the lossless rejected source bytes")
+	}
+
+	missingCloser := fixtureByID(t, corpus.Drafts, "independent-missing-closer")
+	missingParse := syntax.Parse([]byte(missingCloser.Source))
+	if len(missingParse.Diagnostics) != 2 ||
+		missingParse.Diagnostics[0].Code != "syntax.expected_rparen" || missingParse.Diagnostics[0].Primary.Start != 63 || missingParse.Diagnostics[0].Primary.End != 65 ||
+		missingParse.Diagnostics[1].Code != "syntax.expected_rbrace" || missingParse.Diagnostics[1].Primary.Start != 74 || missingParse.Diagnostics[1].Primary.End != 74 {
+		t.Fatalf("independent missing closers were not preserved: %+v", missingParse.Diagnostics)
+	}
+}
+
+func TestPhase34RecoveryControls(t *testing.T) {
+	corpus, after := loadPhase34RecoveryCorpus(t)
+	t.Cleanup(func() {
+		restoreCascadeForTest = false
+		swallowSiblingForTest = false
+		dropIndependentCauseForTest = false
+	})
+	if restoreCascadeForTest || swallowSiblingForTest || dropIndependentCauseForTest {
+		t.Fatal("recovery test controls must be disabled by default")
+	}
+	wants := make(map[string]phase34RecoveryDraft, len(after.Drafts))
+	for _, want := range after.Drafts {
+		wants[want.ID] = want
+	}
+	fixtures := make(map[string]phase34Source, len(corpus.Drafts))
+	for _, draft := range corpus.Drafts {
+		fixtures[draft.ID] = draft
+	}
+
+	checkControl := func(id string) string {
+		draft := fixtures[id]
+		parsed := syntax.Parse([]byte(draft.Source))
+		got := applyPhase34RecoveryControlForTest(id, observePhase34Recovery(parsed))
+		return comparePhase34Recovery(wants[id], got)
+	}
+	if reason := checkControl("malformed-nested-paren"); reason != "" {
+		t.Fatalf("normal nested-paren observation failed before controls: %s", reason)
+	}
+
+	restoreCascadeForTest = true
+	if reason := checkControl("malformed-nested-paren"); reason != "cascade_count" {
+		t.Fatalf("restoreCascadeForTest reached failure reason %q, want cascade_count", reason)
+	}
+	t.Log("restoreCascadeForTest reached cascade_count")
+	restoreCascadeForTest = false
+	if reason := checkControl("malformed-nested-paren"); reason != "" {
+		t.Fatalf("restoreCascadeForTest did not restore normal output: %s", reason)
+	}
+	t.Log("restoreCascadeForTest restored normal output")
+
+	swallowSiblingForTest = true
+	if reason := checkControl("sibling-after-error"); reason != "missing_sibling" {
+		t.Fatalf("swallowSiblingForTest reached failure reason %q, want missing_sibling", reason)
+	}
+	t.Log("swallowSiblingForTest reached missing_sibling")
+	swallowSiblingForTest = false
+	if reason := checkControl("sibling-after-error"); reason != "" {
+		t.Fatalf("swallowSiblingForTest did not restore normal output: %s", reason)
+	}
+	t.Log("swallowSiblingForTest restored normal output")
+
+	dropIndependentCauseForTest = true
+	if reason := checkControl("two-independent-causes"); reason != "missing_independent_cause" {
+		t.Fatalf("dropIndependentCauseForTest reached failure reason %q, want missing_independent_cause", reason)
+	}
+	t.Log("dropIndependentCauseForTest reached missing_independent_cause")
+	dropIndependentCauseForTest = false
+	if reason := checkControl("two-independent-causes"); reason != "" {
+		t.Fatalf("dropIndependentCauseForTest did not restore normal output: %s", reason)
+	}
+	t.Log("dropIndependentCauseForTest restored normal output")
+
+	t.Run("bounded_nested_delimiters", func(t *testing.T) {
+		const depth = 4096
+		nested := strings.Repeat("(", depth) + "broken" + strings.Repeat(")", depth)
+		source := []byte("module phase34.deep\nexport { fn broken fn kept }\n" +
+			"fn broken(n: U64) -> U64 { let value = call(n, " + nested + ") n }\n" +
+			"fn kept(n: U64) -> U64 { n }\n")
+		if len(source) > syntax.MaxSourceBytes {
+			t.Fatalf("generated source length %d exceeds MaxSourceBytes %d", len(source), syntax.MaxSourceBytes)
+		}
+		parsed := syntax.Parse(source)
+		if !bytes.Equal(parsed.Tree.Bytes(), source) {
+			t.Fatal("deep recovery changed lossless source bytes")
+		}
+		if len(parsed.Tree.Tokens) >= syntax.MaxTokens {
+			t.Fatalf("generated token stream reached MaxTokens: %d", len(parsed.Tree.Tokens))
+		}
+		if len(parsed.Diagnostics) != 1 || parsed.Diagnostics[0].Code != "syntax.expected_call_argument" {
+			t.Fatalf("deep nested recovery diagnostics = %+v, want one owned call-argument cause", parsed.Diagnostics)
+		}
+		var names []string
+		for _, function := range parsed.Program.Funcs {
+			names = append(names, function.Name)
+		}
+		if !reflect.DeepEqual(names, []string{"broken", "kept"}) {
+			t.Fatalf("deep recovery siblings = %v, want [broken kept]", names)
+		}
+	})
+
+	t.Run("diagnostic_cap_retains_truncation_marker", func(t *testing.T) {
+		var source strings.Builder
+		source.WriteString("module phase34.cap\nexport { fn f00 }\n")
+		for index := 0; index < 24; index++ {
+			fmt.Fprintf(&source, "@\nfn f%02d(n: U64) -> U64 { n }\n", index)
+		}
+		parsed := syntax.Parse([]byte(source.String()))
+		if len(parsed.Diagnostics) != 21 || parsed.Diagnostics[len(parsed.Diagnostics)-1].Code != "syntax.too_many_errors" {
+			t.Fatalf("bounded error stream diagnostics = %d, final=%+v; want 20 primaries plus syntax.too_many_errors", len(parsed.Diagnostics), parsed.Diagnostics)
+		}
+	})
+}
+
+type phase34Source struct {
+	ID     string `json:"id"`
+	Source string `json:"source"`
+}
+
+func loadPhase34RecoveryCorpus(t *testing.T) (struct {
+	Drafts []phase34Source `json:"drafts"`
+}, struct {
+	Drafts []phase34RecoveryDraft `json:"drafts"`
+}) {
+	t.Helper()
 	var corpus struct {
-		Drafts []struct {
-			ID     string `json:"id"`
-			Source string `json:"source"`
-		} `json:"drafts"`
+		Drafts []phase34Source `json:"drafts"`
 	}
 	readPhase34JSON(t, "testdata/phase34/drafts.json", &corpus)
 	var after struct {
 		Drafts []phase34RecoveryDraft `json:"drafts"`
 	}
 	readPhase34JSON(t, "testdata/phase34/draft-after.json", &after)
-
-	var source string
-	for _, draft := range corpus.Drafts {
-		if draft.ID == "sibling-after-error" {
-			source = draft.Source
-			break
-		}
-	}
-	if source == "" {
-		t.Fatal("reconstructed sibling-after-error fixture is missing")
-	}
-	var want *phase34RecoveryDraft
-	for i := range after.Drafts {
-		if after.Drafts[i].ID == "sibling-after-error" {
-			want = &after.Drafts[i]
-			break
-		}
-	}
-	if want == nil {
-		t.Fatal("draft-after.json has no sibling-after-error row")
-	}
-
-	parsed := syntax.Parse([]byte(source))
-	if !bytes.Equal(parsed.Tree.Bytes(), []byte(source)) {
-		t.Fatal("rejected parse changed the lossless source bytes")
-	}
-	if got, expected := len(parsed.Diagnostics), want.DiagnosticCount; got != expected {
-		t.Fatalf("sibling-after-error diagnostic count = %d, want %d: %+v", got, expected, parsed.Diagnostics)
-	}
-	if len(want.Diagnostics) != len(parsed.Diagnostics) {
-		t.Fatalf("sibling-after-error has %d expected diagnostic rows, got %d", len(want.Diagnostics), len(parsed.Diagnostics))
-	}
-	for i, diagnostic := range parsed.Diagnostics {
-		expected := want.Diagnostics[i]
-		if diagnostic.Code != expected.Code || diagnostic.Primary.Start != expected.PrimarySpan.Start || diagnostic.Primary.End != expected.PrimarySpan.End {
-			t.Fatalf("diagnostic %d = %s@%d:%d, want %s@%d:%d", i, diagnostic.Code, diagnostic.Primary.Start, diagnostic.Primary.End, expected.Code, expected.PrimarySpan.Start, expected.PrimarySpan.End)
-		}
-		if len(diagnostic.Causes) != len(expected.Causes) {
-			t.Fatalf("diagnostic %d has %d causes, want %d", i, len(diagnostic.Causes), len(expected.Causes))
-		}
-		for j, cause := range diagnostic.Causes {
-			wantCause := expected.Causes[j]
-			if cause.Kind != wantCause.Kind || (cause.Span == nil) != (wantCause.Span == nil) {
-				t.Fatalf("diagnostic %d cause %d = %+v, want %+v", i, j, cause, wantCause)
-			}
-			if cause.Span != nil && (cause.Span.Start != wantCause.Span.Start || cause.Span.End != wantCause.Span.End) {
-				t.Fatalf("diagnostic %d cause %d span = %d:%d, want %d:%d", i, j, cause.Span.Start, cause.Span.End, wantCause.Span.Start, wantCause.Span.End)
-			}
-		}
-	}
-	var siblings []string
-	for _, function := range parsed.Program.Funcs {
-		siblings = append(siblings, function.Name)
-	}
-	if !reflect.DeepEqual(siblings, want.RecoveredSiblingNames) {
-		t.Fatalf("recovered functions = %v, want %v", siblings, want.RecoveredSiblingNames)
-	}
-
-	var malformedParenSource string
-	for _, draft := range corpus.Drafts {
-		if draft.ID == "malformed-nested-paren" {
-			malformedParenSource = draft.Source
-			break
-		}
-	}
-	if malformedParenSource == "" {
-		t.Fatal("reconstructed malformed-nested-paren fixture is missing")
-	}
-	malformedParen := syntax.Parse([]byte(malformedParenSource))
-	if !bytes.Equal(malformedParen.Tree.Bytes(), []byte(malformedParenSource)) {
-		t.Fatal("nested-delimiter recovery changed the lossless source bytes")
-	}
-	if len(malformedParen.Diagnostics) != 1 {
-		t.Fatalf("malformed-nested-paren recovery emitted %d diagnostics, want one cause: %+v", len(malformedParen.Diagnostics), malformedParen.Diagnostics)
-	}
-	if got := malformedParen.Diagnostics[0]; got.Code != "syntax.expected_linear_result" || got.Primary.Start != 96 || got.Primary.End != 97 {
-		t.Fatalf("malformed-nested-paren primary = %s@%d:%d, want syntax.expected_linear_result@96:97", got.Code, got.Primary.Start, got.Primary.End)
-	}
-
-	checked := session.Check([]byte(source))
-	if len(checked.Diagnostics) == 0 {
-		t.Fatal("session.Check accepted a source tree with parser recovery diagnostics")
-	}
-	if !reflect.DeepEqual(checked.Program, core.Program{}) {
-		t.Fatalf("session.Check admitted rejected syntax to core: %+v", checked.Program)
-	}
-	if !bytes.Equal(checked.Tree.Bytes(), []byte(source)) {
-		t.Fatal("session.Check changed the lossless rejected source bytes")
-	}
+	return corpus, after
 }
 
 func readPhase34JSON(t *testing.T, path string, target any) {
@@ -146,4 +245,86 @@ func readPhase34JSON(t *testing.T, path string, target any) {
 	if err := json.Unmarshal(contents, target); err != nil {
 		t.Fatalf("decode %s: %v", path, err)
 	}
+}
+
+func fixtureByID(t *testing.T, drafts []phase34Source, id string) phase34Source {
+	t.Helper()
+	for _, draft := range drafts {
+		if draft.ID == id {
+			return draft
+		}
+	}
+	t.Fatalf("draft fixture %q is missing", id)
+	return phase34Source{}
+}
+
+func observePhase34Recovery(parsed syntax.ParseResult) phase34RecoveryObservation {
+	got := phase34RecoveryObservation{
+		Diagnostics:           make([]phase34RecoveryDiagnostic, 0, len(parsed.Diagnostics)),
+		RecoveredSiblingNames: make([]string, 0, len(parsed.Program.Funcs)),
+	}
+	for _, problem := range parsed.Diagnostics {
+		row := phase34RecoveryDiagnostic{
+			Code:        problem.Code,
+			PrimarySpan: phase34RecoverySpan{Start: problem.Primary.Start, End: problem.Primary.End},
+			Causes:      make([]phase34RecoveryCause, 0, len(problem.Causes)),
+		}
+		for _, cause := range problem.Causes {
+			entry := phase34RecoveryCause{Kind: cause.Kind}
+			if cause.Span != nil {
+				entry.Span = &phase34RecoverySpan{Start: cause.Span.Start, End: cause.Span.End}
+			}
+			row.Causes = append(row.Causes, entry)
+		}
+		got.Diagnostics = append(got.Diagnostics, row)
+	}
+	for _, function := range parsed.Program.Funcs {
+		got.RecoveredSiblingNames = append(got.RecoveredSiblingNames, function.Name)
+	}
+	return got
+}
+
+func comparePhase34Recovery(want phase34RecoveryDraft, got phase34RecoveryObservation) string {
+	if len(got.Diagnostics) > want.DiagnosticCount {
+		return "cascade_count"
+	}
+	if len(got.Diagnostics) < want.DiagnosticCount {
+		if want.ID == "two-independent-causes" {
+			return "missing_independent_cause"
+		}
+		return "missing_cause"
+	}
+	for _, sibling := range want.RecoveredSiblingNames {
+		if !containsString(got.RecoveredSiblingNames, sibling) {
+			return "missing_sibling"
+		}
+	}
+	if !reflect.DeepEqual(want.RecoveredSiblingNames, got.RecoveredSiblingNames) {
+		return "unexpected_sibling"
+	}
+	if len(want.Diagnostics) != want.DiagnosticCount || !reflect.DeepEqual(want.Diagnostics, got.Diagnostics) {
+		return "diagnostic_mismatch"
+	}
+	return ""
+}
+
+func applyPhase34RecoveryControlForTest(id string, got phase34RecoveryObservation) phase34RecoveryObservation {
+	switch {
+	case restoreCascadeForTest && id == "malformed-nested-paren" && len(got.Diagnostics) > 0:
+		got.Diagnostics = append(got.Diagnostics, got.Diagnostics[0])
+	case swallowSiblingForTest && id == "sibling-after-error" && len(got.RecoveredSiblingNames) > 0:
+		got.RecoveredSiblingNames = got.RecoveredSiblingNames[:len(got.RecoveredSiblingNames)-1]
+	case dropIndependentCauseForTest && id == "two-independent-causes" && len(got.Diagnostics) > 0:
+		got.Diagnostics = got.Diagnostics[:len(got.Diagnostics)-1]
+	}
+	return got
+}
+
+func containsString(values []string, value string) bool {
+	for _, candidate := range values {
+		if candidate == value {
+			return true
+		}
+	}
+	return false
 }

@@ -49,14 +49,15 @@ type ParseResult struct {
 }
 
 type parser struct {
-	source               []byte
-	tokens               []Token
-	position             int
-	diagnostics          []diagnostic.Diagnostic
-	truncated            bool
-	typeDepth            int
-	typeNodes            int
-	claimedRecoverySpans map[recoveryTokenSpan]struct{}
+	source                    []byte
+	tokens                    []Token
+	position                  int
+	diagnostics               []diagnostic.Diagnostic
+	truncated                 bool
+	typeDepth                 int
+	typeNodes                 int
+	claimedRecoverySpans      map[recoveryTokenSpan]struct{}
+	claimedRecoveryBoundaries map[recoveryTokenSpan]struct{}
 }
 
 type recoveryTokenSpan struct {
@@ -86,11 +87,12 @@ func Parse(source []byte) ParseResult {
 		truncated = false
 	}
 	p := parser{
-		source:               source,
-		tokens:               tokens,
-		diagnostics:          diagnostics,
-		truncated:            truncated,
-		claimedRecoverySpans: make(map[recoveryTokenSpan]struct{}),
+		source:                    source,
+		tokens:                    tokens,
+		diagnostics:               diagnostics,
+		truncated:                 truncated,
+		claimedRecoverySpans:      make(map[recoveryTokenSpan]struct{}),
+		claimedRecoveryBoundaries: make(map[recoveryTokenSpan]struct{}),
 	}
 	program := p.parseProgram()
 	if limit := programLimit(program); limit != "" {
@@ -600,8 +602,22 @@ func (p *parser) scalarLinearBody(unitResult bool) ast.LinearBody {
 		result := p.advance()
 		body.Result = result.Text
 		body.Span.End = result.Span.End
+		if !p.atAny(TokenRBrace, TokenEOF, TokenData, TokenFn, TokenForeign, TokenImport) {
+			p.problem("syntax.expected_rbrace", p.peek(), "expected `}` after the scalar result")
+			p.recoverDelimited(TokenRBrace, TokenData, TokenFn, TokenForeign, TokenImport, TokenEOF)
+			if isCallerOwnedBoundary(p.peek().Kind) {
+				p.claimRecoveryBoundary(p.peek())
+			}
+		}
 	} else {
-		p.problem("syntax.expected_linear_result", p.peek(), "expected a scalar result")
+		boundary := p.peek()
+		p.problemAtBoundary("syntax.expected_linear_result", boundary, "expected a scalar result")
+		if !p.atAny(TokenRBrace, TokenEOF, TokenData, TokenFn, TokenForeign, TokenImport) {
+			p.recoverDelimited(TokenRBrace, TokenData, TokenFn, TokenForeign, TokenImport, TokenEOF)
+			if isCallerOwnedBoundary(p.peek().Kind) {
+				p.claimRecoveryBoundary(p.peek())
+			}
+		}
 	}
 	return body
 }
@@ -743,7 +759,12 @@ func (p *parser) scalarBinaryExpr(minPrecedence int) *ast.Expr {
 }
 
 func (p *parser) scalarExprAtom() *ast.Expr {
-	leftToken := p.advance()
+	leftToken := p.peek()
+	if isCallerOwnedBoundary(leftToken.Kind) {
+		p.problemAtBoundary("syntax.expected_scalar_operand", leftToken, "expected a scalar operand")
+		return &ast.Expr{Kind: "name", Name: leftToken.Text, Span: leftToken.Span}
+	}
+	leftToken = p.advance()
 	switch leftToken.Kind {
 	case TokenNumber:
 		return &ast.Expr{Kind: "number", Value: leftToken.Text, Span: leftToken.Span}
@@ -845,17 +866,17 @@ func (p *parser) typeRef() ast.TypeRef {
 	if !p.accept(TokenLAngle) {
 		return result
 	}
-	for !p.atAny(TokenRAngle, TokenRParen, TokenLBrace, TokenRBrace, TokenData, TokenFn, TokenEOF) {
+	for !p.atAny(TokenRAngle, TokenRParen, TokenLBrace, TokenRBrace, TokenData, TokenFn, TokenEOF, TokenArrow, TokenFatArrow, TokenElse) {
 		before := p.position
 		result.Arguments = append(result.Arguments, p.typeRef())
 		if !p.accept(TokenComma) {
 			break
 		}
-		p.assertProgressOrBoundary(before, TokenRAngle, TokenRParen, TokenLBrace, TokenRBrace, TokenData, TokenFn, TokenEOF)
+		p.assertProgressOrBoundary(before, TokenRAngle, TokenRParen, TokenLBrace, TokenRBrace, TokenData, TokenFn, TokenEOF, TokenArrow, TokenFatArrow, TokenElse)
 	}
 	if !p.accept(TokenRAngle) {
 		p.problem("syntax.expected_type_close", p.peek(), "expected `>`")
-		if !p.atAny(TokenRParen, TokenLBrace, TokenRBrace, TokenData, TokenFn, TokenEOF) {
+		if !isCallerOwnedBoundary(p.peek().Kind) {
 			p.advance()
 		}
 	}
@@ -966,7 +987,18 @@ func (p *parser) linearBody(allowTerminalMatch bool) ast.LinearBody {
 		body.Span.End = end
 		return body
 	}
-	result := p.identifier("syntax.expected_linear_result")
+	result := p.peek()
+	if result.Kind != TokenIdentifier {
+		p.problemAtBoundary("syntax.expected_linear_result", result, "expected `identifier`")
+		if !isCallerOwnedBoundary(result.Kind) {
+			p.recoverDelimited(TokenRBrace, TokenData, TokenFn, TokenForeign, TokenImport, TokenEOF)
+			if isCallerOwnedBoundary(p.peek().Kind) {
+				p.claimRecoveryBoundary(p.peek())
+			}
+		}
+		return body
+	}
+	p.advance()
 	body.Result = result.Text
 	body.Span.End = result.Span.End
 	return body
@@ -1017,7 +1049,18 @@ func (p *parser) callArguments() ([]string, []diagnostic.Span, int) {
 	var argumentSpans []diagnostic.Span
 	if p.peek().Kind != TokenRParen {
 		for {
-			argument := p.identifier("syntax.expected_call_argument")
+			argument := p.peek()
+			if argument.Kind != TokenIdentifier {
+				p.problem("syntax.expected_call_argument", argument, "expected an identifier call argument")
+				if !isCallerOwnedBoundary(argument.Kind) {
+					p.recoverDelimited(TokenRParen, TokenRBrace, TokenData, TokenFn, TokenForeign, TokenImport, TokenEOF)
+					if isCallerOwnedBoundary(p.peek().Kind) {
+						p.claimRecoveryBoundary(p.peek())
+					}
+				}
+				break
+			}
+			p.advance()
 			arguments = append(arguments, argument.Text)
 			argumentSpans = append(argumentSpans, argument.Span)
 			if !p.accept(TokenComma) {
@@ -1040,20 +1083,20 @@ func (p *parser) matchExpr() ast.MatchExpr {
 	scrutinee := p.identifier("syntax.expected_scrutinee")
 	p.expect(TokenLBrace, "syntax.expected_lbrace")
 	expression := ast.MatchExpr{Scrutinee: scrutinee.Text, Span: spanFrom(start, scrutinee)}
-	for !p.atAny(TokenRBrace, TokenData, TokenFn, TokenEOF) {
+	for !p.atAny(TokenRBrace, TokenData, TokenFn, TokenEOF, TokenRParen, TokenArrow, TokenFatArrow, TokenElse) {
 		startPosition := p.position
 		pattern := p.identifier("syntax.expected_pattern")
 		patternBinder := p.optionalPayloadBinder()
 		if !p.accept(TokenFatArrow) {
 			p.problem("syntax.expected_fat_arrow", p.peek(), "expected `=>`")
-			p.recoverUntil(TokenIdentifier, TokenRBrace, TokenData, TokenFn, TokenEOF)
-			p.assertProgressOrBoundary(startPosition, TokenRBrace, TokenData, TokenFn, TokenEOF)
+			p.recoverUntil(TokenIdentifier, TokenRBrace, TokenData, TokenFn, TokenEOF, TokenRParen, TokenArrow, TokenFatArrow, TokenElse)
+			p.assertProgressOrBoundary(startPosition, TokenRBrace, TokenData, TokenFn, TokenEOF, TokenRParen, TokenArrow, TokenFatArrow, TokenElse)
 			continue
 		}
 		if len(expression.Arms) >= maxArmsPerMatch {
 			p.problem("syntax.arm_limit", pattern, "match exceeds the declared arm limit")
-			p.recoverUntil(TokenIdentifier, TokenRBrace, TokenData, TokenFn, TokenEOF)
-			p.assertProgressOrBoundary(startPosition, TokenRBrace, TokenData, TokenFn, TokenEOF)
+			p.recoverUntil(TokenIdentifier, TokenRBrace, TokenData, TokenFn, TokenEOF, TokenRParen, TokenArrow, TokenFatArrow, TokenElse)
+			p.assertProgressOrBoundary(startPosition, TokenRBrace, TokenData, TokenFn, TokenEOF, TokenRParen, TokenArrow, TokenFatArrow, TokenElse)
 			continue
 		}
 		if p.peek().Kind == TokenLBrace {
@@ -1083,7 +1126,7 @@ func (p *parser) matchExpr() ast.MatchExpr {
 				expression.Span.End = value.Span.End
 			}
 		}
-		p.assertProgressOrBoundary(startPosition, TokenRBrace, TokenData, TokenFn, TokenEOF)
+		p.assertProgressOrBoundary(startPosition, TokenRBrace, TokenData, TokenFn, TokenEOF, TokenRParen, TokenArrow, TokenFatArrow, TokenElse)
 	}
 	p.expect(TokenRBrace, "syntax.expected_rbrace")
 	return expression
@@ -1120,8 +1163,22 @@ func (p *parser) expect(kind Kind, code string) Token {
 	if token.Kind == kind {
 		return p.advance()
 	}
-	p.problem(code, token, "expected `"+string(kind)+"`")
-	if token.Kind != TokenEOF && !isDeclarationBoundary(token.Kind) && token.Kind != TokenRBrace {
+	if isCallerOwnedBoundary(token.Kind) {
+		p.problemAtBoundary(code, token, "expected `"+string(kind)+"`")
+	} else {
+		p.problem(code, token, "expected `"+string(kind)+"`")
+		if kind == TokenRParen || kind == TokenRBrace {
+			p.recoverDelimited(kind, TokenData, TokenFn, TokenForeign, TokenImport, TokenEOF)
+			if p.peek().Kind == kind {
+				return p.advance()
+			}
+			if isCallerOwnedBoundary(p.peek().Kind) {
+				p.claimRecoveryBoundary(p.peek())
+			}
+			return p.peek()
+		}
+	}
+	if !isCallerOwnedBoundary(token.Kind) {
 		return p.advance()
 	}
 	return token
@@ -1164,6 +1221,26 @@ func (p *parser) problem(code string, token Token, message string, causes ...dia
 	p.diagnostics = append(p.diagnostics, diagnostic.Error(code, token.Span, message, causes...).AtSource())
 }
 
+// problemAtBoundary gives one parser expectation ownership of an exact
+// caller-owned token. Follow-up expectations at the same byte span are
+// consequences of that recovery boundary and do not create a second cause.
+func (p *parser) problemAtBoundary(code string, token Token, message string, causes ...diagnostic.Cause) {
+	key := recoveryTokenSpan{start: token.Span.Start, end: token.Span.End}
+	if _, owned := p.claimedRecoveryBoundaries[key]; owned {
+		return
+	}
+	before := len(p.diagnostics)
+	p.problem(code, token, message, causes...)
+	if len(p.diagnostics) > before {
+		p.claimRecoveryBoundary(token)
+	}
+}
+
+func (p *parser) claimRecoveryBoundary(token Token) {
+	span := recoveryTokenSpan{start: token.Span.Start, end: token.Span.End}
+	p.claimedRecoveryBoundaries[span] = struct{}{}
+}
+
 func (p *parser) claimRecoveryToken(token Token) {
 	if token.Kind != TokenUnknown {
 		return
@@ -1202,42 +1279,68 @@ func (p *parser) peekNonTrivia(ordinal int) Token {
 	return p.tokens[len(p.tokens)-1]
 }
 
-// recoverUntil is the only token-skipping recovery primitive. If it is not
-// already at a caller-owned boundary, it must consume at least one token.
+// recoverUntil is the only token-skipping recovery primitive. It delegates to
+// delimiter-aware recovery so a nested closer cannot be mistaken for the
+// caller's boundary.
 func (p *parser) recoverUntil(boundaries ...Kind) {
-	if p.atAny(boundaries...) {
-		return
-	}
-	start := p.position
-	for !p.atAny(boundaries...) {
-		p.advance()
-	}
-	if p.position <= start {
-		panic("parser recovery made no progress")
-	}
+	p.recoverDelimited(boundaries...)
 }
 
-// recoverRegion is recoverUntil that additionally records and returns the
-// byte extent it discarded -- from the start offset of the first token it
-// consumes to the end offset of the last -- as a diagnostic.Span, plus
-// whether anything was actually discarded. It keeps recoverUntil's own
-// convention: if already at a caller-owned boundary, it returns without
-// consuming (discarded is false, and the returned span is the zero value --
-// callers must check discarded before attaching it as a cause).
-func (p *parser) recoverRegion(boundaries ...Kind) (diagnostic.Span, bool) {
-	if p.atAny(boundaries...) {
+// recoverDelimited scans the bounded token stream with a small delimiter
+// stack. Requested boundaries stop recovery only at depth zero; matching
+// nested closers are consumed, while unmatched closers and valid declaration
+// siblings remain available to their caller.
+func (p *parser) recoverDelimited(boundaries ...Kind) (diagnostic.Span, bool) {
+	if p.atAny(boundaries...) || p.peek().Kind == TokenEOF {
 		return diagnostic.Span{}, false
 	}
-	start := p.position
+	startPosition := p.position
 	startSpan := p.peek().Span
 	var last Token
-	for !p.atAny(boundaries...) {
-		last = p.advance()
+	stack := make([]Kind, 0, 4)
+	for {
+		token := p.peek()
+		if token.Kind == TokenEOF {
+			break
+		}
+		if len(stack) == 0 && p.atAny(boundaries...) {
+			break
+		}
+		if isDeclarationRecoveryBoundary(p, token.Kind) {
+			break
+		}
+		stopped := false
+		switch token.Kind {
+		case TokenRParen, TokenRBrace:
+			if len(stack) == 0 || stack[len(stack)-1] != token.Kind {
+				stopped = true
+			} else {
+				stack = stack[:len(stack)-1]
+				last = p.advance()
+			}
+		case TokenLParen:
+			stack = append(stack, TokenRParen)
+			last = p.advance()
+		case TokenLBrace:
+			stack = append(stack, TokenRBrace)
+			last = p.advance()
+		default:
+			last = p.advance()
+		}
+		if stopped {
+			break
+		}
 	}
-	if p.position <= start {
-		panic("parser recovery made no progress")
+	if p.position <= startPosition {
+		return diagnostic.Span{}, false
 	}
 	return diagnostic.Span{Start: startSpan.Start, End: last.Span.End}, true
+}
+
+// recoverRegion additionally returns the exact byte extent consumed, for use
+// as a skipped_region diagnostic cause.
+func (p *parser) recoverRegion(boundaries ...Kind) (diagnostic.Span, bool) {
+	return p.recoverDelimited(boundaries...)
 }
 
 func (p *parser) assertProgressOrBoundary(start int, boundaries ...Kind) {
@@ -1245,6 +1348,27 @@ func (p *parser) assertProgressOrBoundary(start int, boundaries ...Kind) {
 		return
 	}
 	panic("parser branch made no progress")
+}
+
+func isCallerOwnedBoundary(kind Kind) bool {
+	switch kind {
+	case TokenEOF, TokenData, TokenFn, TokenForeign, TokenImport, TokenRParen, TokenRBrace,
+		TokenArrow, TokenFatArrow, TokenElse:
+		return true
+	default:
+		return false
+	}
+}
+
+func isDeclarationRecoveryBoundary(p *parser, kind Kind) bool {
+	switch kind {
+	case TokenData, TokenForeign, TokenImport:
+		return true
+	case TokenFn:
+		return p.looksLikeFunctionDecl()
+	default:
+		return false
+	}
 }
 
 func isDeclarationBoundary(kind Kind) bool {
