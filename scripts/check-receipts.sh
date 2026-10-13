@@ -40,8 +40,9 @@ controls=$(mf_get controls)
 case_table=$(grep '^# case ' "$manifest" || true)
 [ -n "$case_table" ] || reject case_table_empty
 [ -n "$want_programs" ] || reject programs_line_missing
+[ -n "$controls" ] || reject controls_line_missing
 table_count=$(printf '%s\n' "$case_table" | grep -c '^# case ')
-control_count=$(printf '%s' "$controls" | awk -F, '{print NF}')
+control_count=$(printf '%s' "$controls" | awk -F, '{ for (i=1; i<=NF; i++) if ($i ~ /^[[:space:]]*$/) exit 1; print NF }') || reject controls_line_malformed
 
 prefix_count() { awk -v p="$1" 'index($0,p)==1 { n++ } END { print n+0 }' "$2"; }
 prefix_first() { awk -v p="$1" 'index($0,p)==1 { print; exit }' "$2"; }
