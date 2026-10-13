@@ -28,6 +28,8 @@ Go-level only; `evidence`, `interface` and `query` are not module-aware
 (named refusal); Phase 28 has no VALIDATION.md or SECURITY.md; Phase 29/30
 test seams in production packages (see `milestones/M006-MILESTONE-AUDIT.md`).
 
+Amended 2026-10-13: 32.1 WR-01/WR-02 and IN-01..03, the coverage-kind pin, and missing Phase 28 VALIDATION/SECURITY are closed in Phase 33 (see 33-CARRIED-DEBT-DISPOSITION.md). Still open: interpreter file-bytes parity is Go-level only; evidence/interface/query are not module-aware; Phase 29/30 test seams remain in production packages.
+
 **Git range:** 955a9fd0 (vM005) → vM006 — 373 commits, 202 code files changed (+31,319 / −577)
 
 **Key accomplishments:**

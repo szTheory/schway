@@ -41,7 +41,7 @@ coverage:
         ref: "internal/compiler/session/session_phase32_receipt_test.go#TestPhase32ReceiptLivingClaims"
         status: pass
       - kind: unit
-        ref: "internal/compiler/session/session_phase32_gate_test.go#TestPhase32ReceiptGate"
+        ref: "internal/compiler/session/session_receipt_gate_test.go#TestReceiptGate"
         status: pass
     human_judgment: false
   - id: D-10a-bound-markers
@@ -57,7 +57,7 @@ coverage:
     requirement: "EVD-15"
     verification:
       - kind: unit
-        ref: "internal/compiler/session/session_phase32_freeze_test.go#TestPhase32FreezeGate"
+        ref: "internal/compiler/session/session_freeze_gate_test.go#TestFreezeGate"
         status: pass
     human_judgment: false
   - id: D-11-coverage-groundedness
@@ -73,6 +73,8 @@ completed: 2026-10-12
 ---
 
 # Phase 32 Plan 11: Receipt ingest and M006 closure Summary
+
+Amended 2026-10-13: Phase 33-04 generalized the receipt and freeze gates to `TestReceiptGate` and `TestFreezeGate`; historical coverage now points to their current sources.
 
 Ingested the hosted macOS and Linux receipts for the frozen code digest, bound the living docs to them, and closed DX-19, EVD-15 and Phase 32.
 

@@ -174,6 +174,8 @@ Go-level only; `evidence`/`interface`/`query` refuse import-bearing sources by
 name; Phase 32.1 review warnings WR-01/WR-02 and a coverage-`kind` pin wait for
 the next code-moving phase.
 
+Amended 2026-10-13: 32.1 WR-01/WR-02 and IN-01..03, the coverage-kind pin, and missing Phase 28 VALIDATION/SECURITY are closed in Phase 33 (see 33-CARRIED-DEBT-DISPOSITION.md). Still open: interpreter file-bytes parity is Go-level only; evidence/interface/query are not module-aware; Phase 29/30 test seams remain in production packages.
+
 Amended 2026-10-13: Hosted run 38335175306 (headSha 9f8f878f) receipts were bound to codedigest b9253457705a224a0580d74896e8e5bd3821446a1d467626b7d611ca0d1c4b5c and are now historical; Phase 33 code changes reopened them. Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
 **2026-10-10 M005 Practical Computation shipped** (5 phases, 25 plans; archive
@@ -612,6 +614,8 @@ usage text lists every route. Hosted run 38335175306 (headSha 9f8f878f) passed o
 The receipts are re-bound at freeze codedigest `b9253457…`. Verifier 6/6, threats 21/21 closed,
 UAT 31/31 automated with 0 human items. Review warnings WR-01/WR-02 and a coverage-`kind` pin are
 deferred to the next code-moving phase, because any code commit reopens the receipts.
+
+Amended 2026-10-13: 32.1 WR-01/WR-02 and IN-01..03, the coverage-kind pin, and missing Phase 28 VALIDATION/SECURITY are closed in Phase 33 (see 33-CARRIED-DEBT-DISPOSITION.md). Still open: interpreter file-bytes parity is Go-level only; evidence/interface/query are not module-aware; Phase 29/30 test seams remain in production packages.
 
 Amended 2026-10-13: Hosted run 38335175306 (headSha 9f8f878f) receipts were bound to codedigest b9253457705a224a0580d74896e8e5bd3821446a1d467626b7d611ca0d1c4b5c and are now historical; Phase 33 code changes reopened them. Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 

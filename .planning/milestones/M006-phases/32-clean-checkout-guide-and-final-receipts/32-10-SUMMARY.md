@@ -24,7 +24,7 @@ coverage:
     requirement: "EVD-15"
     verification:
       - kind: unit
-        ref: "internal/compiler/session/session_phase32_freeze_test.go#TestPhase32FreezeGate"
+        ref: "internal/compiler/session/session_freeze_gate_test.go#TestFreezeGate"
         status: pass
     human_judgment: false
 duration: 5min
@@ -32,6 +32,8 @@ completed: 2026-10-12
 ---
 
 # Phase 32 Plan 10: Hosted dispatch for the frozen M006 revision
+
+Amended 2026-10-13: Phase 33-04 generalized the freeze gate to `TestFreezeGate`; the historical coverage reference now points to its current source.
 
 The single human step ran. The user pushed `phase26-validation` and dispatched `ci.yml` once. The resulting run is bound to the freeze from 32-09.
 

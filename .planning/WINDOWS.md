@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 2
+open_count: 3
 waived_count: 0
 fixed_count: 3
-total_count: 5
-last_updated: 2026-10-13T17:26:32.776Z
+total_count: 6
+last_updated: 2026-10-13T17:55:33.809Z
 ---
 
 # Broken Windows Ledger
@@ -20,6 +20,7 @@ last_updated: 2026-10-13T17:26:32.776Z
 | 3 | 16 | unrun-verify | .planning/phases/16-branch-match-emitter-port/16-19-PLAN.md |  | Full go test ./... ran but failed on pre-existing Phase 11 fixture, corpus, and validation-groundedness drift outside this plan scope. | fixed |  | 2026-09-23T22:41:36.175Z | 2026-09-24T06:37:27.152Z |
 | 4 | 33 | deviation | internal/compiler/interp/interp.go |  | Plan 33-02 acceptance expected two live-resource error strings; source has three because RunWithForeignOutcomes and both routed callers retain the same required text. | open |  | 2026-10-13T17:04:15.066Z |  |
 | 5 | 33 | deviation | scripts/check-receipts.sh |  | Preserved first-failure refusal ordering by resolving the expected digest before manifest-content checks. | fixed |  | 2026-10-13T17:23:51.848Z | 2026-10-13T17:26:32.776Z |
+| 6 | 33 | deviation | .planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/*-SUMMARY.md; .planning/milestones/M006-phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/*-SUMMARY.md |  | Historical Phase 32 and 32.1 coverage refs amended to the Phase 33-04 generic gate test names so groundedness resolves. | open |  | 2026-10-13T17:55:33.809Z |  |
 
 ````json
 [
@@ -85,6 +86,19 @@ last_updated: 2026-10-13T17:26:32.776Z
     "reason": "",
     "recorded_at": "2026-10-13T17:23:51.848Z",
     "resolved_at": "2026-10-13T17:26:32.776Z",
+    "milestone": null
+  },
+  {
+    "id": 6,
+    "kind": "deviation",
+    "phase": "33",
+    "file": ".planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/*-SUMMARY.md; .planning/milestones/M006-phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/*-SUMMARY.md",
+    "line": null,
+    "description": "Historical Phase 32 and 32.1 coverage refs amended to the Phase 33-04 generic gate test names so groundedness resolves.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-13T17:55:33.809Z",
+    "resolved_at": null,
     "milestone": null
   }
 ]

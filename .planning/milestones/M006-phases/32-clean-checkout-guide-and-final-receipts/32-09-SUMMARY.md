@@ -35,7 +35,7 @@ coverage:
     requirement: "EVD-15"
     verification:
       - kind: unit
-        ref: "internal/compiler/session/session_phase32_freeze_test.go#TestPhase32FreezeGate"
+        ref: "internal/compiler/session/session_freeze_gate_test.go#TestFreezeGate"
         status: pass
     human_judgment: false
   - id: D-08b-ci-wiring
@@ -51,6 +51,8 @@ completed: 2026-10-12
 ---
 
 # Phase 32 Plan 09: CI wiring, freeze gate and the freeze Summary
+
+Amended 2026-10-13: Phase 33-04 generalized this gate to `TestFreezeGate`; the historical coverage reference now points to its current source.
 
 Added an armed freeze binding gate and the hosted Phase 32 receipt step, then froze the code on a fully green tree.
 

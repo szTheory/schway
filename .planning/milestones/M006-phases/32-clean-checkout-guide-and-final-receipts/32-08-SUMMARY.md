@@ -36,7 +36,7 @@ coverage:
     requirement: "EVD-15"
     verification:
       - kind: unit
-        ref: "internal/compiler/session/session_phase32_gate_test.go#TestPhase32ReceiptGate"
+        ref: "internal/compiler/session/session_receipt_gate_test.go#TestReceiptGate"
         status: pass
     human_judgment: false
   - id: EVD-15 programs
@@ -60,6 +60,8 @@ completed: 2026-10-12
 ---
 
 # Phase 32 Plan 08: Receipt producer and two-host gate Summary
+
+Amended 2026-10-13: Phase 33-04 generalized this gate to `TestReceiptGate`; the historical coverage reference now points to its current source.
 
 `scripts/verify-phase32.sh` records, at one codedigest, 39 case rows over seven programs plus four non-skippable controls, and `scripts/check-phase32-receipts.sh` accepts only a consistent macOS + Linux pair at that digest.
 
