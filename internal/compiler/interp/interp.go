@@ -269,10 +269,11 @@ func RunWithForeignOutcomes(program core.Program, functionName, input string, ou
 // An unknown case id (generator ok == false) fails the acquire through the
 // typed-failure path with no owner published.
 //
-// D-20: an out-of-range byte_at is abort-like -- the process dies and the OS
-// reclaims the owner -- so a defect terminal that leaves the fixture owner
-// live is accepted ONLY when its final event is the byte-index defect raised
-// by an OpBytesAt operation. Every other terminal with live resources is
+// D-20 / Phase 32.1 D-09, D-25: an abort-like defect (byte_at out of range,
+// checked-add overflow, remainder by zero, or a user defect) kills the process
+// and the OS reclaims the owner, so a defect terminal that leaves the fixture
+// owner live is accepted ONLY when its final event is raised by one of those
+// four operation kinds. Every other terminal with live resources is
 // rejected exactly as RunWithForeignOutcomes rejects them.
 func RunWithFixtureBytes(program core.Program, functionName, input string, bytes func(caseID uint64) ([]byte, bool)) (Execution, error) {
 	if bytes == nil {
@@ -315,7 +316,7 @@ func RunWithFixtureBytes(program core.Program, functionName, input string, bytes
 	if err != nil {
 		return Execution{}, err
 	}
-	if len(result.LiveResources) != 0 && !isByteIndexDefect(program, result) {
+	if len(result.LiveResources) != 0 && !isAbortLikeDefect(program, result) {
 		return Execution{}, fmt.Errorf("model execution reached a terminal outcome with live local resources %v", result.LiveResources)
 	}
 	return result, nil
@@ -367,7 +368,7 @@ func RunWithFileBytes(program core.Program, functionName, path string, read func
 	if err != nil {
 		return Execution{}, err
 	}
-	if len(result.LiveResources) != 0 && !isByteIndexDefect(program, result) {
+	if len(result.LiveResources) != 0 && !isAbortLikeDefect(program, result) {
 		return Execution{}, fmt.Errorf("model execution reached a terminal outcome with live local resources %v", result.LiveResources)
 	}
 	return result, nil
@@ -428,14 +429,19 @@ func fileForeignCall(program core.Program, top *frame, operation core.LinearOper
 	return Execution{}, false, nil
 }
 
-// isByteIndexDefect is the D-20 predicate: a defect outcome whose final event
-// is the out-of-range byte_at defect attributed to an OpBytesAt operation.
-func isByteIndexDefect(program core.Program, result Execution) bool {
+// isAbortLikeDefect is the D-20 predicate widened by Phase 32.1 (D-09, D-25):
+// a defect outcome whose final event is a function.defected event attributed to
+// one of the four abort-like operations -- OpBytesAt, OpAddChecked,
+// OpRemainderU64 or OpDefect. Native aborts with exit 65 on each of them and
+// the OS reclaims the owner, so a live fixture or file owner is accepted. The
+// nonlocal-exit, call-depth and output-limit defects carry different final
+// event IDs and stay refused, as do returned and typed_failure terminals.
+func isAbortLikeDefect(program core.Program, result Execution) bool {
 	if result.Outcome.Kind != execution.OutcomeDefect || len(result.Events) == 0 {
 		return false
 	}
 	final := result.Events[len(result.Events)-1]
-	if final.Kind != "function.defected" || final.Output != "byte index out of bounds" || !strings.HasSuffix(final.ID, ":event:defected") {
+	if final.Kind != "function.defected" || !strings.HasSuffix(final.ID, ":event:defected") {
 		return false
 	}
 	operationID := strings.TrimSuffix(final.ID, ":event:defected")
@@ -445,7 +451,11 @@ func isByteIndexDefect(program core.Program, result Execution) bool {
 		}
 		for _, operation := range function.Linear.Operations {
 			if operation.ID == operationID {
-				return operation.Kind == core.OpBytesAt
+				switch operation.Kind {
+				case core.OpBytesAt, core.OpAddChecked, core.OpRemainderU64, core.OpDefect:
+					return true
+				}
+				return false
 			}
 		}
 	}
