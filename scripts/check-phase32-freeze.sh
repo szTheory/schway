@@ -6,6 +6,7 @@
 # to the frozen code. Revision = codedigest (D-08): commits after the freeze
 # that touch only .planning or prose (outside the digest paths) are accepted;
 # any change to a digest path is rejected. Every SAME_AS must equal CANDIDATE.
+# Like codedigest.sh, .md files under the digest paths are ignored.
 # This is consistency, not authenticity.
 set -eu
 
@@ -38,9 +39,9 @@ git cat-file -e "${candidate}^{commit}" 2>/dev/null || reject "unknown_commit"
 git merge-base --is-ancestor "$freeze" "$candidate" || reject "not_descendant"
 
 # shellcheck disable=SC2086
-changed=$(git log --format=%H "${freeze}..${candidate}" -- $phase32_freeze_paths) || reject "git_log_failed"
+changed=$(git log --format=%H "${freeze}..${candidate}" -- $phase32_freeze_paths ':(exclude)*.md') || reject "git_log_failed"
 [ -z "$changed" ] || reject "digest_path_changed_after_freeze"
 # shellcheck disable=SC2086
-git diff --quiet "$freeze" "$candidate" -- $phase32_freeze_paths || reject "digest_path_changed_after_freeze"
+git diff --quiet "$freeze" "$candidate" -- $phase32_freeze_paths ':(exclude)*.md' || reject "digest_path_changed_after_freeze"
 
 printf 'phase32 freeze gate: status=pass freeze=%s candidate=%s\n' "$freeze" "$candidate"

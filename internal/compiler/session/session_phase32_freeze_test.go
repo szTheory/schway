@@ -127,6 +127,23 @@ func TestPhase32FreezeGate(t *testing.T) {
 	t.Run("post-freeze-digest-change", func(t *testing.T) {
 		expectReject(t, f.dir, "digest_path_changed_after_freeze", f.freeze, f.late)
 	})
+	t.Run("md-only-change-after-freeze-accepted", func(t *testing.T) {
+		g := build(t)
+		phase32Git(t, g.dir, "reset", "-q", "--hard", g.freeze)
+		if err := os.WriteFile(filepath.Join(g.dir, "cmd", "README.md"), []byte("prose\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		phase32Git(t, g.dir, "add", "-A")
+		phase32Git(t, g.dir, "commit", "-qm", "readme")
+		result, err := testsupport.RunCLIErr(context.Background(), "git", nil, "-C", g.dir, "rev-parse", "HEAD")
+		if err != nil || result.Exit != 0 {
+			t.Fatalf("rev-parse: %v", err)
+		}
+		readme := strings.TrimSpace(string(result.Stdout))
+		expectPass(t, g.dir, g.freeze, readme, readme)
+		// Armed counterpart: a .go edit in the same directory still rejects.
+		expectReject(t, g.dir, "digest_path_changed_after_freeze", g.freeze, g.late)
+	})
 	t.Run("not-descendant", func(t *testing.T) {
 		expectReject(t, f.dir, "not_descendant", f.freeze, f.base)
 	})

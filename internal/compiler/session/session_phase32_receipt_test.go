@@ -92,6 +92,40 @@ func TestPhase32CodeDigest(t *testing.T) {
 		phase32Git(t, dir, "commit", "-qm", "base")
 		return dir
 	}
+	t.Run("subdirectory-equals-root", func(t *testing.T) {
+		dir := tempRepo(t)
+		root := phase32ShDigest(t, dir)
+		result, err := testsupport.RunCLIErr(context.Background(), "sh", nil, "-c", `cd "$0/cmd" && sh ../scripts/codedigest.sh`, dir)
+		if err != nil || result.Exit != 0 {
+			t.Fatalf("codedigest.sh from subdirectory: exit=%d err=%v stderr=%s", result.Exit, err, result.Stderr)
+		}
+		if sub := strings.TrimSpace(string(result.Stdout)); sub != root || sub != phase32CodeDigest(t, dir) {
+			t.Fatalf("subdirectory digest %s != root %s", sub, root)
+		}
+	})
+	t.Run("empty-listing-refused", func(t *testing.T) {
+		dir := t.TempDir()
+		for name, content := range map[string][]byte{"tools/codedigest.sh": script, "other.txt": []byte("x\n")} {
+			path := filepath.Join(dir, filepath.FromSlash(name))
+			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(path, content, 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		phase32Git(t, dir, "init", "-q")
+		phase32Git(t, dir, "add", "-A")
+		phase32Git(t, dir, "commit", "-qm", "base")
+		result, err := testsupport.RunCLIErr(context.Background(), "sh", nil, "-c", `cd "$0" && sh tools/codedigest.sh`, dir)
+		if err != nil && result.Exit == 0 {
+			t.Fatalf("spawn: %v", err)
+		}
+		out := string(result.Stdout) + string(result.Stderr)
+		if result.Exit == 0 || !strings.Contains(out, "reason=empty_listing") {
+			t.Fatalf("expected reason=empty_listing, exit=%d out=%s", result.Exit, out)
+		}
+	})
 	for _, row := range []struct {
 		name, file string
 		moves      bool
