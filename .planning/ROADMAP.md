@@ -324,7 +324,30 @@ adapter and public path input.
 The module boundary of every route is named once and pinned by the route audit, and the usage text lists every route. The execution peer's entry rule matches `main` precedence. Hosted receipts are re-taken at the final M006 revision. Source: [M006 audit](M006-MILESTONE-AUDIT.md).
 **Requirements**: DX-17, DX-18, MOD-03, EVD-15 (re-take)
 **Depends on:** Phase 32
-**Plans:** 0 plans
+**Plans:** 11 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 32.1 to break down)
+**Wave 1**
+- [ ] 32.1-01-PLAN.md — Reopen the three M006 receipt markers before any digest-moving commit (D-21)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 32.1-02-PLAN.md — run on an unbindable entry refuses usage/64 tool.run_input_required; 17 dated manifest re-pins; docs; emitter inventory re-pin last (D-01..D-07, D-24)
+- [ ] 32.1-03-PLAN.md — check refuses a ByteView entry-module main with check.unexecutable_shape; IN-01 comment (D-08, D-22)
+- [ ] 32.1-04-PLAN.md — Interpreter abort-like defect parity with native on the fixture route (D-09, D-25)
+- [ ] 32.1-05-PLAN.md — Execution peer adopts main precedence independently; armed unpruned parity control (D-15, D-16, D-26)
+- [ ] 32.1-06-PLAN.md — Phase 32 review hardening: freeze .md exclude, cwd-free codedigest, digest_source, marker scan, formatter/citation/cache fixes (D-20)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 32.1-07-PLAN.md — Module-aware route set named once; route classification audit; usage lists every route (D-11..D-14, D-23)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 32.1-08-PLAN.md — 29/32 review dispositions, phase29 README IN-04, todos completed, living-doc claims (D-10, D-20)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 32.1-09-PLAN.md — Code freeze: full local suite, session meta set, local producer, armed freeze gate (D-19)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 32.1-10-PLAN.md — Human checkpoint: one push-and-dispatch line naming the freeze commit (D-18)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 32.1-11-PLAN.md — .planning-only re-take of the hosted macOS/Linux receipts; run 38315799626 kept historical (D-17)
