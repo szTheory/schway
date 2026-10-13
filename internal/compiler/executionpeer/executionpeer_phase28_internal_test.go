@@ -1,6 +1,7 @@
 package executionpeer
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"github.com/szTheory/schway/internal/compiler/callgraph"
 	"github.com/szTheory/schway/internal/compiler/check"
 	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/modload"
 	"github.com/szTheory/schway/internal/compiler/syntax"
 )
 
@@ -212,4 +214,161 @@ func TestPhase321UnprunedMainPrecedenceParity(t *testing.T) {
 			t.Fatalf("control: legacy rule = %q err=%v, want the dead larger-closure root", legacy, err)
 		}
 	})
+
+	// both runs the oracle and the peer on a synthetic program. wantID "" means
+	// both must refuse; wantClass is the expected peer refusal class.
+	both := func(t *testing.T, program core.Program, wantID, wantClass string) {
+		t.Helper()
+		functions, operations := peerEntryInputs(program)
+		oracle, oracleErr := callgraph.EntryFunction(program)
+		got, peerErr := resolveEntry(functions, operations)
+		if wantID == "" {
+			if oracleErr == nil || peerErr == nil {
+				t.Fatalf("both must refuse: callgraph=%q err=%v peer=%q err=%v", oracle.ID, oracleErr, got, peerErr)
+			}
+			var peerError *Error
+			if !errors.As(peerErr, &peerError) || peerError.Class != wantClass {
+				t.Fatalf("peer refusal = %v, want class %s", peerErr, wantClass)
+			}
+			return
+		}
+		if oracleErr != nil || peerErr != nil || oracle.ID != wantID || got != wantID {
+			t.Fatalf("want %s: callgraph=%q err=%v peer=%q err=%v", wantID, oracle.ID, oracleErr, got, peerErr)
+		}
+	}
+
+	t.Run("two-mains", func(t *testing.T) {
+		both(t, core.Program{Functions: []core.Function{
+			phase321Function("p:a:fn:main", "main", ""),
+			phase321Function("p:b:fn:main", "main", ""),
+		}}, "", "entry_ambiguous")
+	})
+	t.Run("no-main-tie", func(t *testing.T) {
+		both(t, core.Program{Functions: []core.Function{
+			phase321Function("p:fn:x", "x", ""),
+			phase321Function("p:fn:y", "y", ""),
+		}}, "", "entry_ambiguous")
+	})
+	t.Run("tie-including-main", func(t *testing.T) {
+		both(t, core.Program{Functions: []core.Function{
+			phase321Function("p:fn:main", "main", ""),
+			phase321Function("p:fn:y", "y", ""),
+		}}, "p:fn:main", "")
+	})
+	t.Run("library-main-plus-entry-main", func(t *testing.T) {
+		both(t, core.Program{Functions: []core.Function{
+			phase321Function("s:lib:fn:main", "main", "lib"),
+			phase321Function("s:app:fn:main", "main", "", "s:lib:fn:helper"),
+			phase321Function("s:lib:fn:helper", "helper", "lib"),
+		}}, "s:app:fn:main", "")
+	})
+	t.Run("unimported-library-export-tied-with-entry", func(t *testing.T) {
+		both(t, core.Program{Functions: []core.Function{
+			phase321Function("s:app:fn:start", "start", "", "s:app:fn:step"),
+			phase321Function("s:app:fn:step", "step", ""),
+			phase321Function("s:lib:fn:extra", "extra", "lib"),
+		}}, "s:app:fn:start", "")
+	})
+
+	// corpusParity checks, for one checked program whose callgraph entry
+	// resolves, that the peer agrees on the unpruned and the pruned program.
+	corpusParity := func(t *testing.T, path string, program core.Program) bool {
+		t.Helper()
+		entry, err := callgraph.EntryFunction(program)
+		if err != nil {
+			return false
+		}
+		functions, operations := peerEntryInputs(program)
+		unpruned, err := resolveEntry(functions, operations)
+		if err != nil || unpruned != entry.ID {
+			t.Errorf("%s: peer(unpruned) = %q err=%v, want %q", path, unpruned, err, entry.ID)
+			return false
+		}
+		pruned, err := callgraph.PruneToReachable(program, entry.ID)
+		if err != nil {
+			t.Errorf("%s: prune: %v", path, err)
+			return false
+		}
+		functions, operations = peerEntryInputs(pruned)
+		got, err := resolveEntry(functions, operations)
+		if err != nil || got != entry.ID {
+			t.Errorf("%s: peer(pruned) = %q err=%v, want %q", path, got, err, entry.ID)
+			return false
+		}
+		return true
+	}
+
+	t.Run("corpus-plain", func(t *testing.T) {
+		verified := 0
+		for path, program := range phase321CheckedCorpus(t) {
+			if corpusParity(t, path, program) {
+				verified++
+			}
+		}
+		if verified < 80 {
+			t.Fatalf("only %d corpus programs verified; the walk went inert", verified)
+		}
+	})
+
+	t.Run("corpus-modules", func(t *testing.T) {
+		root := filepath.Join("..", "..", "..", "examples", "checksum")
+		verified := 0
+		for _, name := range []string{"adler32_cli.schway", "checksum.schway", "adler_low.schway"} {
+			path := filepath.Join(root, name)
+			set, diagnostics, err := modload.Load(path)
+			if err != nil || len(diagnostics) != 0 {
+				t.Errorf("%s: load: %v %+v", name, err, diagnostics)
+				continue
+			}
+			result := check.Program(set.Program)
+			if len(result.Diagnostics) != 0 {
+				t.Errorf("%s: check: %+v", name, result.Diagnostics)
+				continue
+			}
+			if corpusParity(t, name, result.Program) {
+				verified++
+			}
+		}
+		if verified < 3 {
+			t.Fatalf("only %d module programs verified; the module walk went inert", verified)
+		}
+	})
+}
+
+// phase321CheckedCorpus returns every checked example/testdata program.
+func phase321CheckedCorpus(t *testing.T) map[string]core.Program {
+	t.Helper()
+	root := filepath.Join("..", "..", "..")
+	checked := map[string]core.Program{}
+	for _, dir := range []string{"examples", "testdata"} {
+		err := filepath.Walk(filepath.Join(root, dir), func(path string, info os.FileInfo, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if info.IsDir() || !strings.HasSuffix(path, ".schway") {
+				return nil
+			}
+			source, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			if len(source) > syntax.MaxSourceBytes {
+				return nil
+			}
+			parsed := syntax.Parse(source)
+			if len(parsed.Diagnostics) != 0 {
+				return nil
+			}
+			result := check.Program(parsed.Program)
+			if len(result.Diagnostics) != 0 {
+				return nil
+			}
+			checked[filepath.ToSlash(path)] = result.Program
+			return nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	return checked
 }
