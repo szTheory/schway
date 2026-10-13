@@ -337,6 +337,25 @@ func Program(program ast.Program) Result {
 			))
 			continue
 		}
+		// D-08 / D-22 (29 WR-02): the entry-module `main` cannot take a ByteView.
+		// No engine can bind that input (cgen emits an ill-formed initializer and
+		// the interpreter has no ByteView binding), so refuse it here with the
+		// existing check.unexecutable_shape code. The rule keys on the entry
+		// module's `main` (Module == ""), not on the resolved entry, so library
+		// functions such as adler32(bytes: ByteView) stay legal.
+		if function.Name == "main" && function.Module == "" &&
+			function.Parameter.Type.Constructor == "ByteView" && len(function.Parameter.Type.Arguments) == 0 {
+			result.Diagnostics = append(result.Diagnostics, diagnostic.ErrorWithRepairs(
+				"check.unexecutable_shape", function.Parameter.Span,
+				"entry parameter shape has no execution lowering this phase",
+				[]diagnostic.Cause{
+					{Kind: "type", Detail: "ByteView"},
+					{Kind: "constructor", Detail: "ByteView"},
+				},
+				diagnostic.Repair{Kind: "use_executable_shape", Detail: "U64 (build + app run -- INPUT), Byte or Buffer"},
+			))
+			continue
+		}
 		if function.Body.Linear != nil {
 			if len(function.Body.Linear.Statements) > 0 {
 				checked, diagnostics, work := checkScalarFunction(functionID, function)
@@ -4709,7 +4728,9 @@ var disableReleaseWhileViewLiveLawForTest = false
 // block graph, the existing cycle refusal (check.cfg_back_edge from
 // loanLivenessFixpoint); then the closed five-operation shape. It derives
 // view-from-owner and later-read facts from the core on its own and shares no
-// helper with corevalidate or pathoracle.
+// helper with corevalidate or pathoracle. Its refusal branches are defense in
+// depth: they are unreachable from a checker-assembled core and guard only
+// hand-built cores (32.1 IN-01).
 func checkFixtureOwnerPostAssembly(function core.Function) []diagnostic.Diagnostic {
 	if function.Linear == nil {
 		return nil
