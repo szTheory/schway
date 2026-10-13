@@ -324,7 +324,7 @@ adapter and public path input.
 The module boundary of every route is named once and pinned by the route audit, and the usage text lists every route. The execution peer's entry rule matches `main` precedence. Hosted receipts are re-taken at the final M006 revision. Source: [M006 audit](M006-MILESTONE-AUDIT.md).
 **Requirements**: DX-17, DX-18, MOD-03, EVD-15 (re-take)
 **Depends on:** Phase 32
-**Plans:** 6/11 plans executed
+**Plans:** 7/11 plans executed
 
 Plans:
 **Wave 1**
@@ -338,7 +338,7 @@ Plans:
 - [x] 32.1-06-PLAN.md — Phase 32 review hardening: freeze .md exclude, cwd-free codedigest, digest_source, marker scan, formatter/citation/cache fixes (D-20)
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 32.1-07-PLAN.md — Module-aware route set named once; route classification audit; usage lists every route (D-11..D-14, D-23)
+- [x] 32.1-07-PLAN.md — Module-aware route set named once; route classification audit; usage lists every route (D-11..D-14, D-23)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 32.1-08-PLAN.md — 29/32 review dispositions, phase29 README IN-04, todos completed, living-doc claims (D-10, D-20)
