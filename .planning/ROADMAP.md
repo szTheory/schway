@@ -307,7 +307,7 @@ Plans:
 | 30. Local Modules | 10/10 | Complete    | 2026-10-12 |
 | 31. Bounded File Checksum and Second Consumer | 10/10 | Complete    | 2026-10-12 |
 | 32. Clean-Checkout Guide and Final Receipts | 11/11 | Complete    | 2026-10-12 |
-| 32.1. Address tech debt: CLI exit classes and module-aware routes | 11/11 | Complete | 2026-10-12 |
+| 32.1. Address tech debt: CLI exit classes and module-aware routes | 11/11 | Complete    | 2026-10-12 |
 
 **Coverage:** 16/16 M006 requirements have exactly one phase owner. MOD-06
 (second consumer) is owned by Phase 31 rather than Phase 30, because its
