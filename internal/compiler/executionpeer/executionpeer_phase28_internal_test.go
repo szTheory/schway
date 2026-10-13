@@ -91,20 +91,23 @@ func TestPhase28PeerEntryRefusalUnreachableAfterPrune(t *testing.T) {
 		t.Fatalf("only %d corpus programs verified; the walk went inert", verified)
 	}
 
+	// Phase 32.1 (D-26): multi_function_zero_call.schway has a main, which now
+	// resolves. The control uses a no-main equal-closure tie, which also
+	// witnesses that a tie with no main still refuses.
 	t.Run("negative-control-unpruned-zero-call", func(t *testing.T) {
 		var program core.Program
 		found := false
 		for path, candidate := range checkedPrograms {
-			if strings.HasSuffix(path, "testdata/phase11/multi_function_zero_call.schway") {
+			if strings.HasSuffix(path, "testdata/phase12/payload_borrow_interaction.schway") {
 				program, found = candidate, true
 			}
 		}
 		if !found {
-			t.Fatal("multi_function_zero_call.schway is not in the checked corpus")
+			t.Fatal("payload_borrow_interaction.schway is not in the checked corpus")
 		}
 		functions, operations := peerEntryInputs(program)
 		if _, err := resolveEntry(functions, operations); err == nil {
-			t.Fatal("the peer must refuse the unpruned two-root program; the property would be vacuous")
+			t.Fatal("the peer must refuse the unpruned no-main tie; the property would be vacuous")
 		}
 	})
 }

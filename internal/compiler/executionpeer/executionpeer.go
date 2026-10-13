@@ -281,9 +281,26 @@ func resolveEntry(functions map[string]core.Function, operations map[string]oper
 			inDegree[op.value.CalleeID]++
 		}
 	}
+	// Phase 32.1 (D-15, D-26): independent re-derivation of the Phase 28 D-01
+	// entry rule. Only entry-module (Module == "") functions are candidates;
+	// exactly one `main` wins, several refuse, otherwise the unique root and
+	// the closure tiebreak decide.
+	mains := make([]string, 0)
+	for id, function := range functions {
+		if function.Name == "main" && function.Module == "" {
+			mains = append(mains, id)
+		}
+	}
+	sort.Strings(mains)
+	if len(mains) == 1 {
+		return mains[0], nil
+	}
+	if len(mains) > 1 {
+		return "", refusal("entry_ambiguous", -1, "", "", "", fmt.Sprintf("duplicate main %v", mains))
+	}
 	roots := make([]string, 0)
 	for id, degree := range inDegree {
-		if degree == 0 {
+		if degree == 0 && functions[id].Module == "" {
 			roots = append(roots, id)
 		}
 	}
