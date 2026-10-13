@@ -1,0 +1,9 @@
+<testsuites tests="1" failures="1"><testsuite name="github.com/szTheory/schway/cmd/schway" tests="1" failures="1" skipped="0"><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34CheckDiagnosticPresentation" time="0"><failure message="go test reported failure">=== RUN   TestPhase34CheckDiagnosticPresentation
+    main_phase34_diagnostics_test.go:53: JSON source location=0:0, want 1-based line 3 and a positive scalar column
+--- FAIL: TestPhase34CheckDiagnosticPresentation (0.00s)
+</failure><system-out>=== RUN   TestPhase34CheckDiagnosticPresentation
+    main_phase34_diagnostics_test.go:53: JSON source location=0:0, want 1-based line 3 and a positive scalar column
+--- FAIL: TestPhase34CheckDiagnosticPresentation (0.00s)
+</system-out></testcase><system-out>FAIL
+FAIL	github.com/szTheory/schway/cmd/schway	0.008s
+</system-out></testsuite></testsuites>
