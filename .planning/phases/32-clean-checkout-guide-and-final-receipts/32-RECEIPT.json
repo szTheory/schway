@@ -1,9 +1,9 @@
 {
   "schema": "schway.m006-receipt/1",
   "state": "current",
-  "runId": "38315799626",
-  "headSha": "6c3042713fadab198d827cb259eb7705431055e1",
-  "codedigest": "c1b4e85df4d7723659c62e8338c0c961c0fd930fb45f84b7c25de1fa718cd227",
+  "runId": "38335175306",
+  "headSha": "9f8f878fc5328f953eac6ed04a716478ae986fab",
+  "codedigest": "b9253457705a224a0580d74896e8e5bd3821446a1d467626b7d611ca0d1c4b5c",
   "digestPaths": [
     "cmd",
     "internal",
@@ -22,7 +22,7 @@
       "go": "go version go1.24.13 linux/amd64",
       "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
       "logPath": "receipts/receipt-ubuntu-latest.log",
-      "logSha256": "56a6f3d8284662f1763cc8c6f6fa3489f88746fc86ea5c910242f3d97a99263c",
+      "logSha256": "1e8c43ea12855986799897c65ce47cc749defecc15c28ebba46f7f669b63d3b3",
       "jobConclusion": "success"
     },
     {
@@ -32,7 +32,7 @@
       "go": "go version go1.24.13 darwin/arm64",
       "clang": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
       "logPath": "receipts/receipt-macos-latest.log",
-      "logSha256": "5815c4b1d66a10c56650f48ab220a49ea7c28943d8a8bece7c4086c09691aabb",
+      "logSha256": "b661071a8989de8672ddeedf977df005997a88cd8f5a3c78b00c611dfb137927",
       "jobConclusion": "success"
     }
   ],

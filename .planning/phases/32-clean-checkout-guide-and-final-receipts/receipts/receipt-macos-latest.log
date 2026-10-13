@@ -1,4 +1,4 @@
-phase32 host identity host=macOS arch=arm64 go=darwin/arm64 clang_target=arm64-apple-darwin25.6.0 headsha=6c3042713fadab198d827cb259eb7705431055e1 codedigest=c1b4e85df4d7723659c62e8338c0c961c0fd930fb45f84b7c25de1fa718cd227 tree=clean
+phase32 host identity host=macOS arch=arm64 go=darwin/arm64 clang_target=arm64-apple-darwin25.6.0 headsha=9f8f878fc5328f953eac6ed04a716478ae986fab codedigest=b9253457705a224a0580d74896e8e5bd3821446a1d467626b7d611ca0d1c4b5c tree=clean
 phase32 toolchain go="go version go1.24.13 darwin/arm64" clang="Apple clang version 21.0.0 (clang-2100.1.1.101)"
 phase32 case program=checksum input=empty expected_exit=0 actual_exit=0 stdout=exact stderr=exact status=pass
 phase32 case program=checksum input=zero expected_exit=0 actual_exit=0 stdout=exact stderr=exact status=pass
@@ -43,4 +43,4 @@ phase32 control name=guide package=./cmd/schway tests=TestPhase32GuideCleanCheck
 phase32 control name=route-audit package=./cmd/schway tests=TestPhase32PublicRouteAudit status=pass
 phase32 control name=codedigest package=./internal/compiler/session tests=TestPhase32CodeDigest status=pass
 phase32 control name=receipt-rules package=./internal/compiler/session tests=TestPhase32ReceiptLivingClaims status=pass
-phase32 host result host=macOS codedigest=c1b4e85df4d7723659c62e8338c0c961c0fd930fb45f84b7c25de1fa718cd227 tree=clean cases=39 controls=4 programs=checksum,adler_low,adler32_cli,adler32_fixture,byte_index_oob,sum_to_n,fizzbuzz status=pass
+phase32 host result host=macOS codedigest=b9253457705a224a0580d74896e8e5bd3821446a1d467626b7d611ca0d1c4b5c tree=clean cases=39 controls=4 programs=checksum,adler_low,adler32_cli,adler32_fixture,byte_index_oob,sum_to_n,fizzbuzz status=pass

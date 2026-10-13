@@ -130,9 +130,9 @@ Last activity: 2026-10-12 — Phase 32.1 execution started
 
 Progress: [████████░░] 83% (3/5 M006 phases)
 
-M006 final hosted receipts: reopened 2026-10-12 (historical codedigest c1b4e85df4d7723659c62e8338c0c961c0fd930fb45f84b7c25de1fa718cd227)
+M006 final hosted receipts: bound to codedigest b9253457705a224a0580d74896e8e5bd3821446a1d467626b7d611ca0d1c4b5c (run 38335175306)
 
-The hosted receipts cover the M006 programs (checksum, adler_low, the adler32 library demo, the Phase 29 Adler-32 fixture and out-of-bounds control) plus sum_to_n and FizzBuzz (N2 closed). Receipt rows are default-build only; the optimization matrix is bound by the same run's go test lanes. The Phase 32.1 code changes (D-01, D-08, D-09, D-15, D-20) reopen the receipts taken in run 38315799626; plan 32.1-11 re-takes them at the 32.1 freeze.
+The hosted receipts cover the M006 programs (checksum, adler_low, the adler32 library demo, the Phase 29 Adler-32 fixture and out-of-bounds control) plus sum_to_n and FizzBuzz (N2 closed). Receipt rows are default-build only; the optimization matrix is bound by the same run's go test lanes. Receipts were re-taken after Phase 32.1 at the 32.1 freeze; run 38315799626 is kept as historical; any later code change reopens them.
 
 ## M006 Planning
 

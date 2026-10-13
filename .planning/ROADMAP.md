@@ -307,6 +307,7 @@ Plans:
 | 30. Local Modules | 10/10 | Complete    | 2026-10-12 |
 | 31. Bounded File Checksum and Second Consumer | 10/10 | Complete    | 2026-10-12 |
 | 32. Clean-Checkout Guide and Final Receipts | 11/11 | Complete    | 2026-10-12 |
+| 32.1. Address tech debt: CLI exit classes and module-aware routes | 11/11 | Complete | 2026-10-12 |
 
 **Coverage:** 16/16 M006 requirements have exactly one phase owner. MOD-06
 (second consumer) is owned by Phase 31 rather than Phase 30, because its
@@ -318,13 +319,13 @@ adapter and public path input.
 
 **Goal:** Every public CLI route reports its outcome under the DX-17 exit table:
 - `run` on an unbindable entry refuses with usage/64 `tool.run_input_required`;
-- a `ByteView` entry is refused at `check`;
+- a `ByteView` `main` is refused at `check`;
 - interpreter defect parity holds on the fixture route.
 
 The module boundary of every route is named once and pinned by the route audit, and the usage text lists every route. The execution peer's entry rule matches `main` precedence. Hosted receipts are re-taken at the final M006 revision. Source: [M006 audit](M006-MILESTONE-AUDIT.md).
 **Requirements**: DX-17, DX-18, MOD-03, EVD-15 (re-take)
 **Depends on:** Phase 32
-**Plans:** 10/11 plans executed
+**Plans:** 11/11 plans complete
 
 Plans:
 **Wave 1**
@@ -350,4 +351,4 @@ Plans:
 - [x] 32.1-10-PLAN.md — Human checkpoint: one push-and-dispatch line naming the freeze commit (D-18)
 
 **Wave 7** *(blocked on Wave 6 completion)*
-- [ ] 32.1-11-PLAN.md — .planning-only re-take of the hosted macOS/Linux receipts; run 38315799626 kept historical (D-17)
+- [x] 32.1-11-PLAN.md — .planning-only re-take of the hosted macOS/Linux receipts; run 38315799626 kept historical (D-17)
