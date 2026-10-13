@@ -28,6 +28,11 @@ reject() {
 root=$(CDPATH= cd "$(dirname "$0")/.." && pwd -P)
 cd "$root"
 
+if [ -n "${PHASE32_EXPECTED_CODEDIGEST:-}" ]; then
+	digest_source=env
+else
+	digest_source=computed
+fi
 expected_digest=${PHASE32_EXPECTED_CODEDIGEST:-$(sh scripts/codedigest.sh)}
 [ -n "$expected_digest" ] || reject "expected_codedigest_unknown"
 
@@ -115,5 +120,5 @@ fi
 host_a=$(check_log "$1")
 host_b=$(check_log "$2")
 [ "$host_a" != "$host_b" ] || reject "duplicate_host_$host_a"
-printf 'phase32 receipt gate: status=pass hosts=%s,%s codedigest=%s programs=%s cases=%s\n' \
-	"$host_a" "$host_b" "$expected_digest" "$want_programs" "$table_count"
+printf 'phase32 receipt gate: status=pass hosts=%s,%s codedigest=%s programs=%s cases=%s digest_source=%s\n' \
+	"$host_a" "$host_b" "$expected_digest" "$want_programs" "$table_count" "$digest_source"

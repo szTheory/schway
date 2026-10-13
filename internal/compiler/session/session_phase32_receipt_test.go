@@ -252,6 +252,9 @@ func phase32ReceiptProblems(in phase32ReceiptInputs) []string {
 	slices.Sort(docNames)
 	for _, name := range docNames {
 		for _, line := range strings.Split(in.Docs[name], "\n") {
+			// IN-02: tolerate list/quote decoration before the marker, but keep
+			// the check a prefix check so prose that merely mentions it is ignored.
+			line = strings.TrimLeft(line, " \t>*-")
 			if !strings.HasPrefix(line, phase32MarkerPrefix) {
 				continue
 			}
@@ -294,6 +297,9 @@ func phase32ReceiptProblems(in phase32ReceiptInputs) []string {
 
 	byName := map[string]phase32ReceiptHost{}
 	for _, host := range receipt.Hosts {
+		if _, seen := byName[host.Name]; seen {
+			add("duplicate_host_%s", host.Name)
+		}
 		byName[host.Name] = host
 	}
 	for _, name := range phase32ReceiptHosts {
@@ -516,6 +522,18 @@ func TestPhase32ReceiptLivingClaims(t *testing.T) {
 		{"digest-drift-alone-passes", func(t *testing.T, r *phase32Receipt, l map[string][]byte, in *phase32ReceiptInputs) {
 			in.ComputedDigest = other
 		}, nil},
+		{"bulleted-bound-marker-stale", func(t *testing.T, r *phase32Receipt, l map[string][]byte, in *phase32ReceiptInputs) {
+			in.Docs["STATE.md"] = "- " + boundLine(other) + "\n"
+		}, []string{"stale_bound_claim"}},
+		{"bulleted-malformed-marker", func(t *testing.T, r *phase32Receipt, l map[string][]byte, in *phase32ReceiptInputs) {
+			in.Docs["STATE.md"] = "  * M006 final hosted receipts: bound to commit abc\n"
+		}, []string{"malformed_marker"}},
+		{"quoted-reopened-marker-ok", func(t *testing.T, r *phase32Receipt, l map[string][]byte, in *phase32ReceiptInputs) {
+			in.Docs["STATE.md"] = "> " + reopenedLine + "\n"
+		}, nil},
+		{"duplicate-host-in-receipt", func(t *testing.T, r *phase32Receipt, l map[string][]byte, in *phase32ReceiptInputs) {
+			r.Hosts = append(r.Hosts, r.Hosts[0])
+		}, []string{"duplicate_host_ubuntu-latest"}},
 		{"log-sha256-mismatch", func(t *testing.T, r *phase32Receipt, l map[string][]byte, in *phase32ReceiptInputs) {
 			l["macos-latest"] = append(l["macos-latest"], '\n')
 		}, []string{"log_sha256_mismatch_macos-latest"}},

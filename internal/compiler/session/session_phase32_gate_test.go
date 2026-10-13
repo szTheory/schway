@@ -209,6 +209,30 @@ func TestPhase32ReceiptGate(t *testing.T) {
 		if !strings.Contains(output, "programs="+strings.Join(phase32ReceiptPrograms, ",")) {
 			t.Fatalf("pass line lacks the program list: %s", output)
 		}
+		if !strings.HasSuffix(strings.TrimSpace(output), "digest_source=env") {
+			t.Fatalf("pass line must end with digest_source=env when the env digest is supplied: %s", output)
+		}
+	})
+	t.Run("digest-source-computed", func(t *testing.T) {
+		digest := phase32CodeDigest(t, testsupport.ProjectPath())
+		dir := t.TempDir()
+		paths := []string{filepath.Join(dir, "a.log"), filepath.Join(dir, "b.log")}
+		for index, content := range []string{phase32ReceiptLog(t, "macOS", digest), phase32ReceiptLog(t, "Linux", digest)} {
+			if err := os.WriteFile(paths[index], []byte(content), 0o600); err != nil {
+				t.Fatal(err)
+			}
+		}
+		var environment []string
+		for _, entry := range os.Environ() {
+			if !strings.HasPrefix(entry, "PHASE32_EXPECTED_CODEDIGEST=") {
+				environment = append(environment, entry)
+			}
+		}
+		result, err := testsupport.RunCLIErr(context.Background(), "sh", environment, testsupport.ProjectPath("scripts", "check-phase32-receipts.sh"), paths[0], paths[1])
+		output := string(result.Stdout) + string(result.Stderr)
+		if err != nil || result.Exit != 0 || !strings.Contains(output, "status=pass hosts=macOS,Linux") || !strings.HasSuffix(strings.TrimSpace(output), "digest_source=computed") {
+			t.Fatalf("computed-digest pass line wrong: err=%v exit=%d output=%s", err, result.Exit, output)
+		}
 	})
 	t.Run("host-order-independent", func(t *testing.T) {
 		if output, err := runPhase32Gate(t, phase32GateDigest, linux, mac); err != nil {
