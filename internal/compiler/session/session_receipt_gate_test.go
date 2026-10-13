@@ -1,6 +1,7 @@
 package session_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -215,11 +216,13 @@ func TestReceiptGateArchivedM006(t *testing.T) {
 	}
 	root := testsupport.ProjectPath()
 	manifest := testsupport.ProjectPath("testdata", "receipts", "M006.manifest")
-	pass := phase33RunAtEnv(t, root, "scripts/check-receipts.sh", envWith("EXPECTED_CODEDIGEST", receipt.Codedigest), manifest, macPath, linuxPath)
-	want := "phase32 receipt gate: status=pass hosts=macOS,Linux codedigest=" + receipt.Codedigest + " programs=" + strings.Join(phase32ReceiptPrograms, ",") + " cases=39 digest_source=env\n"
-	if pass.exit != 0 || pass.stdout != want || pass.stderr != "" {
-		t.Fatalf("archived pair: got %#v want %q", pass, want)
-	}
+	t.Run("archived-pair-passes", func(t *testing.T) {
+		pass := phase33RunAtEnv(t, root, "scripts/check-receipts.sh", envWith("EXPECTED_CODEDIGEST", receipt.Codedigest), manifest, macPath, linuxPath)
+		want := "phase32 receipt gate: status=pass hosts=macOS,Linux codedigest=" + receipt.Codedigest + " programs=" + strings.Join(phase32ReceiptPrograms, ",") + " cases=39 digest_source=env\n"
+		if pass.exit != 0 || pass.stdout != want || pass.stderr != "" {
+			t.Fatalf("archived pair: got %#v want %q", pass, want)
+		}
+	})
 	cases := []struct {
 		name, reason string
 		mutate       func(string, string) (string, string)
@@ -240,8 +243,6 @@ func TestReceiptGateArchivedM006(t *testing.T) {
 			dir := t.TempDir()
 			a, b := string(mac), string(linux)
 			a, b = tc.mutate(a, b)
-			if tc.name == "digest-mismatch" { /* Use a separate expected digest while preserving both archived rows. */
-			}
 			ap, bp := filepath.Join(dir, "mac.log"), filepath.Join(dir, "linux.log")
 			if err := os.WriteFile(ap, []byte(a), 0o600); err != nil {
 				t.Fatal(err)
@@ -271,6 +272,14 @@ func TestReceiptGateArchivedM006(t *testing.T) {
 	}
 	rows := func(s string) string {
 		var out []string
+		begin := strings.Index(s, "# phase32-cases-begin")
+		end := strings.Index(s, "# phase32-cases-end")
+		if begin >= 0 || end >= 0 {
+			if begin < 0 || end <= begin {
+				t.Fatal("producer case table markers are malformed")
+			}
+			s = s[begin:end]
+		}
 		for _, line := range strings.Split(s, "\n") {
 			if strings.HasPrefix(line, "# case ") {
 				out = append(out, line)
@@ -290,8 +299,32 @@ func TestReceiptGateArchivedM006(t *testing.T) {
 		}
 		return ""
 	}
-	if programLine(string(producer)) != "" && !strings.Contains(manifestLines, "programs="+programLine(string(producer))) {
+	manifestProgram := ""
+	for _, line := range strings.Split(manifestLines, "\n") {
+		if strings.HasPrefix(line, "programs=") {
+			manifestProgram = strings.TrimPrefix(line, "programs=")
+			break
+		}
+	}
+	if manifestProgram != programLine(string(producer)) {
 		t.Fatal("manifest programs differ from producer")
+	}
+	t.Run("manifest-equals-producer-table", func(t *testing.T) {
+		if rows(manifestLines) != rows(string(producer)) {
+			t.Fatal("manifest case rows differ from producer")
+		}
+		if manifestProgram != programLine(string(producer)) {
+			t.Fatal("manifest programs differ from producer")
+		}
+	})
+	if got, err := os.ReadFile(matches[0]); err != nil || !bytes.Equal(got, data) {
+		t.Fatalf("archived receipt was modified: err=%v", err)
+	}
+	if got, err := os.ReadFile(macPath); err != nil || !bytes.Equal(got, mac) {
+		t.Fatalf("archived macOS log was modified: err=%v", err)
+	}
+	if got, err := os.ReadFile(linuxPath); err != nil || !bytes.Equal(got, linux) {
+		t.Fatalf("archived Linux log was modified: err=%v", err)
 	}
 }
 
