@@ -5,16 +5,16 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 34
 current_phase_name: Agent Diagnostics Floor and Surface Manifest
 status: executing
-stopped_at: Completed 34-05-PLAN.md
-last_updated: "2026-10-13T23:30:24.445Z"
+stopped_at: Completed 34-06-PLAN.md
+last_updated: "2026-10-13T23:52:25.942Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 33 complete, transitioned to Phase 34
-state_head: 4ab415501f0477ba61fd4c64332556fb09350359
+state_head: 60e350f9ab56f1aa578f4471ce30bf2ae6650042
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 13
-  completed_plans: 10
+  completed_plans: 11
   percent: 17
 ---
 
@@ -125,7 +125,7 @@ plans.
 ## Current Position
 
 Phase: 34 (Agent Diagnostics Floor and Surface Manifest) — READY TO EXECUTE
-Plan: 6 of 8
+Plan: 7 of 8
 Status: Ready to execute
 Last activity: 2026-10-13 — Phase 33 complete, transitioned to Phase 34
 
@@ -594,6 +594,7 @@ subset alone.
 | Phase 34 P03 | 14 min | 2 tasks | 13 files |
 | Phase 34 P04 | 16 min | 2 tasks | 13 files |
 | Phase 34 P05 | 35m | 3 tasks | 43 files |
+| Phase 34 P6 | 15min | 3 tasks | 32 files |
 
 ## Accumulated Context
 
@@ -797,6 +798,10 @@ decision history; they no longer describe current status.
 - [Phase 34]: Keep true and false available as ordinary parameter, local, and imported function names; classify only an unbound final result name in a known result-type context.
 - [Phase 34]: Keep final-result byte spans in the syntax AST for contextual diagnostics without adding a core field or changing stable semantic IDs.
 - [Phase 34]: Keep refusal hints as independently tested prose and avoid bitwise, hex, or dynamic-shift promises owned by later work.
+- [Phase 34]: Publish only the two exact surface JSON argument placements; validate the complete raw vector before global flag extraction.
+- [Phase 34]: Describe only checked contexts; keep ability derivation and scalar-expression calls distinct from complete-program admission.
+- [Phase 34]: Expose finite limits with scoped category, route, unit, meaning, and configuration-dependent FileBytes bounds.
+- [Phase 34]: Classify both surface placements as no-entry-source without widening the module-aware route set.
 
 ### Pending Todos
 
@@ -1042,8 +1047,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-13T23:30:24.406Z
-Stopped at: Completed 34-05-PLAN.md
+Last session: 2026-10-13T23:52:25.903Z
+Stopped at: Completed 34-06-PLAN.md
 Resume file: None
 Next action: $gsd-execute-phase 34
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
