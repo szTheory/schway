@@ -211,6 +211,48 @@ func TestPhase35ExpressionDepth(t *testing.T) {
 	phase35AssertNumericDelta(t)
 }
 
+func TestPhase35GroupedNegativeShiftAmountRefusal(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		expr string
+		kind string
+	}{
+		{name: "grouped", expr: "x << (-1)", kind: "shift_left"},
+		{name: "nested groups", expr: "x >> ((-1))", kind: "shift_right"},
+		{name: "comments between tokens", expr: "x << (// before sign\n - // before digits\n 1 )", kind: "shift_left"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			source := phase35Source(tc.expr)
+			parsed := syntax.Parse([]byte(source))
+			if len(parsed.Diagnostics) != 1 || parsed.Diagnostics[0].Code != "surface.unsupported_shift_amount" {
+				t.Fatalf("grouped negative shift amount diagnostics = %+v, want only surface.unsupported_shift_amount", parsed.Diagnostics)
+			}
+			expressionStart := strings.Index(source, "let result = ") + len("let result = ")
+			minus := expressionStart + strings.Index(source[expressionStart:], "-")
+			if parsed.Diagnostics[0].Primary != (diagnostic.Span{Start: minus, End: minus + 1}) {
+				t.Fatalf("shift refusal span = %+v, want minus at %d", parsed.Diagnostics[0].Primary, minus)
+			}
+			expression := parsed.Program.Funcs[0].Body.Linear.Statements[0].Expr
+			if expression.Kind != tc.kind || expression.Right == nil || expression.Right.Kind != "number" || expression.Right.Value != "-1" {
+				t.Fatalf("grouped negative amount AST = %+v", expression)
+			}
+		})
+	}
+
+	recovery := syntax.Parse([]byte(phase35Source("x - y << (-1)")))
+	if len(recovery.Diagnostics) != 2 ||
+		recovery.Diagnostics[0].Code != "surface.unsupported_subtraction" ||
+		recovery.Diagnostics[1].Code != "surface.unsupported_shift_amount" {
+		t.Fatalf("grouped negative shift amount during suffix recovery = %+v", recovery.Diagnostics)
+	}
+
+	tooDeep := "x << " + strings.Repeat("(", syntax.CurrentAuthoringBounds().ExpressionDepth+1) + "-1" + strings.Repeat(")", syntax.CurrentAuthoringBounds().ExpressionDepth+1)
+	parsed := syntax.Parse([]byte(phase35Source(tooDeep)))
+	if phase35DiagnosticCount(parsed.Diagnostics, "surface.unsupported_expression_depth") != 1 || hasPhase35Diagnostic(parsed.Diagnostics, "surface.unsupported_shift_amount") {
+		t.Fatalf("over-depth negative amount bypassed the expression bound: %+v", parsed.Diagnostics)
+	}
+}
+
 func TestPhase35RecoveryDeltaControls(t *testing.T) {
 	phase34AssertFrozenRecoveryInputs(t)
 	corpus, phase34After := loadPhase34RecoveryCorpus(t)

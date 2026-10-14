@@ -830,18 +830,13 @@ func (p *parser) scalarBinaryExpr(minPrecedence int) *ast.Expr {
 			p.advance()
 		}
 		var right *ast.Expr
-		if (operator.Text == "<<" || operator.Text == ">>") && p.peek().Kind == TokenUnknown && p.peek().Text == "-" {
-			minus := p.advance()
-			amount := p.peek()
-			end := minus.Span.End
-			value := "-"
-			if amount.Kind == TokenNumber {
-				amount = p.advance()
-				value += amount.Text
-				end = amount.Span.End
+		if operator.Text == "<<" || operator.Text == ">>" {
+			if amount, minus, ok := p.consumeNegativeShiftAmount(); ok {
+				p.reportSurfaceRefusal("surface.unsupported_shift_amount", minus)
+				right = amount
+			} else {
+				right = p.scalarBinaryExpr(precedence + 1)
 			}
-			p.reportSurfaceRefusal("surface.unsupported_shift_amount", minus)
-			right = &ast.Expr{Kind: "number", Value: value, Span: diagnostic.Span{Start: minus.Span.Start, End: end}}
 		} else {
 			right = p.scalarBinaryExpr(precedence + 1)
 		}
@@ -894,16 +889,71 @@ func (p *parser) discardScalarBinaryExpr(minPrecedence int) {
 		for range width {
 			p.advance()
 		}
-		if (operator.Text == "<<" || operator.Text == ">>") && p.peek().Kind == TokenUnknown && p.peek().Text == "-" {
-			minus := p.advance()
-			if p.peek().Kind == TokenNumber {
-				p.advance()
+		if operator.Text == "<<" || operator.Text == ">>" {
+			if _, minus, ok := p.consumeNegativeShiftAmount(); ok {
+				p.reportSurfaceRefusal("surface.unsupported_shift_amount", minus)
+				continue
 			}
-			p.reportSurfaceRefusal("surface.unsupported_shift_amount", minus)
-			continue
 		}
 		p.discardScalarBinaryExpr(precedence + 1)
 	}
+}
+
+// consumeNegativeShiftAmount recognizes only the rejected shift-amount shape
+// `-integer` or a transparent parenthesized version of it. It deliberately
+// does not introduce unary-minus parsing for any other scalar expression.
+// The preflight is iterative and respects the same expression-depth budget as
+// nestedScalarExpr, so this diagnostic shortcut cannot bypass the nesting cap.
+func (p *parser) consumeNegativeShiftAmount() (*ast.Expr, Token, bool) {
+	index := p.position
+	next := func() Token {
+		for index < len(p.tokens) && p.tokens[index].Trivia() {
+			index++
+		}
+		if index >= len(p.tokens) {
+			return p.tokens[len(p.tokens)-1]
+		}
+		token := p.tokens[index]
+		index++
+		return token
+	}
+
+	openCount := 0
+	var outerOpen Token
+	token := next()
+	for token.Kind == TokenLParen {
+		openCount++
+		if openCount > MaxExpressionDepth-p.expressionDepth {
+			return nil, Token{}, false
+		}
+		if openCount == 1 {
+			outerOpen = token
+		}
+		token = next()
+	}
+	if token.Kind != TokenUnknown || token.Text != "-" {
+		return nil, Token{}, false
+	}
+	minus := token
+	amount := next()
+	if amount.Kind != TokenNumber {
+		return nil, Token{}, false
+	}
+
+	var outerClose Token
+	for range openCount {
+		outerClose = next()
+		if outerClose.Kind != TokenRParen {
+			return nil, Token{}, false
+		}
+	}
+
+	span := diagnostic.Span{Start: minus.Span.Start, End: amount.Span.End}
+	if openCount > 0 {
+		span = diagnostic.Span{Start: outerOpen.Span.Start, End: outerClose.Span.End}
+	}
+	p.position = index
+	return &ast.Expr{Kind: "number", Value: "-" + amount.Text, Span: span}, minus, true
 }
 
 func (p *parser) consumeUnsupportedBinaryOperator() (Token, string, bool) {
