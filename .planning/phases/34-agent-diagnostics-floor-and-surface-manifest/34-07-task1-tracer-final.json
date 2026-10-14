@@ -1,0 +1,30 @@
+{
+  "command": "GOCACHE=/tmp/ai-lang-verification-gocache /opt/homebrew/opt/python@3.14/bin/python3.14 /tmp/schway-go-junit.py --record .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task1-tracer-final.json --target TestPhase34SurfaceManifestWitnesses --target-file internal/compiler/session/session_phase34_surface_test.go --expected 'Post-commit tracer verification passes the complete CheckCommandFile witness and target-specific invented-admission control.' -- go test -json ./internal/compiler/session -run '^TestPhase34SurfaceManifestWitnesses$' -count=1 -v",
+  "exitCode": 0,
+  "output": "<testsuites tests=\"1\" failures=\"0\"><testsuite name=\"github.com/szTheory/schway/internal/compiler/session\" tests=\"1\" failures=\"0\" skipped=\"0\"><testcase classname=\"github.com/szTheory/schway/internal/compiler/session\" name=\"TestPhase34SurfaceManifestWitnesses\" time=\"0\"><system-out>=== RUN   TestPhase34SurfaceManifestWitnesses\n--- PASS: TestPhase34SurfaceManifestWitnesses (0.00s)\n</system-out></testcase><system-out>PASS\nok  \tgithub.com/szTheory/schway/internal/compiler/session\t0.008s\n</system-out></testsuite></testsuites>\n",
+  "targetTest": "TestPhase34SurfaceManifestWitnesses",
+  "targetFile": "internal/compiler/session/session_phase34_surface_test.go",
+  "expected": "Post-commit tracer verification passes the complete CheckCommandFile witness and target-specific invented-admission control.",
+  "actual": "=== RUN   TestPhase34SurfaceManifestWitnesses\n--- PASS: TestPhase34SurfaceManifestWitnesses (0.00s)\n",
+  "reportPath": "/Users/jon/projects/schway/.planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task1-tracer-final.junit.xml",
+  "runStartedAt": "2026-10-14T00:00:36.552496+00:00",
+  "reportModifiedAt": "2026-10-14T00:00:36.856282+00:00",
+  "durationMs": 303.38854098226875,
+  "rawGoJSON": "{\"Time\":\"2026-10-13T20:00:36.839599-04:00\",\"Action\":\"start\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\"}\n{\"Time\":\"2026-10-13T20:00:36.845524-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\"}\n{\"Time\":\"2026-10-13T20:00:36.84555-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Output\":\"=== RUN   TestPhase34SurfaceManifestWitnesses\\n\"}\n{\"Time\":\"2026-10-13T20:00:36.847179-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Output\":\"--- PASS: TestPhase34SurfaceManifestWitnesses (0.00s)\\n\"}\n{\"Time\":\"2026-10-13T20:00:36.847195-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Elapsed\":0}\n{\"Time\":\"2026-10-13T20:00:36.847201-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"PASS\\n\"}\n{\"Time\":\"2026-10-13T20:00:36.847635-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"ok  \\tgithub.com/szTheory/schway/internal/compiler/session\\t0.008s\\n\"}\n{\"Time\":\"2026-10-13T20:00:36.847665-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Elapsed\":0.008}\n",
+  "rawStderr": "",
+  "reporter": "/private/tmp/schway-go-junit.py",
+  "reporterSource": {
+    "path": "/tmp/schway-go-junit.py",
+    "sha256": "69752666215dd93d8d1a65b6dbd8544e205c2aacb7cb95c7f408101f0b7f5106",
+    "kind": "standard-library execution reporter"
+  },
+  "freshness": {
+    "runStartedAt": "2026-10-14T00:00:36.552496+00:00",
+    "reportModifiedAt": "2026-10-14T00:00:36.856282+00:00",
+    "reportNewerThanRunStart": true
+  },
+  "semanticAssessment": {
+    "result": "pass",
+    "reason": "After commit 518b3886, the actual TestPhase34SurfaceManifestWitnesses selector passed and reached both the accepted CheckCommandFile witness and copied manifest-only operator control."
+  }
+}
