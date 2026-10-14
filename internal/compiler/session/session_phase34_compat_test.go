@@ -7,11 +7,13 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/diagnostic"
 	"github.com/szTheory/schway/internal/compiler/protocol"
 	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/syntax"
 	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
@@ -346,5 +348,711 @@ func TestPhase34IdentityBaseline(t *testing.T) {
 	}
 	if !reflect.DeepEqual(resultIDs, baseline.ResultIDs) {
 		t.Fatalf("Result.Finalize IDs changed: got %v want %v", resultIDs, baseline.ResultIDs)
+	}
+}
+
+type phase34CompatSpan struct {
+	Start int `json:"start"`
+	End   int `json:"end"`
+}
+
+type phase34CompatCause struct {
+	Kind   string             `json:"kind"`
+	Span   *phase34CompatSpan `json:"span,omitempty"`
+	Unit   string             `json:"unit,omitempty"`
+	Detail string             `json:"detail,omitempty"`
+}
+
+type phase34CompatDiagnostic struct {
+	ID          string               `json:"id"`
+	Code        string               `json:"code"`
+	PrimarySpan phase34CompatSpan    `json:"primary_span"`
+	Causes      []phase34CompatCause `json:"causes"`
+}
+
+type phase34CompatDraft struct {
+	ID          string                    `json:"id"`
+	Source      string                    `json:"source"`
+	Diagnostics []phase34CompatDiagnostic `json:"diagnostics"`
+}
+
+type phase34CompatDelta struct {
+	Fixture   string                    `json:"fixture"`
+	Authority []string                  `json:"authority"`
+	Before    []phase34CompatDiagnostic `json:"before"`
+	After     []phase34CompatDiagnostic `json:"after"`
+}
+
+type phase34CompatDeltaLedger struct {
+	Schema string               `json:"schema"`
+	Drafts []phase34CompatDelta `json:"drafts"`
+	Bool   phase34BoolNameDelta `json:"bool_name"`
+}
+
+type phase34BoolRouteState struct {
+	Outcome     string                    `json:"outcome"`
+	Count       int                       `json:"count"`
+	Diagnostics []phase34CompatDiagnostic `json:"diagnostics"`
+}
+
+type phase34BoolNameDelta struct {
+	Fixture       string                `json:"fixture"`
+	Authority     string                `json:"authority"`
+	BeforeCheck   phase34BoolRouteState `json:"before_check"`
+	BeforeCommand phase34BoolRouteState `json:"before_command"`
+	AfterCheck    phase34BoolRouteState `json:"after_check"`
+	AfterCommand  phase34BoolRouteState `json:"after_command"`
+}
+
+type phase34CompatDraftBaseline struct {
+	Schema   string                     `json:"schema"`
+	Revision string                     `json:"revision"`
+	Drafts   []phase34CompatDraftBefore `json:"drafts"`
+}
+
+type phase34CompatDraftBefore struct {
+	ID          string                    `json:"id"`
+	Source      string                    `json:"source"`
+	Diagnostics []phase34CompatDiagnostic `json:"diagnostics"`
+}
+
+type phase34CompatDraftAfter struct {
+	ID              string                    `json:"id"`
+	DiagnosticCount int                       `json:"diagnostic_count"`
+	Diagnostics     []phase34CompatDiagnostic `json:"diagnostics"`
+}
+
+const phase34DraftBaselineSHA256ForCompatibility = "6607c9b5e3657c0e65ba6e46d16a1dc281153994f27ca1ab8c645f9e935b8fae"
+
+func TestPhase34CompatibilityDeltaLedger(t *testing.T) {
+	baselineBytes, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase34", "draft-baseline.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest := sha256.Sum256(baselineBytes)
+	if got := hex.EncodeToString(digest[:]); got != phase34DraftBaselineSHA256ForCompatibility {
+		t.Fatalf("immutable draft baseline changed: sha256 %s, want %s", got, phase34DraftBaselineSHA256ForCompatibility)
+	}
+	var baseline phase34CompatDraftBaseline
+	if err := json.Unmarshal(baselineBytes, &baseline); err != nil {
+		t.Fatal(err)
+	}
+	var after struct {
+		Schema string                    `json:"schema"`
+		Drafts []phase34CompatDraftAfter `json:"drafts"`
+	}
+	afterBytes, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase34", "draft-after.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(afterBytes, &after); err != nil {
+		t.Fatal(err)
+	}
+	if baseline.Schema != "phase34.draft-baseline/1" || after.Schema != "phase34.draft-after/1" || len(baseline.Drafts) != 20 || len(after.Drafts) != 20 {
+		t.Fatalf("draft corpus headers/counts changed: before=%q/%d after=%q/%d", baseline.Schema, len(baseline.Drafts), after.Schema, len(after.Drafts))
+	}
+
+	current := make(map[string][]phase34CompatDiagnostic, len(baseline.Drafts))
+	for _, draft := range baseline.Drafts {
+		parsed := syntax.Parse([]byte(draft.Source))
+		problems := phase34CompatProblems(parsed.Diagnostics)
+		current[draft.ID] = problems
+		if !reflect.DeepEqual(draft.Diagnostics, problems) {
+			encoded, _ := json.Marshal(problems)
+			t.Logf("phase34-live-delta %s %s", draft.ID, encoded)
+		}
+	}
+	unboundBefore := phase34FindBoolObservation(t, phase34LoadCompatibilityBaseline(t).BoolCases, "unbound-true-tail")
+	unboundAfter := phase34FindBoolObservation(t, phase34ObserveBoolCases(t, true), "unbound-true-tail")
+	if unboundBefore == nil || unboundAfter == nil {
+		t.Fatal("unbound Bool-tail before/after witness is missing")
+	}
+	t.Logf("phase34-live-bool-delta before_check=%s before_command=%s after_check=%s after_command=%s",
+		phase34CompactRoute(t, unboundBefore.Check), phase34CompactRoute(t, unboundBefore.Command),
+		phase34CompactRoute(t, unboundAfter.Check), phase34CompactRoute(t, unboundAfter.Command))
+
+	ledgerBytes, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase34", "compat-deltas.json"))
+	if err != nil {
+		t.Fatalf("read literal compatibility delta ledger: %v", err)
+	}
+	var ledger phase34CompatDeltaLedger
+	if err := json.Unmarshal(ledgerBytes, &ledger); err != nil {
+		t.Fatalf("decode literal compatibility delta ledger: %v", err)
+	}
+	if ledger.Schema != "phase34.compat-deltas/1" {
+		t.Fatalf("compat delta schema %q, want phase34.compat-deltas/1", ledger.Schema)
+	}
+	baseByID := make(map[string]phase34CompatDraftBefore, len(baseline.Drafts))
+	afterByID := make(map[string]phase34CompatDraftAfter, len(after.Drafts))
+	for _, item := range baseline.Drafts {
+		baseByID[item.ID] = item
+	}
+	for _, item := range after.Drafts {
+		afterByID[item.ID] = item
+		if len(current[item.ID]) != item.DiagnosticCount || !phase34EqualCompatProjection(current[item.ID], item.Diagnostics) {
+			t.Errorf("%s current diagnostics differ from frozen draft-after code/span/cause values", item.ID)
+		}
+	}
+	allowedAuthority := map[string][]string{
+		"logical-and":                {"surface.unsupported_logical_and"},
+		"logical-or":                 {"surface.unsupported_logical_or"},
+		"logical-not":                {"surface.unsupported_logical_not"},
+		"schway-arity-two":           {"surface.unsupported_parameter_arity"},
+		"if-no-else":                 {"surface.unsupported_if_without_else"},
+		"subtraction":                {"surface.unsupported_subtraction"},
+		"malformed-nested-paren":     {"recovery.expected_call_argument"},
+		"malformed-nested-block":     {"surface.unsupported_if_without_else", "recovery.local_assignment"},
+		"sibling-after-error":        {"recovery.exact_parser_owned_token"},
+		"two-independent-causes":     {"recovery.exact_parser_owned_token"},
+		"independent-missing-closer": {"recovery.delimiter_local"},
+		"eof-empty":                  {"recovery.module_prefix"},
+		"malformed-near-miss":        {"recovery.local_boundary"},
+		"crc32-reconstructed":        {"recovery.delimiter_local"},
+		"word-counter-reconstructed": {"surface.unsupported_logical_or", "surface.unsupported_logical_not", "surface.unsupported_if_without_else", "recovery.exact_parser_owned_token"},
+	}
+	deltaByID := make(map[string]phase34CompatDelta, len(ledger.Drafts))
+	for _, delta := range ledger.Drafts {
+		if _, duplicate := deltaByID[delta.Fixture]; duplicate {
+			t.Errorf("compat delta ledger repeats fixture %q", delta.Fixture)
+		}
+		deltaByID[delta.Fixture] = delta
+		before, exists := baseByID[delta.Fixture]
+		if !exists || !reflect.DeepEqual(before.Diagnostics, delta.Before) {
+			t.Errorf("%s literal before diagnostics do not match immutable baseline", delta.Fixture)
+		}
+		if got := current[delta.Fixture]; !reflect.DeepEqual(got, delta.After) {
+			t.Errorf("%s literal after diagnostics differ: got=%+v want=%+v", delta.Fixture, got, delta.After)
+		}
+		if got := allowedAuthority[delta.Fixture]; !reflect.DeepEqual(got, delta.Authority) {
+			t.Errorf("%s authority %v is not its exact authorized cause %v", delta.Fixture, delta.Authority, got)
+		}
+		if _, exists := afterByID[delta.Fixture]; !exists {
+			t.Errorf("%s is absent from draft-after.json", delta.Fixture)
+		}
+	}
+	for _, before := range baseline.Drafts {
+		if reflect.DeepEqual(before.Diagnostics, current[before.ID]) {
+			if _, listed := deltaByID[before.ID]; listed {
+				t.Errorf("%s has no observed change but is listed as an authorized delta", before.ID)
+			}
+			continue
+		}
+		if _, listed := deltaByID[before.ID]; !listed {
+			t.Errorf("%s changed without an exact fixture delta", before.ID)
+		}
+	}
+	for fixture := range allowedAuthority {
+		if _, listed := deltaByID[fixture]; !listed {
+			t.Errorf("authorized fixture %s has no literal delta row", fixture)
+		}
+	}
+
+	if ledger.Bool.Fixture != "unbound-true-tail" || ledger.Bool.Authority != "surface.unsupported_bool_literal_tail" ||
+		!phase34BoolRouteEqual(unboundBefore.Check, ledger.Bool.BeforeCheck) || !phase34BoolRouteEqual(unboundBefore.Command, ledger.Bool.BeforeCommand) ||
+		!phase34BoolRouteEqual(unboundAfter.Check, ledger.Bool.AfterCheck) || !phase34BoolRouteEqual(unboundAfter.Command, ledger.Bool.AfterCommand) {
+		t.Fatal("unbound Bool-tail literal before/after delta differs from the frozen name baseline or live check")
+	}
+}
+
+func phase34CompatProblems(diagnostics []diagnostic.Diagnostic) []phase34CompatDiagnostic {
+	problems := make([]phase34CompatDiagnostic, 0, len(diagnostics))
+	for _, item := range diagnostics {
+		problem := phase34CompatDiagnostic{ID: item.ID, Code: item.Code, PrimarySpan: phase34CompatSpan{Start: item.Primary.Start, End: item.Primary.End}, Causes: make([]phase34CompatCause, 0, len(item.Causes))}
+		for _, cause := range item.Causes {
+			var span *phase34CompatSpan
+			if cause.Span != nil {
+				span = &phase34CompatSpan{Start: cause.Span.Start, End: cause.Span.End}
+			}
+			problem.Causes = append(problem.Causes, phase34CompatCause{Kind: cause.Kind, Span: span, Unit: cause.Unit, Detail: cause.Detail})
+		}
+		problems = append(problems, problem)
+	}
+	return problems
+}
+
+func phase34EqualCompatProjection(actual, expected []phase34CompatDiagnostic) bool {
+	if len(actual) != len(expected) {
+		return false
+	}
+	for index := range actual {
+		if actual[index].Code != expected[index].Code || actual[index].PrimarySpan != expected[index].PrimarySpan || !reflect.DeepEqual(actual[index].Causes, expected[index].Causes) {
+			return false
+		}
+	}
+	return true
+}
+
+func phase34FindBoolObservation(t *testing.T, observations []phase34BoolObservation, id string) *phase34BoolObservation {
+	t.Helper()
+	for index := range observations {
+		if observations[index].ID == id {
+			return &observations[index]
+		}
+	}
+	return nil
+}
+
+func phase34BoolState(route phase34RouteRecord) phase34BoolRouteState {
+	return phase34BoolRouteState{Outcome: route.Outcome, Count: len(route.Diagnostics), Diagnostics: phase34CompatRouteDiagnostics(route.Diagnostics)}
+}
+
+func phase34CompatRouteDiagnostics(problems []phase34RouteProblem) []phase34CompatDiagnostic {
+	result := make([]phase34CompatDiagnostic, 0, len(problems))
+	for _, item := range problems {
+		result = append(result, phase34CompatDiagnostic{ID: item.ID, Code: item.Code, PrimarySpan: phase34CompatSpan{Start: item.Primary.Start, End: item.Primary.End}})
+	}
+	return result
+}
+
+func phase34BoolRouteEqual(route phase34RouteRecord, state phase34BoolRouteState) bool {
+	return route.Outcome == state.Outcome && len(route.Diagnostics) == state.Count && reflect.DeepEqual(phase34CompatRouteDiagnostics(route.Diagnostics), state.Diagnostics)
+}
+
+func phase34CompactRoute(t *testing.T, route phase34RouteRecord) string {
+	t.Helper()
+	encoded, err := json.Marshal(phase34BoolState(route))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(encoded)
+}
+
+type phase34TransitionFinding struct {
+	Document string
+	Code     string
+	Row      string
+	Field    string
+}
+
+type phase34TransitionRow struct {
+	Key           string
+	Status        string
+	Owner         string
+	RequiredFacts []struct {
+		Field string
+		Text  []string
+	}
+}
+
+var phase34CapabilityHeader = []string{
+	"Program", "Status", "Blocker", "Smallest complete slice", "Checker/guarantee", "Evidence/debt", "Owner/next action", "Reprioritization observation",
+}
+
+var phase34SeedHeader = []string{"Seed", "Disposition", "Current source witness", "Named consumer", "Trigger/reason", "Next action"}
+var phase34ProvenanceHeader = []string{"Kind", "Status", "Evidence/claim"}
+
+var phase34TransitionCapabilities = []phase34TransitionRow{
+	{
+		Key: "Broken CRC/word-counter check and schway surface --json", Status: "implemented", Owner: "Phase 34",
+		RequiredFacts: []struct {
+			Field string
+			Text  []string
+		}{
+			{"Blocker", []string{"None remaining"}},
+			{"Smallest complete slice", []string{"runnable", "source-free"}},
+			{"Checker/guarantee", []string{"byte identity", "repair authority"}},
+			{"Evidence/debt", []string{"DX-20", "TestPhase34SourceRoutePresentation", "TestPhase34SurfaceManifestWitnesses", "TestPhase34PreChangeCProgramGolden"}},
+			{"Owner/next action", []string{"Phase 34"}},
+			{"Reprioritization observation", []string{"admitted", "independent cause"}},
+		},
+	},
+	{
+		Key: "CRC-32 operator expression x ^ (y << 3) & 0xFF and Adler b << 16", Status: "planned", Owner: "Phase 35",
+		RequiredFacts: []struct {
+			Field string
+			Text  []string
+		}{
+			{"Blocker", []string{"bitwise", "shift"}},
+			{"Smallest complete slice", []string{"literal shifts", "independent vectors"}},
+			{"Checker/guarantee", []string{"literal", "range", "shift"}},
+			{"Evidence/debt", []string{"BIT-01", "EVD-17"}},
+			{"Owner/next action", []string{"Phase 35"}},
+			{"Reprioritization observation", []string{"dynamic shift", "different bounds"}},
+		},
+	},
+	{
+		Key: "Imported crc_step scalar helper inside a loop", Status: "planned", Owner: "Phase 36; file integration in Phase 37",
+		RequiredFacts: []struct {
+			Field string
+			Text  []string
+		}{
+			{"Blocker", []string{"scalar helper calls"}},
+			{"Smallest complete slice", []string{"arity-one", "file consumer"}},
+			{"Checker/guarantee", []string{"arity-1", "acyclic", "result-defect"}},
+			{"Evidence/debt", []string{"CALL-01", "APP-13", "MOD-07"}},
+			{"Owner/next action", []string{"Phase 36", "Phase 37"}},
+			{"Reprioritization observation", []string{"second consumer", "arity-N"}},
+		},
+	},
+}
+
+var phase34SeedExpectations = []struct {
+	Key, Witness, Consumer, Trigger string
+}{
+	{"z1g", "internal/compiler/session/session_phase6_query.go#QueryCommandFile", "crc_step declaration and all direct call occurrences", "measured named query gap"},
+	{"trz", "internal/compiler/native/native_app.go#readApplicationCapture", "one named checksum/file utility failure", "failure unexplained by current capture, observers, and replay"},
+	{"z1s", "internal/compiler/syntax/format.go#Format", "CRC/word-counter canonical source review", "named canonical-source or contract dispute"},
+}
+
+var phase34ProvenanceExpectations = []struct{ Kind, Status string }{
+	{"Source inspection", "inspected"},
+	{"Focused execution", "passed"},
+	{"Historical M006 receipts", "historical"},
+	{"Phase 38 hosted binding", "pending"},
+	{"Human readability", "unmeasured"},
+	{"Whole-loop latency", "unmeasured"},
+}
+
+const phase34TransitionHeading = "## Phase 34 transition amendment — 2026-10-13"
+
+func TestPhase34TransitionDocuments(t *testing.T) {
+	documents := map[string]string{}
+	for _, name := range []string{"PRODUCT-ROADMAP.md", "LANGUAGE-MATURITY.md"} {
+		data, err := os.ReadFile(testsupport.ProjectPath(".planning", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		documents[name] = string(data)
+		if problems := phase34TransitionProblems(name, documents[name]); len(problems) != 0 {
+			t.Fatalf("%s Phase 34 amendment findings: %+v", name, problems)
+		}
+	}
+
+	for document, original := range documents {
+		capabilityRows := phase34ParseTable(phase34ExtractTransitionBlock(t, original), phase34CapabilityHeader)
+		for _, row := range phase34TransitionCapabilities {
+			for _, field := range phase34CapabilityHeader {
+				mutated := phase34MutateTransitionCell(t, original, phase34CapabilityHeader, "Program", row.Key, field, "")
+				phase34ExpectSingleFinding(t, document, original, mutated, "missing_capability_field", row.Key, field)
+			}
+			if _, exists := capabilityRows[row.Key]; !exists {
+				t.Fatalf("clean %s amendment lacks capability row %q before mutation controls", document, row.Key)
+			}
+			mutated := phase34DeleteTransitionRow(t, original, phase34CapabilityHeader, "Program", row.Key)
+			phase34ExpectSingleFinding(t, document, original, mutated, "missing_capability_field", row.Key, "Program row")
+			wrongStatus := "planned"
+			if row.Status == "planned" {
+				wrongStatus = "implemented"
+			}
+			phase34ExpectCellFinding(t, document, original, phase34CapabilityHeader, "Program", row.Key, "Status", wrongStatus, "wrong_capability_status", row.Key, "Status")
+			phase34ExpectCellFinding(t, document, original, phase34CapabilityHeader, "Program", row.Key, "Owner/next action", "Phase 99", "wrong_capability_owner", row.Key, "Owner/next action")
+		}
+		for _, seed := range phase34SeedExpectations {
+			for _, field := range phase34SeedHeader {
+				mutated := phase34MutateTransitionCell(t, original, phase34SeedHeader, "Seed", seed.Key, field, "")
+				phase34ExpectSingleFinding(t, document, original, mutated, "missing_seed_field", seed.Key, field)
+			}
+			mutated := phase34DeleteTransitionRow(t, original, phase34SeedHeader, "Seed", seed.Key)
+			phase34ExpectSingleFinding(t, document, original, mutated, "missing_seed_field", seed.Key, "Seed row")
+			phase34ExpectCellFinding(t, document, original, phase34SeedHeader, "Seed", seed.Key, "Disposition", "run experiment", "wrong_seed_disposition", seed.Key, "Disposition")
+		}
+		for _, provenance := range phase34ProvenanceExpectations {
+			mutated := phase34DeleteTransitionRow(t, original, phase34ProvenanceHeader, "Kind", provenance.Kind)
+			phase34ExpectSingleFinding(t, document, original, mutated, "missing_provenance", provenance.Kind, "row")
+			mutated = phase34MutateTransitionCell(t, original, phase34ProvenanceHeader, "Kind", provenance.Kind, "Status", "")
+			phase34ExpectSingleFinding(t, document, original, mutated, "missing_provenance", provenance.Kind, "Status")
+		}
+		phase34ExpectCellFinding(t, document, original, phase34ProvenanceHeader, "Kind", "Phase 38 hosted binding", "Status", "passed", "evidence_overclaim", "Phase 38 hosted binding", "Status")
+		phase34ExpectCellFinding(t, document, original, phase34ProvenanceHeader, "Kind", "Human readability", "Status", "measured", "evidence_overclaim", "Human readability", "Status")
+		phase34ExpectCellFinding(t, document, original, phase34ProvenanceHeader, "Kind", "Whole-loop latency", "Status", "measured", "evidence_overclaim", "Whole-loop latency", "Status")
+		if documents[document] != original {
+			t.Fatalf("%s in-memory mutation controls did not restore their source document", document)
+		}
+	}
+}
+
+func phase34TransitionProblems(document, text string) []phase34TransitionFinding {
+	block, found, duplicate := phase34TransitionBlock(text)
+	if !found || duplicate {
+		return []phase34TransitionFinding{{Document: document, Code: "missing_section", Row: phase34TransitionHeading, Field: "unique section"}}
+	}
+	var problems []phase34TransitionFinding
+	capabilityRows := phase34ParseTable(block, phase34CapabilityHeader)
+	for _, expected := range phase34TransitionCapabilities {
+		cells, ok := capabilityRows[expected.Key]
+		if !ok {
+			cells, ok = phase34InferBlankKeyRow(capabilityRows, "Program", "Owner/next action", expected.Owner)
+		}
+		if !ok {
+			problems = append(problems, phase34TransitionFinding{Document: document, Code: "missing_capability_field", Row: expected.Key, Field: "Program row"})
+			continue
+		}
+		for _, field := range phase34CapabilityHeader {
+			if strings.TrimSpace(cells[field]) == "" {
+				problems = append(problems, phase34TransitionFinding{Document: document, Code: "missing_capability_field", Row: expected.Key, Field: field})
+			}
+		}
+		if got := cells["Status"]; got != expected.Status {
+			problems = append(problems, phase34TransitionFinding{Document: document, Code: "wrong_capability_status", Row: expected.Key, Field: "Status"})
+		}
+		if got := cells["Owner/next action"]; got != expected.Owner {
+			problems = append(problems, phase34TransitionFinding{Document: document, Code: "wrong_capability_owner", Row: expected.Key, Field: "Owner/next action"})
+		}
+		for _, facts := range expected.RequiredFacts {
+			if strings.TrimSpace(cells[facts.Field]) == "" {
+				continue
+			}
+			for _, fact := range facts.Text {
+				if !strings.Contains(cells[facts.Field], fact) {
+					problems = append(problems, phase34TransitionFinding{Document: document, Code: "missing_capability_field", Row: expected.Key, Field: facts.Field})
+					break
+				}
+			}
+		}
+	}
+
+	seedRows := phase34ParseTable(block, phase34SeedHeader)
+	for _, expected := range phase34SeedExpectations {
+		cells, ok := seedRows[expected.Key]
+		if !ok {
+			cells, ok = phase34InferBlankKeyRow(seedRows, "Seed", "Named consumer", expected.Consumer)
+		}
+		if !ok {
+			problems = append(problems, phase34TransitionFinding{Document: document, Code: "missing_seed_field", Row: expected.Key, Field: "Seed row"})
+			continue
+		}
+		for _, field := range phase34SeedHeader {
+			if strings.TrimSpace(cells[field]) == "" {
+				problems = append(problems, phase34TransitionFinding{Document: document, Code: "missing_seed_field", Row: expected.Key, Field: field})
+			}
+		}
+		if cells["Disposition"] != "retain dormant" {
+			problems = append(problems, phase34TransitionFinding{Document: document, Code: "wrong_seed_disposition", Row: expected.Key, Field: "Disposition"})
+		}
+		for field, required := range map[string]string{"Current source witness": expected.Witness, "Named consumer": expected.Consumer, "Trigger/reason": expected.Trigger} {
+			if strings.TrimSpace(cells[field]) != "" && !strings.Contains(cells[field], required) {
+				problems = append(problems, phase34TransitionFinding{Document: document, Code: "missing_seed_field", Row: expected.Key, Field: field})
+			}
+		}
+	}
+
+	provenanceRows := phase34ParseTable(block, phase34ProvenanceHeader)
+	for _, expected := range phase34ProvenanceExpectations {
+		cells, ok := provenanceRows[expected.Kind]
+		if !ok {
+			problems = append(problems, phase34TransitionFinding{Document: document, Code: "missing_provenance", Row: expected.Kind, Field: "row"})
+			continue
+		}
+		if strings.TrimSpace(cells["Status"]) == "" || strings.TrimSpace(cells["Evidence/claim"]) == "" {
+			field := "Status"
+			if strings.TrimSpace(cells["Evidence/claim"]) == "" {
+				field = "Evidence/claim"
+			}
+			problems = append(problems, phase34TransitionFinding{Document: document, Code: "missing_provenance", Row: expected.Kind, Field: field})
+			continue
+		}
+		if cells["Status"] != expected.Status {
+			if expected.Kind == "Phase 38 hosted binding" || expected.Kind == "Human readability" || expected.Kind == "Whole-loop latency" || expected.Kind == "Historical M006 receipts" {
+				problems = append(problems, phase34TransitionFinding{Document: document, Code: "evidence_overclaim", Row: expected.Kind, Field: "Status"})
+			} else {
+				problems = append(problems, phase34TransitionFinding{Document: document, Code: "missing_provenance", Row: expected.Kind, Field: "Status"})
+			}
+		}
+	}
+	for _, phrase := range []string{"current hosted receipt", "human readability measured", "whole-loop latency measured", "p50/p95 measured"} {
+		if strings.Contains(strings.ToLower(block), phrase) {
+			problems = append(problems, phase34TransitionFinding{Document: document, Code: "evidence_overclaim", Row: "evidence claim", Field: phrase})
+		}
+	}
+	if !phase34ReferenceExists("internal/compiler/session/session.go#BuildApplicationCommandFile") ||
+		!phase34ReferenceExists("cmd/schway/main.go#runSurface") {
+		problems = append(problems, phase34TransitionFinding{Document: document, Code: "missing_capability_field", Row: phase34TransitionCapabilities[0].Key, Field: "Evidence/debt source reference"})
+	}
+	for _, reference := range []string{
+		"internal/compiler/session/session_phase34_routes_test.go#TestPhase34SourceRoutePresentation",
+		"internal/compiler/session/session_phase34_surface_test.go#TestPhase34SurfaceManifestWitnesses",
+		"internal/compiler/session/session_phase34_prechange_test.go#TestPhase34PreChangeCProgramGolden",
+	} {
+		evidence := capabilityRows[phase34TransitionCapabilities[0].Key]["Evidence/debt"]
+		if strings.TrimSpace(evidence) != "" && (!phase34ReferenceExists(reference) || !strings.Contains(evidence, reference)) {
+			problems = append(problems, phase34TransitionFinding{Document: document, Code: "missing_capability_field", Row: phase34TransitionCapabilities[0].Key, Field: "Evidence/debt " + reference})
+		}
+	}
+	return problems
+}
+
+func phase34ReferenceExists(reference string) bool {
+	path, symbol, ok := strings.Cut(reference, "#")
+	if !ok {
+		return false
+	}
+	data, err := os.ReadFile(testsupport.ProjectPath(filepath.FromSlash(path)))
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(data), "func "+symbol+"(")
+}
+
+func phase34TransitionBlock(text string) (string, bool, bool) {
+	if strings.Count(text, phase34TransitionHeading) != 1 {
+		return "", false, true
+	}
+	start := strings.Index(text, phase34TransitionHeading)
+	end := len(text)
+	rest := text[start+len(phase34TransitionHeading):]
+	for _, marker := range []string{"\n## ", "\n# "} {
+		if index := strings.Index(rest, marker); index >= 0 && start+len(phase34TransitionHeading)+index < end {
+			end = start + len(phase34TransitionHeading) + index + 1
+		}
+	}
+	return text[start:end], true, false
+}
+
+func phase34ExtractTransitionBlock(t *testing.T, text string) string {
+	t.Helper()
+	block, found, duplicate := phase34TransitionBlock(text)
+	if !found || duplicate {
+		t.Fatalf("Phase 34 transition section missing or duplicated")
+	}
+	return block
+}
+
+func phase34ParseTable(block string, header []string) map[string]map[string]string {
+	lines := strings.Split(block, "\n")
+	for index, line := range lines {
+		cells := phase34SplitTableRow(line)
+		if !phase34EqualStrings(cells, header) {
+			continue
+		}
+		rows := make(map[string]map[string]string)
+		for rowIndex := index + 1; rowIndex < len(lines); rowIndex++ {
+			values := phase34SplitTableRow(lines[rowIndex])
+			if len(values) == 0 {
+				break
+			}
+			if len(values) != len(header) || strings.Trim(values[0], "-: ") == "" {
+				continue
+			}
+			row := make(map[string]string, len(header))
+			for cellIndex, key := range header {
+				row[key] = values[cellIndex]
+			}
+			rows[row[header[0]]] = row
+		}
+		return rows
+	}
+	return map[string]map[string]string{}
+}
+
+func phase34SplitTableRow(line string) []string {
+	trimmed := strings.TrimSpace(line)
+	if !strings.HasPrefix(trimmed, "|") || !strings.HasSuffix(trimmed, "|") {
+		return nil
+	}
+	parts := strings.Split(strings.Trim(trimmed, "|"), "|")
+	for index := range parts {
+		parts[index] = strings.TrimSpace(parts[index])
+	}
+	return parts
+}
+
+func phase34EqualStrings(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index] != right[index] {
+			return false
+		}
+	}
+	return true
+}
+
+func phase34InferBlankKeyRow(rows map[string]map[string]string, keyField, discriminatorField, expectedDiscriminator string) (map[string]string, bool) {
+	for _, row := range rows {
+		if row[keyField] == "" && row[discriminatorField] == expectedDiscriminator {
+			return row, true
+		}
+	}
+	return nil, false
+}
+
+func phase34MutateTransitionCell(t *testing.T, document string, header []string, keyField, key, field, value string) string {
+	t.Helper()
+	return phase34ChangeTransitionTable(t, document, header, keyField, key, field, value, false)
+}
+
+func phase34DeleteTransitionRow(t *testing.T, document string, header []string, keyField, key string) string {
+	t.Helper()
+	return phase34ChangeTransitionTable(t, document, header, keyField, key, "", "", true)
+}
+
+func phase34ChangeTransitionTable(t *testing.T, document string, header []string, keyField, key, field, value string, deleteRow bool) string {
+	t.Helper()
+	block, start, end := phase34TransitionBlockRange(t, document)
+	lines := strings.Split(block, "\n")
+	foundHeader := -1
+	for index, line := range lines {
+		if phase34EqualStrings(phase34SplitTableRow(line), header) {
+			foundHeader = index
+			break
+		}
+	}
+	if foundHeader < 0 {
+		t.Fatalf("transition table header %v missing", header)
+	}
+	keyIndex, fieldIndex := -1, -1
+	for index, name := range header {
+		if name == keyField {
+			keyIndex = index
+		}
+		if name == field {
+			fieldIndex = index
+		}
+	}
+	if keyIndex < 0 || (!deleteRow && fieldIndex < 0) {
+		t.Fatalf("transition mutation names unknown fields key=%q field=%q", keyField, field)
+	}
+	for index := foundHeader + 1; index < len(lines); index++ {
+		cells := phase34SplitTableRow(lines[index])
+		if len(cells) == 0 {
+			break
+		}
+		if len(cells) != len(header) || cells[keyIndex] != key {
+			continue
+		}
+		if deleteRow {
+			lines = append(lines[:index], lines[index+1:]...)
+		} else {
+			cells[fieldIndex] = value
+			lines[index] = "| " + strings.Join(cells, " | ") + " |"
+		}
+		mutatedBlock := strings.Join(lines, "\n")
+		return document[:start] + mutatedBlock + document[end:]
+	}
+	t.Fatalf("transition mutation target row %q missing", key)
+	return document
+}
+
+func phase34TransitionBlockRange(t *testing.T, document string) (string, int, int) {
+	t.Helper()
+	block, found, duplicate := phase34TransitionBlock(document)
+	if !found || duplicate {
+		t.Fatal("clean transition block missing or duplicated")
+	}
+	start := strings.Index(document, phase34TransitionHeading)
+	end := start + len(block)
+	return block, start, end
+}
+
+func phase34ExpectCellFinding(t *testing.T, document, original string, header []string, keyField, key, field, value, code, row, expectedField string) {
+	t.Helper()
+	mutated := phase34MutateTransitionCell(t, original, header, keyField, key, field, value)
+	phase34ExpectSingleFinding(t, document, original, mutated, code, row, expectedField)
+}
+
+func phase34ExpectSingleFinding(t *testing.T, document, original, mutated, code, row, field string) {
+	t.Helper()
+	_, start, end := phase34TransitionBlockRange(t, original)
+	mutatedBlock, _, _ := phase34TransitionBlockRange(t, mutated)
+	if original[:start] != mutated[:start] || original[end:] != mutated[len(mutated)-len(original[end:]):] {
+		t.Fatalf("%s mutation altered historical content outside dated amendment", document)
+	}
+	problems := phase34TransitionProblems(document, mutated)
+	if len(problems) != 1 || problems[0].Code != code || problems[0].Row != row || problems[0].Field != field || problems[0].Document != document {
+		t.Fatalf("%s target mutation for %s.%s produced %+v, want only %s", document, row, field, problems, code)
+	}
+	if mutatedBlock == "" {
+		t.Fatal("mutated block unexpectedly empty")
 	}
 }
