@@ -192,6 +192,8 @@ func invocationEventCapacity(nodes []invocationPreflightNode, byID map[string]co
 			}
 			return 0, fmt.Errorf("function %q: has no linear body", function.ID)
 		}
+		// Capacity deliberately remains conservative: it counts every source
+		// operation, including Phase 35's event-free scalar bitwise operations.
 		capacity += len(function.Linear.Operations)
 	}
 	return capacity, nil

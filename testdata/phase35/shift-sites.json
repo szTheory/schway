@@ -1,0 +1,41 @@
+{
+  "format": "schway.phase35.shift-sites/v1",
+  "module": "phase35.scalar_census",
+  "function": "main",
+  "source_type": "U64",
+  "result_type": "U64",
+  "expected_shift_sites": 2,
+  "sites": [
+    {
+      "name": "left",
+      "source_place": "z",
+      "target_place": "left",
+      "kind": "shift_left_u64",
+      "operator": "<<",
+      "count": "63",
+      "source_type": "U64",
+      "result_type": "U64",
+      "controls": [
+        { "mutation": "dynamic_count", "failure": "shift.site.dynamic_count" },
+        { "mutation": "count_64", "failure": "shift.site.count_out_of_range" },
+        { "mutation": "signed_operand", "failure": "shift.site.unsigned_operand" }
+      ]
+    },
+    {
+      "name": "right",
+      "source_place": "left",
+      "target_place": "result",
+      "kind": "shift_right_u64",
+      "operator": ">>",
+      "count": "63",
+      "source_type": "U64",
+      "result_type": "U64",
+      "controls": [
+        { "mutation": "dynamic_count", "failure": "shift.site.dynamic_count" },
+        { "mutation": "count_64", "failure": "shift.site.count_out_of_range" },
+        { "mutation": "signed_operand", "failure": "shift.site.unsigned_operand" }
+      ]
+    }
+  ],
+  "removed_site": { "name": "left", "failure": "shift.site.count_mismatch" }
+}
