@@ -33,6 +33,11 @@ var refusals = [...]Refusal{
 		Hint: "Shift amounts must be integer literals from 0 to 63; write a literal in that range.",
 	},
 	{
+		Code: "surface.unsupported_expression_depth",
+		Form: "scalar expression nesting beyond the parser limit",
+		Hint: "Expression nesting exceeds the parser limit of 64; reduce nested groups or byte_at indices.",
+	},
+	{
 		Code: "surface.unsupported_parameter_arity",
 		Form: "more than one declaration parameter",
 		Hint: "Declarations require exactly one parameter; pass one admitted value.",

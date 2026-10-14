@@ -1,0 +1,23 @@
+{
+  "schema": "phase35.recovery-after/1",
+  "date": "2026-10-14",
+  "amendments": [
+    {
+      "fixture": "crc32-reconstructed",
+      "reason": "Phase 35 admits the XOR and shifts in this parser-only draft; its sibling is now parsed without diagnostics. This does not claim numeric CRC semantics or whole-program admission.",
+      "phase34_projection": {
+        "diagnostic_count": 2,
+        "recovered_sibling_names": ["crc32"],
+        "diagnostics": [
+          {"code": "syntax.unexpected_byte", "primary_span": {"start": 211, "end": 212}, "causes": []},
+          {"code": "syntax.expected_rbrace", "primary_span": {"start": 184, "end": 185}, "causes": []}
+        ]
+      },
+      "phase35_projection": {
+        "diagnostic_count": 0,
+        "recovered_sibling_names": ["crc32"],
+        "diagnostics": []
+      }
+    }
+  ]
+}

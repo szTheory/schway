@@ -1,0 +1,39 @@
+{
+  "schema": "phase35.numeric-delta/1",
+  "date": "2026-10-14",
+  "historical": {
+    "fixture": "numeric-policy-baseline.json",
+    "revision": "c4a2eec1ab47a6e5eabc7ff7ff9093e21854aa4b",
+    "nested_index": [
+      { "depth": 63, "parse": "admitted", "check": "admitted", "emit": "emitted" },
+      { "depth": 64, "parse": "admitted", "check": "admitted", "emit": "emitted" },
+      { "depth": 65, "parse": "admitted", "check": "admitted", "emit": "emitted" },
+      { "depth": 128, "parse": "admitted", "check": "admitted", "emit": "emitted" }
+    ],
+    "note": "Frozen before-state facts remain in numeric-policy-baseline.json; this resource amendment does not rewrite their C witnesses."
+  },
+  "after_state": {
+    "expression_depth_limit": 64,
+    "definition": "The top-level scalar expression starts at depth zero. Each transparent group or recursive byte_at index enters once.",
+    "refusal_code": "surface.unsupported_expression_depth",
+    "nested_index": [
+      { "depth": 63, "parse": "admitted" },
+      { "depth": 64, "parse": "admitted" },
+      { "depth": 65, "parse": "refused" },
+      { "depth": 128, "parse": "refused" }
+    ],
+    "groups": [
+      { "depth": 63, "parse": "admitted" },
+      { "depth": 64, "parse": "admitted" },
+      { "depth": 65, "parse": "refused" },
+      { "depth": 128, "parse": "refused" }
+    ],
+    "mixed": [
+      { "depth": 63, "parse": "admitted" },
+      { "depth": 64, "parse": "admitted" },
+      { "depth": 65, "parse": "refused" },
+      { "depth": 128, "parse": "refused" }
+    ],
+    "resource_amendment": "2026-10-14: the former unbounded recursive parser admitted nested byte_at index chains at depths 65 and 128. The new shared source-expression cap intentionally refuses recursion beyond 64 entries while preserving the previously recorded successful C outputs as historical evidence."
+  }
+}

@@ -2,6 +2,8 @@ package syntax_test
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -45,6 +47,25 @@ type phase34RecoveryObservation struct {
 	RecoveredSiblingNames []string
 }
 
+type phase35RecoveryAfterFile struct {
+	Schema     string                     `json:"schema"`
+	Date       string                     `json:"date"`
+	Amendments []phase35RecoveryAmendment `json:"amendments"`
+}
+
+type phase35RecoveryAmendment struct {
+	Fixture           string                    `json:"fixture"`
+	Reason            string                    `json:"reason"`
+	Phase34Projection phase35RecoveryProjection `json:"phase34_projection"`
+	Phase35Projection phase35RecoveryProjection `json:"phase35_projection"`
+}
+
+type phase35RecoveryProjection struct {
+	DiagnosticCount       int                         `json:"diagnostic_count"`
+	RecoveredSiblingNames []string                    `json:"recovered_sibling_names"`
+	Diagnostics           []phase34RecoveryDiagnostic `json:"diagnostics"`
+}
+
 // These observation-level seams exercise the corpus comparator's specific
 // failure classifications. They are local to this test, default off, and
 // never alter parser behavior or production output.
@@ -56,6 +77,7 @@ var (
 
 func TestPhase34RecoveryCorpus(t *testing.T) {
 	corpus, after := loadPhase34RecoveryCorpus(t)
+	phase35After := loadPhase35RecoveryAfter(t)
 	if len(corpus.Drafts) != len(after.Drafts) {
 		t.Fatalf("draft-after rows = %d, want one exact row for each of %d drafts", len(after.Drafts), len(corpus.Drafts))
 	}
@@ -84,7 +106,13 @@ func TestPhase34RecoveryCorpus(t *testing.T) {
 			t.Errorf("%s recovery changed the lossless source bytes", draft.ID)
 		}
 		got := observePhase34Recovery(parsed)
-		if reason := comparePhase34Recovery(want, got); reason != "" {
+		var reason string
+		if draft.ID == "crc32-reconstructed" {
+			reason = comparePhase35RecoveryAfter(phase35After, want, got)
+		} else {
+			reason = comparePhase34Recovery(want, got)
+		}
+		if reason != "" {
 			t.Errorf("%s recovery mismatch (%s): diagnostics=%+v siblings=%v", draft.ID, reason, got.Diagnostics, got.RecoveredSiblingNames)
 		}
 	}
@@ -109,6 +137,87 @@ func TestPhase34RecoveryCorpus(t *testing.T) {
 		missingParse.Diagnostics[1].Code != "syntax.expected_rbrace" || missingParse.Diagnostics[1].Primary.Start != 74 || missingParse.Diagnostics[1].Primary.End != 74 {
 		t.Fatalf("independent missing closers were not preserved: %+v", missingParse.Diagnostics)
 	}
+}
+
+func phase34AssertFrozenRecoveryInputs(t *testing.T) {
+	t.Helper()
+	want := map[string]string{
+		"testdata/phase34/drafts.json":         "8774033822c9f47db8236d00a347e7e176a9524437314c182be8555f16a1b9df",
+		"testdata/phase34/draft-baseline.json": "6607c9b5e3657c0e65ba6e46d16a1dc281153994f27ca1ab8c645f9e935b8fae",
+		"testdata/phase34/draft-after.json":    "1e11ff4a8af6cc03c5d6e3200d0cdf9ef7dad41ee28e6a6fcd3aa2362b272bf3",
+		"testdata/phase34/compat-deltas.json":  "356d6f087023b46542636bfa244266afe1fbcd73cdb89120cc3d33802f558011",
+	}
+	for path, digestWant := range want {
+		contents, err := os.ReadFile(testsupport.ProjectPath(path))
+		if err != nil {
+			t.Fatalf("read frozen Phase 34 recovery input %s: %v", path, err)
+		}
+		digest := sha256.Sum256(contents)
+		if got := hex.EncodeToString(digest[:]); got != digestWant {
+			t.Errorf("frozen Phase 34 recovery input %s changed: sha256 %s, want %s", path, got, digestWant)
+		}
+	}
+}
+
+func loadPhase35RecoveryAfter(t *testing.T) phase35RecoveryAfterFile {
+	t.Helper()
+	var after phase35RecoveryAfterFile
+	readPhase34JSON(t, "testdata/phase35/recovery-after.json", &after)
+	return after
+}
+
+func fixtureAfterByID(t *testing.T, drafts []phase34RecoveryDraft, id string) phase34RecoveryDraft {
+	t.Helper()
+	for _, draft := range drafts {
+		if draft.ID == id {
+			return draft
+		}
+	}
+	t.Fatalf("draft-after fixture %q is missing", id)
+	return phase34RecoveryDraft{}
+}
+
+func comparePhase35RecoveryAfter(file phase35RecoveryAfterFile, historical phase34RecoveryDraft, got phase34RecoveryObservation) string {
+	if file.Schema != "phase35.recovery-after/1" || file.Date != "2026-10-14" {
+		return "header"
+	}
+	if len(file.Amendments) != 1 {
+		return "amendment_count"
+	}
+	amendment := file.Amendments[0]
+	if amendment.Fixture != "crc32-reconstructed" {
+		return "wrong_fixture"
+	}
+	if strings.TrimSpace(amendment.Reason) == "" {
+		return "missing_reason"
+	}
+	wantHistorical := phase35RecoveryProjection{
+		DiagnosticCount:       historical.DiagnosticCount,
+		RecoveredSiblingNames: historical.RecoveredSiblingNames,
+		Diagnostics:           historical.Diagnostics,
+	}
+	if !reflect.DeepEqual(amendment.Phase34Projection, wantHistorical) {
+		return "wrong_phase34_projection"
+	}
+	actual := phase35RecoveryProjection{
+		DiagnosticCount:       len(got.Diagnostics),
+		RecoveredSiblingNames: got.RecoveredSiblingNames,
+		Diagnostics:           got.Diagnostics,
+	}
+	if !reflect.DeepEqual(amendment.Phase35Projection, actual) {
+		return "wrong_phase35_projection"
+	}
+	return ""
+}
+
+func clonePhase35Projection(projection phase35RecoveryProjection) phase35RecoveryProjection {
+	clone := projection
+	clone.RecoveredSiblingNames = append([]string(nil), projection.RecoveredSiblingNames...)
+	clone.Diagnostics = append([]phase34RecoveryDiagnostic(nil), projection.Diagnostics...)
+	for index := range clone.Diagnostics {
+		clone.Diagnostics[index].Causes = append([]phase34RecoveryCause(nil), projection.Diagnostics[index].Causes...)
+	}
+	return clone
 }
 
 func TestPhase34RecoveryControls(t *testing.T) {

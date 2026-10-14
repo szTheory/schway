@@ -56,6 +56,7 @@ type parser struct {
 	diagnostics               []diagnostic.Diagnostic
 	truncated                 bool
 	typeDepth                 int
+	expressionDepth           int
 	typeNodes                 int
 	claimedRecoverySpans      map[recoveryTokenSpan]struct{}
 	claimedRecoveryBoundaries map[recoveryTokenSpan]struct{}
@@ -67,8 +68,9 @@ type recoveryTokenSpan struct {
 }
 
 const (
-	maxTypeDepth = 64
-	maxTypeNodes = 4096
+	MaxExpressionDepth = 64
+	maxTypeDepth       = 64
+	maxTypeNodes       = 4096
 )
 
 // AuthoringBounds exposes the parser's current structural caps to a named
@@ -76,6 +78,7 @@ const (
 type AuthoringBounds struct {
 	PrimaryDiagnostics int
 	TypeDepth          int
+	ExpressionDepth    int
 	TypeNodes          int
 	Alternatives       int
 	LinearBindings     int
@@ -85,6 +88,7 @@ func CurrentAuthoringBounds() AuthoringBounds {
 	return AuthoringBounds{
 		PrimaryDiagnostics: maxPrimaryDiagnostics,
 		TypeDepth:          maxTypeDepth,
+		ExpressionDepth:    MaxExpressionDepth,
 		TypeNodes:          maxTypeNodes,
 		Alternatives:       maxAlternatives,
 		LinearBindings:     maxLinearBindings,
@@ -182,7 +186,7 @@ func filterNormalizedTokenDiagnostics(diagnostics []diagnostic.Diagnostic, token
 		if problem.Code == "syntax.unexpected_byte" {
 			normalized := false
 			for _, token := range tokens {
-				if token.Span == problem.Primary && (token.Kind == TokenLAngle || token.Kind == TokenRAngle || token.Kind == TokenComma || (token.Kind == TokenUnknown && (token.Text == "^" || token.Text == "&"))) {
+				if token.Span == problem.Primary && (token.Kind == TokenLAngle || token.Kind == TokenRAngle || token.Kind == TokenComma || (token.Kind == TokenUnknown && (token.Text == "^" || token.Text == "&" || token.Text == "!"))) {
 					normalized = true
 					break
 				}
@@ -806,7 +810,7 @@ func (p *parser) scalarBinaryExpr(minPrecedence int) *ast.Expr {
 		if operator, code, ok := p.consumeUnsupportedBinaryOperator(); ok {
 			p.reportSurfaceRefusal(code, operator)
 			if !isCallerOwnedBoundary(p.peek().Kind) {
-				p.scalarBinaryExpr(minPrecedence)
+				p.discardScalarBinaryExpr(minPrecedence)
 			}
 			return left
 		}
@@ -861,6 +865,39 @@ func (p *parser) scalarBinaryExpr(minPrecedence int) *ast.Expr {
 	}
 }
 
+// discardScalarBinaryExpr consumes an invalid suffix after an unsupported
+// binary operator without recursing once per source operator. Its recursion
+// follows increasing Pratt precedence, so source length cannot grow its stack.
+func (p *parser) discardScalarBinaryExpr(minPrecedence int) {
+	p.scalarExprAtom()
+	for {
+		if operator, code, ok := p.consumeUnsupportedBinaryOperator(); ok {
+			p.reportSurfaceRefusal(code, operator)
+			if isCallerOwnedBoundary(p.peek().Kind) {
+				return
+			}
+			p.scalarExprAtom()
+			continue
+		}
+		operator, precedence, width := p.scalarOperatorAt(0)
+		if precedence < minPrecedence || precedence == 0 {
+			return
+		}
+		for range width {
+			p.advance()
+		}
+		if (operator.Text == "<<" || operator.Text == ">>") && p.peek().Kind == TokenUnknown && p.peek().Text == "-" {
+			minus := p.advance()
+			if p.peek().Kind == TokenNumber {
+				p.advance()
+			}
+			p.reportSurfaceRefusal("surface.unsupported_shift_amount", minus)
+			continue
+		}
+		p.discardScalarBinaryExpr(precedence + 1)
+	}
+}
+
 func (p *parser) consumeUnsupportedBinaryOperator() (Token, string, bool) {
 	operator := p.peek()
 	if operator.Kind == TokenUnknown {
@@ -889,12 +926,33 @@ func (p *parser) consumeUnsupportedBinaryOperator() (Token, string, bool) {
 }
 
 func (p *parser) consumeUnsupportedLogicalNot() bool {
-	operator := p.peek()
-	if operator.Kind != TokenUnknown || operator.Text != "!" || p.peekNonTrivia(1).Kind != TokenIdentifier {
+	index := p.position
+	count := 0
+	for index < len(p.tokens) {
+		for index < len(p.tokens) && p.tokens[index].Trivia() {
+			index++
+		}
+		if index >= len(p.tokens) || p.tokens[index].Kind != TokenUnknown || p.tokens[index].Text != "!" {
+			break
+		}
+		count++
+		index++
+	}
+	for index < len(p.tokens) && p.tokens[index].Trivia() {
+		index++
+	}
+	if count == 0 || index >= len(p.tokens) {
 		return false
 	}
-	p.advance()
-	p.reportSurfaceRefusal("surface.unsupported_logical_not", operator)
+	switch p.tokens[index].Kind {
+	case TokenIdentifier, TokenNumber, TokenString, TokenLParen:
+	default:
+		return false
+	}
+	for range count {
+		operator := p.advance()
+		p.reportSurfaceRefusal("surface.unsupported_logical_not", operator)
+	}
 	return true
 }
 
@@ -907,10 +965,8 @@ func (p *parser) reportSurfaceRefusal(code string, token Token) {
 }
 
 func (p *parser) scalarExprAtom() *ast.Expr {
+	p.consumeUnsupportedLogicalNot()
 	leftToken := p.peek()
-	if p.consumeUnsupportedLogicalNot() {
-		return p.scalarExprAtom()
-	}
 	if isCallerOwnedBoundary(leftToken.Kind) {
 		p.problemAtBoundary("syntax.expected_scalar_operand", leftToken, "expected a scalar operand")
 		return &ast.Expr{Kind: "name", Name: leftToken.Text, Span: leftToken.Span}
@@ -918,7 +974,7 @@ func (p *parser) scalarExprAtom() *ast.Expr {
 	leftToken = p.advance()
 	switch leftToken.Kind {
 	case TokenLParen:
-		expression := p.scalarExpr()
+		expression := p.nestedScalarExpr()
 		end := p.expect(TokenRParen, "syntax.expected_rparen")
 		expression.Span = diagnostic.Span{Start: leftToken.Span.Start, End: end.Span.End}
 		return expression
@@ -962,7 +1018,7 @@ func (p *parser) scalarExprAtom() *ast.Expr {
 					p.byteReadArity("syntax.byte_at_arity", message)
 					return &ast.Expr{Kind: "byte_at", Name: view.Text, Span: diagnostic.Span{Start: leftToken.Span.Start, End: view.Span.End}}
 				}
-				index := p.scalarExpr()
+				index := p.nestedScalarExpr()
 				if p.peek().Kind != TokenRParen {
 					p.byteReadArity("syntax.byte_at_arity", message)
 					return &ast.Expr{Kind: "byte_at", Name: view.Text, Right: index, Span: diagnostic.Span{Start: leftToken.Span.Start, End: index.Span.End}}
@@ -973,6 +1029,22 @@ func (p *parser) scalarExprAtom() *ast.Expr {
 		}
 		return &ast.Expr{Kind: "name", Name: leftToken.Text, Span: leftToken.Span}
 	}
+}
+
+// nestedScalarExpr records one recursive source-level expression entry. The
+// top-level scalarExpr starts at depth zero; groups and byte_at indices each
+// enter once. On overflow, delimiter-aware recovery leaves the caller's
+// closer and any following declaration sibling available.
+func (p *parser) nestedScalarExpr() *ast.Expr {
+	start := p.peek()
+	if p.expressionDepth >= MaxExpressionDepth {
+		p.reportSurfaceRefusal("surface.unsupported_expression_depth", start)
+		p.recoverDelimited(TokenRParen, TokenRBrace, TokenData, TokenFn, TokenForeign, TokenImport, TokenEOF)
+		return &ast.Expr{Kind: "name", Span: start.Span}
+	}
+	p.expressionDepth++
+	defer func() { p.expressionDepth-- }()
+	return p.scalarExpr()
 }
 
 // byteReadArity reports a named byte-read arity refusal at the current token,

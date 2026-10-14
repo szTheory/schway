@@ -426,6 +426,25 @@ type phase34CompatDraftAfter struct {
 	Diagnostics     []phase34CompatDiagnostic `json:"diagnostics"`
 }
 
+type phase35RecoveryCompatAfter struct {
+	Schema     string                           `json:"schema"`
+	Date       string                           `json:"date"`
+	Amendments []phase35RecoveryCompatAmendment `json:"amendments"`
+}
+
+type phase35RecoveryCompatAmendment struct {
+	Fixture           string                          `json:"fixture"`
+	Reason            string                          `json:"reason"`
+	Phase34Projection phase35RecoveryCompatProjection `json:"phase34_projection"`
+	Phase35Projection phase35RecoveryCompatProjection `json:"phase35_projection"`
+}
+
+type phase35RecoveryCompatProjection struct {
+	DiagnosticCount       int                       `json:"diagnostic_count"`
+	RecoveredSiblingNames []string                  `json:"recovered_sibling_names"`
+	Diagnostics           []phase34CompatDiagnostic `json:"diagnostics"`
+}
+
 const phase34DraftBaselineSHA256ForCompatibility = "6607c9b5e3657c0e65ba6e46d16a1dc281153994f27ca1ab8c645f9e935b8fae"
 
 func TestPhase34CompatibilityDeltaLedger(t *testing.T) {
@@ -452,15 +471,33 @@ func TestPhase34CompatibilityDeltaLedger(t *testing.T) {
 	if err := json.Unmarshal(afterBytes, &after); err != nil {
 		t.Fatal(err)
 	}
+	phase35AfterBytes, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase35", "recovery-after.json"))
+	if err != nil {
+		t.Fatalf("read Phase 35 recovery amendment: %v", err)
+	}
+	var phase35After phase35RecoveryCompatAfter
+	if err := json.Unmarshal(phase35AfterBytes, &phase35After); err != nil {
+		t.Fatalf("decode Phase 35 recovery amendment: %v", err)
+	}
+	phase34AssertCRC32HistoricalDeltaFiles(t)
 	if baseline.Schema != "phase34.draft-baseline/1" || after.Schema != "phase34.draft-after/1" || len(baseline.Drafts) != 20 || len(after.Drafts) != 20 {
 		t.Fatalf("draft corpus headers/counts changed: before=%q/%d after=%q/%d", baseline.Schema, len(baseline.Drafts), after.Schema, len(after.Drafts))
 	}
+	if phase35After.Schema != "phase35.recovery-after/1" || phase35After.Date != "2026-10-14" || len(phase35After.Amendments) != 1 || phase35After.Amendments[0].Fixture != "crc32-reconstructed" || strings.TrimSpace(phase35After.Amendments[0].Reason) == "" {
+		t.Fatalf("Phase 35 recovery amendment header/rows changed: %+v", phase35After)
+	}
 
 	current := make(map[string][]phase34CompatDiagnostic, len(baseline.Drafts))
+	currentSiblings := make(map[string][]string, len(baseline.Drafts))
 	for _, draft := range baseline.Drafts {
 		parsed := syntax.Parse([]byte(draft.Source))
 		problems := phase34CompatProblems(parsed.Diagnostics)
 		current[draft.ID] = problems
+		siblings := make([]string, 0, len(parsed.Program.Funcs))
+		for _, function := range parsed.Program.Funcs {
+			siblings = append(siblings, function.Name)
+		}
+		currentSiblings[draft.ID] = siblings
 	}
 	unboundBefore := phase34FindBoolObservation(t, phase34LoadCompatibilityBaseline(t).BoolCases, "unbound-true-tail")
 	unboundAfter := phase34FindBoolObservation(t, phase34ObserveBoolCases(t, true), "unbound-true-tail")
@@ -484,8 +521,19 @@ func TestPhase34CompatibilityDeltaLedger(t *testing.T) {
 		baseByID[item.ID] = item
 	}
 	for _, item := range after.Drafts {
+		if _, duplicate := afterByID[item.ID]; duplicate {
+			t.Errorf("draft-after repeats %q", item.ID)
+		}
 		afterByID[item.ID] = item
-		if len(current[item.ID]) != item.DiagnosticCount || !phase34EqualCompatProjection(current[item.ID], item.Diagnostics) {
+		if item.ID == phase35After.Amendments[0].Fixture {
+			amendment := phase35After.Amendments[0]
+			if amendment.Phase34Projection.DiagnosticCount != item.DiagnosticCount || len(item.Diagnostics) != item.DiagnosticCount || !phase34EqualCompatProjection(amendment.Phase34Projection.Diagnostics, item.Diagnostics) {
+				t.Errorf("%s Phase 35 amendment does not retain the exact historical Phase 34 code/span/cause projection", item.ID)
+			}
+			if amendment.Phase35Projection.DiagnosticCount != len(current[item.ID]) || amendment.Phase35Projection.DiagnosticCount != len(amendment.Phase35Projection.Diagnostics) || !phase34EqualCompatProjection(current[item.ID], amendment.Phase35Projection.Diagnostics) || !reflect.DeepEqual(currentSiblings[item.ID], amendment.Phase35Projection.RecoveredSiblingNames) {
+				t.Errorf("%s current parser projection differs from the literal Phase 35 diagnostic/sibling row: diagnostics=%+v siblings=%v", item.ID, current[item.ID], currentSiblings[item.ID])
+			}
+		} else if len(current[item.ID]) != item.DiagnosticCount || !phase34EqualCompatProjection(current[item.ID], item.Diagnostics) {
 			t.Errorf("%s current diagnostics differ from frozen draft-after code/span/cause values", item.ID)
 		}
 	}
@@ -517,6 +565,22 @@ func TestPhase34CompatibilityDeltaLedger(t *testing.T) {
 			t.Errorf("%s is absent from immutable draft baseline", delta.Fixture)
 			continue
 		}
+		if delta.Fixture == "crc32-reconstructed" {
+			wantHistorical := phase34ExpectedCRC32HistoricalDelta()
+			if !reflect.DeepEqual(delta, wantHistorical) {
+				t.Errorf("crc32-reconstructed historical Phase 34 delta changed: got=%+v want=%+v", delta, wantHistorical)
+			}
+			if got := allowedAuthority[delta.Fixture]; !reflect.DeepEqual(got, delta.Authority) {
+				t.Errorf("%s authority %v is not its exact authorized cause %v", delta.Fixture, delta.Authority, got)
+			}
+			if historical, ok := afterByID[delta.Fixture]; !ok || historical.DiagnosticCount != 2 || len(historical.Diagnostics) != 2 || !phase34EqualCompatProjection(phase35After.Amendments[0].Phase34Projection.Diagnostics, historical.Diagnostics) {
+				t.Errorf("crc32-reconstructed historical Phase 34 after projection changed: %+v", historical)
+			}
+			if delta.BeforeCount != len(before.Diagnostics) || delta.AfterCount != afterByID[delta.Fixture].DiagnosticCount {
+				t.Errorf("crc32-reconstructed historical counts changed: baseline=%d ledger=%d/%d after=%d", len(before.Diagnostics), delta.BeforeCount, delta.AfterCount, afterByID[delta.Fixture].DiagnosticCount)
+			}
+			continue
+		}
 		removed, added := phase34CompatDifference(before.Diagnostics, current[delta.Fixture])
 		expectedRemoved := append([]string{}, delta.Removed...)
 		expectedAdded := append([]string{}, delta.Added...)
@@ -534,6 +598,12 @@ func TestPhase34CompatibilityDeltaLedger(t *testing.T) {
 		}
 	}
 	for _, before := range baseline.Drafts {
+		if before.ID == phase35After.Amendments[0].Fixture {
+			if _, listed := deltaByID[before.ID]; !listed {
+				t.Errorf("%s has no frozen historical Phase 34 delta row", before.ID)
+			}
+			continue
+		}
 		if reflect.DeepEqual(before.Diagnostics, current[before.ID]) {
 			if _, listed := deltaByID[before.ID]; listed {
 				t.Errorf("%s has no observed change but is listed as an authorized delta", before.ID)
@@ -554,6 +624,41 @@ func TestPhase34CompatibilityDeltaLedger(t *testing.T) {
 		!phase34BoolRouteEqual(unboundBefore.Check, ledger.Bool.BeforeCheck) || !phase34BoolRouteEqual(unboundBefore.Command, ledger.Bool.BeforeCommand) ||
 		!phase34BoolRouteEqual(unboundAfter.Check, ledger.Bool.AfterCheck) || !phase34BoolRouteEqual(unboundAfter.Command, ledger.Bool.AfterCommand) {
 		t.Fatal("unbound Bool-tail literal before/after delta differs from the frozen name baseline or live check")
+	}
+}
+
+func phase34ExpectedCRC32HistoricalDelta() phase34CompatDelta {
+	return phase34CompatDelta{
+		Fixture:     "crc32-reconstructed",
+		Authority:   []string{"recovery.delimiter_local"},
+		BeforeCount: 5,
+		AfterCount:  2,
+		Removed: []string{
+			"diagnostic:e3ac47f79962d16770d1e475|syntax.unexpected_byte|184:185",
+			"diagnostic:c9914990956616f1356ba6e9|syntax.expected_rbrace|194:197",
+			"diagnostic:72a06b90ea232dc76b9b7aca|syntax.expected_declaration|198:199",
+		},
+		Added: []string{},
+	}
+}
+
+func phase34AssertCRC32HistoricalDeltaFiles(t *testing.T) {
+	t.Helper()
+	want := map[string]string{
+		"testdata/phase34/drafts.json":         "8774033822c9f47db8236d00a347e7e176a9524437314c182be8555f16a1b9df",
+		"testdata/phase34/draft-baseline.json": "6607c9b5e3657c0e65ba6e46d16a1dc281153994f27ca1ab8c645f9e935b8fae",
+		"testdata/phase34/draft-after.json":    "1e11ff4a8af6cc03c5d6e3200d0cdf9ef7dad41ee28e6a6fcd3aa2362b272bf3",
+		"testdata/phase34/compat-deltas.json":  "356d6f087023b46542636bfa244266afe1fbcd73cdb89120cc3d33802f558011",
+	}
+	for path, digestWant := range want {
+		contents, err := os.ReadFile(testsupport.ProjectPath(path))
+		if err != nil {
+			t.Fatalf("read frozen Phase 34 compatibility input %s: %v", path, err)
+		}
+		digest := sha256.Sum256(contents)
+		if got := hex.EncodeToString(digest[:]); got != digestWant {
+			t.Errorf("frozen Phase 34 compatibility input %s changed: sha256 %s, want %s", path, got, digestWant)
+		}
 	}
 }
 
