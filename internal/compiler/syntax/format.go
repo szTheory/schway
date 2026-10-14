@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"sort"
 	"strings"
+
+	"github.com/szTheory/schway/internal/compiler/diagnostic"
 )
 
 // sortImportsForTest is a test-only control (D-03): when set, the formatter
@@ -26,12 +28,31 @@ func Format(tree Tree) []byte {
 	if sortImportsForTest {
 		tokens = sortImportDeclarations(tokens)
 	}
-	for index, token := range tokens {
-		next := TokenEOF
+	for index := 0; index < len(tokens); index++ {
+		token := tokens[index]
+		next := Token{Kind: TokenEOF}
 		if index+1 < len(tokens) {
-			next = tokens[index+1].Kind
+			next = tokens[index+1]
 		}
-		if token.Kind == TokenIdentifier && next == TokenEqual && index > 0 && f.lineOpen && f.insideFunctionBody() {
+		if f.insideFunctionBody() && (token.Kind == TokenLAngle || token.Kind == TokenRAngle) && next.Kind == token.Kind && token.Span.End == next.Span.Start {
+			after := Token{Kind: TokenEOF}
+			if index+2 < len(tokens) {
+				after = tokens[index+2]
+			}
+			token = Token{Kind: TokenUnknown, Text: token.Text + next.Text, Span: diagnostic.Span{Start: token.Span.Start, End: next.Span.End}}
+			next = after
+			index++
+		}
+		if f.scalarExpressionContext() && token.Kind == TokenPipe && next.Kind == TokenPipe && token.Span.End == next.Span.Start {
+			after := Token{Kind: TokenEOF}
+			if index+2 < len(tokens) {
+				after = tokens[index+2]
+			}
+			token = Token{Kind: TokenUnknown, Text: "||", Span: diagnostic.Span{Start: token.Span.Start, End: next.Span.End}}
+			next = after
+			index++
+		}
+		if token.Kind == TokenIdentifier && next.Kind == TokenEqual && index > 0 && f.lineOpen && f.insideFunctionBody() {
 			previous := tokens[index-1]
 			if previous.Span.End <= token.Span.Start && bytes.Contains(tree.Source[previous.Span.End:token.Span.Start], []byte("\n")) {
 				f.newline()
@@ -53,8 +74,15 @@ func Format(tree Tree) []byte {
 }
 
 // isBinaryOperatorToken reports the infix operators a `let` value may chain.
-func isBinaryOperatorToken(kind Kind) bool {
-	return kind == TokenPlus || kind == TokenLAngle || kind == TokenEqualEqual || kind == TokenPercent
+func isBinaryOperatorToken(token Token) bool {
+	switch token.Kind {
+	case TokenPlus, TokenLAngle, TokenEqualEqual, TokenPercent, TokenPipe:
+		return true
+	case TokenUnknown:
+		return token.Text == "^" || token.Text == "&" || token.Text == "<<" || token.Text == ">>"
+	default:
+		return false
+	}
 }
 
 func (f *formatter) insideFunctionBody() bool {
@@ -67,12 +95,13 @@ func (f *formatter) insideFunctionBody() bool {
 }
 
 type formatter struct {
-	out           strings.Builder
-	indent        int
-	lineOpen      bool
-	previous      Kind
-	contexts      []string
-	linearBinding bool
+	out                    strings.Builder
+	indent                 int
+	lineOpen               bool
+	previous               Kind
+	previousBinaryOperator bool
+	contexts               []string
+	linearBinding          bool
 	// tryCall is true between a `try` keyword and its call's closing paren,
 	// so that closing paren (and only that one -- never a function's own
 	// parameter-list paren) breaks the line the same way a plain binding's
@@ -106,7 +135,8 @@ type formatter struct {
 	pendingDefectReason bool
 }
 
-func (f *formatter) token(token Token, next Kind) {
+func (f *formatter) token(token Token, next Token) {
+	nextKind := next.Kind
 	switch token.Kind {
 	case TokenComment:
 		if f.lineOpen {
@@ -225,18 +255,18 @@ func (f *formatter) token(token Token, next Kind) {
 			f.newline()
 		} else if f.previous == TokenPipe || f.previous == TokenFatArrow {
 			f.newline()
-		} else if f.insideFunctionBody() && next == TokenLParen && (token.Text == "write_text" || token.Text == "write_u64" || token.Text == "write_newline") {
+		} else if f.insideFunctionBody() && nextKind == TokenLParen && (token.Text == "write_text" || token.Text == "write_u64" || token.Text == "write_newline") {
 			f.statementWriteCall = true
-		} else if f.insideFunctionBody() && f.linearBinding && f.previous == TokenEqual && next == TokenLParen {
+		} else if f.insideFunctionBody() && f.linearBinding && f.previous == TokenEqual && nextKind == TokenLParen {
 			// D-07-01/D-07-40: this identifier is a bare call's callee, not
 			// a plain binding source -- its own argument list still follows
 			// on this line, so (unlike the branch below) this must NOT end
 			// the line here. See callBinding's doc comment.
 			f.callBinding = true
-		} else if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || isBinaryOperatorToken(f.previous)) && isBinaryOperatorToken(next) {
+		} else if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || f.previousBinaryOperator) && isBinaryOperatorToken(next) {
 			// A binary expression continues on this line; its final operand
 			// ends the binding instead.
-		} else if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || isBinaryOperatorToken(f.previous) || f.previous == TokenTake || f.previous == TokenBorrow || f.previous == TokenMut) {
+		} else if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || f.previousBinaryOperator || f.previous == TokenTake || f.previous == TokenBorrow || f.previous == TokenMut) && nextKind != TokenRParen {
 			f.newline()
 			f.linearBinding = false
 		} else if f.context() == "foreign_fn" && f.previous == TokenColon {
@@ -262,7 +292,7 @@ func (f *formatter) token(token Token, next Kind) {
 		f.ensureLine()
 		f.out.WriteString(token.Text)
 		f.lineOpen = true
-		if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || isBinaryOperatorToken(f.previous)) && !isBinaryOperatorToken(next) {
+		if f.insideFunctionBody() && f.linearBinding && (f.previous == TokenEqual || f.previousBinaryOperator) && !isBinaryOperatorToken(next) && next.Kind != TokenRParen {
 			f.newline()
 			f.linearBinding = false
 		}
@@ -336,6 +366,9 @@ func (f *formatter) token(token Token, next Kind) {
 			if f.insideFunctionBody() {
 				f.newline()
 			}
+		} else if f.insideFunctionBody() && f.linearBinding && !isBinaryOperatorToken(next) && next.Kind != TokenRParen {
+			f.newline()
+			f.linearBinding = false
 		}
 	case TokenColon:
 		f.trimSpace()
@@ -365,8 +398,14 @@ func (f *formatter) token(token Token, next Kind) {
 		f.out.WriteString(" % ")
 		f.lineOpen = true
 	case TokenPipe:
-		f.ensureLine()
-		f.write("| ")
+		if f.scalarExpressionContext() {
+			f.trimSpace()
+			f.out.WriteString(" | ")
+			f.lineOpen = true
+		} else {
+			f.ensureLine()
+			f.write("| ")
+		}
 	case TokenArrow:
 		f.trimSpace()
 		f.out.WriteString(" -> ")
@@ -398,13 +437,24 @@ func (f *formatter) token(token Token, next Kind) {
 		f.out.WriteString(", ")
 		f.lineOpen = true
 	default:
-		f.ensureLine()
-		f.out.WriteString(token.Text)
-		f.lineOpen = true
+		if token.Kind == TokenUnknown && (token.Text == "^" || token.Text == "&" || token.Text == "<<" || token.Text == ">>" || token.Text == "||") {
+			f.trimSpace()
+			f.out.WriteString(" " + token.Text + " ")
+			f.lineOpen = true
+		} else {
+			f.ensureLine()
+			f.out.WriteString(token.Text)
+			f.lineOpen = true
+		}
 	}
 	if token.Kind != TokenWhitespace && token.Kind != TokenComment {
 		f.previous = token.Kind
+		f.previousBinaryOperator = isBinaryOperatorToken(token)
 	}
+}
+
+func (f *formatter) scalarExpressionContext() bool {
+	return f.linearBinding || f.header == "if" || f.header == "while"
 }
 
 func (f *formatter) context() string {

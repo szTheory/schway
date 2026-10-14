@@ -182,7 +182,7 @@ func filterNormalizedTokenDiagnostics(diagnostics []diagnostic.Diagnostic, token
 		if problem.Code == "syntax.unexpected_byte" {
 			normalized := false
 			for _, token := range tokens {
-				if token.Span == problem.Primary && (token.Kind == TokenLAngle || token.Kind == TokenRAngle || token.Kind == TokenComma) {
+				if token.Span == problem.Primary && (token.Kind == TokenLAngle || token.Kind == TokenRAngle || token.Kind == TokenComma || (token.Kind == TokenUnknown && (token.Text == "^" || token.Text == "&"))) {
 					normalized = true
 					break
 				}
@@ -583,18 +583,21 @@ func (p *parser) scalarLetStart() bool {
 		return false
 	}
 	value := p.peekNonTrivia(3)
-	if value.Kind != TokenNumber && value.Kind != TokenIdentifier {
+	if value.Kind == TokenUnknown && value.Text == "!" {
+		return p.peekNonTrivia(4).Kind == TokenIdentifier
+	}
+	if value.Kind != TokenNumber && value.Kind != TokenIdentifier && value.Kind != TokenLParen {
 		return false
 	}
-	next := p.peekNonTrivia(4).Kind
-	if value.Kind == TokenIdentifier && (value.Text == "byte_len" || value.Text == "byte_at") && next == TokenLParen {
+	next := p.peekNonTrivia(4)
+	if value.Kind == TokenIdentifier && (value.Text == "byte_len" || value.Text == "byte_at") && next.Kind == TokenLParen {
 		return true
 	}
-	if scalarBinaryOperator(next) != 0 {
-		operand := p.peekNonTrivia(5).Kind
-		return operand == TokenNumber || operand == TokenIdentifier
+	_, precedence, _ := p.scalarOperatorAt(4)
+	if precedence != 0 {
+		return true
 	}
-	return next != TokenLParen && next != TokenDot
+	return value.Kind == TokenLParen || (next.Kind != TokenLParen && next.Kind != TokenDot)
 }
 
 func (p *parser) scalarBodyStart(parameterType, returnType ast.TypeRef) bool {
@@ -750,17 +753,51 @@ func (p *parser) scalarExpr() *ast.Expr {
 	return p.scalarBinaryExpr(1)
 }
 
-func scalarBinaryOperator(kind Kind) int {
-	switch kind {
+func scalarBinaryOperator(operator Token) int {
+	switch operator.Kind {
 	case TokenLAngle, TokenEqualEqual:
 		return 1
-	case TokenPlus:
+	case TokenPipe:
 		return 2
+	case TokenUnknown:
+		switch operator.Text {
+		case "^":
+			return 3
+		case "&":
+			return 4
+		case "<<", ">>":
+			return 5
+		}
+	case TokenPlus:
+		return 6
 	case TokenPercent:
-		return 3
-	default:
-		return 0
+		return 7
 	}
+	return 0
+}
+
+func (p *parser) scalarOperatorAt(offset int) (Token, int, int) {
+	operator := p.peekNonTrivia(offset)
+	if operator.Kind == TokenPipe {
+		second := p.peekNonTrivia(offset + 1)
+		if second.Kind == TokenPipe && operator.Span.End == second.Span.Start {
+			return operator, 0, 1
+		}
+	}
+	if operator.Kind == TokenLAngle || operator.Kind == TokenRAngle {
+		second := p.peekNonTrivia(offset + 1)
+		if second.Kind == operator.Kind && operator.Span.End == second.Span.Start {
+			combined := Token{
+				Kind: TokenUnknown,
+				Text: operator.Text + second.Text,
+				Span: diagnostic.Span{Start: operator.Span.Start, End: second.Span.End},
+			}
+			if combined.Text == "<<" || combined.Text == ">>" {
+				return combined, scalarBinaryOperator(combined), 2
+			}
+		}
+	}
+	return operator, scalarBinaryOperator(operator), 1
 }
 
 func (p *parser) scalarBinaryExpr(minPrecedence int) *ast.Expr {
@@ -773,23 +810,52 @@ func (p *parser) scalarBinaryExpr(minPrecedence int) *ast.Expr {
 			}
 			return left
 		}
-		operator := p.peek()
-		precedence := scalarBinaryOperator(operator.Kind)
+		operator, precedence, width := p.scalarOperatorAt(0)
 		if precedence < minPrecedence || precedence == 0 {
 			return left
 		}
-		p.advance()
-		right := p.scalarBinaryExpr(precedence + 1)
+		for range width {
+			p.advance()
+		}
+		var right *ast.Expr
+		if (operator.Text == "<<" || operator.Text == ">>") && p.peek().Kind == TokenUnknown && p.peek().Text == "-" {
+			minus := p.advance()
+			amount := p.peek()
+			end := minus.Span.End
+			value := "-"
+			if amount.Kind == TokenNumber {
+				amount = p.advance()
+				value += amount.Text
+				end = amount.Span.End
+			}
+			p.reportSurfaceRefusal("surface.unsupported_shift_amount", minus)
+			right = &ast.Expr{Kind: "number", Value: value, Span: diagnostic.Span{Start: minus.Span.Start, End: end}}
+		} else {
+			right = p.scalarBinaryExpr(precedence + 1)
+		}
 		kind := ""
-		switch operator.Kind {
-		case TokenPlus:
-			kind = "add"
-		case TokenLAngle:
-			kind = "less"
-		case TokenEqualEqual:
-			kind = "equal"
-		case TokenPercent:
-			kind = "remainder"
+		switch {
+		case operator.Kind == TokenUnknown && operator.Text == "^":
+			kind = "bit_xor"
+		case operator.Kind == TokenUnknown && operator.Text == "&":
+			kind = "bit_and"
+		case operator.Kind == TokenUnknown && operator.Text == "<<":
+			kind = "shift_left"
+		case operator.Kind == TokenUnknown && operator.Text == ">>":
+			kind = "shift_right"
+		case operator.Kind == TokenPipe:
+			kind = "bit_or"
+		default:
+			switch operator.Kind {
+			case TokenPlus:
+				kind = "add"
+			case TokenLAngle:
+				kind = "less"
+			case TokenEqualEqual:
+				kind = "equal"
+			case TokenPercent:
+				kind = "remainder"
+			}
 		}
 		left = &ast.Expr{Kind: kind, Left: left, Right: right, Span: diagnostic.Span{Start: left.Span.Start, End: right.Span.End}}
 	}
@@ -851,6 +917,11 @@ func (p *parser) scalarExprAtom() *ast.Expr {
 	}
 	leftToken = p.advance()
 	switch leftToken.Kind {
+	case TokenLParen:
+		expression := p.scalarExpr()
+		end := p.expect(TokenRParen, "syntax.expected_rparen")
+		expression.Span = diagnostic.Span{Start: leftToken.Span.Start, End: end.Span.End}
+		return expression
 	case TokenNumber:
 		return &ast.Expr{Kind: "number", Value: leftToken.Text, Span: leftToken.Span}
 	case TokenString:

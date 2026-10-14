@@ -28,6 +28,11 @@ var refusals = [...]Refusal{
 		Hint: "Logical ! is unsupported; use explicit if/else control flow.",
 	},
 	{
+		Code: "surface.unsupported_shift_amount",
+		Form: "non-literal, negative, or out-of-range shift amount",
+		Hint: "Shift amounts must be integer literals from 0 to 63; write a literal in that range.",
+	},
+	{
 		Code: "surface.unsupported_parameter_arity",
 		Form: "more than one declaration parameter",
 		Hint: "Declarations require exactly one parameter; pass one admitted value.",
