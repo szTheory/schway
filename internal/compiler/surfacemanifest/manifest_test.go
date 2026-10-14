@@ -18,7 +18,7 @@ func TestPhase34SurfaceDocument(t *testing.T) {
 	}) {
 		t.Fatalf("coordinates = %+v", manifest.Coordinates)
 	}
-	if len(manifest.Types) == 0 || len(manifest.Operators) == 0 || len(manifest.Statements) == 0 || len(manifest.Builtins) == 0 || len(manifest.Restrictions) == 0 || len(manifest.Limits) == 0 || len(manifest.Refusals) != 7 {
+	if len(manifest.Types) == 0 || len(manifest.Operators) == 0 || len(manifest.Statements) == 0 || len(manifest.Builtins) == 0 || len(manifest.Restrictions) == 0 || len(manifest.Limits) == 0 || len(manifest.Refusals) != 9 {
 		t.Fatalf("manifest has empty or incomplete required arrays: types=%d operators=%d statements=%d builtins=%d restrictions=%d limits=%d refusals=%d", len(manifest.Types), len(manifest.Operators), len(manifest.Statements), len(manifest.Builtins), len(manifest.Restrictions), len(manifest.Limits), len(manifest.Refusals))
 	}
 
@@ -83,7 +83,17 @@ func TestPhase34SurfaceDocument(t *testing.T) {
 		t.Fatal("byte_at bounds or write_text literal context is not described")
 	}
 
-	wantOperators := map[string]string{"u64.add": "+", "u64.equal": "==", "u64.less_than": "<", "u64.remainder": "%"}
+	wantOperators := map[string]string{
+		"u64.add":         "+",
+		"u64.bit_and":     "&",
+		"u64.bit_or":      "|",
+		"u64.bit_xor":     "^",
+		"u64.equal":       "==",
+		"u64.less_than":   "<",
+		"u64.remainder":   "%",
+		"u64.shift_left":  "<<",
+		"u64.shift_right": ">>",
+	}
 	for _, item := range manifest.Operators {
 		if want, ok := wantOperators[item.ID]; !ok || item.Syntax != want {
 			t.Errorf("unexpected operator %s = %q", item.ID, item.Syntax)
@@ -135,11 +145,13 @@ func TestPhase34SurfaceDocument(t *testing.T) {
 
 	wantRefusals := []Refusal{
 		{"surface.unsupported_bool_literal_tail", "unbound true or false in a result tail", "Bool literals are unsupported in result tails; return an initialized value allowed by the declared result type."},
+		{"surface.unsupported_expression_depth", "scalar expression nesting beyond the parser limit", "Expression nesting exceeds the parser limit of 64; reduce nested groups or byte_at indices."},
 		{"surface.unsupported_if_without_else", "if statement without else block", "An if statement requires an else block."},
 		{"surface.unsupported_logical_and", "&&", "Logical && is unsupported; use explicit if/else control flow."},
 		{"surface.unsupported_logical_not", "!", "Logical ! is unsupported; use explicit if/else control flow."},
 		{"surface.unsupported_logical_or", "||", "Logical || is unsupported; use explicit if/else control flow."},
 		{"surface.unsupported_parameter_arity", "more than one declaration parameter", "Declarations require exactly one parameter; pass one admitted value."},
+		{"surface.unsupported_shift_amount", "non-literal, negative, or out-of-range shift amount", "Shift amounts must be integer literals from 0 to 63; write a literal in that range."},
 		{"surface.unsupported_subtraction", "-", "Subtraction is unsupported; no unchecked emulation is recommended."},
 	}
 	if !reflect.DeepEqual(manifest.Refusals, wantRefusals) {
@@ -152,7 +164,7 @@ func TestPhase34SurfaceDocument(t *testing.T) {
 	}
 	for _, entry := range append(append([]Entry{}, manifest.Operators...), manifest.Statements...) {
 		lower := strings.ToLower(entry.ID + " " + entry.Syntax)
-		if strings.Contains(lower, "bitwise") || strings.Contains(lower, "hex") || strings.Contains(lower, "shift") {
+		if strings.Contains(lower, "complement") || strings.Contains(lower, "rotate") || strings.Contains(lower, "dynamic shift") || strings.Contains(lower, "hex output") {
 			t.Errorf("future-owned operator/statement leaked into current surface: %+v", entry)
 		}
 	}
@@ -184,6 +196,86 @@ func TestPhase34SurfaceDocument(t *testing.T) {
 	assertCanonicalCopies(t)
 }
 
+func TestPhase35SurfaceDocument(t *testing.T) {
+	manifest := Current()
+	wantOperators := map[string]struct {
+		syntax, constraint string
+	}{
+		"u64.bit_and":     {"&", "Bool operands are refused"},
+		"u64.bit_or":      {"|", "logical || remains refused"},
+		"u64.bit_xor":     {"^", "Both operands and the result are U64"},
+		"u64.shift_left":  {"<<", "result keeps the low 64 bits"},
+		"u64.shift_right": {">>", "right shift is logical"},
+	}
+	for _, item := range manifest.Operators {
+		want, ok := wantOperators[item.ID]
+		if !ok {
+			continue
+		}
+		if item.Syntax != want.syntax || !strings.Contains(strings.Join(item.Constraints, " "), want.constraint) {
+			t.Errorf("Phase 35 operator %s = %+v, want syntax %q and constraint %q", item.ID, item, want.syntax, want.constraint)
+		}
+		delete(wantOperators, item.ID)
+	}
+	if len(wantOperators) != 0 {
+		t.Fatalf("manifest omitted Phase 35 operators: %v", wantOperators)
+	}
+
+	precedence := entryByID(t, manifest.Restrictions, "scalar_operator_precedence")
+	if precedence.Syntax != "% > + > << >> > & > ^ > | > (<, ==)" || !strings.Contains(strings.Join(precedence.Constraints, " "), "associate left within each tier") {
+		t.Fatalf("scalar precedence/association facts = %+v", precedence)
+	}
+	grouping := entryByID(t, manifest.Restrictions, "scalar_expression_grouping")
+	groupingFacts := strings.Join(grouping.Constraints, " ")
+	if grouping.Syntax != "( expression )" || !strings.Contains(groupingFacts, "literal provenance") || !strings.Contains(groupingFacts, "does not admit calls or tuples") {
+		t.Fatalf("transparent grouping facts = %+v", grouping)
+	}
+	hex := entryByID(t, manifest.Restrictions, "u64_hex_spelling")
+	hexFacts := strings.Join(hex.Constraints, " ")
+	if hex.Syntax != "0x... | 0X..." || !strings.Contains(hexFacts, "source case") || !strings.Contains(hexFacts, "range is checked by value") {
+		t.Fatalf("hex spelling facts = %+v", hex)
+	}
+	byteEntry := entryByID(t, manifest.Restrictions, "unused_byte_scalar_entry")
+	byteFacts := strings.Join(byteEntry.Constraints, " ")
+	if byteEntry.Syntax != "fn main(unused: Byte) -> U64" || !strings.Contains(byteFacts, "must remain unused") || !strings.Contains(byteFacts, "never read, copied, or converted") {
+		t.Fatalf("unused-Byte boundary facts = %+v", byteEntry)
+	}
+	depthFound := false
+	for _, item := range manifest.Limits {
+		if item.ID != "parser.expression_depth" {
+			continue
+		}
+		depthFound = true
+		if item.Value != 64 || item.Unit != "levels" || !strings.Contains(item.Meaning, "surface.unsupported_expression_depth") || len(item.Routes) == 0 {
+			t.Errorf("expression depth limit = %+v", item)
+		}
+	}
+	if !depthFound {
+		t.Fatal("manifest omitted parser.expression_depth")
+	}
+	refusals := map[string]Refusal{}
+	for _, refusal := range manifest.Refusals {
+		refusals[refusal.Code] = refusal
+	}
+	if refusal := refusals["surface.unsupported_shift_amount"]; refusal.Hint != "Shift amounts must be integer literals from 0 to 63; write a literal in that range." {
+		t.Fatalf("shift refusal = %+v", refusal)
+	}
+	if refusal := refusals["surface.unsupported_expression_depth"]; refusal.Hint != "Expression nesting exceeds the parser limit of 64; reduce nested groups or byte_at indices." {
+		t.Fatalf("expression-depth refusal = %+v", refusal)
+	}
+	if manifest.Schema != "schway.surface/1" || manifest.Calls.DeclarationArity != 1 || manifest.Calls.ScalarExpressionCalls {
+		t.Fatalf("Phase 35 changed schema or call authority: schema=%q calls=%+v", manifest.Schema, manifest.Calls)
+	}
+	data, err := JSON(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wire map[string]json.RawMessage
+	if err := json.Unmarshal(data, &wire); err != nil || len(wire) != 10 {
+		t.Fatalf("Phase 35 manifest wire fields=%d error=%v, want the existing ten fields", len(wire), err)
+	}
+}
+
 func TestPhase34SurfaceLimits(t *testing.T) {
 	manifest := Current()
 	want := map[string]struct {
@@ -207,6 +299,7 @@ func TestPhase34SurfaceLimits(t *testing.T) {
 		"module.total_source_bytes":  {"module loading", "all source files in one loaded module program", "bytes", 4194304, []string{"app verify", "build", "check", "debug-map", "run"}},
 		"parser.alternatives":        {"authoring parse bound", "one parsed source program", "alternatives", 4096, nil},
 		"parser.declarations":        {"authoring parse bound", "one source file", "declarations", 4096, nil},
+		"parser.expression_depth":    {"authoring parse bound", "one nested scalar expression including groups and byte_at indices", "levels", 64, nil},
 		"parser.functions":           {"authoring parse bound", "one source file", "functions", 1024, nil},
 		"parser.linear_bindings":     {"authoring parse bound", "outer linear bodies across one parsed source program", "bindings", 65536, nil},
 		"parser.primary_diagnostics": {"authoring diagnostic bound", "one parsed source", "diagnostics", 20, nil},
