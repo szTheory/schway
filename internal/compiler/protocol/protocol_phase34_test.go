@@ -308,10 +308,11 @@ func TestPhase34HumanSnippetRendering(t *testing.T) {
 		if len(lines) != 5 {
 			t.Fatalf("cropped details emitted unexpected lines: %q", output)
 		}
-		start := strings.Index(lines[1], " source.crop ") + len(" source.crop ")
-		delimiter := ":1:1 [0:1]: "
+		prefix := " source.crop [0:1] "
+		start := strings.Index(lines[1], prefix) + len(prefix)
+		delimiter := ":1:1: "
 		end := strings.Index(lines[1][start:], delimiter)
-		if start < len(" source.crop ") || end < 0 {
+		if start < len(prefix) || end < 0 {
 			t.Fatalf("could not isolate escaped filename/message fields: %q", lines[1])
 		}
 		filename := lines[1][start : start+end]
@@ -328,7 +329,7 @@ func TestPhase34HumanSnippetRendering(t *testing.T) {
 			t.Fatalf("cross-line marker did not stop on first line: %q", cross)
 		}
 		eof := phase34Human(t, "eof.swy", []byte("abc"), diagnostic.Error("source.insert", diagnostic.Span{Start: 3, End: 3}, "insert here").AtSource())
-		if !strings.Contains(eof, "eof.swy:1:4 [3:3]: insert here\nabc\n   ^\n") {
+		if !strings.Contains(eof, "[3:3] eof.swy:1:4: insert here\nabc\n   ^\n") {
 			t.Fatalf("EOF insertion lost its caret: %q", eof)
 		}
 		assertPrintableASCII(t, cross)
