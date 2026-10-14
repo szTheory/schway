@@ -81,3 +81,7 @@ Both gates anchor the repository root. Manifest labels appear as data arguments,
 ## Review Follow-Up — 2026-10-13
 
 CR-01 exposed a malformed-control-list acceptance gap within T-33-08. A delimiter-only or whitespace-only list accepted arbitrary control rows before the fix; an empty list was already refused downstream. The gate now refuses missing and empty entries before inspecting logs. `TestReceiptGateMalformedControls` preserves six regression cases; the broader focused compatibility run passed (28.712s). No open blocking threat remains.
+
+## Successor Refresh — 2026-10-13
+
+The L1 authored register was rechecked after the Phase 34 successor changes. The security implementation boundaries are byte-unchanged since the prior clean review, and current source inspection plus the fresh 47-name focused controls support all 17 existing closures. `threats_open: 0` remains; this uses the L1 short-circuit without a new threat-discovery pass. See `33-REFRESH-AUDIT.md` for scope and execution details.
