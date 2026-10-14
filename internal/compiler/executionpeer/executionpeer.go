@@ -65,6 +65,7 @@ type index struct {
 	occurrences      map[string]occurrence
 	loopOperations   map[string]bool
 	scalarLoopCopies map[string]bool
+	eventFreeKinds   map[core.OperationKind]bool
 }
 
 // Validate checks only observed causal structure. It intentionally does not
@@ -110,6 +111,7 @@ func buildIndex(program core.Program) (*index, error) {
 		functions: make(map[string]core.Function), operations: make(map[string]operation),
 		matchReturns: make(map[string]string), occurrences: make(map[string]occurrence),
 		loopOperations: make(map[string]bool), scalarLoopCopies: make(map[string]bool),
+		eventFreeKinds: eventFreeOperationKinds(),
 	}
 	for _, function := range program.Functions {
 		if function.ID == "" {
@@ -382,6 +384,9 @@ func (i *index) validate(document execution.Execution) error {
 		if err != nil {
 			return refusal("unknown_kind", n, event.Invocation, "", occ.functionID, err.Error())
 		}
+		if i.eventFreeKinds[op.value.Kind] {
+			return refusal("pure_operation_event", n, event.Invocation, "", occ.functionID, "pure value operation is event-free")
+		}
 		checkedOverflow := op.value.Kind == core.OpAddChecked && event.Kind == "function.defected"
 		checkedRemainderZero := op.value.Kind == core.OpRemainderU64 && event.Kind == "function.defected"
 		checkedBytesAt := op.value.Kind == core.OpBytesAt && event.Kind == "function.defected"
@@ -517,6 +522,9 @@ func (i *index) classify(event execution.Event) (operation, error) {
 	}
 	for _, op := range i.operations {
 		id := op.value.ID
+		if i.eventFreeKinds[op.value.Kind] && (event.ID == id+":event" || event.ID == id+":event:defected") {
+			return op, nil
+		}
 		if event.Kind == "function.called" && event.ID == id+":event:called" && op.value.Kind == core.OpCall {
 			return op, nil
 		}
@@ -534,6 +542,16 @@ func (i *index) classify(event execution.Event) (operation, error) {
 		}
 	}
 	return operation{}, fmt.Errorf("unclassified event kind or ID")
+}
+
+func eventFreeOperationKinds() map[core.OperationKind]bool {
+	return map[core.OperationKind]bool{
+		core.OpBitXorU64:     true,
+		core.OpBitAndU64:     true,
+		core.OpBitOrU64:      true,
+		core.OpShiftLeftU64:  true,
+		core.OpShiftRightU64: true,
+	}
 }
 
 func normalKind(kind core.OperationKind) string {
