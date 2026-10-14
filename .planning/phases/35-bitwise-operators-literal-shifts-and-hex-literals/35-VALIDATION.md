@@ -437,3 +437,29 @@ None intended: the scoped contracts have deterministic proxies. Human readabilit
 | Gaps found | 1 |
 | Resolved | 1 |
 | Escalated | 0 |
+
+## Supplemental admission-refusal verification — 2026-10-14
+
+Owning verification: D-09/D-10/D-11, 35-04 tasks 2/3 and the source literal/range
+authority in `TestPhase35ShiftAdmission`.
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase35AdmissionRefusalMutationControls$' -count=1 -v -timeout=600s
+```
+
+Fresh local PASS (exit 0, 9.566s): exactly 26 actual-source refusal-removal
+controls (12 corevalidate, 12 originvalidate, 2 check), 55 cardinality-checked
+source replacement sites and 46 intended named child assertion failures.
+Three no-op and three restored-source controls passed, with 34 named raw rows
+per peer and nine source rows. All three production source hashes stayed
+identical. Compilation/vet/missing-selector/unrelated failures are not kills.
+The old source-marker parser defect was independently replayed through a
+test-file overlay and the current control passed after that failing replay.
+
+The complete inventory, production hashes, attribution rules, guard/fixture
+repairs and limits are in
+[35-ADMISSION-MUTATION-EVIDENCE.md](35-ADMISSION-MUTATION-EVIDENCE.md).
+This receipt supplements the separate 15 arithmetic transfer mutants; that
+harness was unaffected and was not rerun. No production change, broad/native/
+hosted run, phase completion, or review/verification ownership change is
+claimed.
