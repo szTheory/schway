@@ -20,6 +20,7 @@ import (
 	"github.com/szTheory/schway/internal/compiler/execution"
 	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/protocol"
 )
 
 const (
@@ -258,7 +259,8 @@ func removeStaleVerificationReport(reportPath, sourcePath, casesPath string) err
 // admission layer or entry resolution (Phase 28 D-21). The CLI maps it to
 // exit 2 (exitcode.Invalid); capacity and tool outcomes stay exit 3.
 type SourceRefusalError struct {
-	Diagnostics []diagnostic.Diagnostic
+	Diagnostics  []diagnostic.Diagnostic
+	Presentation *protocol.PresentationContext
 }
 
 // Code returns the first refusing diagnostic code.
@@ -311,17 +313,17 @@ func verifyApplicationCases(ctx context.Context, source []byte, precomputed *Che
 		checked = Check(source)
 	}
 	if len(checked.Diagnostics) > 0 {
-		return report, &SourceRefusalError{Diagnostics: checked.Diagnostics}
+		return report, &SourceRefusalError{Diagnostics: checked.Diagnostics, Presentation: checked.Presentation}
 	}
 	admitted, admissionDiagnostics := admitProgram(checked)
 	if len(admissionDiagnostics) > 0 {
-		return report, &SourceRefusalError{Diagnostics: admissionDiagnostics}
+		return report, &SourceRefusalError{Diagnostics: admissionDiagnostics, Presentation: checked.Presentation}
 	}
 	// D-04/D-18: one entry resolution after admission and before the per-case
 	// loop; every engine below sees the pruned program.
 	entry, prunedProgram, entryDiagnostics, entryErr := resolveEntry(admitted)
 	if len(entryDiagnostics) > 0 {
-		return report, &SourceRefusalError{Diagnostics: entryDiagnostics}
+		return report, &SourceRefusalError{Diagnostics: entryDiagnostics, Presentation: checked.Presentation}
 	}
 	// A non-diagnostic resolution failure is a tool error on every lane; it
 	// must never degrade to per-case "unsupported" results (which a

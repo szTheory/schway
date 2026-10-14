@@ -1,0 +1,15 @@
+<testsuites tests="5" failures="0"><testsuite name="github.com/szTheory/schway/cmd/schway" tests="4" failures="0" skipped="0"><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34SourceRoutePresentation" time="0.02"><system-out>=== RUN   TestPhase34SourceRoutePresentation
+--- PASS: TestPhase34SourceRoutePresentation (0.02s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34SourceRoutePresentation/interpreter" time="0"><system-out>=== RUN   TestPhase34SourceRoutePresentation/interpreter
+    --- PASS: TestPhase34SourceRoutePresentation/interpreter (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34SourceRoutePresentation/native" time="0"><system-out>=== RUN   TestPhase34SourceRoutePresentation/native
+    --- PASS: TestPhase34SourceRoutePresentation/native (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34SourceRoutePresentation/build" time="0"><system-out>=== RUN   TestPhase34SourceRoutePresentation/build
+    --- PASS: TestPhase34SourceRoutePresentation/build (0.00s)
+</system-out></testcase><system-out>PASS
+ok  	github.com/szTheory/schway/cmd/schway	0.023s
+</system-out></testsuite><testsuite name="github.com/szTheory/schway/internal/compiler/session" tests="1" failures="0" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase34SourceRoutePresentation" time="0"><system-out>=== RUN   TestPhase34SourceRoutePresentation
+--- PASS: TestPhase34SourceRoutePresentation (0.00s)
+</system-out></testcase><system-out>PASS
+ok  	github.com/szTheory/schway/internal/compiler/session	0.009s
+</system-out></testsuite></testsuites>

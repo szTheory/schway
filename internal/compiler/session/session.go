@@ -1265,23 +1265,29 @@ func RunInterpreterFile(path string) ([]interp.Execution, []diagnostic.Diagnosti
 // admitProgram on the full program (never run what will be refused, D-09/D-18),
 // then entry resolution and the interpreter run on the pruned program.
 func runInterpreterCommand(path string) ([]interp.Execution, []diagnostic.Diagnostic, error) {
+	executions, diagnostics, err, _ := runInterpreterCommandWithCheck(path)
+	return executions, diagnostics, err
+}
+
+func runInterpreterCommandWithCheck(path string) ([]interp.Execution, []diagnostic.Diagnostic, error, CheckResult) {
 	checked, _, err := checkSourcePath(path)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, err, CheckResult{}
 	}
 	if len(checked.Diagnostics) > 0 {
-		return nil, checked.Diagnostics, nil
+		return nil, checked.Diagnostics, nil, checked
 	}
 	admitted, admitDiagnostics := admitProgram(checked)
 	if len(admitDiagnostics) > 0 {
-		return nil, admitDiagnostics, nil
+		return nil, admitDiagnostics, nil, checked
 	}
-	return runInterpreterResolved(admitted)
+	executions, diagnostics, err := runInterpreterResolved(admitted)
+	return executions, diagnostics, err, checked
 }
 
 func RunInterpreterCommandFile(path string) (protocol.Result, error) {
 	started := time.Now()
-	executions, diagnostics, err := runInterpreterCommand(path)
+	executions, diagnostics, err, checked := runInterpreterCommandWithCheck(path)
 	if errors.Is(err, ErrRunInputRequired) {
 		return runInputRequiredResult(started), nil
 	}
@@ -1294,6 +1300,7 @@ func RunInterpreterCommandFile(path string) (protocol.Result, error) {
 	if len(diagnostics) > 0 {
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = diagnostics
+		result = commandWithCheckedPresentation(result, checked)
 	} else {
 		result.Executions = executions
 	}
@@ -1527,6 +1534,32 @@ func BuildApplicationFile(ctx context.Context, sourcePath, outputPath string, ru
 	return buildApplicationChecked(ctx, checked, entryBytes, modules, outputPath, runner, manifestPath...)
 }
 
+// BuildApplicationCommandFile preserves BuildApplicationFile's public
+// receipt/diagnostic/error contract while carrying the checked invocation's
+// source snapshot into the command result used by the CLI.
+func BuildApplicationCommandFile(ctx context.Context, sourcePath, outputPath string, runner native.Runner, manifestPath ...string) (native.BuildReceipt, protocol.Result, error) {
+	checked, entryBytes, modules, err := checkSourcePathModules(sourcePath)
+	if err != nil {
+		return native.BuildReceipt{}, protocol.Result{}, err
+	}
+	if checked.Presentation == nil {
+		checked.Presentation = &protocol.PresentationContext{Sources: map[string]protocol.CapturedSource{
+			"": {Label: sourcePath, Bytes: entryBytes},
+		}}
+	}
+	receipt, diagnostics, err := buildApplicationChecked(ctx, checked, entryBytes, modules, outputPath, runner, manifestPath...)
+	if err != nil {
+		return native.BuildReceipt{}, protocol.Result{}, err
+	}
+	result := protocol.New("build", protocol.StatusPass)
+	if len(diagnostics) > 0 {
+		result.Status = protocol.StatusInvalid
+		result.Diagnostics = diagnostics
+		result = commandWithCheckedPresentation(result, checked)
+	}
+	return receipt, result, nil
+}
+
 // runNativeInputs is task 04-07-03's own bug fix, discovered by driving the
 // shipped binary on out-of-corpus programs per D-04-21: `schway run
 // --engine=native` previously ran every input through ONE shared,
@@ -1596,35 +1629,42 @@ func RunNativeFile(ctx context.Context, path string, runner NativeRunner) (Nativ
 // read it); no path arithmetic may precede Check so relative and absolute
 // paths behave identically (G-28-3).
 func runNativeCommand(ctx context.Context, path string, runner NativeRunner) (NativeResult, []diagnostic.Diagnostic, error) {
+	result, diagnostics, err, _ := runNativeCommandWithCheck(ctx, path, runner)
+	return result, diagnostics, err
+}
+
+func runNativeCommandWithCheck(ctx context.Context, path string, runner NativeRunner) (NativeResult, []diagnostic.Diagnostic, error, CheckResult) {
 	checked, _, err := checkSourcePath(path)
 	if err != nil {
-		return NativeResult{}, nil, err
+		return NativeResult{}, nil, err, CheckResult{}
 	}
 	if len(checked.Diagnostics) > 0 {
-		return NativeResult{}, checked.Diagnostics, nil
+		return NativeResult{}, checked.Diagnostics, nil, checked
 	}
 	admitted, admitDiagnostics := admitProgram(checked)
 	if len(admitDiagnostics) > 0 {
-		return NativeResult{}, admitDiagnostics, nil
+		return NativeResult{}, admitDiagnostics, nil, checked
 	}
 	checked.Program = admitted
 	entry, pruned, entryDiagnostics, err := resolveEntry(checked.Program)
 	if err != nil {
-		return NativeResult{}, nil, err
+		return NativeResult{}, nil, err, checked
 	}
 	if len(entryDiagnostics) > 0 {
-		return NativeResult{}, entryDiagnostics, nil
+		return NativeResult{}, entryDiagnostics, nil, checked
 	}
-	return runNativeChecked(ctx, checked, entry, pruned, runner, filepath.ToSlash(path))
+	result, diagnostics, err := runNativeChecked(ctx, checked, entry, pruned, runner, filepath.ToSlash(path))
+	return result, diagnostics, err, checked
 }
 
 func RunNativeCommandFile(ctx context.Context, path string, runner NativeRunner) (protocol.Result, error) {
 	started := time.Now()
-	nativeResult, diagnostics, err := runNativeCommand(ctx, path, runner)
+	nativeResult, diagnostics, err, checked := runNativeCommandWithCheck(ctx, path, runner)
 	result := protocol.New("run", protocol.StatusPass)
 	if len(diagnostics) > 0 {
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = diagnostics
+		result = commandWithCheckedPresentation(result, checked)
 		return completeCommand(result, started, 1), nil
 	}
 	if errors.Is(err, ErrRunInputRequired) {

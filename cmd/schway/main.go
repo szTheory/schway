@@ -175,10 +175,8 @@ func runNative(path string, jsonMode bool) int {
 }
 
 func runBuild(sourcePath, outputPath string, jsonMode bool, manifestPath ...string) int {
-	receipt, diagnostics, err := session.BuildApplicationFile(context.Background(), sourcePath, outputPath, native.DefaultRunner(), manifestPath...)
-	if len(diagnostics) > 0 {
-		result := protocol.New("build", protocol.StatusInvalid)
-		result.Diagnostics = diagnostics
+	receipt, result, err := session.BuildApplicationCommandFile(context.Background(), sourcePath, outputPath, native.DefaultRunner(), manifestPath...)
+	if len(result.Diagnostics) > 0 {
 		return emit(result, jsonMode, false)
 	}
 	if err != nil {
@@ -342,11 +340,26 @@ func runApplicationVerify(args []string) int {
 	defer cancel()
 	report, err := session.VerifyApplicationCasesFile(ctx, args[2], casesPath, reportPath, native.DefaultRunner())
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "schway app verify: %v\n", err)
 		var refusal *session.SourceRefusalError
 		if errors.As(err, &refusal) {
+			fmt.Fprintf(os.Stderr, "schway app verify: source refused: %s\n", refusal.Code())
+			result := protocol.New("app verify", protocol.StatusInvalid)
+			result.Diagnostics = refusal.Diagnostics
+			if refusal.Presentation != nil {
+				result = protocol.WithPresentation(result, *refusal.Presentation)
+			}
+			human, renderErr := protocol.Human(result)
+			if renderErr == nil {
+				if _, detail, found := strings.Cut(human, "\n"); found {
+					fmt.Fprint(os.Stderr, detail)
+				}
+			}
+			if reportFailure := strings.TrimSpace(strings.TrimPrefix(err.Error(), refusal.Error())); reportFailure != "" {
+				fmt.Fprintln(os.Stderr, reportFailure)
+			}
 			return exitInvalidSource
 		}
+		fmt.Fprintf(os.Stderr, "schway app verify: %v\n", err)
 		return exitOperational
 	}
 	if !report.Verified {
