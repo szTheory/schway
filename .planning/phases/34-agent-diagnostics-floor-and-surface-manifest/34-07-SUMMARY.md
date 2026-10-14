@@ -33,6 +33,8 @@ tech-stack:
 key-files:
   created:
     - internal/compiler/session/session_phase34_surface_test.go
+    - internal/compiler/session/session_phase34_limit_consumers_test.go
+    - internal/compiler/syntax/parser_phase34_limit_scope_test.go
     - testdata/phase34/surface-witnesses.json
     - testdata/phase34/surface-census.json
   modified:
@@ -185,3 +187,9 @@ The summary path and all three owned deliverables exist. Each listed task commit
 The post-plan focused producer check failed because `TestPhase34SurfaceDocument` still expected Box/Pair admission entries after the independent complete-source witnesses had refused them. Commit `396a8ec0` updates that literal contract, pins the parse/ability restriction and scalar-only if/else context, and explains the boundary in docs/agent-surface.md. This is one additional parent follow-up commit beyond the six task commits measured above; their original actuals and ledger remain historical measurements.
 
 Fresh command: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/surfacemanifest ./internal/compiler/session -run '^(TestPhase34SurfaceDocument|TestPhase34SurfaceLimits|TestPhase34SurfaceManifestWitnesses|TestPhase34SurfaceManifestCensus|TestPhase34SurfaceManifestControls)$' -count=1 -v`. Exit 0; all five named selectors passed (package times 0.006s and 0.188s). No broad suite ran. Expected admissions remain independently literal; no producer-derived oracle or admitted semantics were added.
+
+## Parent follow-up: reviewed limit consumers
+
+Commit `18844d62` resolves WR-01, WR-02, and WR-03 from the configured source review. Parser routes include interface core; scalar analysis routes include every checked consumer in the finite seven-file reference census. Checker-work routes include both interfaces, verify, and the conditional debug-map/import and query/lane-corpus paths, with those conditions named in the manifest. Linear bindings are described as the aggregate outer function-body lists. No parser/checker admission or enforcement changed.
+
+The new consumer test first failed with the specific missing route classifications against the original producer. After correction, all seven selected session checks passed (1.010s), both producer contract checks passed (0.006s), and the direct aggregate AST guard check and inherited scalar exhaustion control passed (0.016s and 0.008s respectively). The interface probes accept exactly 1024 functions, refuse 1025 and excessive checker work before artifact publication. Route mutations detect omissions and false inclusion, then restore. The reference census is finite and branch-insensitive; executable inherited controls distinguish debug-map with and without imports. The AST binding guard is tested directly because earlier source/token bounds can prevent reaching it through source text. Original plan actuals remain historical; this is additional parent close-out work.

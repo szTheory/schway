@@ -113,3 +113,7 @@ Wave 1 captured 162 tracked inputs, both emitter outcomes, twenty explicitly rec
 | Gaps found | 1 |
 | Resolved | 1 |
 | Escalated | 0 |
+
+## Source-review Follow-up
+
+The initial 42-selector task-map receipt above remains historical. Source review added three focused controls in `session_phase34_limit_consumers_test.go` and `parser_phase34_limit_scope_test.go`: TestPhase34SurfaceLimitConsumers, TestPhase34InterfaceLimitWitnesses, and TestPhase34LinearBindingLimitScope. All passed after the manifest-only correction in `18844d62`; reached omissions before correction are preserved in `34-REVIEW-FIX.md`. The new source-reference census is finite and branch-insensitive, paired with executable interface thresholds and inherited conditional debug-map/scalar controls. No new test runner or production seam was added.
