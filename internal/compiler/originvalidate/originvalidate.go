@@ -292,7 +292,7 @@ func SetOriginScalarTransferBudgetForTest(budget int) func() {
 
 func originHasScalarCFG(function core.Function) bool {
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpBytesLen || operation.Kind == core.OpBytesAt || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline || operation.Kind == core.OpWriteText {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpBitXorU64 || operation.Kind == core.OpBitAndU64 || operation.Kind == core.OpBitOrU64 || operation.Kind == core.OpShiftLeftU64 || operation.Kind == core.OpShiftRightU64 || operation.Kind == core.OpBytesLen || operation.Kind == core.OpBytesAt || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline || operation.Kind == core.OpWriteText {
 			return true
 		}
 	}
@@ -313,7 +313,8 @@ func originScalarFixedPointWithFailure(function core.Function) (bool, string) {
 	}
 	for _, place := range linear.Places {
 		viewParameter := types[place.TypeID] == "ByteView" && place.ID == function.Parameter.ID && function.Parameter.Type == "ByteView"
-		if types[place.TypeID] != "U64" && types[place.TypeID] != "Bool" && !viewParameter {
+		byteParameter := types[place.TypeID] == "Byte" && place.ID == function.Parameter.ID && function.Parameter.Type == "Byte" && originByteFormalUnused(function)
+		if types[place.TypeID] != "U64" && types[place.TypeID] != "Bool" && !viewParameter && !byteParameter {
 			return false, ""
 		}
 		placeTypes[place.ID] = types[place.TypeID]
@@ -451,6 +452,39 @@ func originTransferScalarOperation(operation core.LinearOperation, state originS
 				value.boolean = source.u64 == right.u64
 			} else {
 				value.boolean = source.u64 < right.u64
+			}
+		}
+		state[operation.TargetID] = value
+	case core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64:
+		right := state[operation.RightID]
+		if !source.initialized || !right.initialized || placeTypes[operation.SourceID] != "U64" || placeTypes[operation.RightID] != "U64" || placeTypes[operation.TargetID] != "U64" {
+			return false
+		}
+		value := originScalarValue{initialized: true}
+		if source.known && right.known {
+			value.known = true
+			switch operation.Kind {
+			case core.OpBitXorU64:
+				value.u64 = source.u64 ^ right.u64
+			case core.OpBitAndU64:
+				value.u64 = source.u64 & right.u64
+			case core.OpBitOrU64:
+				value.u64 = source.u64 | right.u64
+			}
+		}
+		state[operation.TargetID] = value
+	case core.OpShiftLeftU64, core.OpShiftRightU64:
+		amount, err := strconv.ParseUint(operation.ConstU64, 10, 64)
+		if err != nil || strconv.FormatUint(amount, 10) != operation.ConstU64 || amount > 63 || !source.initialized || placeTypes[operation.SourceID] != "U64" || placeTypes[operation.TargetID] != "U64" {
+			return false
+		}
+		value := originScalarValue{initialized: true}
+		if source.known {
+			value.known = true
+			if operation.Kind == core.OpShiftLeftU64 {
+				value.u64 = source.u64 << amount
+			} else {
+				value.u64 = source.u64 >> amount
 			}
 		}
 		state[operation.TargetID] = value
@@ -1328,13 +1362,16 @@ func checkForeignOriginOmitted(function core.Function) *Problem {
 // list: the word "export" does not appear on this path, because publication
 // safety and export membership are different rules (D-07-31).
 func PublishProblemsFor(function core.Function, calleeContracts map[string]calleeOriginFact) []Problem {
+	if problem := phase35UnusedByteProblem(function); problem != nil {
+		return []Problem{*problem}
+	}
 	if problem := phase27ArithmeticProblem(function); problem != nil {
 		return []Problem{*problem}
 	}
 	if problem := phase29ByteOpProblem(function); problem != nil {
 		return []Problem{*problem}
 	}
-	if hasRemainderOperation(function) {
+	if originNeedsScalarAnalysis(function) {
 		valid, zeroOperationID := originScalarFixedPointWithFailure(function)
 		if zeroOperationID != "" {
 			return []Problem{{Code: "core.scalar_remainder_zero", Detail: zeroOperationID}}
@@ -1418,6 +1455,83 @@ func hasRemainderOperation(function core.Function) bool {
 	return false
 }
 
+func originNeedsScalarAnalysis(function core.Function) bool {
+	if hasRemainderOperation(function) {
+		return true
+	}
+	if function.Linear == nil {
+		return false
+	}
+	for _, operation := range function.Linear.Operations {
+		switch operation.Kind {
+		case core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64, core.OpShiftLeftU64, core.OpShiftRightU64:
+			return true
+		}
+	}
+	return false
+}
+
+func originByteFormalUnused(function core.Function) bool {
+	if function.Linear == nil || function.Parameter.Type != "Byte" || function.Parameter.ID == "" || function.ReturnType != "U64" {
+		return false
+	}
+	places := make(map[string]struct{}, len(function.Linear.Places))
+	types := make(map[string]string, len(function.Linear.Types))
+	for _, fact := range function.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	for _, place := range function.Linear.Places {
+		places[place.ID] = struct{}{}
+		if place.ID == function.Parameter.ID {
+			if types[place.TypeID] != "Byte" {
+				return false
+			}
+			continue
+		}
+		if types[place.TypeID] != "U64" && types[place.TypeID] != "Bool" {
+			return false
+		}
+	}
+	if _, ok := places[function.Parameter.ID]; !ok {
+		return false
+	}
+	for _, operation := range function.Linear.Operations {
+		for _, reference := range []string{operation.SourceID, operation.RightID, operation.TargetID, operation.StoreTargetID, operation.ErrTargetID, operation.PayloadTargetID} {
+			if reference == function.Parameter.ID {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func phase35UnusedByteProblem(function core.Function) *Problem {
+	if function.Linear == nil || function.Parameter.Type != "Byte" {
+		return nil
+	}
+	types := make(map[string]string, len(function.Linear.Types))
+	for _, fact := range function.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	parameterType := ""
+	for _, place := range function.Linear.Places {
+		if place.ID == function.Parameter.ID {
+			parameterType = types[place.TypeID]
+			continue
+		}
+		if types[place.TypeID] != "U64" && types[place.TypeID] != "Bool" {
+			return &Problem{Code: "core.scalar_operation_invalid", Detail: fmt.Sprintf("%s: Byte scalar bridge contains non-scalar place %q", function.ID, place.ID)}
+		}
+	}
+	if parameterType != "Byte" || function.ReturnType != "U64" {
+		return &Problem{Code: "core.scalar_operation_invalid", Detail: fmt.Sprintf("%s: invalid unused-Byte scalar signature", function.ID)}
+	}
+	if !originByteFormalUnused(function) {
+		return &Problem{Code: "core.scalar_byte_parameter_used", Detail: function.Parameter.ID}
+	}
+	return nil
+}
+
 // phase27ArithmeticProblem independently derives the operand and result
 // shapes for the narrow U64 equality/remainder operations. The origin peer
 // must not depend on corevalidate to reject a forged operator contract.
@@ -1434,18 +1548,37 @@ func phase27ArithmeticProblem(function core.Function) *Problem {
 		places[place.ID] = types[place.TypeID]
 	}
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind != core.OpEqualU64 && operation.Kind != core.OpRemainderU64 {
-			continue
+		if operation.ConstU64 != "" && operation.Kind != core.OpConst && operation.Kind != core.OpShiftLeftU64 && operation.Kind != core.OpShiftRightU64 {
+			return &Problem{Code: "core.scalar_operation_invalid", Detail: fmt.Sprintf("%s: invalid ConstU64 field on %s operation %q", function.ID, operation.Kind, operation.ID)}
 		}
-		want := "U64"
-		if operation.Kind == core.OpEqualU64 {
-			want = "Bool"
-		}
-		if places[operation.SourceID] != "U64" || places[operation.RightID] != "U64" || operation.RightID == "" || operation.TargetID == "" || types[operation.TypeID] != want || places[operation.TargetID] != want || operation.StoreTargetID != "" || operation.TrueEdgeID != "" || operation.FalseEdgeID != "" {
-			return &Problem{Code: "core.scalar_operation_invalid", Detail: fmt.Sprintf("%s: invalid %s operation %q", function.ID, operation.Kind, operation.ID)}
+		switch operation.Kind {
+		case core.OpEqualU64, core.OpRemainderU64:
+			want := "U64"
+			if operation.Kind == core.OpEqualU64 {
+				want = "Bool"
+			}
+			if places[operation.SourceID] != "U64" || places[operation.RightID] != "U64" || operation.RightID == "" || operation.TargetID == "" || types[operation.TypeID] != want || places[operation.TargetID] != want || operation.StoreTargetID != "" || operation.TrueEdgeID != "" || operation.FalseEdgeID != "" || operation.ConstU64 != "" {
+				return &Problem{Code: "core.scalar_operation_invalid", Detail: fmt.Sprintf("%s: invalid %s operation %q", function.ID, operation.Kind, operation.ID)}
+			}
+		case core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64:
+			if places[operation.SourceID] != "U64" || places[operation.RightID] != "U64" || operation.RightID == "" || operation.TargetID == "" || operation.TargetID == function.Parameter.ID || operation.TargetID == operation.SourceID || types[operation.TypeID] != "U64" || places[operation.TargetID] != "U64" || operation.ConstU64 != "" || operation.StoreTargetID != "" || operation.TrueEdgeID != "" || operation.FalseEdgeID != "" || !originScalarOperationHasNoUnrelatedFields(operation) {
+				return &Problem{Code: "core.scalar_operation_invalid", Detail: fmt.Sprintf("%s: invalid %s operation %q", function.ID, operation.Kind, operation.ID)}
+			}
+		case core.OpShiftLeftU64, core.OpShiftRightU64:
+			amount, err := strconv.ParseUint(operation.ConstU64, 10, 64)
+			if places[operation.SourceID] != "U64" || operation.TargetID == "" || operation.TargetID == function.Parameter.ID || operation.TargetID == operation.SourceID || types[operation.TypeID] != "U64" || places[operation.TargetID] != "U64" || operation.RightID != "" || err != nil || strconv.FormatUint(amount, 10) != operation.ConstU64 || amount > 63 || operation.StoreTargetID != "" || operation.TrueEdgeID != "" || operation.FalseEdgeID != "" || !originScalarOperationHasNoUnrelatedFields(operation) {
+				return &Problem{Code: "core.scalar_operation_invalid", Detail: fmt.Sprintf("%s: invalid %s operation %q", function.ID, operation.Kind, operation.ID)}
+			}
 		}
 	}
 	return nil
+}
+
+func originScalarOperationHasNoUnrelatedFields(operation core.LinearOperation) bool {
+	return operation.LoanID == "" && operation.Foreign == nil && operation.OkEdgeID == "" && operation.ErrEdgeID == "" &&
+		operation.ErrTargetID == "" && operation.ReleasesOperationID == "" && operation.Allocator == "" && operation.Reason == "" &&
+		operation.CalleeID == "" && operation.PayloadType == "" && operation.PayloadTargetID == "" && operation.TextSource == "" &&
+		len(operation.TextBytes) == 0 && operation.TextLength == 0
 }
 
 // disableByteOpLawForTest skips phase29ByteOpProblem when set. Default false;
