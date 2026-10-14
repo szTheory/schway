@@ -1,0 +1,11 @@
+<testsuites tests="2" failures="1"><testsuite name="github.com/szTheory/schway/internal/compiler/session" tests="2" failures="1" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase34SurfaceManifestWitnesses" time="0.04"><system-out>=== RUN   TestPhase34SurfaceManifestWitnesses
+--- PASS: TestPhase34SurfaceManifestWitnesses (0.04s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase34SurfaceManifestCensus" time="0.01"><failure message="go test reported failure">=== RUN   TestPhase34SurfaceManifestCensus
+    session_phase34_surface_test.go:501: source branch census has unaccounted or stale rows: [{unaccounted_source_branch internal/compiler/syntax/parser.go|surface-refusal-emitter|code-literal|surface.unsupported_bool_literal_tail}]
+--- FAIL: TestPhase34SurfaceManifestCensus (0.01s)
+</failure><system-out>=== RUN   TestPhase34SurfaceManifestCensus
+    session_phase34_surface_test.go:501: source branch census has unaccounted or stale rows: [{unaccounted_source_branch internal/compiler/syntax/parser.go|surface-refusal-emitter|code-literal|surface.unsupported_bool_literal_tail}]
+--- FAIL: TestPhase34SurfaceManifestCensus (0.01s)
+</system-out></testcase><system-out>FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/session	0.056s
+</system-out></testsuite></testsuites>

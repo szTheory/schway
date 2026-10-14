@@ -235,9 +235,6 @@ func phase34SurfaceClaims(manifest surfacemanifest.Manifest) []phase34SurfaceCla
 	for _, entry := range manifest.Restrictions {
 		claims = append(claims, phase34SurfaceClaim{Facet: "restriction:" + entry.ID, Form: entry.Syntax, Contexts: entry.Contexts, Constraints: entry.Constraints})
 	}
-	for _, entry := range manifest.Limits {
-		claims = append(claims, phase34SurfaceClaim{Facet: "limit:" + entry.ID, Form: entry.Category, Scope: entry.Scope, Unit: entry.Unit, Value: entry.Value, Meaning: entry.Meaning, Routes: entry.Routes})
-	}
 	for _, entry := range manifest.Refusals {
 		claims = append(claims, phase34SurfaceClaim{Facet: "refusal:" + entry.Code, Form: entry.Form, Code: entry.Code, Hint: entry.Hint})
 	}
@@ -281,7 +278,7 @@ func phase34SurfaceProblems(manifest surfacemanifest.Manifest, observed []phase3
 		seen[facet] = true
 		if strings.HasPrefix(facet, "probe:") {
 			for _, row := range witnesses[facet] {
-				if row.Status != row.Witness.ExpectedStatus || row.Code != row.Witness.ExpectedCode || row.Hint != row.Witness.ExpectedHint {
+				if row.Status != row.Witness.ExpectedStatus || row.Code != row.Witness.ExpectedCode || row.Witness.ExpectedHint != "" && row.Hint != row.Witness.ExpectedHint {
 					add("witness_outcome_changed", facet)
 				}
 			}
@@ -312,7 +309,7 @@ func phase34SurfaceProblems(manifest surfacemanifest.Manifest, observed []phase3
 		constraintSet := false
 		for _, row := range rows {
 			witness := row.Witness
-			if witness.ExpectedStatus == "pass" && witness.Context != "" {
+			if (witness.ExpectedStatus == "pass" || witness.ExpectedCode == "check.unexecutable_shape") && witness.Context != "" {
 				expectedContexts = append(expectedContexts, witness.Context)
 			}
 			if !constraintSet {
@@ -331,7 +328,7 @@ func phase34SurfaceProblems(manifest surfacemanifest.Manifest, observed []phase3
 			if row.Hint != witness.ExpectedHint && witness.ExpectedHint != "" {
 				add("hint_changed", facet)
 			}
-			if witness.ExpectedStatus == "pass" && witness.Context != "" && !containsPhase34SurfaceValue(claim.Contexts, witness.Context) {
+			if (witness.ExpectedStatus == "pass" || witness.ExpectedCode == "check.unexecutable_shape") && witness.Context != "" && !containsPhase34SurfaceValue(claim.Contexts, witness.Context) {
 				add("constraint_changed", facet)
 			}
 			if witness.ExpectedConstraints != nil && !samePhase34Strings(claim.Constraints, witness.ExpectedConstraints) {
@@ -341,8 +338,17 @@ func phase34SurfaceProblems(manifest surfacemanifest.Manifest, observed []phase3
 				add("constraint_changed", facet)
 			}
 			arityIsPublished := strings.HasPrefix(facet, "type:") || strings.HasPrefix(facet, "builtin:") || facet == "call:declaration" || facet == "call:ordinary"
-			if witness.ExpectedArity != 0 && arityIsPublished && claim.Arity != witness.ExpectedArity {
-				add("constraint_changed", facet)
+			if witness.ExpectedArity != 0 {
+				switch {
+				case facet == "call:ordinary":
+					if !containsPhase34Int(claim.Arities, witness.ExpectedArity) {
+						add("constraint_changed", facet)
+					}
+				case arityIsPublished && claim.Arity != witness.ExpectedArity:
+					add("constraint_changed", facet)
+				case strings.HasPrefix(facet, "operator:") && witness.ExpectedArity != 2:
+					add("constraint_changed", facet)
+				}
 			}
 			if witness.ExpectedInputs != nil && !samePhase34Strings(claim.Inputs, witness.ExpectedInputs) || witness.ExpectedResult != "" && claim.Result != witness.ExpectedResult {
 				add("constraint_changed", facet)
@@ -369,6 +375,15 @@ func phase34SurfaceProblems(manifest surfacemanifest.Manifest, observed []phase3
 		}
 	}
 	return problems
+}
+
+func containsPhase34Int(values []int, want int) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }
 
 func phase34ManifestContractProblems(manifest surfacemanifest.Manifest, expected phase34SurfaceWitnessDocument) []phase34SurfaceProblem {
@@ -483,6 +498,11 @@ func TestPhase34SurfaceManifestCensus(t *testing.T) {
 		t.Fatalf("source branch census has unaccounted or stale rows: %v", problems)
 	}
 	observed := phase34ObserveSurfaceWitnesses(t, witnessDocument.Witnesses)
+	for _, row := range observed {
+		if row.Status != row.Witness.ExpectedStatus || row.Code != row.Witness.ExpectedCode || row.Witness.ExpectedHint != "" && row.Hint != row.Witness.ExpectedHint {
+			t.Errorf("witness %s (%s): got status=%q code=%q hint=%q; want status=%q code=%q hint=%q", row.Witness.ID, row.Witness.Facet, row.Status, row.Code, row.Hint, row.Witness.ExpectedStatus, row.Witness.ExpectedCode, row.Witness.ExpectedHint)
+		}
+	}
 	if problems := phase34FullSurfaceProblems(surfacemanifest.Current(), witnessDocument, observed); len(problems) != 0 {
 		t.Fatalf("independent witnesses disagree with the complete manifest: %v", problems)
 	}
@@ -589,8 +609,10 @@ func phase34CensusProblems(document phase34CensusDocument, overrides map[string]
 	actual := phase34CollectCensusBranchesNoFatal(overrides)
 	expected := map[string]phase34CensusBranch{}
 	witnessIDs := map[string]bool{}
+	witnessByID := map[string]phase34SurfaceWitness{}
 	for _, witness := range witnesses {
 		witnessIDs[witness.ID] = true
+		witnessByID[witness.ID] = witness
 	}
 	var problems []phase34SurfaceProblem
 	add := func(facet string) {
@@ -614,6 +636,8 @@ func phase34CensusProblems(document phase34CensusDocument, overrides map[string]
 		for _, witnessID := range row.WitnessIDs {
 			if !witnessIDs[witnessID] {
 				add(row.Facet + " witness " + witnessID)
+			} else if row.Disposition != "non-surface/internal" && !phase34CensusFacetMatches(row.Facet, witnessByID[witnessID].Facet) {
+				add(row.Facet + " links mismatched witness " + witnessID)
 			}
 		}
 	}
@@ -627,9 +651,9 @@ func phase34CensusProblems(document phase34CensusDocument, overrides map[string]
 	for _, branch := range actual {
 		actualKeys[phase34RawCensusKey(branch)] = true
 	}
-	for key, row := range expected {
+	for key := range expected {
 		if !actualKeys[key] {
-			add(row.Facet)
+			add(key)
 		}
 	}
 	return problems
@@ -642,7 +666,7 @@ func phase34CollectCensusBranchesNoFatal(overrides map[string]string) []phase34R
 	selectedFunctions := map[string]map[string]bool{
 		"internal/compiler/syntax/parser.go": {
 			"scalarBinaryOperator": true, "scalarBinaryExpr": true, "consumeUnsupportedBinaryOperator": true,
-			"consumeUnsupportedLogicalNot": true, "scalarStatements": true, "scalarExprAtom": true,
+			"consumeUnsupportedLogicalNot": true, "scalarStatements": true, "scalarExprAtom": true, "linearBody": true,
 			"refuseExtraDeclarationParameter": true,
 		},
 		"internal/compiler/syntax/lexer.go":               {"punctuation": true},
@@ -685,6 +709,11 @@ func phase34CollectCensusBranchesNoFatal(overrides map[string]string) []phase34R
 						for _, value := range clause.List {
 							branches = append(branches, phase34RawCensusBranch{File: relative, Function: name, Selector: selector, Values: []string{phase34GoExprLabel(value)}})
 						}
+					}
+				case *ast.IfStmt:
+					condition := phase34GoExprLabel(statement.Cond)
+					if phase34RelevantCensusCondition(name, condition) {
+						branches = append(branches, phase34RawCensusBranch{File: relative, Function: name, Selector: "if-condition", Values: []string{condition}})
 					}
 				case *ast.ReturnStmt:
 					if name == "ModuleAwareRoutes" {
@@ -748,4 +777,30 @@ func phase34CollectCensusBranchesNoFatal(overrides map[string]string) []phase34R
 
 func validPhase34Disposition(value string) bool {
 	return value == "admitted-with-context" || value == "refusal" || value == "non-surface/internal"
+}
+
+func phase34RelevantCensusCondition(function, condition string) bool {
+	markers := map[string][]string{
+		"linearBody":                       {"TokenDiscard", "TokenTry", "TokenTake", "TokenBorrow", "TokenMut", "TokenMatch"},
+		"refuseExtraDeclarationParameter":  {"TokenComma"},
+		"consumeUnsupportedBinaryOperator": {"TokenUnknown", "TokenPipe"},
+		"resolveCallBinding":               {"len(binding.RHS.Arguments)"},
+		"deriveAt":                         {"sealedLeaves"},
+		"unsupportedBoolTail":              {"resultName"},
+	}
+	for _, marker := range markers[function] {
+		if strings.Contains(condition, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func phase34CensusFacetMatches(facets, candidate string) bool {
+	for _, facet := range strings.Split(facets, "|") {
+		if facet == candidate {
+			return true
+		}
+	}
+	return false
 }

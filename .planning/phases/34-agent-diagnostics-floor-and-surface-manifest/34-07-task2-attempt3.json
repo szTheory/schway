@@ -1,0 +1,35 @@
+{
+  "command": "GOCACHE=/tmp/ai-lang-verification-gocache /opt/homebrew/opt/python@3.14/bin/python3.14 /tmp/schway-go-junit.py --record .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task2-attempt3.json --target TestPhase34SurfaceManifestCensus --target-file internal/compiler/session/session_phase34_surface_test.go --expected 'The full authored witness matrix and bounded source branch classifications match the installed manifest and complete CheckCommandFile behavior.' -- go test -json ./internal/compiler/session -run '^(TestPhase34SurfaceManifestWitnesses|TestPhase34SurfaceManifestCensus)$' -count=1 -v",
+  "exitCode": 1,
+  "output": "<testsuites tests=\"2\" failures=\"1\"><testsuite name=\"github.com/szTheory/schway/internal/compiler/session\" tests=\"2\" failures=\"1\" skipped=\"0\"><testcase classname=\"github.com/szTheory/schway/internal/compiler/session\" name=\"TestPhase34SurfaceManifestWitnesses\" time=\"0.04\"><system-out>=== RUN   TestPhase34SurfaceManifestWitnesses\n--- PASS: TestPhase34SurfaceManifestWitnesses (0.04s)\n</system-out></testcase><testcase classname=\"github.com/szTheory/schway/internal/compiler/session\" name=\"TestPhase34SurfaceManifestCensus\" time=\"0.01\"><failure message=\"go test reported failure\">=== RUN   TestPhase34SurfaceManifestCensus\n    session_phase34_surface_test.go:501: source branch census has unaccounted or stale rows: [{unaccounted_source_branch internal/compiler/syntax/parser.go|surface-refusal-emitter|code-literal|surface.unsupported_bool_literal_tail}]\n--- FAIL: TestPhase34SurfaceManifestCensus (0.01s)\n</failure><system-out>=== RUN   TestPhase34SurfaceManifestCensus\n    session_phase34_surface_test.go:501: source branch census has unaccounted or stale rows: [{unaccounted_source_branch internal/compiler/syntax/parser.go|surface-refusal-emitter|code-literal|surface.unsupported_bool_literal_tail}]\n--- FAIL: TestPhase34SurfaceManifestCensus (0.01s)\n</system-out></testcase><system-out>FAIL\nFAIL\tgithub.com/szTheory/schway/internal/compiler/session\t0.056s\n</system-out></testsuite></testsuites>\n",
+  "targetTest": "TestPhase34SurfaceManifestCensus",
+  "targetFile": "internal/compiler/session/session_phase34_surface_test.go",
+  "expected": "The full authored witness matrix and bounded source branch classifications match the installed manifest and complete CheckCommandFile behavior.",
+  "actual": "=== RUN   TestPhase34SurfaceManifestCensus\n    session_phase34_surface_test.go:501: source branch census has unaccounted or stale rows: [{unaccounted_source_branch internal/compiler/syntax/parser.go|surface-refusal-emitter|code-literal|surface.unsupported_bool_literal_tail}]\n--- FAIL: TestPhase34SurfaceManifestCensus (0.01s)\n",
+  "reportPath": "/Users/jon/projects/schway/.planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task2-attempt3.junit.xml",
+  "runStartedAt": "2026-10-14T00:14:56.237713+00:00",
+  "reportModifiedAt": "2026-10-14T00:14:57.346607+00:00",
+  "durationMs": 1108.42025000602,
+  "rawGoJSON": "{\"Time\":\"2026-10-13T20:14:57.281533-04:00\",\"Action\":\"start\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\"}\n{\"Time\":\"2026-10-13T20:14:57.287631-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\"}\n{\"Time\":\"2026-10-13T20:14:57.287715-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Output\":\"=== RUN   TestPhase34SurfaceManifestWitnesses\\n\"}\n{\"Time\":\"2026-10-13T20:14:57.328873-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Output\":\"--- PASS: TestPhase34SurfaceManifestWitnesses (0.04s)\\n\"}\n{\"Time\":\"2026-10-13T20:14:57.328919-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Elapsed\":0.04}\n{\"Time\":\"2026-10-13T20:14:57.32893-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestCensus\"}\n{\"Time\":\"2026-10-13T20:14:57.328933-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestCensus\",\"Output\":\"=== RUN   TestPhase34SurfaceManifestCensus\\n\"}\n{\"Time\":\"2026-10-13T20:14:57.336869-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestCensus\",\"Output\":\"    session_phase34_surface_test.go:501: source branch census has unaccounted or stale rows: [{unaccounted_source_branch internal/compiler/syntax/parser.go|surface-refusal-emitter|code-literal|surface.unsupported_bool_literal_tail}]\\n\"}\n{\"Time\":\"2026-10-13T20:14:57.3369-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestCensus\",\"Output\":\"--- FAIL: TestPhase34SurfaceManifestCensus (0.01s)\\n\"}\n{\"Time\":\"2026-10-13T20:14:57.336903-04:00\",\"Action\":\"fail\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestCensus\",\"Elapsed\":0.01}\n{\"Time\":\"2026-10-13T20:14:57.336906-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"FAIL\\n\"}\n{\"Time\":\"2026-10-13T20:14:57.337646-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"FAIL\\tgithub.com/szTheory/schway/internal/compiler/session\\t0.056s\\n\"}\n{\"Time\":\"2026-10-13T20:14:57.337663-04:00\",\"Action\":\"fail\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Elapsed\":0.056}\n",
+  "rawStderr": "",
+  "reporter": "/private/tmp/schway-go-junit.py",
+  "reporterSource": {
+    "path": "/tmp/schway-go-junit.py",
+    "sha256": "69752666215dd93d8d1a65b6dbd8544e205c2aacb7cb95c7f408101f0b7f5106",
+    "kind": "standard-library execution reporter"
+  },
+  "freshness": {
+    "runStartedAt": "2026-10-14T00:14:56.237713+00:00",
+    "reportModifiedAt": "2026-10-14T00:14:57.346607+00:00",
+    "reportNewerThanRunStart": true
+  },
+  "semanticAssessment": {
+    "result": "intermediate_failure",
+    "reason": "The focused selector found another stale AST branch descriptor in the authored census; raw Go JSON/JUnit capture is retained."
+  },
+  "matchedTests": [
+    "TestPhase34SurfaceManifestWitnesses",
+    "TestPhase34SurfaceManifestCensus"
+  ],
+  "matchedTestCount": 2
+}
