@@ -32,13 +32,13 @@ acceptance record is kept at
 
 ### Bitwise operators and literals
 
-- [x] **BIT-01**: U64 `^`, `&` and `|` are admitted in scalar code. Interpreter and native agree with literal expected answers at -O0, -O3 and -O3 with LTO. Check, corevalidate and originvalidate derive scalar transfers independently, with a wrong-result transfer mutant per op per value-deriving peer caught. Engine wrong-result controls are caught by independently authored expected answers. Executionpeer independently validates each op's event-free causal admission and catches fabricated step/defect events; it does not prove pure numeric results.
+- [ ] **BIT-01**: U64 `^`, `&` and `|` are admitted in scalar code. Interpreter and native agree with literal expected answers at -O0, -O3 and -O3 with LTO. Check, corevalidate and originvalidate derive scalar transfers independently, with a wrong-result transfer mutant per op per value-deriving peer caught. Engine wrong-result controls are caught by independently authored expected answers. Executionpeer independently validates each op's event-free causal admission and catches fabricated step/defect events; it does not prove pure numeric results.
   - Dated evidence amendment (2026-10-14, Phase 35 D-18): the original requirement said “Each peer (check, corevalidate, originvalidate, executionpeer) derives the ops independently, and a wrong-result mutant per op is caught.” Source inspection of `executionpeer.Validate` shows observed causal structure only and no entry-value input. This amendment assigns value versus causal controls to their actual independent knowers, preserving defined answers and the event-free/no-new-defect contract without inventing result replay.
-- [x] **BIT-02**: U64 `<<` and `>>` are admitted only when the shift amount is an integer literal from 0 to 63.
+- [ ] **BIT-02**: U64 `<<` and `>>` are admitted only when the shift amount is an integer literal from 0 to 63.
   - Amounts of 0, 31, 32 and 63 give pinned answers on both engines and at every optimization level.
   - An amount of 64 or more, or a non-literal amount, is refused at check, core and origin with a named code. Generated C never contains an unguarded shift.
   - `<<` drops high bits by definition, which the manifest and guide document.
-- [x] **BIT-03**: Hex integer literals (`0x…`, case-insensitive digits) are admitted wherever decimal U64 literals are. Overflowing or malformed hex is refused with a named code, and the formatter keeps the source spelling.
+- [ ] **BIT-03**: Hex integer literals (`0x…`, case-insensitive digits) are admitted wherever decimal U64 literals are. Overflowing or malformed hex is refused with a named code, and the formatter keeps the source spelling.
 - [ ] **BIT-04**: `examples/checksum/adler32.schway` uses `b << 16` in place of 16 doublings. All of its pinned answers, and the checksum and `adler_low` outputs, stay byte-identical on both engines.
 
 ### Scalar helper calls
@@ -98,9 +98,9 @@ acceptance record is kept at
 | DX-21 | Phase 34 | Complete |
 | DX-22 | Phase 34 | Complete |
 | DX-23 | Phase 34 | Complete |
-| BIT-01 | Phase 35 | Complete |
-| BIT-02 | Phase 35 | Complete |
-| BIT-03 | Phase 35 | Complete |
+| BIT-01 | Phase 35 | Gaps Found |
+| BIT-02 | Phase 35 | Gaps Found |
+| BIT-03 | Phase 35 | Gaps Found |
 | BIT-04 | Phase 35 | Pending |
 | CALL-01 | Phase 36 | Pending |
 | CALL-02 | Phase 36 | Pending |
