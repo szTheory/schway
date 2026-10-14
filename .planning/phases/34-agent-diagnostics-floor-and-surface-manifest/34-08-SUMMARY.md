@@ -42,6 +42,7 @@ key-files:
     - cmd/schway/main.go
     - internal/compiler/session/session_phase34_compat_test.go
     - testdata/phase16/public-emitter-consumers.json
+    - internal/compiler/session/session_phase30_inventory_test.go
     - .planning/PRODUCT-ROADMAP.md
     - .planning/LANGUAGE-MATURITY.md
 
@@ -214,3 +215,5 @@ All listed created files exist, all eight measured plan commits are ancestors of
 The outstanding research/frontier failure recorded above was resolved after terminal handoff. The current research map now points the manifest witness to its actual session package and writes three equivalent selectors as separately anchored alternatives understood by the legacy branch scanner. No archived finding, classifier, frontier pin, owner map, command count, or selected test was removed. Both groundedness gates passed: R1=0, R2=0, R3=0, R2b=45 with every member owned, over 1122 enforced-tier documents and 968 commands.
 
 The seven named research-map tests were rerun across protocol, CLI and session. That first rerun found two stale rendering expectations from before Plan 34-03 deliberately retained the legacy byte-range prefix. The parent aligned those expectations and docs with the committed format, preserving exact bounds/escape/caret assertions. The subsequent complete seven-selector run exited 0: package times 0.008s (protocol), 0.112s (CLI) and 0.752s (session), including both literal C comparator selectors and the independent manifest witness. Original execution actuals above remain historical measurements; these are additional parent follow-ups.
+
+The final 22-task validation audit also caught a stale Phase 30 bounded-read inventory function identity after the query wrapper was moved. Commit `0606fe1d` updates that single identity to resolveQueryDiagnosticFactsPresented; the route stays single-file and the exact new/unclassified-site controls remain armed. The inventory/snapshot/route selector passed, and the final focused task-map run passed all 42 distinct named selectors in 4.629 seconds, with no missing selector. This is another parent follow-up beyond the original eight measured task commits.
