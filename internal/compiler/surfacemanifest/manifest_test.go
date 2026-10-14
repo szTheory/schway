@@ -22,7 +22,7 @@ func TestPhase34SurfaceDocument(t *testing.T) {
 		t.Fatalf("manifest has empty or incomplete required arrays: types=%d operators=%d statements=%d builtins=%d restrictions=%d limits=%d refusals=%d", len(manifest.Types), len(manifest.Operators), len(manifest.Statements), len(manifest.Builtins), len(manifest.Restrictions), len(manifest.Limits), len(manifest.Refusals))
 	}
 
-	wantTypeIDs := []string{"bool", "box", "buffer", "byte", "byte_view", "file_byte_owner", "file_bytes", "fixture_bytes", "pair", "path_token", "sealed_nominal", "u64", "unit"}
+	wantTypeIDs := []string{"bool", "buffer", "byte", "byte_view", "file_byte_owner", "file_bytes", "fixture_bytes", "path_token", "sealed_nominal", "u64", "unit"}
 	gotTypeIDs := make([]string, 0, len(manifest.Types))
 	for _, item := range manifest.Types {
 		gotTypeIDs = append(gotTypeIDs, item.ID)
@@ -36,16 +36,19 @@ func TestPhase34SurfaceDocument(t *testing.T) {
 	if !reflect.DeepEqual(gotTypeIDs, wantTypeIDs) {
 		t.Fatalf("type IDs = %v, want %v", gotTypeIDs, wantTypeIDs)
 	}
-	for id, arity := range map[string]int{"bool": 0, "box": 1, "buffer": 0, "byte": 0, "byte_view": 0, "file_byte_owner": 0, "file_bytes": 0, "fixture_bytes": 0, "pair": 2, "path_token": 0, "sealed_nominal": 0, "u64": 0, "unit": 0} {
+	for id, arity := range map[string]int{"bool": 0, "buffer": 0, "byte": 0, "byte_view": 0, "file_byte_owner": 0, "file_bytes": 0, "fixture_bytes": 0, "path_token": 0, "sealed_nominal": 0, "u64": 0, "unit": 0} {
 		if got := typeByID(t, manifest.Types, id).Arity; got != arity {
 			t.Errorf("type %s arity = %d, want %d", id, got, arity)
 		}
 	}
-	for _, id := range []string{"box", "pair"} {
-		constraints := strings.Join(typeByID(t, manifest.Types, id).Constraints, " ")
-		if !strings.Contains(constraints, "not make") && !strings.Contains(constraints, "do not make") {
-			t.Errorf("ability-only type %s lacks its execution restriction: %q", id, constraints)
-		}
+	// Complete-source witnesses in Phase 34-07 refuse these ability shapes;
+	// they belong to the parse/ability restriction, not the admission list.
+	abilityOnly := entryByID(t, manifest.Restrictions, "parse_only_and_ability_only")
+	if !reflect.DeepEqual(abilityOnly.Contexts, []string{"sealed ability derivation", "source parser"}) || !reflect.DeepEqual(abilityOnly.Constraints, []string{"Parsing or deriving abilities alone does not establish complete-program checker or engine admission."}) {
+		t.Fatalf("parse/ability restriction = %+v", abilityOnly)
+	}
+	if got := entryByID(t, manifest.Statements, "if_else").Contexts; !reflect.DeepEqual(got, []string{"scalar CFG control flow"}) {
+		t.Fatalf("if/else contexts = %v, want only the witnessed scalar CFG context", got)
 	}
 	if !strings.Contains(strings.Join(entryByID(t, manifest.Restrictions, "bool_context").Constraints, " "), "not a general") {
 		t.Fatal("Bool contexts overstate general literal/result admission")

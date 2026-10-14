@@ -13,7 +13,9 @@ restriction, limit, and refusal entries describe checked contexts in the
 current compiler. They do not describe every form the parser can read or every
 shape for which abilities can be derived. For example, `Box` and `Pair` can
 have structural ability facts without being executable straight-line input
-shapes; Bool facts do not grant general Bool literals or result tails.
+shapes. They are covered by the parse/ability restriction and are absent from
+the admitted type list. `if/else` is advertised only in its witnessed scalar
+CFG context. Bool facts do not grant general Bool literals or result tails.
 
 Ordinary declarations take one parameter. Admitted ordinary calls also take
 one argument in their checked linear binding and match-arm contexts, subject
