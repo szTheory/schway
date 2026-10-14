@@ -632,3 +632,9 @@ unmeasured.
 | Hosted evidence | pending | Phase 38; no current hosted receipt is bound |
 | Human readability | unmeasured | No human review was run |
 | Whole-loop feedback latency | unmeasured | No cold/warm end-to-end distributions were collected |
+
+## Phase 35 closeout transition review — 2026-10-14
+
+The implementation and independent repair work now support the bitwise/Adler slice. Phase acceptance is owned by [35-VERIFICATION.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VERIFICATION.md), rather than the earlier implementation-only pending notes. The [transition check](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-TRANSITION-CHECK.md) records current source witnesses, the 94-name regression refresh, the target-freshness repair, 26 admission mutation controls and all evidence boundaries.
+
+The next three scoped capabilities are: Phase 36 imported `crc_step` calls in a loop; Phase 37 bounded file CRC-32 with a second importer and interpreter CLI parity; Phase 38 reproducible two-host checksum/CRC receipts. The linked transition table names each program, blocker, smallest slice, checker obligations, evidence/debt, owner and priority-changing observation. All three conditional seeds remain dormant on their named source witnesses. Historical M006 receipts remain historical; final hosted binding, human readability and whole-loop cold/warm distributions remain pending or unmeasured.
