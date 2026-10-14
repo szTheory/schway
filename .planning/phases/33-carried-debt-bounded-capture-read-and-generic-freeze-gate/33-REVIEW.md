@@ -1,32 +1,57 @@
 ---
 phase: 33-carried-debt-bounded-capture-read-and-generic-freeze-gate
-reviewed: 2026-10-13T18:12:29Z
+reviewed: 2026-10-14T02:24:09Z
 depth: standard
-files_reviewed: 23
+files_reviewed: 48
 files_reviewed_list:
-  - cmd/schway/main_phase321_run_input_test.go
+  - cmd/schway-repair/repair_phase34_test.go
+  - cmd/schway/main.go
   - cmd/schway/main_phase32_routes_test.go
-  - internal/compiler/cgen/cgen_program.go
-  - internal/compiler/execution/defect_reasons.go
-  - internal/compiler/executionpeer/executionpeer.go
-  - internal/compiler/interp/interp.go
-  - internal/compiler/interp/interp_phase321_defect_test.go
-  - internal/compiler/interp/interp_phase33_defect_test.go
-  - internal/compiler/native/native_app.go
-  - internal/compiler/native/native_phase33_capture_test.go
-  - internal/compiler/native/native_phase33_defect_parity_test.go
+  - cmd/schway/main_phase34_diagnostics_test.go
+  - cmd/schway/main_phase34_routes_test.go
+  - cmd/schway/main_phase34_surface_test.go
+  - docs/agent-surface.md
+  - docs/diagnostics.md
+  - internal/compiler/ast/ast.go
+  - internal/compiler/check/check.go
+  - internal/compiler/check/check_phase34_refusal_test.go
+  - internal/compiler/check/scalar.go
+  - internal/compiler/diagnostic/diagnostic.go
+  - internal/compiler/diagnostic/diagnostic_phase34_test.go
+  - internal/compiler/protocol/presentation.go
+  - internal/compiler/protocol/protocol.go
+  - internal/compiler/protocol/protocol_phase34_test.go
   - internal/compiler/session/session.go
-  - internal/compiler/session/session_freeze_gate_test.go
-  - internal/compiler/session/session_gate_differential_test.go
-  - internal/compiler/session/session_gate_retire_test.go
-  - internal/compiler/session/session_phase32_receipt_test.go
-  - internal/compiler/session/session_receipt_gate_test.go
-  - internal/compiler/session/summary_coverage_test.go
-  - scripts/check-freeze.sh
-  - scripts/check-receipts.sh
-  - scripts/codedigest.sh
-  - scripts/verify-phase32.sh
-  - testdata/receipts/M006.manifest
+  - internal/compiler/session/session_app_verify.go
+  - internal/compiler/session/session_modules.go
+  - internal/compiler/session/session_phase30_inventory_test.go
+  - internal/compiler/session/session_phase34_compat_test.go
+  - internal/compiler/session/session_phase34_limit_consumers_test.go
+  - internal/compiler/session/session_phase34_prechange_test.go
+  - internal/compiler/session/session_phase34_presentation_test.go
+  - internal/compiler/session/session_phase34_routes_test.go
+  - internal/compiler/session/session_phase34_surface_test.go
+  - internal/compiler/session/session_phase6_explain.go
+  - internal/compiler/session/session_phase6_query.go
+  - internal/compiler/session/session_presentation.go
+  - internal/compiler/surface/refusals.go
+  - internal/compiler/surfacemanifest/manifest.go
+  - internal/compiler/surfacemanifest/manifest_test.go
+  - internal/compiler/syntax/lexer.go
+  - internal/compiler/syntax/parser.go
+  - internal/compiler/syntax/parser_phase34_baseline_test.go
+  - internal/compiler/syntax/parser_phase34_limit_scope_test.go
+  - internal/compiler/syntax/parser_phase34_recovery_test.go
+  - internal/compiler/syntax/parser_phase34_refusal_test.go
+  - testdata/phase16/public-emitter-consumers.json
+  - testdata/phase34/compat-deltas.json
+  - testdata/phase34/draft-after.json
+  - testdata/phase34/draft-baseline.json
+  - testdata/phase34/drafts.json
+  - testdata/phase34/identity-baseline.json
+  - testdata/phase34/prechange-corpus.json
+  - testdata/phase34/surface-census.json
+  - testdata/phase34/surface-witnesses.json
 findings:
   critical: 0
   warning: 0
@@ -37,16 +62,18 @@ status: clean
 
 # Phase 33: Code Review Report
 
-**Reviewed:** 2026-10-13T18:12:29Z
-**Depth:** standard
-**Files Reviewed:** 23
+**Reviewed:** 2026-10-14T02:24:09Z  
+**Depth:** standard  
+**Files Reviewed:** 48  
 **Status:** clean
 
 ## Summary
 
-Re-reviewed the canonical Phase 33 scope and the receipt-control repair. `check-receipts.sh` now rejects an absent controls declaration and rejects empty or whitespace-only entries before deriving the expected control count. `TestReceiptGateMalformedControls` covers empty, delimiter-only, leading, trailing, interior, and whitespace-only lists with arbitrary control rows. The prior CR-01 is fixed; no residual verified issues were found in the scoped source.
+The Phase 33 source review remains clean. The prior CR-01 finding, “Empty manifest controls bypass receipt control validation,” remains closed by the evidence in [33-REVIEW-FIX.md](33-REVIEW-FIX.md); [33-REVIEW-DISPOSITION.md](33-REVIEW-DISPOSITION.md) retains its `fixed` decision and `open: 0` ledger. No Phase 33 source changes were found since that review.
 
-All reviewed files meet quality standards. No issues found.
+The evaluation-scope resolver returned `status: degraded`, `source: phase-range`, and `reason: no-task-commits-since`, using diff base `8ca83f5d0086c5c92c52194721b29dd660420db4`. This fallback range represents already executed Phase 34 source changes, not 48 new Phase 33 changes. The Phase 34 manifest-route and limit-scope issues previously identified in that source range are fixed by commit `18844d62`; the current manifest, consumer census, interface boundary witnesses, and aggregate AST guard were inspected and no residual finding was confirmed. Dynamic-shift refusal remains assigned to Phase 35/BIT-02.
+
+This refresh is source inspection only; no Go tests were run during this review. The existing [34-VERIFICATION.md](../34-agent-diagnostics-floor-and-surface-manifest/34-VERIFICATION.md) records 38/38 must-haves verified and a 70-selector focused run plus its JSON event check. Those are existing Phase 34 receipts, not new evidence produced by this refresh. No hosted receipt was bound.
 
 ## Narrative Findings (AI reviewer)
 
@@ -54,6 +81,6 @@ No findings.
 
 ---
 
-_Reviewed: 2026-10-13T18:12:29Z_
-_Reviewer: the agent (gsd-code-reviewer)_
+_Reviewed: 2026-10-14T02:24:09Z_  
+_Reviewer: the agent (gsd-code-reviewer)_  
 _Depth: standard_
