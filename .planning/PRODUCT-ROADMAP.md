@@ -595,3 +595,38 @@ The source-review follow-up corrected manifest route applicability and aggregate
 Source inspection corrects the kickoff's hex estimate: the lexer and scalar checker already admit both hex prefixes, but legacy linear conversion lacks uppercase-prefix support. Phase 35 completes and independently proves that contract while preserving existing decimal/binary route policies. The specified bitwise expression also requires bounded scalar grouping, absent at this baseline. The causal execution peer validates observed events rather than pure numeric answers; the [Phase 35 context](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-CONTEXT.md) records the source-grounded evidence clarification and independent result controls before planning. These are discussion findings, not executed feature evidence.
 
 The current three capability slices remain bitwise main/Adler (Phase 35), imported scalar helper (Phase 36), and file CRC with second importer and public CLI interpreter parity (Phase 37). Their blockers, guarantees, evidence owners, reprioritization observations and retained dormant seed dispositions are scoped in that context. No seed trigger was established. Final hosted binding remains Phase 38; human readability and whole-loop latency remain unmeasured.
+
+## Phase 35 execution transition amendment — 2026-10-14
+
+Source inspection at `83c01058` confirms that `examples/checksum/adler32.schway`
+replaces its sixteen doublings with `b << 16` and retains the final addition;
+the existing `b <= 65520` bound makes the shift exact. Fresh local selectors
+after the Adler change passed both imported consumers on interpreter and native
+runners, including seven independent answer rows per consumer and a reached
+copied `b << 15` wrong-result control (`150143896` versus restored `300286872`).
+The new operator guide is checked against the current manifest and the actual
+public and application witnesses. These local receipts are not the phase-wide
+verification, security review, code review, hosted binding, human readability
+review, or a whole-loop cold/warm latency distribution; those remain pending or
+unmeasured.
+
+| Program | Status | Blocker | Smallest complete slice | Checker/guarantee | Evidence/debt | Owner/next action | Reprioritization observation |
+|---|---|---|---|---|---|---|---|
+| `examples/bitwise.schway` public computation and imported Adler checksum | Implemented and locally witnessed; Phase 35 plan/phase closeout remains separate | Phase-level independent verification, security review, and code review remain pending; hosted binding belongs to Phase 38 | Keep the witnessed grouped bitwise expression and literal shifts alongside the one-line Adler consumer used by `checksum` and `adler_low` | Checked U64 bitwise operators; literal shift range 0..63; low-64-bit left shift and logical right shift; bounded expression nesting; unchanged Adler answer and cleanup | BIT-01..04, D-07/D-18/D-20, EVD-17; `TestPhase35ExistingAdlerAnswers`, `TestPhase35AdlerWrongShiftControl`, public 264/alternate 8, and application `264\n` witnesses; see the Phase 35 plan evidence artifact when closed | Phase 35 executor completes scoped plan artifacts; parent verifier/review owns phase acceptance; Phase 38 owns hosted evidence | Reprioritize if a named consumer requires dynamic shifts or a different bound |
+| Imported `crc_step` helper used by a checksum loop | Planned for Phase 36 | Scalar helper calls are absent from scalar expressions; imported call/result behavior still needs independent checker and execution evidence | One arity-one acyclic imported U64/Bool helper and a direct call in the loop consumer | Validate arity, import identity, acyclic calls, argument/result types, and independently mutated call/result defects | CALL-01/02; Phase 36 requirement and helper call/defect controls; Phase 37 consumer evidence | Phase 36 owner plans and implements the helper; Phase 37 integrates it into the file utility | Reprioritize if a named consumer requires arity-N calls or a second call shape |
+| `crc32 FILE`, a second importer, and interpreter CLI parity | Planned for Phase 37 | Imported helper support and file input through the interpreter CLI are not yet present | One ISO-HDLC CRC-32 module, bounded file consumer, second importer, and a guide with literal vectors | Preserve module boundaries and file limits; independently check CRC vectors, failure outcomes, mutation behavior, and CLI parity | APP-13/14, MOD-07, DX-24; independent CRC vectors, wrong-result mutation, and file/second-consumer controls | Phase 37 owns the runnable integration; Phase 38 binds hosted evidence | Reprioritize if an actual file consumer requires a different bounded input or failure contract |
+
+| Seed | Disposition | Current source witness | Named consumer | Trigger/reason | Next action |
+|---|---|---|---|---|---|
+| z1g | retain dormant | `internal/compiler/session/session_phase6_query.go#QueryCommandFile` | `crc_step` declaration and direct call occurrences | No measured query/search gap is present | Keep dormant until a named reviewer task measures a gap in current query plus ordinary search; then scope one source-unit query |
+| trz | retain dormant | `internal/compiler/native/native_app.go#readApplicationCapture`; `internal/compiler/native/native_phase33_capture_test.go#TestPhase33CaptureReadBounded`; `internal/compiler/session/session_app_verify.go#VerifyApplicationCasesFile` | One named checksum/file-utility failure | No unexplained failure is present; the earlier allocation concern was resolved in Phase 33 | Revisit only after a named failure remains unexplained by bounded capture, observers, and replay |
+| z1s | retain dormant | `internal/compiler/syntax/format.go#Format` | Canonical bitwise/CRC source review | No named reviewer dispute is present | Revisit only when a consumer identifies a concrete canonical-source or contract dispute |
+
+| Evidence kind | Status | Receipt |
+|---|---|---|
+| Source inspection | inspected | Adler bound and rewrite, current guide, manifest constraints, seed witnesses, and Dashbit appraisal were inspected; these observations do not establish execution behavior |
+| Fresh local execution | passed | On Go 1.24.0, Apple Clang 21.0.1, macOS/arm64, source revision `83c01058`: `TestPhase35ExistingAdlerAnswers` and `TestPhase35AdlerWrongShiftControl` passed after the source rewrite; `TestPhase35OperatorDocumentation` and `TestPhase35PublicDocumentValues` passed with their copied prose controls; `TestPhase35PublicConformanceWitness` passed on interpreter/native for 264 and alternate 8; `TestPhase35FocusedValueAnswers` passed with application output `264\n` on both engines. Each selector was run with `-count=1 -v -timeout=600s`; native paths ran without skips. |
+| Historical Phase 35-07 execution | historical | At its recorded revision `64dfec6f`, the committed 33-row fixture ran at O0/O3/O3-LTO; all 16 shift rows ran UBSan. This is historical and is not presented as a fresh receipt for this amendment. |
+| Hosted evidence | pending | Phase 38; no current hosted receipt is bound |
+| Human readability | unmeasured | No human review was run |
+| Whole-loop feedback latency | unmeasured | No cold/warm end-to-end distributions were collected |

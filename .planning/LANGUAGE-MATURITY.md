@@ -480,3 +480,39 @@ The source-review follow-up corrected manifest route applicability and aggregate
 At the pre-feature source inspection, hex is partially implemented rather than absent: generic number tokens retain spelling, lexer accepts `0x`/`0X`, scalar conversion accepts both, and legacy linear conversion recognizes only lowercase `0x`. Unprefixed `010` also has different current values by checker route; Phase 35 preserves that behavior as named debt instead of normalizing it. Bitwise operators, literal shifts and scalar grouping are still absent at this discussion baseline. No feature behavior tests were run here.
 
 The [Phase 35 context](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-CONTEXT.md) separates source literal admission, independently checked IR immediate semantics, static value transfers, engine literal results and causal event validation. `executionpeer.Validate` currently checks observed causal structure, not numeric replay; no broader guarantee is claimed. The three runnable successors and z1g/trz/z1s dormant dispositions remain scoped there. Phase 38 owns hosted final evidence; human readability and whole-loop latency are unmeasured.
+
+## Phase 35 maturity transition amendment — 2026-10-14
+
+Source inspection at `83c01058` confirms the real Adler consumer now uses the
+bounded `b << 16` form with its final addition intact. Fresh local runs passed
+the checksum and `adler_low` answer tables on both engines and reached a copied
+wrong-shift control. The source-free operator guide is tied to current manifest
+contracts; the public conformance observation `outcome.value == 264` remains
+distinct from the U64 application output `264\n`, and the alternate grouping
+returns 8 on both engines. These receipts establish only the named local paths.
+They do not close phase-wide verification, security/code review, Phase 38 hosted
+binding, human readability, or whole-loop cold/warm performance.
+
+| User-visible program | Current blocker/status | Smallest complete slice | Checker/guarantee changes | Evidence/debt | Owner or next action | Observation that changes priority |
+|---|---|---|---|---|---|---|
+| Grouped bitwise example and imported Adler checksum consumers | Implemented and locally witnessed; phase closeout and independent review remain pending | `x ^ (y << 3) & 0xFF` with alternate-grouping control, plus one-line Adler shift through `checksum` and `adler_low` | U64 operators, literal shift bounds, low-64-bit/logical shift behavior, expression-depth guard, and unchanged Adler answers/cleanup | BIT-01..04, D-07/D-18/D-20, EVD-17; fresh `TestPhase35ExistingAdlerAnswers`, `TestPhase35AdlerWrongShiftControl`, `TestPhase35OperatorDocumentation`, `TestPhase35PublicDocumentValues`, public 264/8 and application 264 newline selectors | Finish plan evidence; parent verifier, security audit, and code review own phase acceptance; Phase 38 owns hosted binding | A named consumer needs dynamic shifts or a different bound |
+| Imported `crc_step` helper in a checksum loop | Planned Phase 36; scalar-expression helper calls and independent import/call defect evidence are absent | One arity-one acyclic imported U64/Bool helper and a call from the loop consumer | Check import identity, call arity, argument/result types, acyclicity, and independently mutated call/result behavior | CALL-01/02 and Phase 36 helper call/defect evidence; integrated consumer belongs to Phase 37 | Phase 36 owner; then Phase 37 consumer | A named consumer requires arity-N or another call shape |
+| File CRC-32, second importer, and interpreter CLI use | Planned Phase 37; helper and file-input CLI route are absent | Bounded ISO-HDLC CRC-32 file program, second importer, public interpreter CLI parity, and guide | Preserve bounded file handling and module composition; check independent vectors, failures, mutation, and second-consumer behavior | APP-13/14, MOD-07, DX-24; CRC vectors and wrong-result/file failure controls | Phase 37 owner; Phase 38 binds hosted evidence | A real file consumer needs a different bounded input or failure contract |
+
+The conditional seeds z1g, trz, and z1s remain dormant. z1g's current query
+witness is `internal/compiler/session/session_phase6_query.go#QueryCommandFile`;
+there is no measured navigation gap for the `crc_step` consumer. trz's witnesses
+are bounded application capture (`readApplicationCapture` and
+`TestPhase33CaptureReadBounded`) plus application verification; no unexplained
+checksum failure exists, and the older allocation concern was resolved in
+Phase 33. z1s's witness is `internal/compiler/syntax/format.go#Format`; no
+canonical-source dispute is named. Revisit each only on its named trigger.
+The Dashbit source appraisal remains contextual and supplies no evidence for a
+generic database, telemetry, or source-query expansion.
+
+Current execution receipts were produced locally on macOS/arm64 with Go
+1.24.0 and Apple Clang 21.0.1 against source revision `83c01058`. Historical
+Phase 35-07 evidence remains scoped to revision `64dfec6f`: 33 fixture rows ran
+at O0/O3/O3-LTO, and all 16 shift rows ran UBSan. It is not a fresh current
+receipt. Phase 38 hosted evidence is pending; readability and complete
+generate/verify/run/observe/repair cold/warm distributions remain unmeasured.
