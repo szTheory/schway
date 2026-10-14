@@ -4,18 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 35
 current_phase_name: Bitwise Operators, Literal Shifts, and Hex Literals
-current_plan: 3
+current_plan: 4
 status: executing
-stopped_at: Completed 35-02-PLAN.md
-last_updated: "2026-10-14T14:59:40.738Z"
+stopped_at: Completed 35-03-PLAN.md
+last_updated: "2026-10-14T15:17:09.233Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 35 Plan 35-02 complete; Plan 35-03 is next
-state_head: f902893942284fcf92dfc6c7b225b2fff853b137
+state_head: e412841f90fb2a3276643d92392b6498fb1f7aee
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 21
-  completed_plans: 15
+  completed_plans: 16
   percent: 33
 ---
 
@@ -126,9 +126,9 @@ plans.
 ## Current Position
 
 Phase: 35 (Bitwise Operators, Literal Shifts, and Hex Literals)
-Current Plan: 3
+Current Plan: 4
 Total Plans in Phase: 8
-Status: executing
+Status: Ready to execute
 Last activity: 2026-10-14 — Phase 35 Plan 35-02 complete; Plan 35-03 is next
 
 Progress: [███░░░░░░░] 33%
@@ -602,6 +602,7 @@ subset alone.
 | Phase 34 P08 | 32min | 3 tasks | 23 files |
 | Phase 35 P01 | 24 min | 2 tasks | 5 files |
 | Phase 35 P2 | 22min | 3 tasks | 13 files |
+| Phase 35 P03 | 11 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -819,6 +820,9 @@ decision history; they no longer describe current status.
 - [Phase 35]: Scalar recursion uses one 64-entry bound across grouping and byte_at index paths.
 - [Phase 35]: Malformed numeric ownership suppresses only parser expectations at the exact full lexer token span.
 - [Phase 35]: Historical compatibility fixtures remain unchanged; source-bound literal amendments state current projections independently.
+- [Phase 35]: Keep shifts immediate-only: grouped number leaves become canonical decimal ConstU64 values and never produce RHS places.
+- [Phase 35]: Admit Byte only for the new structured U64-returning bridge after a full-body no-use prepass; preserve statement-free legacy Byte routing and existing U64/ByteView type-fact order.
+- [Phase 35]: Keep checker value transfers independent from the producer; transfer tests use checker-owned facts and a static safety sink, without execution-result replay.
 
 ### Pending Todos
 
@@ -1065,8 +1069,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-14T14:58:32.707Z
-Stopped at: Completed 35-02-PLAN.md
+Last session: 2026-10-14T15:17:09.182Z
+Stopped at: Completed 35-03-PLAN.md
 Resume file: None
 Next action: $gsd-execute-phase 35
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
