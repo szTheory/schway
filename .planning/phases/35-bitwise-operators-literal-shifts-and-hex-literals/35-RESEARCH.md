@@ -418,24 +418,28 @@ For each peer, seed an input vector that distinguishes the selected bitwise/shif
 
 All other assumptions are either locked in `35-CONTEXT.md` or are source observations tied to the cited opened files. No new dependency/backend/runtime defect/event is recommended.
 
-## Open Questions
+## Open Questions (RESOLVED / explicitly dispositioned 2026-10-14)
 
 1. **Resolve the D-07 runnable entry contradiction before plans allocate implementation tasks.**
+   - **RESOLVED:** current 35-CONTEXT.md D-07 and the dated parent addendum define the unused-Byte scalar bridge, distinct conformance/application output and mandatory independent tests. This is planned admission, not an already passing CLI claim.
    - What we know: parser function declarations require one parameter (`internal/compiler/syntax/parser.go:543-552`); current `interpreterInputs` supports Byte, Buffer and Match cases and returns no input for the default route (`internal/compiler/session/session.go:1224-1255`); scalar checking accepts U64 or ByteView parameters (`internal/compiler/check/scalar.go:37-50`).
    - What's unclear: how D-07's required no-input `main` source passes both current public `schway run --engine=interpreter` and native entry routes without adding entry behavior or changing function signature contract.
    - Recommendation: before planning the public witness task, have the parent resolve this within the delegated D-07 decision (e.g. amend the witness to the narrowest currently supported entry form if a verified form exists, or explicitly authorize a small scoped run-entry addition). Do not assert that current public run already works. This agent did not execute a CLI trial.
 
 2. **D-18 live acceptance wording needs its required dated amendment.**
+   - **RESOLVED:** commit 4257c3f5 updates live BIT-01 and Phase 35 criterion 1 with dated original-demand provenance and separate value versus causal evidence obligations.
    - What we know: as read during research, `.planning/REQUIREMENTS.md` BIT-01 and `.planning/ROADMAP.md` criterion 1 call for wrong-result mutants at all peers; `executionpeer.Validate(program, document)` has no entry parameter and checks only observed causal structure. [VERIFIED: `internal/compiler/executionpeer/executionpeer.go:70-81`; `REQUIREMENTS.md:35`; `ROADMAP.md:195`]
    - What's unclear: the exact dated note/wording parent will add to both live artifacts before plan creation.
    - Recommendation: parent should apply D-18's explicit auto-followed correction before planning; retain provenance/original ask, and keep executionpeer's acceptance to per-op event-free plus forged-event controls. Research does not edit either artifact.
 
 3. **Baseline emitter completeness.**
+   - **RESOLVED:** Plan 35-01 explicitly selects all three cgen entry points (Emit, EmitNative, EmitApplication), with emitting/non-emitting literal rows and non-vacuous route controls. No missing route is silently treated as covered.
    - What we know: current frozen baseline test uses `EmitApplication` and `EmitNative`; `Emit` is used by evidence code.
    - What's unclear: whether the generated-C corpus should exercise direct `Emit` too, or document why application/native routes cover the phase's output contract.
    - Recommendation: name every emitter route selected and make baseline row coverage non-vacuous; preserve non-emitting source cases.
 
 4. **Focused native matrix execution support.**
+   - **RESOLVED for local tool availability:** parent compiled and executed a hand-authored volatile U64 shift probe with `clang -std=c17 -Wall -Wextra -Werror -O3 -flto` and, separately, `-O3 -fsanitize=undefined -fno-sanitize-recover=all`; all compile/run exits were 0 with empty stderr. Apple Clang 21.0.0 targeted arm64-apple-darwin25.6.0. Probe source/executables: /tmp/schway35-shift-probe.c, /tmp/schway35-lto-probe, /tmp/schway35-ubsan-probe. This newly executed planning availability check does not prove Schway-generated C or any feature vector. Plan 35-07 still executes the named feature O0/O3/LTO/UBSan lanes; unavailable future/local/hosted lanes remain explicit gaps, with Phase 38 owning final hosted receipts.
    - What we know: local host is macOS arm64 with Go 1.24 and Apple Clang 21; no `-O0`/`-O3`/LTO/UBSan test ran here.
    - What's unclear: whether native LTO and sanitizer runtime work in this environment.
    - Recommendation: include the focused matrix as an explicit named feature test, but treat unavailable local LTO/UBSan as an honest lane gap; do not widen to a broad native suite or hosted dispatch.
@@ -446,8 +450,8 @@ All other assumptions are either locked in `35-CONTEXT.md` or are source observa
 |------------|------------|-----------|---------|----------|
 | Go | Compiler/package tests | ✓ [VERIFIED: terminal version probe] | go1.24.0 darwin/arm64 | — |
 | Clang | Generated native code and optimization tests | ✓ [VERIFIED: terminal version probe] | Apple clang 21.0.0 (clang-2100.1.1.101) | — |
-| Clang LTO linker/runtime | Focused `-O3 -flto` feature test | ? (not tested) | — | Keep as a named lane; resolve only if focused probe fails. |
-| Clang UBSan shift runtime | Focused shift sanitizer test | ? (not tested) | — | Use static literal scan and unsigned C review as separate evidence; do not claim sanitizer ran. |
+| Clang LTO linker/runtime | Focused `-O3 -flto` feature test | Available: planning probe compiled/ran, exit 0 | Apple Clang 21.0.0 local arm64 | Feature vectors still pending; no other-host claim |
+| Clang UBSan shift runtime | Focused shift sanitizer test | Available: planning probe compiled/ran, exit 0, no sanitizer stderr | Apple Clang 21.0.0 local arm64 | Schway-generated shifts/static scan remain separate pending evidence |
 
 No package registry installs or external services are needed. No fallback changes feature scope or introduces another backend.
 
