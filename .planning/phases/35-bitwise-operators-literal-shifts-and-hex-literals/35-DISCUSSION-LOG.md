@@ -60,3 +60,9 @@ Two passes resolved the meaningful conflicts: parentheses, mixed precedence, raw
 ## Deferred Ideas
 
 Numeric policy consistency and causal-peer value replay need separate owners/compatibility inputs. Scalar calls Phase 36, file CRC/second reuse/CLI interpreter parity Phase 37, hosted binding Phase 38, word counter future M008. z1g/trz/z1s remain dormant with named consumers/triggers in CONTEXT.md. No pending todos matched Phase 35. No codebase maps, phase SPEC, interrupted checkpoint or advisor profile was found at initialization.
+
+## Source-grounded research clarification — 2026-10-14
+
+The implementation researcher found a second runnable-witness mismatch: current parser requires one parameter; public run binds Byte/Buffer but scalar checking takes U64/ByteView. Parent inspected the source/checker, input supplier, scalar C function and interpreter frame contracts, then auto-followed the smallest witness bridge: an unused Byte formal with U64/Bool locals, independently enforced as unused. No new CLI input, synthetic U64 default, Byte arithmetic/conversion or arity change. Existing U64 input-required outcomes stay fixed. Public conformance streams show outcome value 264; bare 264 newline belongs to the separate application seam, not a rewritten public run projection. D-07 and the live runnable-gain note now state this explicitly. The bridge is a planned admission change; no passing execution is claimed yet.
+
+The live BIT-01 and Phase 35 criterion 1 received D-18's dated evidence amendment, preserving the original demand in provenance while separating value derivation from causal validation. The active phase/milestone requirement owners did not change. No registry handler exists for replacing arbitrary criterion prose; these narrow textual amendments are within the active GSD planning workflow, followed by canonical roadmap validation. STATE/plan-progress mutations continue through SDK handlers.

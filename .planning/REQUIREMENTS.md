@@ -32,7 +32,8 @@ acceptance record is kept at
 
 ### Bitwise operators and literals
 
-- [ ] **BIT-01**: U64 `^`, `&` and `|` are admitted in scalar code. Interpreter and native agree with literal expected answers at -O0, -O3 and -O3 with LTO. Each peer (check, corevalidate, originvalidate, executionpeer) derives the ops independently, and a wrong-result mutant per op is caught.
+- [ ] **BIT-01**: U64 `^`, `&` and `|` are admitted in scalar code. Interpreter and native agree with literal expected answers at -O0, -O3 and -O3 with LTO. Check, corevalidate and originvalidate derive scalar transfers independently, with a wrong-result transfer mutant per op per value-deriving peer caught. Engine wrong-result controls are caught by independently authored expected answers. Executionpeer independently validates each op's event-free causal admission and catches fabricated step/defect events; it does not prove pure numeric results.
+  - Dated evidence amendment (2026-10-14, Phase 35 D-18): the original requirement said “Each peer (check, corevalidate, originvalidate, executionpeer) derives the ops independently, and a wrong-result mutant per op is caught.” Source inspection of `executionpeer.Validate` shows observed causal structure only and no entry-value input. This amendment assigns value versus causal controls to their actual independent knowers, preserving defined answers and the event-free/no-new-defect contract without inventing result replay.
 - [ ] **BIT-02**: U64 `<<` and `>>` are admitted only when the shift amount is an integer literal from 0 to 63.
   - Amounts of 0, 31, 32 and 63 give pinned answers on both engines and at every optimization level.
   - An amount of 64 or more, or a non-literal amount, is refused at check, core and origin with a named code. Generated C never contains an unguarded shift.
