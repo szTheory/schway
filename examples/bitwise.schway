@@ -1,0 +1,15 @@
+module examples.bitwise
+
+export {
+  fn main
+}
+
+fn main(unused: Byte) -> U64 {
+  var seed = 0
+  let x = 0x100
+  let y = 0x21
+  let shifted_right = x >> 1
+  let combined_or = x | y
+  let witness = x ^ (y << 3) & 0xFF
+  witness
+}

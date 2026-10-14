@@ -1,0 +1,43 @@
+{
+  "schema": "schway.phase35.u64-value-vectors/1",
+  "cases": [
+    {"name":"xor-distinct","op":"xor","left":"165","right":"60","expected_decimal":"153"},
+    {"name":"xor-equal","op":"xor","left":"42","right":"42","expected_decimal":"0"},
+    {"name":"xor-zero-and-maximum","op":"xor","left":"0","right":"18446744073709551615","expected_decimal":"18446744073709551615"},
+    {"name":"xor-high-bit-and-maximum","op":"xor","left":"9223372036854775808","right":"18446744073709551615","expected_decimal":"9223372036854775807"},
+    {"name":"xor-hex-case-separators-leading-zeroes","op":"xor","left":"0x0000_00A5","right":"0X0000_003C","expected_decimal":"153"},
+
+    {"name":"and-distinct","op":"and","left":"165","right":"60","expected_decimal":"36"},
+    {"name":"and-equal-maximum","op":"and","left":"18446744073709551615","right":"18446744073709551615","expected_decimal":"18446744073709551615"},
+    {"name":"and-zero-and-maximum","op":"and","left":"0","right":"18446744073709551615","expected_decimal":"0"},
+    {"name":"and-high-bit-and-maximum","op":"and","left":"9223372036854775808","right":"18446744073709551615","expected_decimal":"9223372036854775808"},
+    {"name":"and-hex-leading-zeroes","op":"and","left":"0X00FF","right":"0x0f0f","expected_decimal":"15"},
+
+    {"name":"or-distinct","op":"or","left":"165","right":"60","expected_decimal":"189"},
+    {"name":"or-equal","op":"or","left":"42","right":"42","expected_decimal":"42"},
+    {"name":"or-zero-and-maximum","op":"or","left":"0","right":"18446744073709551615","expected_decimal":"18446744073709551615"},
+    {"name":"or-high-bit-and-low-bit","op":"or","left":"9223372036854775808","right":"1","expected_decimal":"9223372036854775809"},
+    {"name":"or-hex-case-separators-leading-zeroes","op":"or","left":"0x0001","right":"0X0000_0002","expected_decimal":"3"},
+
+    {"name":"left-zero-count-maximum","op":"shift_left","left":"18446744073709551615","count":"0","expected_decimal":"18446744073709551615"},
+    {"name":"left-count-31","op":"shift_left","left":"1","count":"31","expected_decimal":"2147483648"},
+    {"name":"left-count-32","op":"shift_left","left":"1","count":"32","expected_decimal":"4294967296"},
+    {"name":"left-count-63","op":"shift_left","left":"1","count":"63","expected_decimal":"9223372036854775808"},
+    {"name":"left-high-bit-truncates","op":"shift_left","left":"9223372036854775808","count":"1","expected_decimal":"0"},
+    {"name":"left-maximum-wraps","op":"shift_left","left":"18446744073709551615","count":"1","expected_decimal":"18446744073709551614"},
+    {"name":"left-maximum-count-63","op":"shift_left","left":"18446744073709551615","count":"63","expected_decimal":"9223372036854775808"},
+    {"name":"left-hex-amount-and-source","op":"shift_left","left":"0x0000_0021","count":"0X03","expected_decimal":"264"},
+
+    {"name":"right-zero-count-maximum","op":"shift_right","left":"18446744073709551615","count":"0","expected_decimal":"18446744073709551615"},
+    {"name":"right-count-31-logical","op":"shift_right","left":"18446744073709551615","count":"31","expected_decimal":"8589934591"},
+    {"name":"right-count-32-logical","op":"shift_right","left":"18446744073709551615","count":"32","expected_decimal":"4294967295"},
+    {"name":"right-count-63-logical","op":"shift_right","left":"18446744073709551615","count":"63","expected_decimal":"1"},
+    {"name":"right-high-bit-count-1","op":"shift_right","left":"9223372036854775808","count":"1","expected_decimal":"4611686018427387904"},
+    {"name":"right-high-bit-count-63","op":"shift_right","left":"9223372036854775808","count":"63","expected_decimal":"1"},
+    {"name":"right-zero-value","op":"shift_right","left":"0","count":"32","expected_decimal":"0"},
+    {"name":"right-hex-leading-zeroes","op":"shift_right","left":"0X0000_0100","count":"0x03","expected_decimal":"32"},
+
+    {"name":"locked-association","expression":"x ^ (y << 3) & 0xFF","x":"0x100","y":"0x21","expected_decimal":"264"},
+    {"name":"alternate-final-mask-association","expression":"(x ^ (y << 3)) & 0xFF","x":"0x100","y":"0x21","expected_decimal":"8"}
+  ]
+}

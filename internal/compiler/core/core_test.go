@@ -878,12 +878,11 @@ func linearProbeInput(function core.Function) (string, bool) {
 // fixture, so a kind that no corpus program ever produces cannot silently
 // pass this control by omission.
 //
-// pathoracle and originvalidate do not switch exhaustively on
-// core.OperationKind today (they walk only terminators); "handled" for these
-// two sites means the walk completes without error on a program containing
-// the kind, matching their current terminator-membership-test shape. Widening
-// them to a stronger, kind-aware notion of "handled" is D-04-29, out of this
-// plan's scope.
+// pathoracle and originvalidate have operation-specific rules, but neither
+// provides one general exhaustive dispatcher over core.OperationKind here.
+// "Handled" for these two sites means the relevant walk completes without
+// error on a program containing the kind; independent operation-specific
+// tests remain responsible for transfer and ancestry semantics.
 // exhaustiveDispatchFixtures is the in-process control's own literal,
 // hand-maintained, phase-scoped fixture list (A-05). Extracted to a package
 // var (rather than inlined in TestAllOperationKindsHandledAtEverySite) so
@@ -911,6 +910,7 @@ var exhaustiveDispatchFixtures = []string{
 	"testdata/phase19/literal_tracer.schway",
 	"examples/sum_to_n.schway",
 	"examples/fizzbuzz.schway",
+	"examples/bitwise.schway",
 	"testdata/phase29/adler32_library.schway",
 }
 
