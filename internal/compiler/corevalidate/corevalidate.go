@@ -1216,7 +1216,18 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 	operationIDs := make(map[string]struct{}, len(linear.Operations))
 	pointIDs := make(map[string]struct{}, len(linear.Operations))
 	loanIDs := make(map[string]struct{})
+	// Shift results introduce a place at their static definition. Track all
+	// prior writes, including scalar stores, once in operation order rather
+	// than using fixed-point initialization (a loop reexecutes its own shift).
+	// Only shifts consume this law; mutable locals retain their store rules.
+	written := map[string]bool{function.Parameter.ID: true}
 	for index, operation := range linear.Operations {
+		freshTarget := !written[operation.TargetID]
+		for _, target := range []string{operation.TargetID, operation.StoreTargetID, operation.ErrTargetID, operation.PayloadTargetID} {
+			if target != "" {
+				written[target] = true
+			}
+		}
 		if !v.unique(operationIDs, operation.ID, "core.duplicate_operation_id") || !v.unique(pointIDs, operation.PointID, "core.duplicate_point_id") {
 			return nil, nil, false
 		}
@@ -1303,6 +1314,9 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 				operation.StoreTargetID == "" && operation.TrueEdgeID == "" && operation.FalseEdgeID == "" &&
 				scalarOperationHasNoUnrelatedFields(operation)
 			if !v.check(shapeOK, "core.scalar_operation_invalid", operation.ID) {
+				return nil, nil, false
+			}
+			if !v.check(freshTarget, "core.invalid_target", operation.TargetID) {
 				return nil, nil, false
 			}
 		case core.OpBytesLen, core.OpBytesAt:

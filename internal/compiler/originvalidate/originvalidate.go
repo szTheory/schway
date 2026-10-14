@@ -1569,7 +1569,17 @@ func phase27ArithmeticProblem(function core.Function) *Problem {
 	for _, place := range function.Linear.Places {
 		places[place.ID] = types[place.TypeID]
 	}
+	// Freshness is a static introduction law for shifts, not a prohibition
+	// on reexecuting a loop body or assigning an ordinary mutable local.
+	// Include store/error/payload writes when deriving prior definitions.
+	written := map[string]bool{function.Parameter.ID: true}
 	for _, operation := range function.Linear.Operations {
+		freshTarget := !written[operation.TargetID]
+		for _, target := range []string{operation.TargetID, operation.StoreTargetID, operation.ErrTargetID, operation.PayloadTargetID} {
+			if target != "" {
+				written[target] = true
+			}
+		}
 		if operation.ConstU64 != "" && operation.Kind != core.OpConst && operation.Kind != core.OpShiftLeftU64 && operation.Kind != core.OpShiftRightU64 {
 			return &Problem{Code: "core.scalar_operation_invalid", Detail: fmt.Sprintf("%s: invalid ConstU64 field on %s operation %q", function.ID, operation.Kind, operation.ID)}
 		}
@@ -1590,6 +1600,9 @@ func phase27ArithmeticProblem(function core.Function) *Problem {
 			amount, err := strconv.ParseUint(operation.ConstU64, 10, 64)
 			if places[operation.SourceID] != "U64" || operation.TargetID == "" || operation.TargetID == function.Parameter.ID || operation.TargetID == operation.SourceID || types[operation.TypeID] != "U64" || places[operation.TargetID] != "U64" || operation.RightID != "" || err != nil || strconv.FormatUint(amount, 10) != operation.ConstU64 || amount > 63 || operation.StoreTargetID != "" || operation.TrueEdgeID != "" || operation.FalseEdgeID != "" || !originScalarOperationHasNoUnrelatedFields(operation) {
 				return &Problem{Code: "core.scalar_operation_invalid", Detail: fmt.Sprintf("%s: invalid %s operation %q", function.ID, operation.Kind, operation.ID)}
+			}
+			if !freshTarget {
+				return &Problem{Code: "core.scalar_operation_invalid", Detail: fmt.Sprintf("%s: shift target %q has a prior definition", function.ID, operation.TargetID)}
 			}
 		}
 	}

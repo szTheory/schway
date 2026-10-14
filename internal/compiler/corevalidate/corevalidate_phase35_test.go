@@ -122,6 +122,11 @@ func TestPhase35ShiftImmediateAdmission(t *testing.T) {
 		}, want: "core.scalar_operation_invalid"},
 		{name: "parameter target", edit: func(function *core.Function, op *core.LinearOperation) { op.TargetID = function.Parameter.ID }, want: "core.scalar_operation_invalid"},
 		{name: "source aliases target", edit: func(_ *core.Function, op *core.LinearOperation) { op.TargetID = op.SourceID }, want: "core.scalar_operation_invalid"},
+		{name: "uninitialized U64 source", edit: func(function *core.Function, op *core.LinearOperation) {
+			placeID := function.ID + ":place:" + strconv.Itoa(len(function.Linear.Places))
+			function.Linear.Places = append(function.Linear.Places, core.Place{ID: placeID, TypeID: phase35TypeID(t, function, "U64")})
+			op.SourceID = placeID
+		}, want: "core.scalar_shift_amount_invalid"},
 		{name: "store field", edit: func(_ *core.Function, op *core.LinearOperation) { op.StoreTargetID = inputID }, want: "core.scalar_operation_invalid"},
 		{name: "edge field", edit: func(_ *core.Function, op *core.LinearOperation) { op.TrueEdgeID = "forged-edge" }, want: "core.scalar_operation_invalid"},
 		{name: "callee field", edit: func(_ *core.Function, op *core.LinearOperation) { op.CalleeID = "forged-callee" }, want: "core.scalar_operation_invalid"},
@@ -145,6 +150,75 @@ func TestPhase35ShiftImmediateAdmission(t *testing.T) {
 	}
 	if got := Validate(program); !got.Valid {
 		t.Fatalf("clean raw shift failed after copied controls: %+v", got.Problems)
+	}
+}
+
+// TestPhase35ShiftTargetFreshness reaches a shift target that aliases an
+// earlier U64 definition while keeping the later consumer attached to that
+// target. This isolates target freshness from a downstream uninitialized read.
+func TestPhase35ShiftTargetFreshness(t *testing.T) {
+	program := phase35CheckedCore(t, "module phase35.shift_target\nexport { fn main }\nfn main(input: U64) -> U64 {\n  var reused = input\n  let limit = 16\n  let flag = input < limit\n  let prior = input >> 1\n  let shifted = input << 3\n  shifted\n}\n")
+	base := &program.Functions[0]
+	for _, kind := range []core.OperationKind{core.OpShiftLeftU64, core.OpShiftRightU64} {
+		for _, row := range []struct {
+			name   string
+			target string
+		}{
+			{name: "prior constant", target: phase35FindOperation(t, base, core.OpConst).TargetID},
+			{name: "prior copy", target: phase35PlaceID(t, base, "prior")},
+			{name: "prior mutable store", target: phase35PlaceID(t, base, "reused")},
+			{name: "prior shift", target: phase35FindOperation(t, base, core.OpShiftRightU64).TargetID},
+		} {
+			t.Run(string(kind)+"/"+row.name, func(t *testing.T) {
+				mutant := cloneProgram(program)
+				function := &mutant.Functions[0]
+				shift := phase35FindOperation(t, function, core.OpShiftLeftU64)
+				oldTargetID := shift.TargetID
+				shift.Kind, shift.TargetID = kind, row.target
+				for index := range function.Linear.Operations {
+					if function.Linear.Operations[index].SourceID == oldTargetID {
+						function.Linear.Operations[index].SourceID = row.target
+					}
+				}
+				got := Validate(mutant)
+				if got.Valid || !phase35HasCoreProblem(got.Problems, "core.invalid_target") {
+					t.Fatalf("initialized shift target reuse: verdict=%+v, want core.invalid_target", got)
+				}
+			})
+		}
+	}
+}
+
+// TestPhase35ShiftProducerShapes distinguishes fresh expression temporaries
+// from mutable assignment destinations and repeated execution of a loop body.
+func TestPhase35ShiftProducerShapes(t *testing.T) {
+	for _, row := range []struct {
+		name string
+		body string
+	}{
+		{name: "assignment", body: "  var value = input\n  value = value << 1\n  value = value >> 1\n  value\n"},
+		{name: "branch", body: "  var value = input\n  if input < 16 {\n    value = value << 1\n  } else {\n    value = value >> 1\n  }\n  value\n"},
+		{name: "loop", body: "  var value = input\n  var i = 0\n  while i < 3 {\n    value = value << 1\n    value = value >> 1\n    i = i + 1\n  }\n  value\n"},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			program := phase35CheckedCore(t, "module phase35.shift_shapes\nexport { fn main }\nfn main(input: U64) -> U64 {\n"+row.body+"}\n")
+			if row.name == "loop" {
+				backEdge := false
+				for _, edge := range program.Functions[0].Linear.Edges {
+					backEdge = backEdge || edge.Pattern == "back"
+				}
+				if !backEdge {
+					t.Fatal("loop control did not produce a backedge")
+				}
+			}
+			result := Validate(program)
+			if !result.Valid {
+				t.Fatalf("producer shift shape refused: %+v", result.Problems)
+			}
+			if result.PeerSignatures()[program.Functions[0].ID].ClosureDigest == "" {
+				t.Fatal("producer control stopped replay without finishing validation")
+			}
+		})
 	}
 }
 
