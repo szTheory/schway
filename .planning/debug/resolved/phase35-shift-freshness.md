@@ -121,6 +121,12 @@ commit: 3800080e (fix(phase35): independently refuse reused shift targets)
 completion_authority: Parent delegated autonomous repair, verification and archive within the already authorized Phase35 execute workflow; no separate routine human-verify checkpoint requested.
 files_changed: [internal/compiler/corevalidate/corevalidate.go, internal/compiler/corevalidate/corevalidate_phase35_test.go, internal/compiler/originvalidate/originvalidate.go, internal/compiler/originvalidate/originvalidate_phase35_test.go]
 
+## Blameless Postmortem
+
+why_not_caught: The initial independent admission controls omitted initialized target reuse with a consumer rewired to keep the rest of the raw program valid; core's silent replay exit therefore remained unobserved.
+guard: Both peers' TestPhase35ShiftTargetFreshness now isolate eight prior-static-write cases; TestPhase35ShiftProducerShapes protects assignment/branch/loop behavior and finished core replay. Serial refusal-removal controls established that each new gate is reached and load-bearing.
+prevention: why not caught: initialized target reuse was absent from the admission gate; guard: both peer TestPhase35ShiftTargetFreshness and TestPhase35ShiftProducerShapes controls.
+
 ## Exact Local Receipts
 
 All Go commands used GOCACHE=/tmp/ai-lang-verification-gocache and -count=1 -v -timeout=600s.
