@@ -1,0 +1,11 @@
+<testsuites tests="1" failures="1"><testsuite name="github.com/szTheory/schway/internal/compiler/session" tests="1" failures="1" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase34SurfaceManifestWitnesses" time="0"><failure message="go test reported failure">=== RUN   TestPhase34SurfaceManifestWitnesses
+    session_phase34_surface_test.go:247: independent claim=session_test.phase34SurfaceClaim{Facet:"operator:u64.add", Form:"+", Contexts:[]string{"scalar U64 operands"}, Constraints:[]string{"Checked arithmetic reports overflow as a defect."}, Arity:0, Arities:[]int(nil), Inputs:[]string(nil), Result:"", Scope:"", Unit:"", Value:0, Meaning:"", Routes:[]string(nil), Code:"", Hint:""} witness context="scalar U64 operands" constraints=[]string{"Checked arithmetic reports overflow as a defect."}
+    session_phase34_surface_test.go:252: clean witness/manifest comparison: [{constraint_changed operator:u64.add}]
+--- FAIL: TestPhase34SurfaceManifestWitnesses (0.00s)
+</failure><system-out>=== RUN   TestPhase34SurfaceManifestWitnesses
+    session_phase34_surface_test.go:247: independent claim=session_test.phase34SurfaceClaim{Facet:"operator:u64.add", Form:"+", Contexts:[]string{"scalar U64 operands"}, Constraints:[]string{"Checked arithmetic reports overflow as a defect."}, Arity:0, Arities:[]int(nil), Inputs:[]string(nil), Result:"", Scope:"", Unit:"", Value:0, Meaning:"", Routes:[]string(nil), Code:"", Hint:""} witness context="scalar U64 operands" constraints=[]string{"Checked arithmetic reports overflow as a defect."}
+    session_phase34_surface_test.go:252: clean witness/manifest comparison: [{constraint_changed operator:u64.add}]
+--- FAIL: TestPhase34SurfaceManifestWitnesses (0.00s)
+</system-out></testcase><system-out>FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/session	0.011s
+</system-out></testsuite></testsuites>

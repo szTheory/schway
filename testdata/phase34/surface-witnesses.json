@@ -1,0 +1,20 @@
+{
+  "schema": "phase34.surface-witnesses/1",
+  "boundary": "One authored complete source program checks U64 addition through CheckCommandFile. This finite witness does not establish arbitrary source programs or the other manifest facets, which later plan tasks add.",
+  "witnesses": [
+    {
+      "id": "u64-add-scalar-operands",
+      "facet": "operator:u64.add",
+      "context": "scalar U64 operands",
+      "source": "module examples.phase34.surface_add\n\nexport {\n  fn main\n}\n\nfn main(n: U64) -> U64 {\n  var next = n + 1\n  next\n}\n",
+      "files": [],
+      "expected_status": "pass",
+      "expected_code": "",
+      "expected_hint": "",
+      "expected_arity": 2,
+      "expected_constraints": [
+        "Checked arithmetic reports overflow as a defect."
+      ]
+    }
+  ]
+}

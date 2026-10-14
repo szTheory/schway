@@ -1,0 +1,30 @@
+{
+  "command": "GOCACHE=/tmp/ai-lang-verification-gocache /opt/homebrew/opt/python@3.14/bin/python3.14 /tmp/schway-go-junit.py --record .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task1-comparator-run.json --target TestPhase34SurfaceManifestWitnesses --target-file internal/compiler/session/session_phase34_surface_test.go --expected 'The independent U64 addition witness completes CheckCommandFile admission and detects a manifest-only operator claim by exact facet and reason.' -- go test -json ./internal/compiler/session -run '^TestPhase34SurfaceManifestWitnesses$' -count=1 -v",
+  "exitCode": 1,
+  "output": "<testsuites tests=\"1\" failures=\"1\"><testsuite name=\"github.com/szTheory/schway/internal/compiler/session\" tests=\"1\" failures=\"1\" skipped=\"0\"><testcase classname=\"github.com/szTheory/schway/internal/compiler/session\" name=\"TestPhase34SurfaceManifestWitnesses\" time=\"0\"><failure message=\"go test reported failure\">=== RUN   TestPhase34SurfaceManifestWitnesses\n    session_phase34_surface_test.go:247: clean witness/manifest comparison: [{constraint_changed operator:u64.add}]\n--- FAIL: TestPhase34SurfaceManifestWitnesses (0.00s)\n</failure><system-out>=== RUN   TestPhase34SurfaceManifestWitnesses\n    session_phase34_surface_test.go:247: clean witness/manifest comparison: [{constraint_changed operator:u64.add}]\n--- FAIL: TestPhase34SurfaceManifestWitnesses (0.00s)\n</system-out></testcase><system-out>FAIL\nFAIL\tgithub.com/szTheory/schway/internal/compiler/session\t0.010s\n</system-out></testsuite></testsuites>\n",
+  "targetTest": "TestPhase34SurfaceManifestWitnesses",
+  "targetFile": "internal/compiler/session/session_phase34_surface_test.go",
+  "expected": "The independent U64 addition witness completes CheckCommandFile admission and detects a manifest-only operator claim by exact facet and reason.",
+  "actual": "=== RUN   TestPhase34SurfaceManifestWitnesses\n    session_phase34_surface_test.go:247: clean witness/manifest comparison: [{constraint_changed operator:u64.add}]\n--- FAIL: TestPhase34SurfaceManifestWitnesses (0.00s)\n",
+  "reportPath": "/Users/jon/projects/schway/.planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task1-comparator-run.junit.xml",
+  "runStartedAt": "2026-10-13T23:59:08.615526+00:00",
+  "reportModifiedAt": "2026-10-13T23:59:10.213278+00:00",
+  "durationMs": 1596.967958001187,
+  "rawGoJSON": "{\"Time\":\"2026-10-13T19:59:10.190667-04:00\",\"Action\":\"start\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\"}\n{\"Time\":\"2026-10-13T19:59:10.198192-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\"}\n{\"Time\":\"2026-10-13T19:59:10.198481-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Output\":\"=== RUN   TestPhase34SurfaceManifestWitnesses\\n\"}\n{\"Time\":\"2026-10-13T19:59:10.199866-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Output\":\"    session_phase34_surface_test.go:247: clean witness/manifest comparison: [{constraint_changed operator:u64.add}]\\n\"}\n{\"Time\":\"2026-10-13T19:59:10.200139-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Output\":\"--- FAIL: TestPhase34SurfaceManifestWitnesses (0.00s)\\n\"}\n{\"Time\":\"2026-10-13T19:59:10.200183-04:00\",\"Action\":\"fail\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Elapsed\":0}\n{\"Time\":\"2026-10-13T19:59:10.200189-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"FAIL\\n\"}\n{\"Time\":\"2026-10-13T19:59:10.201361-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"FAIL\\tgithub.com/szTheory/schway/internal/compiler/session\\t0.010s\\n\"}\n{\"Time\":\"2026-10-13T19:59:10.201383-04:00\",\"Action\":\"fail\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Elapsed\":0.011}\n",
+  "rawStderr": "",
+  "reporter": "/private/tmp/schway-go-junit.py",
+  "reporterSource": {
+    "path": "/tmp/schway-go-junit.py",
+    "sha256": "69752666215dd93d8d1a65b6dbd8544e205c2aacb7cb95c7f408101f0b7f5106",
+    "kind": "standard-library execution reporter"
+  },
+  "freshness": {
+    "runStartedAt": "2026-10-13T23:59:08.615526+00:00",
+    "reportModifiedAt": "2026-10-13T23:59:10.213278+00:00",
+    "reportNewerThanRunStart": true
+  },
+  "semanticAssessment": {
+    "result": "invalid_test_expectation",
+    "reason": "The comparator incorrectly applied a published arity comparison to an operator whose typed manifest entry has no arity field. This test-oracle defect was corrected before the final run; it is not behavior RED."
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "command": "GOCACHE=/tmp/ai-lang-verification-gocache /opt/homebrew/opt/python@3.14/bin/python3.14 /tmp/schway-go-junit.py --record .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task1-final.json --target TestPhase34SurfaceManifestWitnesses --target-file internal/compiler/session/session_phase34_surface_test.go --expected 'The independent U64 addition witness completes CheckCommandFile admission; literal context/constraints match and a manifest-only operator is rejected as an invented admission.' -- go test -json ./internal/compiler/session -run '^TestPhase34SurfaceManifestWitnesses$' -count=1 -v",
+  "exitCode": 0,
+  "output": "<testsuites tests=\"1\" failures=\"0\"><testsuite name=\"github.com/szTheory/schway/internal/compiler/session\" tests=\"1\" failures=\"0\" skipped=\"0\"><testcase classname=\"github.com/szTheory/schway/internal/compiler/session\" name=\"TestPhase34SurfaceManifestWitnesses\" time=\"0\"><system-out>=== RUN   TestPhase34SurfaceManifestWitnesses\n--- PASS: TestPhase34SurfaceManifestWitnesses (0.00s)\n</system-out></testcase><system-out>PASS\nok  \tgithub.com/szTheory/schway/internal/compiler/session\t0.009s\n</system-out></testsuite></testsuites>\n",
+  "targetTest": "TestPhase34SurfaceManifestWitnesses",
+  "targetFile": "internal/compiler/session/session_phase34_surface_test.go",
+  "expected": "The independent U64 addition witness completes CheckCommandFile admission; literal context/constraints match and a manifest-only operator is rejected as an invented admission.",
+  "actual": "=== RUN   TestPhase34SurfaceManifestWitnesses\n--- PASS: TestPhase34SurfaceManifestWitnesses (0.00s)\n",
+  "reportPath": "/Users/jon/projects/schway/.planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task1-final.junit.xml",
+  "runStartedAt": "2026-10-13T23:59:42.254766+00:00",
+  "reportModifiedAt": "2026-10-13T23:59:43.602398+00:00",
+  "durationMs": 1346.9660000118893,
+  "rawGoJSON": "{\"Time\":\"2026-10-13T19:59:43.562698-04:00\",\"Action\":\"start\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\"}\n{\"Time\":\"2026-10-13T19:59:43.570101-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\"}\n{\"Time\":\"2026-10-13T19:59:43.570135-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Output\":\"=== RUN   TestPhase34SurfaceManifestWitnesses\\n\"}\n{\"Time\":\"2026-10-13T19:59:43.572037-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Output\":\"--- PASS: TestPhase34SurfaceManifestWitnesses (0.00s)\\n\"}\n{\"Time\":\"2026-10-13T19:59:43.572047-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Elapsed\":0}\n{\"Time\":\"2026-10-13T19:59:43.572056-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"PASS\\n\"}\n{\"Time\":\"2026-10-13T19:59:43.572588-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"ok  \\tgithub.com/szTheory/schway/internal/compiler/session\\t0.009s\\n\"}\n{\"Time\":\"2026-10-13T19:59:43.572614-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Elapsed\":0.01}\n",
+  "rawStderr": "",
+  "reporter": "/private/tmp/schway-go-junit.py",
+  "reporterSource": {
+    "path": "/tmp/schway-go-junit.py",
+    "sha256": "69752666215dd93d8d1a65b6dbd8544e205c2aacb7cb95c7f408101f0b7f5106",
+    "kind": "standard-library execution reporter"
+  },
+  "freshness": {
+    "runStartedAt": "2026-10-13T23:59:42.254766+00:00",
+    "reportModifiedAt": "2026-10-13T23:59:43.602398+00:00",
+    "reportNewerThanRunStart": true
+  },
+  "semanticAssessment": {
+    "result": "pass",
+    "reason": "The real complete-source witness passes through CheckCommandFile, literal context and constraint expectations match, the clean comparator returns no problems, and the copied manifest-only operator is rejected for the target-specific invented_admission reason."
+  }
+}

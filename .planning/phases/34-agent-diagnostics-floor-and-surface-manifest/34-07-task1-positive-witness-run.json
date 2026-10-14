@@ -1,0 +1,30 @@
+{
+  "command": "GOCACHE=/tmp/ai-lang-verification-gocache /opt/homebrew/opt/python@3.14/bin/python3.14 /tmp/schway-go-junit.py --record .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task1-positive-witness-run.json --target TestPhase34SurfaceManifestWitnesses --target-file internal/compiler/session/session_phase34_surface_test.go --expected 'The independent U64 addition witness completes CheckCommandFile admission and matches the literal checked context and constraint.' -- go test -json ./internal/compiler/session -run '^TestPhase34SurfaceManifestWitnesses$' -count=1 -v",
+  "exitCode": 1,
+  "output": "<testsuites tests=\"1\" failures=\"1\"><testsuite name=\"github.com/szTheory/schway/internal/compiler/session\" tests=\"1\" failures=\"1\" skipped=\"0\"><testcase classname=\"github.com/szTheory/schway/internal/compiler/session\" name=\"TestPhase34SurfaceManifestWitnesses\" time=\"0\"><failure message=\"go test reported failure\">=== RUN   TestPhase34SurfaceManifestWitnesses\n    session_phase34_surface_test.go:106: independent complete-source witness u64-add-scalar-operands: status/code/hint = \"invalid\"/\"syntax.expected_rbrace\"/\"expected `}`\", want \"pass\"/\"\"/\"\"\n--- FAIL: TestPhase34SurfaceManifestWitnesses (0.00s)\n</failure><system-out>=== RUN   TestPhase34SurfaceManifestWitnesses\n    session_phase34_surface_test.go:106: independent complete-source witness u64-add-scalar-operands: status/code/hint = \"invalid\"/\"syntax.expected_rbrace\"/\"expected `}`\", want \"pass\"/\"\"/\"\"\n--- FAIL: TestPhase34SurfaceManifestWitnesses (0.00s)\n</system-out></testcase><system-out>FAIL\nFAIL\tgithub.com/szTheory/schway/internal/compiler/session\t0.008s\n</system-out></testsuite></testsuites>\n",
+  "targetTest": "TestPhase34SurfaceManifestWitnesses",
+  "targetFile": "internal/compiler/session/session_phase34_surface_test.go",
+  "expected": "The independent U64 addition witness completes CheckCommandFile admission and matches the literal checked context and constraint.",
+  "actual": "=== RUN   TestPhase34SurfaceManifestWitnesses\n    session_phase34_surface_test.go:106: independent complete-source witness u64-add-scalar-operands: status/code/hint = \"invalid\"/\"syntax.expected_rbrace\"/\"expected `}`\", want \"pass\"/\"\"/\"\"\n--- FAIL: TestPhase34SurfaceManifestWitnesses (0.00s)\n",
+  "reportPath": "/Users/jon/projects/schway/.planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task1-positive-witness-run.junit.xml",
+  "runStartedAt": "2026-10-13T23:58:01.248303+00:00",
+  "reportModifiedAt": "2026-10-13T23:58:02.895255+00:00",
+  "durationMs": 1646.2335000105668,
+  "rawGoJSON": "{\"Time\":\"2026-10-13T19:58:02.874229-04:00\",\"Action\":\"start\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\"}\n{\"Time\":\"2026-10-13T19:58:02.881295-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\"}\n{\"Time\":\"2026-10-13T19:58:02.881392-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Output\":\"=== RUN   TestPhase34SurfaceManifestWitnesses\\n\"}\n{\"Time\":\"2026-10-13T19:58:02.882504-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Output\":\"    session_phase34_surface_test.go:106: independent complete-source witness u64-add-scalar-operands: status/code/hint = \\\"invalid\\\"/\\\"syntax.expected_rbrace\\\"/\\\"expected `}`\\\", want \\\"pass\\\"/\\\"\\\"/\\\"\\\"\\n\"}\n{\"Time\":\"2026-10-13T19:58:02.882686-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Output\":\"--- FAIL: TestPhase34SurfaceManifestWitnesses (0.00s)\\n\"}\n{\"Time\":\"2026-10-13T19:58:02.882727-04:00\",\"Action\":\"fail\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Elapsed\":0}\n{\"Time\":\"2026-10-13T19:58:02.88273-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"FAIL\\n\"}\n{\"Time\":\"2026-10-13T19:58:02.883181-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"FAIL\\tgithub.com/szTheory/schway/internal/compiler/session\\t0.008s\\n\"}\n{\"Time\":\"2026-10-13T19:58:02.883222-04:00\",\"Action\":\"fail\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Elapsed\":0.009}\n",
+  "rawStderr": "",
+  "reporter": "/private/tmp/schway-go-junit.py",
+  "reporterSource": {
+    "path": "/tmp/schway-go-junit.py",
+    "sha256": "69752666215dd93d8d1a65b6dbd8544e205c2aacb7cb95c7f408101f0b7f5106",
+    "kind": "standard-library execution reporter"
+  },
+  "freshness": {
+    "runStartedAt": "2026-10-13T23:58:01.248303+00:00",
+    "reportModifiedAt": "2026-10-13T23:58:02.895255+00:00",
+    "reportNewerThanRunStart": true
+  },
+  "semanticAssessment": {
+    "result": "invalid_red",
+    "reason": "The target test compiled but failed because its source used an unsupported linear result-tail form. This is fixture setup failure, not the planned assertion, so it does not authorize GREEN."
+  }
+}
