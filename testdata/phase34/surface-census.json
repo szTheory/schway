@@ -1,0 +1,14 @@
+{
+  "schema": "phase34.surface-census/1",
+  "boundary": "Finite AST branch census over only seven named parser/checker files. Changes outside those source files and programs outside the explicit witness matrix are not proven.",
+  "files": [
+    "internal/compiler/syntax/parser.go",
+    "internal/compiler/syntax/lexer.go",
+    "internal/compiler/check/check.go",
+    "internal/compiler/check/scalar.go",
+    "internal/compiler/ability/ability.go",
+    "internal/compiler/check/check_modules_routes.go",
+    "internal/compiler/surface/refusals.go"
+  ],
+  "branches": []
+}
