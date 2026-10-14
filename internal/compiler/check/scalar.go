@@ -36,8 +36,14 @@ const ScalarAnalysisWorkLimit = 65536
 
 func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Function, []diagnostic.Diagnostic, int) {
 	byteView := function.Parameter.Type.Constructor == "ByteView" && len(function.Parameter.Type.Arguments) == 0
-	if (function.Parameter.Type.Constructor != "U64" && !byteView) || (function.ReturnType.Constructor != "U64" && function.ReturnType.Constructor != "Unit") {
+	byteInput := function.Parameter.Type.Constructor == "Byte" && len(function.Parameter.Type.Arguments) == 0
+	if (function.Parameter.Type.Constructor != "U64" && !byteView && !byteInput) || (function.ReturnType.Constructor != "U64" && function.ReturnType.Constructor != "Unit") || (byteInput && function.ReturnType.Constructor != "U64") {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.scalar_signature", function.Span, "scalar CFG functions require U64 input and either U64 or Unit output")}, 1
+	}
+	if byteInput {
+		if span, used := scalarByteParameterUse(function.Body.Linear, function.Parameter.Name); used {
+			return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.scalar_byte_parameter_used", span, "Byte input is admitted only when the scalar body leaves it unused")}, 1
+		}
 	}
 	b := &scalarBuilder{function: function, functionID: functionID, types: map[string]string{}, places: map[string]core.Place{}, names: map[string]string{}, initialized: map[string]bool{}, remainderSpans: map[string]diagnostic.Span{}}
 	b.linear = core.LinearBody{ID: functionID + ":linear"}
@@ -48,6 +54,11 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 		// every U64-parameter function keeps its existing type-fact order.
 		typeNames = []string{"ByteView", "U64", "Bool", "Unit"}
 		parameterType = "ByteView"
+	} else if byteInput {
+		// The unused Byte entry bridge has its own leading type fact. Existing
+		// U64 and ByteView fact order and IDs remain unchanged.
+		typeNames = []string{"Byte", "U64", "Bool", "Unit"}
+		parameterType = "Byte"
 	}
 	for _, name := range typeNames {
 		shape := core.TypeRef{Constructor: name}
@@ -115,6 +126,79 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error(refusal, function.Span, "scalar CFG analysis did not converge or found an uninitialized read")}, b.work
 	}
 	return checked, nil, b.work
+}
+
+// scalarByteParameterUse scans the complete source body before lowering. The
+// current scalar producer intentionally has only a small expression surface,
+// so this source law must also cover legacy bindings, terminal matches, and
+// nested unreachable statements that lowering may not visit.
+func scalarByteParameterUse(body *ast.LinearBody, parameter string) (diagnostic.Span, bool) {
+	if body == nil {
+		return diagnostic.Span{}, false
+	}
+	var uses []diagnostic.Span
+	add := func(name string, span diagnostic.Span) {
+		if name == parameter {
+			uses = append(uses, span)
+		}
+	}
+	var scanExpression func(*ast.Expr)
+	scanExpression = func(expression *ast.Expr) {
+		if expression == nil {
+			return
+		}
+		add(expression.Name, expression.Span)
+		scanExpression(expression.Left)
+		scanExpression(expression.Right)
+	}
+	var scanBody func(*ast.LinearBody)
+	var scanStatements func([]ast.Statement)
+	scanStatements = func(statements []ast.Statement) {
+		for _, statement := range statements {
+			if statement.Kind == "assign" {
+				add(statement.Name, statement.Span)
+			}
+			// OpDefect currently carries the scalar formal as its source even
+			// though defect syntax has no explicit operand.
+			if statement.Kind == "defect" {
+				add(parameter, statement.Span)
+			}
+			scanExpression(statement.Expr)
+			scanStatements(statement.Then)
+			scanStatements(statement.Else)
+		}
+	}
+	scanBody = func(current *ast.LinearBody) {
+		if current == nil {
+			return
+		}
+		for _, binding := range current.Bindings {
+			add(binding.RHS.Source, binding.RHS.Span)
+			add(binding.RHS.Callee, binding.RHS.Span)
+			for _, argument := range binding.RHS.Arguments {
+				add(argument, binding.RHS.Span)
+			}
+		}
+		scanStatements(current.Statements)
+		add(current.Result, current.ResultSpan)
+		if current.TerminalMatch != nil {
+			add(current.TerminalMatch.Scrutinee, current.TerminalMatch.Span)
+			for _, arm := range current.TerminalMatch.Arms {
+				scanBody(arm.Body)
+			}
+		}
+	}
+	scanBody(body)
+	if len(uses) == 0 {
+		return diagnostic.Span{}, false
+	}
+	first := uses[0]
+	for _, span := range uses[1:] {
+		if span.Start < first.Start {
+			first = span
+		}
+	}
+	return first, true
 }
 
 func unsupportedBoolTail(resultName string, resultSpan diagnostic.Span, bound bool, resultType string) *diagnostic.Diagnostic {
