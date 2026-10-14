@@ -1,6 +1,7 @@
 package corevalidate
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/check"
@@ -40,6 +41,19 @@ func TestPhase35ShiftImmediateAdmission(t *testing.T) {
 	if !hasScalarCFG(function) {
 		t.Fatal("shift operation did not select the scalar analysis route")
 	}
+	for _, kind := range []core.OperationKind{core.OpShiftLeftU64, core.OpShiftRightU64} {
+		for _, amount := range []string{"0", "63"} {
+			t.Run(string(kind)+"/count-"+amount, func(t *testing.T) {
+				boundary := cloneProgram(program)
+				boundaryShift := phase35FindOperation(t, &boundary.Functions[0], core.OpShiftLeftU64)
+				boundaryShift.Kind = kind
+				boundaryShift.ConstU64 = amount
+				if got := Validate(boundary); !got.Valid {
+					t.Fatalf("raw %s immediate %s should be valid without AST provenance: %+v", kind, amount, got.Problems)
+				}
+			})
+		}
+	}
 
 	flagID := phase35PlaceID(t, function, "flag")
 	inputID := function.Parameter.ID
@@ -53,6 +67,8 @@ func TestPhase35ShiftImmediateAdmission(t *testing.T) {
 		{name: "leading zero", edit: func(_ *core.Function, op *core.LinearOperation) { op.ConstU64 = "03" }, want: "core.scalar_operation_invalid"},
 		{name: "signed immediate", edit: func(_ *core.Function, op *core.LinearOperation) { op.ConstU64 = "+3" }, want: "core.scalar_operation_invalid"},
 		{name: "hex immediate", edit: func(_ *core.Function, op *core.LinearOperation) { op.ConstU64 = "0x3" }, want: "core.scalar_operation_invalid"},
+		{name: "leading whitespace", edit: func(_ *core.Function, op *core.LinearOperation) { op.ConstU64 = " 3" }, want: "core.scalar_operation_invalid"},
+		{name: "trailing whitespace", edit: func(_ *core.Function, op *core.LinearOperation) { op.ConstU64 = "3 " }, want: "core.scalar_operation_invalid"},
 		{name: "count 64", edit: func(_ *core.Function, op *core.LinearOperation) { op.ConstU64 = "64" }, want: "core.scalar_operation_invalid"},
 		{name: "maximum u64", edit: func(_ *core.Function, op *core.LinearOperation) { op.ConstU64 = "18446744073709551615" }, want: "core.scalar_operation_invalid"},
 		{name: "overflow", edit: func(_ *core.Function, op *core.LinearOperation) { op.ConstU64 = "18446744073709551616" }, want: "core.scalar_operation_invalid"},
@@ -239,4 +255,286 @@ func phase35HasCoreProblem(problems []Problem, code string) bool {
 		}
 	}
 	return false
+}
+
+// TestPhase35ScalarTransferMutants reaches the same static zero-remainder
+// sink with each bitwise/shift result, then copy-locally changes one source
+// value so a correct transfer no longer reports zero. The consumer validates
+// raw core and derives each operator independently of checker execution.
+func TestPhase35ScalarTransferMutants(t *testing.T) {
+	program := phase35CheckedCore(t, "module phase35.core_transfer\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let left = 0\n  let right = input\n  let zero = left ^ right\n  let one = 1\n  let remainder = one % zero\n  remainder\n}\n")
+	if len(program.Functions) != 1 {
+		t.Fatalf("transfer fixture functions=%d", len(program.Functions))
+	}
+	base := &program.Functions[0]
+	leftID := phase35PlaceID(t, base, "left")
+	rightID := phase35PlaceID(t, base, "right")
+	type vector struct {
+		name        string
+		kind        core.OperationKind
+		left, right uint64
+		amount      string
+		faultRight  uint64
+		faultAmount string
+	}
+	vectors := []vector{
+		{name: "xor zero", kind: core.OpBitXorU64, left: 5, right: 5, faultRight: 6},
+		{name: "and zero", kind: core.OpBitAndU64, left: 1, right: 2, faultRight: 1},
+		{name: "or zero", kind: core.OpBitOrU64, left: 0, right: 0, faultRight: 1},
+		{name: "shift left zero", kind: core.OpShiftLeftU64, left: 1 << 63, amount: "1", faultAmount: "0"},
+		{name: "shift right zero", kind: core.OpShiftRightU64, left: 1, amount: "1", faultAmount: "0"},
+	}
+	for _, tc := range vectors {
+		t.Run(tc.name, func(t *testing.T) {
+			mutant := cloneProgram(program)
+			function := &mutant.Functions[0]
+			phase35SetConstTarget(t, function, leftID, tc.left)
+			phase35SetConstTarget(t, function, rightID, tc.right)
+			op := phase35FindOperation(t, function, core.OpBitXorU64)
+			op.Kind = tc.kind
+			op.SourceID = leftID
+			if tc.kind == core.OpShiftLeftU64 || tc.kind == core.OpShiftRightU64 {
+				op.RightID = ""
+				op.ConstU64 = tc.amount
+			} else {
+				op.RightID = rightID
+				op.ConstU64 = ""
+			}
+			result := Validate(mutant)
+			if result.Valid || !phase35HasCoreProblem(result.Problems, "core.scalar_remainder_zero") {
+				t.Fatalf("%s transfer failed to reach the static zero-remainder sink: problems=%+v", tc.name, result.Problems)
+			}
+
+			faulted := cloneProgram(mutant)
+			faultFunction := &faulted.Functions[0]
+			if tc.kind == core.OpShiftLeftU64 || tc.kind == core.OpShiftRightU64 {
+				phase35FindOperation(t, faultFunction, tc.kind).ConstU64 = tc.faultAmount
+			} else {
+				phase35SetConstTarget(t, faultFunction, rightID, tc.faultRight)
+			}
+			if got := Validate(faulted); !got.Valid {
+				t.Fatalf("wrong-result control still reached the zero sink: %+v", got.Problems)
+			}
+			if restored := Validate(mutant); restored.Valid || !phase35HasCoreProblem(restored.Problems, "core.scalar_remainder_zero") {
+				t.Fatalf("restored %s transfer no longer reaches the named sink: %+v", tc.name, restored.Problems)
+			}
+		})
+	}
+
+	cfgProgram := phase35CheckedCore(t, "module phase35.core_transfer_cfg\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let left = 0\n  let right = input\n  var divisor = input\n  if input < 8 {\n    divisor = left ^ right\n  } else {\n    divisor = left ^ right\n  }\n  let one = 1\n  let remainder = one % divisor\n  remainder\n}\n")
+	cfgBase := &cfgProgram.Functions[0]
+	cfgLeftID := phase35PlaceID(t, cfgBase, "left")
+	cfgRightID := phase35PlaceID(t, cfgBase, "right")
+	cfgInputID := cfgBase.Parameter.ID
+	for _, tc := range vectors {
+		t.Run("cfg/"+tc.name, func(t *testing.T) {
+			mutant := cloneProgram(cfgProgram)
+			function := &mutant.Functions[0]
+			if len(function.Linear.Blocks) < 3 {
+				t.Fatalf("transfer fixture did not retain a branch CFG: blocks=%d", len(function.Linear.Blocks))
+			}
+			phase35SetConstTarget(t, function, cfgLeftID, tc.left)
+			phase35SetConstTarget(t, function, cfgRightID, tc.right)
+			operations := phase35OperationsOfKind(function, core.OpBitXorU64)
+			if len(operations) != 2 {
+				t.Fatalf("CFG fixture has %d tested branch operations, want 2", len(operations))
+			}
+			for _, operation := range operations {
+				operation.Kind = tc.kind
+				operation.SourceID = cfgLeftID
+				if tc.kind == core.OpShiftLeftU64 || tc.kind == core.OpShiftRightU64 {
+					operation.RightID = ""
+					operation.ConstU64 = tc.amount
+				} else {
+					operation.RightID = cfgRightID
+					operation.ConstU64 = ""
+				}
+			}
+			result := Validate(mutant)
+			if result.Valid || !phase35HasCoreProblem(result.Problems, "core.scalar_remainder_zero") {
+				t.Fatalf("CFG %s transfer failed to reach the static zero-remainder sink: %+v", tc.name, result.Problems)
+			}
+
+			faulted := cloneProgram(mutant)
+			faultOps := phase35OperationsOfKind(&faulted.Functions[0], tc.kind)
+			if len(faultOps) != 2 {
+				t.Fatalf("fault copy has %d branch operations, want 2", len(faultOps))
+			}
+			for _, operation := range faultOps {
+				if tc.kind == core.OpShiftLeftU64 || tc.kind == core.OpShiftRightU64 {
+					operation.ConstU64 = tc.faultAmount
+				} else {
+					operation.RightID = cfgInputID
+				}
+			}
+			if got := Validate(faulted); !got.Valid {
+				t.Fatalf("CFG wrong-result control still reached the zero sink: %+v", got.Problems)
+			}
+			if restored := Validate(mutant); restored.Valid || !phase35HasCoreProblem(restored.Problems, "core.scalar_remainder_zero") {
+				t.Fatalf("restored CFG %s transfer no longer reaches the named sink: %+v", tc.name, restored.Problems)
+			}
+		})
+	}
+}
+
+// TestPhase35AnalysisTriggers pins each pure operator as an independent
+// scalar-analysis trigger and exercises shifts inside a real branch CFG.
+func TestPhase35AnalysisTriggers(t *testing.T) {
+	operators := []struct {
+		name string
+		expr string
+		kind core.OperationKind
+	}{
+		{name: "xor", expr: "input ^ 1", kind: core.OpBitXorU64},
+		{name: "and", expr: "input & 1", kind: core.OpBitAndU64},
+		{name: "or", expr: "input | 1", kind: core.OpBitOrU64},
+		{name: "left shift", expr: "input << 1", kind: core.OpShiftLeftU64},
+		{name: "right shift", expr: "input >> 1", kind: core.OpShiftRightU64},
+	}
+	for _, tc := range operators {
+		t.Run(tc.name, func(t *testing.T) {
+			program := phase35CheckedCore(t, "module phase35.core_trigger\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = "+tc.expr+"\n  result\n}\n")
+			function := &program.Functions[0]
+			if phase35FindOperation(t, function, tc.kind) == nil || !hasScalarCFG(function) {
+				t.Fatalf("%s did not independently select core scalar analysis", tc.name)
+			}
+			if result := Validate(program); !result.Valid {
+				t.Fatalf("pure %s trigger without remainder failed validation: %+v", tc.name, result.Problems)
+			}
+		})
+	}
+
+	branch := phase35CheckedCore(t, "module phase35.core_shift_cfg\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let flag = input < 8\n  var shifted = input\n  if flag {\n    shifted = input << 3\n  } else {\n    shifted = input >> 2\n  }\n  shifted\n}\n")
+	function := &branch.Functions[0]
+	if len(function.Linear.Blocks) < 3 || !hasScalarCFG(function) {
+		t.Fatalf("shift branch fixture did not produce a scalar CFG: blocks=%d", len(function.Linear.Blocks))
+	}
+	if result := Validate(branch); !result.Valid {
+		t.Fatalf("branch shift fixed-point transfer failed validation: %+v", result.Problems)
+	}
+	t.Run("field-laws", phase35CoreScalarFieldLaws)
+}
+
+// phase35CoreScalarFieldLaws keeps wrong-kind immediates and unrelated
+// raw operation fields behind corevalidate's own refusal rows.
+func phase35CoreScalarFieldLaws(t *testing.T) {
+	program := phase35CheckedCore(t, "module phase35.core_fields\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let one = 1\n  let sum = input + one\n  let less = sum < 8\n  let equal = sum == 8\n  let xor = sum ^ one\n  let anded = xor & one\n  let ored = anded | one\n  let left = ored << 1\n  let right = left >> 1\n  let remainder = right % 7\n  remainder\n}\n")
+	kindRows := []core.OperationKind{
+		core.OpAddChecked,
+		core.OpLessU64,
+		core.OpEqualU64,
+		core.OpRemainderU64,
+		core.OpBitXorU64,
+		core.OpBitAndU64,
+		core.OpBitOrU64,
+	}
+	for _, kind := range kindRows {
+		t.Run("ConstU64 forbidden on "+string(kind), func(t *testing.T) {
+			mutant := cloneProgram(program)
+			op := phase35FindOperation(t, &mutant.Functions[0], kind)
+			op.ConstU64 = "1"
+			got := Validate(mutant)
+			if got.Valid || !phase35HasCoreProblem(got.Problems, "core.scalar_field_kind_exclusive") {
+				t.Fatalf("wrong-kind ConstU64 on %s was not refused exactly: %+v", kind, got.Problems)
+			}
+		})
+	}
+
+	flagID := phase35PlaceID(t, &program.Functions[0], "less")
+	type mutation struct {
+		name string
+		edit func(*core.Function, *core.LinearOperation)
+		want string
+	}
+	mutations := []mutation{
+		{name: "wrong source Bool", edit: func(_ *core.Function, op *core.LinearOperation) { op.SourceID = flagID }, want: "core.scalar_operation_invalid"},
+		{name: "wrong right Bool", edit: func(_ *core.Function, op *core.LinearOperation) { op.RightID = flagID }, want: "core.scalar_operation_invalid"},
+		{name: "wrong result type", edit: func(fn *core.Function, op *core.LinearOperation) { op.TypeID = phase35TypeID(t, fn, "Bool") }, want: "core.scalar_operation_invalid"},
+		{name: "missing right operand", edit: func(_ *core.Function, op *core.LinearOperation) { op.RightID = "" }, want: "core.scalar_operation_invalid"},
+		{name: "target is parameter", edit: func(fn *core.Function, op *core.LinearOperation) { op.TargetID = fn.Parameter.ID }, want: "core.place_uninitialized"},
+		{name: "target aliases source", edit: func(_ *core.Function, op *core.LinearOperation) { op.TargetID = op.SourceID }, want: "core.place_uninitialized"},
+		{name: "wrong target type", edit: func(_ *core.Function, op *core.LinearOperation) { op.TargetID = flagID }, want: "core.scalar_operation_invalid"},
+		{name: "store field", edit: func(fn *core.Function, op *core.LinearOperation) { op.StoreTargetID = fn.Parameter.ID }, want: "core.scalar_operation_invalid"},
+		{name: "true edge field", edit: func(_ *core.Function, op *core.LinearOperation) { op.TrueEdgeID = "forged-edge" }, want: "core.scalar_operation_invalid"},
+		{name: "false edge field", edit: func(_ *core.Function, op *core.LinearOperation) { op.FalseEdgeID = "forged-edge" }, want: "core.scalar_operation_invalid"},
+		{name: "loan field", edit: func(_ *core.Function, op *core.LinearOperation) { op.LoanID = "forged-loan" }, want: "core.scalar_operation_invalid"},
+		{name: "foreign field", edit: func(_ *core.Function, op *core.LinearOperation) { op.Foreign = &core.ForeignOperationContract{} }, want: "core.scalar_operation_invalid"},
+		{name: "ok edge field", edit: func(_ *core.Function, op *core.LinearOperation) { op.OkEdgeID = "forged-edge" }, want: "core.scalar_operation_invalid"},
+		{name: "error edge field", edit: func(_ *core.Function, op *core.LinearOperation) { op.ErrEdgeID = "forged-edge" }, want: "core.scalar_operation_invalid"},
+		{name: "error target field", edit: func(fn *core.Function, op *core.LinearOperation) { op.ErrTargetID = fn.Parameter.ID }, want: "core.scalar_operation_invalid"},
+		{name: "release field", edit: func(_ *core.Function, op *core.LinearOperation) { op.ReleasesOperationID = "forged-operation" }, want: "core.scalar_operation_invalid"},
+		{name: "allocator field", edit: func(_ *core.Function, op *core.LinearOperation) { op.Allocator = "forged-allocator" }, want: "core.scalar_operation_invalid"},
+		{name: "reason field", edit: func(_ *core.Function, op *core.LinearOperation) { op.Reason = "forged-reason" }, want: "core.scalar_operation_invalid"},
+		{name: "callee field", edit: func(_ *core.Function, op *core.LinearOperation) { op.CalleeID = "forged-callee" }, want: "core.scalar_operation_invalid"},
+		{name: "payload type field", edit: func(_ *core.Function, op *core.LinearOperation) { op.PayloadType = "forged-payload" }, want: "core.scalar_operation_invalid"},
+		{name: "payload target field", edit: func(fn *core.Function, op *core.LinearOperation) { op.PayloadTargetID = fn.Parameter.ID }, want: "core.scalar_operation_invalid"},
+		{name: "text source field", edit: func(_ *core.Function, op *core.LinearOperation) { op.TextSource = "\"forged\"" }, want: "core.scalar_operation_invalid"},
+		{name: "text bytes field", edit: func(_ *core.Function, op *core.LinearOperation) { op.TextBytes = []byte("forged") }, want: "core.scalar_operation_invalid"},
+		{name: "text length field", edit: func(_ *core.Function, op *core.LinearOperation) { op.TextLength = 6 }, want: "core.scalar_operation_invalid"},
+		{name: "uninitialized U64 source", edit: func(fn *core.Function, op *core.LinearOperation) {
+			op.SourceID = phase35PlaceID(t, fn, "right")
+		}, want: "core.place_uninitialized"},
+	}
+	for _, kind := range []core.OperationKind{core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64} {
+		for _, row := range mutations {
+			t.Run(string(kind)+"/"+row.name, func(t *testing.T) {
+				mutant := cloneProgram(program)
+				function := &mutant.Functions[0]
+				op := phase35FindOperation(t, function, kind)
+				row.edit(function, op)
+				got := Validate(mutant)
+				if got.Valid || !phase35HasCoreProblem(got.Problems, row.want) {
+					t.Fatalf("%s %s fault was not refused as %s: %+v", kind, row.name, row.want, got.Problems)
+				}
+			})
+		}
+	}
+	if got := Validate(program); !got.Valid {
+		t.Fatalf("clean field-law control failed after faults: %+v", got.Problems)
+	}
+
+	byteProgram := phase35CheckedCore(t, "module phase35.core_byte_source\nexport { fn main }\nfn main(unused: Byte) -> U64 {\n  var seed = 0\n  let value = 42\n  let flag = value < 64\n  let shifted = value << 1\n  let first = shifted ^ value\n  let second = first & value\n  let third = second | value\n  third\n}\n")
+	for _, kind := range []core.OperationKind{core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64} {
+		t.Run(string(kind)+"/wrong-source-Byte", func(t *testing.T) {
+			mutant := cloneProgram(byteProgram)
+			function := &mutant.Functions[0]
+			phase35FindOperation(t, function, kind).SourceID = function.Parameter.ID
+			got := Validate(mutant)
+			if got.Valid || !phase35HasCoreProblem(got.Problems, "core.scalar_byte_parameter_used") {
+				t.Fatalf("%s Byte source passed the unused-formal bridge: %+v", kind, got.Problems)
+			}
+		})
+	}
+}
+
+func phase35SetConstTarget(t *testing.T, function *core.Function, target string, value uint64) {
+	t.Helper()
+	for index := range function.Linear.Operations {
+		operation := &function.Linear.Operations[index]
+		if operation.TargetID != target {
+			continue
+		}
+		operation.Kind = core.OpConst
+		operation.SourceID = ""
+		operation.RightID = ""
+		operation.ConstU64 = strconv.FormatUint(value, 10)
+		operation.StoreTargetID = ""
+		operation.ErrTargetID = ""
+		operation.PayloadTargetID = ""
+		operation.PayloadType = ""
+		operation.CalleeID = ""
+		operation.Foreign = nil
+		return
+	}
+	t.Fatalf("missing operation defining target %q", target)
+}
+
+func phase35OperationsOfKind(function *core.Function, kind core.OperationKind) []*core.LinearOperation {
+	var operations []*core.LinearOperation
+	for index := range function.Linear.Operations {
+		if function.Linear.Operations[index].Kind == kind {
+			operations = append(operations, &function.Linear.Operations[index])
+		}
+	}
+	return operations
 }
