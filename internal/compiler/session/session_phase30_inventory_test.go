@@ -188,21 +188,21 @@ var phase30ModuleRouteFunctions = []string{
 // phase30BoundedWant is the classified single-file and corpus set of
 // readBoundedFile(_, syntax.MaxSourceBytes) call sites.
 var phase30BoundedWant = map[string]string{
-	"internal/compiler/session/session.go:EvidenceCommandFile":                      "single-file evidence (imports refused)",
-	"internal/compiler/session/session.go:FormatFile":                               "single-file format (imports formatted, never loaded)",
-	"internal/compiler/session/session.go:InterfaceCoreCommandFile":                 "single-file interface core (imports refused)",
-	"internal/compiler/session/session.go:InterfaceExportCommandFile":               "single-file interface export (imports refused)",
-	"internal/compiler/session/session.go:Phase4CheckedProgram":                     "repo corpus fixture, not a user module",
-	"internal/compiler/session/session.go:ValidateEvidenceCommandFile":              "single-file evidence validation",
-	"internal/compiler/session/session.go:VerifyCorpus":                             "corpus lane",
-	"internal/compiler/session/session.go:verifyBorrowedCorpus":                     "corpus lane",
-	"internal/compiler/session/session.go:verifyForeignCorpus":                      "corpus lane",
-	"internal/compiler/session/session.go:verifyOwnedCorpus":                        "corpus lane",
-	"internal/compiler/session/session_phase6_evidence.go:ValidateEvidenceExpanded": "single-file evidence expansion",
-	"internal/compiler/session/session_phase6_explain.go:ExplainCommandFile":        "single-file explain (imports refused)",
-	"internal/compiler/session/session_phase6_query.go:resolveQueryDebugMapFacts":   "single-file query (imports refused)",
-	"internal/compiler/session/session_phase6_query.go:resolveQueryDiagnosticFacts": "single-file query (imports refused)",
-	"internal/compiler/session/session_phase7.go:VerifyPhase7ControlsAndWork":       "corpus lane",
+	"internal/compiler/session/session.go:EvidenceCommandFile":                               "single-file evidence (imports refused)",
+	"internal/compiler/session/session.go:FormatFile":                                        "single-file format (imports formatted, never loaded)",
+	"internal/compiler/session/session.go:InterfaceCoreCommandFile":                          "single-file interface core (imports refused)",
+	"internal/compiler/session/session.go:InterfaceExportCommandFile":                        "single-file interface export (imports refused)",
+	"internal/compiler/session/session.go:Phase4CheckedProgram":                              "repo corpus fixture, not a user module",
+	"internal/compiler/session/session.go:ValidateEvidenceCommandFile":                       "single-file evidence validation",
+	"internal/compiler/session/session.go:VerifyCorpus":                                      "corpus lane",
+	"internal/compiler/session/session.go:verifyBorrowedCorpus":                              "corpus lane",
+	"internal/compiler/session/session.go:verifyForeignCorpus":                               "corpus lane",
+	"internal/compiler/session/session.go:verifyOwnedCorpus":                                 "corpus lane",
+	"internal/compiler/session/session_phase6_evidence.go:ValidateEvidenceExpanded":          "single-file evidence expansion",
+	"internal/compiler/session/session_phase6_explain.go:ExplainCommandFile":                 "single-file explain (imports refused)",
+	"internal/compiler/session/session_phase6_query.go:resolveQueryDebugMapFacts":            "single-file query (imports refused)",
+	"internal/compiler/session/session_phase6_query.go:resolveQueryDiagnosticFactsPresented": "single-file query (imports refused)",
+	"internal/compiler/session/session_phase7.go:VerifyPhase7ControlsAndWork":                "corpus lane",
 }
 
 // phase30OSWant pins every os.Open, os.OpenFile, os.ReadFile and os.Stat call
