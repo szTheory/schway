@@ -217,6 +217,47 @@ func checkScalarFixedPointDetailed(function core.Function) (int, string, string)
 						return work, "check.scalar_constant_invalid", ""
 					}
 					state[op.TargetID] = checkerScalarFact{initialized: true, known: true, u64: value}
+				case core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64:
+					right := state[op.RightID]
+					if !source.initialized || !right.initialized {
+						return work, "check.scalar_uninitialized", ""
+					}
+					if types[places[op.SourceID].TypeID] != "U64" || types[places[op.RightID].TypeID] != "U64" ||
+						types[places[op.TargetID].TypeID] != "U64" || types[op.TypeID] != "U64" || op.ConstU64 != "" {
+						return work, "check.scalar_bitwise_shape", ""
+					}
+					fact := checkerScalarFact{initialized: true}
+					if source.known && right.known {
+						fact.known = true
+						switch op.Kind {
+						case core.OpBitXorU64:
+							fact.u64 = source.u64 ^ right.u64
+						case core.OpBitAndU64:
+							fact.u64 = source.u64 & right.u64
+						case core.OpBitOrU64:
+							fact.u64 = source.u64 | right.u64
+						}
+					}
+					state[op.TargetID] = fact
+				case core.OpShiftLeftU64, core.OpShiftRightU64:
+					if !source.initialized {
+						return work, "check.scalar_uninitialized", ""
+					}
+					amount, err := strconv.ParseUint(op.ConstU64, 10, 64)
+					if err != nil || strconv.FormatUint(amount, 10) != op.ConstU64 || amount > 63 || op.RightID != "" ||
+						types[places[op.SourceID].TypeID] != "U64" || types[places[op.TargetID].TypeID] != "U64" || types[op.TypeID] != "U64" {
+						return work, "check.scalar_shift_amount", ""
+					}
+					fact := checkerScalarFact{initialized: true}
+					if source.known {
+						fact.known = true
+						if op.Kind == core.OpShiftLeftU64 {
+							fact.u64 = source.u64 << uint(amount)
+						} else {
+							fact.u64 = source.u64 >> uint(amount)
+						}
+					}
+					state[op.TargetID] = fact
 				case core.OpAddChecked:
 					right := state[op.RightID]
 					if !source.initialized || !right.initialized {
@@ -458,7 +499,11 @@ func (b *scalarBuilder) lower(statements []ast.Statement) {
 				b.addOperation(core.LinearOperation{Kind: core.OpConst, TargetID: place.ID, ConstU64: strconv.FormatUint(value, 10), TypeID: b.types["U64"]})
 				b.initialized[place.ID] = true
 			} else {
+				diagnosticsBefore := len(b.diagnostics)
 				value, typeName := b.expression(statement.Expr)
+				if len(b.diagnostics) != diagnosticsBefore {
+					continue
+				}
 				if typeName != "U64" && typeName != "Bool" {
 					b.refuse("type.scalar_binding", statement.Span, "let accepts only U64 or Bool scalars")
 					continue
@@ -487,7 +532,11 @@ func (b *scalarBuilder) lower(statements []ast.Statement) {
 				b.addOperation(core.LinearOperation{Kind: core.OpConst, TargetID: place.ID, ConstU64: strconv.FormatUint(value, 10), TypeID: b.types["U64"]})
 				b.initialized[place.ID] = true
 			} else {
+				diagnosticsBefore := len(b.diagnostics)
 				value, typeName := b.expression(statement.Expr)
+				if len(b.diagnostics) != diagnosticsBefore {
+					continue
+				}
 				if typeName != "U64" && typeName != "Bool" {
 					b.refuse("type.scalar_binding", statement.Span, "var accepts only U64 or Bool scalars")
 					continue
@@ -641,7 +690,41 @@ func (b *scalarBuilder) expression(expr *ast.Expr) (string, string) {
 		b.addOperation(core.LinearOperation{Kind: core.OpConst, TargetID: place.ID, ConstU64: strconv.FormatUint(value, 10), TypeID: b.types["U64"]})
 		b.initialized[place.ID] = true
 		return place.ID, "U64"
-	case "add", "less", "equal", "remainder":
+	case "shift_left", "shift_right":
+		left, leftType := b.expression(expr.Left)
+		if leftType != "U64" {
+			b.refuse("type.scalar_operand", expr.Left.Span, "U64 operator requires a U64 operand")
+			return "", ""
+		}
+		if expr.Right == nil || expr.Right.Kind != "number" {
+			span := expr.Span
+			if expr.Right != nil {
+				span = expr.Right.Span
+			}
+			b.refuseShiftAmount(span)
+			return "", ""
+		}
+		amount, err := strconv.ParseUint(expr.Right.Value, 0, 64)
+		if err != nil {
+			amount, err = strconv.ParseUint(expr.Right.Value, 10, 64)
+		}
+		if err != nil {
+			b.refuse("type.invalid_u64", expr.Right.Span, "invalid U64 literal")
+			return "", ""
+		}
+		if amount > 63 {
+			b.refuseShiftAmount(expr.Right.Span)
+			return "", ""
+		}
+		kind := core.OpShiftLeftU64
+		if expr.Kind == "shift_right" {
+			kind = core.OpShiftRightU64
+		}
+		place := b.addPlace("scalar", "U64", false)
+		b.addOperation(core.LinearOperation{Kind: kind, SourceID: left, TargetID: place.ID, ConstU64: strconv.FormatUint(amount, 10), TypeID: b.types["U64"]})
+		b.initialized[place.ID] = true
+		return place.ID, "U64"
+	case "add", "less", "equal", "remainder", "bit_xor", "bit_and", "bit_or":
 		left, leftType := b.expression(expr.Left)
 		right, rightType := b.expression(expr.Right)
 		if leftType != "U64" || rightType != "U64" {
@@ -666,6 +749,12 @@ func (b *scalarBuilder) expression(expr *ast.Expr) (string, string) {
 					return "", ""
 				}
 			}
+		case "bit_xor":
+			kind = core.OpBitXorU64
+		case "bit_and":
+			kind = core.OpBitAndU64
+		case "bit_or":
+			kind = core.OpBitOrU64
 		}
 		place := b.addPlace("scalar", ""+resultType, false)
 		operationID := b.addOperation(core.LinearOperation{Kind: kind, SourceID: left, RightID: right, TargetID: place.ID, TypeID: b.types[resultType]})
@@ -715,4 +804,12 @@ func cloneInitialized(input map[string]bool) map[string]bool {
 
 func (b *scalarBuilder) refuse(code string, span diagnostic.Span, message string) {
 	b.diagnostics = append(b.diagnostics, diagnostic.Error(code, span, message))
+}
+
+func (b *scalarBuilder) refuseShiftAmount(span diagnostic.Span) {
+	refusal, ok := surface.LookupRefusal("surface.unsupported_shift_amount")
+	if !ok {
+		panic("checker requested an unknown surface refusal: surface.unsupported_shift_amount")
+	}
+	b.diagnostics = append(b.diagnostics, diagnostic.Error(refusal.Code, span, refusal.Hint))
 }

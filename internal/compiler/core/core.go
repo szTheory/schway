@@ -725,6 +725,11 @@ const (
 	OpLessU64            OperationKind = "less_u64"
 	OpEqualU64           OperationKind = "equal_u64"
 	OpRemainderU64       OperationKind = "remainder_u64"
+	OpBitXorU64          OperationKind = "bit_xor_u64"
+	OpBitAndU64          OperationKind = "bit_and_u64"
+	OpBitOrU64           OperationKind = "bit_or_u64"
+	OpShiftLeftU64       OperationKind = "shift_left_u64"
+	OpShiftRightU64      OperationKind = "shift_right_u64"
 	OpBytesLen           OperationKind = "bytes_len"
 	OpBytesAt            OperationKind = "bytes_at"
 	OpScalarStore        OperationKind = "scalar_store"
@@ -881,7 +886,7 @@ const CalleeFrameNotDrained = "core.callee_frame_not_drained"
 // slice is exactly the defect this registry exists to catch --
 // TestAllOperationKindsRegistered fails the moment the two counts diverge.
 func AllOperationKinds() []OperationKind {
-	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConst, OpConstructPayload, OpDestructurePayload, OpAddChecked, OpLessU64, OpEqualU64, OpRemainderU64, OpScalarStore, OpBranch, OpWriteU64, OpWriteNewline, OpWriteText, OpBytesLen, OpBytesAt}
+	return []OperationKind{OpCopy, OpMove, OpBorrowShared, OpBorrowExclusive, OpReturn, OpForeignCall, OpFail, OpRelease, OpDefect, OpCall, OpConst, OpConstructPayload, OpDestructurePayload, OpAddChecked, OpLessU64, OpEqualU64, OpRemainderU64, OpBitXorU64, OpBitAndU64, OpBitOrU64, OpShiftLeftU64, OpShiftRightU64, OpScalarStore, OpBranch, OpWriteU64, OpWriteNewline, OpWriteText, OpBytesLen, OpBytesAt}
 }
 
 // TerminatorKinds returns exactly the operation kinds that end a block --
@@ -966,9 +971,10 @@ type LinearOperation struct {
 	// operation, and every operation kind other than OpDestructurePayload,
 	// leaves this empty.
 	PayloadTargetID string `json:"payload_target_id,omitempty"`
-	// ConstU64 is Phase 19's kind-exclusive canonical U64 value, represented
-	// as base-10 digits (including "0"). It is populated only on OpConst;
-	// all other operation kinds leave it empty so legacy core JSON is stable.
+	// ConstU64 is a kind-exclusive canonical U64 value, represented as base-10
+	// digits (including "0"). It is populated on OpConst and on the two
+	// immediate shift kinds; all other operation kinds leave it empty so
+	// legacy core JSON is stable.
 	ConstU64 string `json:"const_u64,omitempty"`
 	// TextSource is the exact quoted source token admitted by OpWriteText.
 	// TextBytes and TextLength are its decoded byte payload and exact length;

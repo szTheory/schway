@@ -797,7 +797,7 @@ func splitPath(path string) []string {
 // listed twice, so a constant added without registering it is caught
 // (D-04-22).
 func TestAllOperationKindsRegistered(t *testing.T) {
-	const declaredCount = 24 // legacy kinds plus Phase 26 scalar CFG, Phase 27 arithmetic/text writes and Phase 29 byte-view reads
+	const declaredCount = 29 // legacy kinds plus Phase 26 scalar CFG, Phase 27 arithmetic/text writes, Phase 29 byte-view reads, and Phase 35 bitwise operations
 	all := core.AllOperationKinds()
 	if len(all) != declaredCount {
 		t.Fatalf("AllOperationKinds() has %d entries, want %d", len(all), declaredCount)
