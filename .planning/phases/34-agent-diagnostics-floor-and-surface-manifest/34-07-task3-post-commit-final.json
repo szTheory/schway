@@ -1,0 +1,36 @@
+{
+  "command": "GOCACHE=/tmp/ai-lang-verification-gocache /opt/homebrew/opt/python@3.14/bin/python3.14 /tmp/schway-go-junit.py --record .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task3-post-commit-final.json --target TestPhase34SurfaceManifestWitnesses --target TestPhase34SurfaceManifestCensus --target TestPhase34SurfaceManifestControls --target-file internal/compiler/session/session_phase34_surface_test.go --expected 'After the task commit, all three focused Plan 07 selectors pass; the complete witness matrix, seven-file branch census, drift controls, and clean restoration are verified.' -- go test -json ./internal/compiler/session -run '^(TestPhase34SurfaceManifestControls|TestPhase34SurfaceManifestWitnesses|TestPhase34SurfaceManifestCensus)$' -count=1 -v",
+  "exitCode": 0,
+  "output": "<testsuites tests=\"3\" failures=\"0\"><testsuite name=\"github.com/szTheory/schway/internal/compiler/session\" tests=\"3\" failures=\"0\" skipped=\"0\"><testcase classname=\"github.com/szTheory/schway/internal/compiler/session\" name=\"TestPhase34SurfaceManifestWitnesses\" time=\"0.05\"><system-out>=== RUN   TestPhase34SurfaceManifestWitnesses\n--- PASS: TestPhase34SurfaceManifestWitnesses (0.05s)\n</system-out></testcase><testcase classname=\"github.com/szTheory/schway/internal/compiler/session\" name=\"TestPhase34SurfaceManifestCensus\" time=\"0.05\"><system-out>=== RUN   TestPhase34SurfaceManifestCensus\n--- PASS: TestPhase34SurfaceManifestCensus (0.05s)\n</system-out></testcase><testcase classname=\"github.com/szTheory/schway/internal/compiler/session\" name=\"TestPhase34SurfaceManifestControls\" time=\"0.08\"><system-out>=== RUN   TestPhase34SurfaceManifestControls\n--- PASS: TestPhase34SurfaceManifestControls (0.08s)\n</system-out></testcase><system-out>PASS\nok  \tgithub.com/szTheory/schway/internal/compiler/session\t0.185s\n</system-out></testsuite></testsuites>\n",
+  "targetTest": "TestPhase34SurfaceManifestControls",
+  "targetFile": "internal/compiler/session/session_phase34_surface_test.go",
+  "expected": "After the task commit, all three focused Plan 07 selectors pass; the complete witness matrix, seven-file branch census, drift controls, and clean restoration are verified.",
+  "actual": "=== RUN   TestPhase34SurfaceManifestControls\n--- PASS: TestPhase34SurfaceManifestControls (0.08s)\n",
+  "reportPath": "/Users/jon/projects/schway/.planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task3-post-commit-final.junit.xml",
+  "runStartedAt": "2026-10-14T00:22:47.710734+00:00",
+  "reportModifiedAt": "2026-10-14T00:22:48.467569+00:00",
+  "durationMs": 756.3640830048826,
+  "rawGoJSON": "{\"Time\":\"2026-10-13T20:22:48.272077-04:00\",\"Action\":\"start\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\"}\n{\"Time\":\"2026-10-13T20:22:48.280673-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\"}\n{\"Time\":\"2026-10-13T20:22:48.280735-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Output\":\"=== RUN   TestPhase34SurfaceManifestWitnesses\\n\"}\n{\"Time\":\"2026-10-13T20:22:48.332466-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Output\":\"--- PASS: TestPhase34SurfaceManifestWitnesses (0.05s)\\n\"}\n{\"Time\":\"2026-10-13T20:22:48.332515-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestWitnesses\",\"Elapsed\":0.05}\n{\"Time\":\"2026-10-13T20:22:48.332528-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestCensus\"}\n{\"Time\":\"2026-10-13T20:22:48.332531-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestCensus\",\"Output\":\"=== RUN   TestPhase34SurfaceManifestCensus\\n\"}\n{\"Time\":\"2026-10-13T20:22:48.378831-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestCensus\",\"Output\":\"--- PASS: TestPhase34SurfaceManifestCensus (0.05s)\\n\"}\n{\"Time\":\"2026-10-13T20:22:48.378847-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestCensus\",\"Elapsed\":0.05}\n{\"Time\":\"2026-10-13T20:22:48.37885-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestControls\"}\n{\"Time\":\"2026-10-13T20:22:48.378851-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestControls\",\"Output\":\"=== RUN   TestPhase34SurfaceManifestControls\\n\"}\n{\"Time\":\"2026-10-13T20:22:48.456139-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestControls\",\"Output\":\"--- PASS: TestPhase34SurfaceManifestControls (0.08s)\\n\"}\n{\"Time\":\"2026-10-13T20:22:48.456173-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestControls\",\"Elapsed\":0.08}\n{\"Time\":\"2026-10-13T20:22:48.45618-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"PASS\\n\"}\n{\"Time\":\"2026-10-13T20:22:48.457194-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"ok  \\tgithub.com/szTheory/schway/internal/compiler/session\\t0.185s\\n\"}\n{\"Time\":\"2026-10-13T20:22:48.457212-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Elapsed\":0.185}\n",
+  "rawStderr": "",
+  "reporter": "/private/tmp/schway-go-junit.py",
+  "reporterSource": {
+    "path": "/tmp/schway-go-junit.py",
+    "sha256": "69752666215dd93d8d1a65b6dbd8544e205c2aacb7cb95c7f408101f0b7f5106",
+    "kind": "standard-library execution reporter"
+  },
+  "freshness": {
+    "runStartedAt": "2026-10-14T00:22:47.710734+00:00",
+    "reportModifiedAt": "2026-10-14T00:22:48.467569+00:00",
+    "reportNewerThanRunStart": true
+  },
+  "semanticAssessment": {
+    "result": "pass",
+    "reason": "After commit 7594ae7b, the actual three focused selectors passed: complete CheckCommandFile witnesses, the exact seven-file branch census, and all named copied-manifest/source control mutations with clean restoration."
+  },
+  "matchedTests": [
+    "TestPhase34SurfaceManifestWitnesses",
+    "TestPhase34SurfaceManifestCensus",
+    "TestPhase34SurfaceManifestControls"
+  ],
+  "matchedTestCount": 3
+}
