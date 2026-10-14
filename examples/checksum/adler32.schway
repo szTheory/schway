@@ -17,23 +17,7 @@ fn adler32(bytes: ByteView) -> U64 {
     b = b % 65521
     i = i + 1
   }
-  var r = b
-  r = r + r
-  r = r + r
-  r = r + r
-  r = r + r
-  r = r + r
-  r = r + r
-  r = r + r
-  r = r + r
-  r = r + r
-  r = r + r
-  r = r + r
-  r = r + r
-  r = r + r
-  r = r + r
-  r = r + r
-  r = r + r
+  var r = b << 16
   r = r + a
   r
 }

@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/execution"
@@ -18,6 +20,13 @@ import (
 // answers through both engines before the Adler source is compacted.
 func TestPhase35ExistingAdlerAnswers(t *testing.T) {
 	dir := phase31CopyDir(t, testsupport.ProjectPath("examples", "checksum"))
+	library, err := os.ReadFile(filepath.Join(dir, "adler32.schway"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(string(library), "var r = b << 16\n") != 1 || strings.Contains(string(library), "r = r + r") {
+		t.Fatal("Adler library must use exactly one b << 16 and no repeated doublings")
+	}
 	for _, app := range []string{"checksum", "adler_low"} {
 		t.Run(app, func(t *testing.T) {
 			entry := filepath.Join(dir, app+".schway")
@@ -94,4 +103,32 @@ func TestPhase35ExistingAdlerAnswers(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestPhase35AdlerWrongShiftControl mutates only a temporary module copy and
+// pins the resulting answer on both engines before restoring and rerunning it.
+func TestPhase35AdlerWrongShiftControl(t *testing.T) {
+	dir := phase31CopyDir(t, testsupport.ProjectPath("examples", "checksum"))
+	library := filepath.Join(dir, "adler32.schway")
+	phase31CopyReplaceOnce(t, library, "var r = b << 16\n", "var r = b << 15\n")
+	check := func(want string) {
+		t.Helper()
+		checked, err := session.CheckFile(filepath.Join(dir, "checksum.schway"))
+		if err != nil || len(checked.Diagnostics) != 0 {
+			t.Fatalf("checksum check: err=%v diagnostics=%+v", err, checked.Diagnostics)
+		}
+		input := phase31CopyInput(t, "Wikipedia")
+		interpreted, err := interp.RunWithFileBytes(checked.Program, "main", input, testsupport.ChecksumReadFile)
+		if err != nil || interpreted.Outcome.Kind != execution.OutcomeReturned || interpreted.Outcome.Value != strings.TrimSuffix(want, "\n") {
+			t.Fatalf("interpreter outcome=%+v err=%v, want %s", interpreted.Outcome, err, strings.TrimSpace(want))
+		}
+		artifact, _ := phase31CopyBuild(t, dir, "checksum")
+		got := phase31CopyNative(t, artifact, "Wikipedia")
+		if got != want {
+			t.Fatalf("native output=%q, want %q", got, want)
+		}
+	}
+	check("150143896\n")
+	phase31CopyReplaceOnce(t, library, "var r = b << 15\n", "var r = b << 16\n")
+	check("300286872\n")
 }
