@@ -246,6 +246,9 @@ func schema2ExecutionDocumentSize(entry core.Function, nodes []invocationPreflig
 				// Byte length, comparisons, stores, CFG control, and application writes are
 				// event-free. Application bytes are tracked by the bounded writer.
 				continue
+			case core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64, core.OpShiftLeftU64, core.OpShiftRightU64:
+				// Pure scalar bitwise operations have no causal event or defect path.
+				continue
 			case core.OpCopy:
 				event.ID, event.Kind = operation.ID+":event", "value.copied"
 			case core.OpMove:
@@ -892,7 +895,8 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		}
 		if function.Linear != nil {
 			for _, operation := range function.Linear.Operations {
-				if operation.Kind == core.OpConst {
+				switch operation.Kind {
+				case core.OpConst, core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64, core.OpShiftLeftU64, core.OpShiftRightU64:
 					needsU64 = true
 				}
 			}
@@ -2219,6 +2223,24 @@ func emitProgramBranchOperation(out *strings.Builder, function core.Function, op
 		fmt.Fprintf(out, "      %s %s = %s; /* %s: %s */\n      (void)%s;\n", valueType.typeName, locals[operation.TargetID], locals[operation.SourceID], label, operation.ID, locals[operation.TargetID])
 		fmt.Fprintf(out, "      if (!schway_record_event(%s, %s, %s, %s, %s, %s, schway_invocations[invocation_index], NULL)) abort();\n", strconv.Quote(eventKind), strconv.Quote(operation.ID+":event"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID))
 		declared[operation.TargetID] = true
+	case core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64, core.OpShiftLeftU64, core.OpShiftRightU64:
+		target, exists := places[operation.TargetID]
+		if !exists || declared[operation.TargetID] {
+			return fmt.Errorf("operation %q has invalid target", operation.ID)
+		}
+		switch operation.Kind {
+		case core.OpBitXorU64:
+			fmt.Fprintf(out, "      uint64_t %s = (uint64_t)(%s ^ %s); /* pure scalar: %s */\n", locals[target.ID], locals[operation.SourceID], locals[operation.RightID], operation.ID)
+		case core.OpBitAndU64:
+			fmt.Fprintf(out, "      uint64_t %s = (uint64_t)(%s & %s); /* pure scalar: %s */\n", locals[target.ID], locals[operation.SourceID], locals[operation.RightID], operation.ID)
+		case core.OpBitOrU64:
+			fmt.Fprintf(out, "      uint64_t %s = (uint64_t)(%s | %s); /* pure scalar: %s */\n", locals[target.ID], locals[operation.SourceID], locals[operation.RightID], operation.ID)
+		case core.OpShiftLeftU64:
+			fmt.Fprintf(out, "      uint64_t %s = (uint64_t)((unsigned long long)%s << %s); /* pure scalar: %s */\n", locals[target.ID], locals[operation.SourceID], operation.ConstU64, operation.ID)
+		case core.OpShiftRightU64:
+			fmt.Fprintf(out, "      uint64_t %s = (uint64_t)((unsigned long long)%s >> %s); /* pure scalar: %s */\n", locals[target.ID], locals[operation.SourceID], operation.ConstU64, operation.ID)
+		}
+		declared[operation.TargetID] = true
 	case core.OpReturn:
 		returnValue := locals[operation.SourceID]
 		fmt.Fprintf(out, "      if (!schway_record_event(%s, %s, %s, %s, NULL, %s, schway_invocations[invocation_index], NULL)) abort();\n      return %s;\n", strconv.Quote("function.returned"), strconv.Quote(operation.ID+":event:returned"), strconv.Quote(function.ID), strconv.Quote(operation.SourceID), strconv.Quote(operation.TypeID), returnValue)
@@ -2552,7 +2574,7 @@ func hasScalarOperations(function core.Function) bool {
 		return true
 	}
 	for _, operation := range function.Linear.Operations {
-		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpBytesLen || operation.Kind == core.OpBytesAt || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch {
+		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpBytesLen || operation.Kind == core.OpBytesAt || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpBitXorU64 || operation.Kind == core.OpBitAndU64 || operation.Kind == core.OpBitOrU64 || operation.Kind == core.OpShiftLeftU64 || operation.Kind == core.OpShiftRightU64 {
 			return true
 		}
 	}
@@ -2574,7 +2596,8 @@ func isStraightLineScalarBody(function core.Function) bool {
 	}
 	for _, operation := range linear.Operations {
 		switch operation.Kind {
-		case core.OpConst, core.OpCopy, core.OpReturn, core.OpWriteU64, core.OpWriteNewline, core.OpWriteText:
+		case core.OpConst, core.OpCopy, core.OpReturn, core.OpWriteU64, core.OpWriteNewline, core.OpWriteText,
+			core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64, core.OpShiftLeftU64, core.OpShiftRightU64:
 		default:
 			return false
 		}
@@ -2732,6 +2755,16 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 				fmt.Fprintf(out, "  %s = (%s < %s);\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
 			case core.OpEqualU64:
 				fmt.Fprintf(out, "  %s = (%s == %s);\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
+			case core.OpBitXorU64:
+				fmt.Fprintf(out, "  %s = (uint64_t)(%s ^ %s);\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
+			case core.OpBitAndU64:
+				fmt.Fprintf(out, "  %s = (uint64_t)(%s & %s);\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
+			case core.OpBitOrU64:
+				fmt.Fprintf(out, "  %s = (uint64_t)(%s | %s);\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
+			case core.OpShiftLeftU64:
+				fmt.Fprintf(out, "  %s = (uint64_t)((unsigned long long)%s << %s);\n", locals[op.TargetID], locals[op.SourceID], op.ConstU64)
+			case core.OpShiftRightU64:
+				fmt.Fprintf(out, "  %s = (uint64_t)((unsigned long long)%s >> %s);\n", locals[op.TargetID], locals[op.SourceID], op.ConstU64)
 			case core.OpRemainderU64:
 				fmt.Fprintf(out, "  if (%s == UINT64_C(0)) {\n", locals[op.RightID])
 				if shell == programApplicationShell {
