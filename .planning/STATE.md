@@ -5,17 +5,17 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 35
 current_phase_name: Bitwise Operators, Literal Shifts, and Hex Literals
 current_plan: 8
-status: executing
-stopped_at: Completed 35-07-PLAN.md
-last_updated: "2026-10-14T17:46:27.673Z"
+status: verifying
+stopped_at: Completed 35-08-PLAN.md
+last_updated: "2026-10-14T21:48:59.174Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 35 Plan 35-02 complete; Plan 35-03 is next
-state_head: f36049461dc8fc688c1b6abf259fdf402ce2fd3b
+state_head: 6cb2ca5ce5d029135a1529bc7961c99e090c3d11
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 21
-  completed_plans: 20
+  completed_plans: 21
   percent: 33
 ---
 
@@ -128,7 +128,7 @@ plans.
 Phase: 35 (Bitwise Operators, Literal Shifts, and Hex Literals)
 Current Plan: 8
 Total Plans in Phase: 8
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-14 — Phase 35 Plan 35-02 complete; Plan 35-03 is next
 
 Progress: [███░░░░░░░] 33%
@@ -607,6 +607,7 @@ subset alone.
 | Phase 35 P05 | 8m | 3 tasks | 9 files |
 | Phase 35 P06 | 37min | 2 tasks | 9 files |
 | Phase 35 P7 | 20min | 3 tasks | 9 files |
+| Phase 35 P08 | 16min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -840,6 +841,9 @@ decision history; they no longer describe current status.
 - [Phase 35]: Use independent literal answers for numeric correctness; execution-event controls establish causal admission only.
 - [Phase 35]: Preserve Phase 34 witness and census bytes; Phase 35 composes additive evidence with no superseded prior facts.
 - [Phase 35]: Keep BIT-01, BIT-02, and BIT-03 pending until shared phase verification closes readiness.
+- [Phase 35]: Use bounded b << 16 for Adler while preserving final addition and every expected answer.
+- [Phase 35]: Separate fresh local checks, source inspection, historical receipts, and incomplete lanes; causal evidence does not prove numeric answers.
+- [Phase 35]: Keep descriptor-less prohibitions pending independent verification without inventing descriptors or human approval.
 
 ### Pending Todos
 
@@ -1086,8 +1090,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-14T17:46:27.628Z
-Stopped at: Completed 35-07-PLAN.md
+Last session: 2026-10-14T21:48:59.126Z
+Stopped at: Completed 35-08-PLAN.md
 Resume file: None
 Next action: $gsd-execute-phase 35
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
