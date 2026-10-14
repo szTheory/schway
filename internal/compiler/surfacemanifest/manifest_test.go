@@ -196,7 +196,7 @@ func TestPhase34SurfaceLimits(t *testing.T) {
 		"application.argument_bytes": {"application input", "one application input argument", "bytes", 4096, []string{"app run"}},
 		"application.evidence_bytes": {"application capture", "one same-run application evidence capture/report", "bytes", 65536, []string{"app run"}},
 		"application.output_bytes":   {"application output", "one retained application stdout stream", "bytes", 65536, []string{"app run"}},
-		"check.work":                 {"deterministic checker work", "one checked source program including its loaded modules", "work units", 100000, []string{"app verify", "build", "check", "run"}},
+		"check.work":                 {"deterministic checker work", "one checked source program including its loaded modules", "work units", 100000, []string{"app verify", "build", "check", "debug-map", "interface core", "interface export", "query", "run", "verify"}},
 		"evidence.manifest_bytes":    {"tool input", "one evidence manifest file", "bytes", 1048576, []string{"evidence --validate"}},
 		"evidence.tool_stream_bytes": {"external tool capture", "each captured external-tool stdout or stderr stream", "bytes per stream", 65536, []string{"evidence", "evidence --validate"}},
 		"execution.document_bytes":   {"execution capture", "one native execution document", "bytes", 16777216, []string{"app verify"}},
@@ -208,13 +208,13 @@ func TestPhase34SurfaceLimits(t *testing.T) {
 		"parser.alternatives":        {"authoring parse bound", "one parsed source program", "alternatives", 4096, nil},
 		"parser.declarations":        {"authoring parse bound", "one source file", "declarations", 4096, nil},
 		"parser.functions":           {"authoring parse bound", "one source file", "functions", 1024, nil},
-		"parser.linear_bindings":     {"authoring parse bound", "one parsed linear body", "bindings", 65536, nil},
+		"parser.linear_bindings":     {"authoring parse bound", "outer linear bodies across one parsed source program", "bindings", 65536, nil},
 		"parser.primary_diagnostics": {"authoring diagnostic bound", "one parsed source", "diagnostics", 20, nil},
 		"parser.source_bytes":        {"authoring parse bound", "one source file", "bytes", 1048576, nil},
 		"parser.tokens":              {"authoring parse bound", "one source file", "tokens", 131072, nil},
 		"parser.type_depth":          {"authoring type bound", "one nested type expression", "levels", 64, nil},
 		"parser.type_nodes":          {"authoring type bound", "one source file", "nodes", 4096, nil},
-		"scalar.analysis_work":       {"deterministic scalar analysis", "one scalar CFG function", "work units", 65536, []string{"app verify", "build", "check", "run"}},
+		"scalar.analysis_work":       {"deterministic scalar analysis", "one scalar CFG function", "work units", 65536, []string{"app verify", "build", "check", "debug-map", "evidence", "evidence --validate", "explain", "interface core", "interface export", "query", "run", "verify"}},
 	}
 	if len(manifest.Limits) != len(want) {
 		t.Fatalf("limit count = %d, want %d", len(manifest.Limits), len(want))
@@ -234,7 +234,7 @@ func TestPhase34SurfaceLimits(t *testing.T) {
 		if expected.routes != nil && !reflect.DeepEqual(item.Routes, expected.routes) {
 			t.Errorf("limit %s routes = %v, want %v", item.ID, item.Routes, expected.routes)
 		}
-		if expected.routes == nil && !reflect.DeepEqual(item.Routes, []string{"app verify", "build", "check", "debug-map", "evidence", "evidence --validate", "explain", "format", "interface export", "query", "run", "verify"}) {
+		if expected.routes == nil && !reflect.DeepEqual(item.Routes, []string{"app verify", "build", "check", "debug-map", "evidence", "evidence --validate", "explain", "format", "interface core", "interface export", "query", "run", "verify"}) {
 			t.Errorf("limit %s parser routes = %v", item.ID, item.Routes)
 		}
 		delete(want, item.ID)

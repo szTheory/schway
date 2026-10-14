@@ -108,8 +108,9 @@ func limit(id, category, scope, unit string, value int, meaning string, routes .
 func Current() Manifest {
 	bounds := syntax.CurrentAuthoringBounds()
 	moduleRoutes := check.ModuleAwareRoutes()
-	parserRoutes := []string{"app verify", "build", "check", "debug-map", "evidence", "evidence --validate", "explain", "format", "interface export", "query", "run", "verify"}
-	checkedRoutes := []string{"app verify", "build", "check", "run"}
+	parserRoutes := []string{"app verify", "build", "check", "debug-map", "evidence", "evidence --validate", "explain", "format", "interface core", "interface export", "query", "run", "verify"}
+	checkedRoutes := []string{"app verify", "build", "check", "debug-map", "interface core", "interface export", "query", "run", "verify"}
+	scalarRoutes := []string{"app verify", "build", "check", "debug-map", "evidence", "evidence --validate", "explain", "interface core", "interface export", "query", "run", "verify"}
 	refusals := surface.Refusals()
 	refusalEntries := make([]Refusal, 0, len(refusals))
 	for _, refusal := range refusals {
@@ -185,7 +186,7 @@ func Current() Manifest {
 			limit("application.argument_bytes", "application input", "one application input argument", "bytes", native.MaxApplicationArgumentBytes, "Maximum byte length for the retained application input argument.", "app run"),
 			limit("application.evidence_bytes", "application capture", "one same-run application evidence capture/report", "bytes", execution.MaxApplicationEvidenceBytes, "Maximum encoded application evidence bytes; separate from execution documents.", "app run"),
 			limit("application.output_bytes", "application output", "one retained application stdout stream", "bytes", execution.MaxApplicationOutputBytes, "Maximum bytes streamed by the retained application.", "app run"),
-			limit("check.work", "deterministic checker work", "one checked source program including its loaded modules", "work units", session.MaxCheckWork, "Token count plus explicit checker traversal work; exceeding the bound is refused.", checkedRoutes...),
+			limit("check.work", "deterministic checker work", "one checked source program including its loaded modules", "work units", session.MaxCheckWork, "Token count plus explicit checker traversal work; exceeding the bound is refused. debug-map applies this guard only to import-bearing programs; query applies it only through lane/corpus queries.", checkedRoutes...),
 			limit("evidence.manifest_bytes", "tool input", "one evidence manifest file", "bytes", evidence.MaxManifestBytes, "Maximum manifest bytes read for evidence validation.", "evidence --validate"),
 			limit("evidence.tool_stream_bytes", "external tool capture", "each captured external-tool stdout or stderr stream", "bytes per stream", evidence.MaxToolProbeBytes, "Bounds an individual tool probe stream; overflow is reported rather than treated as complete evidence.", "evidence", "evidence --validate"),
 			limit("execution.document_bytes", "execution capture", "one native execution document", "bytes", execution.MaxDocumentBytes, "Maximum native execution-document capture; distinct from application evidence.", "app verify"),
@@ -197,13 +198,13 @@ func Current() Manifest {
 			limit("parser.alternatives", "authoring parse bound", "one parsed source program", "alternatives", bounds.Alternatives, "Maximum parsed alternatives before the parser refuses the program.", parserRoutes...),
 			limit("parser.declarations", "authoring parse bound", "one source file", "declarations", syntax.MaxDeclarations, "Maximum data and function declarations in one file.", parserRoutes...),
 			limit("parser.functions", "authoring parse bound", "one source file", "functions", syntax.MaxFunctions, "Maximum function declarations in one file.", parserRoutes...),
-			limit("parser.linear_bindings", "authoring parse bound", "one parsed linear body", "bindings", bounds.LinearBindings, "Maximum linear bindings accepted by the parser in a body.", parserRoutes...),
+			limit("parser.linear_bindings", "authoring parse bound", "outer linear bodies across one parsed source program", "bindings", bounds.LinearBindings, "Maximum aggregate bindings in outer function linear-body lists; nested statement bindings are not counted by this guard.", parserRoutes...),
 			limit("parser.primary_diagnostics", "authoring diagnostic bound", "one parsed source", "diagnostics", bounds.PrimaryDiagnostics, "Maximum primary parser diagnostics; further diagnostics are suppressed and reported as syntax.too_many_errors.", parserRoutes...),
 			limit("parser.source_bytes", "authoring parse bound", "one source file", "bytes", syntax.MaxSourceBytes, "Maximum bytes accepted by a source parser entry point.", parserRoutes...),
 			limit("parser.tokens", "authoring parse bound", "one source file", "tokens", syntax.MaxTokens, "Maximum tokens accepted from one parsed source file.", parserRoutes...),
 			limit("parser.type_depth", "authoring type bound", "one nested type expression", "levels", bounds.TypeDepth, "Maximum parser type-expression nesting depth.", parserRoutes...),
 			limit("parser.type_nodes", "authoring type bound", "one source file", "nodes", bounds.TypeNodes, "Maximum visited type nodes in parser bounds.", parserRoutes...),
-			limit("scalar.analysis_work", "deterministic scalar analysis", "one scalar CFG function", "work units", check.ScalarAnalysisWorkLimit, "Maximum fixed-point work before scalar analysis refuses to converge.", checkedRoutes...),
+			limit("scalar.analysis_work", "deterministic scalar analysis", "one scalar CFG function", "work units", check.ScalarAnalysisWorkLimit, "Maximum fixed-point work before scalar analysis refuses to converge.", scalarRoutes...),
 		},
 		Refusals: refusalEntries,
 	}

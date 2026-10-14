@@ -33,6 +33,14 @@ are separate budgets. The maximum for a `FileBytes` input is selected by its
 validated binding configuration; the manifest does not claim a universal
 language-wide file-size cap.
 
+Parser limits include both source-producing interface routes. Scalar analysis
+also applies to the checked paths of evidence, explain, query, debug-map, and
+verify. The global checker-work guard applies to debug-map only with imports
+and to query only through its delegated lane/corpus queries. The linear-binding
+parser guard counts the aggregate outer function body binding lists in one
+program; it does not count nested statement bindings. Earlier token or source
+bounds can refuse an input before that guard is reached.
+
 The seven refusal hints are current diagnostics, not admission rules or
 unchecked repair instructions. In particular, the manifest does not promise
 bitwise operators, hexadecimal literals, dynamic shifts, or scalar-expression
