@@ -27,6 +27,7 @@ acceptance record is kept at
 - [x] **DX-20**: Text diagnostics show `file:line:col` and a one-line source snippet with a caret. JSON diagnostics add 1-based `line` and `col` to each span, next to the existing byte offsets. Codes are unchanged.
 - [x] **DX-21**: A single syntax error yields one diagnostic for its recovery point, not a cascade of follow-on `expected }` / `expected declaration` errors. A pinned corpus of agent-style drafts shows the reduction.
 - [x] **DX-22**: Constructs that remain absent are refused with a dedicated `surface.unsupported_*` code and a one-line hint. They include `&&`/`||`/`!`, more than one parameter, if without else, Bool literal tails, subtraction and dynamic shift amounts. The previous misleading parse errors no longer appear.
+  - Phase 34 closure (2026-10-13): the seven current forms are verified; dynamic-shift refusal remains pending with BIT-02 in Phase 35, as explicitly assigned in the roadmap and 34-VERIFICATION.md.
 - [x] **DX-23**: `schway surface --json` prints a versioned, deterministic manifest of the admitted surface: types, operators, statements, builtins, call rules and limits. A meta-test fails if an admitted construct or `surface.unsupported_*` code is missing from the manifest, or if the manifest names one that is not admitted.
 
 ### Bitwise operators and literals

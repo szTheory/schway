@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
-current_phase: 34
-current_phase_name: Agent Diagnostics Floor and Surface Manifest
-status: executing
-stopped_at: Completed 34-08-PLAN.md; Phase 34 remains awaiting verification
-last_updated: "2026-10-14T01:11:16.083Z"
+current_phase: 35
+current_phase_name: Bitwise Operators, Literal Shifts, and Hex Literals
+status: planning
+stopped_at: Phase 34 complete, ready to plan Phase 35
+last_updated: "2026-10-14T02:15:42.043Z"
 last_activity: 2026-10-13
-last_activity_desc: Phase 33 complete, transitioned to Phase 34
-state_head: ae194a952fd3406c646cdb733b45ea10bb2617a1
+last_activity_desc: Phase 34 complete, transitioned to Phase 35
+state_head: 251035d542fe9f7a3ae00d7520a27f6aac02b070
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 13
   completed_plans: 13
-  percent: 17
+  percent: 33
 ---
 
 <!-- schway-current:start -->
@@ -56,7 +56,7 @@ See: .planning/PROJECT.md (updated 2026-10-13)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 34 — Agent Diagnostics Floor and Surface Manifest
+**Current focus:** Phase 35 — Bitwise Operators, Literal Shifts, and Hex Literals (after the Phase 33 successor-stale verification refresh)
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -124,12 +124,12 @@ plans.
 
 ## Current Position
 
-Phase: 34 (Agent Diagnostics Floor and Surface Manifest) — READY TO EXECUTE
-Plan: 8 of 8
-Status: Ready to execute
-Last activity: 2026-10-13 — Phase 33 complete, transitioned to Phase 34
+Phase: 35 — Bitwise Operators, Literal Shifts, and Hex Literals
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-13 — Phase 34 complete, transitioned to Phase 35
 
-Progress: [██░░░░░░░░] 17%
+Progress: [███░░░░░░░] 33%
 
 ## M007 Planning
 
@@ -287,7 +287,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 300
+- Total plans completed: 308
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -313,6 +313,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 32 | 11 | - | - |
 | 32.1 | 11 | - | - |
 | 33 | 5 | - | - |
+| 34 | 8 | - | - |
 
 The archived aggregate preserves the cumulative project total. The detailed
 rows above are the M004 subset; do not recompute the project total from that
@@ -1056,7 +1057,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-10-14T01:11:16.037Z
-Stopped at: Completed 34-08-PLAN.md; Phase 34 remains awaiting verification
+Stopped at: Phase 34 complete, ready to plan Phase 35
 Resume file: None
 Next action: $gsd-execute-phase 34
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
@@ -1238,7 +1239,7 @@ plans, or reopen Phase 25 implementation.
 
 ## Operator Next Steps
 
-- Discuss M007 Phase 33 with /gsd-discuss-phase 33
+- Phase 34 is complete. Refresh the successor-stale Phase 33 report through `$gsd-execute-phase 33` without replaying plans, then discuss Phase 35.
 
 ### Phase 33 completion handoff — 2026-10-13
 
@@ -1247,3 +1248,9 @@ All five plans and four roadmap truths are complete; canonical `verification.sta
 The next command is `$gsd-discuss-phase 34`: `init.progress` identifies Phase 34 as not started with no directory, plans or context. STATE's generic Ready to plan position is not evidence that discussion exists. The living documents and `33-TRANSITION-CHECK.md` record the next three capabilities and dormant seed dispositions.
 
 Completion returned two summary-file warnings: the path scanner treated `sh -n scripts/check-freeze.sh scripts/check-receipts.sh scripts/codedigest.sh`, `git show 9f8f878f:scripts/verify-phase32.sh` (33-03), and `sh -n scripts/verify-phase32.sh` (33-04) as file names. These are recorded commands, not missing artifacts; all four current scripts exist, shell syntax passes, and the archived producer was inspected during execution. No real artifact gap or human verification remains.
+
+### Phase 34 completion handoff — 2026-10-13
+
+Phase 34 is complete at canonical passed verification: 38/38 truths, all 70 selected root test names freshly executed, zero behavior-unverified truths, all review findings fixed, L1 security register closed, and compliant validation. Dynamic-shift hint remains Phase 35/BIT-02. Completion's one summary warning is a shortened `protocol/presentation.go` reference; the full `internal/compiler/protocol/presentation.go` exists and was verified. No artifact or human-UAT gap follows from that scanner warning.
+
+Routing reconciliation: the Phase 34 shared-file changes legitimately stale Phase 33's covered-input fingerprint. `init.execute-phase 33` returns zero incomplete plans; `init.progress` points to `$gsd-execute-phase 33` for verifier regeneration. This refresh is in progress; do not replay completed plans or claim a current Phase 33 verdict from its historical report. Phase 35 is the next feature phase, and no Phase 35 execution has begun. Preserve user configuration edits. M006 receipts remain historical; Phase 38 owns final hosted binding.

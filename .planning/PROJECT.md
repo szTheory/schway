@@ -430,6 +430,11 @@ contract, without a speculative milestone number.
 
 ### Validated
 
+- ✓ Locatable captured-source diagnostics, bounded recovery over 20 explicitly
+  reconstructed drafts, seven contextual absent-form refusals, and deterministic
+  installed `schway.surface/1` discovery with independent controls — M007
+  Phase 34 (DX-20..DX-23; dynamic-shift refusal remains Phase 35/BIT-02).
+
 - ✓ Checked U64 addition and defined overflow; `<` and Bool branching; scalar
   U64/Bool loops with independent deterministic fixed points and explicit
   ownership/resource/loan/provenance back-edge refusals — M005 Phase 26
@@ -796,6 +801,10 @@ Canonical planning inputs:
 | Admit byte reads only as a read-only view in loops that carry scalar state only | The checksum needs reads, not mutation; keeping loans/owners off loop back edges reuses the M005 scalar fixed point instead of widening authority | ✓ M006 Phase 29 — bounds check survives -O3/LTO; every unsound neighbor refused by an existing code |
 | Insert a decimal debt phase from the milestone audit, then close with an override for successor-staled verifications | The audit's DX-17/DX-18/MOD-03 warnings were user-facing; 32.1's verified changes legitimately move earlier phases' covered-file digests | ✓ M006 — 32.1 verified 6/6 and UAT 31/31; 28–32 recorded as stale-by-successor in MILESTONES.md |
 
+| Keep diagnostic locations outside byte identity and repair authority | Presentation must locate captured entry/import causes without changing the checked edit or rereading mutable source | ✓ Phase 34 — location, identity and repair controls pass |
+| Publish checked contextual facts with independent finite witnesses | Grammar reachability and ability derivation do not establish complete-program admission | ✓ Phase 34 — Box/Pair and if/else overclaims removed; two-way drift controls pass |
+| Bind limit claims to consumers and name conditional scopes | Duplicated expected literals missed route applicability and aggregate binding scope | ✓ Phase 34 — independent consumer census, executable interface thresholds and direct AST guard pass |
+
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -816,8 +825,12 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-13 after Phase 33 execution and evidence review*
+*Last updated: 2026-10-13 after Phase 34 execution and evidence review*
 
 ### Phase 33 execution amendment — 2026-10-13
 
 QLT-13, QLT-14, QLT-15 and EVD-16 have focused implementation witnesses: bounded capture ingestion, closed live-owner terminal outcomes, paid carried review debt, reconstructed Phase 28 records and one reusable freeze/receipt boundary. Exact source witnesses and current next capabilities are recorded in `phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-TRANSITION-CHECK.md`. No new language feature or hosted receipt is claimed. The review repair explicitly rejects missing/empty control-list entries; consistency gates continue to make no authenticity claim.
+
+### Phase 34 execution amendment — 2026-10-13
+
+All eight plans are complete. Independent verification passed 38/38 truths and confirmed all 70 selected test names ran and passed. Diagnostic location is additive to byte identity, recovery is bounded to the reconstructed corpus, and installed surface discovery has independent checked witnesses and reached drift controls. The three source-review warnings and CLI copy warning are fixed. No new dependency, backend, broader query framework, native semantic widening or hosted binding is claimed. Dynamic-shift refusal stays with Phase 35/BIT-02. The current three next capabilities and seed dispositions are in `phases/34-agent-diagnostics-floor-and-surface-manifest/34-TRANSITION-CHECK.md`.

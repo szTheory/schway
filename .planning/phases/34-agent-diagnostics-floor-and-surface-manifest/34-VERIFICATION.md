@@ -1,0 +1,226 @@
+---
+phase: 34-agent-diagnostics-floor-and-surface-manifest
+verified: 2026-10-14T02:10:16Z
+status: passed
+score: 38/38 must-haves verified
+covered_files:
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-01-PLAN.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-01-SUMMARY.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-02-PLAN.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-02-SUMMARY.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-03-PLAN.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-03-SUMMARY.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-04-PLAN.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-04-SUMMARY.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-05-PLAN.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-05-SUMMARY.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-PLAN.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-SUMMARY.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-PLAN.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-SUMMARY.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-PLAN.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-SUMMARY.md"
+  - "cmd/schway-repair/repair_phase34_test.go"
+  - "cmd/schway/main.go"
+  - "cmd/schway/main_phase34_diagnostics_test.go"
+  - "cmd/schway/main_phase34_routes_test.go"
+  - "cmd/schway/main_phase34_surface_test.go"
+  - "internal/compiler/ast/ast.go"
+  - "internal/compiler/check/check.go"
+  - "internal/compiler/check/scalar.go"
+  - "internal/compiler/diagnostic/diagnostic.go"
+  - "internal/compiler/diagnostic/diagnostic_phase34_test.go"
+  - "internal/compiler/protocol/presentation.go"
+  - "internal/compiler/protocol/protocol.go"
+  - "internal/compiler/protocol/protocol_phase34_test.go"
+  - "internal/compiler/session/session.go"
+  - "internal/compiler/session/session_app_verify.go"
+  - "internal/compiler/session/session_modules.go"
+  - "internal/compiler/session/session_phase34_compat_test.go"
+  - "internal/compiler/session/session_phase34_limit_consumers_test.go"
+  - "internal/compiler/session/session_phase34_prechange_test.go"
+  - "internal/compiler/session/session_phase34_presentation_test.go"
+  - "internal/compiler/session/session_phase34_routes_test.go"
+  - "internal/compiler/session/session_phase34_surface_test.go"
+  - "internal/compiler/session/session_phase6_explain.go"
+  - "internal/compiler/session/session_phase6_query.go"
+  - "internal/compiler/session/session_presentation.go"
+  - "internal/compiler/surface/refusals.go"
+  - "internal/compiler/surfacemanifest/manifest.go"
+  - "internal/compiler/surfacemanifest/manifest_test.go"
+  - "internal/compiler/syntax/lexer.go"
+  - "internal/compiler/syntax/parser.go"
+  - "internal/compiler/syntax/parser_phase34_baseline_test.go"
+  - "internal/compiler/syntax/parser_phase34_limit_scope_test.go"
+  - "internal/compiler/syntax/parser_phase34_recovery_test.go"
+  - "internal/compiler/syntax/parser_phase34_refusal_test.go"
+  - "testdata/phase34/compat-deltas.json"
+  - "testdata/phase34/draft-baseline.json"
+  - "testdata/phase34/drafts.json"
+  - "testdata/phase34/identity-baseline.json"
+  - "testdata/phase34/prechange-corpus.json"
+  - "testdata/phase34/surface-census.json"
+  - "testdata/phase34/surface-witnesses.json"
+covered_digest: "v3:sha256:e10d1904ea734a2bce9146e73ad87afbb9c6e97df22dc82f43395bd15658acef"
+behavior_unverified: 0
+overrides_applied: 0
+deferred:
+  - truth: "DX-22's dynamic-shift-amount refusal code and hint are not present in the current seven-code catalog."
+    addressed_in: "Phase 35"
+    evidence: "ROADMAP.md Phase 35 success criteria 2 and 5 require a named surface.unsupported_* refusal for dynamic shifts and registration in the surface manifest; REQUIREMENTS.md explicitly assigns this sub-item to BIT-02/Phase 35."
+---
+
+# Phase 34: Agent Diagnostics Floor and Surface Manifest Verification Report
+
+**Phase Goal:** An agent drafting Schway gets one precise, locatable diagnostic per real cause and can ask the toolchain what surface is admitted, instead of guessing from cascading, offset-only or misleading errors.
+**Verified:** 2026-10-14T02:10:16Z
+**Status:** passed
+**Re-verification:** No — initial verification
+
+## Goal Achievement
+
+### Observable Truths
+
+Statuses below cover the four roadmap success criteria plus all 34 PLAN `must_haves.truths`. Tests cited here were freshly executed as exact named selectors in the 70-selector focused run across 11 packages; a second JSON-format run recorded root `run` and `pass` events for all 70 names with no failures. The full command and package results are recorded in `34-REGRESSION.md`. No prior verification existed.
+
+| # | Truth | Status | Evidence |
+|---|---|---|---|
+| R1 | Text diagnostics provide `file:line:col`, one escaped source line and a caret; JSON adds 1-based coordinates beside unchanged byte offsets, including UTF-8, CRLF and final-line EOF. | ✓ VERIFIED | `TestPhase34DiagnosticLocations`, `TestPhase34HumanSnippetRendering`, `TestPhase34CheckDiagnosticPresentation`; `protocol/presentation.go:112` maps source offsets. |
+| R2 | The pinned agent-draft corpus reduces one-cause cascades while retaining independent causes and siblings. | ✓ VERIFIED | `TestPhase34DraftBaseline`, `TestPhase34RecoveryCorpus`, `TestPhase34RecoveryControls`; the 20 fixtures are explicitly reconstructed and do not claim recovery of the unavailable CRC/word-counter originals. |
+| R3 | The seven current absent forms receive dedicated `surface.unsupported_*` codes, exact spans and hints instead of misleading parser errors. | ✓ VERIFIED | `TestPhase34UnsupportedSurfaceRefusals`, `TestPhase34RefusalHintsHaveNoRepairs`, `TestPhase34SurfaceManifestControls`; the separately scoped dynamic-shift item is recorded under Deferred Items. |
+| R4 | `schway surface --json` emits a versioned deterministic manifest and bidirectional controls detect missing or invented admission/refusal claims. | ✓ VERIFIED | `TestPhase34SurfaceRoute`, `TestPhase34SurfaceDocument`, `TestPhase34SurfaceManifestWitnesses`, `TestPhase34SurfaceManifestCensus`, `TestPhase34SurfaceManifestControls`. |
+| P1.1 | Every enumerated tracked Schway input has explicit pre-change emission outcomes and literal successful C; a reached byte mutation fails comparison. | ✓ VERIFIED | `TestPhase34PreChangeCProgramGolden` and `TestPhase34PreChangeCGoldenIsNotInert`; fixture inventory and byte-mutant are compared in `session_phase34_prechange_test.go`. |
+| P1.2 | Every reconstructed draft has labeled provenance and literal pre-change diagnostics, IDs, spans, causes and counts; originals are not claimed recovered. | ✓ VERIFIED | `TestPhase34DraftBaseline`; fixture provenance and immutable before rows are in `testdata/phase34/drafts.json` and `draft-baseline.json`. |
+| P1.3 | Legal `true`/`false` parameter and binding names remain legal, while the exact unbound true-tail baseline is preserved. | ✓ VERIFIED | `TestPhase34BoolNameBaseline`, `TestPhase34BoolSpellingsRemainIdentifiers`, `TestPhase34UnsupportedSurfaceRefusals`; the unbound tail is now refused contextually. |
+| P1.4 | Source-less legacy schemas, IDs, repairs, units and result identity are frozen before additive presentation. | ✓ VERIFIED | `TestPhase34IdentityBaseline`, `TestPhase34DiagnosticIdentityProjection`, `TestPhase34CompatibilityDeltaLedger`; literal baseline is `testdata/phase34/identity-baseline.json`. |
+| P2.1 | Adjacent and zero-width spans keep their half-open byte boundaries; projection neither merges spans nor misplaces EOF/CRLF. | ✓ VERIFIED | `TestPhase34DiagnosticLocations`; primary and nested projections retain byte offsets in `protocol/presentation.go`. |
+| P2.2 | Known empty-file EOF gets a 1:1 caret; unverified synthetic spans and nil cause/repair spans omit coordinates. | ✓ VERIFIED | `TestPhase34DiagnosticLocations`, `TestPhase34PresentationUsesCapturedSource`; position projection rejects unknown origins and invalid ranges. |
+| P2.3 | Columns count Unicode scalar values, invalid bytes count individually, escaped snippet carets align to printable text, and byte offsets do not change. | ✓ VERIFIED | `TestPhase34DiagnosticLocations`, `TestPhase34HumanSnippetRendering`, `TestPhase34DiagnosticIdentityProjection`. |
+| P2.4 | Repeated enrichment preserves diagnostic/cause/repair ordering and IDs; `InUnit` and location-only changes do not alter identity. | ✓ VERIFIED | `TestPhase34DiagnosticIdentityProjection`, `TestPhase34IdentityBaseline`; `SourcePosition` is presentation-only and excluded from identity projection. |
+| P2.5 | Human source errors retain code/ID and bounded location/snippet/caret, while JSON never contains source bodies. | ✓ VERIFIED | `TestPhase34CheckDiagnosticPresentation`, `TestPhase34HumanSnippetRendering`; public CLI test checks both streams and source-body absence in JSON. |
+| P3.1 | Presentation uses only the invocation's captured bytes and path labels; later file mutation cannot change output or trigger another read. | ✓ VERIFIED | `TestPhase34PresentationUsesCapturedSource`, `TestPhase34SourceRoutePresentation`; a read observer and post-capture mutation exercise this invariant. |
+| P3.2 | Imported primary/cause/repair spans use `EffectiveUnit` and loader-confirmed relative labels; JSON retains dotted units and nil spans. | ✓ VERIFIED | `TestPhase34ImportedDiagnosticPresentation`, `TestPhase34DiagnosticRouteInventory`; module source maps are retained by session presentation. |
+| P3.3 | Missing/global positions remain unlocated; entry labels follow CLI authority and imported labels do not leak canonical absolute paths. | ✓ VERIFIED | `TestPhase34DiagnosticRouteInventory`, `TestPhase34SourceRoutePresentation`; operational errors remain unlocated and source-bearing routes use captured labels. |
+| P4.1 | One recovery cause yields one primary diagnostic while the next sibling and independent missing closer/mistake remain visible. | ✓ VERIFIED | `TestPhase34RecoveryCorpus`, `TestPhase34RecoveryControls`; controls specifically restore cascade, sibling swallowing and lost-cause defects. |
+| P4.2 | Recovery terminates within existing source/token/diagnostic/type bounds and retains the overflow diagnostic when capped. | ✓ VERIFIED | `TestPhase34RecoveryCorpus`, `TestPhase34SurfaceLimitConsumers`, `TestPhase34LinearBindingLimitScope`; the finite census and parser bounds are exercised separately. |
+| P4.3 | Only exact parser-claimed token spans suppress lexer errors; rejected source stays lossless and parse failures cannot reach checking/native emission. | ✓ VERIFIED | `TestPhase34UnsupportedSurfaceRefusals`, `TestPhase34RecoveryCorpus`, `TestPhase34SourceRoutePresentation`; exact-span and near-miss controls pass. |
+| P4.4 | The spiral trio retains distinct discarded spans and diagnostic/result identities. | ✓ VERIFIED | `TestSkippedRegionCauseSeparatesSpiralTrio`; phase-34 recovery checks preserve independent causes. |
+| P5.1 | Each of the seven current forms has its stable code, exact span and independently pinned one-line hint without misleading/cascading errors. | ✓ VERIFIED | `TestPhase34UnsupportedSurfaceRefusals` in syntax and checker packages; the seven literals are independently checked by `TestPhase34SurfaceManifestControls`. |
+| P5.2 | Bound `true`/`false` names retain checked meanings; only the contextually unbound result-tail spelling is refused, with no literal/result widening. | ✓ VERIFIED | `TestPhase34BoolSpellingsRemainIdentifiers`, `TestPhase34BoolNameBaseline`, `TestPhase34CallArityBoundaries`. |
+| P5.3 | Schway/foreign declaration arity, ordinary call arity and two-operand `byte_at` remain distinct; scalar helper calls stay absent. | ✓ VERIFIED | `TestPhase34CallArityBoundaries`, `TestPhase34SurfaceManifestWitnesses`, `TestPhase34SurfaceManifestControls`. |
+| P5.4 | Refusal hints are prose only and create no structured repair or automatic replacement authority. | ✓ VERIFIED | `TestPhase34RefusalHintsHaveNoRepairs`, `TestPhase34RepairJSONCompatibility`; repair authority remains exact byte spans and replacements. |
+| P6.1 | Source-free invocation emits a complete nonempty typed current manifest; no source is required and extra/empty arguments fail as usage. | ✓ VERIFIED | `TestPhase34SurfaceRoute` runs from an empty temporary directory, checks exact argument placements and rejects malformed raw args. |
+| P6.2 | Standalone manifest JSON is deterministic UTF-8 with fixed fields/canonical arrays and one newline, and excludes user/host/timing data. | ✓ VERIFIED | `TestPhase34SurfaceRoute`, `TestPhase34SurfaceDocument`; repeated bytes are equal and output is checked for its one-newline framing. |
+| P6.3 | `byte_at` arity two, ordinary arity restrictions and absent scalar helpers are separately represented; no unsupported helper claim is invented. | ✓ VERIFIED | `TestPhase34SurfaceManifestWitnesses`, `TestPhase34SurfaceManifestControls`; actual complete-source outcomes are compared with the typed facts. |
+| P6.4 | Each published limit identifies category, scope, unit, meaning and applicable route; compiler bounds stay distinct from tool budgets. | ✓ VERIFIED | `TestPhase34SurfaceLimitConsumers`, `TestPhase34InterfaceLimitWitnesses`, `TestPhase34LinearBindingLimitScope`; census is finite and branch-insensitive by design. |
+| P7.1 | Each admitted facet/context has an independent complete-source witness; refusal witnesses pin rejected status, code and hint; both comparison directions execute. | ✓ VERIFIED | `TestPhase34SurfaceManifestWitnesses`, `TestPhase34SurfaceManifestCensus`; source witnesses are independent of the typed manifest registry. |
+| P7.2 | Removing/inventing admissions, refusal codes/hints or weakening contexts/arity/limits is caught for its named reason, with controls restored. | ✓ VERIFIED | `TestPhase34SurfaceManifestControls` reaches and restores each declared mutation. |
+| P7.3 | The matrix independently pins `byte_at`/ordinary arities, absent scalar calls, seven refusals, limit values/scopes/units and context restrictions. | ✓ VERIFIED | `TestPhase34SurfaceManifestWitnesses`, `TestPhase34SurfaceManifestControls`, `TestPhase34SurfaceLimitConsumers`. |
+| P7.4 | Coverage is expressly finite; neither source census alone nor production registry output is treated as a complete admission oracle. | ✓ VERIFIED | `TestPhase34SurfaceManifestCensus` checks its finite owned-file witness set; code/report make no universal grammar-reachability claim. |
+| P8.1 | Affected diagnostic-bearing routes present captured source locations when proven and honestly omit unavailable/global locations while preserving streams/exits and route authority. | ✓ VERIFIED | `TestPhase34SourceRoutePresentation`, `TestPhase34DiagnosticRouteInventory`; public check/build/run/app-verify and other constructor families are inventoried. |
+| P8.2 | The existing repair decoder ignores additive positions and prose, preserves eligible byte edits, and declines cross-unit changes. | ✓ VERIFIED | `TestPhase34RepairJSONCompatibility`, `TestRepairDriverDecodesNoProseFields`, `TestPhase30RepairDriverDeclinesCrossUnit`. |
+| P8.3 | Admitted source/name witnesses and successful C remain unchanged; authorized diagnostic deltas are exact and unrelated diagnostics stay fixed. | ✓ VERIFIED | `TestPhase34PreChangeCProgramGolden`, `TestPhase34BoolSpellingsRemainIdentifiers`, `TestPhase34CompatibilityDeltaLedger`. |
+| P8.4 | Final evidence names real tests/selectors; hosted receipt binding remains Phase 38 and readability/whole-loop latency are unmeasured. | ✓ VERIFIED | Fresh 70-selector focused run passed; no whole suite, native matrix, hosted dispatch or receipt binding ran. `34-REGRESSION.md` carries the exact command. |
+| P8.5 | All three dormant seeds retain scoped dispositions and the eight-slice plan includes both runnable check and source-free discovery. | ✓ VERIFIED | `TestPhase34TransitionDocuments` checks the dated amendments; runnable gains are covered by `TestPhase34SourceRoutePresentation` and `TestPhase34SurfaceRoute`. |
+| P8.6 | Both living-document amendments retain the three capability fields, seed dispositions and honest evidence statuses; targeted mutants fail for their defect. | ✓ VERIFIED | `TestPhase34TransitionDocuments` exercises field removal, changed status/disposition and evidence-overclaim controls. |
+
+**Score:** 38/38 truths verified (0 present, behavior-unverified)
+
+### Deferred Items
+
+| # | Item | Addressed In | Evidence |
+|---|---|---|---|
+| 1 | The dynamic-shift-amount refusal code/hint is not in the current seven-code catalog. | Phase 35 | `ROADMAP.md` Phase 35 success criteria 2 and 5 require a named `surface.unsupported_*` code/hint registered in the manifest; `REQUIREMENTS.md` explicitly assigns this DX-22 sub-item to BIT-02/Phase 35. The current Phase 34 requirement tests and plans intentionally cover seven implemented forms. |
+
+## Required Artifacts
+
+The eight `verify.artifacts` queries passed every declared artifact (57/57 declarations; duplicates across plans were checked in each plan). The path groups below match each plan's `files_modified` inventory; all were present and substantive. The 70 named selectors below exercise their behavior, rather than treating file existence as proof.
+
+| Artifact group | Expected | Status | Details |
+|---|---|---|---|
+| 34-01 baselines | Pre-change source/emission, draft and identity snapshots | ✓ VERIFIED | `session_phase34_prechange_test.go`, `parser_phase34_baseline_test.go`, `session_phase34_compat_test.go`; `prechange-corpus.json`, `drafts.json`, `draft-baseline.json`, `identity-baseline.json`. |
+| 34-02 presentation | Byte identity, positions, rendering and CLI behavior | ✓ VERIFIED | `diagnostic.go`, `diagnostic_phase34_test.go`, `protocol.go`, `presentation.go`, `protocol_phase34_test.go`, `session.go`, `parser.go`, `lexer.go`, `main_phase34_diagnostics_test.go`, `docs/diagnostics.md`. |
+| 34-03 captured sources | Entry/import source snapshot and per-unit location projection | ✓ VERIFIED | `session.go`, `session_modules.go`, `session_presentation.go`, `session_phase34_presentation_test.go`. |
+| 34-04 recovery | Bounded local recovery and literal after-state corpus | ✓ VERIFIED | `parser.go`, `lexer.go`, `parser_phase34_recovery_test.go`, `draft-after.json`. |
+| 34-05 refusals | Contextual recognizers, AST/checker guards and refusal tests | ✓ VERIFIED | `parser.go`, `lexer.go`, `parser_phase34_refusal_test.go`, `surface/refusals.go`, `ast.go`, `check.go`, `scalar.go`, `check_phase34_refusal_test.go`, `draft-after.json`. |
+| 34-06 manifest | Typed facts, CLI route, scope tests and guide | ✓ VERIFIED | `surfacemanifest/manifest.go`, `manifest_test.go`, `main.go`, `main_phase34_surface_test.go`, `main_phase32_routes_test.go`, `parser.go`, `scalar.go`, `docs/agent-surface.md`. |
+| 34-07 witnesses | Independent complete-source witness and finite census controls | ✓ VERIFIED | `session_phase34_surface_test.go`, `surface-witnesses.json`, `surface-census.json`. |
+| 34-08 integration | Public source routes, repair compatibility, delta ledger and living amendments | ✓ VERIFIED | `session.go`, `session_app_verify.go`, `main.go`, `session_phase34_routes_test.go`, `main_phase34_routes_test.go`, `session_phase6_explain.go`, `session_phase6_query.go`, `repair_phase34_test.go`, `session_phase34_compat_test.go`, `compat-deltas.json`, `PRODUCT-ROADMAP.md`, `LANGUAGE-MATURITY.md`. |
+
+`verify.key-links` could not interpret plan `from` values expressed as prose descriptions as paths, so those machine results were not accepted as wiring evidence. I traced the following links manually through implementation and their focused behavioral tests:
+
+## Key Link Verification
+
+| From | To | Via | Status | Details |
+|---|---|---|---|---|
+| `CheckCommandFile` and command constructors | `protocol.Result.Presentation` | One checked invocation retains entry bytes and route label | ✓ WIRED | `session.go:1108`, `session.go:1542`, `session_presentation.go`; route inventory and source-route tests pass. |
+| module loader sources / unit trees | presentation source map | `EffectiveUnit`, captured bytes and loader relative path | ✓ WIRED | `TestPhase34ImportedDiagnosticPresentation` and `TestPhase34PresentationUsesCapturedSource` verify unit mapping and no reread. |
+| `protocol.WithPresentation` | primary/cause/repair spans | Copy-and-enrich from verified source origin | ✓ WIRED | `protocol/presentation.go:32-112`; nested coordinate and absent-origin tests pass. |
+| `protocol.JSON` / `Human` | diagnostic locations and source snippet | JSON adds coordinates; text renderer adds bounded escaped excerpt | ✓ WIRED | `TestPhase34DiagnosticLocations`, `TestPhase34HumanSnippetRendering`, `TestPhase34CheckDiagnosticPresentation`. |
+| `diagnostic.InUnit` | byte-only identity projection | Coordinates remain outside the legacy hash shape | ✓ WIRED | `diagnostic.go`; `TestPhase34DiagnosticIdentityProjection` and literal identity baselines pass. |
+| parser refusal recognizers | `surface.LookupRefusal` and exact token suppression | Contextual form, exact span, stable code/hint | ✓ WIRED | `TestPhase34UnsupportedSurfaceRefusals` exercises exact matches and near misses. |
+| contextual Bool-tail classification | checker/parser result-tail refusal | Bound names remain identifiers; only unbound tail is refused | ✓ WIRED | `TestPhase34BoolSpellingsRemainIdentifiers`, `TestPhase34BoolNameBaseline`. |
+| `surface.Refusals()` | `surfacemanifest.Current()` | Typed manifest copies current codes/forms/hints and canonicalizes arrays | ✓ WIRED | `surfacemanifest/manifest.go:108`; manifest witness and mutation controls pass. |
+| parser/check limits | manifest limits | Declared constants, bounded route/context lists and source-consumer census | ✓ WIRED | `TestPhase34SurfaceLimitConsumers`, `TestPhase34InterfaceLimitWitnesses`, `TestPhase34LinearBindingLimitScope`; scope is expressly finite. |
+| raw CLI arguments | `runSurface` | Exact supported placements dispatched before global argument stripping | ✓ WIRED | `cmd/schway/main.go:134`; `TestPhase34SurfaceRoute` checks both placements, bad args and source-free execution. |
+| manifest facts | independent source witnesses and census | Public check outcomes compare both directions with owned contexts | ✓ WIRED | `TestPhase34SurfaceManifestWitnesses`, `TestPhase34SurfaceManifestCensus`, `TestPhase34SurfaceManifestControls`. |
+| enriched protocol JSON | `schway-repair` decode/apply | Existing byte span/replacement authority; hints and coordinates ignored | ✓ WIRED | `TestPhase34RepairJSONCompatibility`, `TestRepairDriverDecodesNoProseFields`, cross-unit decline test. |
+| pre-change snapshots | after-state compatibility ledger | Literal C/admission baselines plus exact authorized diagnostic deltas | ✓ WIRED | Golden, baseline and `TestPhase34CompatibilityDeltaLedger` pass. |
+| transition amendments | current source witnesses and dormant seed dispositions | Independently authored expected fields and mutation controls | ✓ WIRED | `TestPhase34TransitionDocuments` passes. |
+
+## Data-Flow Trace (Level 4)
+
+| Artifact | Data variable | Source | Produces real data | Status |
+|---|---|---|---|---|
+| diagnostic presentation | per-unit source bytes and module labels | Captured parser/module-loader input from the same invocation | Yes; coordinates/snippets are derived from original bytes | ✓ FLOWING |
+| parser recovery | lossless source tree and diagnostics | Actual draft bytes parsed by lexer/parser; `Tree.Bytes()` compared to input | Yes; rejected AST is stopped before checker/emitter | ✓ FLOWING |
+| surface manifest | typed current restrictions, bounds, routes and refusal catalog | Checked constants and `surface.Refusals()` mapped by `surfacemanifest.Current()` | Yes; generated from current implementation facts, not a placeholder/mock | ✓ FLOWING |
+| independent manifest check | witness outcomes | Complete Schway source passed through public check; separate finite census | Yes; tests compare observed behavior to manifest both ways | ✓ FLOWING |
+
+The manifest intentionally describes checked contexts, not reachability of every form through the full grammar. The seven-file reference census is finite and branch-insensitive; executable interface threshold controls and the aggregate AST binding-body guard supply distinct evidence. Neither is reported as a proof of universal source reachability.
+
+## Behavioral Spot-Checks
+
+| Behavior | Command / named test | Result | Status |
+|---|---|---|---|
+| 70 focused selectors across 11 packages, including all phase-34 named checks and prior-phase compatibility controls | Exact anchored-selector command in `34-REGRESSION.md`, run with `GOCACHE=/tmp/ai-lang-verification-gocache`, `-count=1`; repeated in `-json` mode for per-test event validation | `-v` run exited 0; JSON audit recorded 70 root `run`, 70 root `pass`, zero missing/not-passed/failure names | ✓ PASS |
+| UTF-8/CRLF/EOF location mapping, snippets and JSON source exclusion | `TestPhase34DiagnosticLocations`, `TestPhase34HumanSnippetRendering`, `TestPhase34CheckDiagnosticPresentation` | All passed in the focused run | ✓ PASS |
+| Snapshot immutability, imported source attribution and route presentation | `TestPhase34PresentationUsesCapturedSource`, `TestPhase34ImportedDiagnosticPresentation`, `TestPhase34SourceRoutePresentation`, `TestPhase34DiagnosticRouteInventory` | All passed in the focused run | ✓ PASS |
+| One-cause recovery, independent causes, lossless source and mutation controls | `TestPhase34RecoveryCorpus`, `TestPhase34RecoveryControls`, `TestSkippedRegionCauseSeparatesSpiralTrio` | All passed in the focused run | ✓ PASS |
+| Manifest command, independent witness/census, bidirectional drift controls and limits | `TestPhase34SurfaceRoute`, `TestPhase34SurfaceManifestWitnesses`, `TestPhase34SurfaceManifestCensus`, `TestPhase34SurfaceManifestControls`, `TestPhase34SurfaceLimitConsumers` | All passed in the focused run | ✓ PASS |
+
+## Probe Execution
+
+No probe script was declared by the eight plans/summaries, and no conventional `scripts/**/tests/probe-*.sh` file was present. Probe execution is not applicable.
+
+## Requirements Coverage
+
+| Requirement | Source plan | Description | Status | Evidence |
+|---|---|---|---|---|
+| DX-20 | 34-01, 34-02, 34-03, 34-08 | Locatable text and additive JSON coordinates with unchanged byte authority | ✓ SATISFIED | Location, rendering, imported-source, identity and public-route selectors pass. |
+| DX-21 | 34-01, 34-04, 34-08 | Pinned draft corpus reduces one-cause cascades and retains independent causes | ✓ SATISFIED | Twenty explicitly reconstructed fixtures with immutable before rows; recovery corpus/controls pass. |
+| DX-22 | 34-01, 34-05, 34-06, 34-07, 34-08 | Dedicated absent-form refusals with one-line hints | ✓ SATISFIED FOR PHASE 34 SCOPE | Seven current forms and their manifest controls pass. Dynamic-shift amount is tracked as the explicit Phase 35/BIT-02 deferred sub-item above, not claimed as already implemented. |
+| DX-23 | 34-01, 34-06, 34-07, 34-08 | Deterministic source-free surface manifest and two-way drift controls | ✓ SATISFIED | Source-free CLI, canonical JSON and independent admission/refusal comparisons pass. |
+
+All four IDs in plan `requirements` fields are defined in `REQUIREMENTS.md` and mapped to Phase 34. No additional requirement is mapped to Phase 34 without appearing in a plan. DX-22's dynamic-shift sub-item is explicitly owned by BIT-02/Phase 35 in the roadmap note.
+
+## Anti-Patterns Found
+
+| File | Line | Pattern | Severity | Impact |
+|---|---:|---|---|---|
+| — | — | No unreferenced `TBD`/`FIXME`/`XXX` markers, executable placeholders, empty user-visible implementations, or console-only implementations found in Phase 34 files. | — | No completion blocker. The word “placeholder” occurs only in explanatory comments about an unused IR place and a one-byte layout field; neither is user-visible stub behavior. |
+
+The Plan 34-05 task-3 test and implementation were committed together, as documented. This is a process-sequencing deviation, not evidence that any verified phase behavior is absent; no red-first sequence is claimed. No new dependency, backend, general framework or native semantic rule was found in the phase's declared source scope.
+
+## Human Verification Required
+
+None. The phase's deterministic diagnostic, recovery, route, repair and manifest contracts are exercised by focused tests. Per D-24, human readability and cold/warm whole-loop latency remain explicitly unmeasured and are not claimed as completed truths; there is no graphical UI or external-service integration to inspect.
+
+## Gaps Summary
+
+The phase goal and its four roadmap success criteria are achieved. The 34 plan truths and four roadmap truths are behaviorally verified by named tests, the 57 declared artifact occurrences are present and substantive, and manual traces close the key links that the path-based query could not parse. The dynamic-shift refusal is the sole deferred sub-item and has a named Phase 35/BIT-02 owner and matching success criteria, so it is not a blocking Phase 34 gap. The pre-existing CRC-32 and word-counter research scratch sources were unavailable; their representative reconstructed fixtures are explicitly labeled and never presented as recovered originals.
+
+---
+
+_Verified: 2026-10-14T02:10:16Z_  
+_Verifier: the agent (gsd-verifier)_
