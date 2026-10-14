@@ -513,6 +513,205 @@ func TestPhase34SurfaceManifestCensus(t *testing.T) {
 	}
 }
 
+func TestPhase34SurfaceManifestControls(t *testing.T) {
+	document := phase34ReadSurfaceWitnesses(t)
+	census := phase34ReadCensus(t)
+	manifest := surfacemanifest.Current()
+	observed := phase34ObserveSurfaceWitnesses(t, document.Witnesses)
+	if problems := phase34FullSurfaceProblems(manifest, document, observed); len(problems) != 0 {
+		t.Fatalf("control baseline must be clean before mutations: %v", problems)
+	}
+	if problems := phase34CensusProblems(census, nil, document.Witnesses); len(problems) != 0 {
+		t.Fatalf("census control baseline must be clean before mutations: %v", problems)
+	}
+
+	assert := func(name, reason, facet string, problems []phase34SurfaceProblem) {
+		t.Helper()
+		unique := map[phase34SurfaceProblem]bool{}
+		for _, problem := range problems {
+			unique[problem] = true
+		}
+		if len(unique) != 1 || !unique[phase34SurfaceProblem{Reason: reason, Facet: facet}] {
+			t.Errorf("%s = %v, want only distinct finding %s for %s", name, problems, reason, facet)
+		}
+	}
+
+	withoutAdd := phase34CopyManifest(t, manifest)
+	withoutAdd.Operators = phase34FilterEntries(withoutAdd.Operators, "u64.add")
+	assert("remove checked addition admission", "missing_admission", "operator:u64.add", phase34FullSurfaceProblems(withoutAdd, document, observed))
+
+	for _, candidate := range []surfacemanifest.TypeEntry{
+		{Entry: surfacemanifest.Entry{ID: "string", Syntax: "String", Contexts: []string{"general text values"}, Constraints: []string{"Unsupported general text claim."}}},
+		{Entry: surfacemanifest.Entry{ID: "record", Syntax: "Record<T>", Contexts: []string{"general record values"}, Constraints: []string{"Unsupported general record claim."}}},
+	} {
+		mutated := phase34CopyManifest(t, manifest)
+		mutated.Types = append(mutated.Types, candidate)
+		assert("invent general type claim "+candidate.ID, "invented_admission", "type:"+candidate.ID, phase34FullSurfaceProblems(mutated, document, observed))
+	}
+
+	refusalCodes := []string{
+		"surface.unsupported_bool_literal_tail",
+		"surface.unsupported_if_without_else",
+		"surface.unsupported_logical_and",
+		"surface.unsupported_logical_not",
+		"surface.unsupported_logical_or",
+		"surface.unsupported_parameter_arity",
+		"surface.unsupported_subtraction",
+	}
+	for _, code := range refusalCodes {
+		mutated := phase34CopyManifest(t, manifest)
+		mutated.Refusals = phase34FilterRefusals(mutated.Refusals, code)
+		assert("remove refusal "+code, "missing_refusal", "refusal:"+code, phase34FullSurfaceProblems(mutated, document, observed))
+	}
+	for _, code := range refusalCodes {
+		for _, hint := range []string{"", "mutated literal hint"} {
+			mutated := phase34CopyManifest(t, manifest)
+			phase34SetRefusalHint(mutated.Refusals, code, hint)
+			assert("change refusal hint "+code, "hint_changed", "refusal:"+code, phase34FullSurfaceProblems(mutated, document, observed))
+		}
+	}
+
+	wrongByteAtArity := phase34CopyManifest(t, manifest)
+	phase34SetBuiltinArity(wrongByteAtArity.Builtins, "byte_at", 1)
+	assert("change byte_at arity", "constraint_changed", "builtin:byte_at", phase34FullSurfaceProblems(wrongByteAtArity, document, observed))
+
+	wrongCallArity := phase34CopyManifest(t, manifest)
+	wrongCallArity.Calls.OrdinaryArity = []int{2}
+	assert("change ordinary call arity", "constraint_changed", "call:ordinary", phase34FullSurfaceProblems(wrongCallArity, document, observed))
+
+	allowScalarCalls := phase34CopyManifest(t, manifest)
+	allowScalarCalls.Calls.ScalarExpressionCalls = true
+	assert("allow scalar expression calls", "constraint_changed", "call:scalar_expression", phase34FullSurfaceProblems(allowScalarCalls, document, observed))
+
+	withoutLinearCallContext := phase34CopyManifest(t, manifest)
+	withoutLinearCallContext.Calls.OrdinaryContexts = nil
+	assert("remove ownership-only call context", "constraint_changed", "call:ordinary", phase34FullSurfaceProblems(withoutLinearCallContext, document, observed))
+
+	withoutRequiredElse := phase34CopyManifest(t, manifest)
+	phase34SetStatementConstraints(withoutRequiredElse.Statements, "if_else", nil)
+	assert("remove required else restriction", "constraint_changed", "statement:if_else", phase34FullSurfaceProblems(withoutRequiredElse, document, observed))
+
+	weakenLoopCarry := phase34CopyManifest(t, manifest)
+	phase34SetStatementConstraints(weakenLoopCarry.Statements, "while", []string{"Loop back edges may carry authority-bearing state."})
+	assert("weaken loop carry restriction", "constraint_changed", "statement:while", phase34FullSurfaceProblems(weakenLoopCarry, document, observed))
+
+	for _, mutation := range []struct {
+		name string
+		edit func(*surfacemanifest.Limit)
+	}{
+		{name: "numeric value", edit: func(limit *surfacemanifest.Limit) { limit.Value-- }},
+		{name: "unit", edit: func(limit *surfacemanifest.Limit) { limit.Unit = "milliseconds" }},
+		{name: "scope", edit: func(limit *surfacemanifest.Limit) { limit.Scope = "one compiler process" }},
+		{name: "category", edit: func(limit *surfacemanifest.Limit) { limit.Category = "application input" }},
+	} {
+		mutated := phase34CopyManifest(t, manifest)
+		phase34EditLimit(mutated.Limits, "check.work", mutation.edit)
+		assert("change scoped limit "+mutation.name, "constraint_changed", "limit:check.work", phase34ManifestContractProblems(mutated, document))
+	}
+
+	parserPath := "internal/compiler/syntax/parser.go"
+	parserSource, err := os.ReadFile(testsupport.ProjectPath(filepath.FromSlash(parserPath)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parserMutation := phase34ReplaceOnce(t, string(parserSource), "case TokenPlus:\n\t\treturn 2", "case TokenStar:\n\t\treturn 2\n\tcase TokenPlus:\n\t\treturn 2")
+	assert("add unaccounted source operator branch", "unaccounted_source_branch", parserPath+"|scalarBinaryOperator|kind|TokenStar", phase34CensusProblems(census, map[string]string{parserPath: parserMutation}, document.Witnesses))
+
+	scalarPath := "internal/compiler/check/scalar.go"
+	scalarSource, err := os.ReadFile(testsupport.ProjectPath(filepath.FromSlash(scalarPath)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	functionHead := "func unsupportedBoolTail(resultName string, resultSpan diagnostic.Span, bound bool, resultType string) *diagnostic.Diagnostic {"
+	emittedBranch := functionHead + "\n\tif resultType == \"surface.unsupported_control_probe\" {\n\t\treturn &diagnostic.Diagnostic{Code: \"surface.unsupported_control_probe\"}\n\t}"
+	scalarMutation := phase34ReplaceOnce(t, string(scalarSource), functionHead, emittedBranch)
+	assert("add unaccounted emitted refusal branch", "unaccounted_source_branch", scalarPath+"|surface-refusal-emitter|code-literal|surface.unsupported_control_probe", phase34CensusProblems(census, map[string]string{scalarPath: scalarMutation}, document.Witnesses))
+
+	if problems := phase34FullSurfaceProblems(manifest, document, observed); len(problems) != 0 {
+		t.Fatalf("clean comparison did not restore after copied-manifest controls: %v", problems)
+	}
+	if problems := phase34CensusProblems(census, nil, document.Witnesses); len(problems) != 0 {
+		t.Fatalf("clean source census did not restore after copied-source controls: %v", problems)
+	}
+}
+
+func phase34CopyManifest(t *testing.T, source surfacemanifest.Manifest) surfacemanifest.Manifest {
+	t.Helper()
+	data, err := json.Marshal(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var copy surfacemanifest.Manifest
+	if err := json.Unmarshal(data, &copy); err != nil {
+		t.Fatal(err)
+	}
+	return copy
+}
+
+func phase34FilterEntries(entries []surfacemanifest.Entry, id string) []surfacemanifest.Entry {
+	filtered := make([]surfacemanifest.Entry, 0, len(entries))
+	for _, entry := range entries {
+		if entry.ID != id {
+			filtered = append(filtered, entry)
+		}
+	}
+	return filtered
+}
+
+func phase34FilterRefusals(entries []surfacemanifest.Refusal, code string) []surfacemanifest.Refusal {
+	filtered := make([]surfacemanifest.Refusal, 0, len(entries))
+	for _, entry := range entries {
+		if entry.Code != code {
+			filtered = append(filtered, entry)
+		}
+	}
+	return filtered
+}
+
+func phase34SetRefusalHint(entries []surfacemanifest.Refusal, code, hint string) {
+	for index := range entries {
+		if entries[index].Code == code {
+			entries[index].Hint = hint
+			return
+		}
+	}
+}
+
+func phase34SetBuiltinArity(entries []surfacemanifest.BuiltinEntry, id string, arity int) {
+	for index := range entries {
+		if entries[index].ID == id {
+			entries[index].Arity = arity
+			return
+		}
+	}
+}
+
+func phase34SetStatementConstraints(entries []surfacemanifest.Entry, id string, constraints []string) {
+	for index := range entries {
+		if entries[index].ID == id {
+			entries[index].Constraints = constraints
+			return
+		}
+	}
+}
+
+func phase34EditLimit(entries []surfacemanifest.Limit, id string, edit func(*surfacemanifest.Limit)) {
+	for index := range entries {
+		if entries[index].ID == id {
+			edit(&entries[index])
+			return
+		}
+	}
+}
+
+func phase34ReplaceOnce(t *testing.T, source, old, replacement string) string {
+	t.Helper()
+	if count := strings.Count(source, old); count != 1 {
+		t.Fatalf("mutation anchor occurs %d times, want exactly once: %q", count, old)
+	}
+	return strings.Replace(source, old, replacement, 1)
+}
+
 func containsPhase34SurfaceValue(values []string, want string) bool {
 	for _, value := range values {
 		if value == want {

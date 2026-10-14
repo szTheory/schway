@@ -1,0 +1,34 @@
+{
+  "command": "GOCACHE=/tmp/ai-lang-verification-gocache /opt/homebrew/opt/python@3.14/bin/python3.14 /tmp/schway-go-junit.py --record .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task3-controls-final.json --target TestPhase34SurfaceManifestControls --target-file internal/compiler/session/session_phase34_surface_test.go --expected 'Mutations against fresh copies of current manifest and the bounded census inputs report only their named drift reason, and clean baselines still pass afterward.' -- go test -json ./internal/compiler/session -run '^TestPhase34SurfaceManifestControls$' -count=1 -v",
+  "exitCode": 0,
+  "output": "<testsuites tests=\"1\" failures=\"0\"><testsuite name=\"github.com/szTheory/schway/internal/compiler/session\" tests=\"1\" failures=\"0\" skipped=\"0\"><testcase classname=\"github.com/szTheory/schway/internal/compiler/session\" name=\"TestPhase34SurfaceManifestControls\" time=\"0.08\"><system-out>=== RUN   TestPhase34SurfaceManifestControls\n--- PASS: TestPhase34SurfaceManifestControls (0.08s)\n</system-out></testcase><system-out>PASS\nok  \tgithub.com/szTheory/schway/internal/compiler/session\t0.085s\n</system-out></testsuite></testsuites>\n",
+  "targetTest": "TestPhase34SurfaceManifestControls",
+  "targetFile": "internal/compiler/session/session_phase34_surface_test.go",
+  "expected": "Mutations against fresh copies of current manifest and the bounded census inputs report only their named drift reason, and clean baselines still pass afterward.",
+  "actual": "=== RUN   TestPhase34SurfaceManifestControls\n--- PASS: TestPhase34SurfaceManifestControls (0.08s)\n",
+  "reportPath": "/Users/jon/projects/schway/.planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task3-controls-final.junit.xml",
+  "runStartedAt": "2026-10-14T00:22:01.679909+00:00",
+  "reportModifiedAt": "2026-10-14T00:22:02.786178+00:00",
+  "durationMs": 1105.8279999997467,
+  "rawGoJSON": "{\"Time\":\"2026-10-13T20:22:02.691451-04:00\",\"Action\":\"start\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\"}\n{\"Time\":\"2026-10-13T20:22:02.697903-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestControls\"}\n{\"Time\":\"2026-10-13T20:22:02.697948-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestControls\",\"Output\":\"=== RUN   TestPhase34SurfaceManifestControls\\n\"}\n{\"Time\":\"2026-10-13T20:22:02.775361-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestControls\",\"Output\":\"--- PASS: TestPhase34SurfaceManifestControls (0.08s)\\n\"}\n{\"Time\":\"2026-10-13T20:22:02.775397-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestControls\",\"Elapsed\":0.08}\n{\"Time\":\"2026-10-13T20:22:02.775408-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"PASS\\n\"}\n{\"Time\":\"2026-10-13T20:22:02.77631-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"ok  \\tgithub.com/szTheory/schway/internal/compiler/session\\t0.085s\\n\"}\n{\"Time\":\"2026-10-13T20:22:02.776324-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Elapsed\":0.085}\n",
+  "rawStderr": "",
+  "reporter": "/private/tmp/schway-go-junit.py",
+  "reporterSource": {
+    "path": "/tmp/schway-go-junit.py",
+    "sha256": "69752666215dd93d8d1a65b6dbd8544e205c2aacb7cb95c7f408101f0b7f5106",
+    "kind": "standard-library execution reporter"
+  },
+  "freshness": {
+    "runStartedAt": "2026-10-14T00:22:01.679909+00:00",
+    "reportModifiedAt": "2026-10-14T00:22:02.786178+00:00",
+    "reportNewerThanRunStart": true
+  },
+  "semanticAssessment": {
+    "result": "pass",
+    "reason": "The full copied-manifest and copied-source control suite passed. Each mutation reached only its expected distinct reason/facet, and clean witness/census baselines passed again after the controls."
+  },
+  "matchedTests": [
+    "TestPhase34SurfaceManifestControls"
+  ],
+  "matchedTestCount": 1
+}

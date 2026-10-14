@@ -1,0 +1,34 @@
+{
+  "command": "GOCACHE=/tmp/ai-lang-verification-gocache /opt/homebrew/opt/python@3.14/bin/python3.14 /tmp/schway-go-junit.py --record .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task3-control-probe.json --target TestPhase34SurfaceManifestControls --target-file internal/compiler/session/session_phase34_surface_test.go --expected 'Before adding any missing control behavior, determine whether the real copied-artifact control suite already detects each target mutation and restores a clean baseline.' -- go test -json ./internal/compiler/session -run '^TestPhase34SurfaceManifestControls$' -count=1 -v",
+  "exitCode": 1,
+  "output": "<testsuites tests=\"1\" failures=\"1\"><testsuite name=\"github.com/szTheory/schway/internal/compiler/session\" tests=\"1\" failures=\"1\" skipped=\"0\"><testcase classname=\"github.com/szTheory/schway/internal/compiler/session\" name=\"TestPhase34SurfaceManifestControls\" time=\"0.08\"><failure message=\"go test reported failure\">=== RUN   TestPhase34SurfaceManifestControls\n    session_phase34_surface_test.go:576: change ordinary call arity = [{constraint_changed call:ordinary} {constraint_changed call:ordinary}], want only constraint_changed for call:ordinary\n    session_phase34_surface_test.go:584: remove ownership-only call context = [{constraint_changed call:ordinary} {constraint_changed call:ordinary}], want only constraint_changed for call:ordinary\n--- FAIL: TestPhase34SurfaceManifestControls (0.08s)\n</failure><system-out>=== RUN   TestPhase34SurfaceManifestControls\n    session_phase34_surface_test.go:576: change ordinary call arity = [{constraint_changed call:ordinary} {constraint_changed call:ordinary}], want only constraint_changed for call:ordinary\n    session_phase34_surface_test.go:584: remove ownership-only call context = [{constraint_changed call:ordinary} {constraint_changed call:ordinary}], want only constraint_changed for call:ordinary\n--- FAIL: TestPhase34SurfaceManifestControls (0.08s)\n</system-out></testcase><system-out>FAIL\nFAIL\tgithub.com/szTheory/schway/internal/compiler/session\t0.090s\n</system-out></testsuite></testsuites>\n",
+  "targetTest": "TestPhase34SurfaceManifestControls",
+  "targetFile": "internal/compiler/session/session_phase34_surface_test.go",
+  "expected": "Before adding any missing control behavior, determine whether the real copied-artifact control suite already detects each target mutation and restores a clean baseline.",
+  "actual": "=== RUN   TestPhase34SurfaceManifestControls\n    session_phase34_surface_test.go:576: change ordinary call arity = [{constraint_changed call:ordinary} {constraint_changed call:ordinary}], want only constraint_changed for call:ordinary\n    session_phase34_surface_test.go:584: remove ownership-only call context = [{constraint_changed call:ordinary} {constraint_changed call:ordinary}], want only constraint_changed for call:ordinary\n--- FAIL: TestPhase34SurfaceManifestControls (0.08s)\n",
+  "reportPath": "/Users/jon/projects/schway/.planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-task3-control-probe.junit.xml",
+  "runStartedAt": "2026-10-14T00:21:39.422744+00:00",
+  "reportModifiedAt": "2026-10-14T00:21:40.916927+00:00",
+  "durationMs": 1493.5116669803392,
+  "rawGoJSON": "{\"Time\":\"2026-10-13T20:21:40.816495-04:00\",\"Action\":\"start\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\"}\n{\"Time\":\"2026-10-13T20:21:40.822608-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestControls\"}\n{\"Time\":\"2026-10-13T20:21:40.822629-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestControls\",\"Output\":\"=== RUN   TestPhase34SurfaceManifestControls\\n\"}\n{\"Time\":\"2026-10-13T20:21:40.880598-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestControls\",\"Output\":\"    session_phase34_surface_test.go:576: change ordinary call arity = [{constraint_changed call:ordinary} {constraint_changed call:ordinary}], want only constraint_changed for call:ordinary\\n\"}\n{\"Time\":\"2026-10-13T20:21:40.880892-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestControls\",\"Output\":\"    session_phase34_surface_test.go:584: remove ownership-only call context = [{constraint_changed call:ordinary} {constraint_changed call:ordinary}], want only constraint_changed for call:ordinary\\n\"}\n{\"Time\":\"2026-10-13T20:21:40.905584-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestControls\",\"Output\":\"--- FAIL: TestPhase34SurfaceManifestControls (0.08s)\\n\"}\n{\"Time\":\"2026-10-13T20:21:40.905609-04:00\",\"Action\":\"fail\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestPhase34SurfaceManifestControls\",\"Elapsed\":0.08}\n{\"Time\":\"2026-10-13T20:21:40.905633-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"FAIL\\n\"}\n{\"Time\":\"2026-10-13T20:21:40.906517-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"FAIL\\tgithub.com/szTheory/schway/internal/compiler/session\\t0.090s\\n\"}\n{\"Time\":\"2026-10-13T20:21:40.906548-04:00\",\"Action\":\"fail\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Elapsed\":0.09}\n",
+  "rawStderr": "",
+  "reporter": "/private/tmp/schway-go-junit.py",
+  "reporterSource": {
+    "path": "/tmp/schway-go-junit.py",
+    "sha256": "69752666215dd93d8d1a65b6dbd8544e205c2aacb7cb95c7f408101f0b7f5106",
+    "kind": "standard-library execution reporter"
+  },
+  "freshness": {
+    "runStartedAt": "2026-10-14T00:21:39.422744+00:00",
+    "reportModifiedAt": "2026-10-14T00:21:40.916927+00:00",
+    "reportNewerThanRunStart": true
+  },
+  "semanticAssessment": {
+    "result": "intermediate_failure",
+    "reason": "The test reached the ordinary-arity and ownership-context controls. Both produced the intended constraint_changed finding twice, once from witness comparison and once from the independent literal contract comparison; the assertion incorrectly rejected a duplicate target finding, so this is not valid RED evidence."
+  },
+  "matchedTests": [
+    "TestPhase34SurfaceManifestControls"
+  ],
+  "matchedTestCount": 1
+}
