@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -66,6 +67,24 @@ type phase35Emission struct {
 	Error   string `json:"error,omitempty"`
 	Reason  string `json:"reason,omitempty"`
 	CSource string `json:"c_source,omitempty"`
+}
+
+type phase35NumericDeltaFile struct {
+	PreChangeCorpusAmendment phase35PreChangeAmendment `json:"prechange_corpus_amendment"`
+}
+
+type phase35PreChangeAmendment struct {
+	Date      string                     `json:"date"`
+	Path      string                     `json:"path"`
+	SourceSHA string                     `json:"source_sha256"`
+	Reason    string                     `json:"reason"`
+	Before    phase35PreChangeProjection `json:"before"`
+	After     phase35PreChangeProjection `json:"after"`
+}
+
+type phase35PreChangeProjection struct {
+	Check      phase35Admission `json:"check"`
+	EmitReason string           `json:"emit_reason"`
 }
 
 func phase35PreChangePath() string {
@@ -432,6 +451,61 @@ func phase35CompareEmission(problems *[]string, path, route string, want, got ph
 	}
 }
 
+func TestPhase35PreChangeNumericDeltaControls(t *testing.T) {
+	corpus := phase35ReadPreChangeCorpus(t)
+	raw, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase35", "numeric-delta.json"))
+	if err != nil {
+		t.Fatalf("read numeric compatibility amendment: %v", err)
+	}
+	var file phase35NumericDeltaFile
+	if err := json.Unmarshal(raw, &file); err != nil {
+		t.Fatalf("decode numeric compatibility amendment: %v", err)
+	}
+	amendment := file.PreChangeCorpusAmendment
+	requirePhase35AmendmentRestored(t, corpus, amendment)
+
+	if problems := phase35NumericOwnershipAmendmentProblems(corpus, phase35PreChangeAmendment{}); len(problems) == 0 {
+		t.Fatal("missing numeric delta was not detected")
+	}
+	requirePhase35AmendmentRestored(t, corpus, amendment)
+
+	wrongBefore := amendment
+	wrongBefore.Before.Check.Diagnostics = append([]phase35Diagnostic(nil), amendment.Before.Check.Diagnostics...)
+	wrongBefore.Before.Check.Diagnostics[0].Start++
+	if problems := phase35NumericOwnershipAmendmentProblems(corpus, wrongBefore); !phase35HasProblem(problems, "delta content differs from its exact locked projection") {
+		t.Fatalf("wrong before-state was not attributed: %v", problems)
+	}
+	requirePhase35AmendmentRestored(t, corpus, amendment)
+
+	wrongAfter := amendment
+	wrongAfter.After.Check.Diagnostics = append([]phase35Diagnostic(nil), amendment.After.Check.Diagnostics...)
+	wrongAfter.After.Check.Diagnostics[0].End++
+	if problems := phase35NumericOwnershipAmendmentProblems(corpus, wrongAfter); !phase35HasProblem(problems, "delta content differs from its exact locked projection") {
+		t.Fatalf("wrong after-state was not attributed: %v", problems)
+	}
+	requirePhase35AmendmentRestored(t, corpus, amendment)
+
+	missingSource := corpus
+	missingSource.Entries = append([]phase35PreChangeEntry(nil), corpus.Entries...)
+	for index, entry := range missingSource.Entries {
+		if entry.Path == amendment.Path {
+			missingSource.Entries = append(missingSource.Entries[:index], missingSource.Entries[index+1:]...)
+			break
+		}
+	}
+	if problems := phase35NumericOwnershipAmendmentProblems(missingSource, amendment); !phase35HasProblem(problems, "pre-change corpus is missing amended source") {
+		t.Fatalf("missing delta source row was not attributed: %v", problems)
+	}
+	requirePhase35AmendmentRestored(t, corpus, amendment)
+}
+
+func requirePhase35AmendmentRestored(t *testing.T, corpus phase35PreChangeCorpus, amendment phase35PreChangeAmendment) {
+	t.Helper()
+	if problems := phase35NumericOwnershipAmendmentProblems(corpus, amendment); len(problems) != 0 {
+		t.Fatalf("restored numeric compatibility amendment did not pass: %v", problems)
+	}
+}
+
 func phase35RequireOutcomeCoverage(t *testing.T, corpus phase35PreChangeCorpus) {
 	t.Helper()
 	if len(corpus.Entries) == 0 || !sort.SliceIsSorted(corpus.Entries, func(i, j int) bool { return corpus.Entries[i].Path < corpus.Entries[j].Path }) {
@@ -516,6 +590,13 @@ func phase35SemanticIDs(t *testing.T, coreBytes []byte) []string {
 
 func phase35LoadPreChangeCorpus(t *testing.T) phase35PreChangeCorpus {
 	t.Helper()
+	corpus := phase35ReadPreChangeCorpus(t)
+	phase35ApplyNumericOwnershipAmendment(t, &corpus)
+	return corpus
+}
+
+func phase35ReadPreChangeCorpus(t *testing.T) phase35PreChangeCorpus {
+	t.Helper()
 	raw, err := os.ReadFile(phase35PreChangePath())
 	if err != nil {
 		t.Fatalf("read immutable Phase 35 pre-change corpus: %v", err)
@@ -528,6 +609,82 @@ func phase35LoadPreChangeCorpus(t *testing.T) phase35PreChangeCorpus {
 		t.Fatal("pre-change corpus is missing its source revision")
 	}
 	return corpus
+}
+
+func phase35ApplyNumericOwnershipAmendment(t *testing.T, corpus *phase35PreChangeCorpus) {
+	t.Helper()
+	raw, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase35", "numeric-delta.json"))
+	if err != nil {
+		t.Fatalf("read numeric compatibility amendment: %v", err)
+	}
+	var file phase35NumericDeltaFile
+	if err := json.Unmarshal(raw, &file); err != nil {
+		t.Fatalf("decode numeric compatibility amendment: %v", err)
+	}
+	amendment := file.PreChangeCorpusAmendment
+	problems := phase35NumericOwnershipAmendmentProblems(*corpus, amendment)
+	if len(problems) != 0 {
+		t.Fatalf("numeric compatibility amendment does not match its frozen before-state: %s", strings.Join(problems, "; "))
+	}
+	for index := range corpus.Entries {
+		if corpus.Entries[index].Path == amendment.Path {
+			corpus.Entries[index].Check = amendment.After.Check
+			afterEmission := phase35Emission{Outcome: "not_emitted", Schema: cgen.Schema, Reason: amendment.After.EmitReason}
+			corpus.Entries[index].Emit = afterEmission
+			corpus.Entries[index].EmitNative = afterEmission
+			corpus.Entries[index].Application = afterEmission
+			return
+		}
+	}
+	t.Fatalf("validated numeric compatibility source disappeared from corpus: %s", amendment.Path)
+}
+
+func phase35NumericOwnershipAmendmentProblems(corpus phase35PreChangeCorpus, amendment phase35PreChangeAmendment) []string {
+	malformedSpan := phase35Diagnostic{Code: "syntax.malformed_numeric_literal", Message: "malformed numeric literal", Start: 100, End: 105}
+	duplicateSpan := phase35Diagnostic{Code: "syntax.expected_binding_source", Message: "expected `identifier`", Start: 100, End: 105}
+	want := phase35PreChangeAmendment{
+		Date:      "2026-10-14",
+		Path:      "testdata/phase19/literal_malformed.schway",
+		SourceSHA: "sha256:3dc93519d28272ba037adf9ef1fa1a213d5d4e6fdba23a8a80999bc78d39f8a6",
+		Reason:    "Phase 35 exact-span malformed-number ownership removes the parser expectation duplicated at the lexer's TokenUnknown span. The frozen Phase 35 pre-change corpus remains unchanged; only this source-hash-bound live projection is amended.",
+		Before: phase35PreChangeProjection{
+			Check:      phase35Admission{Outcome: "diagnostics", Diagnostics: []phase35Diagnostic{malformedSpan, duplicateSpan}},
+			EmitReason: "CheckFile diagnostics: syntax.malformed_numeric_literal,syntax.expected_binding_source",
+		},
+		After: phase35PreChangeProjection{
+			Check:      phase35Admission{Outcome: "diagnostics", Diagnostics: []phase35Diagnostic{malformedSpan}},
+			EmitReason: "CheckFile diagnostics: syntax.malformed_numeric_literal",
+		},
+	}
+	var problems []string
+	if !reflect.DeepEqual(amendment, want) {
+		problems = append(problems, "delta content differs from its exact locked projection")
+	}
+	index := -1
+	for candidate := range corpus.Entries {
+		if corpus.Entries[candidate].Path == want.Path {
+			if index >= 0 {
+				problems = append(problems, "pre-change corpus contains duplicate amendment path "+want.Path)
+				break
+			}
+			index = candidate
+		}
+	}
+	if index < 0 {
+		problems = append(problems, "pre-change corpus is missing amended source "+want.Path)
+		return problems
+	}
+	entry := &corpus.Entries[index]
+	if entry.SourceSHA != want.SourceSHA || phase35Digest([]byte(entry.Source)) != want.SourceSHA || !reflect.DeepEqual(entry.Check, want.Before.Check) {
+		problems = append(problems, "frozen pre-change source or diagnostic before-state changed")
+	}
+	beforeEmission := phase35Emission{Outcome: "not_emitted", Schema: cgen.Schema, Reason: want.Before.EmitReason}
+	for _, route := range phase35RouteAccessors {
+		if !reflect.DeepEqual(*route.get(entry), beforeEmission) {
+			problems = append(problems, "frozen pre-change "+route.name+" before-state changed")
+		}
+	}
+	return problems
 }
 
 func phase35CloneEntries(entries []phase35PreChangeEntry) []phase35PreChangeEntry {

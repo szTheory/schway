@@ -35,5 +35,69 @@
       { "depth": 128, "parse": "refused" }
     ],
     "resource_amendment": "2026-10-14: the former unbounded recursive parser admitted nested byte_at index chains at depths 65 and 128. The new shared source-expression cap intentionally refuses recursion beyond 64 entries while preserving the previously recorded successful C outputs as historical evidence."
+  },
+  "diagnostic_ownership": {
+    "date": "2026-10-14",
+    "literal": "0x_FF",
+    "reason": "The lexer owns the complete malformed numeric candidate. The parser expectation at that exact TokenUnknown span is a duplicate and is suppressed; expectations at other spans and for unrelated unknown tokens remain visible.",
+    "before": [
+      {
+        "route": "legacy",
+        "diagnostic_count": 2,
+        "diagnostics": [
+          {"code": "syntax.malformed_numeric_literal", "primary_span": {"start": 93, "end": 98}},
+          {"code": "syntax.expected_binding_source", "primary_span": {"start": 93, "end": 98}}
+        ]
+      },
+      {
+        "route": "scalar",
+        "diagnostic_count": 2,
+        "diagnostics": [
+          {"code": "syntax.malformed_numeric_literal", "primary_span": {"start": 92, "end": 97}},
+          {"code": "syntax.expected_binding_source", "primary_span": {"start": 92, "end": 97}}
+        ]
+      }
+    ],
+    "after": [
+      {
+        "route": "legacy",
+        "diagnostic_count": 1,
+        "diagnostics": [
+          {"code": "syntax.malformed_numeric_literal", "primary_span": {"start": 93, "end": 98}}
+        ]
+      },
+      {
+        "route": "scalar",
+        "diagnostic_count": 1,
+        "diagnostics": [
+          {"code": "syntax.malformed_numeric_literal", "primary_span": {"start": 92, "end": 97}}
+        ]
+      }
+    ]
+  },
+  "prechange_corpus_amendment": {
+    "date": "2026-10-14",
+    "path": "testdata/phase19/literal_malformed.schway",
+    "source_sha256": "sha256:3dc93519d28272ba037adf9ef1fa1a213d5d4e6fdba23a8a80999bc78d39f8a6",
+    "reason": "Phase 35 exact-span malformed-number ownership removes the parser expectation duplicated at the lexer's TokenUnknown span. The frozen Phase 35 pre-change corpus remains unchanged; only this source-hash-bound live projection is amended.",
+    "before": {
+      "check": {
+        "outcome": "diagnostics",
+        "diagnostics": [
+          { "code": "syntax.malformed_numeric_literal", "message": "malformed numeric literal", "start": 100, "end": 105 },
+          { "code": "syntax.expected_binding_source", "message": "expected `identifier`", "start": 100, "end": 105 }
+        ]
+      },
+      "emit_reason": "CheckFile diagnostics: syntax.malformed_numeric_literal,syntax.expected_binding_source"
+    },
+    "after": {
+      "check": {
+        "outcome": "diagnostics",
+        "diagnostics": [
+          { "code": "syntax.malformed_numeric_literal", "message": "malformed numeric literal", "start": 100, "end": 105 }
+        ]
+      },
+      "emit_reason": "CheckFile diagnostics: syntax.malformed_numeric_literal"
+    }
   }
 }

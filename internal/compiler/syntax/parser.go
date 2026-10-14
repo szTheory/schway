@@ -58,6 +58,7 @@ type parser struct {
 	typeDepth                 int
 	expressionDepth           int
 	typeNodes                 int
+	malformedNumericSpans     map[recoveryTokenSpan]struct{}
 	claimedRecoverySpans      map[recoveryTokenSpan]struct{}
 	claimedRecoveryBoundaries map[recoveryTokenSpan]struct{}
 }
@@ -105,6 +106,12 @@ func Parse(source []byte) ParseResult {
 	}
 	normalizeOwnershipTokens(tokens)
 	diagnostics = filterNormalizedTokenDiagnostics(diagnostics, tokens)
+	malformedNumericSpans := make(map[recoveryTokenSpan]struct{})
+	for _, problem := range diagnostics {
+		if problem.Code == "syntax.malformed_numeric_literal" {
+			malformedNumericSpans[recoveryTokenSpan{start: problem.Primary.Start, end: problem.Primary.End}] = struct{}{}
+		}
+	}
 	if truncated && !hasUnknownToken(tokens) {
 		// The Phase 1 lexer intentionally does not know provisional generic
 		// punctuation. If every unknown token normalized at this parser boundary,
@@ -116,6 +123,7 @@ func Parse(source []byte) ParseResult {
 		tokens:                    tokens,
 		diagnostics:               diagnostics,
 		truncated:                 truncated,
+		malformedNumericSpans:     malformedNumericSpans,
 		claimedRecoverySpans:      make(map[recoveryTokenSpan]struct{}),
 		claimedRecoveryBoundaries: make(map[recoveryTokenSpan]struct{}),
 	}
@@ -1477,12 +1485,23 @@ func (p *parser) optionalPayloadBinder() string {
 }
 
 func (p *parser) problem(code string, token Token, message string, causes ...diagnostic.Cause) {
+	if p.ownsMalformedNumericExpectation(code, token) {
+		return
+	}
 	if len(p.diagnostics) >= maxPrimaryDiagnostics {
 		p.truncated = true
 		return
 	}
 	p.claimRecoveryToken(token)
 	p.diagnostics = append(p.diagnostics, diagnostic.Error(code, token.Span, message, causes...).AtSource())
+}
+
+func (p *parser) ownsMalformedNumericExpectation(code string, token Token) bool {
+	if !strings.HasPrefix(code, "syntax.expected_") || token.Kind != TokenUnknown {
+		return false
+	}
+	_, ok := p.malformedNumericSpans[recoveryTokenSpan{start: token.Span.Start, end: token.Span.End}]
+	return ok
 }
 
 // problemAtBoundary gives one parser expectation ownership of an exact

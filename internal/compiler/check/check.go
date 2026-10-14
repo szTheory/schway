@@ -6809,7 +6809,7 @@ func findTypeFact(available [][]core.TypeFact, constructor string) (core.TypeFac
 func parseU64Literal(text string) (uint64, error) {
 	digits := strings.ReplaceAll(text, "_", "")
 	base := 10
-	if strings.HasPrefix(digits, "0x") {
+	if strings.HasPrefix(digits, "0x") || strings.HasPrefix(digits, "0X") {
 		base, digits = 16, digits[2:]
 	} else if strings.HasPrefix(digits, "0b") {
 		base, digits = 2, digits[2:]
