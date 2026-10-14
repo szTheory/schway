@@ -4,18 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 35
 current_phase_name: Bitwise Operators, Literal Shifts, and Hex Literals
-current_plan: 6
+current_plan: 7
 status: executing
-stopped_at: Completed 35-05-PLAN.md
-last_updated: "2026-10-14T16:43:36.878Z"
+stopped_at: Completed 35-06-PLAN.md
+last_updated: "2026-10-14T17:23:11.288Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 35 Plan 35-02 complete; Plan 35-03 is next
-state_head: aade92091704af2b017a1b6f109337163e32b77e
+state_head: f1147d6cf9b9d2b172a956862040bcc3e39e4cd0
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 21
-  completed_plans: 18
+  completed_plans: 19
   percent: 33
 ---
 
@@ -126,7 +126,7 @@ plans.
 ## Current Position
 
 Phase: 35 (Bitwise Operators, Literal Shifts, and Hex Literals)
-Current Plan: 6
+Current Plan: 7
 Total Plans in Phase: 8
 Status: Ready to execute
 Last activity: 2026-10-14 — Phase 35 Plan 35-02 complete; Plan 35-03 is next
@@ -605,6 +605,7 @@ subset alone.
 | Phase 35 P03 | 11 min | 3 tasks | 6 files |
 | Phase 35 P4 | 1h 04m | 3 tasks | 4 files |
 | Phase 35 P05 | 8m | 3 tasks | 9 files |
+| Phase 35 P06 | 37min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -831,6 +832,9 @@ decision history; they no longer describe current status.
 - [Phase 35]: Keep executionpeer limited to event-free causal admission and fabricated-event refusal; do not replay numeric results.
 - [Phase 35]: Preserve the Byte formal as Byte and unused; leave the U64 entry input contract unchanged.
 - [Phase 35]: Pin interpreter values to independently authored decimal literals and retain the vector fixture for Plan 35-07.
+- [Phase 35]: Native literal shifts use unsigned widened operands and final U64 casts, verified through the installed C17 runner at -O0.
+- [Phase 35]: The generated-C shift scan requires exactly two user-operation sites and rejects dynamic, count-64, signed-operand, and removed-site controls.
+- [Phase 35]: BIT-01 and BIT-02 remain pending because requirements.ready-ids reports no ready requirement IDs.
 
 ### Pending Todos
 
@@ -1077,8 +1081,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-14T16:43:36.753Z
-Stopped at: Completed 35-05-PLAN.md
+Last session: 2026-10-14T17:23:11.246Z
+Stopped at: Completed 35-06-PLAN.md
 Resume file: None
 Next action: $gsd-execute-phase 35
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
