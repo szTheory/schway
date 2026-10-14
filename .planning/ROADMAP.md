@@ -206,7 +206,7 @@ Plans:
 
 **Plans**: TBD (target ≈8)
 - [x] 35-01-PLAN.md
-- [ ] 35-02-PLAN.md
+- [x] 35-02-PLAN.md
 - [ ] 35-03-PLAN.md
 - [ ] 35-04-PLAN.md
 - [ ] 35-05-PLAN.md
@@ -284,7 +284,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 33. Carried Debt, Bounded Capture Read, and Generic Freeze Gate | 5/5 | Complete    | 2026-10-13 |
 | 34. Agent Diagnostics Floor and Surface Manifest | 8/8 | Complete    | 2026-10-13 |
-| 35. Bitwise Operators, Literal Shifts, and Hex Literals | 1/8 | In Progress | - |
+| 35. Bitwise Operators, Literal Shifts, and Hex Literals | 2/8 | In Progress | - |
 | 36. Scalar Helper Calls | 0/TBD | Not started | - |
 | 37. CRC-32 Consumer, Interpreter File Route, and Guide | 0/TBD | Not started | - |
 | 38. Milestone Receipts | 0/TBD | Not started | - |

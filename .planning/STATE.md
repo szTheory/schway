@@ -4,18 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 35
 current_phase_name: Bitwise Operators, Literal Shifts, and Hex Literals
-current_plan: 2
+current_plan: 3
 status: executing
-stopped_at: Completed 35-01-PLAN.md
-last_updated: "2026-10-14T13:58:39.597Z"
+stopped_at: Completed 35-02-PLAN.md
+last_updated: "2026-10-14T14:59:40.738Z"
 last_activity: 2026-10-14
-last_activity_desc: Phase 35 Plan 35-01 baseline complete; Plan 35-02 is next
-state_head: 8fd061ed5197b99a7d7a2cedc34ca491b9e82559
+last_activity_desc: Phase 35 Plan 35-02 complete; Plan 35-03 is next
+state_head: f902893942284fcf92dfc6c7b225b2fff853b137
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 21
-  completed_plans: 14
+  completed_plans: 15
   percent: 33
 ---
 
@@ -126,10 +126,10 @@ plans.
 ## Current Position
 
 Phase: 35 (Bitwise Operators, Literal Shifts, and Hex Literals)
-Current Plan: 2
+Current Plan: 3
 Total Plans in Phase: 8
-Status: Plan 1 complete; plan 2 is next
-Last activity: 2026-10-14 — Phase 35 Plan 35-01 complete; plan 35-02 is next
+Status: executing
+Last activity: 2026-10-14 — Phase 35 Plan 35-02 complete; Plan 35-03 is next
 
 Progress: [███░░░░░░░] 33%
 
@@ -601,6 +601,7 @@ subset alone.
 | Phase 34 P07 | 33min | 3 tasks | 40 files |
 | Phase 34 P08 | 32min | 3 tasks | 23 files |
 | Phase 35 P01 | 24 min | 2 tasks | 5 files |
+| Phase 35 P2 | 22min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -815,6 +816,9 @@ decision history; they no longer describe current status.
 - [Phase 34]: Keep z1g, trz, and z1s dormant until their named consumer triggers occur.
 - [Phase 35]: Keep legacy and scalar numeric conversion results route-local, including their existing disagreement and refusals.
 - [Phase 35]: Preserve nested-index results as immutable historical evidence; measure any future depth refusal separately.
+- [Phase 35]: Scalar recursion uses one 64-entry bound across grouping and byte_at index paths.
+- [Phase 35]: Malformed numeric ownership suppresses only parser expectations at the exact full lexer token span.
+- [Phase 35]: Historical compatibility fixtures remain unchanged; source-bound literal amendments state current projections independently.
 
 ### Pending Todos
 
@@ -1061,8 +1065,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-14T13:53:26.844Z
-Stopped at: Completed 35-01-PLAN.md
+Last session: 2026-10-14T14:58:32.707Z
+Stopped at: Completed 35-02-PLAN.md
 Resume file: None
 Next action: $gsd-execute-phase 35
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
