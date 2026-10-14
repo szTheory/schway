@@ -2,6 +2,7 @@ package check
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -135,14 +136,187 @@ func TestPhase35ShiftAdmission(t *testing.T) {
 	}
 }
 
+func TestPhase35NumericRoutePolicy(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		rhs  string
+		code string
+	}{
+		{name: "negative syntax owner", rhs: "x << -1", code: "surface.unsupported_shift_amount"},
+		{name: "malformed numeric owner", rhs: "x << 0x_FF", code: "syntax.malformed_numeric_literal"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			source := "module phase35.numeric_route\nexport { fn main }\nfn main(x: U64) -> U64 {\n  let result = " + tc.rhs + "\n  result\n}\n"
+			parsed := syntax.Parse([]byte(source))
+			if len(parsed.Diagnostics) != 1 || parsed.Diagnostics[0].Code != tc.code {
+				t.Fatalf("%s diagnostics=%+v, want the owning stage code %q", tc.name, parsed.Diagnostics, tc.code)
+			}
+			if tc.code == "surface.unsupported_shift_amount" {
+				refusal, ok := surface.LookupRefusal(tc.code)
+				if !ok || parsed.Diagnostics[0].Message != refusal.Hint {
+					t.Fatalf("negative shift diagnostic=%+v, want registered refusal hint %q", parsed.Diagnostics[0], refusal.Hint)
+				}
+			}
+			if len(Program(parsed.Program).Program.Functions) != 0 {
+				t.Fatalf("%s source produced a checked function", tc.name)
+			}
+		})
+	}
+}
+
+func TestPhase35ScalarTransferMutants(t *testing.T) {
+	type vector struct {
+		name      string
+		kind      core.OperationKind
+		peer      core.OperationKind
+		left      uint64
+		right     uint64
+		amount    uint64
+		want      uint64
+		usesRight bool
+		faultAt   *uint64
+	}
+	amountOne := uint64(1)
+	vectors := []vector{
+		{name: "xor high-bit pattern", kind: core.OpBitXorU64, peer: core.OpBitAndU64, left: 0xA5, right: 0x3C, want: 0x99, usesRight: true},
+		{name: "and high-bits to all-zero", kind: core.OpBitAndU64, peer: core.OpBitOrU64, left: 0xF000000000000000, right: 0x0F00000000000000, want: 0, usesRight: true},
+		{name: "or overlapping high-bit", kind: core.OpBitOrU64, peer: core.OpBitXorU64, left: 0x8000000000000005, right: 5, want: 0x8000000000000005, usesRight: true},
+		{name: "left shift all-zero", kind: core.OpShiftLeftU64, peer: core.OpShiftRightU64, left: 0x8000000000000000, amount: 1, want: 0},
+		{name: "right shift high-bit", kind: core.OpShiftRightU64, peer: core.OpShiftLeftU64, left: 0x8000000000000000, amount: 63, want: 1},
+		{name: "left shift count zero", kind: core.OpShiftLeftU64, peer: core.OpShiftRightU64, left: 0x8000000000000000, amount: 0, want: 0x8000000000000000, faultAt: &amountOne},
+		{name: "left shift count 31", kind: core.OpShiftLeftU64, peer: core.OpShiftRightU64, left: 1, amount: 31, want: 1 << 31},
+		{name: "left shift count 32", kind: core.OpShiftLeftU64, peer: core.OpShiftRightU64, left: 1, amount: 32, want: 1 << 32},
+		{name: "left shift count 63", kind: core.OpShiftLeftU64, peer: core.OpShiftRightU64, left: 1, amount: 63, want: 1 << 63},
+		{name: "right shift count zero", kind: core.OpShiftRightU64, peer: core.OpShiftLeftU64, left: 0x8000000000000000, amount: 0, want: 0x8000000000000000, faultAt: &amountOne},
+		{name: "right shift count 31", kind: core.OpShiftRightU64, peer: core.OpShiftLeftU64, left: 0x8000000000000000, amount: 31, want: 1 << 32},
+		{name: "right shift count 32", kind: core.OpShiftRightU64, peer: core.OpShiftLeftU64, left: 0x8000000000000000, amount: 32, want: 1 << 31},
+		{name: "right shift count 63", kind: core.OpShiftRightU64, peer: core.OpShiftLeftU64, left: 0x8000000000000000, amount: 63, want: 1},
+	}
+	for _, tc := range vectors {
+		t.Run(tc.name, func(t *testing.T) {
+			function, testedID, sinkID := phase35TransferSink(tc.kind, tc.left, tc.right, tc.amount, tc.want, tc.usesRight)
+			_, code, category := checkScalarFixedPointDetailed(function)
+			if code != "check.scalar_remainder_zero" || category != sinkID {
+				t.Fatalf("checker did not derive expected %s fact into static-zero sink: code=%q category=%q", tc.name, code, category)
+			}
+
+			// Fault a copied core observation by substituting a peer operator.
+			// No shared implementation hook or production state is mutated.
+			faulted := function
+			faulted.Linear = new(core.LinearBody)
+			*faulted.Linear = *function.Linear
+			faulted.Linear.Types = append([]core.TypeFact(nil), function.Linear.Types...)
+			faulted.Linear.Places = append([]core.Place(nil), function.Linear.Places...)
+			faulted.Linear.Blocks = append([]core.Block(nil), function.Linear.Blocks...)
+			faulted.Linear.Edges = append([]core.Edge(nil), function.Linear.Edges...)
+			faulted.Linear.Operations = append([]core.LinearOperation(nil), function.Linear.Operations...)
+			found := false
+			for index := range faulted.Linear.Operations {
+				if faulted.Linear.Operations[index].ID == testedID {
+					if tc.faultAt != nil {
+						faulted.Linear.Operations[index].ConstU64 = strconv.FormatUint(*tc.faultAt, 10)
+					} else {
+						faulted.Linear.Operations[index].Kind = tc.peer
+					}
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("fault control could not find tested operation %q", testedID)
+			}
+			_, faultCode, faultCategory := checkScalarFixedPointDetailed(faulted)
+			if faultCode != "" || faultCategory != "" {
+				t.Fatalf("peer transfer fault reached an unrelated checker failure instead of changing the named sink: code=%q category=%q", faultCode, faultCategory)
+			}
+			// A clean rerun proves the copied fault did not alter the fixture.
+			if _, code, category = checkScalarFixedPointDetailed(function); code != "check.scalar_remainder_zero" || category != sinkID {
+				t.Fatalf("restored baseline failed after the copy-local fault: code=%q category=%q", code, category)
+			}
+		})
+	}
+}
+
+// phase35TransferSink builds a minimal core observation whose tested result
+// is compared with an independently supplied constant, then feeds that
+// equality-to-zero into the checker's static remainder-divisor safety sink.
+func phase35TransferSink(kind core.OperationKind, left, right, amount, want uint64, usesRight bool) (core.Function, string, string) {
+	const (
+		typeID     = "phase35:type:u64"
+		inputID    = "phase35:place:input"
+		leftID     = "phase35:place:left"
+		rightID    = "phase35:place:right"
+		actualID   = "phase35:place:actual"
+		wantID     = "phase35:place:want"
+		zeroID     = "phase35:place:zero"
+		oneID      = "phase35:place:one"
+		remID      = "phase35:place:remainder"
+		testedID   = "phase35:op:tested"
+		sinkID     = "phase35:op:zero-sink"
+		entryID    = "phase35:block:entry"
+		entryPoint = "phase35:point:entry"
+	)
+	places := []core.Place{
+		{ID: inputID, Name: "input", TypeID: typeID},
+		{ID: leftID, Name: "left", TypeID: typeID},
+		{ID: rightID, Name: "right", TypeID: typeID},
+		{ID: actualID, Name: "actual", TypeID: typeID},
+		{ID: wantID, Name: "want", TypeID: typeID},
+		{ID: zeroID, Name: "zero", TypeID: typeID},
+		{ID: oneID, Name: "one", TypeID: typeID},
+		{ID: remID, Name: "remainder", TypeID: typeID},
+	}
+	constOp := func(id, target string, value uint64) core.LinearOperation {
+		return core.LinearOperation{ID: id, PointID: "phase35:point:" + id, Kind: core.OpConst, TargetID: target, ConstU64: strconv.FormatUint(value, 10), TypeID: typeID}
+	}
+	ops := []core.LinearOperation{
+		constOp("phase35:op:left", leftID, left),
+	}
+	if usesRight {
+		ops = append(ops, constOp("phase35:op:right", rightID, right))
+	}
+	tested := core.LinearOperation{ID: testedID, PointID: "phase35:point:tested", Kind: kind, SourceID: leftID, TargetID: actualID, TypeID: typeID}
+	if usesRight {
+		tested.RightID = rightID
+	} else {
+		tested.ConstU64 = strconv.FormatUint(amount, 10)
+	}
+	ops = append(ops, tested, constOp("phase35:op:want", wantID, want),
+		core.LinearOperation{ID: "phase35:op:compare", PointID: "phase35:point:compare", Kind: core.OpBitXorU64, SourceID: actualID, RightID: wantID, TargetID: zeroID, TypeID: typeID},
+		constOp("phase35:op:one", oneID, 1),
+		core.LinearOperation{ID: sinkID, PointID: "phase35:point:sink", Kind: core.OpRemainderU64, SourceID: oneID, RightID: zeroID, TargetID: remID, TypeID: typeID},
+		core.LinearOperation{ID: "phase35:op:return", PointID: "phase35:point:return", Kind: core.OpReturn, SourceID: remID, TypeID: typeID},
+	)
+	operationIDs := make([]string, len(ops))
+	for index := range ops {
+		operationIDs[index] = ops[index].ID
+	}
+	function := core.Function{
+		ID:            "phase35:transfer",
+		Name:          "transfer",
+		EntryPointID:  entryPoint,
+		ReturnPointID: "phase35:point:return",
+		Parameter:     core.Parameter{ID: inputID, Name: "input", Type: "U64"},
+		ReturnType:    "U64",
+		Linear: &core.LinearBody{
+			ID:         "phase35:linear",
+			Types:      []core.TypeFact{{ID: typeID, Shape: core.TypeRef{Constructor: "U64"}}},
+			Places:     places,
+			Operations: ops,
+			Blocks:     []core.Block{{ID: entryID, PointID: entryPoint, OperationIDs: operationIDs, Successors: []string{}}},
+		},
+	}
+	return function, testedID, sinkID
+}
+
 func TestPhase35UnusedByteSourceAdmission(t *testing.T) {
-	const source = "module phase35.byte_witness\nexport { fn main }\nfn main(unused: Byte) -> U64 {\n  var seed = 0\n  let x = 0x100\n  let y = 0x21\n  let ready = x < y\n  let witness = x ^ ((y << 3) & 0xFF)\n  let alternate = (x ^ (y << 3)) & 0xFF\n  witness\n}\n"
+	const source = "module phase35.byte_witness\nexport { fn main }\nfn main(unused: Byte) -> U64 {\n  var seed = 0\n  let x = 0x100\n  let y = 0x21\n  let ready = x < y\n  let witness = x ^ ((y << 3) & 0xFF)\n  let alternate = (x ^ (y << 3)) & 0xFF\n  let combined = x | y\n  witness\n}\n"
 	parsed := syntax.Parse([]byte(source))
 	if len(parsed.Diagnostics) != 0 || len(parsed.Program.Funcs) != 1 {
 		t.Fatalf("unused-Byte witness did not parse: %+v", parsed.Diagnostics)
 	}
 	functionAST := parsed.Program.Funcs[0]
-	if functionAST.Body.Linear == nil || len(functionAST.Body.Linear.Statements) != 6 {
+	if functionAST.Body.Linear == nil || len(functionAST.Body.Linear.Statements) != 7 {
 		t.Fatalf("witness was not routed through structured statements: %+v", functionAST.Body.Linear)
 	}
 	expression := func(name string) *ast.Expr {
@@ -187,7 +361,7 @@ func TestPhase35UnusedByteSourceAdmission(t *testing.T) {
 	if function.Parameter.ID == "" || function.Linear.Types[0].ID != bytePlace.TypeID || function.Linear.Types[0].Shape.Constructor != "Byte" {
 		t.Fatalf("formal does not have its dedicated Byte fact: parameter=%+v place=%+v", function.Parameter, bytePlace)
 	}
-	seenU64, seenBool, seenXor, seenAnd, seenShift := false, false, false, false, false
+	seenU64, seenBool, seenXor, seenAnd, seenOr, seenShift := false, false, false, false, false, false
 	for _, place := range function.Linear.Places {
 		typeName := ""
 		for _, fact := range function.Linear.Types {
@@ -212,12 +386,22 @@ func TestPhase35UnusedByteSourceAdmission(t *testing.T) {
 			seenXor = true
 		case core.OpBitAndU64:
 			seenAnd = true
+		case core.OpBitOrU64:
+			seenOr = true
 		case core.OpShiftLeftU64:
 			seenShift = true
 		}
 	}
-	if !seenU64 || !seenBool || !seenXor || !seenAnd || !seenShift {
-		t.Fatalf("witness core is incomplete: U64=%v Bool=%v xor=%v and=%v shift=%v ops=%+v", seenU64, seenBool, seenXor, seenAnd, seenShift, function.Linear.Operations)
+	if !seenU64 || !seenBool || !seenXor || !seenAnd || !seenOr || !seenShift {
+		t.Fatalf("witness core is incomplete: U64=%v Bool=%v xor=%v and=%v or=%v shift=%v ops=%+v", seenU64, seenBool, seenXor, seenAnd, seenOr, seenShift, function.Linear.Operations)
+	}
+	byteUnit := syntax.Parse([]byte("module phase35.byte_unit\nexport { fn main }\nfn main(unused: Byte) -> Unit {\n  var seed = 0\n}\n"))
+	if len(byteUnit.Diagnostics) != 0 {
+		t.Fatalf("Byte/Unit signature control did not parse: %+v", byteUnit.Diagnostics)
+	}
+	byteUnitCheck := Program(byteUnit.Program)
+	if len(byteUnitCheck.Diagnostics) != 1 || byteUnitCheck.Diagnostics[0].Code != "type.scalar_signature" || byteUnitCheck.Diagnostics[0].Message != "unused Byte scalar input requires a U64 result" {
+		t.Fatalf("Byte/Unit signature was not refused by its precise owner: %+v", byteUnitCheck.Diagnostics)
 	}
 
 	for _, tc := range []struct {

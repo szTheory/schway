@@ -37,7 +37,10 @@ const ScalarAnalysisWorkLimit = 65536
 func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Function, []diagnostic.Diagnostic, int) {
 	byteView := function.Parameter.Type.Constructor == "ByteView" && len(function.Parameter.Type.Arguments) == 0
 	byteInput := function.Parameter.Type.Constructor == "Byte" && len(function.Parameter.Type.Arguments) == 0
-	if (function.Parameter.Type.Constructor != "U64" && !byteView && !byteInput) || (function.ReturnType.Constructor != "U64" && function.ReturnType.Constructor != "Unit") || (byteInput && function.ReturnType.Constructor != "U64") {
+	if byteInput && function.ReturnType.Constructor != "U64" {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.scalar_signature", function.Span, "unused Byte scalar input requires a U64 result")}, 1
+	}
+	if (function.Parameter.Type.Constructor != "U64" && !byteView && !byteInput) || (function.ReturnType.Constructor != "U64" && function.ReturnType.Constructor != "Unit") {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.scalar_signature", function.Span, "scalar CFG functions require U64 input and either U64 or Unit output")}, 1
 	}
 	if byteInput {
