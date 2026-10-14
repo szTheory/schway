@@ -1,0 +1,59 @@
+<testsuites tests="25" failures="1"><testsuite name="github.com/szTheory/schway/cmd/schway" tests="23" failures="0" skipped="0"><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit" time="3.19"><system-out>=== RUN   TestPhase32PublicRouteAudit
+--- PASS: TestPhase32PublicRouteAudit (3.19s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/programs-line-drift" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/programs-line-drift
+    --- PASS: TestPhase32PublicRouteAudit/programs-line-drift (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/uncovered-route" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/uncovered-route
+    --- PASS: TestPhase32PublicRouteAudit/uncovered-route (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/deleted-row" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/deleted-row
+    --- PASS: TestPhase32PublicRouteAudit/deleted-row (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/stale-row" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/stale-row
+    --- PASS: TestPhase32PublicRouteAudit/stale-row (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/bad-reason" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/bad-reason
+    --- PASS: TestPhase32PublicRouteAudit/bad-reason (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/unknown-program" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/unknown-program
+    --- PASS: TestPhase32PublicRouteAudit/unknown-program (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/usage-names-module-aware-set" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/usage-names-module-aware-set
+    --- PASS: TestPhase32PublicRouteAudit/usage-names-module-aware-set (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/module-classification" time="3.11"><system-out>=== RUN   TestPhase32PublicRouteAudit/module-classification
+    --- PASS: TestPhase32PublicRouteAudit/module-classification (3.11s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/module-classification/unclassified" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/module-classification/unclassified
+        --- PASS: TestPhase32PublicRouteAudit/module-classification/unclassified (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/module-classification/set-drift" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/module-classification/set-drift
+        --- PASS: TestPhase32PublicRouteAudit/module-classification/set-drift (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/module-classification/misclassified" time="1.21"><system-out>=== RUN   TestPhase32PublicRouteAudit/module-classification/misclassified
+        --- PASS: TestPhase32PublicRouteAudit/module-classification/misclassified (1.21s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/module-classification/import-seam" time="1.27"><system-out>=== RUN   TestPhase32PublicRouteAudit/module-classification/import-seam
+        --- PASS: TestPhase32PublicRouteAudit/module-classification/import-seam (1.27s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/module-classification/adjacency-no-imports" time="0.03"><system-out>=== RUN   TestPhase32PublicRouteAudit/module-classification/adjacency-no-imports
+        --- PASS: TestPhase32PublicRouteAudit/module-classification/adjacency-no-imports (0.03s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase32PublicRouteAudit/usage-cross-check" time="0"><system-out>=== RUN   TestPhase32PublicRouteAudit/usage-cross-check
+    --- PASS: TestPhase32PublicRouteAudit/usage-cross-check (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34SourceRoutePresentation" time="0.01"><system-out>=== RUN   TestPhase34SourceRoutePresentation
+--- PASS: TestPhase34SourceRoutePresentation (0.01s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34SourceRoutePresentation/interpreter" time="0"><system-out>=== RUN   TestPhase34SourceRoutePresentation/interpreter
+    --- PASS: TestPhase34SourceRoutePresentation/interpreter (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34SourceRoutePresentation/native" time="0"><system-out>=== RUN   TestPhase34SourceRoutePresentation/native
+    --- PASS: TestPhase34SourceRoutePresentation/native (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34SourceRoutePresentation/build" time="0"><system-out>=== RUN   TestPhase34SourceRoutePresentation/build
+    --- PASS: TestPhase34SourceRoutePresentation/build (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34DiagnosticRouteInventory" time="0.08"><system-out>=== RUN   TestPhase34DiagnosticRouteInventory
+--- PASS: TestPhase34DiagnosticRouteInventory (0.08s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34DiagnosticRouteInventory/deleted-route-row" time="0"><system-out>=== RUN   TestPhase34DiagnosticRouteInventory/deleted-route-row
+    --- PASS: TestPhase34DiagnosticRouteInventory/deleted-route-row (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34DiagnosticRouteInventory/stale-route-row" time="0"><system-out>=== RUN   TestPhase34DiagnosticRouteInventory/stale-route-row
+    --- PASS: TestPhase34DiagnosticRouteInventory/stale-route-row (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/cmd/schway" name="TestPhase34DiagnosticRouteInventory/wrong-module-class" time="0"><system-out>=== RUN   TestPhase34DiagnosticRouteInventory/wrong-module-class
+    --- PASS: TestPhase34DiagnosticRouteInventory/wrong-module-class (0.00s)
+</system-out></testcase><system-out>PASS
+ok  	github.com/szTheory/schway/cmd/schway	3.280s
+</system-out></testsuite><testsuite name="github.com/szTheory/schway/internal/compiler/session" tests="2" failures="1" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase34SourceRoutePresentation" time="0"><system-out>=== RUN   TestPhase34SourceRoutePresentation
+--- PASS: TestPhase34SourceRoutePresentation (0.00s)
+</system-out></testcase><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestPhase34DiagnosticRouteInventory" time="0"><failure message="go test reported failure">=== RUN   TestPhase34DiagnosticRouteInventory
+    session_phase34_routes_test.go:106: format result={Schema:lang.command/1 Command:format Status:invalid ID:result:e240037e2f03a0b0cc9b9eb0 ModuleID: Formatted: Diagnostics:[syntax.expected_rbrace [65:66]: expected `}`] Executions:[] Evidence:&lt;nil&gt; Interface:&lt;nil&gt; DebugMap:&lt;nil&gt; Explain:&lt;nil&gt; Query:&lt;nil&gt; Lanes:[] ExpectedEscapes:[] Metrics:{ElapsedNS:0 PeakRSSStatus:unavailable PeakRSSBytes:0 OutputBytes:0 RecomputedWork:1 CacheInputsReusedCount:0} Presentation:&lt;nil&gt;}, want source diagnostic with presentation
+--- FAIL: TestPhase34DiagnosticRouteInventory (0.00s)
+</failure><system-out>=== RUN   TestPhase34DiagnosticRouteInventory
+    session_phase34_routes_test.go:106: format result={Schema:lang.command/1 Command:format Status:invalid ID:result:e240037e2f03a0b0cc9b9eb0 ModuleID: Formatted: Diagnostics:[syntax.expected_rbrace [65:66]: expected `}`] Executions:[] Evidence:&lt;nil&gt; Interface:&lt;nil&gt; DebugMap:&lt;nil&gt; Explain:&lt;nil&gt; Query:&lt;nil&gt; Lanes:[] ExpectedEscapes:[] Metrics:{ElapsedNS:0 PeakRSSStatus:unavailable PeakRSSBytes:0 OutputBytes:0 RecomputedWork:1 CacheInputsReusedCount:0} Presentation:&lt;nil&gt;}, want source diagnostic with presentation
+--- FAIL: TestPhase34DiagnosticRouteInventory (0.00s)
+</system-out></testcase><system-out>FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/session	0.008s
+</system-out></testsuite></testsuites>
