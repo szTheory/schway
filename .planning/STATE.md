@@ -5,11 +5,11 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 35
 current_phase_name: Bitwise Operators, Literal Shifts, and Hex Literals
 status: planning
-stopped_at: Phases 33 and 34 complete with fresh verification; ready to discuss Phase 35
-last_updated: "2026-10-14T02:43:04.394Z"
+stopped_at: Phase 35 context gathered; auto-advancing to planning
+last_updated: "2026-10-14T03:09:33.876Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 34 complete, transitioned to Phase 35
-state_head: 93a482b2491805bd96d645f23832e2826a0211bb
+state_head: 8ed0a463d9778bc99de609e87ec79f67bf68acc4
 progress:
   total_phases: 6
   completed_phases: 2
@@ -1056,9 +1056,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-14T02:43:04.347Z
-Stopped at: Phases 33 and 34 complete with fresh verification; ready to discuss Phase 35
-Resume file: None
+Last session: 2026-10-14T03:09:33.833Z
+Stopped at: Phase 35 context gathered; auto-advancing to planning
+Resume file: .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-CONTEXT.md
 Next action: $gsd-execute-phase 34
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
