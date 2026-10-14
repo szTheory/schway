@@ -17,16 +17,16 @@ findings:
     title: "Surface limit witnesses do not independently check route behavior"
 open: 0
 total: 3
-recorded: 2026-10-14T01:57:30.771Z
+recorded: 2026-10-14T23:39:49.827Z
 ---
 
 # Phase 34: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | fixed | 34-REVIEW-FIX.md |
-| WR-02 | warning | fixed | 34-REVIEW-FIX.md |
-| WR-03 | warning | fixed | 34-REVIEW-FIX.md |
+| WR-01 | warning | fixed | 34-REVIEW-FIX.md (not in the current review) |
+| WR-02 | warning | fixed | 34-REVIEW-FIX.md (not in the current review) |
+| WR-03 | warning | fixed | 34-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
