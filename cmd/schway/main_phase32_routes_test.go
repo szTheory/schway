@@ -420,7 +420,7 @@ func phase32UsageProblems(usage string, routes []string, omissions []string) []s
 	for _, route := range routes {
 		first[strings.Fields(route)[0]] = true
 	}
-	body := strings.TrimPrefix(usage, "usage: lang [--json] ")
+	body := strings.TrimPrefix(usage, "usage: schway [--json] ")
 	for _, alternative := range strings.Split(body, " | ") {
 		fields := strings.Fields(alternative)
 		if len(fields) == 0 {

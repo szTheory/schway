@@ -85,13 +85,19 @@ func TestPhase34SurfaceRoute(t *testing.T) {
 		}
 		if containsRaw(args, "--json") {
 			var usage struct {
-				Command string `json:"command"`
-				Status  string `json:"status"`
+				Command     string `json:"command"`
+				Status      string `json:"status"`
+				Diagnostics []struct {
+					Message string `json:"message"`
+				} `json:"diagnostics"`
 			}
 			if err := json.Unmarshal([]byte(stdout), &usage); err != nil || usage.Command != "usage" || usage.Status != "usage_error" || stderr != "" {
 				t.Errorf("invalid JSON raw args %q changed usage streams: usage=%+v err=%v stdout=%q stderr=%q", args, usage, err, stdout, stderr)
 			}
-		} else if stdout != "" || stderr == "" || !strings.Contains(stderr, "usage:") {
+			if len(usage.Diagnostics) != 1 || !strings.HasPrefix(usage.Diagnostics[0].Message, "usage: schway ") {
+				t.Errorf("invalid JSON raw args %q changed the public command name: diagnostics=%+v", args, usage.Diagnostics)
+			}
+		} else if stdout != "" || stderr == "" || !strings.Contains(stderr, "usage: schway ") {
 			t.Errorf("invalid text raw args %q changed usage streams: stdout=%q stderr=%q", args, stdout, stderr)
 		}
 	}
