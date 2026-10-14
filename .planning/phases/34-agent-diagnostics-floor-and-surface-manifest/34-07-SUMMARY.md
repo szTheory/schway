@@ -37,6 +37,8 @@ key-files:
     - testdata/phase34/surface-census.json
   modified:
     - internal/compiler/surfacemanifest/manifest.go
+    - internal/compiler/surfacemanifest/manifest_test.go
+    - docs/agent-surface.md
     - .planning/WINDOWS.md
 
 key-decisions:
@@ -177,3 +179,9 @@ The summary path and all three owned deliverables exist. Each listed task commit
 ---
 *Phase: 34-agent-diagnostics-floor-and-surface-manifest*
 *Completed: 2026-10-13*
+
+## Parent follow-up: affected producer contract
+
+The post-plan focused producer check failed because `TestPhase34SurfaceDocument` still expected Box/Pair admission entries after the independent complete-source witnesses had refused them. Commit `396a8ec0` updates that literal contract, pins the parse/ability restriction and scalar-only if/else context, and explains the boundary in docs/agent-surface.md. This is one additional parent follow-up commit beyond the six task commits measured above; their original actuals and ledger remain historical measurements.
+
+Fresh command: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/surfacemanifest ./internal/compiler/session -run '^(TestPhase34SurfaceDocument|TestPhase34SurfaceLimits|TestPhase34SurfaceManifestWitnesses|TestPhase34SurfaceManifestCensus|TestPhase34SurfaceManifestControls)$' -count=1 -v`. Exit 0; all five named selectors passed (package times 0.006s and 0.188s). No broad suite ran. Expected admissions remain independently literal; no producer-derived oracle or admitted semantics were added.
