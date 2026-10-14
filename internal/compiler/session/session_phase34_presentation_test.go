@@ -66,7 +66,7 @@ func TestPhase34ImportedDiagnosticPresentation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(human, "lib.schway:8:13") || !strings.Contains(human, line) {
+	if !strings.Contains(human, "lib.schway:8:15") || !strings.Contains(human, line) {
 		t.Fatalf("human output does not show imported path, position, and source line:\n%s", human)
 	}
 	if strings.Contains(human, filepath.Dir(entry)) || strings.Contains(encoded, filepath.Dir(entry)) {

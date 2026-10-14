@@ -107,6 +107,7 @@ var phase32RouteRows = []phase32RouteRow{
 	{Key: "examples/fizzbuzz.schway", Programs: []string{"fizzbuzz"}},
 
 	// Entry programs the receipts do not run.
+	{Key: "examples/bitwise.schway", Reason: "not covered because it was added in Phase 35 after the M006 receipt boundary; both public conformance engines are owned by TestPhase35PublicConformanceWitness"},
 	{Key: "examples/phase22/identity.schway", Reason: "not covered because it is owned by TestPhase22IdentityApplicationBuildAndRunCLI"},
 	{Key: "examples/phase23/file_byte.schway", Reason: "not covered because it is owned by TestPhase23PublicFileByte"},
 	{Key: "examples/phase24/error.schway", Reason: "not covered because its ownership discharge is owned by TestPhase24ActivationPeerDerivesRepeatedAcquisitions"},
@@ -688,7 +689,7 @@ func TestPhase32PublicRouteAudit(t *testing.T) {
 	entries := phase32EnumerateEntries(testsupport.ProjectPath("examples"))
 	testNames := phase32ScanTestNames(testsupport.ProjectPath("cmd"), testsupport.ProjectPath("internal"))
 
-	if len(routes) < 20 || len(entries) != 14 {
+	if len(routes) < 20 || len(entries) != 15 {
 		t.Fatalf("enumeration looks wrong: %d routes %v, %d entries %v", len(routes), routes, len(entries), entries)
 	}
 	if problems := phase32RouteAuditProblems(routes, entries, phase32RouteRows, testNames); len(problems) > 0 {

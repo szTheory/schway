@@ -2,6 +2,71 @@
   "schema": "phase16.public-emitter-consumers/2",
   "entries": [
     {
+      "call": "internal/compiler/cgen/cgen_phase35_test.go:EmitNative:114",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase35NativeShiftTracer"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase35_test.go:EmitNative:390",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase35UnsignedShiftEmissionAndEventProjection"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase35_test.go:EmitNative:475",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase35ShiftSiteControls"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase35_test.go:EmitNative:564",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase35UnsignedShiftEmissionAndEventProjection"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase35_test.go:EmitNative:588",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase35UnsignedShiftEmissionAndEventProjection"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase35_test.go:EmitNative:611",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase35UnsignedShiftEmissionAndEventProjection"
+    },
+    {
+      "call": "internal/compiler/session/session_phase35_closeout_test.go:Emit:217",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase35PublicDocumentValues"
+    },
+    {
+      "call": "internal/compiler/session/session_phase35_closeout_test.go:EmitNative:218",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase35PublicDocumentValues"
+    },
+    {
+      "call": "internal/compiler/session/session_phase35_prechange_test.go:Emit:289",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase35PreChangeEmitterCorpus"
+    },
+    {
+      "call": "internal/compiler/session/session_phase35_prechange_test.go:EmitNative:290",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase35PreChangeEmitterCorpus"
+    },
+    {
+      "call": "internal/compiler/session/session_phase35_values_test.go:EmitNative:86",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase35BitwiseOptimizationMatrix"
+    },
+    {
+      "call": "internal/compiler/session/session_phase35_values_test.go:EmitNative:152",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase35ShiftUBSan"
+    },
+    {
+      "call": "internal/compiler/session/session_phase35_values_test.go:EmitNative:200",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase35EngineWrongAnswerControls"
+    },
+    {
       "call": "internal/compiler/cgen/cgen_n1_convergence_test.go:Emit:54",
       "classification": "admitted-dynamic-schema2"
     },

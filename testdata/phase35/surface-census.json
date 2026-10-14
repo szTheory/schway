@@ -332,14 +332,14 @@
       "function": "discardScalarBinaryExpr",
       "selector": "if-condition",
       "values": [
-        "(operator.Text == \"<<\" || operator.Text == \">>\") && p.peek().Kind == TokenUnknown && p.peek().Text == \"-\""
+        "operator.Text == \"<<\" || operator.Text == \">>\""
       ],
       "facet": "refusal:surface.unsupported_shift_amount",
       "disposition": "refusal",
       "witness_ids": [
         "phase35-shift-negative"
       ],
-      "reason": "This selected refusal branch is pinned by its complete rejected source and literal diagnostic."
+      "reason": "The shift dispatch invokes consumeNegativeShiftAmount, including grouped negatives after the 2026-10-14 review fix; its rejected source and literal diagnostic remain independently pinned."
     },
     {
       "file": "internal/compiler/syntax/parser.go",
@@ -360,14 +360,14 @@
       "function": "scalarBinaryExpr",
       "selector": "if-condition",
       "values": [
-        "(operator.Text == \"<<\" || operator.Text == \">>\") && p.peek().Kind == TokenUnknown && p.peek().Text == \"-\""
+        "operator.Text == \"<<\" || operator.Text == \">>\""
       ],
       "facet": "refusal:surface.unsupported_shift_amount",
       "disposition": "refusal",
       "witness_ids": [
         "phase35-shift-negative"
       ],
-      "reason": "This selected refusal branch is pinned by its complete rejected source and literal diagnostic."
+      "reason": "The shift dispatch invokes consumeNegativeShiftAmount, including grouped negatives after the 2026-10-14 review fix; its rejected source and literal diagnostic remain independently pinned."
     },
     {
       "file": "internal/compiler/syntax/parser.go",

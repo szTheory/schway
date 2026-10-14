@@ -32,6 +32,9 @@ const phase272MinAcceptedCorpus = 92
 // phase272NewlyAcceptedPaths lists the only accepted sources allowed to be
 // absent from the golden: sources added after the golden was generated.
 var phase272NewlyAcceptedPaths = map[string]bool{
+	// 2026-10-14 (Phase 35, D-07): new public bitwise witness, absent at
+	// the frozen golden revision; historical sources/hashes remain unchanged.
+	"examples/bitwise.schway":                     true,
 	"examples/phase272/straight_line_copy.schway": true,
 	// 2026-10-10 (Phase 28, D-20): new runnable example added after the
 	// golden was generated; golden stays frozen (D-23).
