@@ -1,6 +1,6 @@
 ---
 phase: 34-agent-diagnostics-floor-and-surface-manifest
-verified: 2026-10-14T02:10:16Z
+verified: 2026-10-14T23:46:50Z
 status: passed
 score: 38/38 must-haves verified
 covered_files:
@@ -20,16 +20,38 @@ covered_files:
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-SUMMARY.md"
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-PLAN.md"
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-SUMMARY.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REGRESSION.md"
   - "cmd/schway-repair/repair_phase34_test.go"
   - "cmd/schway/main.go"
   - "cmd/schway/main_phase34_diagnostics_test.go"
   - "cmd/schway/main_phase34_routes_test.go"
   - "cmd/schway/main_phase34_surface_test.go"
+  - "cmd/schway/main_phase35_test.go"
+  - "docs/agent-surface.md"
+  - "examples/bitwise.schway"
+  - "examples/checksum/adler32.schway"
   - "internal/compiler/ast/ast.go"
+  - "internal/compiler/cgen/cgen_phase35_test.go"
   - "internal/compiler/check/check.go"
+  - "internal/compiler/check/check_phase35_baseline_test.go"
+  - "internal/compiler/check/check_phase35_numeric_test.go"
+  - "internal/compiler/check/check_phase35_test.go"
   - "internal/compiler/check/scalar.go"
+  - "internal/compiler/core/core.go"
+  - "internal/compiler/core/core_phase35_test.go"
+  - "internal/compiler/core/core_test.go"
+  - "internal/compiler/corevalidate/corevalidate.go"
+  - "internal/compiler/corevalidate/corevalidate_phase35_test.go"
   - "internal/compiler/diagnostic/diagnostic.go"
   - "internal/compiler/diagnostic/diagnostic_phase34_test.go"
+  - "internal/compiler/executionpeer/executionpeer.go"
+  - "internal/compiler/executionpeer/executionpeer_phase35_test.go"
+  - "internal/compiler/interp/interp.go"
+  - "internal/compiler/interp/interp_phase35_test.go"
+  - "internal/compiler/originvalidate/originvalidate.go"
+  - "internal/compiler/originvalidate/originvalidate_phase35_test.go"
+  - "internal/compiler/pathoracle/pathoracle.go"
+  - "internal/compiler/pathoracle/pathoracle_phase35_test.go"
   - "internal/compiler/protocol/presentation.go"
   - "internal/compiler/protocol/protocol.go"
   - "internal/compiler/protocol/protocol_phase34_test.go"
@@ -42,18 +64,29 @@ covered_files:
   - "internal/compiler/session/session_phase34_presentation_test.go"
   - "internal/compiler/session/session_phase34_routes_test.go"
   - "internal/compiler/session/session_phase34_surface_test.go"
+  - "internal/compiler/session/session_phase35_adler_test.go"
+  - "internal/compiler/session/session_phase35_admission_mutation_test.go"
+  - "internal/compiler/session/session_phase35_closeout_test.go"
+  - "internal/compiler/session/session_phase35_peer_mutation_test.go"
+  - "internal/compiler/session/session_phase35_prechange_test.go"
+  - "internal/compiler/session/session_phase35_surface_test.go"
+  - "internal/compiler/session/session_phase35_values_test.go"
   - "internal/compiler/session/session_phase6_explain.go"
   - "internal/compiler/session/session_phase6_query.go"
   - "internal/compiler/session/session_presentation.go"
   - "internal/compiler/surface/refusals.go"
   - "internal/compiler/surfacemanifest/manifest.go"
   - "internal/compiler/surfacemanifest/manifest_test.go"
+  - "internal/compiler/syntax/format.go"
   - "internal/compiler/syntax/lexer.go"
+  - "internal/compiler/syntax/numeric_phase35_test.go"
   - "internal/compiler/syntax/parser.go"
   - "internal/compiler/syntax/parser_phase34_baseline_test.go"
   - "internal/compiler/syntax/parser_phase34_limit_scope_test.go"
   - "internal/compiler/syntax/parser_phase34_recovery_test.go"
   - "internal/compiler/syntax/parser_phase34_refusal_test.go"
+  - "internal/compiler/syntax/parser_phase35_baseline_test.go"
+  - "internal/compiler/syntax/parser_phase35_test.go"
   - "testdata/phase34/compat-deltas.json"
   - "testdata/phase34/draft-baseline.json"
   - "testdata/phase34/drafts.json"
@@ -61,21 +94,34 @@ covered_files:
   - "testdata/phase34/prechange-corpus.json"
   - "testdata/phase34/surface-census.json"
   - "testdata/phase34/surface-witnesses.json"
-covered_digest: "v3:sha256:e10d1904ea734a2bce9146e73ad87afbb9c6e97df22dc82f43395bd15658acef"
+  - "testdata/phase35/numeric-delta.json"
+  - "testdata/phase35/numeric-policy-baseline.json"
+  - "testdata/phase35/prechange-corpus.json"
+  - "testdata/phase35/recovery-after.json"
+  - "testdata/phase35/shift-sites.json"
+  - "testdata/phase35/surface-census.json"
+  - "testdata/phase35/surface-witnesses.json"
+  - "testdata/phase35/value-vectors.json"
+covered_digest: "v3:sha256:226a0651012cf74291645a653c6472c95715cf530593b8f5ac55f82588c9a31f"
 behavior_unverified: 0
 overrides_applied: 0
-deferred:
-  - truth: "DX-22's dynamic-shift-amount refusal code and hint are not present in the current seven-code catalog."
-    addressed_in: "Phase 35"
-    evidence: "ROADMAP.md Phase 35 success criteria 2 and 5 require a named surface.unsupported_* refusal for dynamic shifts and registration in the surface manifest; REQUIREMENTS.md explicitly assigns this sub-item to BIT-02/Phase 35."
+re_verification:
+  previous_status: passed
+  previous_score: 38/38
+  gaps_closed: []
+  gaps_remaining: []
+  regressions: []
+  scope: "successor-staled fingerprint refresh; prior report passed without gaps; its DX-22 deferral is now resolved by Phase 35"
 ---
 
 # Phase 34: Agent Diagnostics Floor and Surface Manifest Verification Report
 
 **Phase Goal:** An agent drafting Schway gets one precise, locatable diagnostic per real cause and can ask the toolchain what surface is admitted, instead of guessing from cascading, offset-only or misleading errors.
-**Verified:** 2026-10-14T02:10:16Z
+**Verified:** 2026-10-14T23:46:50Z
 **Status:** passed
-**Re-verification:** No — initial verification
+**Re-verification:** Yes — successor-staled fingerprint refresh; the prior report passed without gaps.
+
+The evidence below preserves the dated initial verification, including its then-current DX-22 deferral and 70-selector receipt. The current successor refresh at the end of this report is authoritative for the post-Phase-35 catalog, source binding, and shared regression receipt.
 
 ## Goal Achievement
 
@@ -126,7 +172,7 @@ Statuses below cover the four roadmap success criteria plus all 34 PLAN `must_ha
 
 **Score:** 38/38 truths verified (0 present, behavior-unverified)
 
-### Deferred Items
+### Deferred Items (historical at the prior verification; resolved by Phase 35)
 
 | # | Item | Addressed In | Evidence |
 |---|---|---|---|
@@ -218,9 +264,21 @@ None. The phase's deterministic diagnostic, recovery, route, repair and manifest
 
 ## Gaps Summary
 
-The phase goal and its four roadmap success criteria are achieved. The 34 plan truths and four roadmap truths are behaviorally verified by named tests, the 57 declared artifact occurrences are present and substantive, and manual traces close the key links that the path-based query could not parse. The dynamic-shift refusal is the sole deferred sub-item and has a named Phase 35/BIT-02 owner and matching success criteria, so it is not a blocking Phase 34 gap. The pre-existing CRC-32 and word-counter research scratch sources were unavailable; their representative reconstructed fixtures are explicitly labeled and never presented as recovered originals.
+The phase goal and its four roadmap success criteria were achieved in the initial verification. The 34 plan truths and four roadmap truths were behaviorally verified by named tests, the 57 declared artifact occurrences were present and substantive, and manual traces closed the key links that the path-based query could not parse. At that time the dynamic-shift refusal was deferred to Phase 35/BIT-02; the current refresh below records its delivery. The pre-existing CRC-32 and word-counter research scratch sources were unavailable; their representative reconstructed fixtures are explicitly labeled and never presented as recovered originals.
+
+## Current successor refresh — 2026-10-14T23:46:50Z
+
+This refresh rechecked the Phase 34 goal against current source and the latest scoped regression receipt after Phase 35. It did not replay plans, UAT, or the prior Phase 34 tests. The resulting score remains **38/38 truths verified**, with no present-behavior-unverified truth, no open gap, and no current human-verification item. The plans declare no prohibitions.
+
+The current local receipt in `35-REGRESSION.md` records the final after-repair run: 94 distinct selectors, 98 package-qualified root RUN/PASS executions across 11 packages, exit 0 in 25.854 seconds, and zero missing, failed, or skipped selectors. The receipt says the final run followed the source repairs; the workspace has no source changes since that run. This is the fresh shared successor evidence. The earlier 70-selector Phase 34 receipt above remains historical and is not presented as rerun in this refresh.
+
+Current source inspection confirms diagnostics retain byte offsets while adding 1-based source coordinates from the captured source; human presentation uses the captured line and caret, and JSON presentation preserves the source-less identity projection. Parser recovery/refusal paths remain wired to dedicated diagnostics. The current surface manifest is derived from the parser/checker refusal catalog and the `schway surface` route. Its nine entries preserve the original seven and include the authorized Phase 35 `surface.unsupported_shift_amount` and `surface.unsupported_expression_depth` additions. The prior DX-22 dynamic-shift deferral is therefore resolved; these Phase 35 catalog additions are authorized compatibility deltas, not Phase 34 regressions.
+
+The current contract inventory remains **57/57 declared artifacts** and **22/22 key links**. The path-based key-link query could not parse prose-origin links and some JSON fixture targets, so those links were manually traced through source and current named controls; the prior report's “24 links” count was incorrect, and the plan declarations total 22. Requirements DX-20, DX-21, DX-22, and DX-23 are satisfied. The authored L1 security register has 19/19 items closed and zero open; its applicability check is current, not a new full security audit. State A coverage was reevaluated with no new gap. The review verdict is clean for 60 reviewed files, with the required degraded `no-task-commits-since` fallback disclosed; its disposition records zero open findings. The UI review was reused in automatic mode because this phase has no frontend. The completed UAT remains preserved and was not replayed.
+
+The receipt is a scoped local run, not a full workspace suite, native matrix, hosted CI run, performance claim, or proof of hosted behavior. Existing source-less identity goldens remain unchanged. Archived M006 receipts remain historical; Phase 38 owns the final hosted binding. No new human-verification item is outstanding.
 
 ---
 
-_Verified: 2026-10-14T02:10:16Z_  
+_Verified: 2026-10-14T23:46:50Z_
 _Verifier: the agent (gsd-verifier)_

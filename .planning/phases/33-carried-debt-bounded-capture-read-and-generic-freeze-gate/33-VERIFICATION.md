@@ -1,6 +1,6 @@
 ---
 phase: 33-carried-debt-bounded-capture-read-and-generic-freeze-gate
-verified: 2026-10-14T02:37:37Z
+verified: 2026-10-14T23:46:50Z
 status: passed
 score: 60/60 must-haves verified
 covered_files:
@@ -33,14 +33,17 @@ covered_files:
   - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-TRANSITION-CHECK.md
   - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-UI-REVIEW.md
   - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VALIDATION.md
+  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REGRESSION.md
   - cmd/schway/main_phase321_run_input_test.go
   - cmd/schway/main_phase32_routes_test.go
+  - internal/compiler/cgen/cgen_phase35_test.go
   - internal/compiler/cgen/cgen_program.go
   - internal/compiler/check/check_phase321_byteview_entry_test.go
   - internal/compiler/execution/defect_reasons.go
   - internal/compiler/executionpeer/executionpeer.go
   - internal/compiler/interp/interp.go
   - internal/compiler/interp/interp_phase33_defect_test.go
+  - internal/compiler/interp/interp_phase35_test.go
   - internal/compiler/native/native_app.go
   - internal/compiler/native/native_phase321_defect_parity_test.go
   - internal/compiler/native/native_phase33_capture_test.go
@@ -58,12 +61,12 @@ covered_files:
   - scripts/verify-phase32.sh
   - testdata/phase16/public-emitter-consumers.json
   - testdata/receipts/M006.manifest
-covered_digest: "v3:sha256:3b003e2a1f2b82458b23711e7170c49bdfc57bdc1e7a70ec70c13c500e7fdfe4"
+covered_digest: "v3:sha256:73ad72ba7973b634d16f00c88c93ff49d2c7878769f9a5d7e717500716314809"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
   previous_status: passed
-  previous_score: 4/4
+  previous_score: 60/60
   gaps_closed: []
   gaps_remaining: []
   regressions: []
@@ -74,9 +77,11 @@ re_verification:
 
 **Phase Goal:** The carried M006 debt is paid before any feature work: a child-written capture file can no longer force an unbounded host allocation, the open review warnings are closed or recorded with reasons, Phase 28 has its missing validation and security records, and later milestones reuse one freeze/receipt gate instead of copying phase-specific scripts.
 
-**Verified:** 2026-10-14T02:37:37Z
+**Verified:** 2026-10-14T23:46:50Z
 **Status:** passed
 **Re-verification:** Yes — successor-staled fingerprint refresh; the previous report passed without gaps.
+
+The evidence below preserves the dated prior verification. The current successor refresh at the end of this report is authoritative for the post-Phase-35 source binding and current regression receipt; the earlier Phase 33 named-test receipts remain historical.
 
 ## Goal Achievement
 
@@ -191,9 +196,21 @@ None. The phase has no graphical UI, external service, or unresolved behavior-de
 
 ## Gaps Summary
 
-None. All four roadmap success criteria, all 56 plan must-have truths, all 27 declared prohibitions, all 22 declared artifacts, and all 11 key links are verified. The prior report was passed with no gaps; this refresh regenerated its successor-staled fingerprint from the current evidence set.
+None. All four roadmap success criteria, all 56 plan must-have truths, all 27 declared prohibitions, all 22 declared artifacts, and all 11 key links were verified in the prior report. The current successor refresh below rebinds the report to the post-Phase-35 sources and current shared regression receipt.
+
+## Current successor refresh — 2026-10-14T23:46:50Z
+
+This refresh rechecked the Phase 33 goal against current source and the latest scoped regression receipt after Phase 35. It did not replay plans, UAT, or the prior Phase 33 tests. The resulting score remains **60/60 truths verified**, with no present-behavior-unverified truth, no open gap, and no current human-verification item. All 27 plan-declared prohibitions remain represented by their existing exact plan statements and were checked for current source/control applicability; no prohibition descriptor was invented.
+
+The current local receipt in `35-REGRESSION.md` records the final after-repair run: 94 distinct selectors, 98 package-qualified root RUN/PASS executions across 11 packages, exit 0 in 25.854 seconds, and zero missing, failed, or skipped selectors. The receipt says the final run followed the source repairs; the workspace has no source changes since that run. This is the fresh shared successor evidence. The earlier 33- and 34-specific receipts above remain historical and are not presented as rerun in this refresh.
+
+Current source inspection confirms `RunApplicationWithEvidence` opens the child-written capture and reads through `io.LimitReader(limit+1)` before decoding, preserving the exact-limit case while bounding oversize input. The interpreter's fixture and file routes still pass the single live owner to the same narrow defect predicate, which requires the final function event and an exact reason for an allowed operation kind. The generic freeze and receipt scripts resolve the repository root, use the manifest-driven controls/program/case rows, and do not use `eval`; the Phase 35 interpreter/C-emitter changes do not widen the earlier abort-like authority. The scoped successor controls passed in the current receipt.
+
+Current contract inventory remains **22/22 declared artifacts** and **11/11 key links**; manual source traces cover prose-origin links the path-based query cannot parse. Requirements QLT-13, QLT-14, QLT-15, and EVD-16 remain satisfied. The authored L1 security register has 17/17 items closed and zero open; its applicability check is current, not a new full security audit. State A coverage was reevaluated with no new gap. The review verdict is clean for 58 reviewed files, with the required degraded `no-task-commits-since` fallback disclosed; its disposition records zero open findings. The UI review was reused in automatic mode because this phase has no frontend. The completed UAT remains preserved and was not replayed.
+
+The receipt is a scoped local run, not a full workspace suite, native matrix, hosted CI run, or performance claim. Archived M006 receipts remain historical; Phase 38 owns the final hosted binding. No new human-verification item is outstanding.
 
 ---
 
-_Verified: 2026-10-14T02:37:37Z_
+_Verified: 2026-10-14T23:46:50Z_
 _Verifier: the agent (gsd-verifier)_

@@ -6,11 +6,11 @@ current_phase: 36
 current_phase_name: Scalar Helper Calls
 current_plan: Not started
 status: planning
-stopped_at: Phase 35 complete and verified; ready to discuss Phase 36
-last_updated: "2026-10-14T23:34:52.851Z"
+stopped_at: Phases 33–35 complete and verified; next is $gsd-discuss-phase 36
+last_updated: "2026-10-14T23:49:48.202Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 35 complete, transitioned to Phase 36
-state_head: 84b7e75ca11d8e5849b6f5b2a62c9c3ea622fa59
+state_head: 3b47d6913299107212996b741e5870238c7c5d1a
 progress:
   total_phases: 6
   completed_phases: 3
@@ -847,6 +847,7 @@ decision history; they no longer describe current status.
 - [Phase 35]: Keep descriptor-less prohibitions pending independent verification without inventing descriptors or human approval.
 - [Phase 35]: BIT-01..04 complete: defined U64 bitwise/literal shifts/hex and equivalent Adler rewrite; next feature is Phase 36 Scalar Helper Calls. — Canonical verification passes 38 unique truths; 33/34 report refreshes preserve completed plans and UAT.
 - [Phase 35]: Keep source literal authority, raw immediate laws, value transfer proof and causal event admission separate. — Fresh 15 transfer mutants and 26 refusal controls catch implementation defects without new runtime events.
+- [Phase 35]: Successor refresh resolved: canonical verification for 33, 34 and 35 is passed; progress has three complete phases and no work in progress. — Next is $gsd-discuss-phase 36. All earlier in-progress/next-phase-35 handoffs are historical; do not replay completed plans or UAT.
 
 ### Pending Todos
 
@@ -1093,8 +1094,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-14T23:33:50.843Z
-Stopped at: Phase 35 complete and verified; ready to discuss Phase 36
+Last session: 2026-10-14T23:49:48.114Z
+Stopped at: Phases 33–35 complete and verified; next is $gsd-discuss-phase 36
 Resume file: None
 Next action: $gsd-discuss-phase 36
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
