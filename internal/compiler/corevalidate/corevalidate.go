@@ -1210,7 +1210,7 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 	if !v.check(parameterType.Shape.Constructor == function.Parameter.Type, "core.parameter_mismatch", function.Parameter.ID) {
 		return nil, nil, false
 	}
-	if function.Parameter.Type == "Byte" && !scalarByteFormalUnused(function) {
+	if function.Parameter.Type == "Byte" && scalarByteBridgePresent(function) && !scalarByteFormalUnused(function) {
 		return nil, nil, v.check(false, "core.scalar_byte_parameter_used", function.Parameter.ID)
 	}
 	operationIDs := make(map[string]struct{}, len(linear.Operations))
@@ -4722,6 +4722,27 @@ func hasScalarCFG(function *core.Function) bool {
 	}
 	for _, operation := range function.Linear.Operations {
 		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpBitXorU64 || operation.Kind == core.OpBitAndU64 || operation.Kind == core.OpBitOrU64 || operation.Kind == core.OpShiftLeftU64 || operation.Kind == core.OpShiftRightU64 || operation.Kind == core.OpBytesLen || operation.Kind == core.OpBytesAt || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline || operation.Kind == core.OpWriteText {
+			return true
+		}
+	}
+	return false
+}
+
+// scalarByteBridgePresent identifies the structured scalar producer without
+// using the signature, local types or formal uses that the bridge law checks.
+// Constant-only bodies retain its reserved Bool/Unit facts even when forged
+// operations no longer contain a scalar instruction. Legacy Byte bodies use
+// signature facts (and :type:u64 for literals), rather than this scalar table.
+func scalarByteBridgePresent(function *core.Function) bool {
+	if function == nil || function.Linear == nil {
+		return false
+	}
+	if hasScalarCFG(function) {
+		return true
+	}
+	for _, fact := range function.Linear.Types {
+		if fact.ID == function.ID+":type:2" && fact.Shape.Constructor == "Bool" ||
+			fact.ID == function.ID+":type:3" && fact.Shape.Constructor == "Unit" {
 			return true
 		}
 	}

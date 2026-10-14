@@ -1509,6 +1509,28 @@ func phase35UnusedByteProblem(function core.Function) *Problem {
 	if function.Linear == nil || function.Parameter.Type != "Byte" {
 		return nil
 	}
+	// The scalar producer's reserved type facts identify constant-only
+	// bridges too. Decide applicability before checking return/local types
+	// or formal references: malformed bridges must not become legacy bodies.
+	scalarBody := false
+	for _, fact := range function.Linear.Types {
+		if fact.ID == function.ID+":type:2" && fact.Shape.Constructor == "Bool" ||
+			fact.ID == function.ID+":type:3" && fact.Shape.Constructor == "Unit" {
+			scalarBody = true
+		}
+	}
+	for _, operation := range function.Linear.Operations {
+		switch operation.Kind {
+		case core.OpAddChecked, core.OpLessU64, core.OpEqualU64, core.OpRemainderU64,
+			core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64, core.OpShiftLeftU64, core.OpShiftRightU64,
+			core.OpBytesLen, core.OpBytesAt, core.OpScalarStore, core.OpBranch,
+			core.OpWriteU64, core.OpWriteNewline, core.OpWriteText:
+			scalarBody = true
+		}
+	}
+	if !scalarBody {
+		return nil
+	}
 	types := make(map[string]string, len(function.Linear.Types))
 	for _, fact := range function.Linear.Types {
 		types[fact.ID] = fact.Shape.Constructor

@@ -1,13 +1,56 @@
 package corevalidate
 
 import (
+	"os"
 	"strconv"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/check"
 	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/syntax"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
+
+// TestPhase35LegacyByteCompatibility keeps pre-bridge admission independent
+// of the scalar bridge's unused-formal restriction.
+func TestPhase35LegacyByteCompatibility(t *testing.T) {
+	for _, path := range []string{
+		"testdata/phase2/implicit_copy.schway",
+		"testdata/phase07/call_basic.schway",
+		"testdata/phase4/foreign_acquire_one.schway",
+		"testdata/phase4/nonlocal_exit_probe.schway",
+		"testdata/phase11/multi_function_zero_call.schway",
+	} {
+		t.Run(path, func(t *testing.T) {
+			source, err := os.ReadFile(testsupport.ProjectPath(path))
+			if err != nil {
+				t.Fatal(err)
+			}
+			parsed := syntax.Parse(source)
+			if len(parsed.Diagnostics) != 0 {
+				t.Fatalf("legacy fixture parse: %+v", parsed.Diagnostics)
+			}
+			checked := check.Program(parsed.Program)
+			if len(checked.Diagnostics) != 0 || len(checked.Program.Functions) == 0 {
+				t.Fatalf("legacy fixture admission: %+v", checked.Diagnostics)
+			}
+			for _, function := range checked.Program.Functions {
+				if function.Parameter.Type != "Byte" || function.Linear == nil {
+					continue
+				}
+				for _, fact := range function.Linear.Types {
+					if fact.ID == function.ID+":type:2" && fact.Shape.Constructor == "Bool" ||
+						fact.ID == function.ID+":type:3" && fact.Shape.Constructor == "Unit" {
+						t.Fatalf("legacy fixture unexpectedly carries structured scalar type authority: %+v", fact)
+					}
+				}
+			}
+			if result := Validate(checked.Program); !result.Valid {
+				t.Fatalf("legacy Byte core admission changed: %+v", result.Problems)
+			}
+		})
+	}
+}
 
 // TestPhase35CorePeerBaseline pins the existing OpConst path before the
 // independent Phase 35 immediate and transfer laws are added.
@@ -173,6 +216,62 @@ func TestPhase35UnusedByteIRAdmission(t *testing.T) {
 	if got := Validate(program); !got.Valid {
 		t.Fatalf("clean unused-Byte bridge failed after copied controls: %+v", got.Problems)
 	}
+
+	t.Run("constant-only fake bridge", func(t *testing.T) {
+		constant := phase35CheckedCore(t, "module phase35.constant_byte\nexport { fn main }\nfn main(unused: Byte) -> U64 {\n  var seed = 0\n  let value = 42\n  value\n}\n")
+		base := &constant.Functions[0]
+		for _, operation := range base.Linear.Operations {
+			if operation.Kind != core.OpConst && operation.Kind != core.OpReturn {
+				t.Fatalf("constant-only discriminator control contains %s", operation.Kind)
+			}
+		}
+		if result := Validate(constant); !result.Valid {
+			t.Fatalf("clean constant-only bridge refused: %+v", result.Problems)
+		}
+		for _, row := range []struct {
+			name string
+			edit func(*core.Function)
+			want string
+		}{
+			{name: "used formal without scalar instruction", edit: func(fn *core.Function) {
+				op := &fn.Linear.Operations[0]
+				op.Kind, op.SourceID, op.ConstU64 = core.OpCopy, fn.Parameter.ID, ""
+			}, want: "core.scalar_byte_parameter_used"},
+			{name: "wrong return without scalar instruction", edit: func(fn *core.Function) {
+				fn.ReturnType = "Byte"
+			}, want: "core.scalar_byte_parameter_used"},
+			{name: "non-scalar local without scalar instruction", edit: func(fn *core.Function) {
+				fn.Linear.Places[1].TypeID = phase35TypeID(t, fn, "Byte")
+			}, want: "core.scalar_byte_parameter_used"},
+			{name: "unreachable used formal", edit: func(fn *core.Function) {
+				// This flat operation is deliberately absent from every block.
+				// Applicability and the unused law must inspect it nevertheless.
+				op := fn.Linear.Operations[0]
+				op.ID, op.PointID = fn.ID+":op:unreachable", fn.ID+":point:unreachable"
+				op.Kind, op.SourceID, op.ConstU64 = core.OpCopy, fn.Parameter.ID, ""
+				fn.Linear.Operations = append(fn.Linear.Operations, op)
+			}, want: "core.scalar_byte_parameter_used"},
+			{name: "foreign metadata cannot exempt used formal", edit: func(fn *core.Function) {
+				fn.ForeignContract = &core.ForeignContract{Symbol: "forged"}
+				op := &fn.Linear.Operations[0]
+				op.Kind, op.SourceID, op.ConstU64 = core.OpCopy, fn.Parameter.ID, ""
+			}, want: "core.scalar_byte_parameter_used"},
+			{name: "call opcode cannot exempt used formal", edit: func(fn *core.Function) {
+				op := &fn.Linear.Operations[0]
+				op.Kind, op.SourceID, op.ConstU64 = core.OpCall, fn.Parameter.ID, ""
+				op.CalleeID = "forged-callee"
+			}, want: "core.scalar_byte_parameter_used"},
+		} {
+			t.Run(row.name, func(t *testing.T) {
+				mutant := cloneProgram(constant)
+				row.edit(&mutant.Functions[0])
+				result := Validate(mutant)
+				if result.Valid || !phase35HasCoreProblem(result.Problems, row.want) {
+					t.Fatalf("fake constant-only bridge escaped %s: %+v", row.want, result)
+				}
+			})
+		}
+	})
 }
 
 func phase35CheckedCore(t *testing.T, source string) core.Program {
