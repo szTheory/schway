@@ -5,16 +5,16 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 34
 current_phase_name: Agent Diagnostics Floor and Surface Manifest
 status: executing
-stopped_at: Completed 34-06-PLAN.md
-last_updated: "2026-10-13T23:52:25.942Z"
+stopped_at: Completed 34-07-PLAN.md
+last_updated: "2026-10-14T00:26:57.798Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 33 complete, transitioned to Phase 34
-state_head: 60e350f9ab56f1aa578f4471ce30bf2ae6650042
+state_head: afdb1ddb3d45caa24a1015a3e808068dc6e1f88f
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
   percent: 17
 ---
 
@@ -125,7 +125,7 @@ plans.
 ## Current Position
 
 Phase: 34 (Agent Diagnostics Floor and Surface Manifest) — READY TO EXECUTE
-Plan: 7 of 8
+Plan: 8 of 8
 Status: Ready to execute
 Last activity: 2026-10-13 — Phase 33 complete, transitioned to Phase 34
 
@@ -595,6 +595,7 @@ subset alone.
 | Phase 34 P04 | 16 min | 2 tasks | 13 files |
 | Phase 34 P05 | 35m | 3 tasks | 43 files |
 | Phase 34 P6 | 15min | 3 tasks | 32 files |
+| Phase 34 P07 | 33min | 3 tasks | 40 files |
 
 ## Accumulated Context
 
@@ -802,6 +803,8 @@ decision history; they no longer describe current status.
 - [Phase 34]: Describe only checked contexts; keep ability derivation and scalar-expression calls distinct from complete-program admission.
 - [Phase 34]: Expose finite limits with scoped category, route, unit, meaning, and configuration-dependent FileBytes bounds.
 - [Phase 34]: Classify both surface placements as no-entry-source without widening the module-aware route set.
+- [Phase 34]: Publish only surface-manifest contexts backed by successful complete CheckCommandFile witnesses; ability derivation alone is not admission.
+- [Phase 34]: Keep the source census bounded to its seven named files and use copied-artifact drift controls with target-specific outcomes.
 
 ### Pending Todos
 
@@ -1047,8 +1050,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-13T23:52:25.903Z
-Stopped at: Completed 34-06-PLAN.md
+Last session: 2026-10-14T00:26:57.762Z
+Stopped at: Completed 34-07-PLAN.md
 Resume file: None
 Next action: $gsd-execute-phase 34
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
