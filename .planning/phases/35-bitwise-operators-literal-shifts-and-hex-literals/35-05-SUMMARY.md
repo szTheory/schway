@@ -177,3 +177,13 @@ The interpreter, pathoracle, and causal executionpeer evidence is committed and 
 - Summary file exists at the required plan path.
 - All three task commits are ancestors of the current `HEAD`.
 - The committed-source stub-pattern scan found no TODO, FIXME, placeholder, coming-soon, or not-available stub markers in the nine plan-owned source/test/fixture files.
+
+## Dated count clarification — 2026-10-14
+
+Plan 35-07 source inspection and actual lane execution confirm that the committed
+value-vectors.json contains **33 rows**, including **16 shift rows**. Earlier wording
+of 34 fixture vectors in this handoff was inaccurate; the separate bitwise source
+witness must not be counted as another fixture row. Plan 35-07 executed all 33 rows
+under O0/O3/O3-LTO and all 16 shift rows under UBSan, with no required lane skipped.
+The fixture and independently authored expected values remain unchanged. Use these
+exact counts in current evidence; preserve the earlier authoring record as history.
