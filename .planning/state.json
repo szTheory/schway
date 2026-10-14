@@ -16,7 +16,7 @@
     {
       "number": "35",
       "name": "Bitwise Operators, Literal Shifts, and Hex Literals",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "number": "36",
@@ -39,5 +39,5 @@
     "label": "Advance to the next step",
     "reason": "Phase 35 of 6 · 33% · executing"
   },
-  "updated_at": "2026-10-14T13:34:19.087Z"
+  "updated_at": "2026-10-14T13:58:39.644Z"
 }

@@ -4,17 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 35
 current_phase_name: Bitwise Operators, Literal Shifts, and Hex Literals
+current_plan: 2
 status: executing
-stopped_at: Phase 35 context gathered; auto-advancing to planning
-last_updated: "2026-10-14T13:34:19.072Z"
-last_activity: 2026-10-13
-last_activity_desc: Phase 34 complete, transitioned to Phase 35
-state_head: 2e46cbf0e8e6877b2722bd0b453eaaca72ce2c84
+stopped_at: Completed 35-01-PLAN.md
+last_updated: "2026-10-14T13:58:39.597Z"
+last_activity: 2026-10-14
+last_activity_desc: Phase 35 Plan 35-01 baseline complete; Plan 35-02 is next
+state_head: 8fd061ed5197b99a7d7a2cedc34ca491b9e82559
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 21
-  completed_plans: 13
+  completed_plans: 14
   percent: 33
 ---
 
@@ -124,10 +125,11 @@ plans.
 
 ## Current Position
 
-Phase: 35 (Bitwise Operators, Literal Shifts, and Hex Literals) — READY TO EXECUTE
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-10-13 — Phase 34 complete, transitioned to Phase 35
+Phase: 35 (Bitwise Operators, Literal Shifts, and Hex Literals)
+Current Plan: 2
+Total Plans in Phase: 8
+Status: Plan 1 complete; plan 2 is next
+Last activity: 2026-10-14 — Phase 35 Plan 35-01 complete; plan 35-02 is next
 
 Progress: [███░░░░░░░] 33%
 
@@ -598,6 +600,7 @@ subset alone.
 | Phase 34 P6 | 15min | 3 tasks | 32 files |
 | Phase 34 P07 | 33min | 3 tasks | 40 files |
 | Phase 34 P08 | 32min | 3 tasks | 23 files |
+| Phase 35 P01 | 24 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -810,6 +813,8 @@ decision history; they no longer describe current status.
 - [Phase 34]: Keep BuildApplicationFile public signature and add command-result snapshot presentation for callers that need diagnostics.
 - [Phase 34]: Use captured source bytes for locatable presentation; preserve byte-only summary identity spans and byte-authorized repairs.
 - [Phase 34]: Keep z1g, trz, and z1s dormant until their named consumer triggers occur.
+- [Phase 35]: Keep legacy and scalar numeric conversion results route-local, including their existing disagreement and refusals.
+- [Phase 35]: Preserve nested-index results as immutable historical evidence; measure any future depth refusal separately.
 
 ### Pending Todos
 
@@ -1056,10 +1061,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-14T03:09:33.833Z
-Stopped at: Phase 35 context gathered; auto-advancing to planning
-Resume file: .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-CONTEXT.md
-Next action: $gsd-execute-phase 34
+Last session: 2026-10-14T13:53:26.844Z
+Stopped at: Completed 35-01-PLAN.md
+Resume file: None
+Next action: $gsd-execute-phase 35
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
