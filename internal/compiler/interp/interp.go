@@ -1321,6 +1321,32 @@ func typeFactIndex(function core.Function) map[string]core.TypeFact {
 	return types
 }
 
+// runtimeU64SourceTarget independently rechecks the value-operation type
+// facts at the interpreter boundary. corevalidate.Validate is the primary
+// admission gate, while this guard keeps malformed or future alternate
+// producers from reaching Go's operators with a mismatched place type.
+func runtimeU64SourceTarget(f *frame, operation core.LinearOperation) bool {
+	sourceType, sourceExists := f.placeTypes[operation.SourceID]
+	targetType, targetExists := f.placeTypes[operation.TargetID]
+	typeFact, typeExists := f.types[operation.TypeID]
+	return sourceExists && targetExists && typeExists && operation.TypeID != "" &&
+		sourceType == operation.TypeID && targetType == operation.TypeID &&
+		typeFact.Shape.Constructor == "U64"
+}
+
+// runtimeShiftAmount checks the immediate again at the execution boundary;
+// shifts never read a second place or mask an out-of-range count.
+func runtimeShiftAmount(operation core.LinearOperation) (uint, error) {
+	if operation.RightID != "" {
+		return 0, fmt.Errorf("shift operation has a right operand place")
+	}
+	amount, err := strconv.ParseUint(operation.ConstU64, 10, 64)
+	if err != nil || amount > 63 || strconv.FormatUint(amount, 10) != operation.ConstU64 {
+		return 0, fmt.Errorf("shift operation has a noncanonical or out-of-range immediate")
+	}
+	return uint(amount), nil
+}
+
 // newArmFrame builds a frame for a single selected match arm's own block
 // (runBranchArm's shape): the arm's block lives in the same
 // function.Linear.Blocks list a full block-based body uses, so this reuses
@@ -1761,6 +1787,35 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: terminalLiveResources(stack, top)}, nil
 			}
 			top.values[operation.TargetID] = value{u64: sourceValue.u64 % right.u64, isU64: true}
+			top.idx++
+		case core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64:
+			right, initialized := top.values[operation.RightID]
+			if !initialized || !sourceValue.isU64 || !right.isU64 || !runtimeU64SourceTarget(top, operation) || top.placeTypes[operation.RightID] != operation.TypeID {
+				return Execution{}, fmt.Errorf("operation %q has invalid %s operands", operation.ID, operation.Kind)
+			}
+			var result uint64
+			switch operation.Kind {
+			case core.OpBitXorU64:
+				result = sourceValue.u64 ^ right.u64
+			case core.OpBitAndU64:
+				result = sourceValue.u64 & right.u64
+			case core.OpBitOrU64:
+				result = sourceValue.u64 | right.u64
+			}
+			top.values[operation.TargetID] = value{u64: result, isU64: true}
+			top.idx++
+		case core.OpShiftLeftU64, core.OpShiftRightU64:
+			amount, err := runtimeShiftAmount(operation)
+			if err != nil || !sourceValue.isU64 || !runtimeU64SourceTarget(top, operation) {
+				return Execution{}, fmt.Errorf("operation %q has invalid %s operands or immediate", operation.ID, operation.Kind)
+			}
+			var result uint64
+			if operation.Kind == core.OpShiftLeftU64 {
+				result = sourceValue.u64 << amount
+			} else {
+				result = sourceValue.u64 >> amount
+			}
+			top.values[operation.TargetID] = value{u64: result, isU64: true}
 			top.idx++
 		case core.OpBytesLen:
 			if !sourceValue.isBytes {

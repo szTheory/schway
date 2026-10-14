@@ -232,7 +232,7 @@ func validateStraightLinePointerLoans(function core.Function) error {
 			// counts as a use of its source loans above, preserving overlap
 			// checks across the call boundary; corevalidate/originvalidate
 			// independently derive the call result's actual provenance.
-			if operation.Kind == core.OpCopy || operation.Kind == core.OpCall {
+			if operation.Kind == core.OpCopy || operation.Kind == core.OpCall || isLoanFreeScalarValueOperation(operation.Kind) {
 				placeLoans[operation.TargetID] = nil
 			} else {
 				placeLoans[operation.TargetID] = inherited
@@ -278,6 +278,20 @@ func hasPathAncestor(parents []string, candidate string) bool {
 		}
 	}
 	return false
+}
+
+// isLoanFreeScalarValueOperation classifies pure U64 operators whose results
+// cannot alias their inputs. Their source is still a loan use, but their
+// target starts with no loan ancestry, like other owned scalar values. Shifts
+// remain ordinary value operations here; they do not become OpConst roots.
+func isLoanFreeScalarValueOperation(kind core.OperationKind) bool {
+	switch kind {
+	case core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64,
+		core.OpShiftLeftU64, core.OpShiftRightU64:
+		return true
+	default:
+		return false
+	}
 }
 
 func pathHasCall(function core.Function) bool {
@@ -1074,7 +1088,7 @@ func linearizePath(functionID string, idx blockIndex, blockIDs []string) (map[st
 				}
 				inherited = append(append([]string(nil), inherited...), operation.LoanID)
 			}
-			if operation.Kind == core.OpConst && operation.TargetID != "" {
+			if (operation.Kind == core.OpConst || isLoanFreeScalarValueOperation(operation.Kind)) && operation.TargetID != "" {
 				chain[operation.TargetID] = nil
 			} else if operation.TargetID != "" && len(inherited) > 0 {
 				chain[operation.TargetID] = inherited
