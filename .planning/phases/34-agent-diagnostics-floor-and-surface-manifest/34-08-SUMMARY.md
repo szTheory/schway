@@ -30,6 +30,7 @@ tech-stack:
 
 key-files:
   created:
+    - .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-TRANSITION-CHECK.md
     - internal/compiler/session/session_phase34_routes_test.go
     - cmd/schway/main_phase34_routes_test.go
     - cmd/schway-repair/repair_phase34_test.go
@@ -221,3 +222,7 @@ The final 22-task validation audit also caught a stale Phase 30 bounded-read inv
 ## Parent follow-up: CLI audit
 
 The configured UI review found no graphical frontend and one concrete CLI copy warning. Commit `6da4d10a` corrects generic usage to `schway`, pins the name in invalid text/JSON surface calls, and updates the inherited route-inventory prefix. All three focused CLI selectors passed (3.386s package time). The UI report records this closure separately from the original source-review observations; no human-readability or graphical pass is claimed.
+
+## Parent completion transition review
+
+The living documents, three seed triggers and Dashbit appraisal were reread against current source and focused evidence. `34-TRANSITION-CHECK.md` records the three next runnable capabilities (Phase 35 operators/CRC, Phase 36 imported scalar helper, Phase 37 file CRC, module reuse and CLI interpreter parity), their complete slices, guarantee obligations, evidence owners and reprioritization observations. All three seeds remain dormant. This completion transition adds the reviewed manifest consumer/scope controls without changing historical claims or promoting a broader framework.

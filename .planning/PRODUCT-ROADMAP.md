@@ -585,3 +585,7 @@ This post-execution review updates the ordered next capabilities from the curren
 | Phase 38 hosted binding | pending | Phase 38; not yet bound |
 | Human readability | unmeasured | No human review; readability remains unmeasured |
 | Whole-loop latency | unmeasured | No cold/warm whole-loop distributions; end-to-end latency remains unmeasured |
+
+## Phase 34 completion review — 2026-10-13
+
+The source-review follow-up corrected manifest route applicability and aggregate outer-body binding scope. The newly executed TestPhase34SurfaceLimitConsumers, TestPhase34InterfaceLimitWitnesses and TestPhase34LinearBindingLimitScope provide finite consumer, executable interface-threshold and direct AST-guard evidence; see the [review-fix record](phases/34-agent-diagnostics-floor-and-surface-manifest/34-REVIEW-FIX.md). Parser/checker admission and enforcement are unchanged. The next three runnable capabilities and retained dormant-seed dispositions are now recorded in [34-TRANSITION-CHECK.md](phases/34-agent-diagnostics-floor-and-surface-manifest/34-TRANSITION-CHECK.md): Phase 35 bitwise/CRC expressions, Phase 36 imported scalar helpers, and Phase 37 file CRC, second-consumer reuse and CLI interpreter parity. Final hosted binding remains Phase 38; human readability and whole-loop latency remain unmeasured.
