@@ -1,0 +1,119 @@
+# Phase 35 plan 08 evidence — 2026-10-14
+
+This receipt separates source inspection, newly executed local selectors, and
+historical records. Fresh task selectors ran from checkout HEAD `26380801` on
+macOS/arm64 with Go 1.24.0 and Apple Clang 21.0.1. Task 3's evidence and
+compatibility artifacts were working-tree inputs based on that HEAD during its
+focused selector; its task commit carries those exact files.
+
+## Source inspection
+
+The live Adler module keeps `b = b % 65521`, replaces exactly sixteen
+doublings with `r = b << 16`, and preserves `r = r + a`. Since `b` is bounded
+by 65520, the shifted value fits the intended low 64 bits. The frozen
+source/core/three-emitter snapshot remains pinned to its recorded source
+revision. Source inspection describes these facts; it is not an execution
+receipt.
+
+## Newly executed local selectors
+
+Every command below used
+`GOCACHE=/tmp/ai-lang-verification-gocache`, `-count=1 -v`, and
+`-timeout=600s`. Each selected top-level test ran and passed. The native
+fixture matrix had no skips.
+
+### Task 1 — Adler consumer tracer
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase35ExistingAdlerAnswers|TestPhase35AdlerWrongShiftControl|TestPhase29InterpreterFixtureVectors|TestPhase29NativeFixtureVectors)$' -count=1 -v -timeout=600s
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^TestPhase31CaseMatrix$' -count=1 -v -timeout=600s
+```
+
+- ref: `internal/compiler/session/session_phase35_adler_test.go#TestPhase35ExistingAdlerAnswers`
+- ref: `internal/compiler/session/session_phase35_adler_test.go#TestPhase35AdlerWrongShiftControl`
+- ref: `internal/compiler/session/session_phase29_interp_fixture_test.go#TestPhase29InterpreterFixtureVectors`
+- ref: `internal/compiler/session/session_phase29_native_fixture_test.go#TestPhase29NativeFixtureVectors`
+- ref: `internal/compiler/native/native_phase31_matrix_test.go#TestPhase31CaseMatrix`
+
+`checksum` and `adler_low` each passed seven independently authored answer
+rows through both interpreter and native routes. Their release/cleanup checks
+passed. The copied `b << 15` control reached the answer comparator and produced
+`150143896`; restoring `b << 16` produced the expected `300286872`. The native
+Phase 31 matrix passed its empty, zero, Wikipedia, size boundary, oversize,
+missing, directory, FIFO, `/dev/null`, and mode cases.
+
+### Task 2 — operator guide and projections
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase35OperatorDocumentation|TestPhase35PublicDocumentValues)$' -count=1 -v -timeout=600s
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase35PublicConformanceWitness$' -count=1 -v -timeout=600s
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase35FocusedValueAnswers$' -count=1 -v -timeout=600s
+```
+
+- ref: `internal/compiler/session/session_phase35_closeout_test.go#TestPhase35OperatorDocumentation`
+- ref: `internal/compiler/session/session_phase35_closeout_test.go#TestPhase35PublicDocumentValues`
+- ref: `cmd/schway/main_phase35_test.go#TestPhase35PublicConformanceWitness`
+- ref: `internal/compiler/session/session_phase35_values_test.go#TestPhase35FocusedValueAnswers`
+
+The guide checks the current surface manifest, the written precedence/grouping
+example, 0..63 literal shift rule, depth 64, hexadecimal spelling and route
+policy, the unused-Byte boundary, and causal/numeric separation. Its copied
+wrong-value, wrong-count, and causal-as-numeric controls were reached. Public
+conformance returned `outcome.value == 264` on both engines; the alternate
+grouping returned 8. The separate U64 application route emitted `264\n` on
+interpreter and native. No U64 default/input flag or interpreter file CLI is
+claimed.
+
+### Task 3 — compatibility and coverage grounding
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase35EvidenceGrounding|TestSummaryCoverageGroundedness|TestPhase35PreChangeEmitterCorpus|TestPhase35PreChangeCorpusControls)$' -count=1 -v -timeout=600s
+```
+
+- ref: `internal/compiler/session/session_phase35_closeout_test.go#TestPhase35EvidenceGrounding`
+- ref: `internal/compiler/session/summary_coverage_test.go#TestSummaryCoverageGroundedness`
+- ref: `internal/compiler/session/session_phase35_prechange_test.go#TestPhase35PreChangeEmitterCorpus`
+- ref: `internal/compiler/session/session_phase35_prechange_test.go#TestPhase35PreChangeCorpusControls`
+
+Coverage kind: `unit`.
+
+Status: PASS. All four selected tests ran; all five copied evidence controls
+were reached and rejected their false claim. The frozen emitter corpus and its
+changed-byte/core-identity/status/omission controls passed without changing
+fixture bytes. `TestSummaryCoverageGroundedness` checked 42 summaries. The live
+Adler source projection matched the recorded source/core/semantic-ID hashes;
+the two C-emitting routes matched their exact current byte lengths and hashes,
+and the application-entry refusal remained unchanged.
+
+### Final scoped selector union
+
+After the Task 3 code, compatibility, and validation changes, the focused union
+below ran on the same checkout HEAD. All selected tests and controls passed;
+each native, public CLI, and session lane had actual named executions. The
+receipt was then extended with this union and the Task 3 selector was rerun to
+check the final evidence text.
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase35ExistingAdlerAnswers|TestPhase35AdlerWrongShiftControl|TestPhase29InterpreterFixtureVectors|TestPhase29NativeFixtureVectors|TestPhase35OperatorDocumentation|TestPhase35PublicDocumentValues|TestPhase35FocusedValueAnswers|TestPhase35EvidenceGrounding|TestSummaryCoverageGroundedness|TestPhase35PreChangeEmitterCorpus|TestPhase35PreChangeCorpusControls)$' -count=1 -v -timeout=600s
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^TestPhase31CaseMatrix$' -count=1 -v -timeout=600s
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase35PublicConformanceWitness$' -count=1 -v -timeout=600s
+```
+
+This is a scoped union of plan-owned and explicitly inherited selectors, not a
+package-wide or project-wide suite.
+
+## Historical receipts and limits
+
+Phase 35-07's historical receipt at `64dfec6f` records **33 fixture rows** at
+O0/O3/O3-LTO and **all 16 shift rows** under UBSan. Those rows were not rerun
+for this plan and are not fresh Task 3 or hosted evidence. O0/O3/O3-LTO and
+UBSan were not rerun for this plan. Phase 38 hosted binding remains pending.
+The earlier Phase 35-05 `executionpeer` test validates causal event admission
+and fabricated-event refusal; executionpeer supplies causal admission evidence
+only; it does not prove numeric answers. Numeric correctness uses independently
+authored literal answers and reached wrong-result controls for the named values.
+
+Phase-wide verification, security audit, and code review remain with the parent
+workflow. Human readability and whole-loop cold/warm feedback distributions
+remain unmeasured. No full suite, broad native matrix, hosted run, dependency
+installation, or Phase 36 work was performed here.

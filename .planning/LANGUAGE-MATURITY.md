@@ -511,7 +511,7 @@ The Dashbit source appraisal remains contextual and supplies no evidence for a
 generic database, telemetry, or source-query expansion.
 
 Current execution receipts were produced locally on macOS/arm64 with Go
-1.24.0 and Apple Clang 21.0.1 against source revision `83c01058`. Historical
+1.24.0 and Apple Clang 21.0.1 from checkout revision `26380801`. Historical
 Phase 35-07 evidence remains scoped to revision `64dfec6f`: 33 fixture rows ran
 at O0/O3/O3-LTO, and all 16 shift rows ran UBSan. It is not a fresh current
 receipt. Phase 38 hosted evidence is pending; readability and complete

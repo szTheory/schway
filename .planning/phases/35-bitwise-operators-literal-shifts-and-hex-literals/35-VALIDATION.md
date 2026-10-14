@@ -35,30 +35,32 @@ Eight plans, 22 tasks, seven execution waves. Wave5 has disjoint 35-05/35-06; al
 
 | Task | Wave | Requirements | Task type | Behavior / owner obligation | Exact command and fails_when | Status |
 |---|---|---|---|---|---|---|
-| 35-01-01 | 1 | BIT-01, BIT-02, BIT-03, BIT-04 | tracer | Commit one source-to-C baseline path, then its complete frozen inventory | [35-01-01](#verify-35-01-01) | pending execution; new tests required |
-| 35-01-02 | 1 | BIT-01, BIT-02, BIT-03, BIT-04 | auto | Freeze route-local numeric policy and characterize recursive admission | [35-01-02](#verify-35-01-02) | pending execution; new tests required |
-| 35-02-01 | 2 | BIT-01, BIT-02, BIT-03 | tracer | Parse and format the locked grouped operator witness end to end | [35-02-01](#verify-35-02-01) | pending execution; new tests required |
-| 35-02-02 | 2 | BIT-01, BIT-02, BIT-03 | auto | Bound every scalar recursive entry and preserve recovery siblings | [35-02-02](#verify-35-02-02) | pending execution; new tests required |
-| 35-02-03 | 2 | BIT-01, BIT-02, BIT-03 | auto | Complete hex admission with exact lexical ownership | [35-02-03](#verify-35-02-03) | pending execution; new tests required |
-| 35-03-01 | 3 | BIT-01, BIT-02, BIT-03 | tracer | Check one grouped literal shift from source through canonical core | [35-03-01](#verify-35-03-01) | pending execution; new tests required |
-| 35-03-02 | 3 | BIT-01, BIT-02, BIT-03 | auto | Admit only a provably unused Byte entry without widening scalar input | [35-03-02](#verify-35-03-02) | pending execution; new tests required |
-| 35-03-03 | 3 | BIT-01, BIT-02, BIT-03 | auto | Reach independent checker result and literal-refusal mutants | [35-03-03](#verify-35-03-03) | pending execution; new tests required |
-| 35-04-01 | 4 | BIT-01, BIT-02 | tracer | Validate one raw literal shift and unused-Byte bridge through both peers | [35-04-01](#verify-35-04-01) | pending execution; new tests required |
-| 35-04-02 | 4 | BIT-01, BIT-02 | auto | Complete core field/range laws and all scalar transfer routes | [35-04-02](#verify-35-04-02) | pending execution; new tests required |
-| 35-04-03 | 4 | BIT-01, BIT-02 | auto | Complete origin laws, exact transfers and publication reachability | [35-04-03](#verify-35-04-03) | pending execution; new tests required |
-| 35-05-01 | 5 | BIT-01, BIT-02 | tracer | Execute one checked literal shift to an event-free interpreter outcome | [35-05-01](#verify-35-05-01) | pending execution; new tests required |
-| 35-05-02 | 5 | BIT-01, BIT-02 | auto | Expand literal vectors and execute the unused-Byte bridge | [35-05-02](#verify-35-05-02) | pending execution; new tests required |
-| 35-05-03 | 5 | BIT-01, BIT-02 | auto | Validate per-op causal admission and forged-event rejection | [35-05-03](#verify-35-05-03) | pending execution; new tests required |
-| 35-06-01 | 5 | BIT-01, BIT-02 | tracer | Compile one checked literal shift to its pinned native answer | [35-06-01](#verify-35-06-01) | pending execution; new tests required |
-| 35-06-02 | 5 | BIT-01, BIT-02 | auto | Census all scalar/event seams and reach unsafe generated-shift controls | [35-06-02](#verify-35-06-02) | pending execution; new tests required |
-| 35-07-01 | 6 | BIT-01, BIT-02, BIT-03 | tracer | Run the exact unused-Byte witness through both public conformance engines | [35-07-01](#verify-35-07-01) | pending execution; new tests required |
-| 35-07-02 | 6 | BIT-01, BIT-02, BIT-03 | auto | Pin focused optimization/sanitizer answers and installed source facts | [35-07-02](#verify-35-07-02) | pending execution; new tests required |
-| 35-07-03 | 6 | BIT-01, BIT-02, BIT-03 | auto | Keep complete independent manifest and limit census controls current | [35-07-03](#verify-35-07-03) | pending execution; new tests required |
-| 35-08-01 | 7 | BIT-01, BIT-02, BIT-03, BIT-04 | tracer | Run Adler with its one-line shift through existing consumers | [35-08-01](#verify-35-08-01) | pending execution; new tests required |
-| 35-08-02 | 7 | BIT-01, BIT-02, BIT-03, BIT-04 | auto | Document exact operator semantics and update observed transition facts | [35-08-02](#verify-35-08-02) | pending execution; new tests required |
-| 35-08-03 | 7 | BIT-01, BIT-02, BIT-03, BIT-04 | auto | Ground scoped compatibility and coverage receipts for independent verification | [35-08-03](#verify-35-08-03) | pending execution; new tests required |
+| 35-01-01 | 1 | BIT-01, BIT-02, BIT-03, BIT-04 | tracer | Commit one source-to-C baseline path, then its complete frozen inventory | [35-01-01](#verify-35-01-01) | passed; see 35-01-SUMMARY.md |
+| 35-01-02 | 1 | BIT-01, BIT-02, BIT-03, BIT-04 | auto | Freeze route-local numeric policy and characterize recursive admission | [35-01-02](#verify-35-01-02) | passed; see 35-01-SUMMARY.md |
+| 35-02-01 | 2 | BIT-01, BIT-02, BIT-03 | tracer | Parse and format the locked grouped operator witness end to end | [35-02-01](#verify-35-02-01) | passed; see 35-02-SUMMARY.md |
+| 35-02-02 | 2 | BIT-01, BIT-02, BIT-03 | auto | Bound every scalar recursive entry and preserve recovery siblings | [35-02-02](#verify-35-02-02) | passed; see 35-02-SUMMARY.md |
+| 35-02-03 | 2 | BIT-01, BIT-02, BIT-03 | auto | Complete hex admission with exact lexical ownership | [35-02-03](#verify-35-02-03) | passed; see 35-02-SUMMARY.md |
+| 35-03-01 | 3 | BIT-01, BIT-02, BIT-03 | tracer | Check one grouped literal shift from source through canonical core | [35-03-01](#verify-35-03-01) | passed; see 35-03-SUMMARY.md |
+| 35-03-02 | 3 | BIT-01, BIT-02, BIT-03 | auto | Admit only a provably unused Byte entry without widening scalar input | [35-03-02](#verify-35-03-02) | passed; see 35-03-SUMMARY.md |
+| 35-03-03 | 3 | BIT-01, BIT-02, BIT-03 | auto | Reach independent checker result and literal-refusal mutants | [35-03-03](#verify-35-03-03) | passed; see 35-03-SUMMARY.md |
+| 35-04-01 | 4 | BIT-01, BIT-02 | tracer | Validate one raw literal shift and unused-Byte bridge through both peers | [35-04-01](#verify-35-04-01) | passed; see 35-04-SUMMARY.md |
+| 35-04-02 | 4 | BIT-01, BIT-02 | auto | Complete core field/range laws and all scalar transfer routes | [35-04-02](#verify-35-04-02) | passed; see 35-04-SUMMARY.md |
+| 35-04-03 | 4 | BIT-01, BIT-02 | auto | Complete origin laws, exact transfers and publication reachability | [35-04-03](#verify-35-04-03) | passed; see 35-04-SUMMARY.md |
+| 35-05-01 | 5 | BIT-01, BIT-02 | tracer | Execute one checked literal shift to an event-free interpreter outcome | [35-05-01](#verify-35-05-01) | passed; see 35-05-SUMMARY.md |
+| 35-05-02 | 5 | BIT-01, BIT-02 | auto | Expand literal vectors and execute the unused-Byte bridge | [35-05-02](#verify-35-05-02) | passed; see 35-05-SUMMARY.md |
+| 35-05-03 | 5 | BIT-01, BIT-02 | auto | Validate per-op causal admission and forged-event rejection | [35-05-03](#verify-35-05-03) | passed; see 35-05-SUMMARY.md |
+| 35-06-01 | 5 | BIT-01, BIT-02 | tracer | Compile one checked literal shift to its pinned native answer | [35-06-01](#verify-35-06-01) | passed; see 35-06-SUMMARY.md |
+| 35-06-02 | 5 | BIT-01, BIT-02 | auto | Census all scalar/event seams and reach unsafe generated-shift controls | [35-06-02](#verify-35-06-02) | passed; see 35-06-SUMMARY.md |
+| 35-07-01 | 6 | BIT-01, BIT-02, BIT-03 | tracer | Run the exact unused-Byte witness through both public conformance engines | [35-07-01](#verify-35-07-01) | passed; see 35-07-SUMMARY.md |
+| 35-07-02 | 6 | BIT-01, BIT-02, BIT-03 | auto | Pin focused optimization/sanitizer answers and installed source facts | [35-07-02](#verify-35-07-02) | passed; see 35-07-SUMMARY.md |
+| 35-07-03 | 6 | BIT-01, BIT-02, BIT-03 | auto | Keep complete independent manifest and limit census controls current | [35-07-03](#verify-35-07-03) | passed; see 35-07-SUMMARY.md |
+| 35-08-01 | 7 | BIT-01, BIT-02, BIT-03, BIT-04 | tracer | Run Adler with its one-line shift through existing consumers | [35-08-01](#verify-35-08-01) | passed; see 35-EVIDENCE.md |
+| 35-08-02 | 7 | BIT-01, BIT-02, BIT-03, BIT-04 | auto | Document exact operator semantics and update observed transition facts | [35-08-02](#verify-35-08-02) | passed; see 35-EVIDENCE.md |
+| 35-08-03 | 7 | BIT-01, BIT-02, BIT-03, BIT-04 | auto | Ground scoped compatibility and coverage receipts for independent verification | [35-08-03](#verify-35-08-03) | passed; see 35-EVIDENCE.md |
 
 All automated invocations use the isolated cache and 600-second Go test timeout. Inherited named selectors in plans also include the explicit 600-second Go timeout. Required native LTO/UBSan skips remain incomplete and cannot be counted as a pass.
+
+Execution update (2026-10-14): rows 35-01 through 35-07 refer to their completed plan summaries; all three 35-08 task rows have fresh focused selectors recorded in `35-EVIDENCE.md`. This task map does not mark phase-wide verification or review complete.
 
 ### Verify 35-01-01
 

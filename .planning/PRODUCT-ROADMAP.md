@@ -600,7 +600,9 @@ The current three capability slices remain bitwise main/Adler (Phase 35), import
 
 Source inspection at `83c01058` confirms that `examples/checksum/adler32.schway`
 replaces its sixteen doublings with `b << 16` and retains the final addition;
-the existing `b <= 65520` bound makes the shift exact. Fresh local selectors
+the existing `b <= 65520` bound makes the shift exact: the largest shifted
+term is 4,293,918,720, and adding the maximum `a` of 65,520 yields
+4,293,984,240. Fresh local selectors
 after the Adler change passed both imported consumers on interpreter and native
 runners, including seven independent answer rows per consumer and a reached
 copied `b << 15` wrong-result control (`150143896` versus restored `300286872`).
@@ -625,7 +627,7 @@ unmeasured.
 | Evidence kind | Status | Receipt |
 |---|---|---|
 | Source inspection | inspected | Adler bound and rewrite, current guide, manifest constraints, seed witnesses, and Dashbit appraisal were inspected; these observations do not establish execution behavior |
-| Fresh local execution | passed | On Go 1.24.0, Apple Clang 21.0.1, macOS/arm64, source revision `83c01058`: `TestPhase35ExistingAdlerAnswers` and `TestPhase35AdlerWrongShiftControl` passed after the source rewrite; `TestPhase35OperatorDocumentation` and `TestPhase35PublicDocumentValues` passed with their copied prose controls; `TestPhase35PublicConformanceWitness` passed on interpreter/native for 264 and alternate 8; `TestPhase35FocusedValueAnswers` passed with application output `264\n` on both engines. Each selector was run with `-count=1 -v -timeout=600s`; native paths ran without skips. |
+| Fresh local execution | passed | On Go 1.24.0, Apple Clang 21.0.1, macOS/arm64, checkout revision `26380801`: `TestPhase35ExistingAdlerAnswers` and `TestPhase35AdlerWrongShiftControl` passed after the source rewrite; `TestPhase35OperatorDocumentation` and `TestPhase35PublicDocumentValues` passed with their copied prose controls; `TestPhase35PublicConformanceWitness` passed on interpreter/native for 264 and alternate 8; `TestPhase35FocusedValueAnswers` passed with application output `264\n` on both engines. Each selector was run with `-count=1 -v -timeout=600s`; native paths ran without skips. |
 | Historical Phase 35-07 execution | historical | At its recorded revision `64dfec6f`, the committed 33-row fixture ran at O0/O3/O3-LTO; all 16 shift rows ran UBSan. This is historical and is not presented as a fresh receipt for this amendment. |
 | Hosted evidence | pending | Phase 38; no current hosted receipt is bound |
 | Human readability | unmeasured | No human review was run |
