@@ -5,16 +5,16 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 34
 current_phase_name: Agent Diagnostics Floor and Surface Manifest
 status: executing
-stopped_at: Completed 34-07-PLAN.md
-last_updated: "2026-10-14T00:26:57.798Z"
+stopped_at: Completed 34-08-PLAN.md; Phase 34 remains awaiting verification
+last_updated: "2026-10-14T01:11:16.083Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 33 complete, transitioned to Phase 34
-state_head: afdb1ddb3d45caa24a1015a3e808068dc6e1f88f
+state_head: ae194a952fd3406c646cdb733b45ea10bb2617a1
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 13
-  completed_plans: 12
+  completed_plans: 13
   percent: 17
 ---
 
@@ -596,6 +596,7 @@ subset alone.
 | Phase 34 P05 | 35m | 3 tasks | 43 files |
 | Phase 34 P6 | 15min | 3 tasks | 32 files |
 | Phase 34 P07 | 33min | 3 tasks | 40 files |
+| Phase 34 P08 | 32min | 3 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -805,6 +806,9 @@ decision history; they no longer describe current status.
 - [Phase 34]: Classify both surface placements as no-entry-source without widening the module-aware route set.
 - [Phase 34]: Publish only surface-manifest contexts backed by successful complete CheckCommandFile witnesses; ability derivation alone is not admission.
 - [Phase 34]: Keep the source census bounded to its seven named files and use copied-artifact drift controls with target-specific outcomes.
+- [Phase 34]: Keep BuildApplicationFile public signature and add command-result snapshot presentation for callers that need diagnostics.
+- [Phase 34]: Use captured source bytes for locatable presentation; preserve byte-only summary identity spans and byte-authorized repairs.
+- [Phase 34]: Keep z1g, trz, and z1s dormant until their named consumer triggers occur.
 
 ### Pending Todos
 
@@ -946,6 +950,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
   resolved by later M003 work. Treat those old blocker notes as historical; the
   M003 phase artifacts and audit are the current record.
 - Resolved 2026-10-10: 27.1 hosted run 38066884218 at e6ec151 failed on session meta-tests; fixed in 7936dac and run 38068888687 at 7936dac passed on both hosts (27.1-HOST-EVIDENCE.md).
+- TestVerificationGroundednessThreeClassesAreEmpty still reports stale Phase 34 research/frontier ownership at 34-RESEARCH.md lines 265, 270, 271, and 272; parent follow-up owns reconciliation and rerun.
 
 ### Roadmap Evolution
 
@@ -1050,8 +1055,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-14T00:26:57.762Z
-Stopped at: Completed 34-07-PLAN.md
+Last session: 2026-10-14T01:11:16.037Z
+Stopped at: Completed 34-08-PLAN.md; Phase 34 remains awaiting verification
 Resume file: None
 Next action: $gsd-execute-phase 34
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
