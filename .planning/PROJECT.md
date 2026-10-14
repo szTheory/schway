@@ -430,6 +430,11 @@ contract, without a speculative milestone number.
 
 ### Validated
 
+- ✓ U64 bitwise operators, literal-only shifts, hexadecimal spelling and the
+  equivalent Adler shift consumer — M007 Phase 35 (BIT-01..04). Independent
+  transfer/admission mutations and O0/O3/LTO/UBSan evidence are local; final
+  two-host receipt binding remains Phase 38.
+
 - ✓ Locatable captured-source diagnostics, bounded recovery over 20 explicitly
   reconstructed drafts, seven contextual absent-form refusals, and deterministic
   installed `schway.surface/1` discovery with independent controls — M007
@@ -765,6 +770,9 @@ Canonical planning inputs:
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Keep literal shift provenance at source checking and independently validate immediate IR laws | Raw core cannot attest which source AST produced it | Phase 35 — counts 0..63, canonical immediates, type/field/init/fresh-target checks and 26 refusal-removal controls pass |
+| Separate numeric transfer proof from causal event admission | Event-free pure operators provide no operands for causal replay | Phase 35 — 15 actual value-peer mutations plus independent engine answers; fabricated-event controls remain causal only |
+| Emit shifts through unsigned long long and cast the result to uint64_t | C promotions must not introduce signed shift behavior | Phase 35 — 33 rows at three optimization levels and 16 UBSan rows pass locally |
 | Build M001 as vertical source-to-native slices | Cross-layer feedback reveals semantic mistakes sooner than disconnected compiler layers | ✓ Good — every phase surfaced consumer gaps (e.g. 03-02's native execution-document validator) that a layered build would have hidden until integration |
 | Use Go 1.24 stdlib for Stage 0 | Fast builds, current spike evidence, simple offline onboarding, and low dependency depth | ✓ Good — zero external deps through 6 phases; `go/ast`/`go/parser` doubled as a structural-test substrate |
 | Emit readable C17 through Clang first | Exposes real ABI and optimizer behavior while keeping backend replacement reversible | ✓ Good — real `-O3`/LTO/`restrict` divergences and ASan findings only exist because the backend is real |
@@ -825,7 +833,7 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-13 after Phase 34 execution and evidence review*
+*Last updated: 2026-10-14 after Phase 35 verification*
 
 ### Phase 33 execution amendment — 2026-10-13
 
@@ -834,3 +842,17 @@ QLT-13, QLT-14, QLT-15 and EVD-16 have focused implementation witnesses: bounded
 ### Phase 34 execution amendment — 2026-10-13
 
 All eight plans are complete. Independent verification passed 38/38 truths and confirmed all 70 selected test names ran and passed. Diagnostic location is additive to byte identity, recovery is bounded to the reconstructed corpus, and installed surface discovery has independent checked witnesses and reached drift controls. The three source-review warnings and CLI copy warning are fixed. No new dependency, backend, broader query framework, native semantic widening or hosted binding is claimed. Dynamic-shift refusal stays with Phase 35/BIT-02. The current three next capabilities and seed dispositions are in `phases/34-agent-diagnostics-floor-and-surface-manifest/34-TRANSITION-CHECK.md`.
+
+### Phase 35 completion amendment — 2026-10-14
+
+All eight plans are complete; canonical verification passes 38/38 unique truths
+(39 declared entries with one duplicate), all four BIT requirements, 48 artifacts
+and 24 key links. Fresh checks caught 15 arithmetic mutants and 26 admission
+controls; native O0/O3/O3-LTO exercised 33 independent vectors and UBSan exercised
+16 shifts without skips. Review is clean and all 24 L1 threats are closed.
+Formatter token separation, grouped-negative refusals, prior-write shift target
+admission and inherited inventories were repaired. No dependency or backend was
+added. The current next capabilities and dormant seed dispositions are in
+`phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-TRANSITION-CHECK.md`.
+Phase 36 discussion is next; Phase 38 retains final hosted evidence ownership.
+Earlier source-bound reports for 33/34 require successor refresh, not plan replay.

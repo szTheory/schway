@@ -2,21 +2,21 @@
 gsd_state_version: "1.0"
 milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
-current_phase: 35
-current_phase_name: Bitwise Operators, Literal Shifts, and Hex Literals
-current_plan: 8
-status: verifying
-stopped_at: Completed 35-08-PLAN.md
-last_updated: "2026-10-14T21:48:59.174Z"
+current_phase: 36
+current_phase_name: Scalar Helper Calls
+current_plan: Not started
+status: planning
+stopped_at: Phase 35 complete and verified; ready to discuss Phase 36
+last_updated: "2026-10-14T23:34:52.851Z"
 last_activity: 2026-10-14
-last_activity_desc: Phase 35 Plan 35-02 complete; Plan 35-03 is next
-state_head: 6cb2ca5ce5d029135a1529bc7961c99e090c3d11
+last_activity_desc: Phase 35 complete, transitioned to Phase 36
+state_head: 84b7e75ca11d8e5849b6f5b2a62c9c3ea622fa59
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 21
   completed_plans: 21
-  percent: 33
+  percent: 50
 ---
 
 <!-- schway-current:start -->
@@ -57,7 +57,7 @@ See: .planning/PROJECT.md (updated 2026-10-13)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 35 — Bitwise Operators, Literal Shifts, and Hex Literals
+**Current focus:** Phase 36 — Scalar Helper Calls
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -125,13 +125,13 @@ plans.
 
 ## Current Position
 
-Phase: 35 (Bitwise Operators, Literal Shifts, and Hex Literals)
-Current Plan: 8
-Total Plans in Phase: 8
-Status: Phase complete — ready for verification
-Last activity: 2026-10-14 — Phase 35 Plan 35-02 complete; Plan 35-03 is next
+Phase: 36 — Scalar Helper Calls
+Current Plan: Not started
+Total Plans in Phase: 0
+Status: Ready to plan
+Last activity: 2026-10-14 — Phase 35 complete, transitioned to Phase 36
 
-Progress: [███░░░░░░░] 33%
+Progress: [█████░░░░░] 50%
 
 ## M007 Planning
 
@@ -289,7 +289,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 308
+- Total plans completed: 316
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -316,6 +316,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 32.1 | 11 | - | - |
 | 33 | 5 | - | - |
 | 34 | 8 | - | - |
+| 35 | 8 | - | - |
 
 The archived aggregate preserves the cumulative project total. The detailed
 rows above are the M004 subset; do not recompute the project total from that
@@ -844,6 +845,8 @@ decision history; they no longer describe current status.
 - [Phase 35]: Use bounded b << 16 for Adler while preserving final addition and every expected answer.
 - [Phase 35]: Separate fresh local checks, source inspection, historical receipts, and incomplete lanes; causal evidence does not prove numeric answers.
 - [Phase 35]: Keep descriptor-less prohibitions pending independent verification without inventing descriptors or human approval.
+- [Phase 35]: BIT-01..04 complete: defined U64 bitwise/literal shifts/hex and equivalent Adler rewrite; next feature is Phase 36 Scalar Helper Calls. — Canonical verification passes 38 unique truths; 33/34 report refreshes preserve completed plans and UAT.
+- [Phase 35]: Keep source literal authority, raw immediate laws, value transfer proof and causal event admission separate. — Fresh 15 transfer mutants and 26 refusal controls catch implementation defects without new runtime events.
 
 ### Pending Todos
 
@@ -1090,10 +1093,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-14T21:48:59.126Z
-Stopped at: Completed 35-08-PLAN.md
+Last session: 2026-10-14T23:33:50.843Z
+Stopped at: Phase 35 complete and verified; ready to discuss Phase 36
 Resume file: None
-Next action: $gsd-execute-phase 35
+Next action: $gsd-discuss-phase 36
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
