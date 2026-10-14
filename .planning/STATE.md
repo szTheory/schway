@@ -5,11 +5,11 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 35
 current_phase_name: Bitwise Operators, Literal Shifts, and Hex Literals
 status: planning
-stopped_at: Phase 34 complete, ready to plan Phase 35
-last_updated: "2026-10-14T02:15:42.043Z"
+stopped_at: Phases 33 and 34 complete with fresh verification; ready to discuss Phase 35
+last_updated: "2026-10-14T02:43:04.394Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 34 complete, transitioned to Phase 35
-state_head: 251035d542fe9f7a3ae00d7520a27f6aac02b070
+state_head: 93a482b2491805bd96d645f23832e2826a0211bb
 progress:
   total_phases: 6
   completed_phases: 2
@@ -56,7 +56,7 @@ See: .planning/PROJECT.md (updated 2026-10-13)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 35 — Bitwise Operators, Literal Shifts, and Hex Literals (after the Phase 33 successor-stale verification refresh)
+**Current focus:** Phase 35 — Bitwise Operators, Literal Shifts, and Hex Literals
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -1056,8 +1056,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-14T01:11:16.037Z
-Stopped at: Phase 34 complete, ready to plan Phase 35
+Last session: 2026-10-14T02:43:04.347Z
+Stopped at: Phases 33 and 34 complete with fresh verification; ready to discuss Phase 35
 Resume file: None
 Next action: $gsd-execute-phase 34
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
@@ -1239,7 +1239,7 @@ plans, or reopen Phase 25 implementation.
 
 ## Operator Next Steps
 
-- Phase 34 is complete. Refresh the successor-stale Phase 33 report through `$gsd-execute-phase 33` without replaying plans, then discuss Phase 35.
+- Phases 33 and 34 are complete with canonical passed verification. Next: `$gsd-discuss-phase 35`; no Phase 35 context or plan exists yet.
 
 ### Phase 33 completion handoff — 2026-10-13
 
@@ -1254,3 +1254,9 @@ Completion returned two summary-file warnings: the path scanner treated `sh -n s
 Phase 34 is complete at canonical passed verification: 38/38 truths, all 70 selected root test names freshly executed, zero behavior-unverified truths, all review findings fixed, L1 security register closed, and compliant validation. Dynamic-shift hint remains Phase 35/BIT-02. Completion's one summary warning is a shortened `protocol/presentation.go` reference; the full `internal/compiler/protocol/presentation.go` exists and was verified. No artifact or human-UAT gap follows from that scanner warning.
 
 Routing reconciliation: the Phase 34 shared-file changes legitimately stale Phase 33's covered-input fingerprint. `init.execute-phase 33` returns zero incomplete plans; `init.progress` points to `$gsd-execute-phase 33` for verifier regeneration. This refresh is in progress; do not replay completed plans or claim a current Phase 33 verdict from its historical report. Phase 35 is the next feature phase, and no Phase 35 execution has begun. Preserve user configuration edits. M006 receipts remain historical; Phase 38 owns final hosted binding.
+
+### Phase 33 successor refresh resolution — 2026-10-13
+
+The earlier in-progress refresh note is superseded. Phase 33 now passes 60/60 must-haves, with 27 prohibitions checked and 47 distinct selected test names / 48 package-qualified executions passed. Its refreshed review is clean, prior CR-01 disposition remains fixed, validation is compliant, security has 17 authored closures, and CLI/UI applicability is recorded without a graphical claim. No implementation plan was replayed and no new source change was needed.
+
+Both canonical verification statuses are passed. `init.progress` reports two complete phases, no current phase/work in progress, and Phase 35 as the next not-started phase. Phase 34's report correctly distinguishes 70 distinct selected names from 73 package-qualified executions. The exact next action is `$gsd-discuss-phase 35`, not a repeat verification or implementation command. The temporary auto-chain flag is false; the user's two xhigh routing-effort edits remain uncommitted. No push/hosted dispatch or Phase 35 execution has begun; Phase 38 remains final hosted-receipt owner.

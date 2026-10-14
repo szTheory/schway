@@ -81,7 +81,7 @@ deferred:
 
 ### Observable Truths
 
-Statuses below cover the four roadmap success criteria plus all 34 PLAN `must_haves.truths`. Tests cited here were freshly executed as exact named selectors in the 70-selector focused run across 11 packages; a second JSON-format run recorded root `run` and `pass` events for all 70 names with no failures. The full command and package results are recorded in `34-REGRESSION.md`. No prior verification existed.
+Statuses below cover the four roadmap success criteria plus all 34 PLAN `must_haves.truths`. Tests cited here were freshly executed as 70 distinct exact named selectors across 11 packages. The retained structured verbose-run receipt records 73 package-qualified root `run` events and 73 root `pass` events: three names were selected in two packages each, so event count exceeds distinct-name count. It records 70 expected and 70 passed names, no missing selectors, and exit 0. The full command and package results are recorded in `34-REGRESSION.md`. No prior verification existed.
 
 | # | Truth | Status | Evidence |
 |---|---|---|---|
@@ -120,7 +120,7 @@ Statuses below cover the four roadmap success criteria plus all 34 PLAN `must_ha
 | P8.1 | Affected diagnostic-bearing routes present captured source locations when proven and honestly omit unavailable/global locations while preserving streams/exits and route authority. | ✓ VERIFIED | `TestPhase34SourceRoutePresentation`, `TestPhase34DiagnosticRouteInventory`; public check/build/run/app-verify and other constructor families are inventoried. |
 | P8.2 | The existing repair decoder ignores additive positions and prose, preserves eligible byte edits, and declines cross-unit changes. | ✓ VERIFIED | `TestPhase34RepairJSONCompatibility`, `TestRepairDriverDecodesNoProseFields`, `TestPhase30RepairDriverDeclinesCrossUnit`. |
 | P8.3 | Admitted source/name witnesses and successful C remain unchanged; authorized diagnostic deltas are exact and unrelated diagnostics stay fixed. | ✓ VERIFIED | `TestPhase34PreChangeCProgramGolden`, `TestPhase34BoolSpellingsRemainIdentifiers`, `TestPhase34CompatibilityDeltaLedger`. |
-| P8.4 | Final evidence names real tests/selectors; hosted receipt binding remains Phase 38 and readability/whole-loop latency are unmeasured. | ✓ VERIFIED | Fresh 70-selector focused run passed; no whole suite, native matrix, hosted dispatch or receipt binding ran. `34-REGRESSION.md` carries the exact command. |
+| P8.4 | Final evidence names real tests/selectors; hosted receipt binding remains Phase 38 and readability/whole-loop latency are unmeasured. | ✓ VERIFIED | Fresh run of 70 distinct named selectors passed; no whole suite, native matrix, hosted dispatch or receipt binding ran. `34-REGRESSION.md` carries the exact command. |
 | P8.5 | All three dormant seeds retain scoped dispositions and the eight-slice plan includes both runnable check and source-free discovery. | ✓ VERIFIED | `TestPhase34TransitionDocuments` checks the dated amendments; runnable gains are covered by `TestPhase34SourceRoutePresentation` and `TestPhase34SurfaceRoute`. |
 | P8.6 | Both living-document amendments retain the three capability fields, seed dispositions and honest evidence statuses; targeted mutants fail for their defect. | ✓ VERIFIED | `TestPhase34TransitionDocuments` exercises field removal, changed status/disposition and evidence-overclaim controls. |
 
@@ -134,7 +134,7 @@ Statuses below cover the four roadmap success criteria plus all 34 PLAN `must_ha
 
 ## Required Artifacts
 
-The eight `verify.artifacts` queries passed every declared artifact (57/57 declarations; duplicates across plans were checked in each plan). The path groups below match each plan's `files_modified` inventory; all were present and substantive. The 70 named selectors below exercise their behavior, rather than treating file existence as proof.
+The eight `verify.artifacts` queries passed every declared artifact (57/57 declarations; duplicates across plans were checked in each plan). The path groups below match each plan's `files_modified` inventory; all were present and substantive. The 70 distinct named selectors below exercise their behavior, rather than treating file existence as proof.
 
 | Artifact group | Expected | Status | Details |
 |---|---|---|---|
@@ -183,7 +183,7 @@ The manifest intentionally describes checked contexts, not reachability of every
 
 | Behavior | Command / named test | Result | Status |
 |---|---|---|---|
-| 70 focused selectors across 11 packages, including all phase-34 named checks and prior-phase compatibility controls | Exact anchored-selector command in `34-REGRESSION.md`, run with `GOCACHE=/tmp/ai-lang-verification-gocache`, `-count=1`; repeated in `-json` mode for per-test event validation | `-v` run exited 0; JSON audit recorded 70 root `run`, 70 root `pass`, zero missing/not-passed/failure names | ✓ PASS |
+| 70 distinct focused selectors across 11 packages, including all phase-34 named checks and prior-phase compatibility controls | Exact anchored-selector command in `34-REGRESSION.md`, run with `GOCACHE=/tmp/ai-lang-verification-gocache`, `-count=1` | Structured receipt shows exit 0, 70 expected/passed distinct names and no missing selectors. Its verbose output contains 73 package-qualified root `run` and 73 root `pass` records; `TestPhase34SourceRoutePresentation` and `TestPhase34DiagnosticRouteInventory` each run in `cmd/schway` and `internal/compiler/session`, while `TestPhase34UnsupportedSurfaceRefusals` runs in `internal/compiler/check` and `internal/compiler/syntax`. | ✓ PASS |
 | UTF-8/CRLF/EOF location mapping, snippets and JSON source exclusion | `TestPhase34DiagnosticLocations`, `TestPhase34HumanSnippetRendering`, `TestPhase34CheckDiagnosticPresentation` | All passed in the focused run | ✓ PASS |
 | Snapshot immutability, imported source attribution and route presentation | `TestPhase34PresentationUsesCapturedSource`, `TestPhase34ImportedDiagnosticPresentation`, `TestPhase34SourceRoutePresentation`, `TestPhase34DiagnosticRouteInventory` | All passed in the focused run | ✓ PASS |
 | One-cause recovery, independent causes, lossless source and mutation controls | `TestPhase34RecoveryCorpus`, `TestPhase34RecoveryControls`, `TestSkippedRegionCauseSeparatesSpiralTrio` | All passed in the focused run | ✓ PASS |
