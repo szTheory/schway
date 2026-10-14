@@ -59,7 +59,9 @@ func ExplainCommandFile(path, diagnosticID string, depth int) (protocol.Result, 
 		return protocol.Result{}, err
 	}
 	parsed := syntax.Parse(source)
-	result := protocol.New("explain", protocol.StatusPass)
+	result := protocol.WithPresentation(protocol.New("explain", protocol.StatusPass), protocol.PresentationContext{Sources: map[string]protocol.CapturedSource{
+		"": {Label: path, Bytes: source},
+	}})
 
 	diagnostics := parsed.Diagnostics
 	work := 1

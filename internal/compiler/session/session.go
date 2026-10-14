@@ -25,6 +25,7 @@ import (
 	"github.com/szTheory/schway/internal/compiler/evidence"
 	"github.com/szTheory/schway/internal/compiler/execution"
 	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/modload"
 	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/originvalidate"
 	"github.com/szTheory/schway/internal/compiler/pathoracle"
@@ -819,6 +820,7 @@ func FormatCommandFile(path string, checkOnly bool) (protocol.Result, error) {
 	if len(formatted.Diagnostics) > 0 {
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = formatted.Diagnostics
+		result = commandWithSourceDiagnostics(result, path, formatted.Source)
 		return completeCommand(result, started, 1), nil
 	}
 	if checkOnly && !bytes.Equal(formatted.Source, formatted.Canonical) {
@@ -1709,6 +1711,7 @@ func EvidenceCommandFile(ctx context.Context, path string) (evidence.Product, pr
 	if len(diagnostics) > 0 {
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = diagnostics
+		result = commandWithSourceDiagnostics(result, path, source)
 		return evidence.Product{}, completeCommand(result, started, 1), nil
 	}
 	result.Evidence = &protocol.EvidenceSummary{Schema: product.Manifest.Schema, ID: product.Manifest.ID, Digest: evidence.ContentDigest(product.ManifestBytes)}
@@ -1763,6 +1766,7 @@ func InterfaceExportCommandFile(sourcePath, outPath string) (protocol.Result, er
 	if len(checked.Diagnostics) > 0 {
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = checked.Diagnostics
+		result = commandWithSourceDiagnostics(result, sourcePath, source)
 		return completeCommand(result, started, checked.Work), nil
 	}
 	validated := corevalidate.Validate(checked.Program)
@@ -1776,6 +1780,7 @@ func InterfaceExportCommandFile(sourcePath, outPath string) (protocol.Result, er
 		}
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = []diagnostic.Diagnostic{diag}
+		result = commandWithSourceDiagnostics(result, sourcePath, source)
 		return completeCommand(result, started, checked.Work), nil
 	}
 	checked.Program = validated.Program()
@@ -1818,6 +1823,7 @@ func InterfaceCoreCommandFile(sourcePath, outPath string) (protocol.Result, erro
 	if len(checked.Diagnostics) > 0 {
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = checked.Diagnostics
+		result = commandWithSourceDiagnostics(result, sourcePath, source)
 		return completeCommand(result, started, checked.Work), nil
 	}
 	validated := corevalidate.Validate(checked.Program)
@@ -1831,6 +1837,7 @@ func InterfaceCoreCommandFile(sourcePath, outPath string) (protocol.Result, erro
 		}
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = []diagnostic.Diagnostic{diag}
+		result = commandWithSourceDiagnostics(result, sourcePath, source)
 		return completeCommand(result, started, checked.Work), nil
 	}
 	program := validated.Program()
@@ -1913,6 +1920,7 @@ func DebugMapCommandFile(path, query string) (protocol.Result, error) {
 		if len(parsed.Diagnostics) > 0 {
 			result.Status = protocol.StatusInvalid
 			result.Diagnostics = parsed.Diagnostics
+			result = commandWithLoadedSourceDiagnostics(result, set, path)
 			return completeCommand(result, started, 1), nil
 		}
 		parsedProgram = parsed.Program
@@ -1930,6 +1938,7 @@ func DebugMapCommandFile(path, query string) (protocol.Result, error) {
 	if len(checked.Diagnostics) > 0 {
 		result.Status = protocol.StatusInvalid
 		result.Diagnostics = checked.Diagnostics
+		result = commandWithLoadedSourceDiagnostics(result, set, path)
 		return completeCommand(result, started, checked.Work), nil
 	}
 	validated := corevalidate.Validate(checked.Program)
@@ -1993,6 +2002,41 @@ func readBoundedFile(path string, limit int) ([]byte, error) {
 	}
 	defer file.Close()
 	return io.ReadAll(io.LimitReader(file, int64(limit)+1))
+}
+
+func commandWithSourceDiagnostics(result protocol.Result, label string, source []byte) protocol.Result {
+	context := protocol.PresentationContext{Sources: map[string]protocol.CapturedSource{
+		"": {Label: label, Bytes: source},
+	}}
+	if markLocatedDiagnostics(&result, context) {
+		return protocol.WithPresentation(result, context)
+	}
+	return result
+}
+
+func commandWithLoadedSourceDiagnostics(result protocol.Result, set modload.Set, entryLabel string) protocol.Result {
+	presentation := presentationFromLoaded(set, entryLabel)
+	if presentation != nil && markLocatedDiagnostics(&result, *presentation) {
+		return protocol.WithPresentation(result, *presentation)
+	}
+	return result
+}
+
+func markLocatedDiagnostics(result *protocol.Result, context protocol.PresentationContext) bool {
+	located := false
+	for index := range result.Diagnostics {
+		problem := &result.Diagnostics[index]
+		source, ok := context.Sources[problem.Unit]
+		if !ok {
+			continue
+		}
+		span := problem.Primary
+		if problem.SourcePosition || (span.Start >= 0 && span.End > span.Start && span.End <= len(source.Bytes)) {
+			problem.SourcePosition = true
+			located = true
+		}
+	}
+	return located
 }
 
 func commandProblem(command, status, code, message string) protocol.Result {

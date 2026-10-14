@@ -201,8 +201,8 @@ func TestPhase34DiagnosticRouteInventory(t *testing.T) {
 	// Imported debug-map errors use the loader's captured module bytes and
 	// relative label exactly once.
 	entry := writeModuleFixture(t, map[string]string{
-		"main.schway": "module app.main\nimport lib { fn relay }\nexport { fn main }\nfn main(n: U64) -> U64 { relay(n) }\n",
-		"lib.schway":  "module lib\nexport { fn relay }\nfn relay(n: U64) -> U64 { missing_name }\n",
+		"main.schway": "module app.main\n\nimport lib {\n  fn relay\n}\n\nexport {\n  fn main\n}\n\nfn main(n: U64) -> U64 {\n  let r = relay(n)\n  r\n}\n",
+		"lib.schway":  "module lib\n\nexport {\n  fn relay\n}\n\nfn relay(n: U64) -> U64 {\n  let r = missing_name\n  r\n}\n",
 	})
 	reads := map[string]int{}
 	restoreReads := modload.SetReadObserverForTest(func(module string) { reads[module]++ })

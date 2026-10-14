@@ -62,22 +62,29 @@ var queryKindVocabulary = map[string]bool{
 // the work it recomputed.
 type queryVocabularyResolver func(path, address string) ([]protocol.QueryFact, int, error)
 
+type queryVocabularyPresentationResolver func(path, address string) ([]protocol.QueryFact, int, *protocol.PresentationContext, error)
+
+type queryVocabularyRoute struct {
+	resolve          queryVocabularyResolver
+	resolvePresented queryVocabularyPresentationResolver
+}
+
 // queryVocabularyDispatch is the single source of truth for "which of the
 // five vocabularies handles this address" -- classifyQueryVocabulary picks
 // a key from this map's key set, and TestQueryMintsNoSixthVocabulary proves
 // the two never drift apart.
-var queryVocabularyDispatch = map[string]queryVocabularyResolver{
-	QueryVocabularyDiagnostic: resolveQueryDiagnosticFacts,
-	QueryVocabularyDebugMap:   resolveQueryDebugMapFacts,
-	QueryVocabularyEvidence:   resolveQueryEvidenceFacts,
-	QueryVocabularyControl: func(_, address string) ([]protocol.QueryFact, int, error) {
+var queryVocabularyDispatch = map[string]queryVocabularyRoute{
+	QueryVocabularyDiagnostic: {resolvePresented: resolveQueryDiagnosticFactsPresented},
+	QueryVocabularyDebugMap:   {resolve: resolveQueryDebugMapFacts},
+	QueryVocabularyEvidence:   {resolve: resolveQueryEvidenceFacts},
+	QueryVocabularyControl: {resolve: func(_, address string) ([]protocol.QueryFact, int, error) {
 		facts, work := resolveQueryControlFacts(address)
 		return facts, work, nil
-	},
-	QueryVocabularyLane: func(path, address string) ([]protocol.QueryFact, int, error) {
+	}},
+	QueryVocabularyLane: {resolve: func(path, address string) ([]protocol.QueryFact, int, error) {
 		facts, work := resolveQueryLaneFacts(path, address)
 		return facts, work, nil
-	},
+	}},
 }
 
 // classifyQueryVocabulary recognizes an address's vocabulary by prefix or
@@ -141,12 +148,17 @@ func QueryCommandFile(path, address string, options QueryOptions) (protocol.Resu
 	}
 
 	category := classifyQueryVocabulary(address)
-	resolver, ok := queryVocabularyDispatch[category]
+	route, ok := queryVocabularyDispatch[category]
 	var facts []protocol.QueryFact
 	var work int
+	var presentation *protocol.PresentationContext
 	var err error
 	if ok {
-		facts, work, err = resolver(path, address)
+		if route.resolvePresented != nil {
+			facts, work, presentation, err = route.resolvePresented(path, address)
+		} else {
+			facts, work, err = route.resolve(path, address)
+		}
 	} else {
 		// Structurally unreachable: classifyQueryVocabulary only ever
 		// returns keys present in queryVocabularyDispatch. Kept as an
@@ -172,6 +184,9 @@ func QueryCommandFile(path, address string, options QueryOptions) (protocol.Resu
 	result.Query = &protocol.QuerySummary{
 		Schema: protocol.QuerySchema, Query: address, Facts: page, NextCursor: nextCursor, Truncated: truncated,
 	}
+	if presentation != nil {
+		result = protocol.WithPresentation(result, *presentation)
+	}
 	return completeCommand(result, started, work+len(page)), nil
 }
 
@@ -187,10 +202,16 @@ func unrecognizedQueryFact(address string) protocol.QueryFact {
 // job); query answers "what facts exist at this address," not "how are they
 // related."
 func resolveQueryDiagnosticFacts(path, address string) ([]protocol.QueryFact, int, error) {
+	facts, work, _, err := resolveQueryDiagnosticFactsPresented(path, address)
+	return facts, work, err
+}
+
+func resolveQueryDiagnosticFactsPresented(path, address string) ([]protocol.QueryFact, int, *protocol.PresentationContext, error) {
 	source, err := readBoundedFile(path, syntax.MaxSourceBytes)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, nil, err
 	}
+	presentation := &protocol.PresentationContext{Sources: map[string]protocol.CapturedSource{"": {Label: path, Bytes: source}}}
 	parsed := syntax.Parse(source)
 	diagnostics := parsed.Diagnostics
 	work := 1
@@ -201,7 +222,7 @@ func resolveQueryDiagnosticFacts(path, address string) ([]protocol.QueryFact, in
 	}
 	target, found := findExplainDiagnostic(diagnostics, address)
 	if !found {
-		return []protocol.QueryFact{{ID: address, Kind: "diagnostic", Vocabulary: QueryVocabularyDiagnostic, Availability: string(debugmap.NotCaptured)}}, work, nil
+		return []protocol.QueryFact{{ID: address, Kind: "diagnostic", Vocabulary: QueryVocabularyDiagnostic, Availability: string(debugmap.NotCaptured)}}, work, presentation, nil
 	}
 	primary := target.Primary
 	facts := []protocol.QueryFact{{
@@ -218,7 +239,7 @@ func resolveQueryDiagnosticFacts(path, address string) ([]protocol.QueryFact, in
 			Span: cause.Span, Vocabulary: QueryVocabularyDiagnostic, Availability: availability,
 		})
 	}
-	return facts, work + len(target.Causes), nil
+	return facts, work + len(target.Causes), presentation, nil
 }
 
 // --- debugmap vocabulary (core_id / operation_id / point_id) -------------
