@@ -1,0 +1,34 @@
+{
+  "command": "GOCACHE=/tmp/ai-lang-verification-gocache /opt/homebrew/opt/python@3.14/bin/python3.14 /tmp/schway-go-junit.py --record .planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-summary-groundedness.json --target TestSummaryCoverageGroundedness --target-file internal/compiler/session/summary_coverage_test.go --expected 'The new Plan 07 summary uses valid coverage metadata grounded in actual named test selectors and passing evidence.' -- go test -json ./internal/compiler/session -run '^TestSummaryCoverageGroundedness$' -count=1 -v",
+  "exitCode": 0,
+  "output": "<testsuites tests=\"1\" failures=\"0\"><testsuite name=\"github.com/szTheory/schway/internal/compiler/session\" tests=\"1\" failures=\"0\" skipped=\"0\"><testcase classname=\"github.com/szTheory/schway/internal/compiler/session\" name=\"TestSummaryCoverageGroundedness\" time=\"0.12\"><system-out>=== RUN   TestSummaryCoverageGroundedness\n    summary_coverage_test.go:169: summary coverage: 34 SUMMARYs from phase 32 on checked\n--- PASS: TestSummaryCoverageGroundedness (0.12s)\n</system-out></testcase><system-out>PASS\nok  \tgithub.com/szTheory/schway/internal/compiler/session\t0.124s\n</system-out></testsuite></testsuites>\n",
+  "targetTest": "TestSummaryCoverageGroundedness",
+  "targetFile": "internal/compiler/session/summary_coverage_test.go",
+  "expected": "The new Plan 07 summary uses valid coverage metadata grounded in actual named test selectors and passing evidence.",
+  "actual": "=== RUN   TestSummaryCoverageGroundedness\n    summary_coverage_test.go:169: summary coverage: 34 SUMMARYs from phase 32 on checked\n--- PASS: TestSummaryCoverageGroundedness (0.12s)\n",
+  "reportPath": "/Users/jon/projects/schway/.planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-summary-groundedness.junit.xml",
+  "runStartedAt": "2026-10-14T00:26:11.332484+00:00",
+  "reportModifiedAt": "2026-10-14T00:26:12.309936+00:00",
+  "durationMs": 973.1361669837497,
+  "rawGoJSON": "{\"Time\":\"2026-10-13T20:26:12.155691-04:00\",\"Action\":\"start\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\"}\n{\"Time\":\"2026-10-13T20:26:12.162129-04:00\",\"Action\":\"run\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestSummaryCoverageGroundedness\"}\n{\"Time\":\"2026-10-13T20:26:12.162155-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestSummaryCoverageGroundedness\",\"Output\":\"=== RUN   TestSummaryCoverageGroundedness\\n\"}\n{\"Time\":\"2026-10-13T20:26:12.279389-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestSummaryCoverageGroundedness\",\"Output\":\"    summary_coverage_test.go:169: summary coverage: 34 SUMMARYs from phase 32 on checked\\n\"}\n{\"Time\":\"2026-10-13T20:26:12.279463-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestSummaryCoverageGroundedness\",\"Output\":\"--- PASS: TestSummaryCoverageGroundedness (0.12s)\\n\"}\n{\"Time\":\"2026-10-13T20:26:12.279479-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Test\":\"TestSummaryCoverageGroundedness\",\"Elapsed\":0.12}\n{\"Time\":\"2026-10-13T20:26:12.279502-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"PASS\\n\"}\n{\"Time\":\"2026-10-13T20:26:12.280283-04:00\",\"Action\":\"output\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Output\":\"ok  \\tgithub.com/szTheory/schway/internal/compiler/session\\t0.124s\\n\"}\n{\"Time\":\"2026-10-13T20:26:12.280345-04:00\",\"Action\":\"pass\",\"Package\":\"github.com/szTheory/schway/internal/compiler/session\",\"Elapsed\":0.125}\n",
+  "rawStderr": "",
+  "reporter": "/private/tmp/schway-go-junit.py",
+  "reporterSource": {
+    "path": "/tmp/schway-go-junit.py",
+    "sha256": "69752666215dd93d8d1a65b6dbd8544e205c2aacb7cb95c7f408101f0b7f5106",
+    "kind": "standard-library execution reporter"
+  },
+  "freshness": {
+    "runStartedAt": "2026-10-14T00:26:11.332484+00:00",
+    "reportModifiedAt": "2026-10-14T00:26:12.309936+00:00",
+    "reportNewerThanRunStart": true
+  },
+  "semanticAssessment": {
+    "result": "pass",
+    "reason": "The focused groundedness test found the new Plan 07 SUMMARY coverage metadata valid against its actual named selectors and passing evidence."
+  },
+  "matchedTests": [
+    "TestSummaryCoverageGroundedness"
+  ],
+  "matchedTestCount": 1
+}

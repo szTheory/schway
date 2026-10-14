@@ -1,0 +1,6 @@
+<testsuites tests="1" failures="0"><testsuite name="github.com/szTheory/schway/internal/compiler/session" tests="1" failures="0" skipped="0"><testcase classname="github.com/szTheory/schway/internal/compiler/session" name="TestSummaryCoverageGroundedness" time="0.12"><system-out>=== RUN   TestSummaryCoverageGroundedness
+    summary_coverage_test.go:169: summary coverage: 34 SUMMARYs from phase 32 on checked
+--- PASS: TestSummaryCoverageGroundedness (0.12s)
+</system-out></testcase><system-out>PASS
+ok  	github.com/szTheory/schway/internal/compiler/session	0.124s
+</system-out></testsuite></testsuites>
