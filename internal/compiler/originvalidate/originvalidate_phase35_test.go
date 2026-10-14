@@ -127,12 +127,29 @@ func TestPhase35ShiftImmediateAdmission(t *testing.T) {
 		{name: "wrong result type", edit: func(function *core.Function, op *core.LinearOperation) {
 			op.TypeID = phase35OriginTypeID(t, function, "Bool")
 		}, want: "core.scalar_operation_invalid"},
-		{name: "parameter target", edit: func(function *core.Function, op *core.LinearOperation) { op.TargetID = function.Parameter.ID }, want: "core.scalar_operation_invalid"},
-		{name: "source aliases target", edit: func(_ *core.Function, op *core.LinearOperation) { op.TargetID = op.SourceID }, want: "core.scalar_operation_invalid"},
+		{name: "wrong result place type", edit: func(function *core.Function, op *core.LinearOperation) {
+			for index := range function.Linear.Places {
+				if function.Linear.Places[index].ID == op.TargetID {
+					function.Linear.Places[index].TypeID = phase35OriginTypeID(t, function, "Bool")
+					phase35OriginRewireShiftConsumers(function, op.TargetID, inputID)
+					return
+				}
+			}
+			t.Fatalf("shift target %q is absent", op.TargetID)
+		}, want: "core.scalar_operation_invalid"},
+		{name: "parameter target", edit: func(function *core.Function, op *core.LinearOperation) {
+			phase35OriginRewireShiftConsumers(function, op.TargetID, function.Parameter.ID)
+			op.TargetID = function.Parameter.ID
+		}, want: "core.scalar_operation_invalid"},
+		{name: "source aliases target", edit: func(function *core.Function, op *core.LinearOperation) {
+			phase35OriginRewireShiftConsumers(function, op.TargetID, op.SourceID)
+			op.TargetID = op.SourceID
+		}, want: "core.scalar_operation_invalid"},
 		{name: "uninitialized U64 source", edit: func(function *core.Function, op *core.LinearOperation) {
 			placeID := function.ID + ":place:" + strconv.Itoa(len(function.Linear.Places))
 			function.Linear.Places = append(function.Linear.Places, core.Place{ID: placeID, TypeID: phase35OriginTypeID(t, function, "U64")})
 			op.SourceID = placeID
+			function.Linear.Operations[returnIndex].SourceID = inputID
 		}, want: "core.scalar_analysis_invalid"},
 		{name: "store field", edit: func(_ *core.Function, op *core.LinearOperation) { op.StoreTargetID = inputID }, want: "core.scalar_operation_invalid"},
 		{name: "edge field", edit: func(_ *core.Function, op *core.LinearOperation) { op.TrueEdgeID = "forged-edge" }, want: "core.scalar_operation_invalid"},
@@ -150,13 +167,25 @@ func TestPhase35ShiftImmediateAdmission(t *testing.T) {
 			mutantShift := phase35OriginFindOperation(t, mutantFunction, core.OpShiftLeftU64)
 			test.edit(mutantFunction, mutantShift)
 			problems := originvalidate.PublishProblemsFor(*mutantFunction, nil)
+			if len(problems) == 0 {
+				t.Fatalf("ADMISSION_ACCEPTED: raw shift mutant was published; want refusal %q", test.want)
+			}
 			if !phase35OriginHasProblem(problems, test.want) {
-				t.Fatalf("raw shift mutant problems=%+v, want independent refusal %q; operations=%+v", problems, test.want, mutantFunction.Linear.Operations)
+				t.Fatalf("ADMISSION_DIAGNOSTIC_MISMATCH: raw shift mutant problems=%+v, want independent refusal %q; operations=%+v", problems, test.want, mutantFunction.Linear.Operations)
 			}
 		})
 	}
 	if problems := originvalidate.PublishProblemsFor(function, nil); len(problems) != 0 {
 		t.Fatalf("clean origin observation failed after copied controls: %+v", problems)
+	}
+}
+
+// Keep raw admission edits independent of a later copy/return's own laws.
+func phase35OriginRewireShiftConsumers(function *core.Function, oldTarget, replacement string) {
+	for index := range function.Linear.Operations {
+		if function.Linear.Operations[index].SourceID == oldTarget {
+			function.Linear.Operations[index].SourceID = replacement
+		}
 	}
 }
 
@@ -188,8 +217,11 @@ func TestPhase35ShiftTargetFreshness(t *testing.T) {
 					}
 				}
 				problems := originvalidate.PublishProblemsFor(*function, nil)
+				if len(problems) == 0 {
+					t.Fatalf("ADMISSION_ACCEPTED: origin published initialized shift target reuse")
+				}
 				if !phase35OriginHasProblem(problems, "core.scalar_operation_invalid") {
-					t.Fatalf("origin accepted initialized shift target reuse: problems=%+v", problems)
+					t.Fatalf("ADMISSION_DIAGNOSTIC_MISMATCH: origin target reuse problems=%+v", problems)
 				}
 			})
 		}

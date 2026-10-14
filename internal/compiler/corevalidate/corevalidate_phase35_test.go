@@ -120,12 +120,29 @@ func TestPhase35ShiftImmediateAdmission(t *testing.T) {
 		{name: "wrong result type", edit: func(function *core.Function, op *core.LinearOperation) {
 			op.TypeID = phase35TypeID(t, function, "Bool")
 		}, want: "core.scalar_operation_invalid"},
-		{name: "parameter target", edit: func(function *core.Function, op *core.LinearOperation) { op.TargetID = function.Parameter.ID }, want: "core.scalar_operation_invalid"},
-		{name: "source aliases target", edit: func(_ *core.Function, op *core.LinearOperation) { op.TargetID = op.SourceID }, want: "core.scalar_operation_invalid"},
+		{name: "wrong result place type", edit: func(function *core.Function, op *core.LinearOperation) {
+			for index := range function.Linear.Places {
+				if function.Linear.Places[index].ID == op.TargetID {
+					function.Linear.Places[index].TypeID = phase35TypeID(t, function, "Bool")
+					phase35RewireShiftConsumers(function, op.TargetID, inputID)
+					return
+				}
+			}
+			t.Fatalf("shift target %q is absent", op.TargetID)
+		}, want: "core.scalar_operation_invalid"},
+		{name: "parameter target", edit: func(function *core.Function, op *core.LinearOperation) {
+			phase35RewireShiftConsumers(function, op.TargetID, function.Parameter.ID)
+			op.TargetID = function.Parameter.ID
+		}, want: "core.scalar_operation_invalid"},
+		{name: "source aliases target", edit: func(function *core.Function, op *core.LinearOperation) {
+			phase35RewireShiftConsumers(function, op.TargetID, op.SourceID)
+			op.TargetID = op.SourceID
+		}, want: "core.scalar_operation_invalid"},
 		{name: "uninitialized U64 source", edit: func(function *core.Function, op *core.LinearOperation) {
 			placeID := function.ID + ":place:" + strconv.Itoa(len(function.Linear.Places))
 			function.Linear.Places = append(function.Linear.Places, core.Place{ID: placeID, TypeID: phase35TypeID(t, function, "U64")})
 			op.SourceID = placeID
+			function.Linear.Operations[returnIndex].SourceID = inputID
 		}, want: "core.scalar_shift_amount_invalid"},
 		{name: "store field", edit: func(_ *core.Function, op *core.LinearOperation) { op.StoreTargetID = inputID }, want: "core.scalar_operation_invalid"},
 		{name: "edge field", edit: func(_ *core.Function, op *core.LinearOperation) { op.TrueEdgeID = "forged-edge" }, want: "core.scalar_operation_invalid"},
@@ -143,13 +160,25 @@ func TestPhase35ShiftImmediateAdmission(t *testing.T) {
 			mutantShift := phase35FindOperation(t, mutantFunction, core.OpShiftLeftU64)
 			test.edit(mutantFunction, mutantShift)
 			got := Validate(mutant)
-			if got.Valid || !phase35HasCoreProblem(got.Problems, test.want) {
-				t.Fatalf("raw shift mutant verdict=%+v, want refusal %q", got, test.want)
+			if got.Valid {
+				t.Fatalf("ADMISSION_ACCEPTED: raw shift mutant was accepted; want refusal %q", test.want)
+			}
+			if !phase35HasCoreProblem(got.Problems, test.want) {
+				t.Fatalf("ADMISSION_DIAGNOSTIC_MISMATCH: raw shift mutant verdict=%+v, want refusal %q", got, test.want)
 			}
 		})
 	}
 	if got := Validate(program); !got.Valid {
 		t.Fatalf("clean raw shift failed after copied controls: %+v", got.Problems)
+	}
+}
+
+// Keep raw admission edits independent of a later copy/return's own laws.
+func phase35RewireShiftConsumers(function *core.Function, oldTarget, replacement string) {
+	for index := range function.Linear.Operations {
+		if function.Linear.Operations[index].SourceID == oldTarget {
+			function.Linear.Operations[index].SourceID = replacement
+		}
 	}
 }
 
@@ -181,8 +210,11 @@ func TestPhase35ShiftTargetFreshness(t *testing.T) {
 					}
 				}
 				got := Validate(mutant)
-				if got.Valid || !phase35HasCoreProblem(got.Problems, "core.invalid_target") {
-					t.Fatalf("initialized shift target reuse: verdict=%+v, want core.invalid_target", got)
+				if got.Valid {
+					t.Fatalf("ADMISSION_ACCEPTED: initialized shift target reuse; want core.invalid_target")
+				}
+				if !phase35HasCoreProblem(got.Problems, "core.invalid_target") {
+					t.Fatalf("ADMISSION_DIAGNOSTIC_MISMATCH: initialized shift target reuse: verdict=%+v, want core.invalid_target", got)
 				}
 			})
 		}

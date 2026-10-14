@@ -88,8 +88,11 @@ func TestPhase35ShiftAdmission(t *testing.T) {
 				t.Fatalf("%s source did not reach checking: %+v", tc.name, badParse.Diagnostics)
 			}
 			bad := Program(badParse.Program)
+			if len(bad.Diagnostics) == 0 {
+				t.Fatalf("SOURCE_ADMISSION_ACCEPTED: %s shift amount produced a checked function", tc.name)
+			}
 			if len(bad.Diagnostics) != 1 || bad.Diagnostics[0].Code != tc.code {
-				t.Fatalf("%s amount diagnostics=%+v, want exactly %q", tc.name, bad.Diagnostics, tc.code)
+				t.Fatalf("SOURCE_ADMISSION_DIAGNOSTIC_MISMATCH: %s amount diagnostics=%+v, want exactly %q", tc.name, bad.Diagnostics, tc.code)
 			}
 			if tc.code == refusal.Code && bad.Diagnostics[0].Message != refusal.Hint {
 				t.Fatalf("%s shift refusal message=%q, want catalog hint %q", tc.name, bad.Diagnostics[0].Message, refusal.Hint)
