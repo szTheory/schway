@@ -64,3 +64,14 @@ The final task-map run reached all 42 distinct requested names across eight pack
 | Threats found | 19 |
 | Closed | 19 |
 | Open | 0 |
+
+## Phase 35 successor refresh — 2026-10-14
+
+All original plans remain complete; no implementation or UAT is replayed. The
+Phase 35 final inherited regression refresh passed 94 distinct names / 98
+package-qualified executions across eleven packages with no missing/fail/skip,
+including this phase's mapped selectors. See `../35-bitwise-operators-literal-shifts-and-hex-literals/35-REGRESSION.md`.
+This refresh labels the original execution receipts historical and recomputes
+the current verification fingerprint through its canonical owner.
+
+L1 authored-register review retains every closed mitigation: bounded native capture and root/digest shell gates are byte-unchanged; source presentation and byte identity/repair authority are byte-unchanged. Shift/recovery/manifest additions have passing named independent controls and the current Phase 35 review. No new installation or accepted-risk substitution. The configured L1 zero-open short-circuit applies; this is a current source/control applicability review, not a new hosted security run.

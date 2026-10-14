@@ -119,3 +119,14 @@ Static checks: `git diff --stat -- go.mod go.sum` empty; `sh -n` on the gate scr
 ## Successor Refresh — 2026-10-13
 
 The existing compliant contract was re-audited after Phase 34 changed covered shared inputs. All 18 focused rows resolved to 47 current named tests; the exact anchored run passed across six packages with no missing selector (26.325s). No new coverage gap or test generation was needed. See `33-REFRESH-AUDIT.md`; the earlier receipts above remain historical.
+
+## Phase 35 successor refresh — 2026-10-14
+
+All original plans remain complete; no implementation or UAT is replayed. The
+Phase 35 final inherited regression refresh passed 94 distinct names / 98
+package-qualified executions across eleven packages with no missing/fail/skip,
+including this phase's mapped selectors. See `../35-bitwise-operators-literal-shifts-and-hex-literals/35-REGRESSION.md`.
+This refresh labels the original execution receipts historical and recomputes
+the current verification fingerprint through its canonical owner.
+
+State A coverage review found no additional unmapped requirement or test gap. Successor-specific syntax and inventory adaptations are explicitly bound in the Phase 35 compatibility/mutation evidence; their frozen before-state fixtures are preserved.

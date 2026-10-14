@@ -121,3 +121,14 @@ The initial 42-selector task-map receipt above remains historical. Source review
 ## Final Focused Regression Receipt
 
 After the source-review fixes and transition updates, the one-shot 70-selector command in `34-REGRESSION.md` exited 0 across 11 packages with no missing selector (23.882s wall time). It includes all original 42 task-map names, the three new consumer/guard checks, and selected relevant prior-phase controls. The original task-map receipt and parent follow-up measurements above remain historical. This final receipt does not expand the local test policy or claim hosted, human-readability or whole-loop latency evidence.
+
+## Phase 35 successor refresh — 2026-10-14
+
+All original plans remain complete; no implementation or UAT is replayed. The
+Phase 35 final inherited regression refresh passed 94 distinct names / 98
+package-qualified executions across eleven packages with no missing/fail/skip,
+including this phase's mapped selectors. See `../35-bitwise-operators-literal-shifts-and-hex-literals/35-REGRESSION.md`.
+This refresh labels the original execution receipts historical and recomputes
+the current verification fingerprint through its canonical owner.
+
+State A coverage review found no additional unmapped requirement or test gap. Successor-specific syntax and inventory adaptations are explicitly bound in the Phase 35 compatibility/mutation evidence; their frozen before-state fixtures are preserved.
