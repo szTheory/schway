@@ -1,15 +1,15 @@
 ---
 phase: "35"
 slug: bitwise-operators-literal-shifts-and-hex-literals
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: validated
+nyquist_compliant: true
+wave_0_complete: true
 created: "2026-10-14"
 ---
 
 # Phase 35 — Validation Strategy
 
-> Planning contract, not executed feature evidence. The planner fills the per-task map from final plans and preserves exact named package selectors. Research test names marked proposed are Wave 0 obligations until they exist and run.
+> Executed validation record. The per-task map preserves the exact owner selectors. The 22 task commands passed during Phase 35 execution; this audit refreshed the value-peer transfer lanes, actual implementation mutants, Phase 34 compatibility controls, and closeout evidence grounding. Historical native matrix receipts remain explicitly labeled below.
 
 ## Test Infrastructure
 
@@ -19,7 +19,7 @@ created: "2026-10-14"
 | Config | go.mod; no added test dependency |
 | Existing quick baseline | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase34PreChangeCProgramGolden|TestPhase34PreChangeCGoldenIsNotInert|TestPhase34BoolNameBaseline|TestPhase34IdentityBaseline)$' -count=1 -v -timeout=600s` |
 | Phase gate | Union of final PLAN automated named selectors; no local whole-package/project suite or broad native matrix |
-| Runtime | Unmeasured at planning; normalized commands must have a bounded 600-second timeout, with observed runtime recorded during execution |
+| Runtime | Focused command runtimes are reported in task summaries and receipts; all Go test commands are bounded by 600 seconds |
 
 ## Sampling Rate
 
@@ -31,7 +31,7 @@ created: "2026-10-14"
 
 ## Per-Task Verification Map
 
-Eight plans, 22 tasks, seven execution waves. Wave5 has disjoint 35-05/35-06; all other dependencies are sequential. Baseline commits 35-01 precede all compiler edits. 35-05 task 2 owns the example, exhaustive fixture registration and independently authored value-vectors.json; 35-07 consumes these committed artifacts only after 35-05/06 complete, with task 2 reading the literal fixture for independent engine comparators and optimization/sanitizer evidence. Both plans own nine files. This table and the commands below are exact planning obligations, not passing receipts. All new Phase35 test paths/names are pending; their first owner creates focused checks before implementation. No RED-first history is asserted.
+Eight plans, 22 tasks, seven execution waves. Wave 5 has disjoint 35-05/35-06; all other dependencies are sequential. Baseline commits 35-01 precede compiler edits. 35-05 task 2 owns the example, exhaustive fixture registration, and independently authored `value-vectors.json`; 35-07 consumes these committed artifacts after 35-05/06, reading the literal fixture for independent engine comparators and optimization/sanitizer evidence. The task rows below are execution receipts mapped to their exact owner commands and summaries, not a claim of a phase-wide review.
 
 | Task | Wave | Requirements | Task type | Behavior / owner obligation | Exact command and fails_when | Status |
 |---|---|---|---|---|---|---|
@@ -58,15 +58,15 @@ Eight plans, 22 tasks, seven execution waves. Wave5 has disjoint 35-05/35-06; al
 | 35-08-02 | 7 | BIT-01, BIT-02, BIT-03, BIT-04 | auto | Document exact operator semantics and update observed transition facts | [35-08-02](#verify-35-08-02) | passed; see 35-EVIDENCE.md |
 | 35-08-03 | 7 | BIT-01, BIT-02, BIT-03, BIT-04 | auto | Ground scoped compatibility and coverage receipts for independent verification | [35-08-03](#verify-35-08-03) | passed; see 35-EVIDENCE.md |
 
-All automated invocations use the isolated cache and 600-second Go test timeout. Inherited named selectors in plans also include the explicit 600-second Go timeout. Required native LTO/UBSan skips remain incomplete and cannot be counted as a pass.
+All automated invocations use the isolated cache and 600-second Go test timeout. The historical Phase 35-07 O0/O3/O3-LTO and UBSan lanes had no skips; this audit did not rerun that matrix. Hosted Phase 38 binding remains separate and pending.
 
-Execution update (2026-10-14): rows 35-01 through 35-07 refer to their completed plan summaries; all three 35-08 task rows have fresh focused selectors recorded in `35-EVIDENCE.md`. This task map does not mark phase-wide verification or review complete.
+Execution update (2026-10-14): all 22 task rows passed their owner selectors, with task evidence in the corresponding summaries and 35-08 receipts in `35-EVIDENCE.md`. Fresh 2026-10-14 audit reruns include the checker/corevalidate/originvalidate transfer lanes, 15 actual implementation-source mutations plus 3 no-op overlay controls, Phase 34 historical golden/admission controls, and the final evidence/summary gates. See [35-MUTATION-EVIDENCE.md](35-MUTATION-EVIDENCE.md) for exact mutation outputs and source bindings. This validation record does not mark phase-wide security review, code review, or hosted verification complete.
 
 ### Verify 35-01-01
 
 Owned files: internal/compiler/session/session_phase35_prechange_test.go, testdata/phase35/prechange-corpus.json.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase35PreChangeEmitterCorpus|TestPhase35PreChangeCorpusControls)$' -count=1 -v -timeout=600s
@@ -80,7 +80,7 @@ Acceptance: Revision-pinned source inventory equals the selected tracked corpus,
 
 Owned files: internal/compiler/check/check_phase35_baseline_test.go, internal/compiler/syntax/parser_phase35_baseline_test.go, testdata/phase35/numeric-policy-baseline.json.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/check ./internal/compiler/syntax -run '^(TestPhase35NumericPolicyBaseline|TestPhase35NestedIndexBaseline)$' -count=1 -v -timeout=600s
@@ -94,7 +94,7 @@ Acceptance: Both route policies and observed old nesting statuses are revision-p
 
 Owned files: internal/compiler/syntax/parser.go, internal/compiler/syntax/format.go, internal/compiler/surface/refusals.go, internal/compiler/syntax/parser_phase35_test.go.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/syntax -run '^(TestPhase35ScalarGrammar|TestPhase35FormatterRoundTrip|TestFormatLetBinaryExpressions)$' -count=1 -v -timeout=600s
@@ -108,7 +108,7 @@ Acceptance: AST for the locked expression and discriminating alternate grouping 
 
 Owned files: internal/compiler/syntax/parser.go, internal/compiler/surface/refusals.go, internal/compiler/syntax/parser_phase35_test.go, testdata/phase35/numeric-delta.json.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/syntax -run '^(TestPhase35ExpressionDepth|TestPhase35FormatterRoundTrip|TestPhase34RecoveryCorpus|TestPhase34RecoveryControls)$' -count=1 -v -timeout=600s
@@ -122,7 +122,7 @@ Acceptance: Named limit applies to all recursive scalar paths with exact boundar
 
 Owned files: internal/compiler/syntax/lexer.go, internal/compiler/syntax/parser.go, internal/compiler/check/check.go, internal/compiler/syntax/numeric_phase35_test.go, internal/compiler/check/check_phase35_numeric_test.go.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/syntax ./internal/compiler/check -run '^(TestPhase35NumericOwnership|TestPhase35NumericRoutePolicy|TestPhase19NumericToken|TestPhase19NumericMalformed|TestPhase19NumericLiteralRoundTrip|TestPhase19LiteralAdmission|TestPhase19LiteralRange|TestPhase19NumericRefusalFrontiers)$' -count=1 -v -timeout=600s
@@ -136,7 +136,7 @@ Acceptance: All decimal-admitted contexts gain matching valid hex values; exact 
 
 Owned files: internal/compiler/core/core.go, internal/compiler/core/core_phase35_test.go, internal/compiler/check/scalar.go, internal/compiler/check/check_phase35_test.go.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/core ./internal/compiler/check -run '^(TestPhase35CoreShape|TestPhase35ShiftAdmission|TestAllOperationKindsRegistered)$' -count=1 -v -timeout=600s
@@ -150,7 +150,7 @@ Acceptance: One complete source-to-core shift tracer passes before operator expa
 
 Owned files: internal/compiler/check/check.go, internal/compiler/check/scalar.go, internal/compiler/check/check_phase35_test.go.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/check -run '^(TestPhase35UnusedByteSourceAdmission|TestPhase35ShiftAdmission|TestPhase34BoolSpellingsRemainIdentifiers|TestPhase34CallArityBoundaries)$' -count=1 -v -timeout=600s
@@ -164,7 +164,7 @@ Acceptance: Unused Byte with U64/Bool locals lowers safely; all Byte-use forms f
 
 Owned files: internal/compiler/check/scalar.go, internal/compiler/check/check_phase35_test.go.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/check -run '^(TestPhase35ScalarTransferMutants|TestPhase35ShiftAdmission|TestPhase35UnusedByteSourceAdmission|TestPhase35NumericRoutePolicy)$' -count=1 -v -timeout=600s
@@ -178,7 +178,7 @@ Acceptance: All five exact transfer controls and separate literal/range/Byte sou
 
 Owned files: internal/compiler/corevalidate/corevalidate.go, internal/compiler/corevalidate/corevalidate_phase35_test.go, internal/compiler/originvalidate/originvalidate.go, internal/compiler/originvalidate/originvalidate_phase35_test.go.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/corevalidate ./internal/compiler/originvalidate -run '^(TestPhase35ShiftImmediateAdmission|TestPhase35UnusedByteIRAdmission)$' -count=1 -v -timeout=600s
@@ -192,7 +192,7 @@ Acceptance: One raw-core tracer passes independently through both peers; per-pee
 
 Owned files: internal/compiler/corevalidate/corevalidate.go, internal/compiler/corevalidate/corevalidate_phase35_test.go.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/corevalidate -run '^(TestPhase35ShiftImmediateAdmission|TestPhase35ScalarTransferMutants|TestPhase35AnalysisTriggers|TestPhase35UnusedByteIRAdmission|TestPhase19OpConstIndependentAdmission|TestPhase19ForgedOpConstFactsRefused)$' -count=1 -v -timeout=600s
@@ -206,7 +206,7 @@ Acceptance: Corevalidation has independent complete immediate/type/range control
 
 Owned files: internal/compiler/originvalidate/originvalidate.go, internal/compiler/originvalidate/originvalidate_phase35_test.go.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/originvalidate -run '^(TestPhase35ShiftImmediateAdmission|TestPhase35ScalarTransferMutants|TestPhase35AnalysisTriggers|TestPhase35UnusedByteIRAdmission)$' -count=1 -v -timeout=600s
@@ -220,7 +220,7 @@ Acceptance: Origin independently derives and publishes all five new operation ob
 
 Owned files: internal/compiler/interp/interp.go, internal/compiler/interp/interp_phase35_test.go, internal/compiler/pathoracle/pathoracle.go, internal/compiler/pathoracle/pathoracle_phase35_test.go.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp ./internal/compiler/pathoracle -run '^(TestPhase35BitwiseShiftVectorsEventFree|TestPhase35PureOperationAncestry)$' -count=1 -v -timeout=600s
@@ -234,7 +234,7 @@ Acceptance: One exact runtime tracer and ancestry check pass before full vector 
 
 Owned files: internal/compiler/interp/interp.go, internal/compiler/interp/interp_phase35_test.go, examples/bitwise.schway, internal/compiler/core/core_test.go, testdata/phase35/value-vectors.json.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase35BitwiseShiftVectorsEventFree|TestPhase35InterpreterWrongAnswerControls|TestPhase35UnusedByteRuntime)$' -count=1 -v -timeout=600s
@@ -248,7 +248,7 @@ Acceptance: All literal vectors and per-op wrong-answer controls execute; indepe
 
 Owned files: internal/compiler/executionpeer/executionpeer.go, internal/compiler/executionpeer/executionpeer_phase35_test.go.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/executionpeer -run '^TestPhase35PureOperationCausalControls$' -count=1 -v -timeout=600s
@@ -262,7 +262,7 @@ Acceptance: Five clean no-event admissions and ten per-op fabricated-event contr
 
 Owned files: internal/compiler/cgen/cgen.go, internal/compiler/cgen/cgen_program.go, internal/compiler/cgen/cgen_phase35_test.go.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen -run '^(TestPhase35NativeShiftTracer|TestPhase35EmitterAdmissionGates)$' -count=1 -v -timeout=600s
@@ -276,7 +276,7 @@ Acceptance: Native O0 tracer returns the independently pinned answer; three rout
 
 Owned files: internal/compiler/cgen/cgen_program.go, internal/compiler/cgen/cgen_phase35_test.go, testdata/phase35/shift-sites.json.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen -run '^(TestPhase35UnsignedShiftEmissionAndEventProjection|TestPhase35ShiftSiteControls|TestPhase35EmitterAdmissionGates|TestPhase35NativeShiftTracer)$' -count=1 -v -timeout=600s
@@ -290,7 +290,7 @@ Acceptance: Finite emitter/projection/capacity inventory is reached and independ
 
 Owned files: cmd/schway/main_phase35_test.go, internal/compiler/session/session_phase35_values_test.go.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway ./internal/compiler/session ./internal/compiler/core -run '^(TestPhase35PublicConformanceWitness|TestPhase35FocusedValueAnswers|TestPhase321RunInputRequiredCLI|TestAllOperationKindsHandledAtEverySite)$' -count=1 -v -timeout=600s
@@ -306,7 +306,7 @@ Owned files: internal/compiler/session/session_phase35_values_test.go, internal/
 
 Read-only input: testdata/phase35/value-vectors.json, created and committed by 35-05 task 2 before this dependent plan runs. Expected answers are independently authored literals, never captured from either engine or producer output.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session ./internal/compiler/surfacemanifest -run '^(TestPhase35FocusedValueAnswers|TestPhase35BitwiseOptimizationMatrix|TestPhase35ShiftUBSan|TestPhase35EngineWrongAnswerControls|TestPhase35SurfaceDocument|TestPhase34SurfaceDocument|TestPhase34SurfaceLimits)$' -count=1 -v -timeout=600s
@@ -320,7 +320,7 @@ Acceptance: Literal vectors and per-op controls pass every required local mode, 
 
 Owned files: internal/compiler/session/session_phase34_surface_test.go, internal/compiler/session/session_phase34_limit_consumers_test.go, internal/compiler/session/session_phase35_surface_test.go, testdata/phase35/surface-witnesses.json, testdata/phase35/surface-census.json.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase35SurfaceManifestWitnesses|TestPhase35SurfaceManifestCensus|TestPhase35SurfaceManifestControls|TestPhase35SurfaceLimitConsumers|TestPhase34SurfaceManifestWitnesses|TestPhase34SurfaceManifestCensus|TestPhase34SurfaceManifestControls|TestPhase34SurfaceLimitConsumers)$' -count=1 -v -timeout=600s
@@ -334,7 +334,7 @@ Acceptance: Full manifest and finite consumer census agree independently; all ol
 
 Owned files: examples/checksum/adler32.schway, internal/compiler/session/session_phase35_adler_test.go.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session ./internal/compiler/native -run '^(TestPhase35ExistingAdlerAnswers|TestPhase35AdlerWrongShiftControl|TestPhase29InterpreterFixtureVectors|TestPhase29NativeFixtureVectors|TestPhase31CaseMatrix)$' -count=1 -v -timeout=600s
@@ -348,7 +348,7 @@ Acceptance: Original Phase29 fixture and native Phase31 case matrix answers pass
 
 Owned files: docs/agent-surface.md, .planning/PRODUCT-ROADMAP.md, .planning/LANGUAGE-MATURITY.md, internal/compiler/session/session_phase35_closeout_test.go.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase35OperatorDocumentation|TestPhase35PublicDocumentValues)$' -count=1 -v -timeout=600s
@@ -362,7 +362,7 @@ Acceptance: Documented source-visible semantics are independently pinned and cop
 
 Owned files: internal/compiler/session/session_phase35_closeout_test.go, .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-COMPATIBILITY-DELTA.md, .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-EVIDENCE.md, .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VALIDATION.md.
 
-New Phase35 selectors in this command are pending creation by their first owning task; inherited names are source-grounded. Every selected top-level name must appear as RUN and PASS in the correct package. Commands assume repo root.
+Each selector below was checked in its owner package and executed; verbose output must show every selected top-level name as RUN and PASS in the correct package. Commands assume repo root.
 
 ```sh
 GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase35EvidenceGrounding|TestSummaryCoverageGroundedness|TestPhase35PreChangeEmitterCorpus|TestPhase35PreChangeCorpusControls)$' -count=1 -v -timeout=600s
@@ -370,20 +370,51 @@ GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -r
 
 fails_when: Any name is absent, an unknown/stale/kind-invalid/missing-lane/causal-numeric control passes, baseline history changes, summary refs do not resolve or a skipped required lane becomes a pass.
 
-Acceptance: All task coverage maps resolve actual tracked test names and closed kinds, baseline remains immutable, receipts are newly executed and scoped with explicit incomplete obligations.
+Acceptance: All task coverage maps resolve actual tracked test names and closed kinds, the baseline remains immutable, and execution receipts stay scoped to their declared lanes.
 
 
-The research report's example places `TestPhase31CaseMatrix` under session; actual source is `internal/compiler/native/native_phase31_matrix_test.go`. Plans must use the grounded native package, not copy the mistaken command. Test names not yet present must be clearly new artifacts, never historical passing tests.
+The research report's example places `TestPhase31CaseMatrix` under session; actual source is `internal/compiler/native/native_phase31_matrix_test.go`. The plan uses the grounded native package. Proposed research names were checked against actual owner-package tests before they were recorded as executed receipts.
+
+## 2026-10-14 audit reruns
+
+These fresh named runs exercised the three value-deriving owners after the
+independent expected-value sinks were corrected. Their earlier copied
+operation/input variants remain differential controls; they are not counted as
+implementation-source mutants. The session overlay test mutates the actual
+operator expressions in temporary source copies and checks all 15 failures at
+the peer's independent static zero-remainder sink.
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/check -run '^(TestPhase35ScalarTransferMutants|TestPhase35ShiftAdmission|TestPhase35UnusedByteSourceAdmission|TestPhase35NumericRoutePolicy)$' -count=1 -v -timeout=600s
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/corevalidate -run '^(TestPhase35ShiftImmediateAdmission|TestPhase35ScalarTransferMutants|TestPhase35AnalysisTriggers|TestPhase35UnusedByteIRAdmission|TestPhase19OpConstIndependentAdmission|TestPhase19ForgedOpConstFactsRefused)$' -count=1 -v -timeout=600s
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/originvalidate -run '^(TestPhase35ShiftImmediateAdmission|TestPhase35ScalarTransferMutants|TestPhase35AnalysisTriggers|TestPhase35UnusedByteIRAdmission)$' -count=1 -v -timeout=600s
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase35PeerTransferMutationControls$' -count=1 -v -timeout=600s
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase34PreChangeCProgramGolden|TestPhase34PreChangeCGoldenIsNotInert)$' -count=1 -v -timeout=600s
+```
+
+Every command passed. The session mutation run reported three no-op overlay
+passes and fifteen named `mutant KILLED` results. The Phase 34 adapter retained
+all frozen admission/outcome checks and exact-row hash comparisons; details are
+separately recorded in [35-MUTATION-EVIDENCE.md](35-MUTATION-EVIDENCE.md).
+
+## BIT requirement coverage cross-check
+
+| Requirement | Independently observed behavior and named owners | Audit result |
+|---|---|---|
+| BIT-01 | Grammar and grouping (`TestPhase35ScalarGrammar`); check/corevalidate/originvalidate transfer sinks and 15 actual source-mutant child failures (`TestPhase35ScalarTransferMutants`, `TestPhase35PeerTransferMutationControls`); independent interpreter/native expected answers (`TestPhase35FocusedValueAnswers`, historical `TestPhase35BitwiseOptimizationMatrix`); separate pure causal/event controls (`TestPhase35BitwiseShiftVectorsEventFree`, `TestPhase35PureOperationCausalControls`). | PASS; causal controls are not numeric evidence. |
+| BIT-02 | Source literal/range law (`TestPhase35ShiftAdmission`); independent raw-core immediate/type/range laws in corevalidate and originvalidate (`TestPhase35ShiftImmediateAdmission`); value/mode/UBSan shift evidence (`TestPhase35FocusedValueAnswers`, historical `TestPhase35BitwiseOptimizationMatrix` and `TestPhase35ShiftUBSan`); emitted C shift-site controls (`TestPhase35UnsignedShiftEmissionAndEventProjection`, `TestPhase35ShiftSiteControls`). | PASS; O0/O3/O3-LTO/UBSan receipt is historical Phase 35-07 evidence. |
+| BIT-03 | Malformed/overflow ownership and route policy (`TestPhase35NumericOwnership`, `TestPhase35NumericRoutePolicy`); frozen decimal/binary/Bool and nesting policy (`TestPhase35NumericPolicyBaseline`, `TestPhase35NestedIndexBaseline`); independent literal answers and formatter/source spelling checks (`TestPhase35FocusedValueAnswers`, `TestPhase35ScalarGrammar`). | PASS. |
+| BIT-04 | Existing checksum and `adler_low` interpreter/native expected answers plus reached wrong-shift control (`TestPhase35ExistingAdlerAnswers`, `TestPhase35AdlerWrongShiftControl`); Phase 29/31 consumer outcomes (`TestPhase29InterpreterFixtureVectors`, `TestPhase29NativeFixtureVectors`, `TestPhase31CaseMatrix`); exact source/core/C hashes (`TestPhase35EvidenceGrounding`). | PASS; consumer answer receipt is Phase 35-08 evidence. |
 
 ## Wave 0 Requirements
 
-- [ ] Immutable baseline corpus with emitting/non-emitting cases, all selected emitters and reached changed-byte control, committed before compiler changes.
-- [ ] Numeric compatibility (`010`, `0B10`, Bool names), grouped grammar, exact lexical ownership, expression depth/recovery and token/generic formatter controls.
-- [ ] Independent source/core/origin immediate-only shape/range and unused-Byte bridge controls; scalar transfer fault sinks.
-- [ ] Interpreter/native literal vectors, per-op causal event-free/forged events, evidence capacity/projection inventories and generated shift static scan mutants.
-- [ ] Focused O0/O3/LTO and UBSan feature checks, manifest admission/refusal/limit census and bidirectional controls.
-- [ ] Existing Adler/checksum/adler_low literal answers unchanged and reached wrong-shift control.
-- [ ] Exact task map, threat IDs, real test paths/names and fails_when bindings filled by final plans.
+- [x] Immutable baseline corpus with emitting/non-emitting cases, all selected emitters and reached changed-byte control, committed before compiler changes.
+- [x] Numeric compatibility (`010`, `0B10`, Bool names), grouped grammar, exact lexical ownership, expression depth/recovery and token/generic formatter controls.
+- [x] Independent source/core/origin immediate-only shape/range and unused-Byte bridge controls; scalar transfer fault sinks.
+- [x] Interpreter/native literal vectors, per-op causal event-free/forged events, evidence capacity/projection inventories and generated shift static scan mutants.
+- [x] Focused O0/O3/LTO and UBSan feature checks, manifest admission/refusal/limit census and bidirectional controls.
+- [x] Existing Adler/checksum/adler_low literal answers unchanged and reached wrong-shift control.
+- [x] Exact task map, threat IDs, real test paths/names and fails_when bindings filled by final plans.
 
 ## Manual-Only Verifications
 
@@ -391,10 +422,18 @@ None intended: the scoped contracts have deterministic proxies. Human readabilit
 
 ## Validation Sign-Off
 
-- [ ] Every task has an executable named verify or explicit Wave 0 dependency.
-- [ ] No three consecutive implementation tasks lack verification.
-- [ ] Every expected test name was executed, all fault controls reached/restored.
-- [ ] No watch mode, whole-project local test, push/dispatch or premature hosted binding.
-- [ ] Validation lifecycle changes to validated/compliant only from fresh execution evidence.
+- [x] Every task has an executable named verify or explicit Wave 0 dependency.
+- [x] No three consecutive implementation tasks lack verification.
+- [x] Every expected test name was executed, all fault controls reached/restored.
+- [x] No watch mode, whole-project local test, push/dispatch or premature hosted binding.
+- [x] Validation lifecycle changes to validated/compliant only from fresh execution evidence.
 
-**Approval:** pending execution evidence; planning artifact authorized by the user-delegated auto-advance workflow.
+**Validation sign-off (2026-10-14):** the scoped task map, requirement evidence, and Wave 0 checks are complete from executed evidence. Phase 38 hosted binding and phase-wide security/code review remain separately owned.
+
+## Validation Audit 2026-10-14
+
+| Metric | Count |
+|---|---|
+| Gaps found | 1 |
+| Resolved | 1 |
+| Escalated | 0 |
