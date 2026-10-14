@@ -1,0 +1,520 @@
+{
+  "schema": "phase35.surface-census/1",
+  "boundary": "Additive finite AST source-branch rows for Phase 35 scalar operators, checked hexadecimal literals, refusal emission, expression-depth enforcement, and their named parser consumers. Phase 34 rows remain an immutable base; the composed census covers only the exact file/function/branch sites listed and does not claim arbitrary source completeness.",
+  "files": [
+    "internal/compiler/syntax/parser.go",
+    "internal/compiler/syntax/lexer.go",
+    "internal/compiler/check/check.go",
+    "internal/compiler/check/scalar.go",
+    "internal/compiler/ability/ability.go",
+    "internal/compiler/check/check_modules_routes.go",
+    "internal/compiler/surface/refusals.go"
+  ],
+  "branches": [
+    {
+      "file": "internal/compiler/check/scalar.go",
+      "function": "expression",
+      "selector": "expr.Kind",
+      "values": [
+        "bit_and"
+      ],
+      "facet": "operator:u64.bit_and",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-bit-and"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/check/scalar.go",
+      "function": "expression",
+      "selector": "expr.Kind",
+      "values": [
+        "bit_or"
+      ],
+      "facet": "operator:u64.bit_or",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-bit-or"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/check/scalar.go",
+      "function": "expression",
+      "selector": "expr.Kind",
+      "values": [
+        "bit_xor"
+      ],
+      "facet": "operator:u64.bit_xor",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-bit-xor"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/check/scalar.go",
+      "function": "expression",
+      "selector": "expr.Kind",
+      "values": [
+        "shift_left"
+      ],
+      "facet": "operator:u64.shift_left",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-shift-left-zero"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/check/scalar.go",
+      "function": "expression",
+      "selector": "expr.Kind",
+      "values": [
+        "shift_right"
+      ],
+      "facet": "operator:u64.shift_right",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-shift-right-logical"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/surface/refusals.go",
+      "function": "refusal-catalog",
+      "selector": "code-literal",
+      "values": [
+        "surface.unsupported_expression_depth"
+      ],
+      "facet": "refusal:surface.unsupported_expression_depth",
+      "disposition": "refusal",
+      "witness_ids": [
+        "phase35-depth-65"
+      ],
+      "reason": "This selected refusal branch is pinned by its complete rejected source and literal diagnostic."
+    },
+    {
+      "file": "internal/compiler/surface/refusals.go",
+      "function": "refusal-catalog",
+      "selector": "code-literal",
+      "values": [
+        "surface.unsupported_shift_amount"
+      ],
+      "facet": "refusal:surface.unsupported_shift_amount",
+      "disposition": "refusal",
+      "witness_ids": [
+        "phase35-shift-negative",
+        "phase35-shift-nonliteral",
+        "phase35-shift-64"
+      ],
+      "reason": "This selected refusal branch is pinned by its complete rejected source and literal diagnostic."
+    },
+    {
+      "file": "internal/compiler/syntax/lexer.go",
+      "function": "numericDigit",
+      "selector": "switch-condition",
+      "values": [
+        "value >= '0' && value <= '9'"
+      ],
+      "facet": "restriction:u64_hex_spelling",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-hex-spelling"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/lexer.go",
+      "function": "numericDigit",
+      "selector": "switch-condition",
+      "values": [
+        "value >= 'A' && value <= 'F'"
+      ],
+      "facet": "restriction:u64_hex_spelling",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-hex-spelling"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/lexer.go",
+      "function": "numericDigit",
+      "selector": "switch-condition",
+      "values": [
+        "value >= 'a' && value <= 'f'"
+      ],
+      "facet": "restriction:u64_hex_spelling",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-hex-spelling"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/lexer.go",
+      "function": "validNumericLiteral",
+      "selector": "if-condition",
+      "values": [
+        "digits == \"\""
+      ],
+      "facet": "probe:phase35-hex-malformed",
+      "disposition": "refusal",
+      "witness_ids": [
+        "phase35-hex-malformed"
+      ],
+      "reason": "Empty radix digits are rejected by the complete malformed-hex source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/lexer.go",
+      "function": "validNumericLiteral",
+      "selector": "if-condition",
+      "values": [
+        "len(text) >= 2 && text[0] == '0'"
+      ],
+      "facet": "restriction:u64_hex_spelling",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-hex-spelling"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/lexer.go",
+      "function": "validNumericLiteral",
+      "selector": "if-condition",
+      "values": [
+        "value == '_'"
+      ],
+      "facet": "restriction:u64_hex_spelling",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-hex-spelling"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/lexer.go",
+      "function": "validNumericLiteral",
+      "selector": "text[1]",
+      "values": [
+        "'B'"
+      ],
+      "facet": "restriction:u64_hex_spelling",
+      "disposition": "non-surface/internal",
+      "witness_ids": [],
+      "reason": "Named exclusion: binary prefix remains outside the hexadecimal claim"
+    },
+    {
+      "file": "internal/compiler/syntax/lexer.go",
+      "function": "validNumericLiteral",
+      "selector": "text[1]",
+      "values": [
+        "'b'"
+      ],
+      "facet": "restriction:u64_hex_spelling",
+      "disposition": "non-surface/internal",
+      "witness_ids": [],
+      "reason": "Named exclusion: binary prefix remains outside the hexadecimal claim"
+    },
+    {
+      "file": "internal/compiler/syntax/lexer.go",
+      "function": "validNumericLiteral",
+      "selector": "text[1]",
+      "values": [
+        "'O'"
+      ],
+      "facet": "restriction:u64_hex_spelling",
+      "disposition": "non-surface/internal",
+      "witness_ids": [],
+      "reason": "Named exclusion: octal prefix remains rejected"
+    },
+    {
+      "file": "internal/compiler/syntax/lexer.go",
+      "function": "validNumericLiteral",
+      "selector": "text[1]",
+      "values": [
+        "'o'"
+      ],
+      "facet": "restriction:u64_hex_spelling",
+      "disposition": "non-surface/internal",
+      "witness_ids": [],
+      "reason": "Named exclusion: octal prefix remains rejected"
+    },
+    {
+      "file": "internal/compiler/syntax/lexer.go",
+      "function": "validNumericLiteral",
+      "selector": "text[1]",
+      "values": [
+        "'X'"
+      ],
+      "facet": "restriction:u64_hex_spelling",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-hex-spelling"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/lexer.go",
+      "function": "validNumericLiteral",
+      "selector": "text[1]",
+      "values": [
+        "'x'"
+      ],
+      "facet": "restriction:u64_hex_spelling",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-hex-spelling"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "consumeUnsupportedLogicalNot",
+      "selector": "p.tokens[index].Kind",
+      "values": [
+        "TokenIdentifier"
+      ],
+      "facet": "refusal:surface.unsupported_logical_not",
+      "disposition": "refusal",
+      "witness_ids": [
+        "refuse-logical-not"
+      ],
+      "reason": "Candidate token branch remains paired with the Phase 34 logical-not refusal witness."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "consumeUnsupportedLogicalNot",
+      "selector": "p.tokens[index].Kind",
+      "values": [
+        "TokenLParen"
+      ],
+      "facet": "refusal:surface.unsupported_logical_not",
+      "disposition": "refusal",
+      "witness_ids": [
+        "refuse-logical-not"
+      ],
+      "reason": "Candidate token branch remains paired with the Phase 34 logical-not refusal witness."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "consumeUnsupportedLogicalNot",
+      "selector": "p.tokens[index].Kind",
+      "values": [
+        "TokenNumber"
+      ],
+      "facet": "refusal:surface.unsupported_logical_not",
+      "disposition": "refusal",
+      "witness_ids": [
+        "refuse-logical-not"
+      ],
+      "reason": "Candidate token branch remains paired with the Phase 34 logical-not refusal witness."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "consumeUnsupportedLogicalNot",
+      "selector": "p.tokens[index].Kind",
+      "values": [
+        "TokenString"
+      ],
+      "facet": "refusal:surface.unsupported_logical_not",
+      "disposition": "refusal",
+      "witness_ids": [
+        "refuse-logical-not"
+      ],
+      "reason": "Candidate token branch remains paired with the Phase 34 logical-not refusal witness."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "discardScalarBinaryExpr",
+      "selector": "if-condition",
+      "values": [
+        "(operator.Text == \"<<\" || operator.Text == \">>\") && p.peek().Kind == TokenUnknown && p.peek().Text == \"-\""
+      ],
+      "facet": "refusal:surface.unsupported_shift_amount",
+      "disposition": "refusal",
+      "witness_ids": [
+        "phase35-shift-negative"
+      ],
+      "reason": "This selected refusal branch is pinned by its complete rejected source and literal diagnostic."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "nestedScalarExpr",
+      "selector": "if-condition",
+      "values": [
+        "p.expressionDepth >= MaxExpressionDepth"
+      ],
+      "facet": "refusal:surface.unsupported_expression_depth",
+      "disposition": "refusal",
+      "witness_ids": [
+        "phase35-depth-65"
+      ],
+      "reason": "This selected refusal branch is pinned by its complete rejected source and literal diagnostic."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "scalarBinaryExpr",
+      "selector": "if-condition",
+      "values": [
+        "(operator.Text == \"<<\" || operator.Text == \">>\") && p.peek().Kind == TokenUnknown && p.peek().Text == \"-\""
+      ],
+      "facet": "refusal:surface.unsupported_shift_amount",
+      "disposition": "refusal",
+      "witness_ids": [
+        "phase35-shift-negative"
+      ],
+      "reason": "This selected refusal branch is pinned by its complete rejected source and literal diagnostic."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "scalarBinaryOperator",
+      "selector": "kind",
+      "values": [
+        "TokenPipe"
+      ],
+      "facet": "operator:u64.bit_or",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-bit-or"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "scalarBinaryOperator",
+      "selector": "kind",
+      "values": [
+        "TokenUnknown"
+      ],
+      "facet": "operator:u64.bit_xor|operator:u64.bit_and|operator:u64.shift_left|operator:u64.shift_right",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-bit-xor",
+        "phase35-bit-and",
+        "phase35-shift-left-zero",
+        "phase35-shift-right-logical"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "scalarBinaryOperator",
+      "selector": "operator.Text",
+      "values": [
+        "&"
+      ],
+      "facet": "operator:u64.bit_and",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-bit-and"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "scalarBinaryOperator",
+      "selector": "operator.Text",
+      "values": [
+        "<<"
+      ],
+      "facet": "operator:u64.shift_left",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-shift-left-zero"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "scalarBinaryOperator",
+      "selector": "operator.Text",
+      "values": [
+        ">>"
+      ],
+      "facet": "operator:u64.shift_right",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-shift-right-logical"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "scalarBinaryOperator",
+      "selector": "operator.Text",
+      "values": [
+        "^"
+      ],
+      "facet": "operator:u64.bit_xor",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-bit-xor"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "scalarExprAtom",
+      "selector": "leftToken.Kind",
+      "values": [
+        "TokenLParen"
+      ],
+      "facet": "restriction:scalar_expression_grouping",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "phase35-grouping"
+      ],
+      "reason": "This selected source branch is admitted only with the independently authored full-source witness."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "scalarOperatorAt",
+      "selector": "if-condition",
+      "values": [
+        "operator.Kind == TokenLAngle || operator.Kind == TokenRAngle"
+      ],
+      "facet": "operator:u64.less_than|operator:u64.shift_left|operator:u64.shift_right",
+      "disposition": "admitted-with-context",
+      "witness_ids": [
+        "u64-less-operands",
+        "phase35-shift-left-zero",
+        "phase35-shift-right-logical"
+      ],
+      "reason": "The full-source witnesses pin comparison and left/right shift token combinations."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "surface-refusal-emitter",
+      "selector": "code-literal",
+      "values": [
+        "surface.unsupported_expression_depth"
+      ],
+      "facet": "refusal:surface.unsupported_expression_depth",
+      "disposition": "refusal",
+      "witness_ids": [
+        "phase35-depth-65"
+      ],
+      "reason": "This selected refusal branch is pinned by its complete rejected source and literal diagnostic."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "surface-refusal-emitter",
+      "selector": "code-literal",
+      "values": [
+        "surface.unsupported_shift_amount"
+      ],
+      "facet": "refusal:surface.unsupported_shift_amount",
+      "disposition": "refusal",
+      "witness_ids": [
+        "phase35-shift-negative",
+        "phase35-shift-nonliteral",
+        "phase35-shift-64"
+      ],
+      "reason": "This selected refusal branch is pinned by its complete rejected source and literal diagnostic."
+    }
+  ]
+}

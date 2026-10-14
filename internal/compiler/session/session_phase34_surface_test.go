@@ -34,6 +34,7 @@ type phase34SurfaceWitness struct {
 	ID                  string                      `json:"id"`
 	Facet               string                      `json:"facet"`
 	Context             string                      `json:"context"`
+	CheckRoute          string                      `json:"check_route"`
 	SourcePath          string                      `json:"source_path"`
 	Source              string                      `json:"source"`
 	Files               []phase34SurfaceWitnessFile `json:"files"`
@@ -55,11 +56,19 @@ type phase34SurfaceWitness struct {
 }
 
 type phase34SurfaceWitnessDocument struct {
-	Schema    string                  `json:"schema"`
-	Boundary  string                  `json:"boundary"`
-	Witnesses []phase34SurfaceWitness `json:"witnesses"`
-	Limits    []phase34ExpectedLimit  `json:"limits"`
-	Calls     phase34ExpectedCalls    `json:"calls"`
+	Schema     string                      `json:"schema"`
+	Boundary   string                      `json:"boundary"`
+	Witnesses  []phase34SurfaceWitness     `json:"witnesses"`
+	Limits     []phase34ExpectedLimit      `json:"limits"`
+	Calls      phase34ExpectedCalls        `json:"calls"`
+	Supersedes []phase34ScopedSupersession `json:"supersedes"`
+}
+
+type phase34ScopedSupersession struct {
+	Facet                 string   `json:"facet"`
+	PriorWitnessIDs       []string `json:"prior_witness_ids"`
+	ReplacementWitnessIDs []string `json:"replacement_witness_ids"`
+	Reason                string   `json:"reason"`
 }
 
 type phase34ExpectedLimit struct {
@@ -146,6 +155,55 @@ func phase34ReadSurfaceWitnesses(t *testing.T) phase34SurfaceWitnessDocument {
 	if document.Boundary == "" {
 		t.Fatal("surface witness document must state its finite source and input boundary")
 	}
+	additions := phase35ReadSurfaceWitnessAdditions(t)
+	for _, replacement := range additions.Supersedes {
+		if replacement.Facet == "" || replacement.Reason == "" || len(replacement.PriorWitnessIDs) == 0 || len(replacement.ReplacementWitnessIDs) == 0 {
+			t.Fatalf("Phase 35 has an incomplete scoped witness supersession: %+v", replacement)
+		}
+		prior := map[string]bool{}
+		for _, id := range replacement.PriorWitnessIDs {
+			prior[id] = true
+		}
+		found := map[string]bool{}
+		retained := document.Witnesses[:0]
+		for _, witness := range document.Witnesses {
+			if prior[witness.ID] {
+				if witness.Facet != replacement.Facet {
+					t.Fatalf("supersession %s targets prior witness %s on facet %s", replacement.Facet, witness.ID, witness.Facet)
+				}
+				found[witness.ID] = true
+				continue
+			}
+			retained = append(retained, witness)
+		}
+		if len(found) != len(prior) {
+			t.Fatalf("supersession %s did not name every existing witness: found=%v prior=%v", replacement.Facet, found, prior)
+		}
+		for _, id := range replacement.ReplacementWitnessIDs {
+			foundReplacement := false
+			for _, witness := range additions.Witnesses {
+				if witness.ID == id && witness.Facet == replacement.Facet {
+					foundReplacement = true
+				}
+			}
+			if !foundReplacement {
+				t.Fatalf("supersession %s replacement witness %s is absent or belongs to another facet", replacement.Facet, id)
+			}
+		}
+		document.Witnesses = retained
+	}
+	seen := map[string]bool{}
+	for _, witness := range append(document.Witnesses, additions.Witnesses...) {
+		if witness.ID == "" || seen[witness.ID] {
+			t.Fatalf("duplicate or empty witness ID while composing Phase 34 and Phase 35: %q", witness.ID)
+		}
+		seen[witness.ID] = true
+	}
+	document.Witnesses = append(document.Witnesses, additions.Witnesses...)
+	document.Limits = append(document.Limits, additions.Limits...)
+	if len(additions.Supersedes) == 0 && len(additions.Witnesses) == 0 {
+		t.Fatal("Phase 35 witness additions are empty")
+	}
 	return document
 }
 
@@ -160,6 +218,15 @@ func phase34CheckSurfaceWitness(t *testing.T, witness phase34SurfaceWitness) (st
 		if witness.Exercise != "" && !strings.Contains(string(source), witness.Exercise) {
 			t.Fatalf("source witness %s does not contain its literal exercise %q", witness.ID, witness.Exercise)
 		}
+		if witness.CheckRoute == "direct-check" {
+			result := session.Check(source)
+			code, hint := firstPhase34Diagnostic(result.Diagnostics)
+			status := "pass"
+			if len(result.Diagnostics) != 0 {
+				status = "invalid"
+			}
+			return status, code, hint
+		}
 		result, err := session.CheckCommandFile(path)
 		if err != nil {
 			t.Fatalf("CheckCommandFile witness %s from %s: %v", witness.ID, witness.SourcePath, err)
@@ -170,6 +237,15 @@ func phase34CheckSurfaceWitness(t *testing.T, witness phase34SurfaceWitness) (st
 	root := t.TempDir()
 	if witness.Exercise != "" && !strings.Contains(witness.Source, witness.Exercise) {
 		t.Fatalf("source witness %s does not contain its literal exercise %q", witness.ID, witness.Exercise)
+	}
+	if witness.CheckRoute == "direct-check" {
+		result := session.Check([]byte(witness.Source))
+		code, hint := firstPhase34Diagnostic(result.Diagnostics)
+		status := "pass"
+		if len(result.Diagnostics) != 0 {
+			status = "invalid"
+		}
+		return status, code, hint
 	}
 	writeSource := func(relative, source string) string {
 		t.Helper()
@@ -614,7 +690,7 @@ func TestPhase34SurfaceManifestControls(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parserMutation := phase34ReplaceOnce(t, string(parserSource), "case TokenPlus:\n\t\treturn 2", "case TokenStar:\n\t\treturn 2\n\tcase TokenPlus:\n\t\treturn 2")
+	parserMutation := phase34ReplaceOnce(t, string(parserSource), "case TokenPlus:\n\t\treturn 6", "case TokenStar:\n\t\treturn 8\n\tcase TokenPlus:\n\t\treturn 6")
 	assert("add unaccounted source operator branch", "unaccounted_source_branch", parserPath+"|scalarBinaryOperator|kind|TokenStar", phase34CensusProblems(census, map[string]string{parserPath: parserMutation}, document.Witnesses))
 
 	scalarPath := "internal/compiler/check/scalar.go"
@@ -755,6 +831,8 @@ func phase34ReadCensus(t *testing.T) phase34CensusDocument {
 	if !samePhase34Strings(document.Files, phase34SurfaceCensusFiles) {
 		t.Fatalf("census file boundary = %v, want exactly %v", document.Files, phase34SurfaceCensusFiles)
 	}
+	additions := phase35ReadSurfaceCensusAdditions(t)
+	document.Branches = append(document.Branches, additions.Branches...)
 	return document
 }
 
@@ -866,9 +944,9 @@ func phase34CollectCensusBranchesNoFatal(overrides map[string]string) []phase34R
 		"internal/compiler/syntax/parser.go": {
 			"scalarBinaryOperator": true, "scalarBinaryExpr": true, "consumeUnsupportedBinaryOperator": true,
 			"consumeUnsupportedLogicalNot": true, "scalarStatements": true, "scalarExprAtom": true, "linearBody": true,
-			"refuseExtraDeclarationParameter": true,
+			"refuseExtraDeclarationParameter": true, "scalarOperatorAt": true, "discardScalarBinaryExpr": true, "nestedScalarExpr": true,
 		},
-		"internal/compiler/syntax/lexer.go":               {"punctuation": true},
+		"internal/compiler/syntax/lexer.go":               {"punctuation": true, "validNumericLiteral": true, "numericDigit": true},
 		"internal/compiler/check/check.go":                {"payloadFieldShape": true, "resolveCallBinding": true},
 		"internal/compiler/check/scalar.go":               {"lower": true, "expression": true, "unsupportedBoolTail": true},
 		"internal/compiler/ability/ability.go":            {"deriveAt": true},
@@ -900,9 +978,17 @@ func phase34CollectCensusBranchesNoFatal(overrides map[string]string) []phase34R
 				switch statement := inner.(type) {
 				case *ast.SwitchStmt:
 					if statement.Tag == nil {
+						if name == "numericDigit" {
+							for _, rawCase := range statement.Body.List {
+								clause := rawCase.(*ast.CaseClause)
+								for _, value := range clause.List {
+									branches = append(branches, phase34RawCensusBranch{File: relative, Function: name, Selector: "switch-condition", Values: []string{phase34GoExprLabel(value)}})
+								}
+							}
+						}
 						return true
 					}
-					selector := phase34GoExprLabel(statement.Tag)
+					selector := phase34CensusSelector(name, phase34GoExprLabel(statement.Tag))
 					for _, rawCase := range statement.Body.List {
 						clause := rawCase.(*ast.CaseClause)
 						for _, value := range clause.List {
@@ -980,12 +1066,18 @@ func validPhase34Disposition(value string) bool {
 
 func phase34RelevantCensusCondition(function, condition string) bool {
 	markers := map[string][]string{
+		"scalarBinaryExpr":                 {"operator.Text == \"<<\""},
+		"scalarOperatorAt":                 {"TokenRAngle"},
+		"discardScalarBinaryExpr":          {"operator.Text == \"<<\""},
+		"nestedScalarExpr":                 {"expressionDepth"},
+		"validNumericLiteral":              {"len(text)", "digits ==", "value =="},
 		"linearBody":                       {"TokenDiscard", "TokenTry", "TokenTake", "TokenBorrow", "TokenMut", "TokenMatch"},
 		"refuseExtraDeclarationParameter":  {"TokenComma"},
 		"consumeUnsupportedBinaryOperator": {"TokenUnknown", "TokenPipe"},
 		"resolveCallBinding":               {"len(binding.RHS.Arguments)"},
 		"deriveAt":                         {"sealedLeaves"},
 		"unsupportedBoolTail":              {"resultName"},
+		"numericDigit":                     {"value >=", "value =="},
 	}
 	for _, marker := range markers[function] {
 		if strings.Contains(condition, marker) {
@@ -1002,4 +1094,14 @@ func phase34CensusFacetMatches(facets, candidate string) bool {
 		}
 	}
 	return false
+}
+
+func phase34CensusSelector(function, selector string) string {
+	// Phase 34's committed branch keys use the subject field name rather than
+	// the parameter identifier for this switch. Keep that canonical key while
+	// allowing the implementation parameter to remain descriptive.
+	if function == "scalarBinaryOperator" && selector == "operator.Kind" {
+		return "kind"
+	}
+	return selector
 }

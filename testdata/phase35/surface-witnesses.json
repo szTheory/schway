@@ -1,0 +1,367 @@
+{
+  "schema": "phase35.surface-witnesses/1",
+  "boundary": "Additive finite Phase 35 full-source witnesses. Phase 34 witness bytes remain immutable; no prior published facet changes in this slice, so supersedes is explicitly empty. These witnesses exercise complete command-file programs, but do not claim arbitrary-program completeness.",
+  "supersedes": [],
+  "witnesses": [
+    {
+      "id": "phase35-bit-and",
+      "facet": "operator:u64.bit_and",
+      "context": "scalar U64 operands",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = input & input\n  result\n}\n",
+      "exercise": "input & input",
+      "expected_status": "pass",
+      "expected_form": "&",
+      "expected_arity": 2,
+      "expected_constraints": [
+        "Both operands and the result are U64; Bool operands are refused."
+      ],
+      "form": "&",
+      "arity": 2,
+      "constraints": [
+        "Both operands and the result are U64; Bool operands are refused."
+      ]
+    },
+    {
+      "id": "phase35-bit-or",
+      "facet": "operator:u64.bit_or",
+      "context": "scalar U64 operands",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = input | 1\n  result\n}\n",
+      "exercise": "input | 1",
+      "expected_status": "pass",
+      "expected_form": "|",
+      "expected_arity": 2,
+      "expected_constraints": [
+        "Both operands and the result are U64; logical || remains refused."
+      ],
+      "form": "|",
+      "arity": 2,
+      "constraints": [
+        "Both operands and the result are U64; logical || remains refused."
+      ]
+    },
+    {
+      "id": "phase35-bit-xor",
+      "facet": "operator:u64.bit_xor",
+      "context": "scalar U64 operands",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = input ^ input\n  result\n}\n",
+      "exercise": "input ^ input",
+      "expected_status": "pass",
+      "expected_form": "^",
+      "expected_arity": 2,
+      "expected_constraints": [
+        "Both operands and the result are U64."
+      ],
+      "form": "^",
+      "arity": 2,
+      "constraints": [
+        "Both operands and the result are U64."
+      ]
+    },
+    {
+      "id": "phase35-shift-left-zero",
+      "facet": "operator:u64.shift_left",
+      "context": "scalar U64 operands",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = input << 0\n  result\n}\n",
+      "exercise": "input << 0",
+      "expected_status": "pass",
+      "expected_form": "<<",
+      "expected_arity": 2,
+      "expected_constraints": [
+        "The amount must be an integer literal from 0 through 63; the result keeps the low 64 bits."
+      ],
+      "form": "<<",
+      "arity": 2,
+      "constraints": [
+        "The amount must be an integer literal from 0 through 63; the result keeps the low 64 bits."
+      ]
+    },
+    {
+      "id": "phase35-shift-left-low64",
+      "facet": "operator:u64.shift_left",
+      "context": "scalar U64 operands",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = 0x8000_0000_0000_0001 << 1\n  result\n}\n",
+      "exercise": "0x8000_0000_0000_0001 << 1",
+      "expected_status": "pass",
+      "expected_form": "<<",
+      "expected_arity": 2,
+      "expected_constraints": [
+        "The amount must be an integer literal from 0 through 63; the result keeps the low 64 bits."
+      ],
+      "form": "<<",
+      "arity": 2,
+      "constraints": [
+        "The amount must be an integer literal from 0 through 63; the result keeps the low 64 bits."
+      ]
+    },
+    {
+      "id": "phase35-shift-right-logical",
+      "facet": "operator:u64.shift_right",
+      "context": "scalar U64 operands",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = 0x8000_0000_0000_0000 >> 63\n  result\n}\n",
+      "exercise": "0x8000_0000_0000_0000 >> 63",
+      "expected_status": "pass",
+      "expected_form": ">>",
+      "expected_arity": 2,
+      "expected_constraints": [
+        "The amount must be an integer literal from 0 through 63; right shift is logical."
+      ],
+      "form": ">>",
+      "arity": 2,
+      "constraints": [
+        "The amount must be an integer literal from 0 through 63; right shift is logical."
+      ]
+    },
+    {
+      "id": "phase35-grouping",
+      "facet": "restriction:scalar_expression_grouping",
+      "context": "scalar expressions",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = input << (3)\n  result\n}\n",
+      "exercise": "input << (3)",
+      "expected_status": "pass",
+      "expected_form": "( expression )",
+      "expected_arity": 0,
+      "expected_constraints": [
+        "Grouping is transparent, preserves the inner expression kind and literal provenance, and does not admit calls or tuples."
+      ],
+      "form": "( expression )",
+      "constraints": [
+        "Grouping is transparent, preserves the inner expression kind and literal provenance, and does not admit calls or tuples."
+      ]
+    },
+    {
+      "id": "phase35-precedence",
+      "facet": "restriction:scalar_operator_precedence",
+      "context": "scalar expressions",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = 5 % 7 + 2 << 3 & 0xFF ^ 1 | 2\n  result\n}\n",
+      "exercise": "5 % 7 + 2 << 3 & 0xFF ^ 1 | 2",
+      "expected_status": "pass",
+      "expected_form": "% > + > << >> > & > ^ > | > (<, ==)",
+      "expected_arity": 0,
+      "expected_constraints": [
+        "Operators associate left within each tier; < and == retain their shared comparison tier."
+      ],
+      "form": "% > + > << >> > & > ^ > | > (<, ==)",
+      "constraints": [
+        "Operators associate left within each tier; < and == retain their shared comparison tier."
+      ]
+    },
+    {
+      "id": "phase35-hex-spelling",
+      "facet": "restriction:u64_hex_spelling",
+      "context": "scalar U64 integer literals",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let lower = 0x0a_Ab\n  let upper = 0X0A_ab\n  let result = lower ^ upper\n  result\n}\n",
+      "exercise": "0x0a_Ab",
+      "expected_status": "pass",
+      "expected_form": "0x... | 0X...",
+      "expected_arity": 0,
+      "expected_constraints": [
+        "Hex digits are case-insensitive; the formatter preserves source case and between-digit underscores, and range is checked by value."
+      ],
+      "form": "0x... | 0X...",
+      "constraints": [
+        "Hex digits are case-insensitive; the formatter preserves source case and between-digit underscores, and range is checked by value."
+      ]
+    },
+    {
+      "id": "phase35-byte-unused",
+      "facet": "restriction:unused_byte_scalar_entry",
+      "context": "public conformance run",
+      "check_route": "direct-check",
+      "source_path": "examples/bitwise.schway",
+      "exercise": "x ^ (y << 3) & 0xFF",
+      "expected_status": "pass",
+      "expected_form": "fn main(unused: Byte) -> U64",
+      "expected_arity": 0,
+      "expected_constraints": [
+        "The Byte fixture parameter must remain unused and is never read, copied, or converted; scalar work uses U64 and Bool values."
+      ],
+      "form": "fn main(unused: Byte) -> U64",
+      "constraints": [
+        "The Byte fixture parameter must remain unused and is never read, copied, or converted; scalar work uses U64 and Bool values."
+      ]
+    },
+    {
+      "id": "phase35-depth-64",
+      "facet": "probe:phase35-depth-64",
+      "context": "",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = ((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((input))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))\n  result\n}\n",
+      "exercise": "let result =",
+      "expected_status": "pass",
+      "expected_arity": 0
+    },
+    {
+      "id": "phase35-depth-65",
+      "facet": "refusal:surface.unsupported_expression_depth",
+      "context": "",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((input)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))\n  result\n}\n",
+      "exercise": "let result =",
+      "expected_status": "invalid",
+      "expected_arity": 0,
+      "expected_code": "surface.unsupported_expression_depth",
+      "expected_hint": "Expression nesting exceeds the parser limit of 64; reduce nested groups or byte_at indices."
+    },
+    {
+      "id": "phase35-nested-byte-index",
+      "facet": "builtin:byte_at",
+      "context": "scalar ByteView-parameter function",
+      "source": "module phase35.surface\nexport { fn main }\nfn read(view: ByteView) -> U64 {\n  let result = byte_at(view, ((0)))\n  result\n}\nfn main(input: U64) -> U64 {\n  input\n}\n",
+      "exercise": "byte_at(view, ((0)))",
+      "expected_status": "pass",
+      "expected_arity": 2,
+      "expected_constraints": [
+        "Index outside the borrowed view is a defect."
+      ],
+      "form": "byte_at",
+      "arity": 2,
+      "inputs": [
+        "ByteView",
+        "U64"
+      ],
+      "result": "U64",
+      "constraints": [
+        "Index outside the borrowed view is a defect."
+      ]
+    },
+    {
+      "id": "phase35-type-closers",
+      "facet": "probe:phase35-nested-type-closers",
+      "context": "",
+      "source": "module phase35.surface\n\nexport {\n  fn relay\n  fn main\n}\n\nfn relay(value: Box<Box<U64>>) -> Box<Box<U64>> {\n  let held = take value\n  held\n}\n\nfn main(input: U64) -> U64 {\n  input\n}\n",
+      "exercise": "Box<Box<U64>>",
+      "expected_status": "invalid",
+      "expected_arity": 0,
+      "expected_code": "check.unexecutable_shape"
+    },
+    {
+      "id": "phase35-bool-operand",
+      "facet": "probe:phase35-u64-vs-bool",
+      "context": "",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let yes = input == input\n  let result = input & yes\n  result\n}\n",
+      "exercise": "input & yes",
+      "expected_status": "invalid",
+      "expected_arity": 0,
+      "expected_code": "type.scalar_operand",
+      "expected_hint": "U64 operator requires U64 operands"
+    },
+    {
+      "id": "phase35-shift-nonliteral",
+      "facet": "refusal:surface.unsupported_shift_amount",
+      "context": "",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let amount = input\n  let result = input << amount\n  result\n}\n",
+      "exercise": "input << amount",
+      "expected_status": "invalid",
+      "expected_arity": 0,
+      "expected_code": "surface.unsupported_shift_amount",
+      "expected_hint": "Shift amounts must be integer literals from 0 to 63; write a literal in that range."
+    },
+    {
+      "id": "phase35-shift-negative",
+      "facet": "refusal:surface.unsupported_shift_amount",
+      "context": "",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = input << -1\n  result\n}\n",
+      "exercise": "input << -1",
+      "expected_status": "invalid",
+      "expected_arity": 0,
+      "expected_code": "surface.unsupported_shift_amount",
+      "expected_hint": "Shift amounts must be integer literals from 0 to 63; write a literal in that range."
+    },
+    {
+      "id": "phase35-shift-64",
+      "facet": "refusal:surface.unsupported_shift_amount",
+      "context": "",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = input >> 64\n  result\n}\n",
+      "exercise": "input >> 64",
+      "expected_status": "invalid",
+      "expected_arity": 0,
+      "expected_code": "surface.unsupported_shift_amount",
+      "expected_hint": "Shift amounts must be integer literals from 0 to 63; write a literal in that range."
+    },
+    {
+      "id": "phase35-shift-empty",
+      "facet": "probe:phase35-empty-shift-operand",
+      "context": "",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = input <<\n}\n",
+      "exercise": "input <<",
+      "expected_status": "invalid",
+      "expected_arity": 0,
+      "expected_code": "syntax.expected_scalar_operand",
+      "expected_hint": "expected a scalar operand"
+    },
+    {
+      "id": "phase35-hex-maximum-leading-zeroes",
+      "facet": "restriction:u64_hex_spelling",
+      "context": "scalar U64 integer literals",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = 0x0000_ffff_ffff_ffff_ffff\n  result\n}\n",
+      "exercise": "0x0000_ffff_ffff_ffff_ffff",
+      "expected_status": "pass",
+      "expected_form": "0x... | 0X...",
+      "expected_arity": 0,
+      "expected_constraints": [
+        "Hex digits are case-insensitive; the formatter preserves source case and between-digit underscores, and range is checked by value."
+      ],
+      "form": "0x... | 0X...",
+      "constraints": [
+        "Hex digits are case-insensitive; the formatter preserves source case and between-digit underscores, and range is checked by value."
+      ]
+    },
+    {
+      "id": "phase35-hex-overflow",
+      "facet": "probe:phase35-hex-overflow",
+      "context": "",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = 0x1_0000_0000_0000_0000\n  result\n}\n",
+      "exercise": "0x1_0000_0000_0000_0000",
+      "expected_status": "invalid",
+      "expected_arity": 0,
+      "expected_code": "type.invalid_u64",
+      "expected_hint": "invalid U64 literal"
+    },
+    {
+      "id": "phase35-hex-malformed",
+      "facet": "probe:phase35-hex-malformed",
+      "context": "",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let result = 0x1__0\n  result\n}\n",
+      "exercise": "0x1__0",
+      "expected_status": "invalid",
+      "expected_arity": 0,
+      "expected_code": "syntax.malformed_numeric_literal",
+      "expected_hint": "malformed numeric literal"
+    },
+    {
+      "id": "phase35-byte-used",
+      "facet": "probe:phase35-byte-entry-used",
+      "context": "",
+      "check_route": "direct-check",
+      "source": "module phase35.surface\nexport { fn main }\nfn main(unused: Byte) -> U64 {\n  var seed = 0\n  let result = unused ^ 1\n  result\n}\n",
+      "exercise": "unused ^ 1",
+      "expected_status": "invalid",
+      "expected_arity": 0,
+      "expected_code": "type.scalar_byte_parameter_used",
+      "expected_hint": "Byte input is admitted only when the scalar body leaves it unused"
+    }
+  ],
+  "limits": [
+    {
+      "id": "parser.expression_depth",
+      "category": "authoring parse bound",
+      "scope": "one nested scalar expression including groups and byte_at indices",
+      "unit": "levels",
+      "value": 64,
+      "meaning": "Maximum scalar expression nesting; deeper input receives surface.unsupported_expression_depth.",
+      "routes": [
+        "app verify",
+        "build",
+        "check",
+        "debug-map",
+        "evidence",
+        "evidence --validate",
+        "explain",
+        "format",
+        "interface core",
+        "interface export",
+        "query",
+        "run",
+        "verify"
+      ]
+    }
+  ]
+}

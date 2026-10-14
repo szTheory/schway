@@ -63,6 +63,7 @@ func TestPhase34SurfaceLimitConsumers(t *testing.T) {
 	for _, id := range []string{"parser.alternatives", "parser.declarations", "parser.linear_bindings", "parser.primary_diagnostics", "parser.source_bytes", "parser.tokens", "parser.type_depth", "parser.type_nodes"} {
 		expected[id] = expected["parser.functions"]
 	}
+	expected["parser.expression_depth"] = expected["parser.functions"]
 	manifest := surfacemanifest.Current()
 	if problems := phase34LimitConsumerProblems(manifest, expected); len(problems) != 0 {
 		t.Fatalf("manifest differs from current consumers: %v", problems)
