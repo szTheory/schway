@@ -2,6 +2,7 @@ package session_test
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -21,6 +22,8 @@ import (
 const (
 	phase34PreChangeSchema = "phase34.prechange-corpus/1"
 	phase34PreChangeRows   = 162
+	phase35AdlerSourceSHA  = "16490db4e53cb9db287727a8e5918745aa412659e799dd2fd53b38805bb3bef1"
+	phase35AdlerOutputSHA  = "8653dbec998b2d39975619912b400e465b299d9d60ef59bdb1397ed9991d8e6e"
 )
 
 type phase34PreChangeCorpus struct {
@@ -71,15 +74,38 @@ func phase34TrackedSchwayPaths(t *testing.T) []string {
 	if err != nil {
 		t.Fatalf("git ls-files examples testdata: %v", err)
 	}
-	var paths []string
+	tracked := make(map[string]bool)
 	for _, line := range strings.Split(string(output), "\n") {
 		if strings.HasSuffix(line, ".schway") {
-			paths = append(paths, filepath.ToSlash(line))
+			tracked[filepath.ToSlash(line)] = true
 		}
 	}
-	sort.Strings(paths)
+	corpus := phase34LoadCorpus(t)
+	paths := phase34EntryPaths(corpus.Entries)
 	if len(paths) != phase34PreChangeRows {
-		t.Fatalf("tracked Schway inventory has %d rows, want frozen 162-row inventory", len(paths))
+		t.Fatalf("frozen pre-change corpus has %d paths, want %d", len(paths), phase34PreChangeRows)
+	}
+	for _, path := range paths {
+		if !tracked[path] {
+			t.Fatalf("frozen pre-change Schway source %q is no longer tracked", path)
+		}
+	}
+	var additions []string
+	for path := range tracked {
+		if !phase34Contains(paths, path) {
+			additions = append(additions, path)
+		}
+	}
+	sort.Strings(additions)
+	if !equalStrings(additions, []string{"examples/bitwise.schway"}) {
+		t.Fatalf("tracked source inventory additions are not the declared Phase 35 witness: %v", additions)
+	}
+	delta, err := os.ReadFile(testsupport.ProjectPath(".planning", "phases", "35-bitwise-operators-literal-shifts-and-hex-literals", "35-COMPATIBILITY-DELTA.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(delta), "`examples/bitwise.schway`") {
+		t.Fatal("Phase 35 compatibility delta does not declare the additive tracked witness")
 	}
 	return paths
 }
@@ -199,6 +225,32 @@ func phase34CompareEmission(problems *[]string, path, name string, want, got pha
 		*problems = append(*problems, fmt.Sprintf("%s: %s outcome changed: got %q want %q", path, name, got.Outcome, want.Outcome))
 		return
 	}
+	if binding, ok := phase34AdlerRewriteCRow(path, name); want.Outcome == "emitted" && ok {
+		// This exact-row adapter accepts only the four frozen Phase 34 outputs
+		// whose imported Adler implementation changed in D-20. Each source and
+		// current output is hash-bound; the imported implementation hash and
+		// its direct C projection are also required in the Phase 35 delta.
+		source, err := os.ReadFile(testsupport.ProjectPath(filepath.FromSlash(path)))
+		if err != nil {
+			*problems = append(*problems, fmt.Sprintf("%s: read exact Adler adapter source: %v", path, err))
+			return
+		}
+		if fmt.Sprintf("%x", sha256.Sum256(source)) != binding.sourceSHA {
+			*problems = append(*problems, fmt.Sprintf("%s: exact Adler adapter source hash changed", path))
+		}
+		beforeDigest := fmt.Sprintf("%x", sha256.Sum256([]byte(want.CSource)))
+		if len(want.CSource) != binding.beforeBytes || beforeDigest != binding.beforeSHA {
+			*problems = append(*problems, fmt.Sprintf("%s: frozen %s C bytes changed (got %d/%s want %d/%s)", path, name, len(want.CSource), beforeDigest, binding.beforeBytes, binding.beforeSHA))
+		}
+		gotDigest := fmt.Sprintf("%x", sha256.Sum256([]byte(got.CSource)))
+		if len(got.CSource) != binding.outputBytes || gotDigest != binding.outputSHA {
+			*problems = append(*problems, fmt.Sprintf("%s: %s C byte mismatch in exact Adler adapter (got %d/%s want %d/%s)", path, name, len(got.CSource), gotDigest, binding.outputBytes, binding.outputSHA))
+		}
+		if !phase34AdlerCompatibilityDeltaBound() {
+			*problems = append(*problems, "Phase 35 Adler source/direct-output hashes no longer bind the compatibility adapter")
+		}
+		return
+	}
 	if want.Outcome == "not_emitted" {
 		// Preserve the explicit non-emission outcome while leaving its failed
 		// diagnostic reason, code and presentation as historical facts rather
@@ -218,6 +270,53 @@ func phase34CompareEmission(problems *[]string, path, name string, want, got pha
 	default:
 		*problems = append(*problems, fmt.Sprintf("%s: %s has unknown baseline outcome %q", path, name, want.Outcome))
 	}
+}
+
+type phase34AdlerCBinding struct {
+	sourceSHA   string
+	beforeBytes int
+	beforeSHA   string
+	outputBytes int
+	outputSHA   string
+}
+
+func phase34AdlerRewriteCRow(path, emitter string) (phase34AdlerCBinding, bool) {
+	if emitter == "control_native_c" && path == "examples/checksum/adler32.schway" {
+		return phase34AdlerCBinding{sourceSHA: phase35AdlerSourceSHA, beforeBytes: 44595, beforeSHA: "d6581de8d80080d96fc762b74dcf1964e0eae438fd566cb6a0c68280f606765b", outputBytes: 19163, outputSHA: phase35AdlerOutputSHA}, true
+	}
+	if emitter != "emit_application" {
+		return phase34AdlerCBinding{}, false
+	}
+	switch path {
+	case "examples/checksum/adler32_cli.schway":
+		return phase34AdlerCBinding{sourceSHA: "62478d7b2ab4e777f6adfeab1c9a4e79c230178d4e1c9ca9a41f8c45fad6aa7f", beforeBytes: 19351, beforeSHA: "0bf9cda02e6806c1aeadd4912fabdb46a1856e70ae2a69ba0a9071db86ebc350", outputBytes: 14911, outputSHA: "80df93af9f946d5db3fc520c412f7de31cec28efa7c658ce9a54dd6080950719"}, true
+	case "examples/checksum/adler_low.schway":
+		return phase34AdlerCBinding{sourceSHA: "42a38540c3c282ab7089ee8f2ccc63c23d039879e19f9ddf5c6ffff9bcfe6987", beforeBytes: 21511, beforeSHA: "34dcb4f59f20e2234ddda81654da483c1d9f9e89a18b2567d43b5fec5b6af234", outputBytes: 17071, outputSHA: "31b6410aa3ca9f43bda6db85b6aebd004d2abb30cea03df149be314753698495"}, true
+	case "examples/checksum/checksum.schway":
+		return phase34AdlerCBinding{sourceSHA: "da61026ce0f4a6296603e359244d526bef31db230d7339fe04608ae6e5216518", beforeBytes: 19598, beforeSHA: "9bb3babccd3d9a88b36bdedd148d0b548fe142128f2367e1a33f806d2f298751", outputBytes: 15158, outputSHA: "baef335d68fca5df6ed61c63fb6b6248ebbae04a38cc83937cdc19c4a0cdac9e"}, true
+	default:
+		return phase34AdlerCBinding{}, false
+	}
+}
+
+func phase34AdlerCompatibilityDeltaBound() bool {
+	delta, err := os.ReadFile(testsupport.ProjectPath(".planning", "phases", "35-bitwise-operators-literal-shifts-and-hex-literals", "35-COMPATIBILITY-DELTA.md"))
+	if err != nil {
+		return false
+	}
+	text := string(delta)
+	sourceRow := "| source_sha256 | `sha256:317ac13972a53eccd04a7ab84cc914aff755e77b881db6fcaf77fa5240ebcb4b` | `sha256:" + phase35AdlerSourceSHA + "` |"
+	outputRow := "| `emit` | emitted | 44595 | `sha256:d6581de8d80080d96fc762b74dcf1964e0eae438fd566cb6a0c68280f606765b` | emitted | 19163 | `sha256:" + phase35AdlerOutputSHA + "` |"
+	return strings.Contains(text, sourceRow) && strings.Contains(text, outputRow)
+}
+
+func phase34Contains(paths []string, target string) bool {
+	for _, path := range paths {
+		if path == target {
+			return true
+		}
+	}
+	return false
 }
 
 func phase34EntryPaths(entries []phase34PreChangeEntry) []string {

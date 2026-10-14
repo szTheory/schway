@@ -266,29 +266,30 @@ func TestPhase35UnusedByteIRAdmission(t *testing.T) {
 	})
 }
 
-// TestPhase35ScalarTransferMutants drives each independently implemented
-// origin transfer into its own static zero-remainder refusal, then proves a
-// copy-local wrong-result fault removes that observation and restoration
-// reaches it again.
+// TestPhase35ScalarTransferMutants compares each independently derived
+// bitwise/shift result with a separate expected constant before reaching the
+// static zero-remainder sink. Input mutations remain copy-local controls.
 func TestPhase35ScalarTransferMutants(t *testing.T) {
-	program := phase35OriginCheckedCore(t, "module phase35.origin_transfer\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let left = 0\n  let right = input\n  let zero = left ^ right\n  let one = 1\n  let remainder = one % zero\n  remainder\n}\n")
+	program := phase35OriginCheckedCore(t, "module phase35.origin_transfer\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let left = 0\n  let right = input\n  let actual = left ^ right\n  let expected = 0\n  let mismatch = actual ^ expected\n  let one = 1\n  let remainder = one % mismatch\n  remainder\n}\n")
 	base := &program.Functions[0]
 	leftID := phase35OriginPlaceID(t, base, "left")
 	rightID := phase35OriginPlaceID(t, base, "right")
+	expectedID := phase35OriginPlaceID(t, base, "expected")
 	type vector struct {
 		name        string
 		kind        core.OperationKind
 		left, right uint64
 		amount      string
+		want        uint64
 		faultRight  uint64
 		faultAmount string
 	}
 	vectors := []vector{
-		{name: "xor zero", kind: core.OpBitXorU64, left: 5, right: 5, faultRight: 6},
-		{name: "and zero", kind: core.OpBitAndU64, left: 1, right: 2, faultRight: 1},
-		{name: "or zero", kind: core.OpBitOrU64, left: 0, right: 0, faultRight: 1},
-		{name: "shift left zero", kind: core.OpShiftLeftU64, left: 1 << 63, amount: "1", faultAmount: "0"},
-		{name: "shift right zero", kind: core.OpShiftRightU64, left: 1, amount: "1", faultAmount: "0"},
+		{name: "xor zero", kind: core.OpBitXorU64, left: 5, right: 5, want: 0, faultRight: 6},
+		{name: "and zero", kind: core.OpBitAndU64, left: 1, right: 2, want: 0, faultRight: 1},
+		{name: "or overlapping bit", kind: core.OpBitOrU64, left: 1, right: 1, want: 1, faultRight: 2},
+		{name: "shift left zero", kind: core.OpShiftLeftU64, left: 1 << 63, amount: "1", want: 0, faultAmount: "0"},
+		{name: "shift right one", kind: core.OpShiftRightU64, left: 1 << 63, amount: "63", want: 1, faultAmount: "0"},
 	}
 	for _, tc := range vectors {
 		t.Run(tc.name, func(t *testing.T) {
@@ -296,7 +297,8 @@ func TestPhase35ScalarTransferMutants(t *testing.T) {
 			function := &mutant.Functions[0]
 			phase35OriginSetConstTarget(t, function, leftID, tc.left)
 			phase35OriginSetConstTarget(t, function, rightID, tc.right)
-			op := phase35OriginFindOperation(t, function, core.OpBitXorU64)
+			phase35OriginSetConstTarget(t, function, expectedID, tc.want)
+			op := phase35OriginOperationForSource(t, function, core.OpBitXorU64, leftID)
 			op.Kind = tc.kind
 			op.SourceID = leftID
 			if tc.kind == core.OpShiftLeftU64 || tc.kind == core.OpShiftRightU64 {
@@ -326,10 +328,11 @@ func TestPhase35ScalarTransferMutants(t *testing.T) {
 		})
 	}
 
-	cfgProgram := phase35OriginCheckedCore(t, "module phase35.origin_transfer_cfg\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let left = 0\n  let right = input\n  var divisor = input\n  if input < 8 {\n    divisor = left ^ right\n  } else {\n    divisor = left ^ right\n  }\n  let one = 1\n  let remainder = one % divisor\n  remainder\n}\n")
+	cfgProgram := phase35OriginCheckedCore(t, "module phase35.origin_transfer_cfg\nexport { fn main }\nfn main(input: U64) -> U64 {\n  let left = 0\n  let right = input\n  var actual = input\n  if input < 8 {\n    actual = left ^ right\n  } else {\n    actual = left ^ right\n  }\n  let expected = 0\n  let mismatch = actual ^ expected\n  let one = 1\n  let remainder = one % mismatch\n  remainder\n}\n")
 	cfgBase := &cfgProgram.Functions[0]
 	cfgLeftID := phase35OriginPlaceID(t, cfgBase, "left")
 	cfgRightID := phase35OriginPlaceID(t, cfgBase, "right")
+	cfgExpectedID := phase35OriginPlaceID(t, cfgBase, "expected")
 	cfgInputID := cfgBase.Parameter.ID
 	for _, tc := range vectors {
 		t.Run("cfg/"+tc.name, func(t *testing.T) {
@@ -340,7 +343,8 @@ func TestPhase35ScalarTransferMutants(t *testing.T) {
 			}
 			phase35OriginSetConstTarget(t, function, cfgLeftID, tc.left)
 			phase35OriginSetConstTarget(t, function, cfgRightID, tc.right)
-			operations := phase35OriginOperationsOfKind(function, core.OpBitXorU64)
+			phase35OriginSetConstTarget(t, function, cfgExpectedID, tc.want)
+			operations := phase35OriginOperationsForSource(function, core.OpBitXorU64, cfgLeftID)
 			if len(operations) != 2 {
 				t.Fatalf("origin CFG has %d tested branch operations, want 2", len(operations))
 			}
@@ -360,7 +364,7 @@ func TestPhase35ScalarTransferMutants(t *testing.T) {
 			}
 
 			faulted := phase35CloneOriginProgram(mutant)
-			faultOps := phase35OriginOperationsOfKind(&faulted.Functions[0], tc.kind)
+			faultOps := phase35OriginOperationsForSource(&faulted.Functions[0], tc.kind, cfgLeftID)
 			if len(faultOps) != 2 {
 				t.Fatalf("origin CFG fault copy has %d tested operations, want 2", len(faultOps))
 			}
@@ -379,6 +383,29 @@ func TestPhase35ScalarTransferMutants(t *testing.T) {
 			}
 		})
 	}
+}
+
+func phase35OriginOperationForSource(t *testing.T, function *core.Function, kind core.OperationKind, sourceID string) *core.LinearOperation {
+	t.Helper()
+	for index := range function.Linear.Operations {
+		operation := &function.Linear.Operations[index]
+		if operation.Kind == kind && operation.SourceID == sourceID {
+			return operation
+		}
+	}
+	t.Fatalf("missing origin %s operation from source %q", kind, sourceID)
+	return nil
+}
+
+func phase35OriginOperationsForSource(function *core.Function, kind core.OperationKind, sourceID string) []*core.LinearOperation {
+	var operations []*core.LinearOperation
+	for index := range function.Linear.Operations {
+		operation := &function.Linear.Operations[index]
+		if operation.Kind == kind && operation.SourceID == sourceID {
+			operations = append(operations, operation)
+		}
+	}
+	return operations
 }
 
 // TestPhase35AnalysisTriggers exercises origin admission, scalar trigger and
