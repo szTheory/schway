@@ -76,7 +76,7 @@ func Format(tree Tree) []byte {
 // isBinaryOperatorToken reports the infix operators a `let` value may chain.
 func isBinaryOperatorToken(token Token) bool {
 	switch token.Kind {
-	case TokenPlus, TokenLAngle, TokenEqualEqual, TokenPercent, TokenPipe:
+	case TokenPlus, TokenLAngle, TokenRAngle, TokenEqualEqual, TokenPercent, TokenPipe:
 		return true
 	case TokenUnknown:
 		return token.Text == "^" || token.Text == "&" || token.Text == "<<" || token.Text == ">>"
@@ -429,8 +429,18 @@ func (f *formatter) token(token Token, next Token) {
 		}
 		f.lineOpen = true
 	case TokenRAngle:
-		f.trimSpace()
-		f.out.WriteByte('>')
+		if f.scalarExpressionContext() {
+			if f.lineOpen {
+				f.trimSpace()
+				f.out.WriteString(" > ")
+			} else {
+				f.ensureLine()
+				f.out.WriteString("> ")
+			}
+		} else {
+			f.trimSpace()
+			f.out.WriteByte('>')
+		}
 		f.lineOpen = true
 	case TokenComma:
 		f.trimSpace()

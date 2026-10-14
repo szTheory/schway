@@ -429,6 +429,40 @@ func TestPhase35FormatterRoundTrip(t *testing.T) {
 	}
 }
 
+func TestPhase35FormatterPreservesSeparatedShiftTokens(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		expression string
+		comment    string
+	}{
+		{name: "whitespace", expression: "x > > x"},
+		{name: "line comment", expression: "x > // separated angles\n  > x", comment: "// separated angles"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			source := []byte(phase35Source(tc.expression))
+			parsed := syntax.Parse(source)
+			if len(parsed.Program.Funcs) != 1 || parsed.Program.Funcs[0].Body.Linear == nil || findPhase35Expr(parsed.Program.Funcs[0].Body.Linear.Statements, "shift_right") {
+				t.Fatalf("source unexpectedly contains a right shift for %q: %+v", tc.expression, parsed.Program.Funcs)
+			}
+
+			formatted := syntax.Format(parsed.Tree)
+			if bytes.Contains(formatted, []byte(">>")) {
+				t.Fatalf("formatter joined separated right angles for %q: %q", tc.expression, formatted)
+			}
+			if tc.comment != "" && !bytes.Contains(formatted, []byte(tc.comment)) {
+				t.Fatalf("formatter dropped the separating comment: %q", formatted)
+			}
+			reparsed := syntax.Parse(formatted)
+			if len(reparsed.Program.Funcs) != 1 || reparsed.Program.Funcs[0].Body.Linear == nil || findPhase35Expr(reparsed.Program.Funcs[0].Body.Linear.Statements, "shift_right") {
+				t.Fatalf("formatted source reparsed as a right shift: %q (%+v)", formatted, reparsed.Program.Funcs)
+			}
+			if again := syntax.Format(reparsed.Tree); !bytes.Equal(formatted, again) {
+				t.Fatalf("recovery formatting is not idempotent:\nfirst:  %q\nsecond: %q", formatted, again)
+			}
+		})
+	}
+}
+
 func parsePhase35Expression(t *testing.T, expression string) (syntax.ParseResult, *ast.Expr) {
 	t.Helper()
 	parsed := syntax.Parse([]byte(phase35Source(expression)))
