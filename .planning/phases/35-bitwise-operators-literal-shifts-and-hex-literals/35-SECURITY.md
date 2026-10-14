@@ -56,7 +56,7 @@ No accepted risks. No unregistered SUMMARY threat flags.
 
 The existing mutation receipt records 3 no-op overlays and 15 actual arithmetic implementation mutants. Existing optimization receipts cover 33 vectors at O0/O3/O3-LTO and 16 UBSan shift rows on the local host; this audit did not rerun them or create hosted evidence. Phase 38 owns final two-host binding.
 
-Source/raw-core admission controls submit malformed inputs and assert exact refusals; they are not executed implementation-source refusal-removal mutants. Actual implementation-source mutation evidence here applies to arithmetic transfers. L1 closure verifies the admission gates and their named controls by inspection.
+The initial L1 audit inspected malformed-input admission controls and distinguished them from actual implementation mutation. The subsequent dated amendment below now supplies actual admission refusal-removal evidence; earlier arithmetic evidence remains separately scoped.
 
 Raw core validates immediate semantics, not original literal AST provenance; that authority remains in the source checker. Coordinated erasure of all identifying scalar families/reserved type facts remains the documented source-blind boundary of the unused-Byte guard. Executionpeer verifies causal event admission and fabricated-event refusal; it does not prove numeric answers. Readability and whole-loop cold/warm latency remain unmeasured.
 
@@ -74,3 +74,11 @@ Raw core validates immediate semantics, not original literal AST provenance; tha
 - [x] status: verified.
 
 Approval: verified 2026-10-14, scoped to the evidence above.
+
+## 2026-10-14 post-repair L1 amendment
+
+Source inspection of commit `3800080e` confirms independent shift-scoped prior-write checks: core records `core.invalid_target` and origin returns `core.scalar_operation_invalid`. Each derives prior static writes including stores/error/payload targets; repeated loop execution and ordinary mutable stores retain their existing rules. This closes the target-reuse defect found by the expanded admission controls, without a blanket global single-writer rule.
+
+`35-ADMISSION-MUTATION-EVIDENCE.md` records the newly executed 26-control matrix (12 core, 12 origin, 2 source), 55 exact source replacement sites, 46 intended assertion failures, and three no-op plus three restored baselines. No compiler/vet/missing-selector/unrelated failure earns credit. Test commit `397bfb6d` and evidence commit `7aac4aca` bind the receipt. T-35-06/T-35-09/T-35-10/T-35-11 remain closed on these stronger controls and the inspected repaired gates. The count stays 24/24 closed, zero open; this amendment does not claim a fresh hosted or graphical audit.
+
+The earlier arithmetic receipt binds older core/origin snapshots. Its durable 15-control harness must be rerun by final verification against the repaired snapshots before claiming current arithmetic proof. The source checker snapshot is unchanged.
