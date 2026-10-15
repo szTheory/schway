@@ -154,6 +154,13 @@ is auto-followed. Copy-local code is preferred over new dependencies.
 
 ## Current State
 
+Amended 2026-10-15 after Phase 36: scalar helpers are complete across both
+engines and the independent peers. Phases 33–36 have current passing
+verification reports. Phase 37 owns the complete file CRC-32 library/second
+consumer, interpreter file CLI and executable guide; Phase 38 owns final
+two-host receipts after the milestone audit. The earlier dated records below
+retain their historical source bindings.
+
 **2026-10-12 M006 Bounded Byte Utility and Local Modules shipped** (6 phases,
 63 plans, 158 tasks; archive `.planning/milestones/M006-*`, tag `vM006`).
 `examples/checksum/checksum.schway` reads a file of at most 65,536 bytes and
@@ -430,6 +437,11 @@ contract, without a speculative milestone number.
 
 ### Validated
 
+- ✓ Arity-one U64/Bool helper composition, local/imported calls, ordered evaluation,
+  independent call derivation and preserved application outcomes — M007 Phase 36
+  (CALL-01/CALL-02; 32/32 verifier, 45 feature roots, 80 prior-phase root
+  occurrences, two machine-proven prohibition gates; local evidence only).
+
 - ✓ U64 bitwise operators, literal-only shifts, hexadecimal spelling and the
   equivalent Adler shift consumer — M007 Phase 35 (BIT-01..04). Independent
   transfer/admission mutations and O0/O3/LTO/UBSan evidence are local; final
@@ -561,6 +573,9 @@ contract, without a speculative milestone number.
   digest — M006 Phases 32, 32.1 (DX-19, EVD-15).
 
 ### Active
+
+M007 remains active for Phase 37 consumer/CLI/guide requirements and Phase 38
+final receipts; CALL-01/CALL-02 completed in Phase 36.
 
 M007 (Bitwise Checksum and Composable Scalar Helpers) — atomic IDs in
 [REQUIREMENTS.md](REQUIREMENTS.md). Carried M006 debt is owned by M007's first
@@ -770,6 +785,9 @@ Canonical planning inputs:
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Evaluate scalar arguments once in explicit core order | C operand evaluation order cannot define Schway behavior | Phase 36 — typed temporaries and source/engine order controls pass |
+| Keep dynamic call identity separate from value and source proof | Repeated activations need stable causal attribution without claiming arithmetic replay | Phase 36 — per-parent/per-site ordinals, retained arena paths, checker intent and independent engine controls pass |
+| Preserve program outcomes when optional capture is exhausted | Evidence failure must not hide stdout, exit or later defects | Phase 36 — distinct process/capture outcomes and machine-proven negative controls pass |
 | Keep literal shift provenance at source checking and independently validate immediate IR laws | Raw core cannot attest which source AST produced it | Phase 35 — counts 0..63, canonical immediates, type/field/init/fresh-target checks and 26 refusal-removal controls pass |
 | Separate numeric transfer proof from causal event admission | Event-free pure operators provide no operands for causal replay | Phase 35 — 15 actual value-peer mutations plus independent engine answers; fabricated-event controls remain causal only |
 | Emit shifts through unsigned long long and cast the result to uint64_t | C promotions must not introduce signed shift behavior | Phase 35 — 33 rows at three optimization levels and 16 UBSan rows pass locally |
@@ -833,7 +851,7 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-14 after Phase 35 verification*
+*Last updated: 2026-10-15 after Phase 36 verification*
 
 ### Phase 33 execution amendment — 2026-10-13
 
@@ -856,3 +874,18 @@ added. The current next capabilities and dormant seed dispositions are in
 `phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-TRANSITION-CHECK.md`.
 Phase 36 discussion is next; Phase 38 retains final hosted evidence ownership.
 Earlier source-bound reports for 33/34 require successor refresh, not plan replay.
+
+### Phase 36 completion amendment — 2026-10-15
+
+All eight plans completed and the independent verifier passed 32/32 must-haves.
+The actual local captures record 45 feature roots across 12 packages and 80
+prior-phase root occurrences across 13 packages, with no failed or skipped
+roots. The source review is clean, its prior warning is fixed, and all 24
+planned L1 threats are closed. A phase-local Node built-in adapter wires the
+two previously flagged prohibitions to existing Go assertions, with known-bad
+source overlays RED and clean/default controls GREEN; it adds no compiler or
+runtime dependency. Causal acceptance remains distinct from arithmetic and
+source intent. Hosted receipts, complete CRC-32 consumer work and subjective
+readability/performance claims remain outside this phase. The current next
+capabilities and seed dispositions are in
+`phases/36-scalar-helper-calls/36-TRANSITION-CHECK.md`.

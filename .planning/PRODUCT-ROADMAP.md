@@ -686,3 +686,33 @@ Historical receipts: Historical only; not fresh Phase 36 evidence. [Phase 35 ver
 | z1g | retain dormant | `internal/compiler/session/session_phase6_query.go#QueryCommandFile`; current helper declaration and callsites remain available to ordinary search | No named reviewer task has measured an accuracy or material-cost gap in query plus ordinary search | Keep dormant until a named reviewer measures a concrete lookup gap; then scope one source-unit query |
 | trz | retain dormant | `internal/compiler/native/native_app.go#readApplicationCapture`; `internal/compiler/session/session_app_verify.go#VerifyApplicationCasesFile` | Current bounded capture and replay explain the reviewed Phase 36 outcomes; the older allocation concern was addressed in Phase 33, and no new unexplained failure is named | Review one actual unexplained consumer failure before proposing additional observation |
 | z1s | retain dormant | `internal/compiler/syntax/format.go#Format` | No consumer or reviewer has contested a concrete canonical-source or contract choice | Require a named dispute, paired source forms, and independent obligations before an experiment |
+
+## Phase 36 post-verification transition — 2026-10-15
+
+This amendment supersedes the pending-gate statements in the earlier Phase 36
+implementation snapshot. All eight plans and CALL-01/CALL-02 are complete.
+The independent goal verifier passed 32/32 must-haves; the two previously
+descriptorless prohibitions now have real producer-backed RED/clean/default
+proof. The 52-file independent review is clean with no open finding, its later
+proof-bridge supplement is reviewed separately, and all 24 L1 threats are
+closed. The classifier's unclassified SPEC-less rows remain planning history,
+not a claim of untested runtime contracts.
+
+The 45-root feature and 80-occurrence regression captures retain their exact
+source revisions in the acceptance/regression receipts. Later work adds only
+phase-local proof wiring and planning records. No hosted run, new backend,
+compiler/runtime dependency, subjective readability result or whole-loop
+performance measurement is claimed. Current source witnesses remain the
+checked scalar transfer, the independent peers, interpreter/native execution,
+and the local/imported examples.
+
+The three next capabilities are full file CRC-32 plus a second importer
+(Phase 37, APP-13/MOD-07), public interpreter file CLI plus an executable guide
+(Phase 37, APP-14/DX-24), and final audited two-host receipts (Phase 38, EVD-17).
+Their programs, blockers, smallest complete slices, checker obligations,
+evidence/debt, owners and priority-changing observations are recorded in
+[36-TRANSITION-CHECK.md](phases/36-scalar-helper-calls/36-TRANSITION-CHECK.md).
+The same transition rechecked the Dashbit appraisal and relevant z1g/trz/z1s
+triggers against named consumers and current source witnesses: retain all three
+dormant, with no measured navigation gap, unexplained failure or source-form
+dispute. Phase 37 discussion is next; it has not started.

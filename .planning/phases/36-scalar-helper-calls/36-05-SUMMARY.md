@@ -112,7 +112,7 @@ The plan metadata commit follows this summary and the canonical state/roadmap up
 - `internal/compiler/cgen/cgen_program.go` — emits scalar call statements, bounded dynamic invocation paths, and capacity capture reporting.
 - `internal/compiler/cgen/cgen_phase36_test.go` — native path, event/path/output/ordinal boundary, value/path mutation, and emitter inventory controls.
 - `internal/compiler/native/native_phase36_test.go` — application outcome and bounded capture controls, including late defect and capture-disabled high-call-count cases.
-- `.planning/phases/36-scalar-helper-calls/36-05-task{1,2,3}-red-evidence.json` — accepted TDD RED receipts.
+- `.planning/phases/36-scalar-helper-calls/36-05-task1-red-evidence.json`, `.planning/phases/36-scalar-helper-calls/36-05-task2-red-evidence.json`, and `.planning/phases/36-scalar-helper-calls/36-05-task3-red-evidence.json` — accepted TDD RED receipts.
 - `.planning/phases/36-scalar-helper-calls/deferred-items.md` and `.planning/WINDOWS.md` — recorded inherited core-validator refusal shifts found by the frozen corpus guard.
 
 ## Decisions Made
@@ -140,7 +140,7 @@ The inherited core and cgen inventory files needed no edits: their scoped contro
 
 ## Deferred Issues
 
-The final frozen no-call corpus run reports three route shifts before cgen: `adler_low.schway` and `checksum.schway` now refuse with `core.scalar_call_context_invalid`, and `phase24/error.schway` now refuses with `core.scalar_backedge_authority`. Their historical receipts expected cgen/application-shell outcomes. The generated-C byte snapshots match; this plan does not edit core validation, weaken the corpus guard, or change interpreter/peer behavior. Details are in [`deferred-items.md`](./deferred-items.md), with open broken-windows entry 13 in `.planning/WINDOWS.md` for the owning phase to reconcile.
+The final frozen no-call corpus run reports three route shifts before cgen: `adler_low.schway` and `checksum.schway` now refuse with `core.scalar_call_context_invalid`, and `examples/phase24/error.schway` now refuses with `core.scalar_backedge_authority`. Their historical receipts expected cgen/application-shell outcomes. The generated-C byte snapshots match; this plan does not edit core validation, weaken the corpus guard, or change interpreter/peer behavior. Details are in [`deferred-items.md`](./deferred-items.md), with open broken-windows entry 13 in `.planning/WINDOWS.md` for the owning phase to reconcile.
 
 ## Known Stubs
 

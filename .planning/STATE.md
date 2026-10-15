@@ -6,11 +6,11 @@ current_phase: 37
 current_phase_name: CRC-32 Consumer, Interpreter File Route, and Guide
 current_plan: Not started
 status: planning
-stopped_at: Phase 36 complete, ready to plan Phase 37
-last_updated: "2026-10-15T07:56:19.284Z"
+stopped_at: Phase 36 complete; ready to discuss Phase 37 (--no-transition)
+last_updated: "2026-10-15T07:59:23.335Z"
 last_activity: 2026-10-15
 last_activity_desc: Phase 36 complete, transitioned to Phase 37
-state_head: 8b10dae5cbf351f11a178ab7afe83219f5c27d25
+state_head: 5a08f5e58c4065578c397385d2b9aaa64be930c1
 progress:
   total_phases: 6
   completed_phases: 4
@@ -52,12 +52,12 @@ control list is parsed. Do not run project suites locally.
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-13)
+See: .planning/PROJECT.md (updated 2026-10-15)
 
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 36 — Scalar Helper Calls
+**Current focus:** Phase 37 — CRC-32 Consumer, Interpreter File Route, and Guide
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -127,7 +127,7 @@ plans.
 
 Phase: 37 — CRC-32 Consumer, Interpreter File Route, and Guide
 Current Plan: Not started
-Total Plans in Phase: 8
+Total Plans in Phase: 0
 Status: Ready to plan
 Last activity: 2026-10-15 — Phase 36 complete, transitioned to Phase 37
 
@@ -903,6 +903,14 @@ Carried into M003 as cheap, unowned cleanup:
 
 ### Blockers/Concerns
 
+**Current — Phase 36 closeout (2026-10-15):** No Phase 36 blocker remains.
+Phases 33–36 have passing goal verification; CALL-01/CALL-02 are complete.
+Earlier pending capture/legacy-route/borrow/inventory issues were resolved by
+the dated Phase 36 debug and review records. Remaining scope belongs to
+Phase 37 (file CRC-32, second consumer, interpreter file CLI and guide) and
+Phase 38 (final hosted receipts after audit). Historical entries below keep
+their dated debt owners; they are not current Phase 36 blockers.
+
 **Current — Phase 30 closeout (2026-10-12):** No Phase 30 blocker or human UAT
 remains (verifier 4/4, UAT 6/6 automated, threats 36/36 closed). Open carries:
 - the formatter merges a trailing result line into the preceding `var`
@@ -1122,8 +1130,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-15T05:30:59.600Z
-Stopped at: Phase 36 complete, ready to plan Phase 37
+Last session: 2026-10-15T07:59:23.246Z
+Stopped at: Phase 36 complete; ready to discuss Phase 37 (--no-transition)
 Resume file: None
 Next action: $gsd-discuss-phase 36
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
@@ -1326,3 +1334,16 @@ Routing reconciliation: the Phase 34 shared-file changes legitimately stale Phas
 The earlier in-progress refresh note is superseded. Phase 33 now passes 60/60 must-haves, with 27 prohibitions checked and 47 distinct selected test names / 48 package-qualified executions passed. Its refreshed review is clean, prior CR-01 disposition remains fixed, validation is compliant, security has 17 authored closures, and CLI/UI applicability is recorded without a graphical claim. No implementation plan was replayed and no new source change was needed.
 
 Both canonical verification statuses are passed. `init.progress` reports two complete phases, no current phase/work in progress, and Phase 35 as the next not-started phase. Phase 34's report correctly distinguishes 70 distinct selected names from 73 package-qualified executions. The exact next action is `$gsd-discuss-phase 35`, not a repeat verification or implementation command. The temporary auto-chain flag is false; the user's two xhigh routing-effort edits remain uncommitted. No push/hosted dispatch or Phase 35 execution has begun; Phase 38 remains final hosted-receipt owner.
+
+### Phase 36 handoff — 2026-10-15
+
+Eight plans complete; current independent verification passed 32/32.
+Arguments are evaluated once in source order; per-parent/per-site dynamic
+identity proves causal attribution only; optional capture preserves actual
+application results and defects. All 24 L1 threats are closed and review has
+no open findings. Proof-bridge details and source-bound local captures are in
+`phases/36-scalar-helper-calls/36-TRANSITION-CHECK.md`.
+
+Next command: `$gsd-discuss-phase 37`. Phase 37 has no context or plans yet.
+This execution used `--no-transition`: do not start Phase 37 from this handoff.
+No hosted M007 receipt is claimed. Preserve completed UAT and archived facts.
