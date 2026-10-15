@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/szTheory/schway/internal/compiler/callgraph"
 	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/execution"
 	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/native"
@@ -588,4 +590,321 @@ func phase36HasArgument(arguments []string, want string) bool {
 
 func phase36ShellQuote(value string) string {
 	return "'" + strings.ReplaceAll(value, "'", "'\\''") + "'"
+}
+
+func TestPhase36ByteViewCallerArgumentBoundary(t *testing.T) {
+	const caller = `fn identity(value: U64) -> U64 {
+  let result = value + 1
+  result
+}
+
+fn adler32(bytes: ByteView) -> U64 {
+  let index = byte_len(bytes)
+  var answer = 0
+  answer = identity(byte_at(bytes, index))
+  let later = answer + 2
+  later
+}
+`
+	validCaller := strings.Replace(caller, "let index = byte_len(bytes)", "let index = 0", 1)
+	for _, tc := range []struct {
+		name   string
+		callee string
+		want   string
+	}{
+		{"valid-index-enters-helper", validCaller, "90"},
+		{"out-of-bounds-argument-stops-before-helper", caller, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			source := phase29InlineFixture(t, tc.callee)
+			checked := session.Check(source)
+			if len(checked.Diagnostics) != 0 {
+				t.Fatalf("ByteView caller source diagnostics: %+v", checked.Diagnostics)
+			}
+			identityID := phase36FunctionID(checked.Program.Functions, "identity")
+			if identityID == "" {
+				t.Fatal("checked caller fixture has no identity helper")
+			}
+			run, err := interp.RunWithFixtureBytes(checked.Program, "main", "3", testsupport.Phase29FixtureBytes)
+			if err != nil {
+				t.Fatalf("fixture interpreter run: %v", err)
+			}
+			calls := phase36CallsTo(run.Events, identityID)
+			if strings.Contains(tc.name, "out-of-bounds") {
+				if run.Outcome.Kind != execution.OutcomeDefect || phase36DefectEvent(run.Events) != "byte index out of bounds" || len(run.LiveResources) != 1 || calls != 0 {
+					t.Fatalf("caller OOB outcome=%+v live=%v helper_calls=%d, want byte-index defect with live owner and zero helper calls", run.Outcome, run.LiveResources, calls)
+				}
+			} else if run.Outcome.Kind != execution.OutcomeReturned || run.Outcome.Value != tc.want || len(run.LiveResources) != 0 || calls != 1 {
+				t.Fatalf("valid caller outcome=%+v live=%v helper_calls=%d, want %s and one helper call", run.Outcome, run.LiveResources, calls, tc.want)
+			}
+
+		})
+	}
+}
+
+func TestPhase36LegacyByteViewCalleeBounds(t *testing.T) {
+	fixtureSource := phase29InlineFixture(t, phase36LegacyOOBAdler32())
+	checkedFixture := session.Check(fixtureSource)
+	if len(checkedFixture.Diagnostics) != 0 {
+		t.Fatalf("legacy fixture OOB source diagnostics: %+v", checkedFixture.Diagnostics)
+	}
+	fixtureRun, err := interp.RunWithFixtureBytes(checkedFixture.Program, "main", "3", testsupport.Phase29FixtureBytes)
+	if err != nil || fixtureRun.Outcome.Kind != execution.OutcomeDefect || phase36DefectEvent(fixtureRun.Events) != "byte index out of bounds" || len(fixtureRun.LiveResources) != 1 {
+		t.Fatalf("legacy fixture callee bounds outcome=%+v live=%v err=%v, want byte-index defect with live owner", fixtureRun.Outcome, fixtureRun.LiveResources, err)
+	}
+	validFixture, err := interp.RunWithFixtureBytes(phase29CheckedFixture(t).Program, "main", "3", testsupport.Phase29FixtureBytes)
+	if err != nil || validFixture.Outcome.Kind != execution.OutcomeReturned || validFixture.Outcome.Value != "300286872" || len(validFixture.LiveResources) != 0 {
+		t.Fatalf("restored fixture control outcome=%+v live=%v err=%v, want returned 300286872 with no live owner", validFixture.Outcome, validFixture.LiveResources, err)
+	}
+
+	dir := phase31CopyDir(t, testsupport.ProjectPath("examples", "checksum"))
+	libraryPath := filepath.Join(dir, "adler32.schway")
+	originalLibrary, err := os.ReadFile(libraryPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := strings.Index(string(originalLibrary), "fn adler32(")
+	if start < 0 {
+		t.Fatal("copied legacy adler32 library has no function")
+	}
+	mutatedLibrary := string(originalLibrary[:start]) + phase36LegacyOOBAdler32()
+	if err := os.WriteFile(libraryPath, []byte(mutatedLibrary), 0o600); err != nil {
+		t.Fatalf("write OOB library copy: %v", err)
+	}
+	entryPath := filepath.Join(dir, "checksum.schway")
+	checkedFile := phase36CheckFile(t, entryPath)
+	fileInput := phase31CopyInput(t, "x")
+	fileRun, err := interp.RunWithFileBytes(checkedFile.Program, "main", fileInput, testsupport.ChecksumReadFile)
+	if err != nil || fileRun.Outcome.Kind != execution.OutcomeDefect || phase36DefectEvent(fileRun.Events) != "byte index out of bounds" || len(fileRun.LiveResources) != 1 {
+		t.Fatalf("legacy file callee bounds outcome=%+v live=%v err=%v, want byte-index defect with live owner", fileRun.Outcome, fileRun.LiveResources, err)
+	}
+
+	manifestPath := filepath.Join(dir, "file_bytes.bindings.json")
+	retainedArtifact := filepath.Join(t.TempDir(), "checksum-oob-retained")
+	if _, diagnostics, err := session.BuildApplicationFile(context.Background(), entryPath, retainedArtifact, native.DefaultRunner(), manifestPath); err != nil || len(diagnostics) != 0 {
+		t.Fatalf("BuildApplicationFile OOB diagnostics=%+v err=%v", diagnostics, err)
+	}
+	var retainedStdout, retainedStderr bytes.Buffer
+	retainedOutcome, err := native.RunApplication(context.Background(), retainedArtifact, fileInput, &retainedStdout, &retainedStderr)
+	if err != nil || retainedOutcome.Kind != native.RunExited || retainedOutcome.ExitCode != 65 || retainedStdout.Len() != 0 || retainedStderr.String() != "schway: byte index out of bounds\n" {
+		t.Fatalf("retained OOB app outcome=%+v stdout=%q stderr=%q err=%v, want exit 65 and exact bounds reason", retainedOutcome, retainedStdout.String(), retainedStderr.String(), err)
+	}
+
+	generated, err := cgen.EmitApplication(checkedFile.Program)
+	if err != nil {
+		t.Fatalf("EmitApplication OOB program: %v", err)
+	}
+	// Runner.Run compiles in a private temporary directory and has no binding
+	// manifest staging hook. Point this test-only generated translation unit at
+	// the copied adapter header while keeping the adapter C as a separate unit.
+	headerPath := filepath.ToSlash(filepath.Join(dir, "adapter.h"))
+	const localAdapterInclude = `#include "local/adapter.h"`
+	if strings.Count(generated, localAdapterInclude) != 1 {
+		t.Fatalf("generated C should include the legacy adapter header once")
+	}
+	generated = strings.Replace(generated, localAdapterInclude, `#include "`+headerPath+`"`, 1)
+	clangPath, err := exec.LookPath("clang")
+	if err != nil {
+		t.Fatalf("required installed Clang is unavailable: %v", err)
+	}
+	for _, lane := range []struct {
+		name         string
+		optimization string
+		lto          bool
+	}{
+		{"O0", "-O0", false},
+		{"O3", "-O3", false},
+		{"O3-LTO", "-O3", true},
+	} {
+		lane := lane
+		t.Run("native-"+lane.name, func(t *testing.T) {
+			laneDir := t.TempDir()
+			generatedPath := filepath.Join(laneDir, "program.c")
+			if err := os.WriteFile(generatedPath, []byte(generated), 0o600); err != nil {
+				t.Fatalf("write %s generated C: %v", lane.name, err)
+			}
+			binaryPath := filepath.Join(laneDir, "checksum-oob-lane")
+			compileArgs := []string{"-std=c17", "-Wall", "-Wextra", "-Werror", "-pedantic", lane.optimization}
+			if lane.lto {
+				compileArgs = append(compileArgs, "-flto")
+			}
+			compileArgs = append(compileArgs, generatedPath, filepath.Join(dir, "adapter.c"), "-o", binaryPath)
+			compileCmd := exec.CommandContext(context.Background(), clangPath, compileArgs...)
+			var compileStdout, compileStderr bytes.Buffer
+			compileCmd.Stdout, compileCmd.Stderr = &compileStdout, &compileStderr
+			if err := compileCmd.Run(); err != nil {
+				t.Fatalf("compile native %s application with %v: %v stdout=%q stderr=%q", lane.name, compileArgs, err, compileStdout.String(), compileStderr.String())
+			}
+			if lane.lto && (!phase36HasArgument(compileArgs, "-O3") || !phase36HasArgument(compileArgs, "-flto")) {
+				t.Fatalf("native O3-LTO command lacks required flags: %v", compileArgs)
+			}
+			cmd := exec.Command(binaryPath, fileInput)
+			var stdout, stderr bytes.Buffer
+			cmd.Stdout, cmd.Stderr = &stdout, &stderr
+			runErr := cmd.Run()
+			exitCode := -1
+			if runErr != nil {
+				var exitErr *exec.ExitError
+				if !errors.As(runErr, &exitErr) {
+					t.Fatalf("run %s application binary: %v", lane.name, runErr)
+				}
+				exitCode = exitErr.ExitCode()
+			} else {
+				exitCode = 0
+			}
+			if exitCode != 65 || stdout.Len() != 0 || stderr.String() != "schway: byte index out of bounds\n" {
+				t.Fatalf("native %s application exit=%d stdout=%q stderr=%q, want exit 65 and exact bounds reason", lane.name, exitCode, stdout.String(), stderr.String())
+			}
+		})
+	}
+
+	if err := os.WriteFile(libraryPath, originalLibrary, 0o600); err != nil {
+		t.Fatalf("restore library control: %v", err)
+	}
+	restored := phase36CheckFile(t, entryPath)
+	restoredRun, err := interp.RunWithFileBytes(restored.Program, "main", fileInput, testsupport.ChecksumReadFile)
+	if err != nil || restoredRun.Outcome.Kind != execution.OutcomeReturned || restoredRun.Outcome.Value != "7929977" || len(restoredRun.LiveResources) != 0 {
+		t.Fatalf("restored file control outcome=%+v live=%v err=%v, want returned 7929977 with no live owner", restoredRun.Outcome, restoredRun.LiveResources, err)
+	}
+	validArtifact := filepath.Join(t.TempDir(), "checksum-restored")
+	if _, diagnostics, err := session.BuildApplicationFile(context.Background(), entryPath, validArtifact, native.DefaultRunner(), manifestPath); err != nil || len(diagnostics) != 0 {
+		t.Fatalf("BuildApplicationFile restored diagnostics=%+v err=%v", diagnostics, err)
+	}
+	var validStdout, validStderr bytes.Buffer
+	validOutcome, err := native.RunApplication(context.Background(), validArtifact, fileInput, &validStdout, &validStderr)
+	if err != nil || validOutcome.Kind != native.RunExited || validOutcome.ExitCode != 0 || validStdout.String() != "7929977\n" || validStderr.Len() != 0 {
+		t.Fatalf("restored native control outcome=%+v stdout=%q stderr=%q err=%v", validOutcome, validStdout.String(), validStderr.String(), err)
+	}
+}
+
+func TestPhase36NativeCallCaptureOutcomeSeparation(t *testing.T) {
+	fixture := phase36ReadHelperValues(t)
+	localPath := testsupport.ProjectPath("examples", "helper_calls", "crc_step.schway")
+	localBytes, err := os.ReadFile(localPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := session.Check(localBytes)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("local helper diagnostics: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.EmitApplication(checked.Program)
+	if err != nil {
+		t.Fatalf("EmitApplication repeated helper: %v", err)
+	}
+	generated = phase36ReplaceDefine(t, generated, "SCHWAY_INVOCATION_CAPACITY", "1u")
+	successArtifact := filepath.Join(t.TempDir(), "helper-capture-success")
+	if _, err := native.BuildApplication(context.Background(), localBytes, generated, successArtifact); err != nil {
+		t.Fatalf("BuildApplication repeated helper: %v", err)
+	}
+	late := phase36FindDefectProgram(t, fixture, "late-loop-helper-overflow")
+	lateChecked := session.Check([]byte(late.source))
+	if len(lateChecked.Diagnostics) != 0 {
+		t.Fatalf("late helper defect diagnostics: %+v", lateChecked.Diagnostics)
+	}
+	lateGenerated, err := cgen.EmitApplication(lateChecked.Program)
+	if err != nil {
+		t.Fatalf("EmitApplication late defect: %v", err)
+	}
+	lateGenerated = phase36ReplaceDefine(t, lateGenerated, "SCHWAY_INVOCATION_CAPACITY", "1u")
+	defectArtifact := filepath.Join(t.TempDir(), "helper-capture-defect")
+	if _, err := native.BuildApplication(context.Background(), []byte(late.source), lateGenerated, defectArtifact); err != nil {
+		t.Fatalf("BuildApplication late helper defect: %v", err)
+	}
+
+	success := phase36FindHelperCase(t, fixture, "local-four-step-loop")
+	defect := phase36FindHelperCase(t, fixture, "late-loop-helper-overflow")
+	for _, tc := range []struct {
+		name     string
+		artifact string
+		input    string
+		want     phase36HelperCaseRow
+	}{
+		{"success", successArtifact, success.Input, success},
+		{"late-defect", defectArtifact, defect.Input, defect},
+	} {
+		tc := tc
+		t.Run(tc.name+"-capture-exhausted", func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			outcome, report, runErr := native.DefaultRunner().RunApplicationWithEvidence(context.Background(), tc.artifact, tc.input, filepath.Join(t.TempDir(), "report.json"), native.EvidenceEvents, &stdout, &stderr)
+			var toolError *native.ToolError
+			if !errors.As(runErr, &toolError) || toolError.Code != "native.evidence_capacity_exhausted" || outcome.Kind != native.RunExited || outcome.ExitCode != tc.want.ExpectedExit || report.ProcessOutcome != outcome || report.CaptureStatus != native.EvidenceStatusCapacityExhausted || report.Execution != nil || stdout.String() != tc.want.ExpectedStdout || stderr.String() != tc.want.ExpectedStderr {
+				t.Fatalf("capture exhausted app outcome=%+v report=%+v stdout=%q stderr=%q err=%v", outcome, report, stdout.String(), stderr.String(), runErr)
+			}
+		})
+		t.Run(tc.name+"-capture-disabled", func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			outcome, report, runErr := native.DefaultRunner().RunApplicationWithEvidence(context.Background(), tc.artifact, tc.input, filepath.Join(t.TempDir(), "report.json"), native.EvidenceDisabled, &stdout, &stderr)
+			if runErr != nil || outcome.Kind != native.RunExited || outcome.ExitCode != tc.want.ExpectedExit || report.ProcessOutcome != outcome || report.CaptureStatus != native.EvidenceStatusDisabled || stdout.String() != tc.want.ExpectedStdout || stderr.String() != tc.want.ExpectedStderr {
+				t.Fatalf("capture-disabled app outcome=%+v report=%+v stdout=%q stderr=%q err=%v", outcome, report, stdout.String(), stderr.String(), runErr)
+			}
+		})
+	}
+}
+
+func phase36LegacyOOBAdler32() string {
+	return `fn adler32(bytes: ByteView) -> U64 {
+  let index = byte_len(bytes)
+  let result = 0 + byte_at(bytes, index)
+  result
+}
+`
+}
+
+func phase29CheckedFixture(t *testing.T) session.CheckResult {
+	t.Helper()
+	return phase36CheckFile(t, phase29FixturePath)
+}
+
+func phase36FunctionID(functions []core.Function, name string) string {
+	for _, function := range functions {
+		if function.Name == name {
+			return function.ID
+		}
+	}
+	return ""
+}
+
+func phase36CallsTo(events []execution.Event, calleeID string) int {
+	count := 0
+	for _, event := range events {
+		if event.Kind == "function.called" && event.CalleeFunctionID == calleeID {
+			count++
+		}
+	}
+	return count
+}
+
+func phase36FindDefectProgram(t *testing.T, fixture phase36HelperFixture, name string) struct {
+	caseName string
+	source   string
+	expected phase36HelperCaseRow
+} {
+	t.Helper()
+	for _, row := range phase36DefectPrograms(t, fixture) {
+		if row.caseName == name {
+			return row
+		}
+	}
+	t.Fatalf("unknown Phase 36 defect program %q", name)
+	return struct {
+		caseName string
+		source   string
+		expected phase36HelperCaseRow
+	}{}
+}
+
+func phase36ReplaceDefine(t *testing.T, generated, name, value string) string {
+	t.Helper()
+	prefix := "#define " + name + " "
+	start := strings.Index(generated, prefix)
+	if start < 0 {
+		t.Fatalf("generated C lacks %s", name)
+	}
+	end := strings.IndexByte(generated[start:], '\n')
+	if end < 0 {
+		t.Fatalf("generated C definition %s has no line ending", name)
+	}
+	end += start
+	return generated[:start] + prefix + value + generated[end:]
 }

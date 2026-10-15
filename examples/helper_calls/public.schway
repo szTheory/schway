@@ -1,0 +1,16 @@
+module examples.helper_calls.public
+
+import crc_step {
+  fn crc_step
+}
+
+export {
+  fn main
+}
+
+fn main(unused: Byte) -> U64 {
+  let state = 1
+  let first = crc_step(state)
+  let result = crc_step(first)
+  result
+}

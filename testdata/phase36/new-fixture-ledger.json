@@ -10,6 +10,11 @@
       "path": "examples/helper_calls/importer.schway",
       "sha256": "da4db4e265aae96bf90ab17c5c4b064500115a93bb5095a192334be53a0bc5ab",
       "reason": "New local-module application witness imports crc_step and repeats it four times from its U64 input."
+    },
+    {
+      "path": "examples/helper_calls/public.schway",
+      "sha256": "ef608e10f62d79e731bbf3e6a2320fa567914c2e5e48e13807cd05535d7a4f38",
+      "reason": "New unused-Byte conformance witness feeds two constant-derived local CRC helper calls without adding a U64 public input default."
     }
   ]
 }

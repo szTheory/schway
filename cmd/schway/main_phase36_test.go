@@ -1,41 +1,60 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
+type phase36PublicCommand struct {
+	Schema     string                `json:"schema"`
+	Command    string                `json:"command"`
+	Status     string                `json:"status"`
+	Executions []execution.Execution `json:"executions"`
+}
+
 func TestPhase36PublicHelperConformance(t *testing.T) {
-	const source = `module phase36.red_public
-
-export {
-  fn main
-}
-
-fn crc_step(state: U64) -> U64 {
-  let result = state >> 1
-  result
-}
-
-fn main(unused: Byte) -> U64 {
-  let state = 1
-  let first = crc_step(state)
-  let result = crc_step(first)
-  result
-}
-`
-	if strings.Count(source, "unused") != 1 {
-		t.Fatal("public helper witness must keep its Byte parameter unused")
+	path := testsupport.ProjectPath("examples", "helper_calls", "public.schway")
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read public helper witness: %v", err)
 	}
-	path := filepath.Join(t.TempDir(), "public.schway")
-	if err := os.WriteFile(path, []byte(source), 0o600); err != nil {
-		t.Fatalf("write public helper witness: %v", err)
+	if strings.Count(string(source), "unused") != 1 {
+		t.Fatal("public helper witness must keep its Byte parameter unused")
 	}
 	for _, engine := range []string{"interpreter", "native"} {
 		t.Run(engine, func(t *testing.T) {
-			phase35RunPublicCLI(t, engine, path, "1994146192", nil)
+			code, stdout, stderr := captureLangRun(t, []string{"--json", "run", "--engine=" + engine, path})
+			if code != exitSuccess || stderr != "" {
+				t.Fatalf("public %s helper run code=%d stderr=%q stdout=%q", engine, code, stderr, stdout)
+			}
+			var command phase36PublicCommand
+			if err := json.Unmarshal([]byte(stdout), &command); err != nil {
+				t.Fatalf("decode public %s helper result: %v; output=%q", engine, err, stdout)
+			}
+			if command.Command != "run" || command.Status != "pass" || len(command.Executions) != 1 {
+				t.Fatalf("public %s helper schema=%q command=%q status=%q executions=%d", engine, command.Schema, command.Command, command.Status, len(command.Executions))
+			}
+			got := command.Executions[0]
+			if got.Outcome.Kind != execution.OutcomeReturned || got.Outcome.Value != "1994146192" {
+				t.Fatalf("public %s projection outcome=%+v, want returned value 1994146192", engine, got.Outcome)
+			}
+			calls, returns := 0, 0
+			for _, event := range got.Events {
+				if event.Kind == "function.called" && strings.Contains(event.CalleeFunctionID, "crc_step:fn:crc_step") {
+					calls++
+				}
+				if event.Kind == "function.returned" {
+					returns++
+				}
+			}
+			if calls != 2 || returns != 3 || len(got.LiveResources) != 0 {
+				t.Fatalf("public %s helper calls=%d returns=%d live=%v, want 2 helper calls, 3 returns, and no live resources", engine, calls, returns, got.LiveResources)
+			}
 		})
 	}
 }
