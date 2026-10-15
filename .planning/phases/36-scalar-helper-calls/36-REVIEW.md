@@ -76,7 +76,7 @@ The scalar-call parser, checker, independent core peers, interpreter, native emi
 
 ### Warnings
 
-#### WR-01: Truncated repeated-call traces omit the expected callee
+### WR-01: Truncated repeated-call traces omit the expected callee
 
 **Classification:** WARNING
 **File:** `internal/compiler/executionpeer/executionpeer.go:681-684`
