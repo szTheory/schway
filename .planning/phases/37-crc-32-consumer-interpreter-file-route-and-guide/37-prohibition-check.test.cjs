@@ -39,12 +39,26 @@ const ROOTS = {
     ],
     expectedFailingChildren: [],
   },
+  interpreterOutcome: {
+    package: "./internal/compiler/interp",
+    name: "TestPhase37CaptureDisabledOutcomes",
+    source: "internal/compiler/interp/interp.go",
+    needle: "return ApplicationResult{Execution: executionResult, Output: sink.bytes}, runErr",
+    replacement: "return ApplicationResult{Execution: executionResult, Output: nil}, runErr",
+    expectedAssertions: [
+      "want late defect preserved after evidence exhaustion",
+    ],
+    expectedFailingChildren: [
+      "capture-exhaustion-keeps-later-terminal-outcome",
+    ],
+  },
 };
 
 const FIXTURES = {
   none: { file: "prohibition-clean.json", data: { version: 1, subject: "none" } },
   outcome: { file: "prohibition-outcome-violation.json", data: { version: 1, subject: "outcome" } },
   causal: { file: "prohibition-causal-violation.json", data: { version: 1, subject: "causal" } },
+  interpreterOutcome: { file: "prohibition-interpreter-violation.json", data: { version: 1, subject: "interpreterOutcome" } },
 };
 
 function exactCount(text, needle) {
@@ -78,8 +92,8 @@ function selectSubject() {
 function overlaySource(kind, spec, sourcePath, tempDir) {
   const original = fs.readFileSync(sourcePath, "utf8");
   let changed;
-  if (kind === "outcome") {
-    if (exactCount(original, spec.needle) !== 1) throw new Error("native capacity branch anchor count is not exactly one");
+  if (kind === "outcome" || kind === "interpreterOutcome") {
+    if (exactCount(original, spec.needle) !== 1) throw new Error(`${kind} capacity branch anchor count is not exactly one`);
     changed = original.replace(spec.needle, spec.replacement);
   } else {
     if (exactCount(original, spec.anchor) !== 1) throw new Error("causal Validate anchor count is not exactly one");
@@ -188,10 +202,12 @@ function runExactRoot(kind, selectedSubject) {
 const STATEMENTS = {
   outcome: "MUST NOT turn optional capture exhaustion into application success or hide a later checked defect.",
   causal: "MUST NOT present causal structural acceptance as independent CRC numeric verification.",
+  interpreterOutcome: "MUST NOT let capture exhaustion replace the interpreter's actual FileBytes application outcome or prior output.",
 };
 const TEST_NAMES = {
   outcome: "native capture exhaustion preserves the actual application outcome",
   causal: "causal peer does not claim numeric replay of a false-success trace",
+  interpreterOutcome: "interpreter capture exhaustion preserves the checked defect outcome and prior output",
 };
 
 function digest(bytes) {
@@ -227,29 +243,31 @@ function projectRequest(kind) {
 }
 
 function planProhibitionItems() {
-  const planPath = path.join(ROOT, PHASE_REL, "37-01-PLAN.md");
-  const planText = fs.readFileSync(planPath, "utf8");
-  const match = planText.match(/^  prohibitions:\n([\s\S]*?)(?=^  artifacts:)/m);
-  assert.ok(match, "plan must retain a must_haves.prohibitions block");
-  assert.ok(!/^\s{6}check:\s*$/m.test(match[1]), "plan descriptors must use flat check_* scalars");
-  const items = [];
-  let current = null;
-  for (const line of match[1].split(/\r?\n/)) {
-    const start = line.match(/^    - statement: "(.*)"$/);
-    if (start) {
-      if (current) items.push(current);
-      current = { statement: start[1] };
-      continue;
+  const parsePlan = (planName) => {
+    const planText = fs.readFileSync(path.join(ROOT, PHASE_REL, planName), "utf8");
+    const match = planText.match(/^  prohibitions:\n([\s\S]*?)(?=^  artifacts:)/m);
+    if (!match) return [];
+    assert.ok(!/^\s{6}check:\s*$/m.test(match[1]), "plan descriptors must use flat check_* scalars");
+    const items = [];
+    let current = null;
+    for (const line of match[1].split(/\r?\n/)) {
+      const start = line.match(/^    - statement: "(.*)"$/);
+      if (start) {
+        if (current) items.push(current);
+        current = { statement: start[1] };
+        continue;
+      }
+      const field = line.match(/^      ([a-z_]+): (.+)$/);
+      if (field && current) {
+        let value = field[2];
+        if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+        current[field[1]] = value;
+      }
     }
-    const field = line.match(/^      ([a-z_]+): (.+)$/);
-    if (field && current) {
-      let value = field[2];
-      if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
-      current[field[1]] = value;
-    }
-  }
-  if (current) items.push(current);
-  return items;
+    if (current) items.push(current);
+    return items;
+  };
+  return [...parsePlan("37-01-PLAN.md"), ...parsePlan("37-02-PLAN.md")];
 }
 
 function assertPlanProjectionMatches(projectedItems) {
@@ -261,7 +279,7 @@ function assertPlanProjectionMatches(projectedItems) {
   ], "initial descriptorless unresolved projection history must remain intact");
 
   const planItems = planProhibitionItems();
-  assert.equal(planItems.length, projectedItems.length, "plan must wire both recalled prohibitions");
+  assert.equal(planItems.length, projectedItems.length, "plans must wire all three prohibition descriptors");
   const fields = [
     "statement", "status", "verification", "check_kind", "check_target",
     "check_violation_fixture", "check_clean_fixture",
@@ -314,7 +332,8 @@ function runDirectTap(kind, mode) {
   const output = `${typeof result.stdout === "string" ? result.stdout : ""}${typeof result.stderr === "string" ? result.stderr : ""}`;
   const counts = parseTapCounts(output);
   const bad = mode === "bad";
-  const expected = { tests: 2, pass: bad ? 1 : 2, fail: bad ? 1 : 0, cancelled: 0, skipped: 0, todo: 0 };
+  const testCount = Object.keys(TEST_NAMES).length;
+  const expected = { tests: testCount, pass: bad ? testCount - 1 : testCount, fail: bad ? 1 : 0, cancelled: 0, skipped: 0, todo: 0 };
   const failedNames = [...output.matchAll(/^not ok \d+ - (.+)$/gm)].map((match) => match[1]);
   const expectedFailure = bad ? [TEST_NAMES[kind]] : [];
   assert.equal(result.error, undefined, `${kind}/${mode}: Node test runner must spawn`);
@@ -331,7 +350,7 @@ function runDirectTap(kind, mode) {
 function runGoRootControls(kind, mode) {
   const subject = mode === "bad" ? kind : "none";
   const roots = {};
-  for (const root of ["outcome", "causal"]) {
+  for (const root of Object.keys(ROOTS)) {
     const result = runExactRoot(root, subject);
     const expectedKind = mode === "bad" && root === kind ? "violation" : "green";
     assert.equal(result.kind, expectedKind, `${kind}/${mode}: ${root} exact Go root classification`);
@@ -398,7 +417,7 @@ function runCanonicalProducer(kind, request) {
 
 function writeProofEvidence(rows, projections, proofs) {
   const phaseDir = path.join(ROOT, PHASE_REL);
-  const planPath = path.join(phaseDir, "37-01-PLAN.md");
+  const planPaths = ["37-01-PLAN.md", "37-02-PLAN.md"].map((name) => path.join(phaseDir, name));
   const adapterPath = path.join(phaseDir, "37-prohibition-check.test.cjs");
   const head = spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8", shell: false });
   assert.equal(head.status, 0, "capture current HEAD for evidence");
@@ -410,9 +429,9 @@ function writeProofEvidence(rows, projections, proofs) {
     `Full checkout HEAD: \`${head.stdout.trim()}\``,
     `Host/toolchain: ${os.platform()} ${os.arch()}; Node \`${process.version}\`; Go cache \`/tmp/ai-lang-verification-gocache\`.`,
     `Adapter SHA-256: \`${digest(fs.readFileSync(adapterPath))}\`.`,
-    `Plan SHA-256 after descriptor wiring: \`${digest(fs.readFileSync(planPath))}\`.`,
+    `Plan SHA-256 after descriptor wiring: ${planPaths.map((planPath) => `\`${path.basename(planPath)}=${digest(fs.readFileSync(planPath))}\``).join("; ")}.`,
     "",
-    "This local proof runs the supported installed \`projectProhibitions\` projection, reconstructs each descriptor with \`descriptorFromProjection\`, and calls the canonical \`check prohibition-enforcement\` producer. The initial descriptorless/unresolved projection remains preserved in \`37-PROHIBITION-PROJECTION.json\`; this evidence proves only the two named existing Go boundaries. Structural causal acceptance is not CRC numeric replay.",
+    "This local proof runs the supported installed \`projectProhibitions\` projection, reconstructs each descriptor with \`descriptorFromProjection\`, and calls the canonical \`check prohibition-enforcement\` producer. The initial descriptorless/unresolved projection remains preserved in \`37-PROHIBITION-PROJECTION.json\`; this evidence proves the two existing Go boundaries and the interpreter's capture-disabled FileBytes outcome boundary. Structural causal acceptance is not CRC numeric replay.",
     "",
   ];
   for (let index = 0; index < rows.length; index++) {
@@ -425,7 +444,7 @@ function writeProofEvidence(rows, projections, proofs) {
     };
     const result = proofs[kind];
     lines.push(
-      `## ${kind === "outcome" ? "Native capture outcome" : "Causal peer numeric-limit"} prohibition`,
+      `## ${kind === "outcome" ? "Native capture outcome" : kind === "causal" ? "Causal peer numeric-limit" : "Interpreter FileBytes capture outcome"} prohibition`,
       "",
       `Statement: \`${STATEMENTS[kind]}\``,
       `Source: \`${roots[kind].source}\` SHA-256 \`${specDigests.source}\`; adapter/test SHA-256 \`${digest(fs.readFileSync(adapterPath))}\`.`,
@@ -460,7 +479,7 @@ function writeProofEvidence(rows, projections, proofs) {
 
 function runProofMode() {
   try {
-    const kinds = ["outcome", "causal"];
+    const kinds = ["outcome", "causal", "interpreterOutcome"];
     const projections = {};
     const proofs = {};
     for (const kind of kinds) {
@@ -478,7 +497,7 @@ function runProofMode() {
     }
     assertPlanProjectionMatches(kinds.map((kind) => projections[kind]));
     writeProofEvidence(kinds, projections, proofs);
-    process.stdout.write("Phase37 canonical prohibition proof passed for both projected descriptors.\n");
+    process.stdout.write("Phase37 canonical prohibition proof passed for all three projected descriptors.\n");
   } catch (error) {
     process.stderr.write(`Phase37 canonical prohibition proof failed: ${error.message}\n`);
     process.exitCode = 1;
@@ -495,6 +514,7 @@ if (process.argv.includes("--prove")) {
     results = {
       outcome: runExactRoot("outcome", selection.subject),
       causal: runExactRoot("causal", selection.subject),
+      interpreterOutcome: runExactRoot("interpreterOutcome", selection.subject),
     };
     for (const [kind, result] of Object.entries(results)) {
       if (result.kind === "invalid") invalidReason = `${kind} owner result is not a valid proof: ${result.reason}`;
@@ -514,5 +534,9 @@ if (process.argv.includes("--prove")) {
 
   test(TEST_NAMES.causal, { skip: invalidReason || false }, () => {
     assert.equal(results.causal.kind, "green", proofMessage("causal"));
+  });
+
+  test(TEST_NAMES.interpreterOutcome, { skip: invalidReason || false }, () => {
+    assert.equal(results.interpreterOutcome.kind, "green", proofMessage("interpreterOutcome"));
   });
 }

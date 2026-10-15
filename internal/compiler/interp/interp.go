@@ -310,6 +310,7 @@ type capturePolicyProbe struct {
 	segmentAllocations    int
 	ordinalMapAllocations int
 	initialEventCapacity  int
+	resourceReleases      int
 	frames                []captureFrameSnapshot
 }
 
@@ -773,7 +774,7 @@ func runFileApplicationWithProbe(program core.Program, functionName, path string
 	}
 	if len(executionResult.LiveResources) != 0 {
 		abortLike := isAbortLikeDefect(program, executionResult, ownerOpID)
-		if !captureEnabled {
+		if !captureEnabled || capacityErr {
 			abortLike = isAbortLikeDefectWithoutCapture(program, executionResult, ownerOpID, base.terminal)
 		}
 		if !abortLike {
@@ -1680,7 +1681,7 @@ type terminalDetails struct {
 }
 
 func noteTerminalDetails(f *frame, operation core.LinearOperation, reason string) {
-	if f != nil && !f.captureEnabled && f.terminal != nil && reason != "" {
+	if f != nil && f.terminal != nil && reason != "" {
 		f.terminal.functionID = f.function.ID
 		f.terminal.operationID = operation.ID
 		f.terminal.reason = reason
@@ -2639,6 +2640,9 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				top.transferredOwners[sourceValue.ownerActivationID] = transferred
 			}
 			top.live[operation.ReleasesOperationID] = false
+			if top.captureProbe != nil {
+				top.captureProbe.resourceReleases++
+			}
 			events = appendFrameEvent(top, events, func() Event { return ownedEvent(top, operation, "resource.released") })
 			top.idx++
 		case core.OpForeignCall:
