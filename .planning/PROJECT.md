@@ -154,15 +154,15 @@ is auto-followed. Copy-local code is preferred over new dependencies.
 
 ## Current State
 
-Amended 2026-10-15 after Phase 37: the ordinary-source CRC-32 module, second
-consumer, public interpreter/native file routes and executable guide are
-complete. Independent verification passes 14/14 truths, with zero unverified
-behavior; APP-13, MOD-07, APP-14 and DX-24 are validated. Phase 33–36 reports
-are stale after successor changes to shared files; their plans are complete
-and focused regression checks passed. Refresh those verification gates without
-replaying implementation, then audit M007 and close any audit gaps before
-Phase 38 binds final two-host receipts. Earlier dated records retain their
-historical source bindings.
+Amended 2026-10-15 after Phase 33's successor refresh: the ordinary-source
+CRC module, second consumer, public file routes and guide remain implemented.
+Phase 33 now passes independent verification at 60/60 truths after bounded
+metadata and receipt-guard repairs. Phases 34-37 have complete plans but stale
+whole-phase reports; preserve implementation/UAT and refresh gates beginning
+with `$gsd-execute-phase 34`. Audit M007 and close gaps before Phase 38 binds
+new two-host receipts. The earlier Phase 37 acceptance remains historical at
+its recorded source; its metadata corrections also need a verifier refresh.
+See [33-CLOSEOUT.md](phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CLOSEOUT.md).
 
 **2026-10-12 M006 Bounded Byte Utility and Local Modules shipped** (6 phases,
 63 plans, 158 tasks; archive `.planning/milestones/M006-*`, tag `vM006`).
@@ -866,7 +866,7 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-15 after Phase 37 verification*
+*Last updated: 2026-10-15 after Phase 33 verification refresh*
 
 ### Phase 33 execution amendment — 2026-10-13
 
@@ -922,3 +922,19 @@ The next capabilities are audited two-host CRC/checksum receipts, the already
 proposed M008 `wc`/`longest_line` pair, and a bounded key=value config consumer.
 Only EVD-17 is active scope. No Phase 38 planning, push or hosted dispatch was
 performed during this closeout.
+
+
+### Phase 33 successor verification amendment — 2026-10-15
+
+Independent verification passes 60/60 truths with a fresh 59-file fingerprint;
+QLT-13/14/15 and EVD-16 remain complete. All 18 focused validation rows passed
+49 named roots, plus seven metadata/ledger roots; independent key-path checks
+and input/log bindings passed. Four newly reviewed guard defects are fixed;
+the disposition retains five fixed findings including historical CR-01.
+Coverage metadata remains a small audited canonical subset, and receipt
+consistency follows the actual producer field grammar. No dependency or
+compiler/runtime capability was added. The next three capabilities and dormant
+seed dispositions remain scoped in [33-CLOSEOUT.md](phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CLOSEOUT.md).
+Current next action is the Phase 34 verifier refresh, then the remaining stale
+reports and milestone audit before Phase 38; EVD-17 is still the only active
+requirement.

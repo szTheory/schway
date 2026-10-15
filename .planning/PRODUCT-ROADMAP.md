@@ -820,3 +820,29 @@ then run the milestone audit and any gap closure before Phase 38. This run
 stops before Phase 38 planning, push or hosted dispatch. Local evidence is
 Darwin/arm64; final two-host receipts, subjective readability and whole-loop
 cold/warm latency distributions remain pending or unmeasured.
+
+
+## Phase 33 verification refresh after Phase 37 — 2026-10-15
+
+This dated amendment updates the earlier freshness routing. Phase 33 now
+passes independent 60/60 verification with a fresh 59-file fingerprint. Source
+inspection and reached controls close incomplete coverage metadata and receipt
+record/inventory false accepts; the shared gate follows the producer's real
+whitespace and free-text stderr grammar. Compiler/runtime semantics and the
+existing language frontier are unchanged. Frozen receipts/goldens remain
+historical at their original source.
+
+The final parent run passed 49 exact roots across six packages and seven
+metadata/ledger roots, with no missing/fail/skip; the verifier executed its own
+critical paths and checked current log/input bindings. No hosted result,
+dependency or latency distribution is claimed. Phases 34-37 implementation
+remains complete but their reports are stale, including Phase 37 after the
+metadata corrections. Resume with `$gsd-execute-phase 34`, preserve completed
+plans/UAT, then audit M007 and close gaps before Phase 38.
+
+The current three recommendations remain same-source audited two-host CRC
+receipts, the proposed M008 wc/longest_line pair, then a bounded fixed-schema
+key=value consumer. Their programs, blockers, complete slices, checker laws,
+evidence/debt, owners and reprioritization conditions, plus relevant dormant
+z1g/trz/z1s dispositions, are in [33-CLOSEOUT.md](phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CLOSEOUT.md).
+Only EVD-17 is active milestone scope; no later consumer was promoted.
