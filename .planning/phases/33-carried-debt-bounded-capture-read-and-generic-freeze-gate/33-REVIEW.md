@@ -1,94 +1,69 @@
 ---
 phase: 33-carried-debt-bounded-capture-read-and-generic-freeze-gate
-reviewed: 2026-10-14T23:38:46Z
+reviewed: 2026-10-15T19:42:42Z
 depth: standard
-files_reviewed: 58
+files_reviewed: 25
 files_reviewed_list:
+  - cmd/schway/main_phase321_run_input_test.go
   - cmd/schway/main_phase32_routes_test.go
-  - cmd/schway/main_phase35_test.go
-  - docs/agent-surface.md
-  - examples/bitwise.schway
-  - examples/checksum/adler32.schway
-  - internal/compiler/cgen/cgen_phase35_test.go
   - internal/compiler/cgen/cgen_program.go
-  - internal/compiler/check/check.go
-  - internal/compiler/check/check_phase35_baseline_test.go
-  - internal/compiler/check/check_phase35_numeric_test.go
-  - internal/compiler/check/check_phase35_test.go
-  - internal/compiler/check/scalar.go
-  - internal/compiler/core/core.go
-  - internal/compiler/core/core_phase35_test.go
-  - internal/compiler/core/core_test.go
-  - internal/compiler/corevalidate/corevalidate.go
-  - internal/compiler/corevalidate/corevalidate_phase35_test.go
+  - internal/compiler/execution/defect_reasons.go
   - internal/compiler/executionpeer/executionpeer.go
-  - internal/compiler/executionpeer/executionpeer_phase35_test.go
   - internal/compiler/interp/interp.go
-  - internal/compiler/interp/interp_phase35_test.go
-  - internal/compiler/originvalidate/originvalidate.go
-  - internal/compiler/originvalidate/originvalidate_phase35_test.go
-  - internal/compiler/pathoracle/pathoracle.go
-  - internal/compiler/pathoracle/pathoracle_phase35_test.go
-  - internal/compiler/session/session_phase272_identity_test.go
-  - internal/compiler/session/session_phase273_identity_test.go
-  - internal/compiler/session/session_phase34_compat_test.go
-  - internal/compiler/session/session_phase34_limit_consumers_test.go
-  - internal/compiler/session/session_phase34_prechange_test.go
-  - internal/compiler/session/session_phase34_presentation_test.go
-  - internal/compiler/session/session_phase34_surface_test.go
-  - internal/compiler/session/session_phase35_adler_test.go
-  - internal/compiler/session/session_phase35_admission_mutation_test.go
-  - internal/compiler/session/session_phase35_closeout_test.go
-  - internal/compiler/session/session_phase35_peer_mutation_test.go
-  - internal/compiler/session/session_phase35_prechange_test.go
-  - internal/compiler/session/session_phase35_surface_test.go
-  - internal/compiler/session/session_phase35_values_test.go
-  - internal/compiler/surface/refusals.go
-  - internal/compiler/surfacemanifest/manifest.go
-  - internal/compiler/surfacemanifest/manifest_test.go
-  - internal/compiler/syntax/format.go
-  - internal/compiler/syntax/numeric_phase35_test.go
-  - internal/compiler/syntax/parser.go
-  - internal/compiler/syntax/parser_phase34_recovery_test.go
-  - internal/compiler/syntax/parser_phase34_refusal_test.go
-  - internal/compiler/syntax/parser_phase35_baseline_test.go
-  - internal/compiler/syntax/parser_phase35_test.go
+  - internal/compiler/interp/interp_phase321_defect_test.go
+  - internal/compiler/interp/interp_phase33_defect_test.go
+  - internal/compiler/native/native_app.go
+  - internal/compiler/native/native_phase33_capture_test.go
+  - internal/compiler/native/native_phase33_defect_parity_test.go
+  - internal/compiler/session/session.go
+  - internal/compiler/session/session_freeze_gate_test.go
+  - internal/compiler/session/session_gate_differential_test.go
+  - internal/compiler/session/session_gate_retire_test.go
+  - internal/compiler/session/session_phase32_receipt_test.go
+  - internal/compiler/session/session_phase37_validation_test.go
+  - internal/compiler/session/session_receipt_gate_test.go
+  - internal/compiler/session/summary_coverage_test.go
+  - scripts/check-freeze.sh
+  - scripts/check-receipts.sh
+  - scripts/codedigest.sh
+  - scripts/verify-phase32.sh
   - testdata/phase16/public-emitter-consumers.json
-  - testdata/phase35/numeric-delta.json
-  - testdata/phase35/numeric-policy-baseline.json
-  - testdata/phase35/prechange-corpus.json
-  - testdata/phase35/recovery-after.json
-  - testdata/phase35/shift-sites.json
-  - testdata/phase35/surface-census.json
-  - testdata/phase35/surface-witnesses.json
-  - testdata/phase35/value-vectors.json
+  - testdata/receipts/M006.manifest
 findings:
   critical: 0
-  warning: 0
+  warning: 2
   info: 0
-  total: 0
-status: clean
+  total: 2
+status: issues_found
 ---
 
 # Phase 33: Code Review Report
 
-**Reviewed:** 2026-10-14T23:38:46Z
+**Reviewed:** 2026-10-15T19:42:42Z
 **Depth:** standard
-**Files Reviewed:** 58
-**Status:** clean
+**Files Reviewed:** 25
+**Status:** issues_found
 
 ## Summary
 
-The canonical evaluation-scope resolver returned status degraded, source phase-range, reason no-task-commits-since. This 58-path fallback is the supplied phase-range union, not a Phase 33 own-task commit union. I inspected the live bounded application-capture read, explicit capture-path environment gate, executable and receipt digest checks, and the generic root-aware freeze and receipt scripts. The prior CR-01 finding remains fixed under 33-REVIEW-DISPOSITION.md; the receipt gate rejects empty or whitespace-only control entries before log validation. No new issue or reopening was confirmed.
-
-This is source inspection only. No tests were run in this refresh; the focused results recorded in 33-REVIEW-FIX.md and other phase receipts are historical evidence. No UAT replay or phase-completion claim is made.
+The review covers source snapshot `537e90ac` on `phase26-validation` and used the explicit 25-file scope override. The canonical resolver's degraded 77-file fallback was not used, and this report does not claim an incremental commit union. I reviewed the bounded capture reader, the single-owner/reason defect rule including its disabled-capture path, the generic POSIX freeze and receipt gates, and the current registry and metadata repairs. Historical CR-01, “Empty manifest controls bypass receipt control validation,” was fixed by commit `99b72703`; it is not reused here. No tests were run in this review, so validation receipts elsewhere remain historical or parent-reported evidence.
 
 ## Narrative Findings (AI reviewer)
 
-No material findings.
+### WR-01 [WARNING]: Coverage checker accepts incomplete verification records
+
+**File:** `internal/compiler/session/summary_coverage_test.go:84-104`
+**Issue:** The checker validates only values collected in `e.kinds` and `e.statuses`; it never requires either slice to contain one value for each verification reference. A `human_judgment: false` entry with a non-empty ref but no `kind:` or `status:` therefore passes this guard. The coverage consumer requires each verification item to provide kind, ref, and status, so this test can let malformed SUMMARY metadata reach downstream verification.
+**Fix:** Track each verification item as its own record and reject a missing or empty `kind`, `ref`, or `status`; require every status to be `pass` for test-backed entries. Add controls that remove `kind:` and `status:` from an otherwise valid item.
+
+### WR-02 [WARNING]: Receipt gate allows undeclared case programs
+
+**File:** `scripts/check-receipts.sh:86-95`
+**Issue:** The loop checks that every name in `programs=` appears in the case table and in each log, then checks every table row against the logs. It never checks the reverse relationship: a case row can name a program omitted from `programs=`. With `programs=checksum`, a matching checksum case and an additional matching case for another program can pass, while the result rows and pass summary still declare only `checksum`. That leaves the generic receipt's declared program inventory inconsistent with its case coverage.
+**Fix:** Parse the program names used by the case table and require their unique set to equal the `programs=` set before validating logs; add a refusal control for an extra case-table program absent from `programs=`.
 
 ---
 
-_Reviewed: 2026-10-14T23:38:46Z_
-_Reviewer: the agent (gsd-code-reviewer)_  
+_Reviewed: 2026-10-15T19:42:42Z_
+_Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
