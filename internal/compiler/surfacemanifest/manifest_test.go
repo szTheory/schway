@@ -300,7 +300,7 @@ func TestPhase36SurfaceDocument(t *testing.T) {
 	if !reflect.DeepEqual(boolType.Contexts, []string{"scalar comparison results", "scalar function input and result", "scalar local state"}) {
 		t.Fatalf("Bool call contexts = %v", boolType.Contexts)
 	}
-	if !strings.Contains(strings.Join(boolType.Constraints, " "), "initialized Bool locals or formals by identifier") {
+	if !strings.Contains(strings.Join(boolType.Constraints, " "), "initialized Bool local or formal by identifier") {
 		t.Fatalf("Bool result-tail boundary is not explicit: %v", boolType.Constraints)
 	}
 	calls := entryByID(t, manifest.Restrictions, "scalar_expression_calls")
@@ -312,18 +312,18 @@ func TestPhase36SurfaceDocument(t *testing.T) {
 		"scalar byte_at index expressions",
 	}
 	wantCallRuleConstraints := []string{
+		"A direct local function call has exactly one scalar expression argument and returns the declared U64 or Bool result.",
 		"Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
 		"Bool result tails return an initialized Bool local or formal by identifier; bind a call result before returning it.",
 		"Imported targets must be explicitly exported local module functions; whole-program call graphs remain acyclic.",
 		"Only U64 -> U64, U64 -> Bool, Bool -> U64, and Bool -> Bool signatures are admitted; Unit and ByteView calls are absent.",
-		"A direct local function call has exactly one scalar expression argument and returns the declared U64 or Bool result.",
 	}
 	if calls.Syntax != "function_call(expression)" || !reflect.DeepEqual(calls.Contexts, wantContexts) || !reflect.DeepEqual(calls.Constraints, wantCallRuleConstraints) {
 		t.Fatalf("scalar expression-call surface = %+v", calls)
 	}
 	grouping := entryByID(t, manifest.Restrictions, "scalar_expression_grouping")
 	groupingFacts := strings.Join(grouping.Constraints, " ")
-	if grouping.Syntax != "( expression )" || !strings.Contains(groupingFacts, "literal provenance") || !strings.Contains(groupingFacts, "admitted call atom") || !strings.Contains(groupingFacts, "does not admit tuples or general tails") {
+	if grouping.Syntax != "( expression )" || !strings.Contains(groupingFacts, "literal provenance") || !strings.Contains(groupingFacts, "admits the scalar call atom") || !strings.Contains(groupingFacts, "does not admit tuples or general tails") {
 		t.Fatalf("grouping/call atom boundary = %+v", grouping)
 	}
 	for _, forbidden := range []string{"does not admit calls", "Helper calls are absent", "Bool literals are admitted", "ByteView scalar-call arguments are admitted", "Unit-valued calls are admitted"} {

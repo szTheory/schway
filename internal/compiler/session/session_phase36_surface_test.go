@@ -16,6 +16,7 @@ type phase36SurfaceWitness struct {
 	ID                  string                      `json:"id"`
 	Facet               string                      `json:"facet"`
 	Context             string                      `json:"context"`
+	CheckRoute          string                      `json:"check_route"`
 	Signature           string                      `json:"signature"`
 	Source              string                      `json:"source"`
 	Files               []phase34SurfaceWitnessFile `json:"files"`
@@ -62,7 +63,7 @@ func TestPhase36SurfaceManifestCallWitnesses(t *testing.T) {
 		"nested scalar helper arguments":            false,
 	}
 	wantNegativeCodes := map[string]string{
-		"phase36-refuse-arity-two":          "syntax.scalar_call_arity",
+		"phase36-refuse-arity-two":          "check.call_arity_unsupported",
 		"phase36-refuse-argument-type":      "check.call_argument_type_mismatch",
 		"phase36-refuse-private-import":     "module.not_exported",
 		"phase36-refuse-recursion":          "core.call_graph_cycle",
@@ -97,7 +98,7 @@ func TestPhase36SurfaceManifestCallWitnesses(t *testing.T) {
 			}
 		}
 		observedInput = append(observedInput, phase34SurfaceWitness{
-			ID: witness.ID, Facet: witness.Facet, Context: witness.Context, Files: witness.Files,
+			ID: witness.ID, Facet: witness.Facet, Context: witness.Context, CheckRoute: witness.CheckRoute, Files: witness.Files,
 			Source: witness.Source, ExpectedStatus: witness.ExpectedStatus, ExpectedCode: witness.ExpectedCode,
 			ExpectedHint: witness.ExpectedHint, Exercise: witness.Exercise, ExpectedForm: witness.ExpectedForm,
 			ExpectedConstraints: witness.ExpectedConstraints,
@@ -116,6 +117,12 @@ func TestPhase36SurfaceManifestCallWitnesses(t *testing.T) {
 	}
 
 	observed := phase34ObserveSurfaceWitnesses(t, observedInput)
+	for _, row := range observed {
+		witness := row.Witness
+		if row.Status != witness.ExpectedStatus || row.Code != witness.ExpectedCode || witness.ExpectedHint != "" && row.Hint != witness.ExpectedHint {
+			t.Errorf("witness %s (%s): got status=%q code=%q hint=%q; want status=%q code=%q hint=%q", witness.ID, witness.Facet, row.Status, row.Code, row.Hint, witness.ExpectedStatus, witness.ExpectedCode, witness.ExpectedHint)
+		}
+	}
 	manifest := surfacemanifest.Current()
 	if manifest.Schema != "schway.surface/1" || !manifest.Calls.ScalarExpressionCalls || !document.Calls.ScalarExpressionCalls {
 		t.Fatalf("source-free scalar call discovery disagrees with the literal witness contract: schema=%q calls=%+v expected=%+v", manifest.Schema, manifest.Calls, document.Calls)
