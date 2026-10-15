@@ -1,6 +1,6 @@
 ---
 phase: 36-scalar-helper-calls
-reviewed: 2026-10-15T06:21:47Z
+reviewed: 2026-10-15T06:27:35Z
 depth: standard
 files_reviewed: 49
 files_reviewed_list:
@@ -55,37 +55,30 @@ files_reviewed_list:
   - testdata/phase36/surface-witnesses.json
 findings:
   critical: 0
-  warning: 1
+  warning: 0
   info: 0
-  total: 1
-status: issues_found
+  total: 0
+status: clean
 ---
 
 # Phase 36: Code Review Report
 
-**Reviewed:** 2026-10-15T06:21:47Z
+**Reviewed:** 2026-10-15T06:27:35Z
 **Depth:** standard
 **Files Reviewed:** 49
-**Status:** issues_found
+**Status:** clean
 
 ## Summary
 
-The scalar-call parser, checker, independent core peers, interpreter, native emitter, and legacy ByteView composition were reviewed at standard depth. One warning remains: truncated traces after repeated dynamic calls lose the expected callee identity in the peer error.
+The fixed peer now reports the expected callee for truncated dynamic invocations at ordinal one, and regression controls cover both pending-child and unterminated-activation cases. No additional concrete bugs, security issues, or quality defects were found in the supplied scope.
 
 ## Narrative Findings (AI reviewer)
 
-### Warnings
-
-### WR-01: Truncated repeated-call traces omit the expected callee
-
-**Classification:** WARNING
-**File:** `internal/compiler/executionpeer/executionpeer.go:681-684`
-**Issue:** When a dynamic call stream is truncated after a repeated call site has created a child with ordinal greater than zero, the child path is present in `dynamicOccurrences` but absent from the statically unfolded `i.occurrences` map. Both terminal error branches read the static map, so `orphan_child` (and the nonempty-stack refusal for a truncated dynamic activation) return an empty `ExpectedFunction`. Consumers lose the callee identity precisely when reporting an incomplete causal trace.
-**Fix:** Resolve the pending/stack invocation from `dynamicOccurrences` when `i.dynamicCallIdentity` is true, and from `i.occurrences` otherwise; use that selected occurrence's `functionID` in both refusal paths.
+All reviewed files meet quality standards. No issues found.
 
 ---
 
-_Reviewed: 2026-10-15T06:21:47Z_
+_Reviewed: 2026-10-15T06:27:35Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
 
