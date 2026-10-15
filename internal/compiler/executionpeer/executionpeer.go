@@ -340,11 +340,15 @@ func resolveEntry(functions map[string]core.Function, operations map[string]oper
 }
 
 func appendInvocation(parent, callID string) (string, error) {
+	return appendInvocationOrdinal(parent, callID, 0)
+}
+
+func appendInvocationOrdinal(parent, callID string, ordinal int) (string, error) {
 	parsed, err := execution.ParseInvocation(parent)
 	if err != nil {
 		return "", err
 	}
-	parsed.Segments = append(parsed.Segments, execution.InvocationSegment{OpCallID: callID, Ordinal: 0})
+	parsed.Segments = append(parsed.Segments, execution.InvocationSegment{OpCallID: callID, Ordinal: ordinal})
 	return execution.FormatInvocation(parsed.EntryID, parsed.Segments)
 }
 
@@ -354,6 +358,10 @@ func (i *index) validate(document execution.Execution) error {
 	}
 	nextOccurrence := make(map[string]uint64)
 	exhaustedOccurrence := make(map[string]bool)
+	root := rootInvocation(i.entry)
+	dynamicOccurrences := map[string]occurrence{root: {functionID: i.entry}}
+	closedActivations := make(map[string]bool)
+	nextOrdinals := make(map[string]uint64)
 	stack := make([]string, 0)
 	pending := ""
 	checkedAddDefect := -1
@@ -364,9 +372,9 @@ func (i *index) validate(document execution.Execution) error {
 		if parseErr != nil {
 			return refusal("malformed_invocation", n, event.Invocation, "", "", parseErr.Error())
 		}
-		occ, found := i.occurrences[event.Invocation]
+		occ, found := dynamicOccurrences[event.Invocation]
 		if !found {
-			return refusal("unknown_invocation", n, event.Invocation, "", "", "invocation is outside bounded membership")
+			return refusal("unknown_invocation", n, event.Invocation, "", "", "invocation is not derived from an observed call edge")
 		}
 		if parsed.EntryID != i.entry {
 			return refusal("entry", n, event.Invocation, "", i.entry, "wrong entry")
@@ -390,7 +398,8 @@ func (i *index) validate(document execution.Execution) error {
 		checkedOverflow := op.value.Kind == core.OpAddChecked && event.Kind == "function.defected"
 		checkedRemainderZero := op.value.Kind == core.OpRemainderU64 && event.Kind == "function.defected"
 		checkedBytesAt := op.value.Kind == core.OpBytesAt && event.Kind == "function.defected"
-		if (i.loopOperations[op.value.ID] || event.Occurrence > 0) && !i.scalarLoopCopies[op.value.ID] && !checkedOverflow && !checkedRemainderZero && !checkedBytesAt {
+		checkedCall := op.value.Kind == core.OpCall && event.Kind == "function.called"
+		if (i.loopOperations[op.value.ID] || event.Occurrence > 0) && !i.scalarLoopCopies[op.value.ID] && !checkedOverflow && !checkedRemainderZero && !checkedBytesAt && !checkedCall {
 			return refusal("loop_event", n, event.Invocation, "", occ.functionID, "cyclic or repeated event is not an admitted scalar copy")
 		}
 		if checkedOverflow {
@@ -455,6 +464,9 @@ func (i *index) validate(document execution.Execution) error {
 		if exhaustedOccurrence[pair] || event.Occurrence != nextOccurrence[pair] {
 			return refusal("occurrence", n, event.Invocation, "", occ.functionID, fmt.Sprintf("expected occurrence %d", nextOccurrence[pair]))
 		}
+		if closedActivations[event.Invocation] {
+			return refusal("closed_activation", n, event.Invocation, "", occ.functionID, "event follows this activation's terminal")
+		}
 		if event.Occurrence == ^uint64(0) {
 			exhaustedOccurrence[pair] = true
 		} else {
@@ -477,17 +489,23 @@ func (i *index) validate(document execution.Execution) error {
 			return refusal("ownership", n, event.Invocation, "", event.FunctionID, "event ID belongs to another function")
 		}
 		if event.Kind == "function.called" {
-			child, childErr := appendInvocation(event.Invocation, op.value.ID)
+			ordinalKey := event.Invocation + "\x00" + op.value.ID
+			ordinal := nextOrdinals[ordinalKey]
+			if ordinal > 2147483647 {
+				return refusal("ordinal_exhausted", n, event.Invocation, "", event.FunctionID, "dynamic invocation ordinal exceeds the portable capture ceiling")
+			}
+			child, childErr := appendInvocationOrdinal(event.Invocation, op.value.ID, int(ordinal))
 			if childErr != nil {
 				return refusal("malformed_invocation", n, event.Invocation, "", event.FunctionID, childErr.Error())
 			}
-			childOcc, exists := i.occurrences[child]
-			if !exists || childOcc.parent != event.Invocation || childOcc.callID != op.value.ID {
-				return refusal("call_edge", n, event.Invocation, "", event.FunctionID, "call is not a declared child occurrence")
+			if _, exists := dynamicOccurrences[child]; exists {
+				return refusal("call_edge", n, event.Invocation, "", event.FunctionID, "call reuses a previously derived child activation")
 			}
 			if event.CalleeFunctionID == "" || event.CalleeFunctionID != op.value.CalleeID {
 				return refusal("callee", n, event.Invocation, "", op.value.CalleeID, "callee function disagrees with call")
 			}
+			dynamicOccurrences[child] = occurrence{functionID: op.value.CalleeID, parent: event.Invocation, callID: op.value.ID}
+			nextOrdinals[ordinalKey] = ordinal + 1
 			pending = child
 		} else if event.CalleeFunctionID != "" {
 			return refusal("callee", n, event.Invocation, "", "", "callee function is reserved for function.called")
@@ -496,6 +514,7 @@ func (i *index) validate(document execution.Execution) error {
 			if pending != "" {
 				return refusal("preorder", n, event.Invocation, "", event.FunctionID, "function returned before observed child activation")
 			}
+			closedActivations[event.Invocation] = true
 			stack = stack[:len(stack)-1]
 		}
 	}

@@ -1075,6 +1075,9 @@ type frame struct {
 	invocation string
 	entryID    string
 	segments   []execution.InvocationSegment
+	// nextCallOrdinals is activation-local. Scalar helper calls at one static
+	// site advance independently, while a newly pushed frame starts fresh.
+	nextCallOrdinals map[string]int
 
 	// values is this frame's OWN place map (D-10-26): a moved-from place
 	// in a caller's frame is genuinely absent from this map -- not merely
@@ -1386,24 +1389,12 @@ func (f *frame) eventSchema() string {
 	return f.schema
 }
 
-func (f *frame) childInvocation(operation core.LinearOperation) string {
-	if f.eventSchema() != execution.Schema2 {
-		return ""
-	}
-	segments := append(append([]execution.InvocationSegment{}, f.segments...), execution.InvocationSegment{OpCallID: operation.ID, Ordinal: 0})
-	invocation, err := execution.FormatInvocation(f.entryID, segments)
-	if err != nil {
-		panic(fmt.Sprintf("checked core has invalid invocation component: %v", err))
-	}
-	return invocation
-}
-
-func (f *frame) configureChild(child *frame, operation core.LinearOperation) {
+func (f *frame) configureChild(child *frame, operation core.LinearOperation, segments []execution.InvocationSegment, invocation string) {
 	child.applicationOutput = f.applicationOutput
 	child.schema = f.eventSchema()
 	child.entryID = f.entryID
-	child.segments = append(append([]execution.InvocationSegment{}, f.segments...), execution.InvocationSegment{OpCallID: operation.ID, Ordinal: 0})
-	child.invocation = f.childInvocation(operation)
+	child.segments = segments
+	child.invocation = invocation
 	child.returnOkEdge = operation.OkEdgeID
 	child.errorTarget = operation.ErrTargetID
 	child.errorEdge = operation.ErrEdgeID
@@ -1437,6 +1428,8 @@ type pushResult struct {
 	immediateValue string
 	immediateEvent Event
 	calleeID       string
+	segments       []execution.InvocationSegment
+	invocation     string
 }
 
 // partitionFrameForCall is the ONE frame-partition helper D-10-39 permits
@@ -1466,6 +1459,23 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 		delete(caller.values, operation.SourceID)
 	}
 	seeded := map[string]value{callee.Parameter.ID: argument}
+	ordinal := 0
+	if scalarValueFunction(callee) {
+		if caller.nextCallOrdinals == nil {
+			caller.nextCallOrdinals = make(map[string]int)
+		}
+		ordinal = caller.nextCallOrdinals[operation.ID]
+		caller.nextCallOrdinals[operation.ID] = ordinal + 1
+	}
+	segments := append(append([]execution.InvocationSegment{}, caller.segments...), execution.InvocationSegment{OpCallID: operation.ID, Ordinal: ordinal})
+	invocation := ""
+	if caller.eventSchema() == execution.Schema2 {
+		var err error
+		invocation, err = execution.FormatInvocation(caller.entryID, segments)
+		if err != nil {
+			return pushResult{}, fmt.Errorf("operation %q: child invocation: %w", operation.ID, err)
+		}
+	}
 
 	if callee.Match != nil {
 		scrutineeID := callee.Match.ScrutineeID
@@ -1476,8 +1486,8 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 			f := newBlockFrame(callee, seeded, callee.ID+":block:entry")
 			f.returnTarget = operation.TargetID
 			f.hasCaller = true
-			caller.configureChild(&f, operation)
-			return pushResult{frame: &f, calleeID: callee.ID}, nil
+			caller.configureChild(&f, operation, segments, invocation)
+			return pushResult{frame: &f, calleeID: callee.ID, segments: segments, invocation: invocation}, nil
 		}
 		argumentText := argument.String()
 		for _, arm := range callee.Match.Arms {
@@ -1487,7 +1497,7 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 			if arm.BlockID == "" {
 				event := Event{
 					Schema: caller.eventSchema(), ID: arm.ID + ":event:returned", Kind: "function.returned",
-					Invocation: caller.childInvocation(operation),
+					Invocation: invocation,
 					FunctionID: callee.ID, Input: argumentText, Output: arm.Value,
 				}
 				if callee.Parameter.Type != callee.ReturnType {
@@ -1499,13 +1509,15 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 					immediateValue: arm.Value,
 					immediateEvent: event,
 					calleeID:       callee.ID,
+					segments:       segments,
+					invocation:     invocation,
 				}, nil
 			}
 			f := newArmFrame(callee, seeded, arm.BlockID)
 			f.returnTarget = operation.TargetID
 			f.hasCaller = true
-			caller.configureChild(&f, operation)
-			return pushResult{frame: &f, calleeID: callee.ID}, nil
+			caller.configureChild(&f, operation, segments, invocation)
+			return pushResult{frame: &f, calleeID: callee.ID, segments: segments, invocation: invocation}, nil
 		}
 		return pushResult{}, fmt.Errorf("checked match %q has no arm for %q", callee.Match.ID, argumentText)
 	}
@@ -1518,8 +1530,14 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 	}
 	f.returnTarget = operation.TargetID
 	f.hasCaller = true
-	caller.configureChild(&f, operation)
-	return pushResult{frame: &f, calleeID: callee.ID}, nil
+	caller.configureChild(&f, operation, segments, invocation)
+	return pushResult{frame: &f, calleeID: callee.ID, segments: segments, invocation: invocation}, nil
+}
+
+func scalarValueFunction(function core.Function) bool {
+	parameter := function.Parameter.Type
+	result := function.ReturnType
+	return (parameter == "U64" || parameter == "Bool") && (result == "U64" || result == "Bool")
 }
 
 // argumentIsCopyable reports whether operation's own SourceID place carries
