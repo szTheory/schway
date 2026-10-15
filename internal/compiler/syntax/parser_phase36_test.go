@@ -150,6 +150,18 @@ func TestPhase36ScalarCallFormatting(t *testing.T) {
 	}
 }
 
+func TestPhase36ByteAtIndexCallLetInitializer(t *testing.T) {
+	source := []byte("module phase36.byte_at_call_let\nexport {\n  fn evaluate\n}\nfn evaluate(view: ByteView) -> U64 {\n  let result = byte_at(view, index_of(1))\n  result\n}\n")
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("byte_at index call initializer did not parse: %+v", parsed.Diagnostics)
+	}
+	expression := parsed.Program.Funcs[0].Body.Linear.Statements[0].Expr
+	if expression == nil || expression.Kind != "byte_at" || expression.Right == nil || expression.Right.Kind != "call" || expression.Right.Name != "index_of" {
+		t.Fatalf("byte_at index call AST = %+v", expression)
+	}
+}
+
 func phase36CallSource(expression string) string {
 	return "module phase36.call_expr\nexport {\n  fn evaluate\n}\nfn evaluate(input: U64) -> U64 {\n  let result = " + expression + "\n  result\n}\n"
 }
