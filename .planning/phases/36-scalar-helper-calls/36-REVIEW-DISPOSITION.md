@@ -3,19 +3,24 @@ phase: 36
 review: 36-REVIEW.md
 titles: json
 findings:
+  - id: WR-02
+    severity: warning
+    disposition: deferred
+    title: "Raw call ownership comment states an obsolete same-type invariant"
   - id: WR-01
     severity: warning
     disposition: fixed
     title: "Truncated repeated-call traces omit the expected callee"
 open: 0
-total: 1
-recorded: 2026-10-15T06:28:45.597Z
+total: 2
+recorded: 2026-10-15T23:50:06.356Z
 ---
 
 # Phase 36: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
+| WR-02 | warning | deferred | Core-validator maintainer: correct historical same-type commentary with the next semantic edit; current implementation and tests derive from sourceTypeID correctly. An isolated comment edit would stale Phase 35 without changing checked behavior. |
 | WR-01 | warning | fixed | 36-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.

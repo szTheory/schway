@@ -1,8 +1,8 @@
 ---
 phase: 36-scalar-helper-calls
-reviewed: 2026-10-15T06:56:52Z
+reviewed: 2026-10-15T23:46:42Z
 depth: standard
-files_reviewed: 52
+files_reviewed: 53
 files_reviewed_list:
   - cmd/schway/main_phase32_routes_test.go
   - cmd/schway/main_phase36_test.go
@@ -39,6 +39,7 @@ files_reviewed_list:
   - internal/compiler/session/session_phase34_prechange_test.go
   - internal/compiler/session/session_phase34_surface_test.go
   - internal/compiler/session/session_phase35_admission_mutation_test.go
+  - internal/compiler/session/session_phase35_closeout_test.go
   - internal/compiler/session/session_phase35_surface_test.go
   - internal/compiler/session/session_phase36_byteview_test.go
   - internal/compiler/session/session_phase36_calls_test.go
@@ -58,29 +59,36 @@ files_reviewed_list:
   - testdata/phase36/surface-witnesses.json
 findings:
   critical: 0
-  warning: 0
+  warning: 1
   info: 0
-  total: 0
-status: clean
+  total: 1
+status: issues_found
 ---
 
 # Phase 36: Code Review Report
 
-**Reviewed:** 2026-10-15T06:56:52Z
+**Reviewed:** 2026-10-15T23:46:42Z
 **Depth:** standard
-**Files Reviewed:** 52
-**Status:** clean
+**Files Reviewed:** 53
+**Status:** issues_found
 
 ## Summary
 
-The prior standard review of the original 49-file scope remains clean after its fix and re-review. This pass covered the three added regression files and their contracts: helper routes are module-aware and have named CLI owners; U64 entries require input with matching exit-64 results across engines; and the Phase36 fixture ledger closes over only the three declared helper paths with bounded reads, content hashes, and mutation controls. The Phase35 foreign-field mutant removes the equivalent metadata refusal only for targeted shift operations, leaving other foreign-operation handling intact. No concrete defects were found.
+The 53-path review found one maintainability defect in the raw call validator's ownership commentary: it still describes the pre-Phase-36 same-type call invariant even though scalar calls now allow distinct argument and result types. The implementation derives ownership from the argument's own type, so this is not a runtime failure. The supplied refresh artifacts report 84 passing exact roots across 13 packages and both prohibition checks green; these were treated as supporting evidence, not substitutes for source review. The earlier WR-01 attribution finding remains a fixed historical item and is not reopened.
 
 ## Narrative Findings (AI reviewer)
 
-All 52 reviewed files meet quality standards. No issues found.
+### Warnings
+
+### WR-02: Raw call ownership comment states an obsolete same-type invariant
+
+**Classification:** WARNING
+**File:** `internal/compiler/corevalidate/corevalidate.go:4248-4270`
+**Issue:** This comment says every operation's `operation.TypeID` equals the source argument type and that a callee's declared return type equals its parameter type. Phase 36 admits all U64/Bool parameter/result pairs, including cross-typed calls, and `consumeCallArgument` now correctly derives copy/move behavior from `sourceTypeID` while the separate contract check compares the argument and result independently. The stale claims also contradict the current comment at lines 4286-4296, so a future change could incorrectly reintroduce result-type-based ownership derivation or break cross-typed calls.
+**Fix:** Rewrite the commentary to state that call ownership is derived from `sourceTypeID`; the independent call-contract checks separately validate source against the callee parameter and target against the callee result. Remove the old same-type assertions or label them as historical pre-Phase-36 context.
 
 ---
 
-_Reviewed: 2026-10-15T06:56:52Z_
+_Reviewed: 2026-10-15T23:46:42Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
