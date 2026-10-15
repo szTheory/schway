@@ -96,6 +96,18 @@ Compiler and repair commands:
 | `AppLaunchError` | 125 | The child could not be launched. |
 | `SignalBase` | 128 | A child killed by signal n exits 128 + n. |
 
+### Source-file `run` routes
+
+`schway run --engine=interpreter SOURCE -- PATH` supplies PATH to the interpreter's FileBytes reads.
+
+`schway run --engine=native SOURCE --manifest MANIFEST -- PATH` supplies PATH to the native application's FileBytes reads.
+
+The no-tail `run --engine=interpreter|native FILE` form remains synthetic conformance and supplies no application input; use `build` plus `app run` for an artifact workflow.
+
+An empty `PATH` is refused before file access with `(65, "", "")`; `TestPhase37FileRunInputBoundary` pins this tuple.
+
+The file route keeps source refusal at 2, tool/build failures at 3, bad usage at 64, and typed file/input refusal at 65.
+
 `schway app run` passes the child's exit status through unchanged, so a
 generated program's own status can coincide with a host code. The
 `schway app run:` stderr prefix and `--report` tell the two apart.
