@@ -241,7 +241,7 @@ Plans:
 - [x] 36-02-PLAN.md
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 36-03-PLAN.md
+- [x] 36-03-PLAN.md
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 36-04-PLAN.md
@@ -306,7 +306,7 @@ Plans:
 | 33. Carried Debt, Bounded Capture Read, and Generic Freeze Gate | 5/5 | Complete    | 2026-10-13 |
 | 34. Agent Diagnostics Floor and Surface Manifest | 8/8 | Complete    | 2026-10-13 |
 | 35. Bitwise Operators, Literal Shifts, and Hex Literals | 8/8 | Complete    | 2026-10-14 |
-| 36. Scalar Helper Calls | 2/8 | In Progress | - |
+| 36. Scalar Helper Calls | 3/8 | In Progress | - |
 | 37. CRC-32 Consumer, Interpreter File Route, and Guide | 0/TBD | Not started | - |
 | 38. Milestone Receipts | 0/TBD | Not started | - |
 

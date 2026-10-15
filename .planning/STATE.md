@@ -4,18 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 36
 current_phase_name: Scalar Helper Calls
-current_plan: 3
+current_plan: 4
 status: executing
-stopped_at: Completed 36-02-PLAN.md
-last_updated: "2026-10-15T01:55:32.358Z"
+stopped_at: Completed 36-03-PLAN.md
+last_updated: "2026-10-15T02:22:38.463Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 36 execution started
-state_head: 7a6d870246cc9b851017539d23c105407000e1c7
+state_head: 36dcfabbb342b3c7944a657ffe14536ed3364694
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 29
-  completed_plans: 23
+  completed_plans: 24
   percent: 50
 ---
 
@@ -126,7 +126,7 @@ plans.
 ## Current Position
 
 Phase: 36 (Scalar Helper Calls) — EXECUTING
-Current Plan: 3
+Current Plan: 4
 Total Plans in Phase: 8
 Status: Ready to execute
 Last activity: 2026-10-14 — Phase 36 execution started
@@ -611,6 +611,7 @@ subset alone.
 | Phase 35 P08 | 16min | 3 tasks | 9 files |
 | Phase 36 P01 | 9min | 2 tasks | 3 files |
 | Phase 36 P2 | 23min | 3 tasks | 7 files |
+| Phase 36 P03 | 22m | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -852,6 +853,9 @@ decision history; they no longer describe current status.
 - [Phase 35]: Successor refresh resolved: canonical verification for 33, 34 and 35 is passed; progress has three complete phases and no work in progress. — Next is $gsd-discuss-phase 36. All earlier in-progress/next-phase-35 handoffs are historical; do not replay completed plans or UAT.
 - [Phase 36]: Represent calls with existing Expr fields and core.OpCall; add no AST or core schema field.
 - [Phase 36]: Treat helper-call results as initialized but value-unknown, preserving local constant and zero-divisor analysis.
+- [Phase 36]: Each validation peer resolves declared scalar call signatures and authority from its own program facts; no checker verdict or numeric callee summary is trusted.
+- [Phase 36]: Scalar helper results are initialized but value-unknown; static freshness applies to producer targets, not repeated execution or ordinary mutable stores.
+- [Phase 36]: Scalar-call results add no loan ancestry while the argument source use remains live at the call; generic OpCall authority stays closed.
 
 ### Pending Todos
 
@@ -1099,8 +1103,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-15T01:55:31.945Z
-Stopped at: Completed 36-02-PLAN.md
+Last session: 2026-10-15T02:22:38.043Z
+Stopped at: Completed 36-03-PLAN.md
 Resume file: None
 Next action: $gsd-discuss-phase 36
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.

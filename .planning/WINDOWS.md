@@ -2,9 +2,9 @@
 schema_version: 1
 open_count: 4
 waived_count: 0
-fixed_count: 7
-total_count: 11
-last_updated: 2026-10-15T01:54:05.332Z
+fixed_count: 8
+total_count: 12
+last_updated: 2026-10-15T02:22:57.466Z
 ---
 
 # Broken Windows Ledger
@@ -26,6 +26,7 @@ last_updated: 2026-10-15T01:54:05.332Z
 | 9 | 36 | deviation | internal/compiler/session/session_phase36_prechange_test.go |  | Reject unsafe new-fixture ledger paths before file reads; traversal control passes. | fixed |  | 2026-10-15T01:31:06.038Z | 2026-10-15T01:31:07.387Z |
 | 10 | 36 | deviation | internal/compiler/check/check_phase34_refusal_test.go |  | Updated Phase 34's stale one-argument scalar-call rejection assertion to the Phase 36 source contract while retaining its two-argument refusal. | fixed |  | 2026-10-15T01:53:35.425Z | 2026-10-15T01:54:05.136Z |
 | 11 | 36 | deviation | internal/compiler/syntax/parser.go |  | Kept byte_len/byte_at builtin initializer routing ahead of named-call lookahead so nested byte_at indexes parse as source calls. | fixed |  | 2026-10-15T01:54:00.791Z | 2026-10-15T01:54:05.332Z |
+| 12 | 36 | deviation | internal/compiler/corevalidate/corevalidate.go |  | corevalidate had a diagnostic-less early return for a Foreign field on OpCall; malformed call appeared valid; the refusal now records a diagnostic. | fixed |  | 2026-10-15T02:21:37.900Z | 2026-10-15T02:22:57.466Z |
 
 ````json
 [
@@ -169,6 +170,19 @@ last_updated: 2026-10-15T01:54:05.332Z
     "reason": "",
     "recorded_at": "2026-10-15T01:54:00.791Z",
     "resolved_at": "2026-10-15T01:54:05.332Z",
+    "milestone": null
+  },
+  {
+    "id": 12,
+    "kind": "deviation",
+    "phase": "36",
+    "file": "internal/compiler/corevalidate/corevalidate.go",
+    "line": null,
+    "description": "corevalidate had a diagnostic-less early return for a Foreign field on OpCall; malformed call appeared valid; the refusal now records a diagnostic.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-15T02:21:37.900Z",
+    "resolved_at": "2026-10-15T02:22:57.466Z",
     "milestone": null
   }
 ]
