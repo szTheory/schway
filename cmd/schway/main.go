@@ -180,7 +180,7 @@ func runNative(path string, jsonMode bool) int {
 	return emit(result, jsonMode, false)
 }
 
-const fileRunUsage = "usage: schway run --engine={interpreter|native} SOURCE [--manifest MANIFEST] -- PATH"
+const fileRunUsage = "usage: schway run --engine=interpreter SOURCE -- PATH\n       schway run --engine=native SOURCE --manifest MANIFEST -- PATH"
 
 type fileRunSpec struct {
 	engine   string

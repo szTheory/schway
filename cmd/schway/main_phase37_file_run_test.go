@@ -73,7 +73,7 @@ func TestPhase37PublicFileRunTracer(t *testing.T) {
 
 func TestPhase37FileRunGrammar(t *testing.T) {
 	source, manifest := phase37RunFixture()
-	usage := "usage: schway run --engine={interpreter|native} SOURCE [--manifest MANIFEST] -- PATH\n"
+	usage := "usage: schway run --engine=interpreter SOURCE -- PATH\n       schway run --engine=native SOURCE --manifest MANIFEST -- PATH\n"
 	for _, test := range []struct {
 		name string
 		args []string
