@@ -1,8 +1,8 @@
 ---
 phase: "36"
 slug: scalar-helper-calls
-status: draft
-threats_open: 1
+status: verified
+threats_open: 0
 asvs_level: 1
 block_on: high
 register_authored_at_plan_time: true
@@ -11,7 +11,7 @@ created: "2026-10-15"
 
 # Phase 36 — Security
 
-Independent ASVS Level 1 audit returned OPEN_THREATS at 2026-10-15T05:42:10Z: 22 of 24 unique plan threats closed; two high-severity planned adversarial controls remain open. The bounded arena and positive census exist; the audit demonstrated no production exploit. Phase advancement remains blocked until the controls are implemented and independently re-audited.
+Final independent ASVS Level 1 re-audit returned SECURED at 2026-10-15T06:08:12Z: all24 unique plan threats closed and threats_open0. The earlier audit findings and their correction history are retained below. The two planned control gaps are resolved without production, dependency or frozen-fixture changes.
 
 ## Threat Register
 
@@ -33,7 +33,7 @@ Independent ASVS Level 1 audit returned OPEN_THREATS at 2026-10-15T05:42:10Z: 22
 | T-36-13 | Tampering | invocation pointer lifetime and ancestry | high | mitigate | Task 1 uses append-only bounded storage; Tasks 1/3 check post-return paths and stack-pointer mutation. | closed |
 | T-36-14 | Denial of service | C event/path/ordinal storage | high | mitigate | Task 2 checks exact-plus-one guards before write/allocation/increment, including canonical ordinal exhaustion. | closed |
 | T-36-15 | Tampering | capture/real process outcome separation | high | mitigate | Task 2 independently pins app streams/outcome and late 65 defect after optional recording stops. | closed |
-| T-36-16 | Tampering | inherited emitter inventory | high | mitigate | Task 3 owns exact census adaptations and live missing/extra-site/preflight controls; old C corpus remains frozen. | open |
+| T-36-16 | Tampering | inherited emitter inventory | high | mitigate | Task 3 owns exact census adaptations and live missing/extra-site/preflight controls; old C corpus remains frozen. | closed |
 | T-36-17 | Tampering | helper numeric/defect outcome | high | mitigate | Tasks 1/3 pin independent literals and kill dropped argument/result/overflow/remainder per engine at O0/O3/O3-LTO. | closed |
 | T-36-18 | Tampering | byte argument evaluation and old callee bounds | high | mitigate | Task 2 proves caller OOB before entry separately from legacy ByteView callee bounds with exact owner/outcome. | closed |
 | T-36-19 | Elevation of privilege | public input/capture route claims | high | mitigate | Task 2 preserves unused-Byte laws, U64 input refusal and actual app/capture separation. | closed |
@@ -48,7 +48,7 @@ Independent ASVS Level 1 audit returned OPEN_THREATS at 2026-10-15T05:42:10Z: 22
 |---|---|---|---|---|
 | R-36-SC | T-36-SC | All eight Phase36 plans explicitly selected accept for dependency installation: no packages are installed and no dependency or mandatory runtime is added; implementation uses the Go 1.24 standard library and installed Clang/C17 tools. This records the existing plan decision and does not accept a new implementation risk. | Phase36 plan-time decision authority; 36-CONTEXT D-01 and all eight PLAN threat registers | 2026-10-14 |
 
-## Open Findings
+## Initial Open Findings — historical
 
 | Threat | Missing declared control | Next action |
 |---|---|---|
@@ -93,3 +93,28 @@ The auditor independently verified the refreshed45-root capture at eddb535ae9fa1
 | Threats found | 24 |
 | Closed | 23 |
 | Open | 1 |
+
+## Final independent re-audit — 2026-10-15T06:08:12Z
+
+T-36-16 is closed: cgen_phase36_test.go independently derives expected callee symbols from checked call contracts, verifies definitions/call lines, strips comments/strings within the user-function body, and enumerates actual SCHWAY_ invocations separately from markers/events/reservations. Eight copied-emission mutations include marker-preserving actual-call removal and an unmarked extra actual call; each requires its named finding and restored positive. T-36-13 retains the actual returned-stack-pointer lifetime mutation with native value10 and the discriminating retained-path failure plus clean/no-op/restored positives.
+
+The auditor independently verified current final45-root/12-package manifest /tmp/schway36-final-83c1f58a1720-jikc_g2_/owner-results.json, output hashes, anchored root records, all eight census subtests and source/test equality with83c1f58a1720770e77216ee82737efa3acdbeeaa. Other22 closures and the plan-time SC accepted risk remain valid. No unregistered flags.
+
+Current open findings: none. All24 register rows are closed; threats_open0 at the high blocking threshold. The audit is source/receipt verification at ASVS1, not a full suite, hosted two-host receipt, human UAT, general security certification, or wired descriptor-policy claim.
+
+## Sign-Off
+
+- [x] All24 unique threats have verified or previously accepted dispositions.
+- [x] T-36-SC accepted risk records the existing plan decision.
+- [x] Both independently found adversarial-control gaps are resolved.
+- [x] threats_open0; statusverified.
+
+Approval: independent GSD security auditor verified2026-10-15.
+
+## Security Audit 2026-10-15
+
+| Metric | Count |
+|---|---|
+| Threats found | 24 |
+| Closed | 24 |
+| Open | 0 |

@@ -119,3 +119,17 @@ None expected for the deterministic criteria audited here. This sign-off does no
 | Gaps found | 0 |
 | Resolved | 21 |
 | Escalated | 0 |
+
+## Security audit coverage correction — 2026-10-15
+
+The initial Nyquist audit marked Task36-05-03 covered but missed two explicitly promised adversarial controls. The independent security audit identified returned/reused stack-pointer lifetime and missing/extra actual emitter-site controls. Test-only04ce6fa1 added runtime lifetime and census controls; independent re-audit required50b90a30 to count actual call expressions rather than comments. The original audit is retained as history, not a claim that it discovered these gaps.
+
+Both gaps are now resolved within TestPhase36EmitterCallInventoryControls, with clean/no-op/restored native positives, actual compiled stack-pointer mutant returning10 and a named retained-path failure, plus eight actual-call/marker/event/reservation census mutations. No new selector, dependency or implementation file was introduced. Task36-05-03 remains green with strengthened evidence. Current final capture /tmp/schway36-final-83c1f58a1720-jikc_g2_/owner-results.json observes45/45 roots across12 packages including the expanded control root, binds source/tests to83c1f58a1720770e77216ee82737efa3acdbeeaa, and was independently verified by the security auditor. All21 task rows remain covered; no manual-only gap or human UAT is inferred.
+
+## Validation Audit 2026-10-15
+
+| Metric | Count |
+|---|---|
+| Gaps found | 2 |
+| Resolved | 2 |
+| Escalated | 0 |
