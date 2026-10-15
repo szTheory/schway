@@ -1,0 +1,15 @@
+module lib.crc32
+
+export {
+  fn crc32
+}
+
+fn crc32(bytes: ByteView) -> U64 {
+	let result = byte_len(bytes)
+	result
+}
+
+fn crc_byte(mixed: U64) -> U64 {
+	let result = mixed >> 1
+	result
+}
