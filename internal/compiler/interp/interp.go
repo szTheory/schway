@@ -504,7 +504,8 @@ func RunWithForeignOutcomes(program core.Program, functionName, input string, ou
 		}
 	}
 	result, err := runProgramFrameStack(program, base)
-	if err != nil {
+	capacityErr := errors.Is(err, ErrEvidenceCapacityExhausted)
+	if err != nil && !capacityErr {
 		return ModelResult{}, err
 	}
 	for operationID := range base.modeledReusableOutcomes {
@@ -518,10 +519,14 @@ func RunWithForeignOutcomes(program core.Program, functionName, input string, ou
 	if len(result.LiveResources) != 0 {
 		return ModelResult{}, fmt.Errorf("model execution reached a terminal outcome with live local resources %v", result.LiveResources)
 	}
-	return ModelResult{
+	modelResult := ModelResult{
 		Execution: result, EvidenceScope: EvidenceScopeModelOnly,
 		ActualHostIO: false, PhysicalCleanup: false,
-	}, nil
+	}
+	if capacityErr {
+		return modelResult, err
+	}
+	return modelResult, nil
 }
 
 // RunWithFixtureBytes runs the Phase 29 fixture bytes program (D-16) in the
@@ -580,11 +585,15 @@ func RunWithFixtureBytes(program core.Program, functionName, input string, bytes
 	base := newFlatFrame(function, map[string]value{function.Parameter.ID: initial})
 	base.fixtureBytes = bytes
 	result, err := runProgramFrameStack(program, base)
-	if err != nil {
+	capacityErr := errors.Is(err, ErrEvidenceCapacityExhausted)
+	if err != nil && !capacityErr {
 		return Execution{}, err
 	}
 	if len(result.LiveResources) != 0 && !isAbortLikeDefect(program, result, ownerOpID) {
 		return Execution{}, fmt.Errorf("model execution reached a terminal outcome with live local resources %v", result.LiveResources)
+	}
+	if capacityErr {
+		return result, err
 	}
 	return result, nil
 }
@@ -634,11 +643,15 @@ func RunWithFileBytes(program core.Program, functionName, path string, read func
 	base := newFlatFrame(function, map[string]value{function.Parameter.ID: initial})
 	base.fileBytes = read
 	result, err := runProgramFrameStack(program, base)
-	if err != nil {
+	capacityErr := errors.Is(err, ErrEvidenceCapacityExhausted)
+	if err != nil && !capacityErr {
 		return Execution{}, err
 	}
 	if len(result.LiveResources) != 0 && !isAbortLikeDefect(program, result, ownerOpID) {
 		return Execution{}, fmt.Errorf("model execution reached a terminal outcome with live local resources %v", result.LiveResources)
+	}
+	if capacityErr {
+		return result, err
 	}
 	return result, nil
 }
