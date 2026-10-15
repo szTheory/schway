@@ -1,7 +1,7 @@
 # Phase 36 Acceptance Evidence
 
 Evidence date: 2026-10-15
-Source revision: 3697ec2950487bb98723c06262d6d7e6bb2ae1d6
+Source revision: 979357388171339005fd6dbd65aa760810ae9384
 Host/toolchain: macOS arm64; Go 1.24.0; Apple Clang 21.0.1
 Application/conformance routes: Public `schway` command conformance, interpreter application and fixture routes, native application C, and direct local/importer helper conformance are separate observations; no hosted receipt is claimed.
 
@@ -69,6 +69,10 @@ Test-only commit `50b90a30` corrects the T-36-16 census control: it counts actua
 ### Code-review fix follow-up — 2026-10-15
 
 Code-review fix commit `61217af4` preserves the independently derived expected callee when an end-of-stream refusal occurs for a dynamically numbered call occurrence. Its two ordinal-1 truncation cases cover pending-child and open-activation boundaries, with exact refusal, invocation context, and callee assertions; the [review-fix report](./36-REVIEW-FIX.md) records the focused four-root verification and ordinal-zero compatibility result. The fix changes only `executionpeer.go` and its test, without changing acceptance, schema, dependency, fixture, or corpus contracts. The final owner capture below binds the current test/source revision. The prior security record reports 24 closed and zero open at its then-tested revision `83c1f58a`; this evidence refresh is not a new security audit, and parent confirmation of the narrow T09 metadata repair remains pending.
+
+### Current-source acceptance refresh — 2026-10-15
+
+The amended fixed final owner command was run at full current HEAD `979357388171339005fd6dbd65aa760810ae9384`; its result is recorded below. The separately bounded prior-phase regression capture remains the 80-root/13-command receipt at source/test revision `b51043c6566f793893c8c4e143493e7ec3af5bcd` in [36-REGRESSION.md](./36-REGRESSION.md); tracked source files are identical from that revision through current HEAD, so this refresh did not rerun it. The final 52-file code review has zero open dispositions at review revision `97935738` ([review report](./36-REVIEW.md), [disposition](./36-REVIEW-DISPOSITION.md)). This review status is separate from the fixed owner capture and does not change the prior security record's revision binding.
 
 Observed owner commands (compatibility, HEAD 5474f16ecd3e80cf7cdafec73173b2af48c6556f): [/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/owner-results.json](/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/owner-results.json)
 - [/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/1-session.log](/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/1-session.log), sha256 532732e9b01633f18df764db593f14c1c7ff6b506055e2ccdf4cbc11b554d41b
@@ -149,3 +153,17 @@ Observed owner commands (final, HEAD 3697ec2950487bb98723c06262d6d7e6bb2ae1d6): 
 - [/tmp/schway36-final-3697ec295048-safn6e49/10-session.log](/tmp/schway36-final-3697ec295048-safn6e49/10-session.log), sha256 6855aeb4fe7b26043588e2376c57c9d836a8abd429f63c9478775459d728575a
 - [/tmp/schway36-final-3697ec295048-safn6e49/11-schway.log](/tmp/schway36-final-3697ec295048-safn6e49/11-schway.log), sha256 6c03673c479a60f57a4921e81df6d02ba9c7bb2ec59d8b2468317da6f63957c8
 - [/tmp/schway36-final-3697ec295048-safn6e49/12-surfacemanifest.log](/tmp/schway36-final-3697ec295048-safn6e49/12-surfacemanifest.log), sha256 4e59c6ea26ff967f54daff0c35cb86e5a557af9076b767d68312911fce5c84c2
+
+Observed owner commands (final, HEAD 979357388171339005fd6dbd65aa760810ae9384): [/tmp/schway36-final-979357388171-x4n9kf3c/owner-results.json](/tmp/schway36-final-979357388171-x4n9kf3c/owner-results.json)
+- [/tmp/schway36-final-979357388171-x4n9kf3c/1-syntax.log](/tmp/schway36-final-979357388171-x4n9kf3c/1-syntax.log), sha256 7a2415e7b66318ab720c1031fe4f72801b69fad21b40d8488f19cf1f55f01290
+- [/tmp/schway36-final-979357388171-x4n9kf3c/2-check.log](/tmp/schway36-final-979357388171-x4n9kf3c/2-check.log), sha256 f67033844e27ad3909a09065ad132a763929bca838bb469b2b7d83a9191ad3df
+- [/tmp/schway36-final-979357388171-x4n9kf3c/3-corevalidate.log](/tmp/schway36-final-979357388171-x4n9kf3c/3-corevalidate.log), sha256 b04b46c47119e5ddd7232f44653d9ad91c8d845a889e286542acfcfa99f2acf7
+- [/tmp/schway36-final-979357388171-x4n9kf3c/4-originvalidate.log](/tmp/schway36-final-979357388171-x4n9kf3c/4-originvalidate.log), sha256 1b6ccfbfaba61226276a876b844722d5c3215db559428cb3759b67e0e49024cb
+- [/tmp/schway36-final-979357388171-x4n9kf3c/5-pathoracle.log](/tmp/schway36-final-979357388171-x4n9kf3c/5-pathoracle.log), sha256 71e4b1262d8a13f23ab4838bb67fa1d2f59c5d29739d2ff98ead79b495ba1e8a
+- [/tmp/schway36-final-979357388171-x4n9kf3c/6-interp.log](/tmp/schway36-final-979357388171-x4n9kf3c/6-interp.log), sha256 ca3a952785726d8f9c078df0310cdd0de9096c44bdb822becfc45a62a958caf7
+- [/tmp/schway36-final-979357388171-x4n9kf3c/7-executionpeer.log](/tmp/schway36-final-979357388171-x4n9kf3c/7-executionpeer.log), sha256 9707b4078e9b37b9402bf44b0c068d22a830eb3372fd110bd6c4316e9fad011a
+- [/tmp/schway36-final-979357388171-x4n9kf3c/8-cgen.log](/tmp/schway36-final-979357388171-x4n9kf3c/8-cgen.log), sha256 2dacf3d1ab3036b1599a0cc8ceb433a60b5e5faea6332611ff49bf76986f8b49
+- [/tmp/schway36-final-979357388171-x4n9kf3c/9-native.log](/tmp/schway36-final-979357388171-x4n9kf3c/9-native.log), sha256 e65ee6108c7e84ba8831a61283a8550e1ac8c31fb27fe1aa9359eb9f66676ab4
+- [/tmp/schway36-final-979357388171-x4n9kf3c/10-session.log](/tmp/schway36-final-979357388171-x4n9kf3c/10-session.log), sha256 f41fa04ed9c83ee97c0ab8401fa768976df5853251f8ec2c0e4f77d0d9613919
+- [/tmp/schway36-final-979357388171-x4n9kf3c/11-schway.log](/tmp/schway36-final-979357388171-x4n9kf3c/11-schway.log), sha256 347a11ab373c34ee21a16326313d2c2172b665a5a4cc1b114ac8fc0b23d08fbe
+- [/tmp/schway36-final-979357388171-x4n9kf3c/12-surfacemanifest.log](/tmp/schway36-final-979357388171-x4n9kf3c/12-surfacemanifest.log), sha256 ebbe275e1bcf2861cdaf431e27e67e692268114f4133889e55442923a3608e27

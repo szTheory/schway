@@ -177,3 +177,17 @@ I ran only the amended fixed final owner command at current source/test HEAD `36
 - All 12 commands exited zero; all logs exist and match their recorded SHA-256 values.
 - Review-fix commit `61217af4` is an ancestor of the capture revision; the separate four-root review-fix result is recorded in `36-REVIEW-FIX.md`.
 - `git diff --check` passed before this documentation-only append; the final scoped documentation diff is checked before commit.
+
+## Dated final current-source acceptance capture — 2026-10-15
+
+I ran the exact fixed final owner command from the amended `36-08-PLAN.md` at full current HEAD `979357388171339005fd6dbd65aa760810ae9384`. It passed 45/45 unique expected roots across 12 owner groups; every command exited zero and the output contained no `FAIL` or `SKIP`. The complete manifest and per-package logs are recorded in [36-ACCEPTANCE-EVIDENCE.md](./36-ACCEPTANCE-EVIDENCE.md); manifest: `/tmp/schway36-final-979357388171-x4n9kf3c/owner-results.json`.
+
+The bounded prior-phase regression receipt remains separately bound to source/test revision `b51043c6566f793893c8c4e143493e7ec3af5bcd`: it passed 80 root occurrences across 13 commands and is recorded in [36-REGRESSION.md](./36-REGRESSION.md), committed as `fbc19851`. Tracked source files are identical from `b51043c6` through this final capture, so the 80/13 sample and earlier 15-root compatibility captures were not rerun. The final 52-file code review is clean with zero open dispositions at `97935738`; this does not change the revision bindings of the earlier evidence. The preexisting frontmatter coverage block, added in `350340c0`, is retained unchanged.
+
+## Current-source capture self-check: PASSED
+
+- The final manifest binds full HEAD `979357388171339005fd6dbd65aa760810ae9384`, records a clean source tree, 12 command groups, and 45 unique expected roots.
+- All commands exited zero; all 12 logs exist and match the manifest SHA-256 values.
+- The separate `b51043c6` prior-phase regression manifest remains 80/13; source paths are identical through `97935738`, and no regression or compatibility rerun was performed.
+- The final review disposition has zero open findings at `97935738`; this current owner capture remains a separate evidence lane.
+- `git diff --check` passed before this documentation-only append; the exact scoped diff is checked before commit.
