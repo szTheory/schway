@@ -4,18 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 37
 current_phase_name: CRC-32 Consumer, Interpreter File Route, and Guide
-current_plan: Not started
+current_plan: 2
 status: executing
-stopped_at: Phase 37 context gathered
-last_updated: "2026-10-15T13:51:41.721Z"
+stopped_at: Completed 37-01-PLAN.md
+last_updated: "2026-10-15T14:23:11.567Z"
 last_activity: 2026-10-15
-last_activity_desc: Phase 36 complete, transitioned to Phase 37
-state_head: 57bdfc32611be6a6c4de4b41c8f40935851190b2
+last_activity_desc: Phase 37 execution started
+state_head: 4384e383e39c776448e63480b642251982883dd1
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 37
-  completed_plans: 29
+  completed_plans: 30
   percent: 67
 ---
 
@@ -125,11 +125,11 @@ plans.
 
 ## Current Position
 
-Phase: 37 (CRC-32 Consumer, Interpreter File Route, and Guide) — READY TO EXECUTE
-Current Plan: Not started
+Phase: 37 (CRC-32 Consumer, Interpreter File Route, and Guide) — EXECUTING
+Current Plan: 2
 Total Plans in Phase: 8
 Status: Ready to execute
-Last activity: 2026-10-15 — Phase 36 complete, transitioned to Phase 37
+Last activity: 2026-10-15 — Phase 37 execution started
 
 Progress: [███████░░░] 67%
 
@@ -618,6 +618,7 @@ subset alone.
 | Phase 36 P06 | 38min | 3 tasks | 13 files |
 | Phase 36 P07 | 35min | 2 tasks | 9 files |
 | Phase 36 P08 | not recorded | 2 tasks | 3 files |
+| Phase 37 P01 | 21min | 3 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -875,6 +876,9 @@ decision history; they no longer describe current status.
 - [Phase 36]: Supersede only exact obsolete no-call witness and branch claims; keep owner/path proof on complete session routes.
 - [Phase 36]: Bind final owner evidence to source HEAD d117ca4058fbf6a727cb5aa634768cf6194bac34; later commits changed planning documents only.
 - [Phase 36]: Keep CALL-01 and CALL-02 pending until the orchestrator-owned Phase 36 verification and audit gates pass.
+- [Phase 37]: Use reflected ISO-HDLC CRC-32 with polynomial 0xEDB88320, all-ones seed/final XOR, and one private crc_byte call per byte.
+- [Phase 37]: Keep the existing FileBytes ABI and copy its local adapter triple byte-for-byte for the second consumer.
+- [Phase 37]: Treat causal acceptance as structural evidence; only the native literal-vector test establishes the CRC numeric result.
 
 ### Pending Todos
 
@@ -1130,9 +1134,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-15T12:38:41.303Z
-Stopped at: Phase 37 context gathered
-Resume file: .planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-CONTEXT.md
+Last session: 2026-10-15T14:23:10.706Z
+Stopped at: Completed 37-01-PLAN.md
+Resume file: None
 Next action: $gsd-discuss-phase 36
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
