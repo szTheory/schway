@@ -1,11 +1,12 @@
 ---
 phase: 33-carried-debt-bounded-capture-read-and-generic-freeze-gate
-verified: 2026-10-15T07:22:07Z
+verified: 2026-10-15T20:13:37Z
 status: passed
 score: 60/60 must-haves verified
 covered_files:
   - ".planning/milestones/M006-phases/28-exit-classes-verify-report-and-entry-pruning/28-SECURITY.md"
   - ".planning/milestones/M006-phases/28-exit-classes-verify-report-and-entry-pruning/28-VALIDATION.md"
+  - ".planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/32-08-PLAN.md"
   - ".planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/32-RECEIPT.json"
   - ".planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/32-RECEIPT.run-38315799626.json"
   - ".planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/receipts/receipt-macos-latest.log"
@@ -23,35 +24,29 @@ covered_files:
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-05-SUMMARY.md"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CARRIED-DEBT-DISPOSITION.md"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CONTEXT.md"
-  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-PATTERNS.md"
-  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH-AUDIT.md"
-  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-RESEARCH.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-FINAL-REFRESH-RUN.json"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-PHASE37-GATES.md"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW-DISPOSITION.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW-FIX-RUN.json"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW-FIX.md"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW.md"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-SECURITY.md"
-  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-TRANSITION-CHECK.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-SUCCESSOR-REFRESH.md"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-UI-REVIEW.md"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VALIDATION.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REGRESSION.md"
   - ".planning/phases/36-scalar-helper-calls/36-ACCEPTANCE-EVIDENCE.md"
   - ".planning/phases/36-scalar-helper-calls/36-REGRESSION.md"
   - ".planning/phases/36-scalar-helper-calls/36-REVIEW-DISPOSITION.md"
-  - ".planning/phases/36-scalar-helper-calls/36-REVIEW.md"
   - "cmd/schway/main_phase321_run_input_test.go"
   - "cmd/schway/main_phase32_routes_test.go"
-  - "internal/compiler/cgen/cgen_phase35_test.go"
   - "internal/compiler/cgen/cgen_program.go"
-  - "internal/compiler/check/check_phase321_byteview_entry_test.go"
-  - "internal/compiler/check/check_phase36_scalar_calls_test.go"
-  - "internal/compiler/check/scalar.go"
   - "internal/compiler/execution/defect_reasons.go"
   - "internal/compiler/executionpeer/executionpeer.go"
   - "internal/compiler/interp/interp.go"
+  - "internal/compiler/interp/interp_phase321_defect_test.go"
   - "internal/compiler/interp/interp_phase33_defect_test.go"
-  - "internal/compiler/interp/interp_phase35_test.go"
   - "internal/compiler/native/native_app.go"
-  - "internal/compiler/native/native_phase321_defect_parity_test.go"
   - "internal/compiler/native/native_phase33_capture_test.go"
   - "internal/compiler/native/native_phase33_defect_parity_test.go"
   - "internal/compiler/session/session.go"
@@ -59,18 +54,16 @@ covered_files:
   - "internal/compiler/session/session_gate_differential_test.go"
   - "internal/compiler/session/session_gate_retire_test.go"
   - "internal/compiler/session/session_phase32_receipt_test.go"
-  - "internal/compiler/session/session_phase36_prechange_test.go"
+  - "internal/compiler/session/session_phase37_validation_test.go"
   - "internal/compiler/session/session_receipt_gate_test.go"
   - "internal/compiler/session/summary_coverage_test.go"
-  - "internal/compiler/syntax/parser.go"
-  - "internal/compiler/syntax/parser_phase36_test.go"
   - "scripts/check-freeze.sh"
   - "scripts/check-receipts.sh"
   - "scripts/codedigest.sh"
   - "scripts/verify-phase32.sh"
   - "testdata/phase16/public-emitter-consumers.json"
   - "testdata/receipts/M006.manifest"
-covered_digest: "v3:sha256:ecbcb705eb7bf4aa5f1ff6a32179ba5b8fb6ea88f20e12399302b277485a4b83"
+covered_digest: "v3:sha256:946f14683a49b8744a21b07889540965eefd082007e52250e99b277c4b5a5916"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -79,18 +72,18 @@ re_verification:
   gaps_closed: []
   gaps_remaining: []
   regressions: []
-  scope: "Phase36 successor-staled fingerprint refresh; prior report passed without gaps; current scoped regression and acceptance receipts checked against raw runs and hashes"
+  scope: "Phase 37 successor-staled fingerprint refresh; 49-root receipt and seven metadata roots verified against raw logs and current 25 input hashes; fresh targeted checks pass; prior report passed 60/60"
 ---
 
 # Phase 33: Carried Debt, Bounded Capture Read, and Generic Freeze Gate Verification Report
 
 **Phase Goal:** The carried M006 debt is paid before any feature work: a child-written capture file can no longer force an unbounded host allocation, the open review warnings are closed or recorded with reasons, Phase 28 has its missing validation and security records, and later milestones reuse one freeze/receipt gate instead of copying phase-specific scripts.
 
-**Verified:** 2026-10-15T07:22:07Z
+**Verified:** 2026-10-15T20:13:37Z
 **Status:** passed
-**Re-verification:** Yes — Phase 36 successor-staled fingerprint refresh; the prior report passed without gaps.
+**Re-verification:** Yes — Phase 37 successor-staled fingerprint refresh; prior report passed 60/60 with no gaps.
 
-The evidence below preserves the dated prior verification. The current successor refresh at the end of this report is authoritative for the post-Phase-36 source binding and current regression receipt; the earlier Phase 33 named-test receipts remain historical.
+The dated reports below remain historical evidence. The Phase 37 refresh at the end is authoritative for the current source and receipt binding; earlier Phase 33 and successor receipts are not presented as newly rerun.
 
 ## Goal Achievement
 
@@ -237,4 +230,42 @@ All five Phase 33 plan artifact queries passed (22 declared artifact occurrences
 ---
 
 _Verified: 2026-10-15T07:22:07Z_
+_Verifier: the agent (gsd-verifier)_
+
+## Current Phase 37 successor refresh — 2026-10-15T20:13:37Z
+
+This refresh verifies the Phase 33 goal against the current checkout and successor-facing controls. It preserves the completed five plans and four-wave execution, performs no plan replay or UAT replay, and does not rerun Phase 37 matrices or archived hosted UAT.
+
+The current HEAD is 78e99c52b5632847d48bef1d5254c58c5ff5ad98. The final scoped receipt records source_head eb04b1a43defdcd81bbdb007557229ed720f9b1a; I independently recomputed all 25 receipt input hashes against the current files and all matched. I verified the SHA-256 of each of the six raw package logs and parsed the Go JSON events: all 49 exact root tests have pass events across six packages, the 18 validation rows have zero missing, failed, or skipped roots, and the run reports 70.834 seconds. The seven-root metadata supplement log also matches its hash, every root has a pass event, and missing/failed/skipped are zero. The review-fix receipt's four WR-01/WR-02 red/green logs and six metadata roots also match their recorded hashes and pass results. The final receipt's five WR-03/WR-04 closure log hashes match as well. These receipts bind exact inputs and named controls; they do not claim a whole-suite or hosted run.
+
+Fresh exact-selector checks during this verification:
+
+- Native capture: GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^TestPhase33CaptureReadBounded$' -count=1 -v — PASS. Exactly-limit, limit-plus-one, and sparse 1 GiB cases pass. The sparse case measured 271,304 bytes of TotalAlloc increase over its in-limit baseline.
+- Interpreter predicate: GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase33AbortLikeNarrowed|TestPhase33AbortLikeWideningMutantKilled)$' -count=1 -v — PASS. Positive and refusal cases plus both widening-mutant seams pass.
+- Generic receipt and document controls: GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestReceiptGateCaseRecords|TestReceiptGateProgramInventory|TestSummaryCoverageGroundedness|TestReceiptGateDifferential|TestReceiptGateArchivedM006|TestNoCheckPhase32Caller)$' -count=1 -v — PASS. This includes seven structurally malformed case rows, positive multiword stderr rows, bidirectional program inventory, differential/archived behavior, no-retired-caller control, 71 summary controls (12 valid, 59 invalid), and all 60 current summaries.
+- POSIX syntax: sh -n scripts/check-freeze.sh scripts/check-receipts.sh scripts/codedigest.sh scripts/verify-phase32.sh — exit 0.
+
+The WR-03 grammar boundary was checked against the producer, gate, and archived 32-08 plan. The documented grammar is “# case PROGRAM KEY EXIT STDOUT STDERR”; shell read uses default whitespace IFS and STDERR consumes the remainder. Both “# case  checksum 0 0 - -” and “# case checksum 0 0 - -” parse to the same tuple (#, case, checksum, 0, 0, -, -). Repeated spaces therefore normalize to a valid seven-field row. The current guard rejects rows with fewer than seven logical fields; its seven negative controls cover empty/whitespace program, missing key/exit/stdout/stderr, and blank stderr. The two multiword stderr controls remain positive. This is not a false pass: no exact-one-space contract exists, and the gate checks table/log consistency rather than authenticity.
+
+All five declared artifact queries were rerun: 22/22 artifacts exist and pass their plan checks. The path-based key-link helper cannot resolve prose-form from-values as file paths; the existing manual traces remain valid, and all 11 declared links were checked from source call sites to their named tests. Context decision coverage reports all 22 trackable decisions honored. The configuration lookup for workflow.context_coverage_gate is absent; it does not change the completed decision-coverage result.
+
+Review closure is complete. The current explicit review scope is 25 files; the degraded 77-file fallback was not used. The disposition records five findings and open: 0. Independent source/control checks support each repair:
+
+| Finding | Current repair and evidence |
+|---|---|
+| WR-01 — incomplete verification records | Each verification item is checked as an individual mapping with required nonempty kind/ref/status; automated entries require pass. Split/missing-field negatives fail in TestSummaryCoverageGroundedness. |
+| WR-02 — undeclared case programs | Manifest and case inventories are checked in both directions; empty/duplicate entries and undeclared/missing program controls fail in TestReceiptGateProgramInventory. |
+| WR-03 — malformed case row | Required logical fields are checked before inventory comparison; STDERR remains the free-text remainder. TestReceiptGateCaseRecords rejects the seven genuinely malformed shapes and accepts both multiword stderr positives. |
+| WR-04 — incomplete SUMMARY metadata | The canonical SUMMARY subset checks IDs, descriptions, uniqueness, boolean type, rationale, list shape, and per-item mappings; all 71 controls and 60 summaries pass. |
+| CR-01 — empty manifest controls | Historical fix is retained; TestReceiptGateMalformedControls and the archived/differential receipt controls pass. |
+
+Phase 28 validation/security documents are present and explicitly labeled reconstructed/retroactive; current groundedness and archived-corpus grading tests pass without claiming new Phase 28 evidence. The authored ASVS Level 1 register still has 17 closed threats and zero open; this is a current applicability check, not a new deep security certification. The UI safety gate is false for frontend/files/spec; no visual score or human readability claim applies.
+
+All four requirements remain satisfied: QLT-13 by bounded capture controls; QLT-14 by debt dispositions and narrowed defect/freeze controls; QLT-15 by the grounded Phase 28 backfills and Phase 29 witnesses; EVD-16 by the generic manifest-driven gate and retired-caller check. No Phase 33 requirement is orphaned. The four roadmap truths and 56 plan truths remain 60/60; no current must-have is uncertain or failed. No relevant source anti-pattern or unresolved debt marker was found; the only XXXXXX match is the mktemp template. There are no declared Phase 33 probes or conventional probe files. The non-graphical UI review needs no human acceptance.
+
+The scoped checks do not claim a full workspace suite, broad native matrix, hosted dispatch, receipt authenticity, new Phase 28 runs, or replayed UAT. Those limits match the phase boundary and leave no goal gap or human-verification item.
+
+---
+
+_Verified: 2026-10-15T20:13:37Z_
 _Verifier: the agent (gsd-verifier)_
