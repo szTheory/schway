@@ -32,6 +32,14 @@ The focused command did pass the Phase 36 call census, Phase 36 limit consumers 
 | `testdata/phase35/surface-witnesses.json` | `0fcfe36a942a5670a9819bdc789b4aebcf2182e336bbef9b9ef9d8a11fd2f64a` |
 | `testdata/phase35/surface-census.json` | `9af1ecafc10e01bfcdca8882b44c85019f637c51790207f01808013e2461c98f` |
 
+## Resolution amendment — 2026-10-15: Plan 36-07 borrow compatibility
+
+The failure record above is historical. The authorized `phase36-borrow-call-paths` debug correction is resolved: PathOracle had equated local borrow/LoanID presence with authority crossing a scalar call. Commit `1c32b347` admits only the already checked U64 borrow → copy → owned-return helper shape, with clean operation fields and independent straight-line loan replay. Ordinary scalar-call authority, freshness, owner, provenance, CFG/backedge, and borrowed-result restrictions remain enforced. Both legacy access modes and all eight frozen full-session witness outcomes now pass.
+
+The exact 15-root Task2 command above passed on a fresh independent manager rerun (`/tmp/schway36-borrow-manager-surface.log`). Focused new/legacy loan controls, raw scalar peers, owner discharge/backedge checks, and the unchanged frozen generated-C baseline and Controls also passed in the manager's other three named-selector logs. A no-op/restored positive passed, reverting the correction reproduced both borrow failures, and a single-site authority-check mutation was killed at the specific unsafe-acceptance assertion. The frozen Phase34/35 JSON and generated-C corpus/goldens remain unchanged. The resolved debug record contains full commands, review, mutation recipe, and limits: `.planning/debug/resolved/phase36-borrow-call-paths.md`.
+
+The exact command also exposed a separate composed-witness test-control issue after the production refusal was repaired: removing only the old depth witness left new Phase36 coverage for the same refusal facet. The narrowly authorized `TestPhase35SurfaceManifestControls` adjustment now removes all active copied-data coverage of that exact facet, still demands `missing_refusal`, guards against a vacuous removal, and checks the restored positive. This shared test-file hunk remains uncommitted with the executor's existing Plan36-07 Task2 work; its incremental patch is `/tmp/schway36-borrow-phase35-consumer.patch`. The executor owns its eventual Task2 commit and plan completion. This amendment closes only the recorded compatibility blocker and does not advance the phase or claim human UAT, a full suite, a broad native matrix, or cross-host evidence.
+
 ## Preserved historical record: Plan 36-05
 
 ### Frozen no-call corpus refusal shifts
