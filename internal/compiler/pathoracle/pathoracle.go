@@ -58,8 +58,21 @@ import (
 // local-owner path. Acquisition seeds obligations; a borrow must observe the
 // live owner and exactly one matching consuming release must discharge it.
 func ValidateLocalOwnerPaths(program core.Program) error {
+	if err := validateScalarCallContracts(program); err != nil {
+		return err
+	}
 	if err := validateTransferredOwner(program); err != nil {
 		return err
+	}
+	if HasFixtureOwnerOperations(program) {
+		if err := ValidateFixtureOwnerPaths(program); err != nil {
+			return err
+		}
+	}
+	if HasFileBytesOwnerOperations(program) {
+		if err := ValidateFileBytesOwnerPaths(program); err != nil {
+			return err
+		}
 	}
 	for _, function := range program.Functions {
 		if err := validateStraightLinePointerLoans(function); err != nil {
@@ -152,6 +165,113 @@ func ValidateLocalOwnerPaths(program core.Program) error {
 		}
 	}
 	return nil
+}
+
+var disableScalarCallContextForTest bool
+
+func validateScalarCallContracts(program core.Program) error {
+	callees := make(map[string]core.Function, len(program.Functions))
+	for _, function := range program.Functions {
+		if _, duplicate := callees[function.ID]; duplicate || function.ID == "" {
+			return fmt.Errorf("pathoracle.scalar_call_callee: duplicate or empty function identity %q", function.ID)
+		}
+		callees[function.ID] = function
+	}
+	for _, caller := range program.Functions {
+		if caller.Linear == nil {
+			continue
+		}
+		types := make(map[string]string, len(caller.Linear.Types))
+		for _, fact := range caller.Linear.Types {
+			types[fact.ID] = fact.Shape.Constructor
+		}
+		places := make(map[string]core.Place, len(caller.Linear.Places))
+		for _, place := range caller.Linear.Places {
+			places[place.ID] = place
+		}
+		written := map[string]bool{caller.Parameter.ID: true}
+		for _, operation := range caller.Linear.Operations {
+			if operation.Kind == core.OpCall {
+				sourceType, targetType := "", ""
+				if source, ok := places[operation.SourceID]; ok {
+					sourceType = types[source.TypeID]
+				}
+				if target, ok := places[operation.TargetID]; ok {
+					targetType = types[target.TypeID]
+				}
+				callee, known := callees[operation.CalleeID]
+				touchesScalar := pathScalarType(sourceType) || pathScalarType(targetType) || known && (pathScalarType(callee.Parameter.Type) || pathScalarType(callee.ReturnType))
+				ownerViewCall := sourceType == "ByteView" && targetType == "U64" && pathCallerHasOwnerContract(caller)
+				if touchesScalar && !ownerViewCall {
+					resultType := types[operation.TypeID]
+					valid := known && pathScalarType(callee.Parameter.Type) && pathScalarType(callee.ReturnType) && pathScalarCalleeValueOnly(callee) &&
+						sourceType == callee.Parameter.Type && targetType == callee.ReturnType && resultType == callee.ReturnType &&
+						operation.SourceID != "" && operation.TargetID != "" && operation.SourceID != operation.TargetID && operation.TargetID != caller.Parameter.ID &&
+						!written[operation.TargetID] && pathScalarCallFieldsClean(operation)
+					if !valid && !disableScalarCallContextForTest {
+						return fmt.Errorf("pathoracle.scalar_call_context: caller %q operation %q has an invalid scalar call contract or carries non-value authority", caller.ID, operation.ID)
+					}
+				}
+			}
+			for _, placeID := range []string{operation.TargetID, operation.StoreTargetID, operation.ErrTargetID, operation.PayloadTargetID} {
+				if placeID != "" {
+					written[placeID] = true
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func pathScalarType(constructor string) bool {
+	return constructor == "U64" || constructor == "Bool"
+}
+
+func pathScalarCallFieldsClean(operation core.LinearOperation) bool {
+	return operation.LoanID == "" && operation.Foreign == nil && operation.OkEdgeID == "" && operation.ErrEdgeID == "" && operation.ErrTargetID == "" &&
+		operation.ReleasesOperationID == "" && operation.Allocator == "" && operation.Reason == "" && operation.PayloadType == "" && operation.PayloadTargetID == "" &&
+		operation.ConstU64 == "" && operation.TextSource == "" && len(operation.TextBytes) == 0 && operation.TextLength == 0 && operation.RightID == "" &&
+		operation.StoreTargetID == "" && operation.TrueEdgeID == "" && operation.FalseEdgeID == ""
+}
+
+func pathScalarCalleeValueOnly(callee core.Function) bool {
+	if callee.Linear == nil || callee.PublicOrigin != nil {
+		return false
+	}
+	types := make(map[string]string, len(callee.Linear.Types))
+	for _, fact := range callee.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	for _, place := range callee.Linear.Places {
+		if !pathScalarType(types[place.TypeID]) {
+			return false
+		}
+	}
+	for _, operation := range callee.Linear.Operations {
+		if operation.Foreign != nil || operation.LoanID != "" {
+			return false
+		}
+		switch operation.Kind {
+		case core.OpConst, core.OpCopy, core.OpAddChecked, core.OpLessU64, core.OpEqualU64, core.OpRemainderU64,
+			core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64, core.OpShiftLeftU64, core.OpShiftRightU64,
+			core.OpScalarStore, core.OpBranch, core.OpReturn, core.OpCall:
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func pathCallerHasOwnerContract(function core.Function) bool {
+	if function.Linear == nil {
+		return false
+	}
+	for _, operation := range function.Linear.Operations {
+		if fixtureOwnerContract(operation.Foreign) || fileBytesOwnerContract(operation.Foreign) {
+			return true
+		}
+	}
+	return false
 }
 
 // validateStraightLinePointerLoans is a bounded, source-blind replay for
