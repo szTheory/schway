@@ -28,7 +28,13 @@ tech-stack:
 key-files:
   created:
     - .planning/phases/36-scalar-helper-calls/36-ACCEPTANCE-EVIDENCE.md
+    - .planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs
+    - .planning/phases/36-scalar-helper-calls/prohibition-clean.json
+    - .planning/phases/36-scalar-helper-calls/prohibition-outcome-violation.json
+    - .planning/phases/36-scalar-helper-calls/prohibition-causal-violation.json
+    - .planning/phases/36-scalar-helper-calls/36-PROHIBITION-EVIDENCE.md
   modified:
+    - .planning/phases/36-scalar-helper-calls/36-08-PLAN.md
     - .planning/PRODUCT-ROADMAP.md
     - .planning/LANGUAGE-MATURITY.md
 
@@ -191,3 +197,24 @@ The bounded prior-phase regression receipt remains separately bound to source/te
 - The separate `b51043c6` prior-phase regression manifest remains 80/13; source paths are identical through `97935738`, and no regression or compatibility rerun was performed.
 - The final review disposition has zero open findings at `97935738`; this current owner capture remains a separate evidence lane.
 - `git diff --check` passed before this documentation-only append; the exact scoped diff is checked before commit.
+
+## Dated Task 2 prohibition proof supplement — 2026-10-15
+
+The initial verifier had left two descriptorless scope prohibitions unverified. This bounded follow-up added one Node standard-library adapter and three closed JSON subjects, then wired both original prohibition statements through the existing `projectProhibitions` flat-scalar contract and canonical `check prohibition-enforcement` producer. Both requests returned `status=green`, `flagged=false`, `kind=node-test`, and `failFirstProof=violation-fixture`; the exact request JSON and raw producer output with SHA-256 are linked in [36-PROHIBITION-EVIDENCE.md](./36-PROHIBITION-EVIDENCE.md).
+
+At tested full checkout HEAD `1aa48549963797b71bd7a0a6d7d5c314509cb139`, the outcome overlay made the exact existing native root fail on `capture exhaustion changed successful work` and `capture exhaustion hid the later defect`. The causal overlay made the exact execution-peer root fail on `causal peer should accept the structurally plausible false-success trace; numeric replay is not its claim`. The direct violation TAP captures each showed one intended failure and one unaffected pass. Direct clean-fixture and absent-subject default captures each showed both Node tests passing. The canonical producer independently repeated bad RED, clean GREEN, and default GREEN for both statements. Go 1.24.0 and Node v26.10.0 ran with `GOCACHE=/tmp/ai-lang-verification-gocache`; overlays and replacement Go files were temporary under `/tmp`, removed after each run, and tracked compiler/test source remained clean and byte-unchanged.
+
+The first adapter draft failed closed because it did not normalize indentation on Go's nested `--- FAIL` lines and rejected the expected package-level `FAIL`. No plan descriptor was resolved on that attempt. The adapter now accepts only the exact existing root and assertion set, and invalid fixture, source anchor, timeout, output, skip, compile, or unrelated failure outcomes skip both Node tests so they cannot count as a non-vacuous RED or GREEN. The current descriptors resolve only the two tested scope prohibitions. CALL-01/CALL-02 remain unclassified/unresolved, and this supplement does not close the independent security, validation, verifier, or phase gates.
+
+Direct raw TAP receipts:
+
+- Outcome violation: [`debug-outcome-red.log`](/tmp/schway36-prohibition-proof-1aa485499637/debug-outcome-red.log), SHA-256 `1573d1d42f143bb68238c5e5580c5fb65405ada77970ad4105cd13562a511556` (exit 1).
+- Causal violation: [`debug-causal-red.log`](/tmp/schway36-prohibition-proof-1aa485499637/debug-causal-red.log), SHA-256 `0f3be5e5e61c6577c2ea1291112cb3e8e07a00c6cb56a1864672fc9c9e14b5b2` (exit 1).
+- Clean control: [`clean-control.tap`](/tmp/schway36-prohibition-proof-1aa485499637/clean-control.tap), SHA-256 `4c4ad3972bf2cf3a1c86e5b0a8ba698e243ba32bbe6d03547aeef3ee70600e1e` (exit 0, two passes).
+- Default/restored control: [`default-control.tap`](/tmp/schway36-prohibition-proof-1aa485499637/default-control.tap), SHA-256 `6adb8460ab747f4b25ca57531acba78269e4ab344c072ad04200fbcf08d6f25a` (exit 0, two passes).
+
+## Prohibition supplement self-check: PASSED
+
+- The plan descriptors point to the shared adapter and the statement-specific violation fixtures, with the same clean fixture.
+- Both canonical producer result files say green/unflagged and record machine-proven `violation-fixture` evidence.
+- The adapter, three JSON subjects, evidence artifact, amended plan, and this summary are the only task-owned files in the supplement; production source and Go tests, acceptance/living docs, requirements, and phase state were not changed.
