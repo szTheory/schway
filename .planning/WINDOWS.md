@@ -2,9 +2,9 @@
 schema_version: 1
 open_count: 4
 waived_count: 0
-fixed_count: 5
-total_count: 9
-last_updated: 2026-10-15T01:31:07.387Z
+fixed_count: 7
+total_count: 11
+last_updated: 2026-10-15T01:54:05.332Z
 ---
 
 # Broken Windows Ledger
@@ -24,6 +24,8 @@ last_updated: 2026-10-15T01:31:07.387Z
 | 7 | 34 | deviation | internal/compiler/session/session_phase34_prechange_test.go |  | Comparator now compares not_emitted outcomes and reaches a status-mutation control. | open |  | 2026-10-13T21:34:52.574Z |  |
 | 8 | 34 | deviation | internal/compiler/surfacemanifest/manifest.go |  | Removed Box/Pair ability-only and linear-if contexts from the surface manifest after CheckCommandFile rejected their complete programs. | fixed |  | 2026-10-14T00:24:46.705Z | 2026-10-14T00:24:48.501Z |
 | 9 | 36 | deviation | internal/compiler/session/session_phase36_prechange_test.go |  | Reject unsafe new-fixture ledger paths before file reads; traversal control passes. | fixed |  | 2026-10-15T01:31:06.038Z | 2026-10-15T01:31:07.387Z |
+| 10 | 36 | deviation | internal/compiler/check/check_phase34_refusal_test.go |  | Updated Phase 34's stale one-argument scalar-call rejection assertion to the Phase 36 source contract while retaining its two-argument refusal. | fixed |  | 2026-10-15T01:53:35.425Z | 2026-10-15T01:54:05.136Z |
+| 11 | 36 | deviation | internal/compiler/syntax/parser.go |  | Kept byte_len/byte_at builtin initializer routing ahead of named-call lookahead so nested byte_at indexes parse as source calls. | fixed |  | 2026-10-15T01:54:00.791Z | 2026-10-15T01:54:05.332Z |
 
 ````json
 [
@@ -141,6 +143,32 @@ last_updated: 2026-10-15T01:31:07.387Z
     "reason": "",
     "recorded_at": "2026-10-15T01:31:06.038Z",
     "resolved_at": "2026-10-15T01:31:07.387Z",
+    "milestone": null
+  },
+  {
+    "id": 10,
+    "kind": "deviation",
+    "phase": "36",
+    "file": "internal/compiler/check/check_phase34_refusal_test.go",
+    "line": null,
+    "description": "Updated Phase 34's stale one-argument scalar-call rejection assertion to the Phase 36 source contract while retaining its two-argument refusal.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-15T01:53:35.425Z",
+    "resolved_at": "2026-10-15T01:54:05.136Z",
+    "milestone": null
+  },
+  {
+    "id": 11,
+    "kind": "deviation",
+    "phase": "36",
+    "file": "internal/compiler/syntax/parser.go",
+    "line": null,
+    "description": "Kept byte_len/byte_at builtin initializer routing ahead of named-call lookahead so nested byte_at indexes parse as source calls.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-15T01:54:00.791Z",
+    "resolved_at": "2026-10-15T01:54:05.332Z",
     "milestone": null
   }
 ]
