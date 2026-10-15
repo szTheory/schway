@@ -1,7 +1,7 @@
 # Phase 36 Acceptance Evidence
 
 Evidence date: 2026-10-15
-Source revision: 5474f16ecd3e80cf7cdafec73173b2af48c6556f
+Source revision: d117ca4058fbf6a727cb5aa634768cf6194bac34
 Host/toolchain: macOS arm64; Go 1.24.0; Apple Clang 21.0.1
 Application/conformance routes: Public `schway` command conformance, interpreter application and fixture routes, native application C, and direct local/importer helper conformance are separate observations; no hosted receipt is claimed.
 
@@ -21,21 +21,23 @@ CALL-01 and CALL-02 remain `unclassified/unresolved` because no SPEC classifies 
 | legacy-byteview-bounds | `internal/compiler/session/session_phase36_calls_test.go#TestPhase36LegacyByteViewCalleeBounds` | PASS — interpreter and native O0/O3/O3-LTO owning-wrapper bounds regressions passed. |
 | static-and-runtime-capacity | `internal/compiler/cgen/cgen_program_test.go#TestInvocationPathTableBoundary`; `internal/compiler/cgen/cgen_phase36_test.go#TestPhase36CallEventCapacityBoundary` | PASS — static invocation-path and runtime event/output exact/plus-one boundaries passed. |
 | route-input-and-capture-separation | `cmd/schway/main_phase36_test.go#TestPhase36PublicHelperConformance`; `internal/compiler/session/session_phase36_calls_test.go#TestPhase36NativeCallCaptureOutcomeSeparation` | PASS — public interpreter/native routes and disabled/exhausted capture outcome controls passed. |
-| helper-values | `internal/compiler/session/session_phase36_calls_test.go#TestPhase36HelperAnswersAndDefects` | Awaiting fixed final capture |
-| callee-defects | `internal/compiler/session/session_phase36_calls_test.go#TestPhase36HelperOptimizationMatrix` | Awaiting fixed final capture |
-| caller-bounds-before-entry | `internal/compiler/session/session_phase36_calls_test.go#TestPhase36ByteViewCallerArgumentBoundary`; `internal/compiler/session/session_phase36_calls_test.go#TestPhase36NativeByteViewCallerArgumentBoundary` | Awaiting fixed final capture |
-| independent-raw-contracts | `internal/compiler/corevalidate/corevalidate_phase36_test.go#TestPhase36RawCallShapeAndFreshness`; `internal/compiler/originvalidate/originvalidate_phase36_test.go#TestPhase36OriginCallFreshnessAndTransfer` | Awaiting fixed final capture |
-| causal-only | `internal/compiler/executionpeer/executionpeer_phase36_test.go#TestPhase36CallCausalAttributionControls` | Awaiting fixed final capture |
-| capture-outcome-separation | `internal/compiler/session/session_phase36_calls_test.go#TestPhase36NativeCallCaptureOutcomeSeparation` | Awaiting fixed final capture |
-| manifest | `internal/compiler/session/session_phase36_surface_test.go#TestPhase36SurfaceManifestCallWitnesses` | Awaiting fixed final capture |
+| helper-values | `internal/compiler/session/session_phase36_calls_test.go#TestPhase36HelperAnswersAndDefects` | PASS — local/imported four-step answers and the U64/Bool value cases passed; overflow and zero-remainder defects were reached. |
+| callee-defects | `internal/compiler/session/session_phase36_calls_test.go#TestPhase36HelperOptimizationMatrix` | PASS — local/imported O0, O3, and O3-LTO answer and defect rows passed; UBSan passed separately. |
+| caller-bounds-before-entry | `internal/compiler/session/session_phase36_calls_test.go#TestPhase36ByteViewCallerArgumentBoundary`; `internal/compiler/session/session_phase36_calls_test.go#TestPhase36NativeByteViewCallerArgumentBoundary` | PASS — interpreter OOB arguments stopped before helper entry; native first/last/in-range/past-end/empty rows passed at O0, O3, and O3-LTO. |
+| independent-raw-contracts | `internal/compiler/corevalidate/corevalidate_phase36_test.go#TestPhase36RawCallShapeAndFreshness`; `internal/compiler/originvalidate/originvalidate_phase36_test.go#TestPhase36OriginCallFreshnessAndTransfer` | PASS — core and origin owners independently accepted exact calls and unknown-result transfer; their malformed-field, signature, and target-freshness controls passed. |
+| causal-only | `internal/compiler/executionpeer/executionpeer_phase36_test.go#TestPhase36CallCausalAttributionControls` | PASS — ordinal gaps/duplicates/order, wrong parent/site/callee/places/type, missing call/return, and repeated-terminal controls passed without numeric replay. |
+| capture-outcome-separation | `internal/compiler/session/session_phase36_calls_test.go#TestPhase36NativeCallCaptureOutcomeSeparation` | PASS — disabled/exhausted native evidence preserved successful work and late defects; the native owner also passed its exhaustion/disabled cases. |
+| manifest | `internal/compiler/session/session_phase36_surface_test.go#TestPhase36SurfaceManifestCallWitnesses` | PASS — witness, census, copied-data controls, limit consumers, and source-free document owners passed. |
 
 ## Evidence categories
 
 Source inspection: Current checker and engine boundaries are in `internal/compiler/check/scalar.go`, `internal/compiler/interp/interp.go`, `internal/compiler/executionpeer/executionpeer.go`, and `internal/compiler/cgen/cgen.go`; local/importer programs are `examples/helper_calls/crc_step.schway` and `examples/helper_calls/importer.schway`. Inspection is not a fresh execution claim.
 
-New focused checks: Compatibility capture passed 15 root selectors in three owner packages with exit 0 and no FAIL/SKIP: `internal/compiler/session/session_phase36_prechange_test.go#TestPhase36NoCallGeneratedCByteBaseline`, `internal/compiler/session/session_phase36_prechange_test.go#TestPhase36NoCallGeneratedCByteBaselineControls`, `internal/compiler/session/session_phase36_calls_test.go#TestPhase36LegacyByteViewCalleeBounds`, `internal/compiler/cgen/cgen_program_test.go#TestInvocationPathTableBoundary`, `internal/compiler/cgen/cgen_phase36_test.go#TestPhase36CallEventCapacityBoundary`, `cmd/schway/main_phase36_test.go#TestPhase36PublicHelperConformance`, and `internal/compiler/session/session_phase36_calls_test.go#TestPhase36NativeCallCaptureOutcomeSeparation`. Scratch constructibility probes in `36-VALIDATION.md` are planning-checker observations, not compiler feature evidence.
+New focused checks: Compatibility capture passed 15/15 expected root selectors across the session, cgen, and public command owners. The amended final capture passed 45/45 expected roots across 12 owner packages with exit 0 and no FAIL/SKIP; it includes `internal/compiler/check/check_phase36_scalar_calls_test.go#TestPhase36CallSourceIntentControls`, `internal/compiler/corevalidate/corevalidate_phase36_legacy_internal_test.go#TestPhase36CallCFGApplicability`, `internal/compiler/originvalidate/originvalidate_phase36_test.go#TestPhase36OriginCallFreshnessAndTransfer`, `internal/compiler/pathoracle/pathoracle_phase36_borrow_test.go#TestPhase36ScalarCallLocalBorrowControls`, `internal/compiler/interp/interp_phase36_test.go#TestPhase36InterpreterCallAnswersAndDefects`, `internal/compiler/executionpeer/executionpeer_phase36_test.go#TestPhase36CallCausalAttributionControls`, and `internal/compiler/session/session_phase36_peer_mutation_test.go#TestPhase36EngineCallMutationControls`. Logs below bind the complete selector set and output digests. Scratch constructibility probes in `36-VALIDATION.md` are planning-checker observations, not compiler feature evidence.
 
 Historical receipts: Historical only; not fresh Phase 36 evidence. [Phase 35 verification](.planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VERIFICATION.md) passed on 2026-10-14 and remains scoped to its recorded revision and host.
+
+Resolved integration-debug records are historical explanations for the final owner set: [legacy call routes](../../debug/resolved/phase36-legacy-call-routes.md), [borrow call paths](../../debug/resolved/phase36-borrow-call-paths.md), and [ByteView helper composition](../../debug/resolved/phase36-byteview-helper.md). They do not substitute for the amended fixed final capture below.
 
 ## Requirement, decision, and threat mapping
 
@@ -56,9 +58,42 @@ Only the exact package and selector lists embedded in `36-08-PLAN.md` are valid 
 
 Observed owner commands (compatibility): PASS — 15/15 expected root selectors across the session, cgen, and public command owners; each command exited 0. Full argv, roots, hashes and logs are in [/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/owner-results.json](/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/owner-results.json) and the linked logs appended below.
 
-Observed owner commands (final): awaiting the fixed final capture.
+Observed owner commands (final): PASS — 45/45 expected root selectors across 12 packages; each command exited 0, with no FAIL/SKIP. The full argv, source binding, roots, hashes and logs are in [/tmp/schway36-final-d117ca4058fb-lo7ctopk/owner-results.json](/tmp/schway36-final-d117ca4058fb-lo7ctopk/owner-results.json) and the linked logs appended below.
 
 Observed owner commands (compatibility, HEAD 5474f16ecd3e80cf7cdafec73173b2af48c6556f): [/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/owner-results.json](/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/owner-results.json)
 - [/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/1-session.log](/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/1-session.log), sha256 532732e9b01633f18df764db593f14c1c7ff6b506055e2ccdf4cbc11b554d41b
 - [/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/2-cgen.log](/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/2-cgen.log), sha256 6244a598ae46877ea49d8883dc1fb84c08c7df8947e98a92da3abf0581a4828b
 - [/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/3-schway.log](/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/3-schway.log), sha256 6c03673c479a60f57a4921e81df6d02ba9c7bb2ec59d8b2468317da6f63957c8
+
+Observed owner commands (compatibility, HEAD d117ca4058fbf6a727cb5aa634768cf6194bac34): [/tmp/schway36-compatibility-d117ca4058fb-w_dxuf4j/owner-results.json](/tmp/schway36-compatibility-d117ca4058fb-w_dxuf4j/owner-results.json)
+- [/tmp/schway36-compatibility-d117ca4058fb-w_dxuf4j/1-session.log](/tmp/schway36-compatibility-d117ca4058fb-w_dxuf4j/1-session.log), sha256 63d3d4c60cb8dbe3900965d49da2276ed8abec885eac2d6869f99588daaec42f
+- [/tmp/schway36-compatibility-d117ca4058fb-w_dxuf4j/2-cgen.log](/tmp/schway36-compatibility-d117ca4058fb-w_dxuf4j/2-cgen.log), sha256 ec3f6a6e0270b2ac449e15d37961c2be49a1cd44a971b148bacd7a185def6e62
+- [/tmp/schway36-compatibility-d117ca4058fb-w_dxuf4j/3-schway.log](/tmp/schway36-compatibility-d117ca4058fb-w_dxuf4j/3-schway.log), sha256 756ca3ffd983acf25e7e7480d866957eccdf6ea118bf30da0fd2bacb6e8a3157
+
+Observed owner commands (final, HEAD d117ca4058fbf6a727cb5aa634768cf6194bac34): [/tmp/schway36-final-d117ca4058fb-lo7ctopk/owner-results.json](/tmp/schway36-final-d117ca4058fb-lo7ctopk/owner-results.json)
+- [/tmp/schway36-final-d117ca4058fb-lo7ctopk/1-syntax.log](/tmp/schway36-final-d117ca4058fb-lo7ctopk/1-syntax.log), sha256 cadb6d9849e08ab930ecbeb98b50dadb003b7f9a07b7371456fe3fe52e77cfee
+- [/tmp/schway36-final-d117ca4058fb-lo7ctopk/2-check.log](/tmp/schway36-final-d117ca4058fb-lo7ctopk/2-check.log), sha256 e3185cc9810966b9a34c4ae3ec12398adfd8ed79158ce3f5bb65547fcec0ad48
+- [/tmp/schway36-final-d117ca4058fb-lo7ctopk/3-corevalidate.log](/tmp/schway36-final-d117ca4058fb-lo7ctopk/3-corevalidate.log), sha256 bce07457cef51c1033500f61bfa251e36008c21c83ab9ba6c205d97d9b21cd80
+- [/tmp/schway36-final-d117ca4058fb-lo7ctopk/4-originvalidate.log](/tmp/schway36-final-d117ca4058fb-lo7ctopk/4-originvalidate.log), sha256 1b6ccfbfaba61226276a876b844722d5c3215db559428cb3759b67e0e49024cb
+- [/tmp/schway36-final-d117ca4058fb-lo7ctopk/5-pathoracle.log](/tmp/schway36-final-d117ca4058fb-lo7ctopk/5-pathoracle.log), sha256 67e3baf4746c26d0c037ba06e48c1d56ba23650c0f49d09a03a6f5f8aca33fe6
+- [/tmp/schway36-final-d117ca4058fb-lo7ctopk/6-interp.log](/tmp/schway36-final-d117ca4058fb-lo7ctopk/6-interp.log), sha256 4db77a0eec93657b49e94a1cde16f19e40d504c9cedf85909f9629944d0e1c43
+- [/tmp/schway36-final-d117ca4058fb-lo7ctopk/7-executionpeer.log](/tmp/schway36-final-d117ca4058fb-lo7ctopk/7-executionpeer.log), sha256 956c1331ad69710b33a1feb1a4ad8b216d7fde25f994c6c30a4286182bb53796
+- [/tmp/schway36-final-d117ca4058fb-lo7ctopk/8-cgen.log](/tmp/schway36-final-d117ca4058fb-lo7ctopk/8-cgen.log), sha256 b458bacdf344d3ed2d422b1abb83e19981b2bd118cd3371b047a560ffd3d5c18
+- [/tmp/schway36-final-d117ca4058fb-lo7ctopk/9-native.log](/tmp/schway36-final-d117ca4058fb-lo7ctopk/9-native.log), sha256 e65ee6108c7e84ba8831a61283a8550e1ac8c31fb27fe1aa9359eb9f66676ab4
+- [/tmp/schway36-final-d117ca4058fb-lo7ctopk/10-session.log](/tmp/schway36-final-d117ca4058fb-lo7ctopk/10-session.log), sha256 6200805b42c102197041eaf701deb80b2d2696cf9f9fbe2e49ebdf585b408738
+- [/tmp/schway36-final-d117ca4058fb-lo7ctopk/11-schway.log](/tmp/schway36-final-d117ca4058fb-lo7ctopk/11-schway.log), sha256 86e6b8c08db6b5226d30becda8daa256e0c96fc0b8ba5544662a0697d0087286
+- [/tmp/schway36-final-d117ca4058fb-lo7ctopk/12-surfacemanifest.log](/tmp/schway36-final-d117ca4058fb-lo7ctopk/12-surfacemanifest.log), sha256 4e59c6ea26ff967f54daff0c35cb86e5a557af9076b767d68312911fce5c84c2
+
+Observed owner commands (final, HEAD d117ca4058fbf6a727cb5aa634768cf6194bac34): [/tmp/schway36-final-d117ca4058fb-evx1nc2r/owner-results.json](/tmp/schway36-final-d117ca4058fb-evx1nc2r/owner-results.json)
+- [/tmp/schway36-final-d117ca4058fb-evx1nc2r/1-syntax.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/1-syntax.log), sha256 7a2415e7b66318ab720c1031fe4f72801b69fad21b40d8488f19cf1f55f01290
+- [/tmp/schway36-final-d117ca4058fb-evx1nc2r/2-check.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/2-check.log), sha256 1a59756433e4a5289ffae18984bd1f44a1f5a8b521a1c68ec48e4e5b8de288f9
+- [/tmp/schway36-final-d117ca4058fb-evx1nc2r/3-corevalidate.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/3-corevalidate.log), sha256 bce07457cef51c1033500f61bfa251e36008c21c83ab9ba6c205d97d9b21cd80
+- [/tmp/schway36-final-d117ca4058fb-evx1nc2r/4-originvalidate.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/4-originvalidate.log), sha256 1b6ccfbfaba61226276a876b844722d5c3215db559428cb3759b67e0e49024cb
+- [/tmp/schway36-final-d117ca4058fb-evx1nc2r/5-pathoracle.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/5-pathoracle.log), sha256 67e3baf4746c26d0c037ba06e48c1d56ba23650c0f49d09a03a6f5f8aca33fe6
+- [/tmp/schway36-final-d117ca4058fb-evx1nc2r/6-interp.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/6-interp.log), sha256 19a4c89b05255c3b20c3c8c52d00df4ff37c4a6ef388389947a626694e2e091b
+- [/tmp/schway36-final-d117ca4058fb-evx1nc2r/7-executionpeer.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/7-executionpeer.log), sha256 9707b4078e9b37b9402bf44b0c068d22a830eb3372fd110bd6c4316e9fad011a
+- [/tmp/schway36-final-d117ca4058fb-evx1nc2r/8-cgen.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/8-cgen.log), sha256 5d71daaa631836b82a8a1ae0ebb6bcf746d11dad9af1433465a9a22f6b3f27bc
+- [/tmp/schway36-final-d117ca4058fb-evx1nc2r/9-native.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/9-native.log), sha256 a07bfccccbf0b6ee8258dc7ac966b481d10867d82735ed9ee26c5e135c5c54a0
+- [/tmp/schway36-final-d117ca4058fb-evx1nc2r/10-session.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/10-session.log), sha256 c2a81284bb4a3d7ecbc1f18c7a33ee5b1889e0516e5a112516f7036778b536de
+- [/tmp/schway36-final-d117ca4058fb-evx1nc2r/11-schway.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/11-schway.log), sha256 db8d312e2401a130701cc0c0c3f35f3bcfe09d862042a7f04a47d5368612ab01
+- [/tmp/schway36-final-d117ca4058fb-evx1nc2r/12-surfacemanifest.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/12-surfacemanifest.log), sha256 4e59c6ea26ff967f54daff0c35cb86e5a557af9076b767d68312911fce5c84c2
