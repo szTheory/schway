@@ -4,18 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 37
 current_phase_name: CRC-32 Consumer, Interpreter File Route, and Guide
-current_plan: 7
+current_plan: 8
 status: executing
-stopped_at: Completed 37-06-PLAN.md
-last_updated: "2026-10-15T16:48:40.708Z"
+stopped_at: Completed 37-07-PLAN.md
+last_updated: "2026-10-15T17:08:26.505Z"
 last_activity: 2026-10-15
 last_activity_desc: Phase 37 execution started
-state_head: 492ab7e3241e321e8dd78bbb2f589470b939718e
+state_head: 547e21564b5e99ab65e93cfe7ed25f73438e7be0
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 37
-  completed_plans: 35
+  completed_plans: 36
   percent: 67
 ---
 
@@ -126,7 +126,7 @@ plans.
 ## Current Position
 
 Phase: 37 (CRC-32 Consumer, Interpreter File Route, and Guide) — EXECUTING
-Current Plan: 7
+Current Plan: 8
 Total Plans in Phase: 8
 Status: Ready to execute
 Last activity: 2026-10-15 — Phase 37 execution started
@@ -624,6 +624,7 @@ subset alone.
 | Phase 37 P04 | 11m | 2 tasks | 4 files |
 | Phase 37 P5 | 7min | 2 tasks | 4 files |
 | Phase 37 P06 | 13min | 2 tasks | 3 files |
+| Phase 37 P07 | 14m | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -900,6 +901,9 @@ decision history; they no longer describe current status.
 - [Phase 37]: Use InputID and module rows for no-edit source/closure stability while retaining BuildID as exact executable-bound identity.
 - [Phase 37]: Keep all semantic mutations in private copies and require public admission plus numeric output on both engines.
 - [Phase 37]: Plan evidence for APP-13, MOD-07, and APP-14 remains pending parent phase acceptance.
+- [Phase 37]: Keep the source-file PATH ceiling separate from the fixed interpreter FileBytes read cap.
+- [Phase 37]: Preserve native binding-selected FileBytes maxima and the ten-field surface schema.
+- [Phase 37]: Preserve the immutable Phase 34 witness receipt and compose Phase 37 facts additively.
 
 ### Pending Todos
 
@@ -1155,8 +1159,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-15T16:48:39.813Z
-Stopped at: Completed 37-06-PLAN.md
+Last session: 2026-10-15T17:08:25.681Z
+Stopped at: Completed 37-07-PLAN.md
 Resume file: None
 Next action: Continue with Phase 37 Plan 05 after plan 04 execution.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
