@@ -186,11 +186,22 @@ The final summary/STATE/ROADMAP metadata commit follows this fresh verification.
 
 Plan36-06 is complete. Phase36 remains open: Plans36-07 and 36-08 are still pending and no Phase37 work was started.
 
+## Dated Integration Follow-up — 2026-10-15
+
+The mandatory final-regression route audit found three new entry programs without `phase32RouteRows` entries: `examples/helper_calls/crc_step.schway`, `examples/helper_calls/importer.schway`, and `examples/helper_calls/public.schway`. Added rows in `cmd/schway/main_phase32_routes_test.go`, each owned by the real `TestPhase36PublicHelperConformance` consumer. All three are classified as module-aware. The local and imported U64 entries now run through the actual CLI on both engines and require `tool.run_input_required` with exit 64 and identical JSON; the importer must not be refused as `module.imports_not_loaded`. The existing public unused-Byte conformance route continues to return `1994146192` on both engines.
+
+The route audit's current-entry count was pinned at 15 from before these examples existed. Updated that exact census expectation to 18; the M006 receipt program set and receipt rows remain unchanged. Commit `ec9be36e` contains only the route inventory and its CLI evidence test. No production route, input default, fixture ledger, security claim, or phase requirement changed.
+
+Focused verification passed with roots `TestPhase34DiagnosticRouteInventory`, `TestPhase32PublicRouteAudit`, `TestPhase36PublicHelperConformance`, and `TestPhase321RunInputRequiredCLI`:
+
+`GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase34DiagnosticRouteInventory|TestPhase32PublicRouteAudit|TestPhase36PublicHelperConformance|TestPhase321RunInputRequiredCLI)$' -count=1 -v -timeout=600s`
+
 ## Self-Check: PASSED
 
 - Summary, test, and debug commits are verified in the current history.
 - The three focused selectors passed with current HEAD; the new native caller, fixture-loop, FileBytes-loop, and mutation roots executed rather than being skipped.
 - The native caller refusal remains recorded above as historical pre-fix evidence, followed by its dated resolution and fresh semantic evidence.
+- The dated route-inventory follow-up's four named CLI/audit roots passed; the helper entry rows have real result-owning coverage.
 - No TODO/FIXME/placeholder stubs or skipped roots were found in the owned source/test changes.
 
 ---
