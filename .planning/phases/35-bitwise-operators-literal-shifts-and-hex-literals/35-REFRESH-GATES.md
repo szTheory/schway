@@ -54,3 +54,28 @@ prior Phase35 receipts, frozen goldens and successor-bound receipt files stay
 unchanged. No hosted result, new dependency, compiler semantic change, future
 phase execution or human usability result is claimed. The independent goal
 verifier is next and owns VERIFICATION.md and its canonical fingerprint.
+
+## Final post-wiring gate amendment — 2026-10-15
+
+The first independent report established 38/38 behavior truths but identified
+unwired/null prohibition tiers. Both now have explicit test descriptors and
+canonical mechanical enforcement: two green results, with bad-subject RED,
+clean-subject GREEN and default GREEN. The five-file wiring follow-up review
+is clean; the two review passes cover 66 unique paths, not a claim of rereading
+all 66 in the follow-up. Historical WR-01/WR-02 remain fixed, zero of two open.
+Security retains 24 closed/zero open at L1; UI applicability is unchanged.
+
+The report's eight table-split regex commands were repaired as fenced blocks;
+three affected metadata/evidence roots passed. The final complete focused
+regression at committed c1136586 then passed the same 165 distinct names /
+175 root executions across 16 packages, zero missing/fail/skip, 80.974s wall
+time. There are 174 unique (package,name) keys: Go reports the internal and
+external checker NumericRoutePolicy tests under the same root name; both
+executions are retained, not silently deduplicated. All 15 transfer and 26
+admission source mutants were caught again; feature-only optimization/sanitizer
+controls passed without skips. 35-REFRESH-FINAL-RUN.json binds 122 current
+source/fixture/acceptance inputs and 16 raw logs. It supersedes earlier refresh
+runs for current acceptance; failed intermediate runs earn no passing credit.
+No compiler/runtime semantics or dependency changed. Independent verifier
+re-verification and fingerprint regeneration are next; this record does not
+override its verdict.
