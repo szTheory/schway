@@ -313,18 +313,85 @@ Both receipts' input hashes and raw-log hashes match the files currently on disk
 
 All commands used `GOCACHE=/tmp/ai-lang-verification-gocache`, `-count=1 -v -timeout=600s`. Each named root below was observed RUN and PASS.
 
-| Area | Exact selector | Result |
-|---|---|---|
-| Evidence grounding | `go test ./internal/compiler/session -run '^(TestPhase35EvidenceGrounding|TestSummaryCoverageGroundedness)$'` | ✓ PASS; false-evidence controls and shared summary coverage validator pass. |
-| Grammar, recovery and literal ownership | `go test ./internal/compiler/syntax -run '^(TestPhase35ScalarGrammar|TestPhase35ExpressionDepth|TestPhase35FormatterRoundTrip|TestPhase35NumericOwnership|TestPhase35GroupedNegativeShiftAmountRefusal)$'` | ✓ PASS; precedence, bounded grouping, formatter, malformed/overflowing hex and negative shift controls pass. |
-| Checker lowering/transfers | `go test ./internal/compiler/check -run '^(TestPhase35ShiftAdmission|TestPhase35ScalarTransferMutants|TestPhase35NumericRoutePolicy)$'` | ✓ PASS; literal-only shifts, route-local numeric policy and value-transfer controls pass. |
-| Core validator contract/analysis | `go test ./internal/compiler/corevalidate -run '^(TestPhase35ShiftImmediateAdmission|TestPhase35ScalarTransferMutants|TestPhase35AnalysisTriggers|TestPhase35UnusedByteIRAdmission)$'` | ✓ PASS; raw immediate laws, transfer paths and Byte controls pass. |
-| Origin validator contract/analysis | `go test ./internal/compiler/originvalidate -run '^(TestPhase35ShiftImmediateAdmission|TestPhase35ScalarTransferMutants|TestPhase35AnalysisTriggers|TestPhase35UnusedByteIRAdmission)$'` | ✓ PASS; independent raw immediate laws and transfer paths pass. |
-| Interpreter | `go test ./internal/compiler/interp -run '^(TestPhase35BitwiseShiftVectorsEventFree|TestPhase35InterpreterWrongAnswerControls|TestPhase35UnusedByteRuntime)$'` | ✓ PASS; literal vectors, wrong-answer controls and event-free outcomes pass. |
-| Executionpeer | `go test ./internal/compiler/executionpeer -run '^TestPhase35PureOperationCausalControls$'` | ✓ PASS; fabricated event controls pass; this is causal evidence only. |
-| C emission | `go test ./internal/compiler/cgen -run '^(TestPhase35UnsignedShiftEmissionAndEventProjection|TestPhase35ShiftSiteControls)$'` | ✓ PASS; unsigned shifts, positive site count and dynamic/64/signed controls pass. |
-| Public application and Adler | `go test ./internal/compiler/session -run '^(TestPhase35FocusedValueAnswers|TestPhase35ExistingAdlerAnswers|TestPhase35AdlerWrongShiftControl)$'` | ✓ PASS; interpreter/native public output and pinned Adler values pass; wrong-shift control is reached. |
-| CLI witness | `go test ./cmd/schway -run '^TestPhase35PublicConformanceWitness$'` | ✓ PASS; public interpreter/native witness returns 264 and the alternate association control returns 8. |
+**Evidence grounding**
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase35EvidenceGrounding|TestSummaryCoverageGroundedness)$' -count=1 -v -timeout=600s
+```
+
+✓ PASS; false-evidence controls and shared summary coverage validator pass.
+
+**Grammar, recovery and literal ownership**
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/syntax -run '^(TestPhase35ScalarGrammar|TestPhase35ExpressionDepth|TestPhase35FormatterRoundTrip|TestPhase35NumericOwnership|TestPhase35GroupedNegativeShiftAmountRefusal)$' -count=1 -v -timeout=600s
+```
+
+✓ PASS; precedence, bounded grouping, formatter, malformed/overflowing hex and negative shift controls pass.
+
+**Checker lowering/transfers**
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/check -run '^(TestPhase35ShiftAdmission|TestPhase35ScalarTransferMutants|TestPhase35NumericRoutePolicy)$' -count=1 -v -timeout=600s
+```
+
+✓ PASS; literal-only shifts, route-local numeric policy and value-transfer controls pass.
+
+**Core validator contract/analysis**
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/corevalidate -run '^(TestPhase35ShiftImmediateAdmission|TestPhase35ScalarTransferMutants|TestPhase35AnalysisTriggers|TestPhase35UnusedByteIRAdmission)$' -count=1 -v -timeout=600s
+```
+
+✓ PASS; raw immediate laws, transfer paths and Byte controls pass.
+
+**Origin validator contract/analysis**
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/originvalidate -run '^(TestPhase35ShiftImmediateAdmission|TestPhase35ScalarTransferMutants|TestPhase35AnalysisTriggers|TestPhase35UnusedByteIRAdmission)$' -count=1 -v -timeout=600s
+```
+
+✓ PASS; independent raw immediate laws and transfer paths pass.
+
+**Interpreter**
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase35BitwiseShiftVectorsEventFree|TestPhase35InterpreterWrongAnswerControls|TestPhase35UnusedByteRuntime)$' -count=1 -v -timeout=600s
+```
+
+✓ PASS; literal vectors, wrong-answer controls and event-free outcomes pass.
+
+**Executionpeer**
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/executionpeer -run '^TestPhase35PureOperationCausalControls$' -count=1 -v -timeout=600s
+```
+
+✓ PASS; fabricated event controls pass; this is causal evidence only.
+
+**C emission**
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen -run '^(TestPhase35UnsignedShiftEmissionAndEventProjection|TestPhase35ShiftSiteControls)$' -count=1 -v -timeout=600s
+```
+
+✓ PASS; unsigned shifts, positive site count and dynamic/64/signed controls pass.
+
+**Public application and Adler**
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase35FocusedValueAnswers|TestPhase35ExistingAdlerAnswers|TestPhase35AdlerWrongShiftControl)$' -count=1 -v -timeout=600s
+```
+
+✓ PASS; interpreter/native public output and pinned Adler values pass; wrong-shift control is reached.
+
+**CLI witness**
+
+```sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase35PublicConformanceWitness$' -count=1 -v -timeout=600s
+```
+
+✓ PASS; public interpreter/native witness returns 264 and the alternate association control returns 8.
 
 No server, broad test suite, broad native matrix, hosted job, push or UAT replay was run.
 
