@@ -25,14 +25,145 @@ type phase36SurfaceWitness struct {
 	ExpectedHint        string                      `json:"expected_hint"`
 	Exercise            string                      `json:"exercise"`
 	ExpectedForm        string                      `json:"expected_form"`
+	ExpectedArity       int                         `json:"expected_arity"`
 	ExpectedConstraints []string                    `json:"expected_constraints"`
 }
 
 type phase36SurfaceWitnessDocument struct {
-	Schema    string                  `json:"schema"`
-	Boundary  string                  `json:"boundary"`
-	Calls     phase34ExpectedCalls    `json:"calls"`
-	Witnesses []phase36SurfaceWitness `json:"witnesses"`
+	Schema     string                      `json:"schema"`
+	Boundary   string                      `json:"boundary"`
+	Calls      phase34ExpectedCalls        `json:"calls"`
+	Supersedes []phase34ScopedSupersession `json:"supersedes"`
+	Witnesses  []phase36SurfaceWitness     `json:"witnesses"`
+}
+
+const phase36SurfaceCensusSchema = "phase36.surface-census/1"
+
+type phase36LimitContext struct {
+	ID             string `json:"id"`
+	Value          int    `json:"value"`
+	Unit           string `json:"unit"`
+	Meaning        string `json:"meaning"`
+	Source         string `json:"source"`
+	Classification string `json:"classification"`
+}
+
+type phase36SurfaceCensusDocument struct {
+	Schema        string                `json:"schema"`
+	Boundary      string                `json:"boundary"`
+	Files         []string              `json:"files"`
+	Branches      []phase34CensusBranch `json:"branches"`
+	LimitContexts []phase36LimitContext `json:"limit_contexts"`
+}
+
+func phase36ReadSurfaceWitnesses(t *testing.T) phase36SurfaceWitnessDocument {
+	t.Helper()
+	path := testsupport.ProjectPath("testdata", "phase36", "surface-witnesses.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read independent Phase 36 scalar-call witnesses: %v", err)
+	}
+	var document phase36SurfaceWitnessDocument
+	if err := json.Unmarshal(data, &document); err != nil {
+		t.Fatalf("decode independent Phase 36 scalar-call witnesses: %v", err)
+	}
+	if document.Schema != phase36SurfaceWitnessSchema || document.Boundary == "" || len(document.Witnesses) == 0 {
+		t.Fatalf("invalid Phase 36 witness header: schema=%q boundary=%q witnesses=%d", document.Schema, document.Boundary, len(document.Witnesses))
+	}
+	return document
+}
+
+func phase36ReadSurfaceCensus(t *testing.T) phase36SurfaceCensusDocument {
+	t.Helper()
+	data, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase36", "surface-census.json"))
+	if err != nil {
+		t.Fatalf("read independent Phase 36 call census: %v", err)
+	}
+	var document phase36SurfaceCensusDocument
+	if err := json.Unmarshal(data, &document); err != nil {
+		t.Fatalf("decode independent Phase 36 call census: %v", err)
+	}
+	if document.Schema != phase36SurfaceCensusSchema || document.Boundary == "" || len(document.Branches) == 0 {
+		t.Fatalf("invalid Phase 36 census header: schema=%q boundary=%q branches=%d", document.Schema, document.Boundary, len(document.Branches))
+	}
+	if !samePhase34Strings(document.Files, phase34SurfaceCensusFiles) {
+		t.Fatalf("Phase 36 census boundary files = %v, want exactly %v", document.Files, phase34SurfaceCensusFiles)
+	}
+	return document
+}
+
+func TestPhase36SurfaceManifestCallCensus(t *testing.T) {
+	witnessDocument := phase34ReadSurfaceWitnesses(t)
+	phase36Witnesses := phase36ReadSurfaceWitnesses(t)
+	for _, witness := range phase36Witnesses.Witnesses {
+		witnessDocument.Witnesses = append(witnessDocument.Witnesses, phase34SurfaceWitness{
+			ID: witness.ID, Facet: witness.Facet, Context: witness.Context, CheckRoute: witness.CheckRoute,
+			Files: witness.Files, Source: witness.Source, ExpectedStatus: witness.ExpectedStatus,
+			ExpectedCode: witness.ExpectedCode, ExpectedHint: witness.ExpectedHint, Exercise: witness.Exercise,
+			ExpectedForm: witness.ExpectedForm, ExpectedArity: witness.ExpectedArity, ExpectedConstraints: witness.ExpectedConstraints,
+		})
+	}
+	census := phase34ReadCensus(t)
+	phase36Census := phase36ReadSurfaceCensus(t)
+	census.Branches = append(census.Branches, phase36Census.Branches...)
+	if problems := phase34CensusProblems(census, nil, witnessDocument.Witnesses); len(problems) != 0 {
+		t.Fatalf("composed Phase 34/35/36 source branch census differs from selected producers; expected Phase 36 call census IDs to be accounted: %v", problems)
+	}
+	for _, row := range phase36Census.Branches {
+		if row.Disposition == "non-surface/internal" && row.Reason == "" {
+			t.Fatalf("Phase 36 internal branch lacks a named exclusion: %+v", row)
+		}
+	}
+}
+
+func TestPhase36SurfaceManifestCallControls(t *testing.T) {
+	witnessDocument := phase36ReadSurfaceWitnesses(t)
+	if witnessDocument.Calls.DeclarationArity != 1 || !samePhase34Ints(witnessDocument.Calls.OrdinaryArity, []int{1}) || !witnessDocument.Calls.ScalarExpressionCalls {
+		t.Fatalf("Phase 36 literal call controls do not describe one-argument scalar calls: %+v", witnessDocument.Calls)
+	}
+	if len(witnessDocument.Supersedes) == 0 {
+		t.Fatal("Phase 36 call composition must name exact inherited witness supersessions")
+	}
+	manifest := surfacemanifest.Current()
+	if !manifest.Calls.ScalarExpressionCalls {
+		t.Fatal("scalar expression call admission is absent from the source-free manifest")
+	}
+}
+
+func TestPhase36SurfaceLimitConsumers(t *testing.T) {
+	document := phase36ReadSurfaceCensus(t)
+	want := map[string]phase36LimitContext{
+		"parser.expression_depth":    {ID: "parser.expression_depth", Value: 64, Unit: "levels", Classification: "source-expression-depth"},
+		"interpreter.call_depth":     {ID: "interpreter.call_depth", Value: 128, Unit: "frames", Classification: "runtime-call-stack"},
+		"cgen.invocation_path_nodes": {ID: "cgen.invocation_path_nodes", Value: 4096, Unit: "static nodes", Classification: "static-preflight"},
+		"executionpeer.invocations":  {ID: "executionpeer.invocations", Value: 4096, Unit: "static occurrences", Classification: "static-preflight"},
+		"execution.document_bytes":   {ID: "execution.document_bytes", Value: 16 * 1024 * 1024, Unit: "bytes", Classification: "runtime-capture-bytes"},
+		"application.evidence_bytes": {ID: "application.evidence_bytes", Value: 64 * 1024, Unit: "bytes", Classification: "runtime-capture-bytes"},
+		"application.output_bytes":   {ID: "application.output_bytes", Value: 65536, Unit: "bytes", Classification: "runtime-capture-bytes"},
+	}
+	for _, row := range document.LimitContexts {
+		expected, ok := want[row.ID]
+		if !ok || row.Value != expected.Value || row.Unit != expected.Unit || row.Classification != expected.Classification || row.Meaning == "" || row.Source == "" {
+			t.Errorf("limit context %q = %+v; want independently classified value %d %s (%s) with a named source", row.ID, row, expected.Value, expected.Unit, expected.Classification)
+			continue
+		}
+		delete(want, row.ID)
+	}
+	if len(want) != 0 {
+		t.Errorf("missing exact Phase 36 limit contexts: %v", want)
+	}
+}
+
+func samePhase34Ints(left, right []int) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index] != right[index] {
+			return false
+		}
+	}
+	return true
 }
 
 func TestPhase36SurfaceManifestCallWitnesses(t *testing.T) {
