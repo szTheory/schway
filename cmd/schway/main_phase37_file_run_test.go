@@ -78,7 +78,6 @@ func TestPhase37FileRunGrammar(t *testing.T) {
 		name string
 		args []string
 	}{
-		{name: "missing separator", args: []string{"run", "--engine=interpreter", source}},
 		{name: "missing engine", args: []string{"run", source, "--", "input"}},
 		{name: "duplicate engine", args: []string{"run", "--engine=interpreter", "--engine=native", source, "--manifest", manifest, "--", "input"}},
 		{name: "unknown engine", args: []string{"run", "--engine=llvm", source, "--", "input"}},

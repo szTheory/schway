@@ -16,6 +16,7 @@ import (
 	"github.com/szTheory/schway/internal/compiler/check"
 	"github.com/szTheory/schway/internal/compiler/diagnostic"
 	"github.com/szTheory/schway/internal/compiler/evidence"
+	"github.com/szTheory/schway/internal/compiler/execution"
 	"github.com/szTheory/schway/internal/compiler/exitcode"
 	"github.com/szTheory/schway/internal/compiler/measure"
 	"github.com/szTheory/schway/internal/compiler/native"
@@ -34,6 +35,11 @@ const (
 func main() { os.Exit(run(os.Args[1:])) }
 
 func run(args []string) int {
+	// Source applications have a separate grammar from conformance runs. Find
+	// their first separator before global extractors can consume opaque argv.
+	if hasSeparatorMarkedSourceRun(args) {
+		return runFileApplication(args)
+	}
 	// Route the application command before global flag extraction so the token
 	// after `--` stays opaque, even when it is spelled like a lang flag.
 	if len(args) > 0 && args[0] == "surface" {
@@ -172,6 +178,206 @@ func runNative(path string, jsonMode bool) int {
 		return emit(problemResult("run", protocol.StatusOperational, "tool.read_failed", "unable to read input"), jsonMode, false)
 	}
 	return emit(result, jsonMode, false)
+}
+
+const fileRunUsage = "usage: schway run --engine={interpreter|native} SOURCE [--manifest MANIFEST] -- PATH"
+
+type fileRunSpec struct {
+	engine   string
+	source   string
+	manifest string
+	path     string
+}
+
+// hasSeparatorMarkedSourceRun recognizes only `run` after any leading global
+// presentation flags. The no-separator conformance form stays on its existing
+// path through runInterpreter/runNative.
+func hasSeparatorMarkedSourceRun(args []string) bool {
+	separator := -1
+	for index, argument := range args {
+		if argument == "--" {
+			separator = index
+			break
+		}
+	}
+	if separator < 0 {
+		return false
+	}
+	index := 0
+	for index < separator {
+		argument := args[index]
+		switch {
+		case argument == "--json", argument == "--expand",
+			strings.HasPrefix(argument, "--depth="),
+			strings.HasPrefix(argument, "--kind="),
+			strings.HasPrefix(argument, "--cursor="):
+			index++
+		case argument == "run":
+			return true
+		default:
+			return false
+		}
+	}
+	return false
+}
+
+func parseFileRun(args []string) (fileRunSpec, bool) {
+	separator := -1
+	for index, argument := range args {
+		if argument == "--" {
+			separator = index
+			break
+		}
+	}
+	if separator < 0 || separator+2 != len(args) || len(args) == 0 || args[0] != "run" {
+		return fileRunSpec{}, false
+	}
+	spec := fileRunSpec{path: args[separator+1]}
+	seenEngine, seenManifest := false, false
+	for index := 1; index < separator; index++ {
+		argument := args[index]
+		switch {
+		case strings.HasPrefix(argument, "--engine="):
+			if seenEngine {
+				return fileRunSpec{}, false
+			}
+			seenEngine = true
+			spec.engine = strings.TrimPrefix(argument, "--engine=")
+			if spec.engine != "interpreter" && spec.engine != "native" {
+				return fileRunSpec{}, false
+			}
+		case argument == "--manifest":
+			if seenManifest || index+1 >= separator || args[index+1] == "" {
+				return fileRunSpec{}, false
+			}
+			seenManifest = true
+			spec.manifest = args[index+1]
+			index++
+		case strings.HasPrefix(argument, "--"):
+			return fileRunSpec{}, false
+		default:
+			if spec.source != "" || argument == "" {
+				return fileRunSpec{}, false
+			}
+			spec.source = argument
+		}
+	}
+	if !seenEngine || spec.source == "" || (spec.engine == "native") != seenManifest {
+		return fileRunSpec{}, false
+	}
+	return spec, true
+}
+
+func runFileApplication(args []string) int {
+	spec, ok := parseFileRun(args)
+	if !ok {
+		fmt.Fprintln(os.Stderr, fileRunUsage)
+		return exitUsage
+	}
+	if spec.path == "" {
+		return exitcode.AppInputRefused
+	}
+	if len(spec.path) > native.MaxApplicationArgumentBytes {
+		fmt.Fprintln(os.Stderr, "schway run: input exceeds 4096 bytes")
+		return exitcode.AppInputRefused
+	}
+	if strings.IndexByte(spec.path, 0) >= 0 {
+		fmt.Fprintln(os.Stderr, "schway run: input contains NUL")
+		return exitcode.AppInputRefused
+	}
+
+	checked, err := session.CheckCommandFile(spec.source)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "schway run: unable to read source")
+		return exitOperational
+	}
+	checked.Command = "run"
+	if checked.Status != protocol.StatusPass {
+		return emit(checked, false, false)
+	}
+
+	if spec.engine == "interpreter" {
+		result, diagnostics, err := session.RunInterpreterFileApplication(spec.source, spec.path)
+		if len(diagnostics) > 0 {
+			checked.Status = protocol.StatusInvalid
+			checked.Diagnostics = diagnostics
+			return emit(checked, false, false)
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "schway run: interpreter file application failed")
+			return exitOperational
+		}
+		if len(result.Output) > 0 {
+			if _, err := os.Stdout.Write(result.Output); err != nil {
+				fmt.Fprintln(os.Stderr, "schway run: unable to write application output")
+				return exitOperational
+			}
+		}
+		switch result.Execution.Outcome.Kind {
+		case execution.OutcomeReturned:
+			return exitSuccess
+		case execution.OutcomeTypedFailure:
+			if result.Execution.Outcome.Value != "" {
+				fmt.Fprintf(os.Stderr, "FileError.%s\n", result.Execution.Outcome.Value)
+			}
+			return exitcode.AppInputRefused
+		default:
+			// Evidence-disabled interpreter results intentionally omit defect
+			// details. Preserve any completed output and keep the checked defect
+			// a failure rather than converting its zero value into success.
+			return exitcode.AppInputRefused
+		}
+	}
+	return runNativeFileApplication(spec)
+}
+
+func runNativeFileApplication(spec fileRunSpec) (exit int) {
+	tempDir, err := os.MkdirTemp("", "schway-run-")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "schway run: unable to create private build directory")
+		return exitOperational
+	}
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil && exit == exitSuccess {
+			fmt.Fprintln(os.Stderr, "schway run: unable to remove private build directory")
+			exit = exitOperational
+		}
+	}()
+
+	artifact := filepath.Join(tempDir, "application")
+	_, diagnostics, err := session.BuildApplicationFile(context.Background(), spec.source, artifact, native.DefaultRunner(), spec.manifest)
+	if len(diagnostics) > 0 {
+		checked, checkErr := session.CheckCommandFile(spec.source)
+		if checkErr == nil {
+			checked.Command = "run"
+			checked.Status = protocol.StatusInvalid
+			checked.Diagnostics = diagnostics
+			return emit(checked, false, false)
+		}
+		fmt.Fprintln(os.Stderr, "schway run: source admission refused")
+		return exitInvalidSource
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "schway run: native build failed")
+		return exitOperational
+	}
+
+	outcome, err := native.RunApplication(context.Background(), artifact, spec.path, os.Stdout, os.Stderr)
+	if err != nil {
+		if outcome.Diagnostic != "" {
+			fmt.Fprintf(os.Stderr, "schway run: %s\n", outcome.Diagnostic)
+		}
+		return appRunExitCode(outcome, err)
+	}
+	switch outcome.Kind {
+	case native.RunTimedOut, native.RunLaunchError:
+		fmt.Fprintf(os.Stderr, "schway run: %s\n", outcome.Diagnostic)
+	case native.RunExited, native.RunSignaled:
+	default:
+		fmt.Fprintln(os.Stderr, "schway run: invalid process outcome")
+		return exitcode.AppLaunchError
+	}
+	return appRunExitCode(outcome, nil)
 }
 
 func runBuild(sourcePath, outputPath string, jsonMode bool, manifestPath ...string) int {
