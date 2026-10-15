@@ -14,8 +14,8 @@ prints an unsigned decimal value followed by one newline. This is not POSIX
 `123456789`, the full result is `3421780262` and the low result is `14630`.
 
 Build the tracked source CLI and create the exact binary inputs used by the
-table below. All generated files and native artifacts stay under the ignored
-`.schway/crc32/` directory.
+table below. The CLI executable is written to ignored `./schway`; binary inputs
+and retained native artifacts stay under ignored `.schway/crc32/`.
 
 ```sh doc-test=setup
 go build -o ./schway ./cmd/schway
