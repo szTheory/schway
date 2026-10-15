@@ -113,6 +113,99 @@ func TestPhase36NoCallGeneratedCByteBaseline(t *testing.T) {
 	phase36RequireModuleCoverage(t, corpus)
 }
 
+func TestPhase36NoCallGeneratedCByteBaselineControls(t *testing.T) {
+	corpus := phase36LoadPreChangeCorpus(t)
+	ledger := phase36LoadFixtureLedger(t)
+	phase36VerifyRevision(t, testsupport.ProjectPath("."), corpus)
+	if problems := phase36InventoryProblems(corpus, ledger, phase36TrackedSources(t)); len(problems) != 0 {
+		t.Fatalf("tracked source inventory is not closed before controls: %s", strings.Join(problems, "; "))
+	}
+	observed := phase36ObservePreChangeCorpus(t, corpus)
+	if problems := phase36ComparePreChangeCorpus(corpus, observed); len(problems) != 0 {
+		t.Fatalf("clean pre-change observation must pass before mutation: %s", strings.Join(problems, "; "))
+	}
+	if problems := phase36ComparePreChangeCorpus(corpus, phase36CloneEntries(observed)); len(problems) != 0 {
+		t.Fatalf("no-op observation must pass: %s", strings.Join(problems, "; "))
+	}
+
+	byteMutationCaught := false
+	for index := range observed {
+		for _, route := range phase36RouteAccessors {
+			result := route.get(&observed[index])
+			if result.Outcome != "emitted" || result.CSource == "" {
+				continue
+			}
+			mutant := phase36CloneEntries(observed)
+			mutated := route.get(&mutant[index])
+			cBytes := []byte(mutated.CSource)
+			cBytes[0] ^= 1
+			mutated.CSource = string(cBytes)
+			problems := phase36ComparePreChangeCorpus(corpus, mutant)
+			want := observed[index].Path + ": " + route.name + " C byte mismatch"
+			if !phase36HasProblem(problems, want) {
+				t.Fatalf("changed C byte was not attributed to %s: %v", want, problems)
+			}
+			if clean := phase36ComparePreChangeCorpus(corpus, observed); len(clean) != 0 {
+				t.Fatalf("restored C observation did not pass: %s", strings.Join(clean, "; "))
+			}
+			byteMutationCaught = true
+			break
+		}
+		if byteMutationCaught {
+			break
+		}
+	}
+	if !byteMutationCaught {
+		t.Fatal("no emitted C row was available for the changed-byte control")
+	}
+
+	missing := phase36CloneEntries(observed)
+	missingPath := missing[len(missing)-1].Path
+	missing = missing[:len(missing)-1]
+	if problems := phase36ComparePreChangeCorpus(corpus, missing); !phase36HasProblem(problems, missingPath+": source row missing from observation") {
+		t.Fatalf("omitted source row was not attributed to %s: %v", missingPath, problems)
+	}
+	if clean := phase36ComparePreChangeCorpus(corpus, observed); len(clean) != 0 {
+		t.Fatalf("restored source inventory did not pass: %s", strings.Join(clean, "; "))
+	}
+
+	falseExemptionCaught := false
+	for index := range observed {
+		for _, route := range phase36RouteAccessors {
+			if route.get(&observed[index]).Outcome != "emitted" {
+				continue
+			}
+			mutant := phase36CloneEntries(observed)
+			*route.get(&mutant[index]) = phase36NotEmitted("misclassified as exempt")
+			problems := phase36ComparePreChangeCorpus(corpus, mutant)
+			want := observed[index].Path + ": " + route.name + " outcome changed"
+			if !phase36HasProblem(problems, want) {
+				t.Fatalf("false route exemption was not attributed to %s: %v", want, problems)
+			}
+			if clean := phase36ComparePreChangeCorpus(corpus, observed); len(clean) != 0 {
+				t.Fatalf("restored route observation did not pass: %s", strings.Join(clean, "; "))
+			}
+			falseExemptionCaught = true
+			break
+		}
+		if falseExemptionCaught {
+			break
+		}
+	}
+	if !falseExemptionCaught {
+		t.Fatal("no admitted emitting route was available for the false-exemption control")
+	}
+
+	old := corpus.Entries[0]
+	mutatedLedger := phase36FixtureLedger{Schema: phase36LedgerSchema, Entries: []phase36FixtureLedgerRow{{Path: old.Path, SourceSHA: old.SourceSHA, Reason: "control: attempt to exempt an old source"}}}
+	if problems := phase36InventoryProblems(corpus, mutatedLedger, phase36TrackedSources(t)); !phase36HasProblem(problems, old.Path+": old corpus source cannot be exempted by the new-fixture ledger") {
+		t.Fatalf("old source false exemption was not rejected: %v", problems)
+	}
+	if problems := phase36InventoryProblems(corpus, ledger, phase36TrackedSources(t)); len(problems) != 0 {
+		t.Fatalf("restored fixture ledger did not pass: %s", strings.Join(problems, "; "))
+	}
+}
+
 func phase36ObservePreChangeCorpus(t *testing.T, corpus phase36PreChangeCorpus) []phase36PreChangeEntry {
 	t.Helper()
 	if corpus.Schema != phase36PreChangeSchema {
