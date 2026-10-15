@@ -16,9 +16,11 @@ fn u64_u64(value: U64) -> U64 { let result = value result }
 fn u64_bool(value: U64) -> Bool { let result = value < 9 result }
 fn bool_u64(value: Bool) -> U64 { let result = 13 result }
 fn bool_bool(value: Bool) -> Bool { let result = value result }
+fn unit_sink(value: U64) -> Unit { write_newline() }
 fn main(input: U64) -> U64 {
   let seed = 7
   let copied = input
+  let flag = input < 8
   let below = u64_bool(input)
   let same = bool_bool(below)
   let from_bool = bool_u64(same)
@@ -97,8 +99,8 @@ func TestPhase36RawCallRefusalRemovalControls(t *testing.T) {
 	// contract seam is removed; source checking and the other peer are absent.
 	argumentMutant := phase36CloneRawCallProgram(t, program)
 	argumentMain := phase36RawCallFunction(t, &argumentMutant, "main")
-	argumentCall := phase36FindRawCall(t, argumentMain, "u64_bool")
-	argumentCall.SourceID = phase36RawCallPlace(t, argumentMain, "below")
+	argumentCall := phase36FindRawCall(t, argumentMain, "bool_bool")
+	argumentCall.SourceID = phase36RawCallPlace(t, argumentMain, "copied")
 	if got := corevalidate.Validate(argumentMutant); got.Valid {
 		t.Fatal("corevalidate accepted a Bool argument for a U64 parameter")
 	}
@@ -132,6 +134,109 @@ func TestPhase36RawCallRefusalRemovalControls(t *testing.T) {
 		t.Fatal("return contract stayed disabled after restore")
 	}
 
+	for _, row := range []struct {
+		name, callee, wrongSource, wrongCallee string
+	}{
+		{name: "U64-to-U64", callee: "u64_u64", wrongSource: "flag", wrongCallee: "u64_bool"},
+		{name: "U64-to-Bool", callee: "u64_bool", wrongSource: "flag", wrongCallee: "u64_u64"},
+		{name: "Bool-to-U64", callee: "bool_u64", wrongSource: "input", wrongCallee: "bool_bool"},
+		{name: "Bool-to-Bool", callee: "bool_bool", wrongSource: "input", wrongCallee: "bool_u64"},
+	} {
+		t.Run(row.name+" argument type", func(t *testing.T) {
+			mutant := phase36CloneRawCallProgram(t, program)
+			main := phase36RawCallFunction(t, &mutant, "main")
+			call := phase36FindRawCall(t, main, row.callee)
+			call.SourceID = phase36RawCallPlace(t, main, row.wrongSource)
+			if got := corevalidate.Validate(mutant); got.Valid {
+				t.Fatal("corevalidate accepted a call argument with the wrong scalar constructor")
+			}
+		})
+		t.Run(row.name+" result type", func(t *testing.T) {
+			mutant := phase36CloneRawCallProgram(t, program)
+			main := phase36RawCallFunction(t, &mutant, "main")
+			call := phase36FindRawCall(t, main, row.callee)
+			callee := phase36RawCallFunction(t, &mutant, row.wrongCallee)
+			call.CalleeID = callee.ID
+			if got := corevalidate.Validate(mutant); got.Valid {
+				t.Fatal("corevalidate accepted a call target whose declared return constructor differs")
+			}
+		})
+	}
+
+	for _, row := range []struct {
+		name string
+		edit func(*testing.T, *core.Program, *core.LinearOperation)
+	}{
+		{name: "missing callee", edit: func(_ *testing.T, _ *core.Program, op *core.LinearOperation) { op.CalleeID = "" }},
+		{name: "unknown callee", edit: func(_ *testing.T, _ *core.Program, op *core.LinearOperation) { op.CalleeID = "missing:function" }},
+		{name: "missing source", edit: func(_ *testing.T, _ *core.Program, op *core.LinearOperation) { op.SourceID = "" }},
+		{name: "missing target", edit: func(_ *testing.T, _ *core.Program, op *core.LinearOperation) { op.TargetID = "" }},
+		{name: "extra right field", edit: func(t *testing.T, p *core.Program, op *core.LinearOperation) {
+			op.RightID = phase36RawCallFunction(t, p, "main").Parameter.ID
+		}},
+		{name: "extra mutable-store field", edit: func(t *testing.T, p *core.Program, op *core.LinearOperation) {
+			op.StoreTargetID = phase36RawCallPlace(t, phase36RawCallFunction(t, p, "main"), "current")
+		}},
+		{name: "extra foreign contract", edit: func(_ *testing.T, _ *core.Program, op *core.LinearOperation) {
+			op.Foreign = &core.ForeignOperationContract{Mode: "borrow"}
+		}},
+		{name: "extra fallible edge", edit: func(_ *testing.T, _ *core.Program, op *core.LinearOperation) {
+			op.OkEdgeID, op.ErrEdgeID, op.ErrTargetID = "ok", "err", "err-place"
+		}},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			mutant := phase36CloneRawCallProgram(t, program)
+			main := phase36RawCallFunction(t, &mutant, "main")
+			call := phase36FindRawCall(t, main, "u64_u64")
+			row.edit(t, &mutant, call)
+			got := corevalidate.Validate(mutant)
+			if got.Valid {
+				t.Fatalf("corevalidate accepted malformed raw OpCall fields: %+v", *call)
+			}
+		})
+	}
+
+	for _, row := range []struct {
+		name     string
+		typeName string
+	}{
+		{name: "Unit result", typeName: "Unit"},
+		{name: "ByteView result", typeName: "ByteView"},
+		{name: "resource result", typeName: "FileByteOwner"},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			mutant := phase36CloneRawCallProgram(t, program)
+			main := phase36RawCallFunction(t, &mutant, "main")
+			call := phase36FindRawCall(t, main, "u64_u64")
+			typeID := phase36RawCallType(t, main, row.typeName)
+			call.TypeID = typeID
+			for index := range main.Linear.Places {
+				if main.Linear.Places[index].ID == call.TargetID {
+					main.Linear.Places[index].TypeID = typeID
+				}
+			}
+			if got := corevalidate.Validate(mutant); got.Valid {
+				t.Fatalf("corevalidate accepted scalar helper with %s result authority", row.typeName)
+			}
+		})
+	}
+
+	for _, row := range []struct{ name, target string }{
+		{name: "prior constant", target: "seed"},
+		{name: "prior copy", target: "copied"},
+		{name: "prior mutable store", target: "current"},
+	} {
+		t.Run("target freshness/"+row.name, func(t *testing.T) {
+			mutant := phase36CloneRawCallProgram(t, program)
+			main := phase36RawCallFunction(t, &mutant, "main")
+			call := phase36FindRawCall(t, main, "u64_u64")
+			call.TargetID = phase36RawCallPlace(t, main, row.target)
+			if got := corevalidate.Validate(mutant); got.Valid {
+				t.Fatal("corevalidate accepted reuse of an initialized non-call target")
+			}
+		})
+	}
+
 	// A static producer cannot redefine an earlier call result. One call site
 	// in the loop is still valid when executed repeatedly at runtime; this
 	// mutant changes its static target to an earlier producer.
@@ -155,10 +260,25 @@ func phase36RawCallProgram(t *testing.T) core.Program {
 		t.Fatalf("Phase 36 raw call fixture did not parse: %+v", parsed.Diagnostics)
 	}
 	checked := check.Program(parsed.Program)
-	if len(checked.Diagnostics) != 0 || len(checked.Program.Functions) != 5 {
+	if len(checked.Diagnostics) != 0 || len(checked.Program.Functions) != 6 {
 		t.Fatalf("Phase 36 raw call fixture did not lower: diagnostics=%+v functions=%d", checked.Diagnostics, len(checked.Program.Functions))
 	}
 	return checked.Program
+}
+
+func phase36RawCallType(t *testing.T, function *core.Function, constructor string) string {
+	t.Helper()
+	for _, fact := range function.Linear.Types {
+		if fact.Shape.Constructor == constructor {
+			return fact.ID
+		}
+	}
+	if constructor != "ByteView" && constructor != "FileByteOwner" {
+		t.Fatalf("missing raw call type %q", constructor)
+	}
+	id := function.ID + ":type:phase36:" + constructor
+	function.Linear.Types = append(function.Linear.Types, core.TypeFact{ID: id, Shape: core.TypeRef{Constructor: constructor}})
+	return id
 }
 
 func phase36CloneRawCallProgram(t *testing.T, program core.Program) core.Program {

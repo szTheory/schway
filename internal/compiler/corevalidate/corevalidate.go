@@ -1449,13 +1449,25 @@ func (v *validator) linearStructural(function *core.Function) (map[string]core.T
 				}
 			}
 		} else if operation.Foreign != nil {
-			if operation.Kind != core.OpRelease || !v.validateLocalForeignOperation(function, operation, types, places) {
+			if !v.check(operation.Kind == core.OpRelease, "core.scalar_call_operation_invalid", operation.ID) || !v.validateLocalForeignOperation(function, operation, types, places) {
 				return nil, nil, false
 			}
 		}
 		if operation.Kind == core.OpCall && (operation.ErrTargetID != "" || operation.OkEdgeID != "" || operation.ErrEdgeID != "") {
 			errTarget, known := places[operation.ErrTargetID]
 			if !v.check(operation.ErrTargetID != "" && operation.OkEdgeID != "" && operation.ErrEdgeID != "" && known && errTarget.TypeID != "" && len(linear.Blocks) != 0, "core.call_error_edges_invalid", operation.ID) {
+				return nil, nil, false
+			}
+		}
+		if operation.Kind == core.OpCall {
+			if !v.check(operation.Foreign == nil, "core.scalar_call_operation_invalid", operation.ID) {
+				return nil, nil, false
+			}
+			argumentType := types[places[operation.SourceID].TypeID].Shape.Constructor
+			resultType := types[places[operation.TargetID].TypeID].Shape.Constructor
+			argumentScalar := argumentType == "U64" || argumentType == "Bool"
+			resultScalar := resultType == "U64" || resultType == "Bool"
+			if argumentScalar && resultScalar && !v.check(scalarCallOperationFieldsClean(operation), "core.scalar_call_operation_invalid", operation.ID) {
 				return nil, nil, false
 			}
 		}
@@ -2918,9 +2930,6 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 	returned := false
 	for index, operation := range operations {
 		source := places[operation.SourceID]
-		if !v.check(operation.Kind == core.OpConst || operation.Kind != core.OpCall || source.TypeID == operation.TypeID || function.Parameter.Type != function.ReturnType || fixtureViewCall(function, operation, types, places), "core.type_mismatch", operation.ID) {
-			return false
-		}
 		if !v.check(optionalOperationSource(function, operation) || initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
 			return false
 		}
@@ -3095,14 +3104,20 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 				if !v.checkVisibility(*function, callee) {
 					return false
 				}
-				if !v.checkCallTypeContract(callee, source, operation, places, types) {
+				if !v.checkCallTypeContractForCaller(*function, callee, source, operation, places, types) {
 					return false
 				}
 			}
 			if !v.consumeCallArgument(operation, source.TypeID, types, initialized) {
 				return false
 			}
-			if !v.targetMatches(function, index, operation, places, produced) {
+			targetValid := false
+			if hasScalarCFG(function) {
+				targetValid = scalarTargetMatches(function, index, operation, places, produced)
+			} else {
+				targetValid = v.targetMatches(function, index, operation, places, produced)
+			}
+			if !targetValid {
 				return false
 			}
 			initialized[operation.TargetID] = true
@@ -3296,9 +3311,6 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 	returnedBlocks := make(map[string]bool, len(linear.Blocks))
 	for index, operation := range operations {
 		source := places[operation.SourceID]
-		if !v.check(operation.Kind == core.OpConst || operation.Kind != core.OpCall || source.TypeID == operation.TypeID || function.Parameter.Type != function.ReturnType, "core.type_mismatch", operation.ID) {
-			return false
-		}
 		if !v.check(optionalOperationSource(function, operation) || initialized[operation.SourceID], finalOrTransitionCode(operation.Kind), operation.SourceID) {
 			return false
 		}
@@ -3506,7 +3518,7 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 					return false
 				}
 				// See replayStraightLine's identical case (07-09).
-				if !v.checkCallTypeContract(callee, source, operation, places, types) {
+				if !v.checkCallTypeContractForCaller(*function, callee, source, operation, places, types) {
 					return false
 				}
 			}
@@ -3514,7 +3526,13 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			if !v.consumeCallArgument(operation, source.TypeID, types, initialized) {
 				return false
 			}
-			if !v.targetMatches(function, index, operation, places, produced) {
+			targetValid := false
+			if hasScalarCFG(function) {
+				targetValid = scalarTargetMatches(function, index, operation, places, produced)
+			} else {
+				targetValid = v.targetMatches(function, index, operation, places, produced)
+			}
+			if !targetValid {
 				return false
 			}
 			initialized[operation.TargetID] = true
@@ -4265,23 +4283,17 @@ func (v *validator) consumeCallArgument(operation core.LinearOperation, sourceTy
 	if disableCallArgumentConsumePeerForTest {
 		return true
 	}
-	// A call must name a target when its return type differs from its argument
-	// type. This also keeps the direct, target-less test seam fail-closed.
-	if operation.TargetID == "" && operation.TypeID != sourceTypeID {
+	// Every admitted OpCall has a result target. Its type comes from the
+	// callee's independent return contract, so it may differ from the
+	// argument's type for any of the four U64/Bool pairs.
+	if operation.TargetID == "" {
 		v.problems = append(v.problems, Problem{Code: "core.type_mismatch", Detail: operation.ID})
 		return false
 	}
-	// WR-01 (07-REVIEW): OpCall-specific defense -- operation.TypeID (the
-	// call's declared return type) must equal sourceTypeID (the argument
-	// place's own declared type) before the ability derivation below is
-	// allowed to key off operation.TypeID. This is NOT redundant with the
-	// generic source.TypeID == operation.TypeID check every operation kind
-	// already passes (corevalidate.go, replayStraightLine/replayBlocks):
-	// that check is generic across all kinds and could be loosened or
-	// bypassed for OpCall specifically without this function ever knowing.
-	// A divergence here ties directly to D-07-09 (a function's declared
-	// return type must equal its own declared parameter type) -- if that
-	// constraint is ever relaxed, this assertion is what catches it.
+	// The argument's own type controls its copy/move behavior. The separate
+	// checkCallTypeContract predicate compares it with the callee's declared
+	// parameter, while operation.TypeID is checked against the callee's
+	// declared return type.
 	granted, _, known := v.derive(types[sourceTypeID].Shape, 0)
 	if !known {
 		return false
@@ -4343,6 +4355,10 @@ func abilityGranted(granted []core.Ability, wanted core.Ability) bool {
 // protection against this defect class. A shared helper WITH check here
 // would rebuild exactly that; this helper shares nothing with it.
 func (v *validator) checkCallTypeContract(callee core.Function, source core.Place, operation core.LinearOperation, places map[string]core.Place, types map[string]core.TypeFact) bool {
+	return v.checkCallTypeContractForCaller(core.Function{}, callee, source, operation, places, types)
+}
+
+func (v *validator) checkCallTypeContractForCaller(caller, callee core.Function, source core.Place, operation core.LinearOperation, places map[string]core.Place, types map[string]core.TypeFact) bool {
 	argumentConstructor := ""
 	if fact, ok := types[source.TypeID]; ok {
 		argumentConstructor = fact.Shape.Constructor
@@ -4358,7 +4374,30 @@ func (v *validator) checkCallTypeContract(callee core.Function, source core.Plac
 		}
 	}
 	targetTypeMatches := targetConstructor != "" && callee.ReturnType != "" && targetConstructor == callee.ReturnType
-	return v.check(disableCallReturnTypePeerForTest || targetTypeMatches, core.CallReturnTypeMismatch, operation.ID)
+	if !v.check(disableCallReturnTypePeerForTest || targetTypeMatches, core.CallReturnTypeMismatch, operation.ID) {
+		return false
+	}
+	argumentScalar := argumentConstructor == "U64" || argumentConstructor == "Bool"
+	resultScalar := targetConstructor == "U64" || targetConstructor == "Bool"
+	if argumentScalar || resultScalar {
+		if argumentScalar && resultScalar {
+			return v.check(scalarCallOperationFieldsClean(operation), "core.scalar_call_operation_invalid", operation.ID)
+		}
+		// The only mixed scalar/non-scalar call retained here is the old
+		// fixture-owned ByteView -> U64 consumer. Its dedicated lifecycle
+		// validator proves the foreign owner, borrow, call, release and return
+		// order; scalar helpers receive no authority to consume resources or
+		// return views.
+		return v.check(fixtureViewCall(&caller, operation, types, places), "core.scalar_call_context_invalid", operation.ID)
+	}
+	return true
+}
+
+func scalarCallOperationFieldsClean(operation core.LinearOperation) bool {
+	return operation.LoanID == "" && operation.Foreign == nil && operation.OkEdgeID == "" && operation.ErrEdgeID == "" && operation.ErrTargetID == "" &&
+		operation.ReleasesOperationID == "" && operation.Allocator == "" && operation.Reason == "" && operation.PayloadType == "" && operation.PayloadTargetID == "" &&
+		operation.ConstU64 == "" && operation.TextSource == "" && len(operation.TextBytes) == 0 && operation.TextLength == 0 && operation.RightID == "" &&
+		operation.StoreTargetID == "" && operation.TrueEdgeID == "" && operation.FalseEdgeID == ""
 }
 
 // peerCalleeFrameDrained is Plan 10-05 Task 2's per-function-declaration
@@ -4734,7 +4773,25 @@ func hasScalarCFG(function *core.Function) bool {
 	if function == nil || function.Linear == nil {
 		return false
 	}
+	typeByID := make(map[string]string, len(function.Linear.Types))
+	placeByID := make(map[string]string, len(function.Linear.Places))
+	for _, fact := range function.Linear.Types {
+		typeByID[fact.ID] = fact.Shape.Constructor
+	}
+	for _, place := range function.Linear.Places {
+		placeByID[place.ID] = typeByID[place.TypeID]
+	}
 	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpCall {
+			// A scalar result or source selects the scalar transfer, including
+			// the existing ByteView-to-U64 wrapper seam. Resource-only calls
+			// retain their separate ownership replay and do not acquire scalar
+			// authority merely because they are calls.
+			source, target := placeByID[operation.SourceID], placeByID[operation.TargetID]
+			if source == "U64" || source == "Bool" || target == "U64" || target == "Bool" || typeByID[operation.TypeID] == "U64" || typeByID[operation.TypeID] == "Bool" {
+				return true
+			}
+		}
 		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpBitXorU64 || operation.Kind == core.OpBitAndU64 || operation.Kind == core.OpBitOrU64 || operation.Kind == core.OpShiftLeftU64 || operation.Kind == core.OpShiftRightU64 || operation.Kind == core.OpBytesLen || operation.Kind == core.OpBytesAt || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline || operation.Kind == core.OpWriteText {
 			return true
 		}
@@ -4998,6 +5055,14 @@ func (v *validator) validateScalarFixedPoint(function *core.Function, types map[
 						return false
 					}
 					state[operation.StoreTargetID] = scalarAbstractValue{initialized: true, known: source.known, isBool: types[places[operation.StoreTargetID].TypeID].Shape.Constructor == "Bool", u64: source.u64, boolean: source.boolean}
+				case core.OpCall:
+					sourceType := types[places[operation.SourceID].TypeID].Shape.Constructor
+					targetType := types[places[operation.TargetID].TypeID].Shape.Constructor
+					viewBridge := sourceType == "ByteView" && operation.SourceID == function.Parameter.ID && function.Parameter.Type == "ByteView" && targetType == "U64" || fixtureViewCall(function, operation, types, places)
+					if !v.check(source.initialized && (sourceType == "U64" || sourceType == "Bool" || viewBridge) && (targetType == "U64" || targetType == "Bool"), "core.scalar_backedge_authority", operation.ID) {
+						return false
+					}
+					state[operation.TargetID] = scalarAbstractValue{initialized: true, isBool: targetType == "Bool"}
 				case core.OpWriteU64:
 					if !v.check(source.initialized, "core.place_uninitialized", operation.ID) {
 						return false
@@ -5125,6 +5190,14 @@ func (v *validator) validateStraightLineScalarFacts(function *core.Function, typ
 			state[operation.TargetID] = scalarAbstractValue{initialized: source.initialized}
 		case core.OpScalarStore:
 			state[operation.StoreTargetID] = source
+		case core.OpCall:
+			sourceType := types[places[operation.SourceID].TypeID].Shape.Constructor
+			targetType := types[places[operation.TargetID].TypeID].Shape.Constructor
+			viewBridge := sourceType == "ByteView" && operation.SourceID == function.Parameter.ID && function.Parameter.Type == "ByteView" && targetType == "U64" || fixtureViewCall(function, operation, types, places)
+			if !v.check(source.initialized && (sourceType == "U64" || sourceType == "Bool" || viewBridge) && (targetType == "U64" || targetType == "Bool"), "core.scalar_backedge_authority", operation.ID) {
+				return false
+			}
+			state[operation.TargetID] = scalarAbstractValue{initialized: true, isBool: targetType == "Bool"}
 		case core.OpWriteU64:
 		case core.OpWriteNewline, core.OpWriteText, core.OpReturn, core.OpBranch, core.OpDefect:
 		default:
