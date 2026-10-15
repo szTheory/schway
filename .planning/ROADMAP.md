@@ -100,7 +100,7 @@ construct, so the manifest cannot drift.
 - [x] **Phase 34: Agent Diagnostics Floor and Surface Manifest** - Diagnostics carry line:col and a caret snippet, a syntax error yields one diagnostic, absent constructs get `surface.unsupported_*` hints, and `schway surface --json` prints a meta-tested manifest of the admitted surface. (completed 2026-10-13)
 - [x] **Phase 35: Bitwise Operators, Literal Shifts, and Hex Literals** - U64 `^ & |`, literal-amount `<< >>` and hex literals run with identical answers on both engines at every optimization level, and `adler32` uses `b << 16` with byte-identical pinned answers. (completed 2026-10-14)
 - [x] **Phase 36: Scalar Helper Calls** - A scalar function calls another scalar function (one U64/Bool argument, including imported module functions), with independent peer derivation and callee defects surfacing on both engines. (completed 2026-10-15)
-- [ ] **Phase 37: CRC-32 Consumer, Interpreter File Route, and Guide** - `crc32 FILE` prints exact CRC-32/ISO-HDLC from an ordinary-source module, a second consumer imports it, `schway run --engine=interpreter` runs file-bytes programs from the CLI, and an executable guide is test-run.
+- [x] **Phase 37: CRC-32 Consumer, Interpreter File Route, and Guide** - `crc32 FILE` prints exact CRC-32/ISO-HDLC from an ordinary-source module, a second consumer imports it, `schway run --engine=interpreter` runs file-bytes programs from the CLI, and an executable guide is test-run. (completed 2026-10-15)
 - [ ] **Phase 38: Milestone Receipts** - Hosted ubuntu and macOS receipts for every M007 and earlier pinned program are bound once to the final M007 codedigest, after the milestone audit.
 
 ## Phase Details
@@ -326,7 +326,7 @@ Plans:
 | 34. Agent Diagnostics Floor and Surface Manifest | 8/8 | Complete    | 2026-10-13 |
 | 35. Bitwise Operators, Literal Shifts, and Hex Literals | 8/8 | Complete    | 2026-10-14 |
 | 36. Scalar Helper Calls | 8/8 | Complete    | 2026-10-15 |
-| 37. CRC-32 Consumer, Interpreter File Route, and Guide | 9/9 | In Progress | - |
+| 37. CRC-32 Consumer, Interpreter File Route, and Guide | 9/9 | Complete    | 2026-10-15 |
 | 38. Milestone Receipts | 0/TBD | Not started | - |
 
 **Coverage:** 19/19 M007 requirements have exactly one phase owner. DX-22 is

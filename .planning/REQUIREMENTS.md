@@ -65,7 +65,7 @@ scalar-to-scalar call admission follows. See
 
 ### CRC-32 consumer
 
-- [ ] **APP-13**: `examples/crc32/crc32.schway` reads a file of at most 65,536 bytes and prints its CRC-32/ISO-HDLC as bare decimal. It is built from an ordinary-source `crc32` module that uses a bit-at-a-time loop with no table.
+- [x] **APP-13**: `examples/crc32/crc32.schway` reads a file of at most 65,536 bytes and prints its CRC-32/ISO-HDLC as bare decimal. It is built from an ordinary-source `crc32` module that uses a bit-at-a-time loop with no table.
   - Pinned answers:
     - empty input gives 0;
     - one `0x00` byte gives 3523407757;
@@ -75,9 +75,9 @@ scalar-to-scalar call admission follows. See
     - a missing or unreadable file gets the shared outcome.
   - Answers are checked against Python `zlib.crc32` with armed controls.
   - The guide states that this is not POSIX `cksum` (CRC-32/CKSUM).
-- [ ] **MOD-07**: A second consumer imports `crc32` from the module without copying it and prints a pinned answer on both engines.
-- [ ] **APP-14**: `schway run --engine=interpreter` runs file-bytes programs such as `crc32` and `checksum` from the CLI, and gives the same stdout, stderr and exit code as native for every pinned case. Interpreter/native parity for file input is no longer Go-level only.
-- [ ] **DX-24**: `examples/crc32/README.md` is an executable clean-checkout guide, run by a test the way `TestPhase32GuideCleanCheckout` runs its guide.
+- [x] **MOD-07**: A second consumer imports `crc32` from the module without copying it and prints a pinned answer on both engines.
+- [x] **APP-14**: `schway run --engine=interpreter` runs file-bytes programs such as `crc32` and `checksum` from the CLI, and gives the same stdout, stderr and exit code as native for every pinned case. Interpreter/native parity for file input is no longer Go-level only.
+- [x] **DX-24**: `examples/crc32/README.md` is an executable clean-checkout guide, run by a test the way `TestPhase32GuideCleanCheckout` runs its guide.
 
 ### Evidence
 
@@ -121,10 +121,10 @@ scalar-to-scalar call admission follows. See
 | BIT-04 | Phase 35 | Complete |
 | CALL-01 | Phase 36 | Complete |
 | CALL-02 | Phase 36 | Complete |
-| APP-13 | Phase 37 | Gaps Found |
-| MOD-07 | Phase 37 | Gaps Found |
-| APP-14 | Phase 37 | Gaps Found |
-| DX-24 | Phase 37 | Pending |
+| APP-13 | Phase 37 | Complete |
+| MOD-07 | Phase 37 | Complete |
+| APP-14 | Phase 37 | Complete |
+| DX-24 | Phase 37 | Complete |
 | EVD-17 | Phase 38 | Pending |
 
 DX-22's dynamic-shift-amount item is delivered by Phase 35's BIT-02 refusal,

@@ -154,12 +154,15 @@ is auto-followed. Copy-local code is preferred over new dependencies.
 
 ## Current State
 
-Amended 2026-10-15 after Phase 36: scalar helpers are complete across both
-engines and the independent peers. Phases 33–36 have current passing
-verification reports. Phase 37 owns the complete file CRC-32 library/second
-consumer, interpreter file CLI and executable guide; Phase 38 owns final
-two-host receipts after the milestone audit. The earlier dated records below
-retain their historical source bindings.
+Amended 2026-10-15 after Phase 37: the ordinary-source CRC-32 module, second
+consumer, public interpreter/native file routes and executable guide are
+complete. Independent verification passes 14/14 truths, with zero unverified
+behavior; APP-13, MOD-07, APP-14 and DX-24 are validated. Phase 33–36 reports
+are stale after successor changes to shared files; their plans are complete
+and focused regression checks passed. Refresh those verification gates without
+replaying implementation, then audit M007 and close any audit gaps before
+Phase 38 binds final two-host receipts. Earlier dated records retain their
+historical source bindings.
 
 **2026-10-12 M006 Bounded Byte Utility and Local Modules shipped** (6 phases,
 63 plans, 158 tasks; archive `.planning/milestones/M006-*`, tag `vM006`).
@@ -437,6 +440,12 @@ contract, without a speculative milestone number.
 
 ### Validated
 
+- ✓ Ordinary-source CRC-32/ISO-HDLC and an unchanged second importer, public
+  interpreter/native file execution with exact pinned outcomes, and an
+  executable tracked-checkout guide — M007 Phase 37 (APP-13, MOD-07, APP-14,
+  DX-24; 14/14 truths verified, 78 guide tuples, 31 security dispositions
+  closed and no open review findings; local Darwin/arm64 evidence).
+
 - ✓ Arity-one U64/Bool helper composition, local/imported calls, ordered evaluation,
   independent call derivation and preserved application outcomes — M007 Phase 36
   (CALL-01/CALL-02; 32/32 verifier, 45 feature roots, 80 prior-phase root
@@ -574,8 +583,10 @@ contract, without a speculative milestone number.
 
 ### Active
 
-M007 remains active for Phase 37 consumer/CLI/guide requirements and Phase 38
-final receipts; CALL-01/CALL-02 completed in Phase 36.
+M007 remains active for EVD-17, Phase 38's final two-host receipts after the
+milestone audit and any gap closure. Phase 37's four consumer/CLI/guide
+requirements and CALL-01/CALL-02 are complete. Earlier verification freshness
+must be reconciled before milestone acceptance.
 
 M007 (Bitwise Checksum and Composable Scalar Helpers) — atomic IDs in
 [REQUIREMENTS.md](REQUIREMENTS.md). Carried M006 debt is owned by M007's first
@@ -785,6 +796,10 @@ Canonical planning inputs:
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Put eight CRC bit rounds inside one per-byte helper | A numeric answer cannot prove the intended call structure or its allocation cost | Phase 37 — independent numeric vectors plus 3-byte/3-call and AST controls pass |
+| Admit the complete merged program before selecting the file entry | Unreachable or imported declarations must not bypass source and authority checks | Phase 37 — whole-module/entry controls refuse before any file read |
+| Disable optional capture before allocating retention state | Ordinary application outcomes and later defects must survive disabled or exhausted evidence | Phase 37 — five reached capture-growth mutants and independent outcome controls pass |
+| Preserve InputID stability without promising byte-identical native binaries | Existing incomplete, non-cacheable receipts bind BuildID to actual executable bytes | Phase 37 — shared-library edits invalidate both consumers; no linker or dependency change |
 | Evaluate scalar arguments once in explicit core order | C operand evaluation order cannot define Schway behavior | Phase 36 — typed temporaries and source/engine order controls pass |
 | Keep dynamic call identity separate from value and source proof | Repeated activations need stable causal attribution without claiming arithmetic replay | Phase 36 — per-parent/per-site ordinals, retained arena paths, checker intent and independent engine controls pass |
 | Preserve program outcomes when optional capture is exhausted | Evidence failure must not hide stdout, exit or later defects | Phase 36 — distinct process/capture outcomes and machine-proven negative controls pass |
@@ -851,7 +866,7 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-15 after Phase 36 verification*
+*Last updated: 2026-10-15 after Phase 37 verification*
 
 ### Phase 33 execution amendment — 2026-10-13
 
@@ -889,3 +904,21 @@ source intent. Hosted receipts, complete CRC-32 consumer work and subjective
 readability/performance claims remain outside this phase. The current next
 capabilities and seed dispositions are in
 `phases/36-scalar-helper-calls/36-TRANSITION-CHECK.md`.
+
+### Phase 37 completion amendment — 2026-10-15
+
+Nine plans and 21 tasks are complete. Independent source/data-flow verification
+passed 14/14 truths with no behavior-unverified or human-verification items.
+Security re-audit closed 31/31 dispositions; review has zero open findings.
+The audit found and repaired misplaced CRC helper rounds and missing capture
+and reader mutation controls before acceptance. Initial receipts stay bound
+to their recorded source; the remediation receipt and independent verification
+cover the repaired implementation. No dependency was added.
+
+Current recommendations, dormant-seed dispositions, completion warnings and
+the successor-staleness routing reconciliation are in
+[37-CLOSEOUT.md](phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-CLOSEOUT.md).
+The next capabilities are audited two-host CRC/checksum receipts, the already
+proposed M008 `wc`/`longest_line` pair, and a bounded key=value config consumer.
+Only EVD-17 is active scope. No Phase 38 planning, push or hosted dispatch was
+performed during this closeout.

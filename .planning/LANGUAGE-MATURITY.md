@@ -666,3 +666,38 @@ records the current pending parent gates, three scoped next capabilities,
 source witnesses, and z1g/trz/z1s dormant dispositions. M008
 `wc`/`longest_line`, general arity expansion, and hosted two-host binding
 retain their separate owners.
+
+## Phase 37 accepted transition — 2026-10-15
+
+This dated amendment supersedes the pending-gate statements above. Nine plans
+and 21 tasks are complete; canonical verification passes 14/14 truths with
+zero unverified behavior and no human-verification item. APP-13, MOD-07,
+APP-14 and DX-24 are complete. Independent security re-audit closed 31/31
+dispositions, validation is compliant and review has zero open findings.
+The repaired private CRC helper owns eight rounds and is called once per
+byte; structural activation evidence is separate from independent CRC values.
+Five capture-growth and three reader mutations reached their named assertions.
+
+New independent local checks on the repaired implementation include the
+public expected-first matrix, actual native cleanup/ASan/UBSan, and 78 guide
+tuples from a tracked-only copy. Source/data-flow inspection and exact commands
+are in [37-VERIFICATION.md](phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-VERIFICATION.md);
+the earlier implementation captures remain historical at their recorded
+revisions. No dependency, backend, language construct or wire field was added.
+
+The current three recommendations are audited same-source two-host receipts,
+the existing M008 `wc`/`longest_line` landing, then a bounded key=value config
+consumer before JSON. Their programs, blockers, smallest slices, checker
+obligations, evidence/debt, owners and priority-changing observations are in
+[37-CLOSEOUT.md](phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-CLOSEOUT.md).
+The same artifact records the relevant seed review: z1g/trz/z1s stay dormant
+without a measured navigation gap, unexplained failure or source-form dispute.
+Only EVD-17 is current milestone scope; later programs need normal ownership.
+
+Phase 33–36 implementation remains complete, but their whole-phase reports
+are stale after successor changes; focused regressions do not refresh those
+fingerprints. Reconcile the canonical verifier-only route (earliest Phase 33),
+then run the milestone audit and any gap closure before Phase 38. This run
+stops before Phase 38 planning, push or hosted dispatch. Local evidence is
+Darwin/arm64; final two-host receipts, subjective readability and whole-loop
+cold/warm latency distributions remain pending or unmeasured.

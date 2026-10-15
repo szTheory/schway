@@ -2,21 +2,21 @@
 gsd_state_version: "1.0"
 milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
-current_phase: 37
-current_phase_name: CRC-32 Consumer, Interpreter File Route, and Guide
-current_plan: 9 (last plan; execution finished)
-status: executing
-stopped_at: Completed 37-09-PLAN.md
-last_updated: "2026-10-15T18:27:06.922Z"
+current_phase: 38
+current_phase_name: Milestone Receipts
+current_plan: Not started
+status: planning
+stopped_at: Phase 37 complete; earlier verifier refresh and milestone audit precede Phase 38
+last_updated: "2026-10-15T19:11:50.306Z"
 last_activity: 2026-10-15
-last_activity_desc: Phase 37 Plan 09 complete; parent gates pending
-state_head: c611acdcfa4dec959fb5b4d2850c8aed90a4e833
+last_activity_desc: Phase 37 complete, transitioned to Phase 38
+state_head: 88c24a88e8e6347e21966d82ed0e570454dd843a
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 38
   completed_plans: 38
-  percent: 67
+  percent: 83
 ---
 
 <!-- schway-current:start -->
@@ -57,7 +57,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 37 — CRC-32 Consumer, Interpreter File Route, and Guide
+**Current focus:** Phase 37 accepted; reconcile earlier verification freshness, then audit M007 before Phase 38 receipts
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -125,13 +125,13 @@ plans.
 
 ## Current Position
 
-Phase: 37 (CRC-32 Consumer, Interpreter File Route, and Guide) — PLAN EXECUTION COMPLETE; PARENT ACCEPTANCE PENDING
-Current Plan: 9 (last plan; execution finished)
-Total Plans in Phase: 9
-Status: Awaiting parent phase acceptance
-Last activity: 2026-10-15 — Phase 37 Plan 09 complete; parent gates pending
+Phase: 38 — Milestone Receipts
+Current Plan: Not started
+Total Plans in Phase: 0 (Phase 38 unplanned)
+Status: Awaiting verification freshness reconciliation and milestone audit before Phase 38 planning
+Last activity: 2026-10-15 — Phase 37 accepted; Phase 38 prerequisite gates pending
 
-Progress: [███████░░░] 67%
+Progress: [████████░░] 83% of roadmap phases complete; [████████████████████] 38/38 authored plans complete (Phase 38 plans TBD)
 
 ## M007 Planning
 
@@ -289,7 +289,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 324
+- Total plans completed: 333
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -318,6 +318,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 34 | 8 | - | - |
 | 35 | 8 | - | - |
 | 36 | 8 | - | - |
+| 37 | 9 | - | - |
 
 The archived aggregate preserves the cumulative project total. The detailed
 rows above are the M004 subset; do not recompute the project total from that
@@ -939,13 +940,16 @@ Carried into M003 as cheap, unowned cleanup:
 
 ### Blockers/Concerns
 
-**Current — Phase 36 closeout (2026-10-15):** No Phase 36 blocker remains.
-Phases 33–36 have passing goal verification; CALL-01/CALL-02 are complete.
-Earlier pending capture/legacy-route/borrow/inventory issues were resolved by
-the dated Phase 36 debug and review records. Remaining scope belongs to
-Phase 37 (file CRC-32, second consumer, interpreter file CLI and guide) and
-Phase 38 (final hosted receipts after audit). Historical entries below keep
-their dated debt owners; they are not current Phase 36 blockers.
+**Current — Phase 37 closeout (2026-10-15):** Phase 37 passes 14/14 truths;
+its four requirements, security, validation and review gates are closed.
+Phases 33–36 have no incomplete plans, but their verification fingerprints
+are stale after successor shared-file changes. Earliest canonical route:
+`$gsd-execute-phase 33` for gates/verifier only; preserve completed UAT and
+implementation. Re-query progress after each refresh, then audit M007 and
+close gaps before Phase 38's EVD-17 freeze/hosted receipts. Two summary-path
+scanner warnings and the expected uncreated-Phase-38 S004 warning are explained
+in `phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-CLOSEOUT.md`.
+Historical entries below retain their dated debt owners.
 
 **Current — Phase 30 closeout (2026-10-12):** No Phase 30 blocker or human UAT
 remains (verifier 4/4, UAT 6/6 automated, threats 36/36 closed). Open carries:
@@ -1166,10 +1170,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-15T18:25:50.892Z
-Stopped at: Completed 37-09-PLAN.md
+Last session: 2026-10-15T19:15:03Z
+Stopped at: Phase 37 complete; earlier verifier refresh and milestone audit precede Phase 38
 Resume file: None
-Next action: Parent-owned independent Phase 37 acceptance
+Next action: `$gsd-execute-phase 33` (gates/verifier only), re-query progress, then `$gsd-audit-milestone` before Phase 38
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
@@ -1349,7 +1353,7 @@ plans, or reopen Phase 25 implementation.
 
 ## Operator Next Steps
 
-- Phases 33 and 34 are complete with canonical passed verification. Next: `$gsd-discuss-phase 35`; no Phase 35 context or plan exists yet.
+- Phase 37 is accepted (14/14, 9/9 plans). Next canonical route: `$gsd-execute-phase 33` for successor-staled verification only; after freshness reconciliation run `$gsd-audit-milestone` and any gap closure before planning Phase 38. This run stops at `--no-transition`.
 
 ### Phase 33 completion handoff — 2026-10-13
 
@@ -1383,3 +1387,22 @@ no open findings. Proof-bridge details and source-bound local captures are in
 Next command: `$gsd-discuss-phase 37`. Phase 37 has no context or plans yet.
 This execution used `--no-transition`: do not start Phase 37 from this handoff.
 No hosted M007 receipt is claimed. Preserve completed UAT and archived facts.
+
+### Phase 37 completion handoff — 2026-10-15
+
+Canonical completion ran once after the independent 14/14 passed verdict.
+All nine plans/21 tasks and APP-13/MOD-07/APP-14/DX-24 are complete; security
+has 31/31 closed dispositions, validation is compliant, and review has zero
+open findings. Current repaired-source receipts and exact independent checks
+are linked in `phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-CLOSEOUT.md`.
+Earlier Phase 37 receipts and prior hosted receipts retain their historical
+scope. No hosted M007 receipt, Linux run or human readability claim is made.
+
+`init.progress` reports 33–36 stale, 37 passed and 38 not started;
+`init.execute-phase` returns zero incomplete plans for 33–36. Refresh only
+their gates/verifiers, beginning with `$gsd-execute-phase 33`, and re-query
+progress after each. M007 audit/gap closure precedes Phase 38. Preserve
+completed UAT and all archived decisions. The temporary chain flag is false;
+user routing-effort edits remain uncommitted. No Phase 38 planning, push or
+hosted dispatch began. The current three next capability recommendations and
+all dormant-seed dispositions are in the linked closeout.
