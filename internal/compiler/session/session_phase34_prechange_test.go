@@ -68,6 +68,40 @@ func phase34PreChangePath() string {
 
 func phase34TrackedSchwayPaths(t *testing.T) []string {
 	t.Helper()
+	tracked := phase34CurrentTrackedSchwayPaths(t)
+	corpus := phase34LoadCorpus(t)
+	paths := phase34EntryPaths(corpus.Entries)
+	if len(paths) != phase34PreChangeRows {
+		t.Fatalf("frozen pre-change corpus has %d paths, want %d", len(paths), phase34PreChangeRows)
+	}
+	for _, path := range paths {
+		if !phase34Contains(tracked, path) {
+			t.Fatalf("frozen pre-change Schway source %q is no longer tracked", path)
+		}
+	}
+	var additions []string
+	for _, path := range tracked {
+		if !phase34Contains(paths, path) {
+			additions = append(additions, path)
+		}
+	}
+	ledger := phase34LoadNewFixtureLedger(t)
+	phase37Ledger := phase34LoadPhase37FixtureLedger(t)
+	if problems := phase34AdditionProblems(paths, ledger, phase37Ledger, additions); len(problems) != 0 {
+		t.Fatalf("tracked source inventory additions: %s", strings.Join(problems, "; "))
+	}
+	delta, err := os.ReadFile(testsupport.ProjectPath(".planning", "phases", "35-bitwise-operators-literal-shifts-and-hex-literals", "35-COMPATIBILITY-DELTA.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(delta), "`examples/bitwise.schway`") {
+		t.Fatal("Phase 35 compatibility delta does not declare the additive tracked witness")
+	}
+	return paths
+}
+
+func phase34CurrentTrackedSchwayPaths(t *testing.T) []string {
+	t.Helper()
 	cmd := exec.Command("git", "ls-files", "--", "examples", "testdata")
 	cmd.Dir = testsupport.ProjectPath(".")
 	output, err := cmd.Output()
@@ -80,34 +114,11 @@ func phase34TrackedSchwayPaths(t *testing.T) []string {
 			tracked[filepath.ToSlash(line)] = true
 		}
 	}
-	corpus := phase34LoadCorpus(t)
-	paths := phase34EntryPaths(corpus.Entries)
-	if len(paths) != phase34PreChangeRows {
-		t.Fatalf("frozen pre-change corpus has %d paths, want %d", len(paths), phase34PreChangeRows)
-	}
-	for _, path := range paths {
-		if !tracked[path] {
-			t.Fatalf("frozen pre-change Schway source %q is no longer tracked", path)
-		}
-	}
-	var additions []string
+	var paths []string
 	for path := range tracked {
-		if !phase34Contains(paths, path) {
-			additions = append(additions, path)
-		}
+		paths = append(paths, path)
 	}
-	sort.Strings(additions)
-	ledger := phase34LoadNewFixtureLedger(t)
-	if problems := phase34AdditionProblems(paths, ledger, additions); len(problems) != 0 {
-		t.Fatalf("tracked source inventory additions: %s", strings.Join(problems, "; "))
-	}
-	delta, err := os.ReadFile(testsupport.ProjectPath(".planning", "phases", "35-bitwise-operators-literal-shifts-and-hex-literals", "35-COMPATIBILITY-DELTA.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(delta), "`examples/bitwise.schway`") {
-		t.Fatal("Phase 35 compatibility delta does not declare the additive tracked witness")
-	}
+	sort.Strings(paths)
 	return paths
 }
 
@@ -125,6 +136,11 @@ type phase34NewFixtureRow struct {
 	Reason    string `json:"reason"`
 }
 
+type phase34Phase37FixtureLedger struct {
+	Schema  string                 `json:"schema"`
+	Entries []phase34NewFixtureRow `json:"entries"`
+}
+
 func phase34LoadNewFixtureLedger(t *testing.T) phase34NewFixtureLedger {
 	t.Helper()
 	raw, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase36", "new-fixture-ledger.json"))
@@ -138,7 +154,20 @@ func phase34LoadNewFixtureLedger(t *testing.T) phase34NewFixtureLedger {
 	return ledger
 }
 
-func phase34AdditionProblems(frozen []string, ledger phase34NewFixtureLedger, additions []string) []string {
+func phase34LoadPhase37FixtureLedger(t *testing.T) phase34Phase37FixtureLedger {
+	t.Helper()
+	raw, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase37", "new-fixture-ledger.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ledger phase34Phase37FixtureLedger
+	if err := json.Unmarshal(raw, &ledger); err != nil {
+		t.Fatalf("decode Phase37 fixture ledger: %v", err)
+	}
+	return ledger
+}
+
+func phase34AdditionProblems(frozen []string, ledger phase34NewFixtureLedger, phase37 phase34Phase37FixtureLedger, additions []string) []string {
 	want := []string{
 		"examples/helper_calls/crc_step.schway",
 		"examples/helper_calls/importer.schway",
@@ -180,7 +209,47 @@ func phase34AdditionProblems(frozen []string, ledger phase34NewFixtureLedger, ad
 	if !equalStrings(ledgerPaths, want) {
 		problems = append(problems, "Phase36 ledger must contain exactly the three declared helper paths in order")
 	}
+	wantPhase37 := []string{
+		"examples/crc32/crc32.schway",
+		"examples/crc32/crc_low.schway",
+		"examples/crc32/lib/crc32.schway",
+	}
+	if phase37.Schema != "phase37.new-fixture-ledger/1" {
+		problems = append(problems, "Phase37 fixture ledger schema changed")
+	}
+	phase37Paths := make([]string, 0, len(phase37.Entries))
+	phase37Seen := map[string]bool{}
+	for _, row := range phase37.Entries {
+		phase37Paths = append(phase37Paths, row.Path)
+		if phase34Contains(frozen, row.Path) || row.Path == "examples/bitwise.schway" || phase34Contains(want, row.Path) {
+			problems = append(problems, row.Path+": old corpus source cannot be exempted")
+		}
+		if phase37Seen[row.Path] {
+			problems = append(problems, "Phase37 ledger paths must be sorted and unique")
+		}
+		phase37Seen[row.Path] = true
+		if !phase34Contains(wantPhase37, row.Path) {
+			problems = append(problems, row.Path+": unsafe Phase37 new-fixture ledger path")
+			continue
+		}
+		if strings.TrimSpace(row.Reason) == "" {
+			problems = append(problems, row.Path+": Phase37 ledger requires a nonblank reason")
+		}
+		if len(row.SourceSHA) != len("sha256:")+64 || !strings.HasPrefix(row.SourceSHA, "sha256:") || strings.Trim(row.SourceSHA[len("sha256:"):], "0123456789abcdef") != "" {
+			problems = append(problems, row.Path+": Phase37 source hash is malformed")
+		}
+		source, err := os.ReadFile(testsupport.ProjectPath(filepath.FromSlash(row.Path)))
+		if err != nil {
+			problems = append(problems, row.Path+": Phase37 source is missing from the working tree")
+		} else if row.SourceSHA != fmt.Sprintf("sha256:%x", sha256.Sum256(source)) {
+			problems = append(problems, row.Path+": Phase37 source hash differs from the working tree")
+		}
+	}
+	if !equalStrings(phase37Paths, wantPhase37) {
+		problems = append(problems, "Phase37 ledger must contain exactly the three CRC source paths in order")
+	}
 	allowed := append([]string{"examples/bitwise.schway"}, ledgerPaths...)
+	allowed = append(allowed, phase37Paths...)
 	for _, path := range additions {
 		if !phase34Contains(allowed, path) {
 			problems = append(problems, path+": tracked source is neither frozen nor explicitly ledgered")
@@ -494,7 +563,8 @@ func TestPhase34PreChangeCGoldenIsNotInert(t *testing.T) {
 	corpus := phase34LoadCorpus(t)
 	frozen := phase34EntryPaths(corpus.Entries)
 	ledger := phase34LoadNewFixtureLedger(t)
-	additions := []string{"examples/bitwise.schway", "examples/helper_calls/crc_step.schway", "examples/helper_calls/importer.schway", "examples/helper_calls/public.schway"}
+	phase37Ledger := phase34LoadPhase37FixtureLedger(t)
+	additions := []string{"examples/bitwise.schway", "examples/crc32/crc32.schway", "examples/crc32/crc_low.schway", "examples/crc32/lib/crc32.schway", "examples/helper_calls/crc_step.schway", "examples/helper_calls/importer.schway", "examples/helper_calls/public.schway"}
 	for _, control := range []struct {
 		name   string
 		mutate func(*phase34NewFixtureLedger, *[]string)
@@ -519,17 +589,17 @@ func TestPhase34PreChangeCGoldenIsNotInert(t *testing.T) {
 		{"extra-source", func(_ *phase34NewFixtureLedger, a *[]string) { *a = append(*a, "examples/undeclared.schway") }, "tracked source is neither frozen nor explicitly ledgered"},
 	} {
 		t.Run("additions/"+control.name, func(t *testing.T) {
-			if problems := phase34AdditionProblems(frozen, ledger, additions); len(problems) != 0 {
+			if problems := phase34AdditionProblems(frozen, ledger, phase37Ledger, additions); len(problems) != 0 {
 				t.Fatalf("clean addition closure: %v", problems)
 			}
 			changed := phase34NewFixtureLedger{Schema: ledger.Schema, Entries: append([]phase34NewFixtureRow(nil), ledger.Entries...)}
 			changedAdditions := append([]string(nil), additions...)
 			control.mutate(&changed, &changedAdditions)
-			problems := phase34AdditionProblems(frozen, changed, changedAdditions)
+			problems := phase34AdditionProblems(frozen, changed, phase37Ledger, changedAdditions)
 			if !strings.Contains(strings.Join(problems, "; "), control.want) {
 				t.Fatalf("addition control did not reach %q: %v", control.want, problems)
 			}
-			if problems := phase34AdditionProblems(frozen, ledger, additions); len(problems) != 0 {
+			if problems := phase34AdditionProblems(frozen, ledger, phase37Ledger, additions); len(problems) != 0 {
 				t.Fatalf("restored addition closure: %v", problems)
 			}
 		})
@@ -608,5 +678,61 @@ statusMutation:
 	}
 	if !statusMutationCaught {
 		t.Fatal("no non-emitting result was available for the explicit outcome mutation")
+	}
+}
+
+func TestPhase37Phase34AdditionLedgerControls(t *testing.T) {
+	corpus := phase34LoadCorpus(t)
+	frozen := phase34EntryPaths(corpus.Entries)
+	phase36 := phase34LoadNewFixtureLedger(t)
+	phase37 := phase34LoadPhase37FixtureLedger(t)
+	phase34TrackedSchwayPaths(t) // The clean control uses the actual staged git inventory.
+	var additions []string
+	for _, path := range phase34CurrentTrackedSchwayPaths(t) {
+		if !phase34Contains(frozen, path) {
+			additions = append(additions, path)
+		}
+	}
+	if problems := phase34AdditionProblems(frozen, phase36, phase37, additions); len(problems) != 0 {
+		t.Fatalf("clean Phase37 addition closure: %v", problems)
+	}
+	for _, control := range []struct {
+		name   string
+		mutate func(*phase34Phase37FixtureLedger, *[]string)
+		want   string
+	}{
+		{"omitted-ledger-row", func(l *phase34Phase37FixtureLedger, _ *[]string) { l.Entries = l.Entries[:len(l.Entries)-1] }, "tracked source is neither frozen nor explicitly ledgered"},
+		{"omitted-tracked-source", func(_ *phase34Phase37FixtureLedger, paths *[]string) { *paths = (*paths)[1:] }, "frozen or ledgered source is missing from tracked inventory"},
+		{"unknown-extra-tracked-source", func(_ *phase34Phase37FixtureLedger, paths *[]string) {
+			*paths = append(*paths, "examples/phase37/undeclared.schway")
+		}, "tracked source is neither frozen nor explicitly ledgered"},
+		{"malformed-hash", func(l *phase34Phase37FixtureLedger, _ *[]string) { l.Entries[0].SourceSHA = "bad" }, "Phase37 source hash is malformed"},
+		{"wrong-hash", func(l *phase34Phase37FixtureLedger, _ *[]string) {
+			l.Entries[0].SourceSHA = "sha256:" + strings.Repeat("0", 64)
+		}, "Phase37 source hash differs from the working tree"},
+		{"blank-reason", func(l *phase34Phase37FixtureLedger, _ *[]string) { l.Entries[0].Reason = "  \t" }, "Phase37 ledger requires a nonblank reason"},
+		{"duplicate-row", func(l *phase34Phase37FixtureLedger, _ *[]string) { l.Entries[1] = l.Entries[0] }, "Phase37 ledger paths must be sorted and unique"},
+		{"unsorted-rows", func(l *phase34Phase37FixtureLedger, _ *[]string) {
+			l.Entries[0], l.Entries[1] = l.Entries[1], l.Entries[0]
+		}, "Phase37 ledger must contain exactly the three CRC source paths in order"},
+		{"unsafe-path", func(l *phase34Phase37FixtureLedger, _ *[]string) { l.Entries[0].Path = "../outside.schway" }, "unsafe Phase37 new-fixture ledger path"},
+		{"old-exemption", func(l *phase34Phase37FixtureLedger, _ *[]string) { l.Entries[0].Path = frozen[0] }, "old corpus source cannot be exempted"},
+		{"phase35-exemption", func(l *phase34Phase37FixtureLedger, _ *[]string) { l.Entries[0].Path = "examples/bitwise.schway" }, "old corpus source cannot be exempted"},
+		{"phase36-exemption", func(l *phase34Phase37FixtureLedger, _ *[]string) {
+			l.Entries[0].Path = "examples/helper_calls/crc_step.schway"
+		}, "old corpus source cannot be exempted"},
+	} {
+		t.Run(control.name, func(t *testing.T) {
+			changed := phase34Phase37FixtureLedger{Schema: phase37.Schema, Entries: append([]phase34NewFixtureRow(nil), phase37.Entries...)}
+			changedAdditions := append([]string(nil), additions...)
+			control.mutate(&changed, &changedAdditions)
+			problems := phase34AdditionProblems(frozen, phase36, changed, changedAdditions)
+			if !strings.Contains(strings.Join(problems, "; "), control.want) {
+				t.Fatalf("control did not reach %q: %v", control.want, problems)
+			}
+			if clean := phase34AdditionProblems(frozen, phase36, phase37, additions); len(clean) != 0 {
+				t.Fatalf("restored Phase37 addition closure: %v", clean)
+			}
+		})
 	}
 }

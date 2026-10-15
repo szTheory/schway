@@ -23,6 +23,19 @@ import (
 
 const phase36PreChangeSchema = "phase36.prechange-corpus/1"
 const phase36LedgerSchema = "phase36.new-fixture-ledger/1"
+const phase37LedgerSchema = "phase37.new-fixture-ledger/1"
+
+var phase36ExpectedLedger = map[string]string{
+	"examples/helper_calls/crc_step.schway": "sha256:0242b3a253a80d8818310897220494722eda3029e12f67baa34cfeb529a50d0f",
+	"examples/helper_calls/importer.schway": "sha256:da4db4e265aae96bf90ab17c5c4b064500115a93bb5095a192334be53a0bc5ab",
+	"examples/helper_calls/public.schway":   "sha256:ef608e10f62d79e731bbf3e6a2320fa567914c2e5e48e13807cd05535d7a4f38",
+}
+
+var phase37ExpectedLedgerPaths = []string{
+	"examples/crc32/crc32.schway",
+	"examples/crc32/crc_low.schway",
+	"examples/crc32/lib/crc32.schway",
+}
 
 type phase36PreChangeCorpus struct {
 	Schema      string                  `json:"schema"`
@@ -81,6 +94,11 @@ type phase36FixtureLedger struct {
 	Entries []phase36FixtureLedgerRow `json:"entries"`
 }
 
+type phase36Phase37FixtureLedger struct {
+	Schema  string                    `json:"schema"`
+	Entries []phase36FixtureLedgerRow `json:"entries"`
+}
+
 type phase36FixtureLedgerRow struct {
 	Path      string `json:"path"`
 	SourceSHA string `json:"source_sha256"`
@@ -101,8 +119,9 @@ var phase36RouteAccessors = []phase36RouteAccessor{
 func TestPhase36NoCallGeneratedCByteBaseline(t *testing.T) {
 	corpus := phase36LoadPreChangeCorpus(t)
 	ledger := phase36LoadFixtureLedger(t)
+	phase37Ledger := phase36LoadPhase37FixtureLedger(t)
 	phase36VerifyRevision(t, testsupport.ProjectPath("."), corpus)
-	if problems := phase36InventoryProblems(corpus, ledger, phase36TrackedSources(t)); len(problems) != 0 {
+	if problems := phase36InventoryProblems(corpus, ledger, phase37Ledger, phase36TrackedSources(t)); len(problems) != 0 {
 		t.Fatalf("tracked source inventory is not closed: %s", strings.Join(problems, "; "))
 	}
 	observed := phase36ObservePreChangeCorpus(t, corpus)
@@ -116,8 +135,9 @@ func TestPhase36NoCallGeneratedCByteBaseline(t *testing.T) {
 func TestPhase36NoCallGeneratedCByteBaselineControls(t *testing.T) {
 	corpus := phase36LoadPreChangeCorpus(t)
 	ledger := phase36LoadFixtureLedger(t)
+	phase37Ledger := phase36LoadPhase37FixtureLedger(t)
 	phase36VerifyRevision(t, testsupport.ProjectPath("."), corpus)
-	if problems := phase36InventoryProblems(corpus, ledger, phase36TrackedSources(t)); len(problems) != 0 {
+	if problems := phase36InventoryProblems(corpus, ledger, phase37Ledger, phase36TrackedSources(t)); len(problems) != 0 {
 		t.Fatalf("tracked source inventory is not closed before controls: %s", strings.Join(problems, "; "))
 	}
 	observed := phase36ObservePreChangeCorpus(t, corpus)
@@ -198,15 +218,72 @@ func TestPhase36NoCallGeneratedCByteBaselineControls(t *testing.T) {
 
 	old := corpus.Entries[0]
 	mutatedLedger := phase36FixtureLedger{Schema: phase36LedgerSchema, Entries: []phase36FixtureLedgerRow{{Path: old.Path, SourceSHA: old.SourceSHA, Reason: "control: attempt to exempt an old source"}}}
-	if problems := phase36InventoryProblems(corpus, mutatedLedger, phase36TrackedSources(t)); !phase36HasProblem(problems, old.Path+": old corpus source cannot be exempted by the new-fixture ledger") {
+	if problems := phase36InventoryProblems(corpus, mutatedLedger, phase37Ledger, phase36TrackedSources(t)); !phase36HasProblem(problems, old.Path+": old corpus source cannot be exempted by the new-fixture ledger") {
 		t.Fatalf("old source false exemption was not rejected: %v", problems)
 	}
 	unsafeLedger := phase36FixtureLedger{Schema: phase36LedgerSchema, Entries: []phase36FixtureLedgerRow{{Path: "../outside.schway", SourceSHA: "sha256:bad", Reason: "control: traversal"}}}
-	if problems := phase36InventoryProblems(corpus, unsafeLedger, phase36TrackedSources(t)); !phase36HasProblem(problems, "../outside.schway: unsafe new-fixture ledger path") {
+	if problems := phase36InventoryProblems(corpus, unsafeLedger, phase37Ledger, phase36TrackedSources(t)); !phase36HasProblem(problems, "../outside.schway: unsafe new-fixture ledger path") {
 		t.Fatalf("unsafe ledger path was not rejected before file access: %v", problems)
 	}
-	if problems := phase36InventoryProblems(corpus, ledger, phase36TrackedSources(t)); len(problems) != 0 {
+	if problems := phase36InventoryProblems(corpus, ledger, phase37Ledger, phase36TrackedSources(t)); len(problems) != 0 {
 		t.Fatalf("restored fixture ledger did not pass: %s", strings.Join(problems, "; "))
+	}
+}
+
+func TestPhase37Phase36AdditionLedgerControls(t *testing.T) {
+	corpus := phase36LoadPreChangeCorpus(t)
+	phase36 := phase36LoadFixtureLedger(t)
+	phase37 := phase36LoadPhase37FixtureLedger(t)
+	tracked := phase36TrackedSources(t)
+	if problems := phase36InventoryProblems(corpus, phase36, phase37, tracked); len(problems) != 0 {
+		t.Fatalf("clean composed source inventory: %v", problems)
+	}
+	for _, control := range []struct {
+		name   string
+		mutate func(*phase36Phase37FixtureLedger, *[]string)
+		want   string
+	}{
+		{"omitted-ledger-row", func(l *phase36Phase37FixtureLedger, _ *[]string) { l.Entries = l.Entries[:len(l.Entries)-1] }, "Phase37 ledger must contain exactly the three CRC source paths in order"},
+		{"omitted-tracked-source", func(_ *phase36Phase37FixtureLedger, paths *[]string) {
+			for index, path := range *paths {
+				if path == phase37ExpectedLedgerPaths[0] {
+					*paths = append((*paths)[:index], (*paths)[index+1:]...)
+					return
+				}
+			}
+		}, phase37ExpectedLedgerPaths[0] + ": frozen or ledgered source is missing from tracked inventory"},
+		{"unknown-extra-tracked-source", func(_ *phase36Phase37FixtureLedger, paths *[]string) {
+			*paths = append(*paths, "examples/phase37/undeclared.schway")
+			sort.Strings(*paths)
+		}, "examples/phase37/undeclared.schway: tracked source is neither frozen nor explicitly ledgered"},
+		{"malformed-hash", func(l *phase36Phase37FixtureLedger, _ *[]string) { l.Entries[0].SourceSHA = "bad" }, phase37ExpectedLedgerPaths[0] + ": Phase37 source hash is malformed"},
+		{"wrong-hash", func(l *phase36Phase37FixtureLedger, _ *[]string) {
+			l.Entries[0].SourceSHA = "sha256:" + strings.Repeat("0", 64)
+		}, phase37ExpectedLedgerPaths[0] + ": Phase37 source hash differs from the working tree"},
+		{"blank-reason", func(l *phase36Phase37FixtureLedger, _ *[]string) { l.Entries[0].Reason = " \t" }, phase37ExpectedLedgerPaths[0] + ": Phase37 ledger requires a nonblank reason"},
+		{"duplicate-row", func(l *phase36Phase37FixtureLedger, _ *[]string) { l.Entries[1] = l.Entries[0] }, "Phase37 ledger paths must be sorted and unique"},
+		{"unsorted-rows", func(l *phase36Phase37FixtureLedger, _ *[]string) {
+			l.Entries[0], l.Entries[1] = l.Entries[1], l.Entries[0]
+		}, "Phase37 ledger paths must be sorted and unique"},
+		{"unsafe-path", func(l *phase36Phase37FixtureLedger, _ *[]string) { l.Entries[0].Path = "../outside.schway" }, "../outside.schway: unsafe Phase37 new-fixture ledger path"},
+		{"old-exemption", func(l *phase36Phase37FixtureLedger, _ *[]string) { l.Entries[0].Path = corpus.Entries[0].Path }, corpus.Entries[0].Path + ": old corpus source cannot be exempted by the Phase37 ledger"},
+		{"phase35-exemption", func(l *phase36Phase37FixtureLedger, _ *[]string) { l.Entries[0].Path = "examples/bitwise.schway" }, "examples/bitwise.schway: old corpus source cannot be exempted by the Phase37 ledger"},
+		{"phase36-exemption", func(l *phase36Phase37FixtureLedger, _ *[]string) {
+			l.Entries[0].Path = "examples/helper_calls/crc_step.schway"
+		}, "examples/helper_calls/crc_step.schway: Phase36 source cannot be exempted by the Phase37 ledger"},
+	} {
+		t.Run(control.name, func(t *testing.T) {
+			changed := phase36Phase37FixtureLedger{Schema: phase37.Schema, Entries: append([]phase36FixtureLedgerRow(nil), phase37.Entries...)}
+			changedTracked := append([]string(nil), tracked...)
+			control.mutate(&changed, &changedTracked)
+			problems := phase36InventoryProblems(corpus, phase36, changed, changedTracked)
+			if !strings.Contains(strings.Join(problems, "; "), control.want) {
+				t.Fatalf("control did not reach %q: %v", control.want, problems)
+			}
+			if clean := phase36InventoryProblems(corpus, phase36, phase37, tracked); len(clean) != 0 {
+				t.Fatalf("restored composed source inventory: %v", clean)
+			}
+		})
 	}
 }
 
@@ -322,10 +399,13 @@ func phase36TrackedSources(t *testing.T) []string {
 	return paths
 }
 
-func phase36InventoryProblems(corpus phase36PreChangeCorpus, ledger phase36FixtureLedger, tracked []string) []string {
+func phase36InventoryProblems(corpus phase36PreChangeCorpus, ledger phase36FixtureLedger, phase37 phase36Phase37FixtureLedger, tracked []string) []string {
 	var problems []string
 	if ledger.Schema != phase36LedgerSchema {
 		problems = append(problems, fmt.Sprintf("fixture ledger schema is %q, want %q", ledger.Schema, phase36LedgerSchema))
+	}
+	if phase37.Schema != phase37LedgerSchema {
+		problems = append(problems, fmt.Sprintf("Phase37 fixture ledger schema is %q, want %q", phase37.Schema, phase37LedgerSchema))
 	}
 	base := make(map[string]phase36PreChangeEntry, len(corpus.Entries))
 	for _, entry := range corpus.Entries {
@@ -334,11 +414,20 @@ func phase36InventoryProblems(corpus phase36PreChangeCorpus, ledger phase36Fixtu
 		}
 		base[entry.Path] = entry
 	}
+	phase36Allowed := []string{
+		"examples/helper_calls/crc_step.schway",
+		"examples/helper_calls/importer.schway",
+		"examples/helper_calls/public.schway",
+	}
 	ledgerPaths := make([]string, 0, len(ledger.Entries))
 	for _, row := range ledger.Entries {
 		ledgerPaths = append(ledgerPaths, row.Path)
 		if _, old := base[row.Path]; old {
 			problems = append(problems, row.Path+": old corpus source cannot be exempted by the new-fixture ledger")
+			continue
+		}
+		if !phase36ContainsString(phase36Allowed, row.Path) {
+			problems = append(problems, row.Path+": unsafe new-fixture ledger path")
 			continue
 		}
 		cleanPath := filepath.Clean(filepath.FromSlash(row.Path))
@@ -349,8 +438,10 @@ func phase36InventoryProblems(corpus phase36PreChangeCorpus, ledger phase36Fixtu
 		if row.Path == "" || row.SourceSHA == "" || strings.TrimSpace(row.Reason) == "" {
 			problems = append(problems, row.Path+": new-fixture ledger row requires path, source hash, and reason")
 		}
-		if !strings.HasPrefix(row.SourceSHA, "sha256:") {
+		if len(row.SourceSHA) != len("sha256:")+64 || !strings.HasPrefix(row.SourceSHA, "sha256:") || strings.Trim(row.SourceSHA[len("sha256:"):], "0123456789abcdef") != "" {
 			problems = append(problems, row.Path+": new-fixture ledger source hash is malformed")
+		} else if row.SourceSHA != phase36ExpectedLedger[row.Path] {
+			problems = append(problems, row.Path+": Phase36 fixture ledger pinned source hash changed")
 		}
 		if source, err := os.ReadFile(testsupport.ProjectPath(filepath.FromSlash(row.Path))); err != nil {
 			problems = append(problems, row.Path+": new-fixture ledger path is missing from the working tree")
@@ -361,12 +452,63 @@ func phase36InventoryProblems(corpus phase36PreChangeCorpus, ledger phase36Fixtu
 	if !sort.StringsAreSorted(ledgerPaths) || phase36HasDuplicates(ledgerPaths) {
 		problems = append(problems, "new-fixture ledger paths must be sorted and unique")
 	}
-	allowed := make(map[string]bool, len(base)+len(ledger.Entries))
+	if !phase36EqualStrings(ledgerPaths, phase36Allowed) {
+		problems = append(problems, "Phase36 ledger must contain exactly its three declared helper paths in order")
+	}
+
+	phase37Paths := make([]string, 0, len(phase37.Entries))
+	phase37Seen := make(map[string]bool, len(phase37.Entries))
+	for _, row := range phase37.Entries {
+		phase37Paths = append(phase37Paths, row.Path)
+		if _, old := base[row.Path]; old {
+			problems = append(problems, row.Path+": old corpus source cannot be exempted by the Phase37 ledger")
+			continue
+		}
+		if phase36ContainsString(phase36Allowed, row.Path) {
+			problems = append(problems, row.Path+": Phase36 source cannot be exempted by the Phase37 ledger")
+			continue
+		}
+		if !phase36ContainsString(phase37ExpectedLedgerPaths, row.Path) {
+			problems = append(problems, row.Path+": unsafe Phase37 new-fixture ledger path")
+			continue
+		}
+		cleanPath := filepath.Clean(filepath.FromSlash(row.Path))
+		if row.Path == "" || filepath.IsAbs(cleanPath) || cleanPath == ".." || strings.HasPrefix(cleanPath, ".."+string(filepath.Separator)) || filepath.ToSlash(cleanPath) != row.Path {
+			problems = append(problems, row.Path+": unsafe Phase37 new-fixture ledger path")
+			continue
+		}
+		if phase37Seen[row.Path] {
+			problems = append(problems, "Phase37 ledger paths must be sorted and unique")
+		}
+		phase37Seen[row.Path] = true
+		if strings.TrimSpace(row.Reason) == "" {
+			problems = append(problems, row.Path+": Phase37 ledger requires a nonblank reason")
+		}
+		if len(row.SourceSHA) != len("sha256:")+64 || !strings.HasPrefix(row.SourceSHA, "sha256:") || strings.Trim(row.SourceSHA[len("sha256:"):], "0123456789abcdef") != "" {
+			problems = append(problems, row.Path+": Phase37 source hash is malformed")
+		}
+		if source, err := os.ReadFile(testsupport.ProjectPath(filepath.FromSlash(row.Path))); err != nil {
+			problems = append(problems, row.Path+": Phase37 source is missing from the working tree")
+		} else if phase36Digest(source) != row.SourceSHA {
+			problems = append(problems, row.Path+": Phase37 source hash differs from the working tree")
+		}
+	}
+	if !sort.StringsAreSorted(phase37Paths) || phase36HasDuplicates(phase37Paths) {
+		problems = append(problems, "Phase37 ledger paths must be sorted and unique")
+	}
+	if !phase36EqualStrings(phase37Paths, phase37ExpectedLedgerPaths) {
+		problems = append(problems, "Phase37 ledger must contain exactly the three CRC source paths in order")
+	}
+
+	allowed := make(map[string]bool, len(base)+len(phase36Allowed)+len(phase37ExpectedLedgerPaths))
 	for path := range base {
 		allowed[path] = true
 	}
-	for _, row := range ledger.Entries {
-		allowed[row.Path] = true
+	for _, path := range phase36Allowed {
+		allowed[path] = true
+	}
+	for _, path := range phase37ExpectedLedgerPaths {
+		allowed[path] = true
 	}
 	if !sort.StringsAreSorted(tracked) || phase36HasDuplicates(tracked) {
 		problems = append(problems, "tracked source inventory must be sorted and unique")
@@ -573,6 +715,19 @@ func phase36LoadFixtureLedger(t *testing.T) phase36FixtureLedger {
 	var ledger phase36FixtureLedger
 	if err := json.Unmarshal(raw, &ledger); err != nil {
 		t.Fatalf("decode Phase 36 intentional new-fixture ledger: %v", err)
+	}
+	return ledger
+}
+
+func phase36LoadPhase37FixtureLedger(t *testing.T) phase36Phase37FixtureLedger {
+	t.Helper()
+	raw, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase37", "new-fixture-ledger.json"))
+	if err != nil {
+		t.Fatalf("read Phase37 additive source ledger: %v", err)
+	}
+	var ledger phase36Phase37FixtureLedger
+	if err := json.Unmarshal(raw, &ledger); err != nil {
+		t.Fatalf("decode Phase37 additive source ledger: %v", err)
 	}
 	return ledger
 }

@@ -5,11 +5,30 @@ export {
 }
 
 fn crc32(bytes: ByteView) -> U64 {
-	let result = byte_len(bytes)
-	result
+  // State stays in the low 32 bits: the seed, input byte, shift, and
+  // reflected polynomial all fit there, so each iteration preserves it.
+  var crc = 0xFFFFFFFF
+  var i = 0
+  var n = byte_len(bytes)
+  while i < n {
+    crc = crc ^ byte_at(bytes, i)
+    var round = 0
+    while round < 8 {
+      crc = crc_byte(crc)
+      round = round + 1
+    }
+    i = i + 1
+  }
+  crc = crc ^ 0xFFFFFFFF
+  crc
 }
 
 fn crc_byte(mixed: U64) -> U64 {
-	let result = mixed >> 1
-	result
+  var next = mixed >> 1
+  if mixed & 1 == 1 {
+    next = next ^ 0xEDB88320
+  } else {
+    next = mixed >> 1
+  }
+  next
 }

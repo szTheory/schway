@@ -1,0 +1,20 @@
+{
+  "schema": "phase37.new-fixture-ledger/1",
+  "entries": [
+    {
+      "path": "examples/crc32/crc32.schway",
+      "source_sha256": "sha256:8a8c7570409a6bf96258a35b5964dc899a2347871b564fb59e081beb011388c9",
+      "reason": "Retained native CRC entry imports the shared library and discharges the existing file-bytes owner."
+    },
+    {
+      "path": "examples/crc32/crc_low.schway",
+      "source_sha256": "sha256:797f9cd2e733c3590a593518fe671a1fda553eb6ce22ea50d70f1a26d606dccc",
+      "reason": "Second retained native entry imports the same CRC implementation and projects its low 16 bits."
+    },
+    {
+      "path": "examples/crc32/lib/crc32.schway",
+      "source_sha256": "sha256:304d47059ac5f5266776bb250794a3c64ae76ce9fe7b55a2a490facf1e35fb4f",
+      "reason": "One table-free reflected CRC-32/ISO-HDLC library owns the byte loop and private eight-round helper."
+    }
+  ]
+}
