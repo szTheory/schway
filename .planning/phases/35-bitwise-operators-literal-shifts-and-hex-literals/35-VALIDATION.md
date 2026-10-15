@@ -500,3 +500,16 @@ post-wiring regression is recorded separately before phase acceptance.
 | Gaps found | 3 |
 | Resolved | 3 |
 | Escalated | 0 |
+
+The report-format follow-up also repaired eight table-split verifier regex
+commands by using fenced blocks. Both failing groundedness roots and the Go
+evidence root then passed without changing the classifier/frontier. Final
+post-wiring execution and input bindings are in 35-REFRESH-FINAL-RUN.json.
+
+## Validation Audit 2026-10-15
+
+| Metric | Count |
+|---|---|
+| Gaps found | 4 |
+| Resolved | 4 |
+| Escalated | 0 |

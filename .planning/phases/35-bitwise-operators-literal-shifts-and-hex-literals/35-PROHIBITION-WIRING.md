@@ -34,3 +34,17 @@ No new dependency, package installation, evaluator, runtime boundary or human
 approval was introduced. The prior null-tier report remains in commit history.
 Independent review, final regression and verifier re-verification follow this
 wiring; no phase completion is claimed by this record.
+
+## Report command formatting correction
+
+The first post-wiring regression passed the runtime/mutation checks but
+failed two groundedness roots because eight verifier commands were placed in
+Markdown table cells with unescaped regex alternation. The exact commands
+were moved to fenced shell blocks, retaining the reported checks and verdict.
+The final verifier still owns the new verdict and fingerprint. Fresh
+TestVerificationGroundednessFrontierIsPinned,
+TestVerificationGroundednessThreeClassesAreEmpty and
+TestPhase35EvidenceGrounding passed after the formatting repair; raw log is
+/tmp/schway35-report-format-fix.log. No groundedness rule or frontier was
+relaxed, and the failed earlier run earns no passing credit. The final full
+focused regression is recorded separately before acceptance.
