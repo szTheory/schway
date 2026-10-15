@@ -1,7 +1,7 @@
 # Phase 37 prohibition evidence
 
 Evidence date: 2026-10-15
-Full checkout HEAD: `c210004ef940a6e2556fc63d5c1d53e683e9118e`
+Full checkout HEAD: `4f2eb354ce002878699d627b123dbec6ce9f0cf9`
 Host/toolchain: darwin arm64; Node `v26.10.0`; Go cache `/tmp/ai-lang-verification-gocache`.
 Adapter SHA-256: `e85d67e7487f4aa03022c1d0efa5e0becdc93bfc1bf45bbdf1af3d86c239086c`.
 Plan SHA-256 after descriptor wiring: `ee401dac81b262544bbc3c94954cdb7362be57e1b58e40adb5450f15085f987f`.
@@ -40,9 +40,9 @@ Canonical request:
 
 | Subject | Go root counts and output digests | Direct node-test TAP counts | Exit | TAP SHA-256 |
 | --- | --- | --- | ---: | --- |
-| bad | outcome: run=1, pass=0, fail=1, skip=0; causal: run=1, pass=1, fail=0, skip=0; output SHA-256: outcome=746ec8711a3f33c64a924d78b6341ca2a4e601a337a2907d26039b8a31edd745; causal=4e270f9b267af09a1e76b88b53bc195a900c186744d5a8a78b6419c8bc3435e1 | tests=2, pass=1, fail=1, skipped=0 | 1 | `2abe168f69774f8fe5097c6e061a94f3b0f535ad69ed021e84e4ddef270c3c44` |
-| clean | outcome: run=1, pass=1, fail=0, skip=0; causal: run=1, pass=1, fail=0, skip=0; output SHA-256: outcome=f61c9e948f5f95a558e9d2929caff215adf77d05bacb7a4e09af54320b2874fa; causal=4e270f9b267af09a1e76b88b53bc195a900c186744d5a8a78b6419c8bc3435e1 | tests=2, pass=2, fail=0, skipped=0 | 0 | `4ece5ea753627cc980726f7e8527e2efbb39a9573f26ca4562d6ab0f3e5547b8` |
-| default | outcome: run=1, pass=1, fail=0, skip=0; causal: run=1, pass=1, fail=0, skip=0; output SHA-256: outcome=af7871a298ebb183067ce90bcb2fabfb62909509ef9edaa4776731bcb9bf387d; causal=4e270f9b267af09a1e76b88b53bc195a900c186744d5a8a78b6419c8bc3435e1 | tests=2, pass=2, fail=0, skipped=0 | 0 | `35a1dbdeec3289f13a10b609150a20aa1f71dc4cb841db247a8fcae39af9eaf2` |
+| bad | outcome: run=1, pass=0, fail=1, skip=0; causal: run=1, pass=1, fail=0, skip=0; output SHA-256: outcome=037079a643e3935803db9cb989709e2d3e9a084f2a104a74f2190780b2dd7251; causal=4e270f9b267af09a1e76b88b53bc195a900c186744d5a8a78b6419c8bc3435e1 | tests=2, pass=1, fail=1, skipped=0 | 1 | `ef63718dcb335230ca6bf1a6cd1136d66f14611b5f22552484fa5ba07e752fde` |
+| clean | outcome: run=1, pass=1, fail=0, skip=0; causal: run=1, pass=1, fail=0, skip=0; output SHA-256: outcome=b535101c240f05560dab0b8d9ba166b2becb958cfe6aa5d7ab8b445e3d91b3d8; causal=5845a532a5b59e989931d972941a6c6e29587dfacfe3981604f4b128a6aa0fbe | tests=2, pass=2, fail=0, skipped=0 | 0 | `85334fc0a48e62e3fa991ac9c97634010504a6995d8ce948fd67c05bdf461042` |
+| default | outcome: run=1, pass=1, fail=0, skip=0; causal: run=1, pass=1, fail=0, skip=0; output SHA-256: outcome=7c019be3c7fb9e2ed530815978507c46457bf281a0e24d806a0387a57733cb9d; causal=5845a532a5b59e989931d972941a6c6e29587dfacfe3981604f4b128a6aa0fbe | tests=2, pass=2, fail=0, skipped=0 | 0 | `f4c6475b1d0189e9be2c1118103e0972069eb49a9419730d6f8bce843dca84f9` |
 
 Exact named root: `./internal/compiler/native -run '^TestPhase36CaptureOutcomeSeparation$' -count=1 -v -timeout=20s`. Expected violation assertion(s): `capture exhaustion changed successful work`; `capture exhaustion hid the later defect`. The bad subject changes only its hardcoded temporary Go overlay and reaches only these assertions; tracked source bytes are compared before/after and temp overlays are removed. Clean/default controls both pass without skips.
 
@@ -78,8 +78,8 @@ Canonical request:
 
 | Subject | Go root counts and output digests | Direct node-test TAP counts | Exit | TAP SHA-256 |
 | --- | --- | --- | ---: | --- |
-| bad | outcome: run=1, pass=1, fail=0, skip=0; causal: run=1, pass=0, fail=1, skip=0; output SHA-256: outcome=e2abc15aadbdf8459be89ecbe4f508252ec75ad20a76651f260a7d8c672a4c7f; causal=6a856c1c1cd355122a3fe523b06699883f615f4506e2ecb453f5567033cf6521 | tests=2, pass=1, fail=1, skipped=0 | 1 | `ba96a50c4e55b2ca92364e2facea89b658e7e4d12573e2363478a9342c186671` |
-| clean | outcome: run=1, pass=1, fail=0, skip=0; causal: run=1, pass=1, fail=0, skip=0; output SHA-256: outcome=f61c9e948f5f95a558e9d2929caff215adf77d05bacb7a4e09af54320b2874fa; causal=4e270f9b267af09a1e76b88b53bc195a900c186744d5a8a78b6419c8bc3435e1 | tests=2, pass=2, fail=0, skipped=0 | 0 | `cce3db30cc417ebee0d9ebf0293b11a3a88b171e8e600314c724cb967b58cdcb` |
-| default | outcome: run=1, pass=1, fail=0, skip=0; causal: run=1, pass=1, fail=0, skip=0; output SHA-256: outcome=b79828435f73a24f4f356011e2df816ae09607697d58a3ec48706a87c6f12142; causal=5845a532a5b59e989931d972941a6c6e29587dfacfe3981604f4b128a6aa0fbe | tests=2, pass=2, fail=0, skipped=0 | 0 | `d29eb3d861d5bbd321b7e6e30dbb8e3e075d58c1598c0f70c8c2da5289cac946` |
+| bad | outcome: run=1, pass=1, fail=0, skip=0; causal: run=1, pass=0, fail=1, skip=0; output SHA-256: outcome=af7871a298ebb183067ce90bcb2fabfb62909509ef9edaa4776731bcb9bf387d; causal=c886531596f18515293285368388cf20e65f232e41e34e782f4ec471ae65a739 | tests=2, pass=1, fail=1, skipped=0 | 1 | `3be9839699905be70c105212a8723f62cd4e447fe6fe3809d5f304f861f3c948` |
+| clean | outcome: run=1, pass=1, fail=0, skip=0; causal: run=1, pass=1, fail=0, skip=0; output SHA-256: outcome=7a05c53c85df411d97b23fbb07efdbc4d13c0e328948a9b075aa033c9f9a9fa1; causal=5845a532a5b59e989931d972941a6c6e29587dfacfe3981604f4b128a6aa0fbe | tests=2, pass=2, fail=0, skipped=0 | 0 | `3f83252fd1b6f076bfe723b7aa9993725c3402e8116c9c46b0c87bc0c63506c2` |
+| default | outcome: run=1, pass=1, fail=0, skip=0; causal: run=1, pass=1, fail=0, skip=0; output SHA-256: outcome=b9c49ec2863e185addf76ebf367b6e259eb155dd4f36f3ead9b692c26a686715; causal=5845a532a5b59e989931d972941a6c6e29587dfacfe3981604f4b128a6aa0fbe | tests=2, pass=2, fail=0, skipped=0 | 0 | `380d9f65b9a5d2a066bec37ccd03318e72c81249fb22df8b6251f05c9d1ab6a9` |
 
 Exact named root: `./internal/compiler/executionpeer -run '^TestPhase36CallCausalAttributionControls$' -count=1 -v -timeout=20s`. Expected violation assertion(s): `causal peer should accept the structurally plausible false-success trace; numeric replay is not its claim`. The bad subject changes only its hardcoded temporary Go overlay and reaches only these assertions; tracked source bytes are compared before/after and temp overlays are removed. Clean/default controls both pass without skips.
