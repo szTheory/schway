@@ -9,7 +9,8 @@ findings:
     title: "Empty manifest controls bypass receipt control validation"
 open: 0
 total: 1
-recorded: 2026-10-13T18:13:18.045Z
+unparsed: 2
+recorded: 2026-10-15T19:45:30.058Z
 ---
 
 # Phase 33: Code Review Disposition
