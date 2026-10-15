@@ -6,6 +6,8 @@ package executionpeer
 import (
 	"fmt"
 	"sort"
+	"strconv"
+	"unicode/utf8"
 
 	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/execution"
@@ -75,11 +77,118 @@ func Validate(program core.Program, document execution.Execution) error {
 	if document.Schema != execution.Schema2 {
 		return refusal("schema", -1, "", "", "", "expected lang.execution/2")
 	}
+	if err := preflightDocumentCapacity(document); err != nil {
+		return err
+	}
 	indexed, err := buildIndex(program)
 	if err != nil {
 		return err
 	}
 	return indexed.validate(document)
+}
+
+func preflightDocumentCapacity(document execution.Execution) error {
+	if len(document.Events) > execution.MaxDocumentBytes/128 {
+		return refusal("document_capacity", -1, "", "", "", "observed event count exceeds bounded peer capacity")
+	}
+	used := 0
+	add := func(size int) bool {
+		if size < 0 || size > execution.MaxDocumentBytes-used {
+			return false
+		}
+		used += size
+		return true
+	}
+	// Count the actual Execution envelope and event array without marshaling
+	// or allocating a second copy of untrusted event strings.
+	if !add(len(`{"schema":`)+jsonStringSize(document.Schema)) ||
+		!add(len(`,"outcome":{"kind":`)+jsonStringSize(document.Outcome.Kind)) ||
+		!add(len(`,"value":`)+jsonStringSize(document.Outcome.Value)) || !add(1) ||
+		!add(len(`,"events":[`)) {
+		return refusal("document_capacity", -1, "", "", "", "execution document exceeds bounded peer capacity")
+	}
+	for index, event := range document.Events {
+		size, ok := eventJSONSize(event)
+		if !ok || (index > 0 && !add(1)) || !add(size) {
+			return refusal("document_capacity", -1, "", "", "", "execution document exceeds bounded peer capacity")
+		}
+	}
+	if !add(len(`],"live_resources":[`)) {
+		return refusal("document_capacity", -1, "", "", "", "execution document exceeds bounded peer capacity")
+	}
+	for index, resource := range document.LiveResources {
+		if (index > 0 && !add(1)) || !add(jsonStringSize(resource)) {
+			return refusal("document_capacity", -1, "", "", "", "execution document exceeds bounded peer capacity")
+		}
+	}
+	if !add(2) { // close live_resources array and document object
+		return refusal("document_capacity", -1, "", "", "", "execution document exceeds bounded peer capacity")
+	}
+	return nil
+}
+
+func eventJSONSize(event execution.Event) (int, bool) {
+	size := 2 // braces
+	fields := 0
+	add := func(n int) bool {
+		if n < 0 || size > execution.MaxDocumentBytes-n-1 {
+			return false
+		}
+		if fields > 0 {
+			size++
+		}
+		size += n
+		fields++
+		return true
+	}
+	stringField := func(key, value string, optional bool) bool {
+		if optional && value == "" {
+			return true
+		}
+		return add(len(key) + jsonStringSize(value))
+	}
+	for _, field := range []struct{ key, value string }{
+		{`"schema":`, event.Schema}, {`"id":`, event.ID}, {`"kind":`, event.Kind}, {`"function_id":`, event.FunctionID},
+	} {
+		if !stringField(field.key, field.value, false) {
+			return 0, false
+		}
+	}
+	for _, field := range []struct{ key, value string }{
+		{`"input":`, event.Input}, {`"output":`, event.Output}, {`"source_place":`, event.SourcePlace},
+		{`"target_place":`, event.TargetPlace}, {`"type_id":`, event.TypeID}, {`"invocation":`, event.Invocation},
+		{`"callee_function_id":`, event.CalleeFunctionID},
+	} {
+		if !stringField(field.key, field.value, true) {
+			return 0, false
+		}
+	}
+	if event.Occurrence != 0 && !add(len(`"occurrence":`)+len(strconv.FormatUint(event.Occurrence, 10))) {
+		return 0, false
+	}
+	return size, true
+}
+
+func jsonStringSize(value string) int {
+	size := 2 // quotes
+	for index := 0; index < len(value); {
+		r, width := utf8.DecodeRuneInString(value[index:])
+		if r == utf8.RuneError && width == 1 {
+			size += 6 // encoding/json replaces an invalid byte with \\ufffd
+			index++
+			continue
+		}
+		switch {
+		case r == '"' || r == '\\' || r == '\b' || r == '\f' || r == '\n' || r == '\r' || r == '\t':
+			size += 2
+		case r < 0x20 || r == '<' || r == '>' || r == '&' || r == '\u2028' || r == '\u2029':
+			size += 6
+		default:
+			size += width
+		}
+		index += width
+	}
+	return size
 }
 
 // ValidateFullCoverage is the intentionally separate straight-line fixture

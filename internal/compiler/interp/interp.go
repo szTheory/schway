@@ -1,10 +1,12 @@
 package interp
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/szTheory/schway/internal/compiler/core"
 	"github.com/szTheory/schway/internal/compiler/corevalidate"
@@ -12,6 +14,270 @@ import (
 )
 
 const Schema = execution.Schema0
+
+// ErrEvidenceCapacityExhausted reports that an interpreter result is real
+// but its optional execution evidence is incomplete.
+var ErrEvidenceCapacityExhausted = errors.New("interp.evidence_capacity_exhausted")
+
+type interpreterEvidenceLimits struct {
+	pathBytes  int
+	eventBytes int
+	totalBytes int
+	maxOrdinal uint64
+}
+
+var interpreterEvidenceLimitsForTest *interpreterEvidenceLimits
+
+const maxPortableCallOrdinal = uint64(2147483647)
+
+type eventPair struct{ invocation, id string }
+
+type interpreterEvidence struct {
+	pathLimit, eventLimit, totalLimit int
+	maxOrdinal                        uint64
+	pathBytes, eventBytes             int
+	maxEvents                         int
+	occurrences                       map[eventPair]uint64
+	events                            int
+	rootReserved                      bool
+	exhausted                         bool
+	terminalReason                    string
+}
+
+type evidenceCapacityError struct{ reason string }
+
+func (e *evidenceCapacityError) Error() string {
+	if e == nil || e.reason == "" {
+		return ErrEvidenceCapacityExhausted.Error()
+	}
+	return ErrEvidenceCapacityExhausted.Error() + ": " + e.reason
+}
+
+func (e *evidenceCapacityError) Unwrap() error { return ErrEvidenceCapacityExhausted }
+
+func newInterpreterEvidence() *interpreterEvidence {
+	limits := interpreterEvidenceLimits{
+		pathBytes: execution.MaxDocumentBytes, eventBytes: execution.MaxDocumentBytes,
+		totalBytes: execution.MaxDocumentBytes, maxOrdinal: maxPortableCallOrdinal,
+	}
+	if interpreterEvidenceLimitsForTest != nil {
+		limits = *interpreterEvidenceLimitsForTest
+	}
+	maxEvents := limits.totalBytes / 256
+	if maxEvents < 1 {
+		maxEvents = 1
+	}
+	return &interpreterEvidence{
+		pathLimit: limits.pathBytes, eventLimit: limits.eventBytes, totalLimit: limits.totalBytes,
+		maxOrdinal: limits.maxOrdinal, maxEvents: maxEvents,
+		occurrences: make(map[eventPair]uint64),
+	}
+}
+
+func (e *interpreterEvidence) exhaust(reason string) {
+	if e == nil {
+		return
+	}
+	if reason != "" {
+		e.noteTerminal(reason)
+	}
+	e.exhausted = true
+	e.occurrences = nil
+}
+
+func (e *interpreterEvidence) noteTerminal(reason string) {
+	if e == nil || reason == "" || e.terminalReason != "" {
+		return
+	}
+	const maxReasonBytes = 128
+	if len(reason) > maxReasonBytes {
+		reason = strings.Clone(reason[:maxReasonBytes])
+	}
+	e.terminalReason = reason
+}
+
+func (e *interpreterEvidence) capacityError() error {
+	if e == nil || !e.exhausted {
+		return nil
+	}
+	return &evidenceCapacityError{reason: e.terminalReason}
+}
+
+func (e *interpreterEvidence) reserveRoot(entryID string) bool {
+	if e == nil || e.exhausted {
+		return false
+	}
+	size := len("inv:entry:") + invocationComponentLength(entryID)
+	if size > e.pathLimit || size > e.totalLimit {
+		e.exhaust("")
+		return false
+	}
+	e.pathBytes = size
+	e.rootReserved = true
+	return true
+}
+
+func (e *interpreterEvidence) reserveChild(parent, callID string, ordinal uint64) bool {
+	if e == nil || e.exhausted {
+		return false
+	}
+	size := len(parent) + 2 + invocationComponentLength(callID) + len(strconv.FormatUint(ordinal, 10))
+	if size < len(parent) || size > e.pathLimit-e.pathBytes || e.pathBytes+size > e.totalLimit-e.eventBytes {
+		e.exhaust("")
+		return false
+	}
+	e.pathBytes += size
+	return true
+}
+
+func invocationComponentLength(value string) int {
+	length := 0
+	for index := 0; index < len(value); index++ {
+		b := value[index]
+		if b == ':' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9' || b == '-' || b == '.' || b == '_' || b == '~' {
+			length++
+		} else {
+			length += 3
+		}
+	}
+	return length
+}
+
+func (e *interpreterEvidence) record(events []Event, event Event) []Event {
+	if e == nil {
+		return append(events, event)
+	}
+	if event.Kind == "function.defected" {
+		e.noteTerminal(event.Output)
+	}
+	if e.exhausted {
+		return nil
+	}
+	key := eventPair{invocation: event.Invocation, id: event.ID}
+	ordinal := e.occurrences[key]
+	event.Occurrence = ordinal
+	if ordinal == ^uint64(0) {
+		e.exhaust("")
+		return nil
+	}
+	e.occurrences[key] = ordinal + 1
+	if e.events >= e.maxEvents {
+		e.exhaust("")
+		return nil
+	}
+	available := e.eventLimit - e.eventBytes
+	if totalAvailable := e.totalLimit - e.pathBytes - e.eventBytes; totalAvailable < available {
+		available = totalAvailable
+	}
+	comma := 0
+	if e.events > 0 {
+		comma = 1
+		available--
+	}
+	encodedSize, ok := interpreterEventJSONSize(event, available)
+	if !ok {
+		e.exhaust("")
+		return nil
+	}
+	e.eventBytes += encodedSize + comma
+	e.events++
+	return append(events, event)
+}
+
+func interpreterEventJSONSize(event Event, limit int) (int, bool) {
+	if limit < 2 {
+		return 0, false
+	}
+	size, fields := 2, 0 // braces
+	add := func(n int) bool {
+		separator := 0
+		if fields > 0 {
+			separator = 1
+		}
+		if n < 0 || n > limit-size-separator {
+			return false
+		}
+		size += separator + n
+		fields++
+		return true
+	}
+	stringField := func(key, value string, optional bool) bool {
+		if optional && value == "" {
+			return true
+		}
+		separator := 0
+		if fields > 0 {
+			separator = 1
+		}
+		encodedSize, ok := interpreterJSONStringSize(value, limit-size-separator-len(key))
+		return ok && add(len(key)+encodedSize)
+	}
+	for _, field := range []struct{ key, value string }{
+		{`"schema":`, event.Schema}, {`"id":`, event.ID}, {`"kind":`, event.Kind}, {`"function_id":`, event.FunctionID},
+	} {
+		if !stringField(field.key, field.value, false) {
+			return 0, false
+		}
+	}
+	for _, field := range []struct{ key, value string }{
+		{`"input":`, event.Input}, {`"output":`, event.Output}, {`"source_place":`, event.SourcePlace},
+		{`"target_place":`, event.TargetPlace}, {`"type_id":`, event.TypeID}, {`"invocation":`, event.Invocation},
+		{`"callee_function_id":`, event.CalleeFunctionID},
+	} {
+		if !stringField(field.key, field.value, true) {
+			return 0, false
+		}
+	}
+	if event.Occurrence != 0 && !add(len(`"occurrence":`)+len(strconv.FormatUint(event.Occurrence, 10))) {
+		return 0, false
+	}
+	return size, true
+}
+
+func interpreterJSONStringSize(value string, limit int) (int, bool) {
+	if limit < 2 {
+		return 0, false
+	}
+	size := 2 // quotes
+	for index := 0; index < len(value); {
+		r, width := utf8.DecodeRuneInString(value[index:])
+		increment := width
+		if r == utf8.RuneError && width == 1 {
+			increment = 6 // encoding/json replaces an invalid byte with \\ufffd
+		} else {
+			switch {
+			case r == '"' || r == '\\' || r == '\b' || r == '\f' || r == '\n' || r == '\r' || r == '\t':
+				increment = 2
+			case r < 0x20 || r == '<' || r == '>' || r == '&' || r == '\u2028' || r == '\u2029':
+				increment = 6
+			}
+		}
+		if increment > limit-size {
+			return 0, false
+		}
+		size += increment
+		index += width
+	}
+	return size, true
+}
+
+func appendInterpreterEvents(evidence *interpreterEvidence, events []Event, additions ...Event) []Event {
+	for _, event := range additions {
+		events = evidence.record(events, event)
+	}
+	return events
+}
+
+// SetEvidenceLimitsForTest installs small scoped capture limits for focused
+// boundary tests. It must not be used by production callers.
+func SetEvidenceLimitsForTest(pathBytes, eventBytes, totalBytes, maxOrdinal int) (restore func()) {
+	previous := interpreterEvidenceLimitsForTest
+	interpreterEvidenceLimitsForTest = &interpreterEvidenceLimits{
+		pathBytes: pathBytes, eventBytes: eventBytes, totalBytes: totalBytes,
+		maxOrdinal: uint64(maxOrdinal),
+	}
+	return func() { interpreterEvidenceLimitsForTest = previous }
+}
 
 // schemaForProgram makes the producer boundary explicit: existing
 // single-function executions retain the legacy schema selected by their
@@ -131,15 +397,14 @@ func frameDrainOrder(n int) []int {
 // (D-10-32) -- never a depth value -- so this is sound only as long as
 // recursion stays refused by callgraph (a function cannot appear twice on
 // the stack, so no two live frames ever share a FunctionID).
-func drainStackForAbruptExit(stack []frame) ([]Event, []string) {
-	events := []Event{}
+func drainStackForAbruptExit(stack []frame, evidence *interpreterEvidence, events []Event) ([]Event, []string) {
 	liveResources := []string{}
 	leakIndex := 0
 	for _, frameIndex := range frameDrainOrder(len(stack)) {
 		f := &stack[frameIndex]
 		places := frameLiveResourcePlaces(f)
 		for _, place := range places {
-			events = append(events, Event{
+			events = appendInterpreterEvents(evidence, events, Event{
 				Schema: f.eventSchema(), ID: fmt.Sprintf("%s:event:leaked:%d", f.function.ID, leakIndex), Kind: "resource.leaked", FunctionID: f.function.ID,
 				Invocation:  f.invocation,
 				SourcePlace: place,
@@ -408,7 +673,7 @@ func fileForeignCall(program core.Program, top *frame, operation core.LinearOper
 				return Execution{}, false, fmt.Errorf("file acquire %q reader returned unknown alternative %q for %q", operation.ID, alternative, contract.Fails)
 			}
 			called.Kind, called.TypeID = "foreign.failed", contract.Fails
-			*events = append(*events, called, Event{
+			*events = appendInterpreterEvents(top.evidence, *events, called, Event{
 				Schema: top.eventSchema(), ID: operation.ID + ":event:failed", Kind: "function.failed",
 				FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: contract.Fails,
 			})
@@ -428,7 +693,7 @@ func fileForeignCall(program core.Program, top *frame, operation core.LinearOper
 	default:
 		return Execution{}, false, fmt.Errorf("file route does not support foreign mode %q", contract.Mode)
 	}
-	*events = append(*events, called)
+	*events = appendInterpreterEvents(top.evidence, *events, called)
 	top.idx++
 	return Execution{}, false, nil
 }
@@ -536,7 +801,7 @@ func fixtureForeignCall(program core.Program, top *frame, operation core.LinearO
 				return Execution{}, false, fmt.Errorf("fixture acquire %q failure type %q has no alternative", operation.ID, contract.Fails)
 			}
 			called.Kind, called.TypeID = "foreign.failed", contract.Fails
-			*events = append(*events, called, Event{
+			*events = appendInterpreterEvents(top.evidence, *events, called, Event{
 				Schema: top.eventSchema(), ID: operation.ID + ":event:failed", Kind: "function.failed",
 				FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: contract.Fails,
 			})
@@ -558,7 +823,7 @@ func fixtureForeignCall(program core.Program, top *frame, operation core.LinearO
 	default:
 		return Execution{}, false, fmt.Errorf("fixture route does not support foreign mode %q", contract.Mode)
 	}
-	*events = append(*events, called)
+	*events = appendInterpreterEvents(top.evidence, *events, called)
 	top.idx++
 	return Execution{}, false, nil
 }
@@ -853,8 +1118,12 @@ func runApplicationWithOutputLimit(program core.Program, functionName, input str
 		base = newBlockFrame(function, map[string]value{function.Parameter.ID: initial}, function.ID+":block:entry")
 	}
 	base.applicationOutput = sink
+	if hasScalarValueCalls(program) {
+		base.evidence = newInterpreterEvidence()
+	}
 	execution, err := runProgramFrameStack(program, base)
-	if err != nil {
+	capacityErr := errors.Is(err, ErrEvidenceCapacityExhausted)
+	if err != nil && !capacityErr {
 		return ApplicationResult{}, err
 	}
 	if execution.Outcome.Kind == "returned" && function.ReturnType == "U64" {
@@ -868,8 +1137,14 @@ func runApplicationWithOutputLimit(program core.Program, functionName, input str
 			if len(execution.Events) > 0 && execution.Events[len(execution.Events)-1].Kind == "function.returned" {
 				execution.Events = execution.Events[:len(execution.Events)-1]
 			}
-			execution = applicationOutputLimitExecution(execution.Schema, returnOperation.ID, function.ID, "", returnOperation.SourceID, returnOperation.TypeID, execution.Events, execution.LiveResources)
+			execution = applicationOutputLimitExecution(execution.Schema, returnOperation.ID, function.ID, "", returnOperation.SourceID, returnOperation.TypeID, execution.Events, execution.LiveResources, base.evidence)
 		}
+	}
+	if base.evidence != nil && base.evidence.exhausted {
+		capacityErr = true
+	}
+	if capacityErr {
+		return ApplicationResult{Execution: execution, Output: sink.bytes}, base.evidence.capacityError()
 	}
 	return ApplicationResult{Execution: execution, Output: sink.bytes}, nil
 }
@@ -1086,7 +1361,8 @@ type frame struct {
 	segments   []execution.InvocationSegment
 	// nextCallOrdinals is activation-local. Scalar helper calls at one static
 	// site advance independently, while a newly pushed frame starts fresh.
-	nextCallOrdinals map[string]int
+	nextCallOrdinals map[string]uint64
+	evidence         *interpreterEvidence
 
 	// values is this frame's OWN place map (D-10-26): a moved-from place
 	// in a caller's frame is genuinely absent from this map -- not merely
@@ -1385,8 +1661,38 @@ func entryIdentity(program core.Program, entryID, legacySchema string) (string, 
 	return schema, invocation, nil
 }
 
+func hasScalarValueCalls(program core.Program) bool {
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind != core.OpCall {
+				continue
+			}
+			callee, ok := findFunctionByID(program, operation.CalleeID)
+			if ok && scalarValueFunction(callee) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func runProgramFrameStack(program core.Program, base frame) (Execution, error) {
-	schema, invocation, err := entryIdentity(program, base.function.ID, execution.Schema1)
+	var schema, invocation string
+	var err error
+	if hasScalarValueCalls(program) {
+		if base.evidence == nil {
+			base.evidence = newInterpreterEvidence()
+		}
+		schema = schemaForProgram(program, execution.Schema1)
+		if base.evidence.rootReserved || base.evidence.reserveRoot(base.function.ID) {
+			schema, invocation, err = entryIdentity(program, base.function.ID, execution.Schema1)
+		}
+	} else {
+		schema, invocation, err = entryIdentity(program, base.function.ID, execution.Schema1)
+	}
 	if err != nil {
 		return Execution{}, err
 	}
@@ -1403,6 +1709,7 @@ func (f *frame) eventSchema() string {
 
 func (f *frame) configureChild(child *frame, operation core.LinearOperation, segments []execution.InvocationSegment, invocation string) {
 	child.applicationOutput = f.applicationOutput
+	child.evidence = f.evidence
 	child.schema = f.eventSchema()
 	child.entryID = f.entryID
 	child.segments = segments
@@ -1414,15 +1721,16 @@ func (f *frame) configureChild(child *frame, operation core.LinearOperation, seg
 
 const applicationOutputLimitDefectReason = "application output limit exceeded"
 
-func applicationOutputLimitExecution(schema, operationID, functionID, invocation, sourcePlace, typeID string, events []Event, liveResources []string) Execution {
+func applicationOutputLimitExecution(schema, operationID, functionID, invocation, sourcePlace, typeID string, events []Event, liveResources []string, evidence *interpreterEvidence) Execution {
 	event := Event{
 		Schema: schema, ID: operationID + ":event:defected", Kind: "function.defected",
 		FunctionID: functionID, Invocation: invocation, SourcePlace: sourcePlace,
 		TypeID: typeID, Output: applicationOutputLimitDefectReason,
 	}
+	events = appendInterpreterEvents(evidence, events, event)
 	return Execution{
 		Schema: schema, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""},
-		Events: append(events, event), LiveResources: liveResources,
+		Events: events, LiveResources: liveResources,
 	}
 }
 
@@ -1469,21 +1777,37 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 		delete(caller.values, operation.SourceID)
 	}
 	seeded := map[string]value{callee.Parameter.ID: argument}
-	ordinal := 0
-	if scalarValueFunction(callee) {
+	var ordinal uint64
+	segments := []execution.InvocationSegment{}
+	invocation := ""
+	if caller.evidence == nil {
+		segments = append(append([]execution.InvocationSegment{}, caller.segments...), execution.InvocationSegment{OpCallID: operation.ID, Ordinal: 0})
+		if caller.eventSchema() == execution.Schema2 {
+			var err error
+			invocation, err = execution.FormatInvocation(caller.entryID, segments)
+			if err != nil {
+				return pushResult{}, fmt.Errorf("operation %q: child invocation: %w", operation.ID, err)
+			}
+		}
+	} else if !caller.evidence.exhausted {
 		if caller.nextCallOrdinals == nil {
-			caller.nextCallOrdinals = make(map[string]int)
+			caller.nextCallOrdinals = make(map[string]uint64)
 		}
 		ordinal = caller.nextCallOrdinals[operation.ID]
-		caller.nextCallOrdinals[operation.ID] = ordinal + 1
-	}
-	segments := append(append([]execution.InvocationSegment{}, caller.segments...), execution.InvocationSegment{OpCallID: operation.ID, Ordinal: ordinal})
-	invocation := ""
-	if caller.eventSchema() == execution.Schema2 {
-		var err error
-		invocation, err = execution.FormatInvocation(caller.entryID, segments)
-		if err != nil {
-			return pushResult{}, fmt.Errorf("operation %q: child invocation: %w", operation.ID, err)
+		if ordinal > caller.evidence.maxOrdinal {
+			caller.evidence.exhaust("")
+		} else {
+			caller.nextCallOrdinals[operation.ID] = ordinal + 1
+			if caller.evidence.reserveChild(caller.invocation, operation.ID, ordinal) {
+				segments = append(append([]execution.InvocationSegment{}, caller.segments...), execution.InvocationSegment{OpCallID: operation.ID, Ordinal: int(ordinal)})
+				if caller.eventSchema() == execution.Schema2 {
+					var err error
+					invocation, err = execution.FormatInvocation(caller.entryID, segments)
+					if err != nil {
+						return pushResult{}, fmt.Errorf("operation %q: child invocation: %w", operation.ID, err)
+					}
+				}
+			}
 		}
 	}
 
@@ -1643,13 +1967,26 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 		if runErr != nil {
 			return
 		}
+		if base.evidence != nil {
+			if base.evidence.exhausted {
+				runErr = base.evidence.capacityError()
+			}
+			return
+		}
 		if err := assignEventOccurrences(result.Events); err != nil {
 			result = Execution{}
 			runErr = err
 		}
 	}()
 	stack := []frame{base}
-	events := make([]Event, 0, len(base.operations))
+	capacity := len(base.operations)
+	if base.evidence != nil && capacity > base.evidence.maxEvents {
+		capacity = base.evidence.maxEvents
+	}
+	if capacity < 0 {
+		capacity = 0
+	}
+	events := make([]Event, 0, capacity)
 
 	for {
 		top := &stack[len(stack)-1]
@@ -1738,27 +2075,27 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			if top.applicationOutput != nil {
 				chunk := strconv.AppendUint(make([]byte, 0, 20), sourceValue.u64, 10)
 				if !top.applicationOutput.write(chunk) {
-					leakEvents, liveResources := drainStackForAbruptExit(stack)
-					events = append(events, leakEvents...)
-					return applicationOutputLimitExecution(top.eventSchema(), operation.ID, top.function.ID, top.invocation, operation.SourceID, operation.TypeID, events, liveResources), nil
+					drainedEvents, liveResources := drainStackForAbruptExit(stack, top.evidence, events)
+					events = drainedEvents
+					return applicationOutputLimitExecution(top.eventSchema(), operation.ID, top.function.ID, top.invocation, operation.SourceID, operation.TypeID, events, liveResources, top.evidence), nil
 				}
 			}
 			top.idx++
 		case core.OpWriteNewline:
 			if top.applicationOutput != nil {
 				if !top.applicationOutput.write([]byte{'\n'}) {
-					leakEvents, liveResources := drainStackForAbruptExit(stack)
-					events = append(events, leakEvents...)
-					return applicationOutputLimitExecution(top.eventSchema(), operation.ID, top.function.ID, top.invocation, "", operation.TypeID, events, liveResources), nil
+					drainedEvents, liveResources := drainStackForAbruptExit(stack, top.evidence, events)
+					events = drainedEvents
+					return applicationOutputLimitExecution(top.eventSchema(), operation.ID, top.function.ID, top.invocation, "", operation.TypeID, events, liveResources, top.evidence), nil
 				}
 			}
 			top.idx++
 		case core.OpWriteText:
 			if top.applicationOutput != nil {
 				if !top.applicationOutput.write(operation.TextBytes) {
-					leakEvents, liveResources := drainStackForAbruptExit(stack)
-					events = append(events, leakEvents...)
-					return applicationOutputLimitExecution(top.eventSchema(), operation.ID, top.function.ID, top.invocation, "", operation.TypeID, events, liveResources), nil
+					drainedEvents, liveResources := drainStackForAbruptExit(stack, top.evidence, events)
+					events = drainedEvents
+					return applicationOutputLimitExecution(top.eventSchema(), operation.ID, top.function.ID, top.invocation, "", operation.TypeID, events, liveResources, top.evidence), nil
 				}
 			}
 			top.idx++
@@ -1775,7 +2112,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				return Execution{}, fmt.Errorf("operation %q has invalid checked-add operands", operation.ID)
 			}
 			if ^uint64(0)-sourceValue.u64 < right.u64 {
-				events = append(events, Event{
+				events = appendInterpreterEvents(top.evidence, events, Event{
 					Schema: top.eventSchema(), ID: operation.ID + ":event:defected", Kind: "function.defected",
 					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
 					TypeID: operation.TypeID, Output: execution.DefectReasonU64AddOverflow,
@@ -1805,7 +2142,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			}
 			if right.u64 == 0 {
 				const reason = execution.DefectReasonU64RemainderByZero
-				events = append(events, Event{
+				events = appendInterpreterEvents(top.evidence, events, Event{
 					Schema: top.eventSchema(), ID: operation.ID + ":event:defected", Kind: "function.defected",
 					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
 					TypeID: operation.TypeID, Output: reason,
@@ -1857,7 +2194,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			// The bounds comparison precedes every slice index (BYTE-02).
 			if index.u64 >= uint64(len(sourceValue.bytes)) {
 				const reason = execution.DefectReasonByteIndexOutOfBounds
-				events = append(events, Event{
+				events = appendInterpreterEvents(top.evidence, events, Event{
 					Schema: top.eventSchema(), ID: operation.ID + ":event:defected", Kind: "function.defected",
 					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
 					TypeID: operation.TypeID, Output: reason,
@@ -1886,20 +2223,20 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			continue
 		case core.OpCopy:
 			top.values[operation.TargetID] = sourceValue
-			events = append(events, ownedEvent(top, operation, "value.copied"))
+			events = appendInterpreterEvents(top.evidence, events, ownedEvent(top, operation, "value.copied"))
 			top.idx++
 		case core.OpMove:
 			delete(top.values, operation.SourceID)
 			top.values[operation.TargetID] = sourceValue
-			events = append(events, ownedEvent(top, operation, "value.transferred"))
+			events = appendInterpreterEvents(top.evidence, events, ownedEvent(top, operation, "value.transferred"))
 			top.idx++
 		case core.OpBorrowShared:
 			top.values[operation.TargetID] = sourceValue
-			events = append(events, ownedEvent(top, operation, "value.borrowed"))
+			events = appendInterpreterEvents(top.evidence, events, ownedEvent(top, operation, "value.borrowed"))
 			top.idx++
 		case core.OpBorrowExclusive:
 			top.values[operation.TargetID] = sourceValue
-			events = append(events, ownedEvent(top, operation, "value.borrowed_exclusive"))
+			events = appendInterpreterEvents(top.evidence, events, ownedEvent(top, operation, "value.borrowed_exclusive"))
 			top.idx++
 		case core.OpConstructPayload:
 			// D-12-05/D-12-14: builds a NEW tagged value from the source
@@ -1928,7 +2265,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				return Execution{}, fmt.Errorf("operation %q: %w", operation.ID, altErr)
 			}
 			top.values[operation.TargetID] = value{tag: altName, payload: sourceValue.payload}
-			events = append(events, ownedEvent(top, operation, "value.payload_constructed"))
+			events = appendInterpreterEvents(top.evidence, events, ownedEvent(top, operation, "value.payload_constructed"))
 			top.idx++
 		case core.OpDestructurePayload:
 			// D-12-05/D-12-14: extracts the source's own payload content
@@ -1937,7 +2274,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			// scrutinee alias it moves the payload out of.
 			delete(top.values, operation.SourceID)
 			top.values[operation.PayloadTargetID] = value{tag: "", payload: sourceValue.payload}
-			events = append(events, Event{
+			events = appendInterpreterEvents(top.evidence, events, Event{
 				Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "value.payload_destructured", FunctionID: top.function.ID, Invocation: top.invocation,
 				SourcePlace: operation.SourceID, TargetPlace: operation.PayloadTargetID, TypeID: operation.TypeID,
 			})
@@ -1959,7 +2296,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				top.transferredOwners[sourceValue.ownerActivationID] = transferred
 			}
 			top.live[operation.ReleasesOperationID] = false
-			events = append(events, ownedEvent(top, operation, "resource.released"))
+			events = appendInterpreterEvents(top.evidence, events, ownedEvent(top, operation, "resource.released"))
 			top.idx++
 		case core.OpForeignCall:
 			if top.fileBytes != nil {
@@ -2017,7 +2354,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 						top.liveOrder = append(top.liveOrder, operation.ID)
 					}
 				}
-				events = append(events, event)
+				events = appendInterpreterEvents(top.evidence, events, event)
 				if top.blocks != nil && operation.OkEdgeID != "" {
 					edgeID := operation.OkEdgeID
 					if !succeeded {
@@ -2036,15 +2373,15 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			}
 			top.nonlocalExitCalls++
 			if top.nonlocalExitPolicy && top.nonlocalExitCalls == 2 {
-				events = append(events, Event{
+				events = appendInterpreterEvents(top.evidence, events, Event{
 					Schema: top.eventSchema(), ID: top.function.ID + ":event:nonlocal_exit", Kind: "foreign.nonlocal_exit", FunctionID: top.function.ID, Invocation: top.invocation,
 				})
 				// D-10-33: drain EVERY live frame on the stack, not only
 				// top -- this landing pad is one of the two constructs
 				// (D-10-31) that genuinely skip more than one frame.
-				leakEvents, liveResources := drainStackForAbruptExit(stack)
-				events = append(events, leakEvents...)
-				events = append(events, Event{
+				drainedEvents, liveResources := drainStackForAbruptExit(stack, top.evidence, events)
+				events = drainedEvents
+				events = appendInterpreterEvents(top.evidence, events, Event{
 					Schema: top.eventSchema(), ID: top.function.ID + ":event:nonlocal_defect", Kind: "function.defected", FunctionID: top.function.ID, Invocation: top.invocation,
 					SourcePlace: top.function.Parameter.ID, TypeID: top.placeTypes[top.function.Parameter.ID], Output: nonlocalExitDefectReason,
 				})
@@ -2056,7 +2393,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			}
 			top.values[operation.TargetID] = sourceValue
 			top.values[operation.ErrTargetID] = value{tag: "", payload: "err"}
-			events = append(events, Event{
+			events = appendInterpreterEvents(top.evidence, events, Event{
 				Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID, Invocation: top.invocation,
 				SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
 			})
@@ -2081,9 +2418,9 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				// push, no callee frame ever ran -- bind directly into the
 				// caller's own TargetID place.
 				if top.eventSchema() == execution.Schema2 {
-					events = append(events, calledEvent(top, operation, result.calleeID))
+					events = appendInterpreterEvents(top.evidence, events, calledEvent(top, operation, result.calleeID))
 				}
-				events = append(events, result.immediateEvent)
+				events = appendInterpreterEvents(top.evidence, events, result.immediateEvent)
 				top.values[operation.TargetID] = value{tag: "", payload: result.immediateValue}
 				continue
 			}
@@ -2100,15 +2437,15 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				// (D-10-31) that skips more than one frame at once -- drain
 				// every live frame currently on the stack, same LIFO
 				// flattening the nonlocal landing pad uses.
-				leakEvents, liveResources := drainStackForAbruptExit(stack)
-				events = append(events, leakEvents...)
+				drainedEvents, liveResources := drainStackForAbruptExit(stack, top.evidence, events)
+				events = drainedEvents
 				event := Event{
 					Schema: top.eventSchema(), ID: operation.ID + ":event:call_depth_exceeded", Kind: "function.defected",
 					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: callDepthExceededDefectReason,
 				}
 				return Execution{
 					Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""},
-					Events: append(events, event), LiveResources: liveResources,
+					Events: appendInterpreterEvents(top.evidence, events, event), LiveResources: liveResources,
 				}, nil
 			}
 			if top.modeledOutcomes != nil {
@@ -2119,7 +2456,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			result.frame.fixtureBytes = top.fixtureBytes
 			result.frame.fileBytes = top.fileBytes
 			if top.eventSchema() == execution.Schema2 {
-				events = append(events, calledEvent(top, operation, result.calleeID))
+				events = appendInterpreterEvents(top.evidence, events, calledEvent(top, operation, result.calleeID))
 			}
 			stack = append(stack, *result.frame)
 		case core.OpReturn, core.OpFail, core.OpDefect:
@@ -2131,7 +2468,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: top.modeledFailure.Type,
 				}
 			}
-			events = append(events, event)
+			events = appendInterpreterEvents(top.evidence, events, event)
 			if operation.Kind == core.OpFail && top.hasCaller && top.errorTarget != "" && top.errorEdge != "" {
 				failure := ForeignOutcome{Kind: "failure", Type: operation.TypeID, Value: sourceValue.terminalString()}
 				if top.modeledFailure != nil {
