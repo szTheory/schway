@@ -1,0 +1,1062 @@
+{
+  "source_head": "534fac4d0ec9e2ff6ade8da20a4627b888f12792",
+  "validation_rows": 29,
+  "package_count": 16,
+  "distinct_names": 167,
+  "root_executions": 179,
+  "wall_seconds": 104.046,
+  "missing": 0,
+  "failed": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "package": "./cmd/schway",
+      "root_tests": [
+        "TestPhase321RunInputRequiredCLI",
+        "TestPhase32PublicRouteAudit",
+        "TestPhase34CheckDiagnosticPresentation",
+        "TestPhase34DiagnosticRouteInventory",
+        "TestPhase34SourceRoutePresentation",
+        "TestPhase34SurfaceRoute",
+        "TestPhase34SurfaceRouteInventory",
+        "TestPhase35PublicConformanceWitness"
+      ],
+      "count": 8,
+      "exit": 0,
+      "seconds": 3.29,
+      "command": "go test ./cmd/schway -run '^(TestPhase321RunInputRequiredCLI|TestPhase32PublicRouteAudit|TestPhase34CheckDiagnosticPresentation|TestPhase34DiagnosticRouteInventory|TestPhase34SourceRoutePresentation|TestPhase34SurfaceRoute|TestPhase34SurfaceRouteInventory|TestPhase35PublicConformanceWitness)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-0.log",
+      "log_sha256": "baf2010108302d3b8a5d0bb7962225ee6c90eb95860296d675cdcfe11aca7af0"
+    },
+    {
+      "package": "./cmd/schway-repair",
+      "root_tests": [
+        "TestPhase30RepairDriverDeclinesCrossUnit",
+        "TestPhase34RepairJSONCompatibility",
+        "TestRepairDriverDecodesNoProseFields"
+      ],
+      "count": 3,
+      "exit": 0,
+      "seconds": 0.338,
+      "command": "go test ./cmd/schway-repair -run '^(TestPhase30RepairDriverDeclinesCrossUnit|TestPhase34RepairJSONCompatibility|TestRepairDriverDecodesNoProseFields)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-1.log",
+      "log_sha256": "cc5effee675ab31ed04d83a6d50f8b3c93cda86e0f5217a8d3423ab6921df4c8"
+    },
+    {
+      "package": "./internal/compiler/cgen",
+      "root_tests": [
+        "TestEmittedCExitLiteralsMatchTable",
+        "TestPhase27EvidenceCapacity",
+        "TestPhase35EmitterAdmissionGates",
+        "TestPhase35NativeShiftTracer",
+        "TestPhase35ShiftSiteControls",
+        "TestPhase35UnsignedShiftEmissionAndEventProjection"
+      ],
+      "count": 6,
+      "exit": 0,
+      "seconds": 1.179,
+      "command": "go test ./internal/compiler/cgen -run '^(TestEmittedCExitLiteralsMatchTable|TestPhase27EvidenceCapacity|TestPhase35EmitterAdmissionGates|TestPhase35NativeShiftTracer|TestPhase35ShiftSiteControls|TestPhase35UnsignedShiftEmissionAndEventProjection)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-2.log",
+      "log_sha256": "2e7359901378ed0c9b0198ced4cae3a36df9f427d479e9de3f08151537da61ee"
+    },
+    {
+      "package": "./internal/compiler/check",
+      "root_tests": [
+        "TestPhase19LiteralAdmission",
+        "TestPhase19LiteralRange",
+        "TestPhase19NumericRefusalFrontiers",
+        "TestPhase26AnalysisExhaustion",
+        "TestPhase321ByteViewEntryRefused",
+        "TestPhase34BoolSpellingsRemainIdentifiers",
+        "TestPhase34CallArityBoundaries",
+        "TestPhase34RefusalHintsHaveNoRepairs",
+        "TestPhase34UnsupportedSurfaceRefusals",
+        "TestPhase35NumericPolicyBaseline",
+        "TestPhase35NumericRoutePolicy",
+        "TestPhase35NumericRoutePolicy",
+        "TestPhase35ScalarTransferMutants",
+        "TestPhase35ShiftAdmission",
+        "TestPhase35UnusedByteSourceAdmission"
+      ],
+      "count": 15,
+      "exit": 0,
+      "seconds": 0.38,
+      "command": "go test ./internal/compiler/check -run '^(TestPhase19LiteralAdmission|TestPhase19LiteralRange|TestPhase19NumericRefusalFrontiers|TestPhase26AnalysisExhaustion|TestPhase321ByteViewEntryRefused|TestPhase34BoolSpellingsRemainIdentifiers|TestPhase34CallArityBoundaries|TestPhase34RefusalHintsHaveNoRepairs|TestPhase34UnsupportedSurfaceRefusals|TestPhase35NumericPolicyBaseline|TestPhase35NumericRoutePolicy|TestPhase35NumericRoutePolicy|TestPhase35ScalarTransferMutants|TestPhase35ShiftAdmission|TestPhase35UnusedByteSourceAdmission)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-3.log",
+      "log_sha256": "e72970823fef2209480bd6e94ed2efe9ff595b1923a41de7eb53e4ea498728d5"
+    },
+    {
+      "package": "./internal/compiler/core",
+      "root_tests": [
+        "TestAllOperationKindsHandledAtEverySite",
+        "TestAllOperationKindsRegistered",
+        "TestPhase35CoreShape"
+      ],
+      "count": 3,
+      "exit": 0,
+      "seconds": 0.333,
+      "command": "go test ./internal/compiler/core -run '^(TestAllOperationKindsHandledAtEverySite|TestAllOperationKindsRegistered|TestPhase35CoreShape)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-4.log",
+      "log_sha256": "33fe1a0772c87f057e39fd2a7bfe6a499b3c7939150b48e1adc327c7b02fd30c"
+    },
+    {
+      "package": "./internal/compiler/corevalidate",
+      "root_tests": [
+        "TestPhase19ForgedOpConstFactsRefused",
+        "TestPhase19OpConstIndependentAdmission",
+        "TestPhase35AnalysisTriggers",
+        "TestPhase35ScalarTransferMutants",
+        "TestPhase35ShiftImmediateAdmission",
+        "TestPhase35ShiftProducerShapes",
+        "TestPhase35ShiftTargetFreshness",
+        "TestPhase35UnusedByteIRAdmission"
+      ],
+      "count": 8,
+      "exit": 0,
+      "seconds": 0.333,
+      "command": "go test ./internal/compiler/corevalidate -run '^(TestPhase19ForgedOpConstFactsRefused|TestPhase19OpConstIndependentAdmission|TestPhase35AnalysisTriggers|TestPhase35ScalarTransferMutants|TestPhase35ShiftImmediateAdmission|TestPhase35ShiftProducerShapes|TestPhase35ShiftTargetFreshness|TestPhase35UnusedByteIRAdmission)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-5.log",
+      "log_sha256": "4eb4e7992d2df011bf214a962933914b88907a11be20d4a663bab13d3396a8e1"
+    },
+    {
+      "package": "./internal/compiler/diagnostic",
+      "root_tests": [
+        "TestDiagnosticZeroBytesUnchanged",
+        "TestPhase30UnitIdentity",
+        "TestPhase34DiagnosticIdentityProjection",
+        "TestRepairIdentityUsesKindOnly",
+        "TestRepairSpanShiftDoesNotChangeDiagnosticID"
+      ],
+      "count": 5,
+      "exit": 0,
+      "seconds": 0.283,
+      "command": "go test ./internal/compiler/diagnostic -run '^(TestDiagnosticZeroBytesUnchanged|TestPhase30UnitIdentity|TestPhase34DiagnosticIdentityProjection|TestRepairIdentityUsesKindOnly|TestRepairSpanShiftDoesNotChangeDiagnosticID)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-6.log",
+      "log_sha256": "13066b18e803d1d97045ce51fc95387df155dfeaa5fec99dc7cbe3cbe9928640"
+    },
+    {
+      "package": "./internal/compiler/executionpeer",
+      "root_tests": [
+        "TestPhase35PureOperationCausalControls"
+      ],
+      "count": 1,
+      "exit": 0,
+      "seconds": 0.286,
+      "command": "go test ./internal/compiler/executionpeer -run '^(TestPhase35PureOperationCausalControls)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-7.log",
+      "log_sha256": "92ac9d707b7c0ab4c933fbc450d0c5799fc8fbfcd70b7ad5b36134bf406eee4d"
+    },
+    {
+      "package": "./internal/compiler/interp",
+      "root_tests": [
+        "TestPhase321AbortLikeDefectFileRoute",
+        "TestPhase321AbortLikeDefectPredicate",
+        "TestPhase33AbortLikeNarrowed",
+        "TestPhase33AbortLikeWideningMutantKilled",
+        "TestPhase35BitwiseShiftVectorsEventFree",
+        "TestPhase35InterpreterWrongAnswerControls",
+        "TestPhase35UnusedByteRuntime"
+      ],
+      "count": 7,
+      "exit": 0,
+      "seconds": 0.339,
+      "command": "go test ./internal/compiler/interp -run '^(TestPhase321AbortLikeDefectFileRoute|TestPhase321AbortLikeDefectPredicate|TestPhase33AbortLikeNarrowed|TestPhase33AbortLikeWideningMutantKilled|TestPhase35BitwiseShiftVectorsEventFree|TestPhase35InterpreterWrongAnswerControls|TestPhase35UnusedByteRuntime)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-8.log",
+      "log_sha256": "f17533612659ab742fc4d4805e85b48d62e2e96cabffa75637a08c67d2255612"
+    },
+    {
+      "package": "./internal/compiler/native",
+      "root_tests": [
+        "TestPhase22EvidenceMissingPartialAndCapacityControls",
+        "TestPhase25LivingRoadmap",
+        "TestPhase26FailureChannels",
+        "TestPhase27EvidenceCapacity",
+        "TestPhase27OutputEvidenceExactLimit",
+        "TestPhase31CaseMatrix",
+        "TestPhase321DefectParityWithLiveOwner",
+        "TestPhase33CaptureReadBounded",
+        "TestPhase33DefectParityFileRoute",
+        "TestPhase33DefectParityFixtureRoute"
+      ],
+      "count": 10,
+      "exit": 0,
+      "seconds": 5.25,
+      "command": "go test ./internal/compiler/native -run '^(TestPhase22EvidenceMissingPartialAndCapacityControls|TestPhase25LivingRoadmap|TestPhase26FailureChannels|TestPhase27EvidenceCapacity|TestPhase27OutputEvidenceExactLimit|TestPhase31CaseMatrix|TestPhase321DefectParityWithLiveOwner|TestPhase33CaptureReadBounded|TestPhase33DefectParityFileRoute|TestPhase33DefectParityFixtureRoute)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-9.log",
+      "log_sha256": "d230745471761aeaa9014be1a538247561cdc1b52d5d9bf6b65f0e57db2f0be0"
+    },
+    {
+      "package": "./internal/compiler/originvalidate",
+      "root_tests": [
+        "TestPhase35AnalysisTriggers",
+        "TestPhase35ScalarTransferMutants",
+        "TestPhase35ShiftImmediateAdmission",
+        "TestPhase35ShiftProducerShapes",
+        "TestPhase35ShiftTargetFreshness",
+        "TestPhase35UnusedByteIRAdmission"
+      ],
+      "count": 6,
+      "exit": 0,
+      "seconds": 0.289,
+      "command": "go test ./internal/compiler/originvalidate -run '^(TestPhase35AnalysisTriggers|TestPhase35ScalarTransferMutants|TestPhase35ShiftImmediateAdmission|TestPhase35ShiftProducerShapes|TestPhase35ShiftTargetFreshness|TestPhase35UnusedByteIRAdmission)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-10.log",
+      "log_sha256": "6101adaca6058ba8adc20d8a7e3a3e913e0b9dec3e0ac0c7b1bbbc270bf6f103"
+    },
+    {
+      "package": "./internal/compiler/pathoracle",
+      "root_tests": [
+        "TestPhase35PureOperationAncestry"
+      ],
+      "count": 1,
+      "exit": 0,
+      "seconds": 0.334,
+      "command": "go test ./internal/compiler/pathoracle -run '^(TestPhase35PureOperationAncestry)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-11.log",
+      "log_sha256": "d2947a68997c73cdaab2e0406b3e465824cdd2b9e0f1ec23592e795a6a35ef40"
+    },
+    {
+      "package": "./internal/compiler/protocol",
+      "root_tests": [
+        "TestHumanJSONProjectionParity",
+        "TestPhase30UnitProjection",
+        "TestPhase34DiagnosticLocations",
+        "TestPhase34HumanSnippetRendering"
+      ],
+      "count": 4,
+      "exit": 0,
+      "seconds": 0.335,
+      "command": "go test ./internal/compiler/protocol -run '^(TestHumanJSONProjectionParity|TestPhase30UnitProjection|TestPhase34DiagnosticLocations|TestPhase34HumanSnippetRendering)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-12.log",
+      "log_sha256": "0a206a86263d069cb3e0ab9653dc0765b7afc0c5bb8de95f779c2c09f762d249"
+    },
+    {
+      "package": "./internal/compiler/session",
+      "root_tests": [
+        "TestFreezeGate",
+        "TestFreezeGateDifferential",
+        "TestNoCheckPhase32Caller",
+        "TestPhase16EmitterInventoryMutationControls",
+        "TestPhase16PublicEmitterConsumerInventory",
+        "TestPhase20ValidationLifecycle",
+        "TestPhase272AcceptedCorpusByteIdentity",
+        "TestPhase273ConformanceCorpusByteIdentity",
+        "TestPhase28PrunedEmitMatchesGolden",
+        "TestPhase29InterpreterFixtureVectors",
+        "TestPhase29NativeFixtureVectors",
+        "TestPhase30DebugMapNoImportUnguarded",
+        "TestPhase30ImportedFileDiagnosticNamesFile",
+        "TestPhase30ModuleWorkLimit",
+        "TestPhase30SingleIOSite",
+        "TestPhase32CIHostMatrix",
+        "TestPhase32CodeDigest",
+        "TestPhase32HostedCIEnv",
+        "TestPhase32ProducerCaseTable",
+        "TestPhase32ReceiptLivingClaims",
+        "TestPhase34BoolNameBaseline",
+        "TestPhase34CompatibilityDeltaLedger",
+        "TestPhase34DiagnosticRouteInventory",
+        "TestPhase34IdentityBaseline",
+        "TestPhase34ImportedDiagnosticPresentation",
+        "TestPhase34InterfaceLimitWitnesses",
+        "TestPhase34PreChangeCGoldenIsNotInert",
+        "TestPhase34PreChangeCProgramGolden",
+        "TestPhase34PresentationUsesCapturedSource",
+        "TestPhase34SourceRoutePresentation",
+        "TestPhase34SurfaceLimitConsumers",
+        "TestPhase34SurfaceManifestCensus",
+        "TestPhase34SurfaceManifestControls",
+        "TestPhase34SurfaceManifestWitnesses",
+        "TestPhase34TransitionDocuments",
+        "TestPhase35AdlerWrongShiftControl",
+        "TestPhase35AdmissionRefusalMutationControls",
+        "TestPhase35BitwiseOptimizationMatrix",
+        "TestPhase35EngineWrongAnswerControls",
+        "TestPhase35EvidenceGrounding",
+        "TestPhase35ExistingAdlerAnswers",
+        "TestPhase35FocusedValueAnswers",
+        "TestPhase35OperatorDocumentation",
+        "TestPhase35PeerTransferMutationControls",
+        "TestPhase35PreChangeCorpusControls",
+        "TestPhase35PreChangeEmitterCorpus",
+        "TestPhase35PreChangeNumericDeltaControls",
+        "TestPhase35PublicDocumentValues",
+        "TestPhase35ShiftUBSan",
+        "TestPhase35SurfaceLimitConsumers",
+        "TestPhase35SurfaceManifestCensus",
+        "TestPhase35SurfaceManifestControls",
+        "TestPhase35SurfaceManifestWitnesses",
+        "TestPhase36SurfaceManifestCallCensus",
+        "TestPhase36SurfaceManifestCallControls",
+        "TestPhase36SurfaceManifestCallWitnesses",
+        "TestPhase37FileRouteSurfaceFacts",
+        "TestPhase37Phase34AdditionLedgerControls",
+        "TestPhase37Phase36AdditionLedgerControls",
+        "TestPhase37ValidationCommandRegistry",
+        "TestPhase37ValidationCommandRegistryControls",
+        "TestReceiptGate",
+        "TestReceiptGateArchivedM006",
+        "TestReceiptGateCaseRecords",
+        "TestReceiptGateDifferential",
+        "TestReceiptGateMalformedControls",
+        "TestReceiptGateProgramInventory",
+        "TestStaticTestIndexMatchesGoTestList",
+        "TestSummaryCoverageGroundedness",
+        "TestValidationRowGradesAreEarnedOverArchivedCorpus",
+        "TestVerificationGroundedness",
+        "TestVerificationGroundednessClassifier",
+        "TestVerificationGroundednessCorpusIsNotEmpty",
+        "TestVerificationGroundednessFrontierIsPinned",
+        "TestVerificationGroundednessGrepExecution",
+        "TestVerificationGroundednessGrepOverRealCorpus",
+        "TestVerificationGroundednessIsNotInert",
+        "TestVerificationGroundednessPerBranch",
+        "TestVerificationGroundednessScopeByIllocutionaryRole",
+        "TestVerificationGroundednessThreeClassesAreEmpty"
+      ],
+      "count": 80,
+      "exit": 0,
+      "seconds": 84.314,
+      "command": "go test ./internal/compiler/session -run '^(TestFreezeGate|TestFreezeGateDifferential|TestNoCheckPhase32Caller|TestPhase16EmitterInventoryMutationControls|TestPhase16PublicEmitterConsumerInventory|TestPhase20ValidationLifecycle|TestPhase272AcceptedCorpusByteIdentity|TestPhase273ConformanceCorpusByteIdentity|TestPhase28PrunedEmitMatchesGolden|TestPhase29InterpreterFixtureVectors|TestPhase29NativeFixtureVectors|TestPhase30DebugMapNoImportUnguarded|TestPhase30ImportedFileDiagnosticNamesFile|TestPhase30ModuleWorkLimit|TestPhase30SingleIOSite|TestPhase32CIHostMatrix|TestPhase32CodeDigest|TestPhase32HostedCIEnv|TestPhase32ProducerCaseTable|TestPhase32ReceiptLivingClaims|TestPhase34BoolNameBaseline|TestPhase34CompatibilityDeltaLedger|TestPhase34DiagnosticRouteInventory|TestPhase34IdentityBaseline|TestPhase34ImportedDiagnosticPresentation|TestPhase34InterfaceLimitWitnesses|TestPhase34PreChangeCGoldenIsNotInert|TestPhase34PreChangeCProgramGolden|TestPhase34PresentationUsesCapturedSource|TestPhase34SourceRoutePresentation|TestPhase34SurfaceLimitConsumers|TestPhase34SurfaceManifestCensus|TestPhase34SurfaceManifestControls|TestPhase34SurfaceManifestWitnesses|TestPhase34TransitionDocuments|TestPhase35AdlerWrongShiftControl|TestPhase35AdmissionRefusalMutationControls|TestPhase35BitwiseOptimizationMatrix|TestPhase35EngineWrongAnswerControls|TestPhase35EvidenceGrounding|TestPhase35ExistingAdlerAnswers|TestPhase35FocusedValueAnswers|TestPhase35OperatorDocumentation|TestPhase35PeerTransferMutationControls|TestPhase35PreChangeCorpusControls|TestPhase35PreChangeEmitterCorpus|TestPhase35PreChangeNumericDeltaControls|TestPhase35PublicDocumentValues|TestPhase35ShiftUBSan|TestPhase35SurfaceLimitConsumers|TestPhase35SurfaceManifestCensus|TestPhase35SurfaceManifestControls|TestPhase35SurfaceManifestWitnesses|TestPhase36SurfaceManifestCallCensus|TestPhase36SurfaceManifestCallControls|TestPhase36SurfaceManifestCallWitnesses|TestPhase37FileRouteSurfaceFacts|TestPhase37Phase34AdditionLedgerControls|TestPhase37Phase36AdditionLedgerControls|TestPhase37ValidationCommandRegistry|TestPhase37ValidationCommandRegistryControls|TestReceiptGate|TestReceiptGateArchivedM006|TestReceiptGateCaseRecords|TestReceiptGateDifferential|TestReceiptGateMalformedControls|TestReceiptGateProgramInventory|TestStaticTestIndexMatchesGoTestList|TestSummaryCoverageGroundedness|TestValidationRowGradesAreEarnedOverArchivedCorpus|TestVerificationGroundedness|TestVerificationGroundednessClassifier|TestVerificationGroundednessCorpusIsNotEmpty|TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessGrepExecution|TestVerificationGroundednessGrepOverRealCorpus|TestVerificationGroundednessIsNotInert|TestVerificationGroundednessPerBranch|TestVerificationGroundednessScopeByIllocutionaryRole|TestVerificationGroundednessThreeClassesAreEmpty)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-13.log",
+      "log_sha256": "eb54013826b99dfcb9ff564b89c845cf00dc17173640e2597ab531d0001f98c6"
+    },
+    {
+      "package": "./internal/compiler/surfacemanifest",
+      "root_tests": [
+        "TestPhase34SurfaceDocument",
+        "TestPhase34SurfaceLimits",
+        "TestPhase35SurfaceDocument"
+      ],
+      "count": 3,
+      "exit": 0,
+      "seconds": 0.499,
+      "command": "go test ./internal/compiler/surfacemanifest -run '^(TestPhase34SurfaceDocument|TestPhase34SurfaceLimits|TestPhase35SurfaceDocument)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-14.log",
+      "log_sha256": "ff01d157277f9c481bf552ebba50fb12cfc54299feb53fe414959c0bcca6eba2"
+    },
+    {
+      "package": "./internal/compiler/syntax",
+      "root_tests": [
+        "TestFormatLetBinaryExpressions",
+        "TestPhase19NumericLiteralRoundTrip",
+        "TestPhase19NumericMalformed",
+        "TestPhase19NumericToken",
+        "TestPhase34DraftBaseline",
+        "TestPhase34LinearBindingLimitScope",
+        "TestPhase34RecoveryControls",
+        "TestPhase34RecoveryCorpus",
+        "TestPhase34UnsupportedSurfaceRefusals",
+        "TestPhase35ExpressionDepth",
+        "TestPhase35FormatterPreservesSeparatedShiftTokens",
+        "TestPhase35FormatterRoundTrip",
+        "TestPhase35GroupedNegativeShiftAmountRefusal",
+        "TestPhase35NestedIndexBaseline",
+        "TestPhase35NumericOwnership",
+        "TestPhase35RecoveryDeltaControls",
+        "TestPhase35ScalarGrammar",
+        "TestSkippedRegionCauseSeparatesSpiralTrio",
+        "TestValidProgramUnaffectedBySkippedRegionFix"
+      ],
+      "count": 19,
+      "exit": 0,
+      "seconds": 0.449,
+      "command": "go test ./internal/compiler/syntax -run '^(TestFormatLetBinaryExpressions|TestPhase19NumericLiteralRoundTrip|TestPhase19NumericMalformed|TestPhase19NumericToken|TestPhase34DraftBaseline|TestPhase34LinearBindingLimitScope|TestPhase34RecoveryControls|TestPhase34RecoveryCorpus|TestPhase34UnsupportedSurfaceRefusals|TestPhase35ExpressionDepth|TestPhase35FormatterPreservesSeparatedShiftTokens|TestPhase35FormatterRoundTrip|TestPhase35GroupedNegativeShiftAmountRefusal|TestPhase35NestedIndexBaseline|TestPhase35NumericOwnership|TestPhase35RecoveryDeltaControls|TestPhase35ScalarGrammar|TestSkippedRegionCauseSeparatesSpiralTrio|TestValidProgramUnaffectedBySkippedRegionFix)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway36-regression-15.log",
+      "log_sha256": "06c02f775c1a0c86ef0f19999a6ccaa143057671251fcac8ea35e429ac80d6c6"
+    }
+  ],
+  "captured_utc": "2026-10-15T23:53:17.464593+00:00",
+  "scope": "Fresh focused union of Phase35 final regression selectors (carrying Phases33/34 obligations) and the historical Phase36 affected selector inventory. No whole-package/project suite.",
+  "inputs": [
+    {
+      "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-PLAN.md",
+      "sha256": "df6cb11dd7d876eb8d04e58feb94ca8aaa33706197b697641f335df4fb7332ee"
+    },
+    {
+      "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-EVIDENCE.md",
+      "sha256": "8c563640c2cc9370e3bcb58222264f0826b9538d5d0f07f655866d4f62daf031"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-01-PLAN.md",
+      "sha256": "f2e0bef00fabd1a69631374cdddc2b944101090c2a7ecd45580239efbbc19e77"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-01-SUMMARY.md",
+      "sha256": "f1b22d226fc66edb271f045ac274aa66e71d36fb024befa904e4c2a088795505"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-02-PLAN.md",
+      "sha256": "382ec2cb75598e5e6e0f6cebca88c55a3ede0b26800d9662d3a2e8588c0d6b50"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-02-SUMMARY.md",
+      "sha256": "ccab95cf7cad8c9816c83da72ccd59073aaf90ba7edd539053fa65ae5d912472"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-03-PLAN.md",
+      "sha256": "d366a2922ea5eeab5c0865f769405d749521dbaff47fcc9e9d1d4828303f3ebb"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-03-SUMMARY.md",
+      "sha256": "6805141d057979d2fe54204b66993af993b0d978fc4483c967c045c91bcb9cf5"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-03-pathoracle-red.json",
+      "sha256": "01e3dfaf88fe23735995b0804d3b49ef6f56961a7bf6464c94b099f47d5cf9b7"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-04-PLAN.md",
+      "sha256": "bca96ff56c31cfd5f447a72d411ce5e9b809a351a7cccd9127d120fab1740f45"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-04-SUMMARY.md",
+      "sha256": "e4bf7065bfc8603ed70a0736865aef4b48de22a39e88d22bfd981909f1d9c8bb"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-05-PLAN.md",
+      "sha256": "eb1ba41e339d0721e9986cde42526c7c13a456ff4e95abf70462845cb8a12c83"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-05-SUMMARY.md",
+      "sha256": "5d13ed2e64ff7f0373411ffa2b334fcf5ae475128c3f6863517fa6d324b97def"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-05-task1-red-evidence.json",
+      "sha256": "40165c146d5ad2c66930eeba719e99453dbe994385a9363a7a3b7afe8d017760"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-05-task2-red-evidence.json",
+      "sha256": "01dc9f396ed70505ce840a22b565fa9d3d029388df3962ea0c16ec232ccfedcf"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-05-task3-red-evidence.json",
+      "sha256": "3d3b5c013bb1c20167ae7ed34fe96556070404a96b4fd8e3adf16fe704dee61d"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-06-PLAN.md",
+      "sha256": "fc644338243ccac33f6c19b796d701756e05f7c13401589ad0cbc5ceb1016da6"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-06-SUMMARY.md",
+      "sha256": "5e92e418e6b9852a4ca5466cc0f99633ad91806826be781aff89d83f7e701f38"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-06-task1-red-evidence.json",
+      "sha256": "fddd01962d74c1bdda3958fe3b004e015c6123c4a2ba9080d2269357e9c89270"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-06-task2-red-evidence.json",
+      "sha256": "cf025626aeafbb709251c0dedc47f6ab84f193230dc10a2e976b767ad93c6088"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-06-task3-red-evidence.json",
+      "sha256": "589915d34d29dfefd0b8c143ec1d9869e60794d617c9093c47c200b9b769012f"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-07-PLAN.md",
+      "sha256": "b76f24f31a90bcea2c094b9f39d0ff60894096350c14e5d97942ad8df1008b9a"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-07-SUMMARY.md",
+      "sha256": "fbbcbafaf2ffeb13132be74ae982fb449cecf2a4e03d2fd31f3069ca7f35f9f6"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-08-PLAN.md",
+      "sha256": "1495abb7c64ed3e393b0d51fd4e1083d7d6c4648e443def404e95f9fd5ab1947"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-08-SUMMARY.md",
+      "sha256": "b37ea14f9761a31d215e2d35cd222cb81227cf175f3de698d5fd61dfaefd548b"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-CONTEXT.md",
+      "sha256": "e31d56ccb3c4bfbb0e42e809a74058918de020325285a89905f738322e3a8d46"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-RESEARCH.md",
+      "sha256": "76d7b81e5fcc6f94a2fe01d08d61be48007d8d45375cc02ceba9095307fc6eaa"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs",
+      "sha256": "86f688d31f140ab99d3a545facc3c7ea26c042cfb1d0ebe06253c251992ce6b2"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/prohibition-causal-violation.json",
+      "sha256": "ca7150830d5d654a71a3dfcce53790efa33d4fe9486ea4e0fc8490b3a360b2d8"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/prohibition-clean.json",
+      "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/prohibition-outcome-violation.json",
+      "sha256": "7f38214b22d1748b5290a999c6a6e3ec9b4776596f79b006b2fbfd591c111654"
+    },
+    {
+      "path": "cmd/schway-repair/repair_phase34_test.go",
+      "sha256": "ab009c5e12fa6283a7dac6188088c5408681df2755125a97a2a979f8280d7934"
+    },
+    {
+      "path": "cmd/schway/main.go",
+      "sha256": "bf729e9ccc1169df3d8067e3d9244ba4d7b15db1e9435637ab5b30f33a956086"
+    },
+    {
+      "path": "cmd/schway/main_phase321_run_input_test.go",
+      "sha256": "c78f7ec065a812e7d765ec8b9927933d561a0059071e3e0cef36d6a6780b84c5"
+    },
+    {
+      "path": "cmd/schway/main_phase32_routes_test.go",
+      "sha256": "d3679523fb7db0b48778821098daa857f768aeac0b87f463cdb9b2d8158ebb90"
+    },
+    {
+      "path": "cmd/schway/main_phase34_diagnostics_test.go",
+      "sha256": "8785ef9842a0b8739f86bc84cdc314230bfa05356b7d966828a42650484971d6"
+    },
+    {
+      "path": "cmd/schway/main_phase34_routes_test.go",
+      "sha256": "c6a81d534fcc5aa98e77de73df958a91c9e1ab8ccd9cfd624fab4ffd223d1349"
+    },
+    {
+      "path": "cmd/schway/main_phase34_surface_test.go",
+      "sha256": "1c0e8ebd73b9ac0727ad80f7e6c0b4e9545d321bac2d45a55ae3116829fdc355"
+    },
+    {
+      "path": "cmd/schway/main_phase35_test.go",
+      "sha256": "061596407ba05f3fc950901a79f04f37d577bca64d8eba5227beb693d4aefc30"
+    },
+    {
+      "path": "cmd/schway/main_phase36_test.go",
+      "sha256": "82a3617d5033c7d23ad00c65e41469b61590dd7e037c9f63e266bd9faca29623"
+    },
+    {
+      "path": "cmd/schway/main_phase37_file_run_test.go",
+      "sha256": "29f4432b5fc1a68292a5df1d80c60953124c987ed79b6c9e14bd9f5753929ad7"
+    },
+    {
+      "path": "docs/agent-surface.md",
+      "sha256": "549f711fa151f39b63cbd36a0cdd1e88cd33276ea99ba4a870a49e1e0918a219"
+    },
+    {
+      "path": "docs/diagnostics.md",
+      "sha256": "1540fb6eac02398773bf0cb695b6361d3618b03c3928f19660622bb9a0e4f1dc"
+    },
+    {
+      "path": "examples/bitwise.schway",
+      "sha256": "f20f6d458afb536976658c2d30c23d8cbcd5ddcbcee2b05b2cc20bd5904c7b74"
+    },
+    {
+      "path": "examples/checksum/adler32.schway",
+      "sha256": "16490db4e53cb9db287727a8e5918745aa412659e799dd2fd53b38805bb3bef1"
+    },
+    {
+      "path": "examples/helper_calls/crc_step.schway",
+      "sha256": "0242b3a253a80d8818310897220494722eda3029e12f67baa34cfeb529a50d0f"
+    },
+    {
+      "path": "examples/helper_calls/importer.schway",
+      "sha256": "da4db4e265aae96bf90ab17c5c4b064500115a93bb5095a192334be53a0bc5ab"
+    },
+    {
+      "path": "examples/helper_calls/public.schway",
+      "sha256": "ef608e10f62d79e731bbf3e6a2320fa567914c2e5e48e13807cd05535d7a4f38"
+    },
+    {
+      "path": "go.mod",
+      "sha256": "e5528bd61a2df297376013bb17799792898928c9133e971c9da52491ebf29491"
+    },
+    {
+      "path": "internal/compiler/ast/ast.go",
+      "sha256": "5afe3698888efdfb0f19ea4129e20b64c76cc95db8e1dc11a0402e63ec0e4ce3"
+    },
+    {
+      "path": "internal/compiler/cgen/cgen.go",
+      "sha256": "a89413e0dda08ccfc2d0aaa7ddcfe7fc93b60606211ac2f655411fe0d6860604"
+    },
+    {
+      "path": "internal/compiler/cgen/cgen_phase273_test.go",
+      "sha256": "7bdcb305690fc5e88d1020fc8bc79abd3c97575f03f5a4e3c38bfaa74065f64b"
+    },
+    {
+      "path": "internal/compiler/cgen/cgen_phase35_test.go",
+      "sha256": "f263299a0ffce47d932253ea1dc56ac6bee8d28d24b4898d24cd10e9a941cabc"
+    },
+    {
+      "path": "internal/compiler/cgen/cgen_phase36_test.go",
+      "sha256": "dd4b25c5cff466dab83090f3b27c510d75bc2ced29390b2164bd059e5c5b81ea"
+    },
+    {
+      "path": "internal/compiler/cgen/cgen_program.go",
+      "sha256": "37398adb9d59a8fddad29b67feafc42f80d041b67a70a6fd2e0b2052608571fb"
+    },
+    {
+      "path": "internal/compiler/cgen/cgen_program_test.go",
+      "sha256": "cb96cfac7644ced35cf102857f46b39bf80e84da24284b4718a04234e7bfd82b"
+    },
+    {
+      "path": "internal/compiler/check/check.go",
+      "sha256": "bb9bb3ba9a3d2c8d685245c496ece95d514f09bc63fff8bad793252441bc8982"
+    },
+    {
+      "path": "internal/compiler/check/check_phase34_refusal_test.go",
+      "sha256": "422f70560a1486e7e171a76934576fcaebe97281a18d47a9ef343f1e257d009e"
+    },
+    {
+      "path": "internal/compiler/check/check_phase35_baseline_test.go",
+      "sha256": "e3205ddf6e01f9db0288aa3b2471ce6300a34715488b72f9a54709dd12b50fff"
+    },
+    {
+      "path": "internal/compiler/check/check_phase35_numeric_test.go",
+      "sha256": "303f3e767908fa9c8bb205deaf9df2190d1edd8b1058fa3c92e87d5ac794a4ba"
+    },
+    {
+      "path": "internal/compiler/check/check_phase35_test.go",
+      "sha256": "955b7d2347ebe575aaeb7713c17b2d2604f508f42418ac1602d73580f9fba74c"
+    },
+    {
+      "path": "internal/compiler/check/check_phase36_scalar_calls_test.go",
+      "sha256": "e09ddb70b3beb80daa100a021bc2cedf8d53175bc24e8d40799f899cda8df8bd"
+    },
+    {
+      "path": "internal/compiler/check/scalar.go",
+      "sha256": "31537311ef6ad8fcf11f8cd7139f21404e41445d6d4c8ba5974a953ddaa1ec83"
+    },
+    {
+      "path": "internal/compiler/core/core.go",
+      "sha256": "893258f0bda7d8e73af2e8ba1a30a8a794d41efbaadd0742afcc48048f0250b3"
+    },
+    {
+      "path": "internal/compiler/core/core_phase35_test.go",
+      "sha256": "2820489c817926b1be79ecf2b661e9d0b225e4c317f09a5492adad9ab57c4c77"
+    },
+    {
+      "path": "internal/compiler/core/core_test.go",
+      "sha256": "ff434081f1cd6c373095bddec1fbd3c1ceda781df28f06ef682eff67370472c2"
+    },
+    {
+      "path": "internal/compiler/corevalidate/corevalidate.go",
+      "sha256": "f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81"
+    },
+    {
+      "path": "internal/compiler/corevalidate/corevalidate_phase35_test.go",
+      "sha256": "05be7ec3cbf590ed9233bdea963fbcaafeb479fdd949d7149f1939745beb2df3"
+    },
+    {
+      "path": "internal/compiler/corevalidate/corevalidate_phase36_legacy_internal_test.go",
+      "sha256": "bf266f812183ec76351eb04f0cd72f5232898d82d55eb0c680fe980deff82c00"
+    },
+    {
+      "path": "internal/compiler/corevalidate/corevalidate_phase36_test.go",
+      "sha256": "7c06c8ca09b76643a3df4c41ce7139d25a1a081837d3fac6efb5fa733d9cb813"
+    },
+    {
+      "path": "internal/compiler/diagnostic/diagnostic.go",
+      "sha256": "279994c636ddc1204f9370b7d6e67c722da96421d4fcbf0b98289b8b698f2277"
+    },
+    {
+      "path": "internal/compiler/diagnostic/diagnostic_phase34_test.go",
+      "sha256": "0043b1d3bd3c4b6462629da30105f6f1f6b31b8dc01c1f0aadcd1d8a01a1df39"
+    },
+    {
+      "path": "internal/compiler/execution/defect_reasons.go",
+      "sha256": "0965bb2d5bc4c834c23dd1216808102369ff48d74c5f391942ee6515166abce2"
+    },
+    {
+      "path": "internal/compiler/executionpeer/executionpeer.go",
+      "sha256": "867185ab16461dd079451ead43ae47c68c3339ac6db7b790430f54954a02393c"
+    },
+    {
+      "path": "internal/compiler/executionpeer/executionpeer_phase35_test.go",
+      "sha256": "8baa81db396124108f3d92570b27d31c16ac956b1e9ba38f89f3f3dd9a51a79a"
+    },
+    {
+      "path": "internal/compiler/executionpeer/executionpeer_phase36_test.go",
+      "sha256": "bb5b00cf7ee1844c82877725f96751a5dd2107e22021f0082bc881c37265d3d2"
+    },
+    {
+      "path": "internal/compiler/interp/interp.go",
+      "sha256": "aba3e9245fb5189527faf0b7e95757bfc8c8c5985f063701b0f697dbdfd2afbd"
+    },
+    {
+      "path": "internal/compiler/interp/interp_phase321_defect_test.go",
+      "sha256": "0d5ffe12a34bd3099e00f7be4490bf0830e76fa4893df322f9d9f17dab4ac6ba"
+    },
+    {
+      "path": "internal/compiler/interp/interp_phase33_defect_test.go",
+      "sha256": "4c2737f73096b271f5622d3de7965697ae2258f1abb8e2e8d201a0edfc4403fd"
+    },
+    {
+      "path": "internal/compiler/interp/interp_phase35_test.go",
+      "sha256": "cd7d9aa2af83733d919e756f0f21fb68b3395080d9c8009b4096ab69cd3b04a1"
+    },
+    {
+      "path": "internal/compiler/interp/interp_phase36_test.go",
+      "sha256": "4f95ce622f29ace4d7a47213ecc315bc8ab258b06d4e21809bf72dd2e5dc19b7"
+    },
+    {
+      "path": "internal/compiler/native/native_app.go",
+      "sha256": "0124d35186677f20a88704968de42c32a5d7f0fb6ea850533bd5b891629bac64"
+    },
+    {
+      "path": "internal/compiler/native/native_phase33_capture_test.go",
+      "sha256": "25cd43f11a3397240e5b73b8ccd4aae6c94013804a425500a06c788434d6abff"
+    },
+    {
+      "path": "internal/compiler/native/native_phase33_defect_parity_test.go",
+      "sha256": "d66095311906251127443504fc39f8758abfbaceaa2f88218ec6fab58d54581a"
+    },
+    {
+      "path": "internal/compiler/native/native_phase36_test.go",
+      "sha256": "ba3ac41f638a52c7cc17501cacef27a0f189424389f8f78c69a46d11c497b49d"
+    },
+    {
+      "path": "internal/compiler/originvalidate/originvalidate.go",
+      "sha256": "831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272"
+    },
+    {
+      "path": "internal/compiler/originvalidate/originvalidate_phase35_test.go",
+      "sha256": "74dd6c145f9b741c92ac5ead0025f51cb55a4d071788b018e80db1d2856d638c"
+    },
+    {
+      "path": "internal/compiler/originvalidate/originvalidate_phase36_test.go",
+      "sha256": "407ebf724ebdde305ce777a1e10b027f515c6706cce6623708413f3d893c99fe"
+    },
+    {
+      "path": "internal/compiler/pathoracle/pathoracle.go",
+      "sha256": "e79394ce5998582d6d431a1fe625e739809757149e92da7b0762c6c58f45a0fe"
+    },
+    {
+      "path": "internal/compiler/pathoracle/pathoracle_phase35_test.go",
+      "sha256": "33ded83b9401b8451d7f55302c463a99417119afc862b2c50084e555f3ad6a3f"
+    },
+    {
+      "path": "internal/compiler/pathoracle/pathoracle_phase36_borrow_test.go",
+      "sha256": "2d9100879568bc183ec9a78ebd58d93714edd66321188098e959ff43ecf04278"
+    },
+    {
+      "path": "internal/compiler/pathoracle/pathoracle_phase36_test.go",
+      "sha256": "d82b6985ab8a5eb8edf3ad1aca902112fdc01248043cefc33c0ce4803f8908ff"
+    },
+    {
+      "path": "internal/compiler/protocol/presentation.go",
+      "sha256": "34260f1e9af50be847bbf80f2f15591ef36649f0f8c72c8ee6eeeaca871a07d3"
+    },
+    {
+      "path": "internal/compiler/protocol/protocol.go",
+      "sha256": "1a01641764d28a3a70fedd4ec1a277b4a859a9e6bbed6c2125c04e88a2826d14"
+    },
+    {
+      "path": "internal/compiler/protocol/protocol_phase34_test.go",
+      "sha256": "da8f6f2f1931bf8e310be9755c86cbc8d9ad63da6f6a0483ec1ec6a55f786da7"
+    },
+    {
+      "path": "internal/compiler/session/session.go",
+      "sha256": "9646a37ace6a50afe3d4a5b1c0c4f8d5e3160407d1fc18b0593bf7e4616af831"
+    },
+    {
+      "path": "internal/compiler/session/session_app_verify.go",
+      "sha256": "0bbc9fdaf722e1ee8f7a9f2c732842c2b2c5677ffa376cf3261fa5777a55ec68"
+    },
+    {
+      "path": "internal/compiler/session/session_freeze_gate_test.go",
+      "sha256": "867780915cf805227545c61018264861d919a5305791e8f34b6cf8df8deed9a7"
+    },
+    {
+      "path": "internal/compiler/session/session_gate_differential_test.go",
+      "sha256": "95152bc83cf82176e40d6d62960eb098cb9dc6c345030e67234227e41958d9c6"
+    },
+    {
+      "path": "internal/compiler/session/session_gate_retire_test.go",
+      "sha256": "451ae055c034996c11a70e11cda42d12a56246e0b6c5945128441d82188ef186"
+    },
+    {
+      "path": "internal/compiler/session/session_modules.go",
+      "sha256": "585f6a8ae2b6e67e60c20f542b12710c1c0885caa93c54baf0cb67d9d5b810dd"
+    },
+    {
+      "path": "internal/compiler/session/session_phase272_identity_test.go",
+      "sha256": "938770997c634557fe1b880dda1b6d66dcdf6d0f5edbeb4ed559be536c3790a1"
+    },
+    {
+      "path": "internal/compiler/session/session_phase273_identity_test.go",
+      "sha256": "1c64117f0b41648cbeacccb69411f26ad26695d1582bd54e0abdb9b33e7142f0"
+    },
+    {
+      "path": "internal/compiler/session/session_phase32_receipt_test.go",
+      "sha256": "a8d98f35ba936d5deaf7aed72420aa70eb16b251808a5359e6a668d5286f1302"
+    },
+    {
+      "path": "internal/compiler/session/session_phase34_compat_test.go",
+      "sha256": "346af8efe6729344e8fb6ac13a20bc72d49563d2c92f955e427007d77aef97ad"
+    },
+    {
+      "path": "internal/compiler/session/session_phase34_limit_consumers_test.go",
+      "sha256": "ba44c429fc390a8b6c6176896ee14a9f4b62661881a68a60b1501911b2fa2227"
+    },
+    {
+      "path": "internal/compiler/session/session_phase34_prechange_test.go",
+      "sha256": "2ab0f24dd69256c26c88dd2caa32d907c823be01b638f13265349a40d5657fcd"
+    },
+    {
+      "path": "internal/compiler/session/session_phase34_presentation_test.go",
+      "sha256": "5028977b2703a7b5a1354fcb4894415c909724b633c8e52760350e92cbddaa5a"
+    },
+    {
+      "path": "internal/compiler/session/session_phase34_routes_test.go",
+      "sha256": "4dacb766968a6032c8753d77ad2560bcc31d33812b0572498083ca36acd4c4bb"
+    },
+    {
+      "path": "internal/compiler/session/session_phase34_surface_test.go",
+      "sha256": "5f93d5a849fa41d6488c5ea238c24644822e20582c6019fd81a1b06c1f1ed351"
+    },
+    {
+      "path": "internal/compiler/session/session_phase35_adler_test.go",
+      "sha256": "4dbf1ccc48481d5fcf3adcef4f2a10c4aafba171ee5ff340db53ac999a273472"
+    },
+    {
+      "path": "internal/compiler/session/session_phase35_admission_mutation_test.go",
+      "sha256": "37a8eda7480f891d533371514138e5772aa2abc8eed9fd88114b1d083bb63905"
+    },
+    {
+      "path": "internal/compiler/session/session_phase35_closeout_test.go",
+      "sha256": "c1d9d920132033ad043c35a53525f0bed3d1d49d3f16ca363c04b3376acbd7b4"
+    },
+    {
+      "path": "internal/compiler/session/session_phase35_peer_mutation_test.go",
+      "sha256": "e193be1a479432b0be02400fcd8927a2c21a813f00300712a803f1b9bd41bee3"
+    },
+    {
+      "path": "internal/compiler/session/session_phase35_prechange_test.go",
+      "sha256": "eaad86aa0476fa5d135e86851a7ad54c9adc530732900a4ce107dae723e66cd6"
+    },
+    {
+      "path": "internal/compiler/session/session_phase35_surface_test.go",
+      "sha256": "007d7d7d42462a8f76cd5497d8c535703746887ab206d514ad29d252712dcc3f"
+    },
+    {
+      "path": "internal/compiler/session/session_phase35_values_test.go",
+      "sha256": "9a02b4d36a928d0e25242e7aa48ff14684b53f8fd90a61ccdfcfca1882545bcc"
+    },
+    {
+      "path": "internal/compiler/session/session_phase36_byteview_test.go",
+      "sha256": "554555434e2324f8a1db289c3ee944c4fc8ba2f0341e8e8946e00b820362bb8a"
+    },
+    {
+      "path": "internal/compiler/session/session_phase36_calls_test.go",
+      "sha256": "c2fd08cbcd7b19c86dce12cf25079abc9952f861fe9098f4ecc656f4f440d1d0"
+    },
+    {
+      "path": "internal/compiler/session/session_phase36_legacy_calls_test.go",
+      "sha256": "b5a56a32d798a62baf9e3bb5112b63f8a1230ca24430d695731abb247fd6e266"
+    },
+    {
+      "path": "internal/compiler/session/session_phase36_peer_mutation_test.go",
+      "sha256": "c03e6fb9474feae6b1278ae190df180978cc99ae1fdc5e61160dab872144cee2"
+    },
+    {
+      "path": "internal/compiler/session/session_phase36_prechange_test.go",
+      "sha256": "3b918b9ef09f486a9f67da0cdf70db3872d58ed0383c869814615768e7e08aef"
+    },
+    {
+      "path": "internal/compiler/session/session_phase36_surface_test.go",
+      "sha256": "d0e640c8c71e0b67934ff5f26f4ecda949a08bea65ca138059746d1bd720040e"
+    },
+    {
+      "path": "internal/compiler/session/session_phase37_surface_test.go",
+      "sha256": "66a71bd3766f20751d07525b1d25080d9efb4796665e44f8b149c007b6aa1393"
+    },
+    {
+      "path": "internal/compiler/session/session_phase37_validation_test.go",
+      "sha256": "425b738aa0c5dad97620baea95abcf5a637520618ec434c0542bd08240d21339"
+    },
+    {
+      "path": "internal/compiler/session/session_presentation.go",
+      "sha256": "f528c3c0bfc1278e93dadd3f4911886457742c4de8a72f2932b380f0f4d5160d"
+    },
+    {
+      "path": "internal/compiler/session/session_receipt_gate_test.go",
+      "sha256": "d235b05012ebb8ca8304538d0c91f00ccdfb79200ec886d7f4efe83ef2a7a5e1"
+    },
+    {
+      "path": "internal/compiler/session/summary_coverage_test.go",
+      "sha256": "cf480cbb47ee3e95a8066454333616c79b774c035a796de09dd957c55a27b088"
+    },
+    {
+      "path": "internal/compiler/surface/refusals.go",
+      "sha256": "d776f7620d198539883627cf77c5554d6d1428f5ba5584a8a9db209e82708014"
+    },
+    {
+      "path": "internal/compiler/surfacemanifest/manifest.go",
+      "sha256": "047ccc606cae924e7d974d275e28e82c91f35276b258346e94d40bff1aba5b3d"
+    },
+    {
+      "path": "internal/compiler/surfacemanifest/manifest_test.go",
+      "sha256": "920df160f431652681608239462c92ee947ef1dcd10971ade1c5e43b6854479b"
+    },
+    {
+      "path": "internal/compiler/syntax/format.go",
+      "sha256": "cf31cad5c219849b4b6d2cbfb2155ec43f40a1961c1043672fdffb62f3bc174c"
+    },
+    {
+      "path": "internal/compiler/syntax/lexer.go",
+      "sha256": "88a32042b98a8fb436ea8e815d8ee9b1dfdcae462c5bb2be51072a04ab9ecb6f"
+    },
+    {
+      "path": "internal/compiler/syntax/numeric_phase35_test.go",
+      "sha256": "3d0da57b64fa89145a399d3e5224d4b1991d7274cc1f193f3ec986c42270eec1"
+    },
+    {
+      "path": "internal/compiler/syntax/parser.go",
+      "sha256": "c8ecf18cd7ffeadb4328998e77ed6ebd28aad132f59558ff7239639094adcac3"
+    },
+    {
+      "path": "internal/compiler/syntax/parser_phase34_recovery_test.go",
+      "sha256": "578af20b57aa76425b2a487bed197c204bd70304ad6880c1ccfd6f898125850c"
+    },
+    {
+      "path": "internal/compiler/syntax/parser_phase34_refusal_test.go",
+      "sha256": "61f49170af1e713a542e281a0a70c3d636444797b94b6eb39e137fbf1182c76c"
+    },
+    {
+      "path": "internal/compiler/syntax/parser_phase35_baseline_test.go",
+      "sha256": "4c9a3f516f200fd0b326fe06cb7d5ec2a507a26d457406ba3dd8469e05c0f3e6"
+    },
+    {
+      "path": "internal/compiler/syntax/parser_phase35_test.go",
+      "sha256": "8ce609c3481caaf9938529163737f3b5fef9a928336888b807cdc85625761b3d"
+    },
+    {
+      "path": "internal/compiler/syntax/parser_phase36_test.go",
+      "sha256": "731ceed00647a93cc31703909bcd2d49174627d2390e2183e3467002c9194e22"
+    },
+    {
+      "path": "scripts/check-freeze.sh",
+      "sha256": "acc4c21e545b5fda1ef892f5e122d7cb3a8c2c71a790aefb6e05b5f39cec34d2"
+    },
+    {
+      "path": "scripts/check-receipts.sh",
+      "sha256": "251e3d1484919174b86b1b2e6fce059939b7fad3051ff9cb815ce0def94d216f"
+    },
+    {
+      "path": "scripts/codedigest.sh",
+      "sha256": "9914f8bfda3bcfe0bd9d5c61f2ad5016d672e404ace42f4f5efe18ceb2a50a3e"
+    },
+    {
+      "path": "scripts/verify-phase32.sh",
+      "sha256": "ed406a768fdaee8ca1815f5135f478f2eb17a3b7a63c3a06d0e4b96fe7e10aaf"
+    },
+    {
+      "path": "testdata/phase16/public-emitter-consumers.json",
+      "sha256": "7132c2bed3bf1561691668b77ef241c36e4399b910a2bcbcc212dfe7c78257ee"
+    },
+    {
+      "path": "testdata/phase34/compat-deltas.json",
+      "sha256": "356d6f087023b46542636bfa244266afe1fbcd73cdb89120cc3d33802f558011"
+    },
+    {
+      "path": "testdata/phase34/draft-after.json",
+      "sha256": "1e11ff4a8af6cc03c5d6e3200d0cdf9ef7dad41ee28e6a6fcd3aa2362b272bf3"
+    },
+    {
+      "path": "testdata/phase34/draft-baseline.json",
+      "sha256": "6607c9b5e3657c0e65ba6e46d16a1dc281153994f27ca1ab8c645f9e935b8fae"
+    },
+    {
+      "path": "testdata/phase34/drafts.json",
+      "sha256": "8774033822c9f47db8236d00a347e7e176a9524437314c182be8555f16a1b9df"
+    },
+    {
+      "path": "testdata/phase34/identity-baseline.json",
+      "sha256": "8cdcc4243cecf24b3721a652b6835aae077e62f797826e484fc7a0618273174c"
+    },
+    {
+      "path": "testdata/phase34/prechange-corpus.json",
+      "sha256": "903010268526ce71dab023e562714a5a8e18329a4d91adca9678e5d64d50042f"
+    },
+    {
+      "path": "testdata/phase34/surface-census.json",
+      "sha256": "3934469136ed0f741dbbbca79428a98bc8134c7bfc0e5862ca440e85a94c256a"
+    },
+    {
+      "path": "testdata/phase34/surface-witnesses.json",
+      "sha256": "823ac61fac34274ba6ee4cb8719ab0618443600fc976ca5587e1ffee76869742"
+    },
+    {
+      "path": "testdata/phase35/numeric-delta.json",
+      "sha256": "a0406ebcd47423b5fe97ca567895b7efa9944f54746dc6bec52c8c4837b0547f"
+    },
+    {
+      "path": "testdata/phase35/numeric-policy-baseline.json",
+      "sha256": "f43bb2baaa3d492f5e9bb208762239983b981c96ffe57975dfb588fb64876b18"
+    },
+    {
+      "path": "testdata/phase35/prechange-corpus.json",
+      "sha256": "ecf045024b00f2f9eb3c463bca0482d3bdcaa1468fb42214a02013fcdc5c3088"
+    },
+    {
+      "path": "testdata/phase35/prohibition-causal-bad.txt",
+      "sha256": "30bee7077155d5376cbc9307d20da96c2d3283d2ad341c8a233f0e5c0622b3c9"
+    },
+    {
+      "path": "testdata/phase35/prohibition-evidence.test.cjs",
+      "sha256": "8e89b884606878151dc257a03e902fd1bea6d334e43a365ebdc8f3b44156a8a3"
+    },
+    {
+      "path": "testdata/phase35/prohibition-lanes-bad.txt",
+      "sha256": "ebb4a1636e544e8bee4d108b8032c5421bfe5dcf614c3cb223b770277d5c2b73"
+    },
+    {
+      "path": "testdata/phase35/recovery-after.json",
+      "sha256": "9440c2fa4546ad3f60c2368b0f194d9451d980ef49fa097a6cbb00f8574bcabe"
+    },
+    {
+      "path": "testdata/phase35/shift-sites.json",
+      "sha256": "ccf15ab99ce82364f15883f10602638515e66030709936cfc3421eb679b09ca7"
+    },
+    {
+      "path": "testdata/phase35/surface-census.json",
+      "sha256": "9af1ecafc10e01bfcdca8882b44c85019f637c51790207f01808013e2461c98f"
+    },
+    {
+      "path": "testdata/phase35/surface-witnesses.json",
+      "sha256": "0fcfe36a942a5670a9819bdc789b4aebcf2182e336bbef9b9ef9d8a11fd2f64a"
+    },
+    {
+      "path": "testdata/phase35/value-vectors.json",
+      "sha256": "ef5edc88f41469ded6b815753b0875596a35007e73d27e35ae391608b973f9e2"
+    },
+    {
+      "path": "testdata/phase36/helper-values.json",
+      "sha256": "b007718abf8750b149724b7b010e8111e5e3c2038f905c8c92fbbe0662070bde"
+    },
+    {
+      "path": "testdata/phase36/new-fixture-ledger.json",
+      "sha256": "99ee245b707175e1b27846ce825ae6371e7eb7da0e810b2d8edf486c3517eaf4"
+    },
+    {
+      "path": "testdata/phase36/prechange-corpus.json",
+      "sha256": "b9db7faa10bae93e741f2b24e602a9eda3eb393ed38efb0df6364a9ef9873001"
+    },
+    {
+      "path": "testdata/phase36/surface-census.json",
+      "sha256": "83d16a1b9a1bebc0fbeb71946bd881b5204893ac7f63feb51f5e6905dae7730d"
+    },
+    {
+      "path": "testdata/phase36/surface-witnesses.json",
+      "sha256": "02174019248afdae4b9436d324089c8f8a46013bac42abd2b3f3ad39e47d19b5"
+    },
+    {
+      "path": "testdata/phase37/new-fixture-ledger.json",
+      "sha256": "2fd2bbf340d95212966aade306a155ab4cb526c077cfb10f9b6405e2dcaded7d"
+    },
+    {
+      "path": "testdata/phase37/surface-witnesses.json",
+      "sha256": "f6fbf552024b308dd3a63ee2409042f0c161a6b22f61675ffe9bb55d27978061"
+    },
+    {
+      "path": "testdata/receipts/M006.manifest",
+      "sha256": "9b6906304a74b67df57e930b297c91c6c7115ecc1e4d98dac563bdaaf446e9c7"
+    }
+  ],
+  "mutant_diagnostics": [],
+  "multiplicity_note": "Names repeat across packages and internal/external tests share TestPhase35NumericRoutePolicy; the harness checks sorted root multiplicities, not membership alone."
+}
