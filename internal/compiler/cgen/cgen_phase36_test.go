@@ -221,19 +221,26 @@ func phase36EscapedCallID(value string) string {
 	return escaped.String()
 }
 
-func phase36CheckEmitterCallSiteCensus(functionRegion string, callIDs []string) error {
-	expectedCalls := make(map[string]int, len(callIDs))
-	expectedEvents := make(map[string]int, len(callIDs))
-	expectedReservations := make(map[string]int, len(callIDs))
-	for _, callID := range callIDs {
-		expectedCalls[callID]++
-		expectedEvents[callID+":event:called"]++
-		expectedReservations[phase36EscapedCallID(callID)]++
+type phase36CheckedCallContract struct {
+	ID           string
+	CalleeSymbol string
+}
+
+func phase36CheckEmitterCallSiteCensus(functionRegion string, expectedCallContracts []phase36CheckedCallContract) error {
+	expectedMarkers := make(map[string]int, len(expectedCallContracts))
+	expectedCalls := make(map[string]int, len(expectedCallContracts))
+	expectedEvents := make(map[string]int, len(expectedCallContracts))
+	expectedReservations := make(map[string]int, len(expectedCallContracts))
+	for _, call := range expectedCallContracts {
+		expectedMarkers[call.ID]++
+		expectedCalls[call.CalleeSymbol]++
+		expectedEvents[call.ID+":event:called"]++
+		expectedReservations[phase36EscapedCallID(call.ID)]++
 	}
-	callPattern := regexp.MustCompile(`/\* call: ([^*]+) \*/`)
+	markerPattern := regexp.MustCompile(`/\* call: ([^*]+) \*/`)
 	eventPattern := regexp.MustCompile(`schway_record_event\("function\.called",\s*"([^"]+)"`)
 	reservationPattern := regexp.MustCompile(`schway_reserve_invocation\([^,\n]+,\s*"([^"]+)"`)
-	calls := callPattern.FindAllStringSubmatch(functionRegion, -1)
+	markers := markerPattern.FindAllStringSubmatch(functionRegion, -1)
 	events := eventPattern.FindAllStringSubmatch(functionRegion, -1)
 	reservations := reservationPattern.FindAllStringSubmatch(functionRegion, -1)
 	checkCategory := func(category string, expected map[string]int, matches [][]string) error {
@@ -256,21 +263,49 @@ func phase36CheckEmitterCallSiteCensus(functionRegion string, callIDs []string) 
 		for _, id := range ordered {
 			want, got := expected[id], actual[id]
 			if got < want {
-				return fmt.Errorf("missing %s site %q: got %d, want %d", category, id, got, want)
+				return fmt.Errorf("missing %s %q: got %d, want %d", category, id, got, want)
 			}
 			if got > want {
-				return fmt.Errorf("extra %s site %q: got %d, want %d", category, id, got, want)
+				return fmt.Errorf("extra %s %q: got %d, want %d", category, id, got, want)
 			}
 		}
 		return nil
 	}
-	if err := checkCategory("call", expectedCalls, calls); err != nil {
+	if err := checkCategory("call marker", expectedMarkers, markers); err != nil {
 		return err
 	}
-	if err := checkCategory("event", expectedEvents, events); err != nil {
+
+	// Count emitted Schway function expressions, not the emitter's comments.
+	// Generated language-function symbols are in the SCHWAY_ namespace;
+	// lowercase schway_* runtime support calls are separate implementation
+	// details. Counting every SCHWAY_ invocation also catches an unmarked call
+	// to an unexpected helper symbol.
+	bodyStart := strings.IndexByte(functionRegion, '\n')
+	if bodyStart < 0 {
+		return fmt.Errorf("user-function call region has no body")
+	}
+	body := functionRegion[bodyStart+1:]
+	withoutCommentsOrStrings := regexp.MustCompile(`"(?:\\.|[^"\\])*"|/\*.*?\*/|//.*`).ReplaceAllString(body, " ")
+	invocationPattern := regexp.MustCompile(`\b([A-Za-z_][A-Za-z0-9_]*)\s*\(`)
+	actualCalls := make(map[string]int, len(expectedCalls))
+	for _, match := range invocationPattern.FindAllStringSubmatch(withoutCommentsOrStrings, -1) {
+		if strings.HasPrefix(match[1], "SCHWAY_") {
+			actualCalls[match[1]]++
+		}
+	}
+	actualCallMatches := make([][]string, 0, len(actualCalls))
+	for symbol, count := range actualCalls {
+		for range count {
+			actualCallMatches = append(actualCallMatches, []string{"", symbol})
+		}
+	}
+	if err := checkCategory("call site", expectedCalls, actualCallMatches); err != nil {
 		return err
 	}
-	return checkCategory("reservation", expectedReservations, reservations)
+	if err := checkCategory("event site", expectedEvents, events); err != nil {
+		return err
+	}
+	return checkCategory("reservation site", expectedReservations, reservations)
 }
 
 func phase36FunctionRegionByHeader(generated, header string) (string, bool) {
@@ -556,6 +591,7 @@ func TestPhase36EmitterCallInventoryControls(t *testing.T) {
 		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
 	}
 	var call core.LinearOperation
+	var caller core.Function
 	callCount := 0
 	for _, function := range checked.Program.Functions {
 		if function.Linear == nil {
@@ -564,6 +600,7 @@ func TestPhase36EmitterCallInventoryControls(t *testing.T) {
 		for _, operation := range function.Linear.Operations {
 			if operation.Kind == core.OpCall {
 				call = operation
+				caller = function
 				callCount++
 			}
 		}
@@ -571,9 +608,38 @@ func TestPhase36EmitterCallInventoryControls(t *testing.T) {
 	if callCount != 1 {
 		t.Fatalf("checked core call inventory=%d, want exactly one call site", callCount)
 	}
+	symbolByFunctionID := make(map[string]string, len(checked.Program.Functions))
+	reservedFunctionNames := append([]string(nil), cgen.LinearFixedNames...)
+	for index, function := range checked.Program.Functions {
+		if function.Module != "" {
+			t.Fatalf("call-census fixture unexpectedly imports function %q from %q", function.ID, function.Module)
+		}
+		name := cgen.AllocateFrom(reservedFunctionNames, cgen.CName(function.Name), "function", index)
+		symbolByFunctionID[function.ID] = name
+		reservedFunctionNames = append(reservedFunctionNames, name)
+	}
+	calleeSymbol := symbolByFunctionID[call.CalleeID]
+	if calleeSymbol == "" {
+		t.Fatalf("checked OpCall %q has no checked callee function %q", call.ID, call.CalleeID)
+	}
+	expectedCallContracts := make([]phase36CheckedCallContract, 0, callCount)
+	for _, operation := range caller.Linear.Operations {
+		if operation.Kind != core.OpCall {
+			continue
+		}
+		symbol := symbolByFunctionID[operation.CalleeID]
+		if symbol == "" {
+			t.Fatalf("checked OpCall %q has no checked callee function %q", operation.ID, operation.CalleeID)
+		}
+		expectedCallContracts = append(expectedCallContracts, phase36CheckedCallContract{ID: operation.ID, CalleeSymbol: symbol})
+	}
 	generated, err := cgen.EmitNative(checked.Program)
 	if err != nil {
 		t.Fatalf("EmitNative: %v", err)
+	}
+	calleeDefinition := regexp.MustCompile(`(?m)^static [A-Za-z_][A-Za-z0-9_ *]*\b` + regexp.QuoteMeta(calleeSymbol) + `\([^;\n]*\) \{$`)
+	if !calleeDefinition.MatchString(generated) {
+		t.Fatalf("checked callee %q has no emitted C definition for symbol %q", call.CalleeID, calleeSymbol)
 	}
 	callMarker := "/* call: " + call.ID + " */"
 	if count := strings.Count(generated, "/* call:"); count != callCount || strings.Count(generated, callMarker) != 1 {
@@ -586,7 +652,7 @@ func TestPhase36EmitterCallInventoryControls(t *testing.T) {
 	callLine := generated[lineStart:lineEnd]
 	callPattern := regexp.MustCompile(`^(\s*)(schway_scalar_[0-9]+) = ([A-Za-z0-9_]+)\((schway_scalar_[0-9]+), ([A-Za-z0-9_]+\[invocation_index\])\); /\* call: (.+) \*/$`)
 	parts := callPattern.FindStringSubmatch(callLine)
-	if len(parts) != 7 || parts[6] != call.ID {
+	if len(parts) != 7 || parts[6] != call.ID || parts[3] != calleeSymbol {
 		t.Fatalf("generated call line lacks a typed argument/result and child invocation index: %q", callLine)
 	}
 	functionStart := strings.LastIndex(generated[:lineStart], "\nstatic ") + 1
@@ -606,10 +672,10 @@ func TestPhase36EmitterCallInventoryControls(t *testing.T) {
 	if strings.Count(functionRegion, "schway_record_event(\"function.called\"") != 1 || strings.Count(functionRegion, "schway_reserve_invocation(") != 1 {
 		t.Fatalf("user function call region does not enumerate one call event and one path reservation:\n%s", functionRegion)
 	}
-	if err := phase36CheckEmitterCallSiteCensus(functionRegion, []string{call.ID}); err != nil {
+	if err := phase36CheckEmitterCallSiteCensus(functionRegion, expectedCallContracts); err != nil {
 		t.Fatalf("clean user-function call-site census: %v", err)
 	}
-	if err := phase36CheckEmitterCallSiteCensus(functionRegion, []string{call.ID}); err != nil {
+	if err := phase36CheckEmitterCallSiteCensus(functionRegion, expectedCallContracts); err != nil {
 		t.Fatalf("no-op user-function call-site census: %v", err)
 	}
 	calledOffset := strings.Index(functionRegion, "schway_record_event(\"function.called\"")
@@ -620,61 +686,84 @@ func TestPhase36EmitterCallInventoryControls(t *testing.T) {
 	}
 	eventFragment := fmt.Sprintf("schway_record_event(\"function.called\", %q", call.ID+":event:called")
 	reserveFragment := fmt.Sprintf("schway_reserve_invocation(schway_invocations[invocation_index], %q,", phase36EscapedCallID(call.ID))
-	mutations := []struct {
-		name      string
-		fragment  string
-		inserted  string
-		wantError string
-	}{
-		{name: "removed-call", fragment: callMarker, wantError: fmt.Sprintf("missing call site %q", call.ID)},
-		{name: "removed-event", fragment: eventFragment, wantError: fmt.Sprintf("missing event site %q", call.ID+":event:called")},
-		{name: "removed-reservation", fragment: reserveFragment, wantError: fmt.Sprintf("missing reservation site %q", phase36EscapedCallID(call.ID))},
-		{name: "extra-call", fragment: callMarker, wantError: fmt.Sprintf("extra call site %q", call.ID+"-extra")},
-		{name: "extra-event", fragment: eventFragment, wantError: fmt.Sprintf("extra event site %q", call.ID+":event:called:extra")},
-		{name: "extra-reservation", fragment: reserveFragment, wantError: fmt.Sprintf("extra reservation site %q", phase36EscapedCallID(call.ID)+"-extra")},
-	}
-	for _, mutation := range mutations {
-		t.Run("census-"+mutation.name, func(t *testing.T) {
-			var mutated string
-			var ok bool
-			if strings.HasPrefix(mutation.name, "removed-") {
-				mutated, _, ok = phase36ReplaceLineContaining(generated, mutation.fragment, "")
-			} else {
-				var extraLine string
-				switch mutation.name {
-				case "extra-call":
-					extraLine = strings.Replace(callLine, callMarker, "/* call: "+call.ID+"-extra */", 1)
-				case "extra-event":
-					_, eventLine, found := phase36ReplaceLineContaining(generated, eventFragment, "")
-					if !found {
-						t.Fatal("could not locate emitted function.called event line")
-					}
-					extraLine = strings.Replace(eventLine, call.ID+":event:called", call.ID+":event:called:extra", 1)
-				case "extra-reservation":
-					_, reserveLine, found := phase36ReplaceLineContaining(generated, reserveFragment, "")
-					if !found {
-						t.Fatal("could not locate emitted invocation reservation line")
-					}
-					extraLine = strings.Replace(reserveLine, `"`+phase36EscapedCallID(call.ID)+`"`, `"`+phase36EscapedCallID(call.ID)+`-extra"`, 1)
-				}
-				mutated, ok = phase36InsertLineAfterContaining(generated, mutation.fragment, extraLine)
-			}
-			if !ok {
-				t.Fatalf("could not apply %s mutation to the emitted user-function region", mutation.name)
-			}
+	checkCensusMutant := func(name, mutated, wantError string) {
+		t.Helper()
+		t.Run("census-"+name, func(t *testing.T) {
 			mutatedRegion, found := phase36FunctionRegionByHeader(mutated, functionHeader)
 			if !found {
-				t.Fatalf("%s mutation lost the emitted user-function boundary", mutation.name)
+				t.Fatalf("%s mutation lost the emitted user-function boundary", name)
 			}
-			censusErr := phase36CheckEmitterCallSiteCensus(mutatedRegion, []string{call.ID})
-			if censusErr == nil || !strings.Contains(censusErr.Error(), mutation.wantError) {
-				t.Fatalf("%s mutation census error=%v, want named finding containing %q", mutation.name, censusErr, mutation.wantError)
+			censusErr := phase36CheckEmitterCallSiteCensus(mutatedRegion, expectedCallContracts)
+			if censusErr == nil || !strings.Contains(censusErr.Error(), wantError) {
+				t.Fatalf("%s mutation census error=%v, want named finding containing %q", name, censusErr, wantError)
 			}
-			if restoreErr := phase36CheckEmitterCallSiteCensus(functionRegion, []string{call.ID}); restoreErr != nil {
-				t.Fatalf("restored user-function census after %s mutation: %v", mutation.name, restoreErr)
+			if restoreErr := phase36CheckEmitterCallSiteCensus(functionRegion, expectedCallContracts); restoreErr != nil {
+				t.Fatalf("restored user-function census after %s mutation: %v", name, restoreErr)
 			}
 		})
 	}
+
+	// Keep the call marker while deleting the C expression. This proves the
+	// census observes the actual invocation and does not accept its comment as
+	// evidence that the checked call still exists.
+	removedActualCall, _, ok := phase36ReplaceLineContaining(generated, callMarker, parts[1]+callMarker)
+	if !ok {
+		t.Fatal("could not remove emitted C call while preserving its marker")
+	}
+	checkCensusMutant("removed-actual-call-marker-preserved", removedActualCall, fmt.Sprintf("missing call site %q", calleeSymbol))
+
+	// Duplicate the real invocation with no marker. The helper must discover
+	// this extra expression from C syntax inside the bounded caller region.
+	unmarkedCall := strings.TrimSuffix(callLine, " /* call: "+call.ID+" */")
+	extraActualCall, ok := phase36InsertLineAfterContaining(generated, callMarker, unmarkedCall)
+	if !ok {
+		t.Fatal("could not insert an unmarked emitted C call")
+	}
+	checkCensusMutant("extra-unmarked-actual-call", extraActualCall, fmt.Sprintf("extra call site %q", calleeSymbol))
+
+	removedMarker, _, ok := phase36ReplaceLineContaining(generated, callMarker, strings.TrimSuffix(callLine, " /* call: "+call.ID+" */"))
+	if !ok {
+		t.Fatal("could not remove call marker while retaining its C expression")
+	}
+	checkCensusMutant("removed-call-marker", removedMarker, fmt.Sprintf("missing call marker %q", call.ID))
+	extraMarker, ok := phase36InsertLineAfterContaining(generated, callMarker, "  /* call: "+call.ID+"-extra */")
+	if !ok {
+		t.Fatal("could not insert extra standalone call marker")
+	}
+	checkCensusMutant("extra-call-marker", extraMarker, fmt.Sprintf("extra call marker %q", call.ID+"-extra"))
+
+	removedEvent, _, ok := phase36ReplaceLineContaining(generated, eventFragment, "")
+	if !ok {
+		t.Fatal("could not remove emitted function.called event")
+	}
+	checkCensusMutant("removed-event", removedEvent, fmt.Sprintf("missing event site %q", call.ID+":event:called"))
+	removedReservation, _, ok := phase36ReplaceLineContaining(generated, reserveFragment, "")
+	if !ok {
+		t.Fatal("could not remove emitted invocation reservation")
+	}
+	checkCensusMutant("removed-reservation", removedReservation, fmt.Sprintf("missing reservation site %q", phase36EscapedCallID(call.ID)))
+
+	_, eventLine, ok := phase36ReplaceLineContaining(generated, eventFragment, "")
+	if !ok {
+		t.Fatal("could not locate emitted function.called event line")
+	}
+	extraEventLine := strings.Replace(eventLine, call.ID+":event:called", call.ID+":event:called:extra", 1)
+	extraEvent, ok := phase36InsertLineAfterContaining(generated, eventFragment, extraEventLine)
+	if !ok {
+		t.Fatal("could not insert extra emitted function.called event")
+	}
+	checkCensusMutant("extra-event", extraEvent, fmt.Sprintf("extra event site %q", call.ID+":event:called:extra"))
+
+	_, reserveLine, ok := phase36ReplaceLineContaining(generated, reserveFragment, "")
+	if !ok {
+		t.Fatal("could not locate emitted invocation reservation line")
+	}
+	extraReservationLine := strings.Replace(reserveLine, `"`+phase36EscapedCallID(call.ID)+`"`, `"`+phase36EscapedCallID(call.ID)+`-extra"`, 1)
+	extraReservation, ok := phase36InsertLineAfterContaining(generated, reserveFragment, extraReservationLine)
+	if !ok {
+		t.Fatal("could not insert extra emitted invocation reservation")
+	}
+	checkCensusMutant("extra-reservation", extraReservation, fmt.Sprintf("extra reservation site %q", phase36EscapedCallID(call.ID)+"-extra"))
 	for _, guard := range []string{
 		"if (schway_event_count >= SCHWAY_EVENT_CAPACITY)",
 		"if (*ordinal > SCHWAY_INVOCATION_ORDINAL_MAX)",
