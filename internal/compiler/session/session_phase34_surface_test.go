@@ -204,6 +204,89 @@ func phase34ReadSurfaceWitnesses(t *testing.T) phase34SurfaceWitnessDocument {
 	if len(additions.Supersedes) == 0 && len(additions.Witnesses) == 0 {
 		t.Fatal("Phase 35 witness additions are empty")
 	}
+	phase36 := phase36ReadSurfaceWitnesses(t)
+	phase36ByID := map[string]phase36SurfaceWitness{}
+	for _, witness := range phase36.Witnesses {
+		if witness.ID == "" || phase36ByID[witness.ID].ID != "" {
+			t.Fatalf("duplicate or empty Phase 36 replacement witness ID %q", witness.ID)
+		}
+		phase36ByID[witness.ID] = witness
+	}
+	supersededIDs := map[string]bool{}
+	for _, replacement := range phase36.Supersedes {
+		if replacement.Facet == "" || replacement.Reason == "" || len(replacement.PriorWitnessIDs) == 0 || len(replacement.ReplacementWitnessIDs) == 0 {
+			t.Fatalf("Phase 36 has an incomplete scoped witness supersession: %+v", replacement)
+		}
+		prior := map[string]bool{}
+		for _, id := range replacement.PriorWitnessIDs {
+			if id == "" || prior[id] || supersededIDs[id] {
+				t.Fatalf("Phase 36 supersession duplicates prior witness ID %q", id)
+			}
+			prior[id] = true
+			supersededIDs[id] = true
+		}
+		found := map[string]bool{}
+		retained := document.Witnesses[:0]
+		for _, witness := range document.Witnesses {
+			if prior[witness.ID] {
+				if witness.Facet != replacement.Facet {
+					t.Fatalf("Phase 36 supersession %s targets prior witness %s on facet %s", replacement.Facet, witness.ID, witness.Facet)
+				}
+				found[witness.ID] = true
+				continue
+			}
+			retained = append(retained, witness)
+		}
+		if len(found) != len(prior) {
+			t.Fatalf("Phase 36 supersession %s did not name every existing witness: found=%v prior=%v", replacement.Facet, found, prior)
+		}
+		for _, id := range replacement.ReplacementWitnessIDs {
+			witness, ok := phase36ByID[id]
+			if !ok || witness.Facet != replacement.Facet {
+				t.Fatalf("Phase 36 supersession %s replacement witness %s is absent or belongs to another facet", replacement.Facet, id)
+			}
+		}
+		document.Witnesses = retained
+	}
+	for _, witness := range phase36.Witnesses {
+		document.Witnesses = append(document.Witnesses, phase34SurfaceWitness{
+			ID: witness.ID, Facet: witness.Facet, Context: witness.Context, CheckRoute: witness.CheckRoute,
+			SourcePath: witness.SourcePath, Source: phase36WitnessSource(witness), Files: witness.Files,
+			ExpectedStatus: witness.ExpectedStatus, ExpectedCode: witness.ExpectedCode, ExpectedHint: witness.ExpectedHint,
+			Exercise: witness.Exercise, ExpectedForm: witness.ExpectedForm, ExpectedArity: witness.ExpectedArity,
+			ExpectedConstraints: witness.ExpectedConstraints,
+		})
+	}
+	seenPhase36Limits := map[string]bool{}
+	for _, supersession := range phase36.SupersededLimits {
+		if supersession.ID == "" || supersession.Reason == "" || seenPhase36Limits[supersession.ID] {
+			t.Fatalf("Phase 36 has an incomplete or duplicate limit supersession: %+v", supersession)
+		}
+		seenPhase36Limits[supersession.ID] = true
+		priorIndex, priorCount := -1, 0
+		for index, limit := range document.Limits {
+			if limit.ID == supersession.ID {
+				priorIndex, priorCount = index, priorCount+1
+			}
+		}
+		replacementIndex, replacementCount := -1, 0
+		for index, limit := range phase36.Limits {
+			if limit.ID == supersession.ID {
+				replacementIndex, replacementCount = index, replacementCount+1
+			}
+		}
+		if priorCount != 1 || replacementCount != 1 {
+			t.Fatalf("Phase 36 limit supersession %s has prior/replacement counts %d/%d; want exact rows", supersession.ID, priorCount, replacementCount)
+		}
+		document.Limits[priorIndex] = phase36.Limits[replacementIndex]
+	}
+	for _, limit := range phase36.Limits {
+		if !seenPhase36Limits[limit.ID] {
+			document.Limits = append(document.Limits, limit)
+		}
+	}
+	document.Calls = phase36.Calls
+	document.Supersedes = append(document.Supersedes, phase36.Supersedes...)
 	return document
 }
 
@@ -655,9 +738,9 @@ func TestPhase34SurfaceManifestControls(t *testing.T) {
 	wrongCallArity.Calls.OrdinaryArity = []int{2}
 	assert("change ordinary call arity", "constraint_changed", "call:ordinary", phase34FullSurfaceProblems(wrongCallArity, document, observed))
 
-	allowScalarCalls := phase34CopyManifest(t, manifest)
-	allowScalarCalls.Calls.ScalarExpressionCalls = true
-	assert("allow scalar expression calls", "constraint_changed", "call:scalar_expression", phase34FullSurfaceProblems(allowScalarCalls, document, observed))
+	refuseScalarCalls := phase34CopyManifest(t, manifest)
+	refuseScalarCalls.Calls.ScalarExpressionCalls = false
+	assert("refuse witnessed scalar expression calls", "constraint_changed", "call:scalar_expression", phase34FullSurfaceProblems(refuseScalarCalls, document, observed))
 
 	withoutLinearCallContext := phase34CopyManifest(t, manifest)
 	withoutLinearCallContext.Calls.OrdinaryContexts = nil
@@ -833,6 +916,51 @@ func phase34ReadCensus(t *testing.T) phase34CensusDocument {
 	}
 	additions := phase35ReadSurfaceCensusAdditions(t)
 	document.Branches = append(document.Branches, additions.Branches...)
+	phase36 := phase36ReadSurfaceCensus(t)
+	seenSuperseded := map[string]bool{}
+	for _, supersession := range phase36.Supersedes {
+		if supersession.Facet == "" || supersession.Reason == "" || len(supersession.PriorBranchKeys) == 0 || len(supersession.ReplacementBranchKeys) == 0 {
+			t.Fatalf("Phase 36 has an incomplete exact census supersession: %+v", supersession)
+		}
+		priorKeys := map[string]bool{}
+		for _, key := range supersession.PriorBranchKeys {
+			if key == "" || priorKeys[key] || seenSuperseded[key] {
+				t.Fatalf("Phase 36 census supersession duplicates prior branch key %q", key)
+			}
+			priorKeys[key] = true
+			seenSuperseded[key] = true
+		}
+		found := map[string]bool{}
+		retained := document.Branches[:0]
+		for _, branch := range document.Branches {
+			key := phase34RawCensusKey(phase34RawCensusBranch{File: branch.File, Function: branch.Function, Selector: branch.Selector, Values: branch.Values})
+			if priorKeys[key] {
+				if branch.Facet != supersession.Facet {
+					t.Fatalf("Phase 36 census supersession %s targets prior branch %s on facet %s", supersession.Facet, key, branch.Facet)
+				}
+				found[key] = true
+				continue
+			}
+			retained = append(retained, branch)
+		}
+		if len(found) != len(priorKeys) {
+			t.Fatalf("Phase 36 census supersession %s did not name every existing branch: found=%v prior=%v", supersession.Facet, found, priorKeys)
+		}
+		for _, key := range supersession.ReplacementBranchKeys {
+			foundReplacement := false
+			for _, branch := range phase36.Branches {
+				branchKey := phase34RawCensusKey(phase34RawCensusBranch{File: branch.File, Function: branch.Function, Selector: branch.Selector, Values: branch.Values})
+				if branchKey == key && branch.Facet == supersession.Facet {
+					foundReplacement = true
+				}
+			}
+			if !foundReplacement {
+				t.Fatalf("Phase 36 census supersession %s replacement branch %s is absent or has another facet", supersession.Facet, key)
+			}
+		}
+		document.Branches = retained
+	}
+	document.Branches = append(document.Branches, phase36.Branches...)
 	return document
 }
 
@@ -945,10 +1073,11 @@ func phase34CollectCensusBranchesNoFatal(overrides map[string]string) []phase34R
 			"scalarBinaryOperator": true, "scalarBinaryExpr": true, "consumeUnsupportedBinaryOperator": true,
 			"consumeUnsupportedLogicalNot": true, "scalarStatements": true, "scalarExprAtom": true, "linearBody": true,
 			"refuseExtraDeclarationParameter": true, "scalarOperatorAt": true, "discardScalarBinaryExpr": true, "nestedScalarExpr": true,
+			"scalarCall": true, "scalarCallHasOneArgument": true, "scalarLetStart": true,
 		},
 		"internal/compiler/syntax/lexer.go":               {"punctuation": true, "validNumericLiteral": true, "numericDigit": true},
 		"internal/compiler/check/check.go":                {"payloadFieldShape": true, "resolveCallBinding": true},
-		"internal/compiler/check/scalar.go":               {"lower": true, "expression": true, "unsupportedBoolTail": true},
+		"internal/compiler/check/scalar.go":               {"lower": true, "expression": true, "lowerScalarCall": true, "unsupportedBoolTail": true},
 		"internal/compiler/ability/ability.go":            {"deriveAt": true},
 		"internal/compiler/check/check_modules_routes.go": {"ModuleAwareRoutes": true},
 	}
@@ -1078,6 +1207,11 @@ func phase34RelevantCensusCondition(function, condition string) bool {
 		"deriveAt":                         {"sealedLeaves"},
 		"unsupportedBoolTail":              {"resultName"},
 		"numericDigit":                     {"value >=", "value =="},
+		"scalarExprAtom":                   {"leftToken.Kind == TokenIdentifier && p.peek().Kind == TokenLParen"},
+		"scalarLetStart":                   {"value.Kind == TokenIdentifier && next.Kind == TokenLParen", "scalarValueCallTypes(parameterType, returnType) && p.scalarCallHasOneArgument(next)"},
+		"scalarCallHasOneArgument":         {"openIndex < 0", "depth == 0", "token.Kind == TokenRBrace || token.Kind == TokenEOF"},
+		"scalarCall":                       {"p.peek().Kind == TokenRParen", "p.peek().Kind == TokenComma", "p.peek().Kind == TokenRBrace", "isCallerOwnedBoundary(p.peek().Kind)"},
+		"lowerScalarCall":                  {"!ok || contract.ID == \"\"", "contract.ParameterType != \"U64\"", "expr.Left == nil || expr.Right != nil", "argumentType != contract.ParameterType"},
 	}
 	for _, marker := range markers[function] {
 		if strings.Contains(condition, marker) {
@@ -1102,6 +1236,9 @@ func phase34CensusSelector(function, selector string) string {
 	// allowing the implementation parameter to remain descriptive.
 	if function == "scalarBinaryOperator" && selector == "operator.Kind" {
 		return "kind"
+	}
+	if function == "lowerScalarCall" && selector == "expr.Kind" {
+		return "scalar-call-contract"
 	}
 	return selector
 }

@@ -12,6 +12,26 @@
   ],
   "branches": [
     {
+      "file": "internal/compiler/ability/ability.go",
+      "function": "deriveAt",
+      "selector": "shape.Constructor",
+      "values": ["Bool"],
+      "facet": "type:bool",
+      "disposition": "admitted-with-context",
+      "witness_ids": ["phase36-bool-local-state", "phase36-bool-comparison-results", "phase36-bool-function-parameter-and-result"],
+      "reason": "The unchanged primitive Bool derivation is re-linked to the exact Phase 36 local, comparison, parameter and result witnesses."
+    },
+    {
+      "file": "internal/compiler/syntax/parser.go",
+      "function": "scalarExprAtom",
+      "selector": "leftToken.Kind",
+      "values": ["TokenLParen"],
+      "facet": "restriction:scalar_expression_grouping",
+      "disposition": "admitted-with-context",
+      "witness_ids": ["phase36-grouping-with-helper-call"],
+      "reason": "Grouping now independently admits the scalar helper-call atom while preserving its unrelated tuple and general-tail restrictions."
+    },
+    {
       "file": "internal/compiler/syntax/parser.go",
       "function": "scalarCall",
       "selector": "if-condition",
@@ -20,7 +40,51 @@
       "disposition": "admitted-with-context",
       "witness_ids": ["phase36-pair-u64-u64"],
       "reason": "The named empty-argument refusal boundary keeps call admission pinned to the one-argument grammar."
-    }
+    },
+    {"file":"internal/compiler/check/scalar.go","function":"expression","selector":"expr.Kind","values":["call"],"facet":"restriction:scalar_expression_calls","disposition":"admitted-with-context","witness_ids":["phase36-pair-u64-u64"],"reason":"The scalar expression dispatcher lowers the independently witnessed direct U64/Bool call atom."},
+    {"file":"internal/compiler/check/scalar.go","function":"lowerScalarCall","selector":"if-condition","values":["!ok || contract.ID == \"\""],"facet":"probe:phase36-unresolved-callee","disposition":"refusal","witness_ids":["phase36-refuse-unresolved-scalar-call"],"reason":"An unresolved direct scalar call remains a named complete-program refusal."},
+    {"file":"internal/compiler/check/scalar.go","function":"lowerScalarCall","selector":"if-condition","values":["(contract.ParameterType != \"U64\" && contract.ParameterType != \"Bool\") || (contract.ReturnType != \"U64\" && contract.ReturnType != \"Bool\")"],"facet":"probe:phase36-byteview-call-signature","disposition":"refusal","witness_ids":["phase36-refuse-byteview-signature"],"reason":"The complete ByteView-signature refusal pins this exact signature guard."},
+    {"file":"internal/compiler/check/scalar.go","function":"lowerScalarCall","selector":"if-condition","values":["argumentType != contract.ParameterType"],"facet":"probe:phase36-scalar-call-type","disposition":"refusal","witness_ids":["phase36-refuse-argument-type"],"reason":"The complete mismatched-argument program pins the exact checked type refusal."},
+    {"file":"internal/compiler/check/scalar.go","function":"lowerScalarCall","selector":"if-condition","values":["expr.Left == nil || expr.Right != nil"],"facet":"restriction:scalar_expression_calls","disposition":"non-surface/internal","witness_ids":[],"reason":"Named internal guard against malformed scalar-call AST shapes; parser-owned source syntax admits exactly one argument before lowering."},
+    {"file":"internal/compiler/syntax/parser.go","function":"scalarCallHasOneArgument","selector":"if-condition","values":["depth == 0"],"facet":"restriction:scalar_expression_calls","disposition":"admitted-with-context","witness_ids":["phase36-pair-u64-u64"],"reason":"At the outer delimiter, the bounded lookahead recognizes one complete nested argument before scalar call parsing."},
+    {"file":"internal/compiler/syntax/parser.go","function":"scalarCallHasOneArgument","selector":"if-condition","values":["openIndex < 0"],"facet":"restriction:scalar_expression_calls","disposition":"non-surface/internal","witness_ids":[],"reason":"Fail-closed token-span lookup in parser lookahead; malformed parser state does not create a source admission."},
+    {"file":"internal/compiler/syntax/parser.go","function":"scalarCallHasOneArgument","selector":"token.Kind","values":["TokenComma"],"facet":"call:ordinary","disposition":"admitted-with-context","witness_ids":["phase36-call-ordinary-arity-two"],"reason":"A top-level comma excludes the scalar-expression fast path; legacy ordinary calls retain their separately witnessed arity refusal."},
+    {"file":"internal/compiler/syntax/parser.go","function":"scalarCallHasOneArgument","selector":"token.Kind","values":["TokenEOF"],"facet":"restriction:scalar_expression_calls","disposition":"non-surface/internal","witness_ids":[],"reason":"EOF is a delimiter-recovery boundary, not an admitted call argument form."},
+    {"file":"internal/compiler/syntax/parser.go","function":"scalarCallHasOneArgument","selector":"token.Kind","values":["TokenLBrace"],"facet":"restriction:scalar_expression_calls","disposition":"non-surface/internal","witness_ids":[],"reason":"Brace tracking only lets lookahead find the matching call delimiter; scalar expression checking still decides admission."},
+    {"file":"internal/compiler/syntax/parser.go","function":"scalarCallHasOneArgument","selector":"token.Kind","values":["TokenLParen"],"facet":"restriction:scalar_expression_calls","disposition":"admitted-with-context","witness_ids":["phase36-nested-argument"],"reason":"Nested parentheses remain inside the single recursively checked argument."},
+    {"file":"internal/compiler/syntax/parser.go","function":"scalarCallHasOneArgument","selector":"token.Kind","values":["TokenRBrace"],"facet":"restriction:scalar_expression_calls","disposition":"non-surface/internal","witness_ids":[],"reason":"A caller-owned closing brace is a recovery boundary rather than a scalar call argument."},
+    {"file":"internal/compiler/syntax/parser.go","function":"scalarCallHasOneArgument","selector":"token.Kind","values":["TokenRParen"],"facet":"restriction:scalar_expression_calls","disposition":"admitted-with-context","witness_ids":["phase36-pair-u64-u64"],"reason":"The closing call delimiter ends one complete argument in the independently checked source witness."},
+    {"file":"internal/compiler/syntax/parser.go","function":"scalarCall","selector":"if-condition","values":["isCallerOwnedBoundary(p.peek().Kind)"],"facet":"restriction:scalar_expression_calls","disposition":"non-surface/internal","witness_ids":[],"reason":"The parser leaves enclosing delimiters to their caller and emits a local recovery diagnostic; this boundary does not admit a call."},
+    {"file":"internal/compiler/syntax/parser.go","function":"scalarCall","selector":"if-condition","values":["p.peek().Kind == TokenComma"],"facet":"probe:phase36-scalar-call-arity","disposition":"refusal","witness_ids":["phase36-refuse-scalar-call-arity"],"reason":"The leading/trailing argument-comma grammar rejects scalar calls outside exact arity one."},
+    {"file":"internal/compiler/syntax/parser.go","function":"scalarExprAtom","selector":"if-condition","values":["leftToken.Kind == TokenIdentifier && p.peek().Kind == TokenLParen"],"facet":"restriction:scalar_expression_calls","disposition":"admitted-with-context","witness_ids":["phase36-pair-u64-u64"],"reason":"Direct named call atoms are independently exercised by the full scalar helper-call witness."},
+    {"file":"internal/compiler/syntax/parser.go","function":"scalarLetStart","selector":"if-condition","values":["value.Kind == TokenIdentifier && next.Kind == TokenLParen"],"facet":"restriction:scalar_expression_calls","disposition":"admitted-with-context","witness_ids":["phase36-pair-u64-u64"],"reason":"The scalar-body selector admits a checked direct named call expression for supported U64/Bool function shapes."},
+    {"file":"internal/compiler/check/check.go","function":"resolveCallBinding","selector":"diagnostic-code","values":["check.call_arity_unsupported"],"facet":"call:ordinary","disposition":"refusal","witness_ids":["phase36-call-ordinary-arity-two"],"reason":"The updated complete ordinary-call arity witness keeps the legacy checker diagnostic pinned."},
+    {"file":"internal/compiler/check/check.go","function":"resolveCallBinding","selector":"if-condition","values":["len(binding.RHS.Arguments) != 1"],"facet":"call:ordinary","disposition":"refusal","witness_ids":["phase36-call-ordinary-arity-two"],"reason":"The inherited exact checker guard retains its complete two-argument refusal witness."},
+    {"file":"internal/compiler/syntax/parser.go","function":"nestedScalarExpr","selector":"if-condition","values":["p.expressionDepth >= MaxExpressionDepth"],"facet":"refusal:surface.unsupported_expression_depth","disposition":"refusal","witness_ids":["phase35-depth-65","phase36-call-argument-depth-65"],"reason":"The same declared 64-level parser guard rejects depth 65 for both nested groups and helper-call arguments."}
   ],
-  "limit_contexts": []
+  "supersedes": [
+    {
+      "facet": "type:bool",
+      "prior_branch_keys": ["internal/compiler/ability/ability.go|deriveAt|shape.Constructor|Bool"],
+      "replacement_branch_keys": ["internal/compiler/ability/ability.go|deriveAt|shape.Constructor|Bool"],
+      "reason": "Replace the unchanged Bool derivation row's obsolete Phase 34 witness links with the exact Phase 36 Bool witnesses."
+    },
+    {
+      "facet": "restriction:scalar_expression_grouping",
+      "prior_branch_keys": ["internal/compiler/syntax/parser.go|scalarExprAtom|leftToken.Kind|TokenLParen"],
+      "replacement_branch_keys": ["internal/compiler/syntax/parser.go|scalarExprAtom|leftToken.Kind|TokenLParen"],
+      "reason": "Replace the Phase 35 no-call grouping witness link with its exact Phase 36 helper-call replacement; preserve all unrelated grouping boundaries."
+    },
+    {"facet":"call:ordinary","prior_branch_keys":["internal/compiler/check/check.go|resolveCallBinding|diagnostic-code|check.call_arity_unsupported","internal/compiler/check/check.go|resolveCallBinding|if-condition|len(binding.RHS.Arguments) != 1"],"replacement_branch_keys":["internal/compiler/check/check.go|resolveCallBinding|diagnostic-code|check.call_arity_unsupported","internal/compiler/check/check.go|resolveCallBinding|if-condition|len(binding.RHS.Arguments) != 1"],"reason":"Replace only the two inherited arity rows whose Phase 34 witness ID is explicitly superseded by the Phase 36 composed call contract."},
+    {"facet":"refusal:surface.unsupported_expression_depth","prior_branch_keys":["internal/compiler/syntax/parser.go|nestedScalarExpr|if-condition|p.expressionDepth >= MaxExpressionDepth"],"replacement_branch_keys":["internal/compiler/syntax/parser.go|nestedScalarExpr|if-condition|p.expressionDepth >= MaxExpressionDepth"],"reason":"Keep the exact existing parser guard while adding the independent over-depth scalar-call witness to its coverage."}
+  ],
+  "limit_contexts": [
+    {"id":"parser.expression_depth","value":64,"unit":"levels","meaning":"Source expression nesting shared by groups, byte_at indices and scalar helper-call arguments.","source":"internal/compiler/syntax/parser.go:MaxExpressionDepth = 64","classification":"source-expression-depth"},
+    {"id":"interpreter.call_depth","value":128,"unit":"frames","meaning":"Interpreter explicit runtime call stack depth; distinct from source expression nesting.","source":"internal/compiler/interp/interp.go:const MaxCallDepth = 128","classification":"runtime-call-stack"},
+    {"id":"cgen.invocation_path_nodes","value":4096,"unit":"static nodes","meaning":"Native static invocation-path table preflight bound; not a dynamic call-count cap.","source":"internal/compiler/cgen/cgen_program.go:const maxInvocationPathTableNodes = 4096","classification":"static-preflight"},
+    {"id":"executionpeer.invocations","value":4096,"unit":"static occurrences","meaning":"Peer static activation-occurrence bound; not a runtime iteration or dynamic-call limit.","source":"internal/compiler/executionpeer/executionpeer.go:const MaxInvocations = 4096","classification":"static-preflight"},
+    {"id":"execution.document_bytes","value":16777216,"unit":"bytes","meaning":"Native execution-document capture ceiling, measured in bytes.","source":"internal/compiler/execution/execution.go:const MaxDocumentBytes = 16 * 1024 * 1024","classification":"runtime-capture-bytes"},
+    {"id":"application.evidence_bytes","value":65536,"unit":"bytes","meaning":"Application evidence capture ceiling, measured in bytes and not a semantic iteration bound.","source":"internal/compiler/execution/execution.go:MaxApplicationEvidenceBytes = 64 * 1024","classification":"runtime-capture-bytes"},
+    {"id":"application.output_bytes","value":65536,"unit":"bytes","meaning":"Retained application output stream ceiling, measured in bytes.","source":"internal/compiler/execution/execution.go:MaxApplicationOutputBytes = 65_536","classification":"runtime-capture-bytes"}
+  ]
 }

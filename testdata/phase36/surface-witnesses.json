@@ -17,7 +17,160 @@
       "Scalar CFG expressions admit direct arity-one U64/Bool value calls with one argument; imported targets must be explicitly exported and whole-program call graphs remain acyclic."
     ]
   },
+  "limits": [
+    {
+      "id": "parser.expression_depth",
+      "category": "authoring parse bound",
+      "scope": "one nested scalar expression including groups, byte_at indices and helper-call arguments",
+      "unit": "levels",
+      "value": 64,
+      "meaning": "Maximum scalar expression nesting across groups, byte_at indices and helper-call arguments; deeper input receives surface.unsupported_expression_depth.",
+      "routes": ["app verify", "build", "check", "debug-map", "evidence", "evidence --validate", "explain", "format", "interface core", "interface export", "query", "run", "verify"]
+    }
+  ],
+  "superseded_limits": [
+    {"id": "parser.expression_depth", "reason": "Scalar helper-call arguments enter the same declared 64-level source expression bound as groups and byte_at indices."}
+  ],
+  "supersedes": [
+    {"facet": "type:bool", "prior_witness_ids": ["bool-local-state", "bool-comparison-results"], "replacement_witness_ids": ["phase36-bool-local-state", "phase36-bool-comparison-results", "phase36-bool-function-parameter-and-result"], "reason": "Replace only the prior Bool rows whose exact result-tail wording and supported function input/result context changed with scalar calls."},
+    {"facet": "restriction:scalar_expression_calls", "prior_witness_ids": ["restriction-scalar-expressions"], "replacement_witness_ids": ["phase36-pair-u64-u64"], "reason": "Replace the inherited helper-call absence claim with a complete checked direct-call program."},
+    {"facet": "restriction:scalar_expression_grouping", "prior_witness_ids": ["phase35-grouping"], "replacement_witness_ids": ["phase36-grouping-with-helper-call"], "reason": "Grouping now admits the scalar call atom while tuple and general-tail restrictions remain."},
+    {"facet": "call:declaration", "prior_witness_ids": ["call-declaration-arity-one"], "replacement_witness_ids": ["phase36-call-declaration-arity-one"], "reason": "The declaration arity remains one; replace the inherited no-scalar-call wording with the exact current call contract."},
+    {"facet": "call:ordinary", "prior_witness_ids": ["call-linear-binding-arity-one", "call-match-arm-arity-one", "call-ordinary-arity-two"], "replacement_witness_ids": ["phase36-call-linear-binding-arity-one", "phase36-call-match-arm-arity-one", "phase36-call-ordinary-arity-two"], "reason": "Ordinary-call paths remain arity one while their shared exact constraints now include the admitted scalar expression call contract."},
+    {"facet": "call:scalar_expression", "prior_witness_ids": ["call-scalar-context"], "replacement_witness_ids": ["phase36-call-scalar-expression"], "reason": "Replace the inherited absence claim with a complete checked scalar helper-call program."},
+    {"facet": "probe:scalar-helper-call", "prior_witness_ids": ["probe-scalar-helper-call"], "replacement_witness_ids": ["phase36-probe-scalar-helper-call"], "reason": "Replace the parser-era rejection sample with a passing complete scalar call witness."}
+  ],
   "witnesses": [
+    {
+      "id": "phase36-bool-local-state",
+      "facet": "type:bool",
+      "context": "scalar local state",
+      "source": "module phase34.bool_state\nexport { fn main }\nfn main(n: U64) -> U64 {\n  let yes = n == n\n  var output = 0\n  if yes { output = 1 } else { output = 2 }\n  output\n}\n",
+      "exercise": "let yes = n == n",
+      "expected_status": "pass",
+      "expected_form": "Bool",
+      "expected_constraints": ["Bool result tails return an initialized Bool local or formal by identifier; Bool literals are not generally admitted as result tails."]
+    },
+    {
+      "id": "phase36-bool-comparison-results",
+      "facet": "type:bool",
+      "context": "scalar comparison results",
+      "source": "module phase34.bool_result\nexport { fn main }\nfn main(n: U64) -> U64 {\n  var output = 0\n  if n == n { output = 1 } else { output = 2 }\n  output\n}\n",
+      "exercise": "if n == n",
+      "expected_status": "pass",
+      "expected_form": "Bool",
+      "expected_constraints": ["Bool result tails return an initialized Bool local or formal by identifier; Bool literals are not generally admitted as result tails."]
+    },
+    {
+      "id": "phase36-bool-function-parameter-and-result",
+      "facet": "type:bool",
+      "context": "scalar function input and result",
+      "source": "module phase36.bool_signature\nexport { fn main }\nfn relay(value: Bool) -> Bool {\n  let result = value\n  result\n}\nfn main(n: U64) -> U64 {\n  let yes = n == n\n  let result = relay(yes)\n  var output = 0\n  if result { output = 1 } else { output = 2 }\n  output\n}\n",
+      "exercise": "relay(yes)",
+      "expected_status": "pass",
+      "expected_form": "Bool",
+      "expected_constraints": ["Bool result tails return an initialized Bool local or formal by identifier; Bool literals are not generally admitted as result tails."]
+    },
+    {
+      "id": "phase36-grouping-with-helper-call",
+      "facet": "restriction:scalar_expression_grouping",
+      "context": "scalar expressions",
+      "source": "module phase36.grouped_call\nexport { fn main }\nfn helper(value: U64) -> U64 {\n  let result = value + 1\n  result\n}\nfn main(n: U64) -> U64 {\n  let result = n + (helper(n))\n  result\n}\n",
+      "exercise": "n + (helper(n))",
+      "expected_status": "pass",
+      "expected_form": "( expression )",
+      "expected_constraints": ["Grouping is transparent, preserves the inner expression kind and literal provenance, admits the scalar call atom, and does not admit tuples or general tails."]
+    },
+    {
+      "id": "phase36-call-declaration-arity-one",
+      "facet": "call:declaration",
+      "source_path": "testdata/phase07/call_basic.schway",
+      "exercise": "fn main(value: Byte)",
+      "expected_status": "pass",
+      "expected_arity": 1,
+      "expected_constraints": ["Call arguments and results must satisfy current type, ownership and authority checks.", "Foreign calls require their separate declared policy/adapter contract.", "Ordinary calls require a checked signature and acyclic call graph.", "Scalar CFG expressions admit direct arity-one U64/Bool value calls with one argument; imported targets must be explicitly exported and whole-program call graphs remain acyclic."]
+    },
+    {
+      "id": "phase36-call-linear-binding-arity-one",
+      "facet": "call:ordinary",
+      "context": "admitted linear binding and match-arm call paths",
+      "source_path": "testdata/phase07/call_basic.schway",
+      "exercise": "identity(value)",
+      "expected_status": "pass",
+      "expected_arity": 1,
+      "expected_constraints": ["Call arguments and results must satisfy current type, ownership and authority checks.", "Foreign calls require their separate declared policy/adapter contract.", "Ordinary calls require a checked signature and acyclic call graph.", "Scalar CFG expressions admit direct arity-one U64/Bool value calls with one argument; imported targets must be explicitly exported and whole-program call graphs remain acyclic."]
+    },
+    {
+      "id": "phase36-call-match-arm-arity-one",
+      "facet": "call:ordinary",
+      "context": "admitted linear binding and match-arm call paths",
+      "source_path": "testdata/phase08/match_arm_call.schway",
+      "exercise": "helper(flag)",
+      "expected_status": "pass",
+      "expected_arity": 1,
+      "expected_constraints": ["Call arguments and results must satisfy current type, ownership and authority checks.", "Foreign calls require their separate declared policy/adapter contract.", "Ordinary calls require a checked signature and acyclic call graph.", "Scalar CFG expressions admit direct arity-one U64/Bool value calls with one argument; imported targets must be explicitly exported and whole-program call graphs remain acyclic."]
+    },
+    {
+      "id": "phase36-call-ordinary-arity-two",
+      "facet": "call:ordinary",
+      "context": "admitted linear binding and match-arm call paths",
+      "source": "module phase36.call_arity\nexport { fn main }\nfn helper(value: U64) -> U64 {\n  let result = value\n  result\n}\nfn main(n: U64) -> U64 {\n  let result = helper(n, n)\n  result\n}\n",
+      "exercise": "helper(n, n)",
+      "expected_status": "invalid",
+      "expected_code": "check.call_arity_unsupported",
+      "expected_arity": 1,
+      "expected_constraints": ["Call arguments and results must satisfy current type, ownership and authority checks.", "Foreign calls require their separate declared policy/adapter contract.", "Ordinary calls require a checked signature and acyclic call graph.", "Scalar CFG expressions admit direct arity-one U64/Bool value calls with one argument; imported targets must be explicitly exported and whole-program call graphs remain acyclic."]
+    },
+    {
+      "id": "phase36-call-scalar-expression",
+      "facet": "call:scalar_expression",
+      "context": "scalar CFG expressions",
+      "source": "module phase36.scalar_contract\nexport { fn main }\nfn helper(value: U64) -> U64 {\n  let result = value + 1\n  result\n}\nfn main(n: U64) -> U64 {\n  let result = helper(n)\n  result\n}\n",
+      "exercise": "helper(n)",
+      "expected_status": "pass",
+      "expected_constraints": ["Call arguments and results must satisfy current type, ownership and authority checks.", "Foreign calls require their separate declared policy/adapter contract.", "Ordinary calls require a checked signature and acyclic call graph.", "Scalar CFG expressions admit direct arity-one U64/Bool value calls with one argument; imported targets must be explicitly exported and whole-program call graphs remain acyclic."]
+    },
+    {
+      "id": "phase36-probe-scalar-helper-call",
+      "facet": "probe:scalar-helper-call",
+      "source": "module phase36.scalar_probe\nexport { fn main }\nfn helper(value: U64) -> U64 {\n  let result = value + 1\n  result\n}\nfn main(n: U64) -> U64 {\n  let result = helper(n)\n  result\n}\n",
+      "exercise": "helper(n)",
+      "expected_status": "pass"
+    },
+    {
+      "id": "phase36-refuse-scalar-call-arity",
+      "facet": "probe:phase36-scalar-call-arity",
+      "source": "module phase36.refuse_scalar_arity\nexport { fn main }\nfn helper(value: U64) -> Bool {\n  let yes = value < 8\n  yes\n}\nfn main(n: U64) -> U64 {\n  var result = 0\n  if helper(n, n) {\n    result = 1\n  } else {\n    result = 2\n  }\n  result\n}\n",
+      "exercise": "helper(n, n)",
+      "expected_status": "invalid",
+      "expected_code": "syntax.scalar_call_arity"
+    },
+    {
+      "id": "phase36-refuse-unresolved-scalar-call",
+      "facet": "probe:phase36-unresolved-callee",
+      "source": "module phase36.refuse_unresolved\nexport { fn main }\nfn main(n: U64) -> U64 {\n  var result = 0\n  if ghost(n) {\n    result = 1\n  } else {\n    result = 2\n  }\n  result\n}\n",
+      "exercise": "ghost(n)",
+      "expected_status": "invalid",
+      "expected_code": "core.call_callee_unresolved"
+    },
+    {
+      "id": "phase36-call-argument-depth-64",
+      "facet": "restriction:scalar_expression_calls",
+      "context": "nested scalar helper arguments",
+      "generated_call_depth": 64,
+      "expected_status": "pass",
+      "expected_form": "function_call(expression)",
+      "expected_arity": 1,
+      "expected_constraints": ["A direct local function call has exactly one scalar expression argument and returns the declared U64 or Bool result.", "Argument recursion shares the 64-level expression-depth bound and lowers in source order.", "Bool result tails return an initialized Bool local or formal by identifier; bind a call result before returning it.", "Imported targets must be explicitly exported local module functions; whole-program call graphs remain acyclic.", "Only U64 -> U64, U64 -> Bool, Bool -> U64, and Bool -> Bool signatures are admitted; Unit and ByteView calls are absent."]
+    },
+    {
+      "id": "phase36-call-argument-depth-65",
+      "facet": "refusal:surface.unsupported_expression_depth",
+      "generated_call_depth": 65,
+      "expected_status": "invalid",
+      "expected_code": "surface.unsupported_expression_depth",
+      "expected_hint": "Expression nesting exceeds the parser limit of 64; reduce nested groups or byte_at indices."
+    },
     {
       "id": "phase36-pair-u64-u64",
       "facet": "restriction:scalar_expression_calls",
@@ -26,6 +179,7 @@
       "source": "module phase36.witness_u64_u64\nexport { fn main }\nfn adjust(value: U64) -> U64 {\n  let result = value + 1\n  result\n}\nfn main(n: U64) -> U64 {\n  let result = adjust(n)\n  result\n}\n",
       "exercise": "adjust(n)",
       "expected_status": "pass",
+      "expected_arity": 1,
       "expected_form": "function_call(expression)",
       "expected_constraints": [
         "Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
@@ -43,6 +197,7 @@
       "source": "module phase36.witness_u64_bool\nexport { fn main }\nfn is_small(value: U64) -> Bool {\n  let yes = value < 8\n  yes\n}\nfn main(n: U64) -> U64 {\n  var result = 0\n  if is_small(n) {\n    result = 1\n  } else {\n    result = 2\n  }\n  result\n}\n",
       "exercise": "if is_small(n)",
       "expected_status": "pass",
+      "expected_arity": 1,
       "expected_form": "function_call(expression)",
       "expected_constraints": [
         "Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
@@ -60,6 +215,7 @@
       "source": "module phase36.witness_bool_u64\nexport { fn main }\nfn choose(value: Bool) -> U64 {\n  var result = 0\n  if value {\n    result = 7\n  } else {\n    result = 11\n  }\n  result\n}\nfn main(n: U64) -> U64 {\n  let yes = n == 8\n  let result = choose(yes)\n  result\n}\n",
       "exercise": "choose(yes)",
       "expected_status": "pass",
+      "expected_arity": 1,
       "expected_form": "function_call(expression)",
       "expected_constraints": [
         "Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
@@ -77,6 +233,7 @@
       "source": "module phase36.witness_bool_bool\nexport { fn main }\nfn relay(value: Bool) -> Bool {\n  let result = value\n  result\n}\nfn main(n: U64) -> U64 {\n  let yes = n == 8\n  let result = relay(yes)\n  var output = 0\n  if result {\n    output = 1\n  } else {\n    output = 2\n  }\n  output\n}\n",
       "exercise": "relay(yes)",
       "expected_status": "pass",
+      "expected_arity": 1,
       "expected_form": "function_call(expression)",
       "expected_constraints": [
         "Argument recursion shares the 64-level expression-depth bound and lowers in source order.",

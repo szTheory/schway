@@ -58,7 +58,7 @@ func TestPhase35SurfaceManifestWitnesses(t *testing.T) {
 	required := map[string]bool{
 		"phase35-bit-and": false, "phase35-bit-or": false, "phase35-bit-xor": false,
 		"phase35-shift-left-zero": false, "phase35-shift-right-logical": false,
-		"phase35-grouping": false, "phase35-precedence": false, "phase35-hex-spelling": false,
+		"phase35-precedence": false, "phase35-hex-spelling": false,
 		"phase35-byte-unused": false, "phase35-depth-64": false, "phase35-depth-65": false,
 		"phase35-nested-byte-index": false, "phase35-type-closers": false,
 		"phase35-bool-operand": false, "phase35-shift-nonliteral": false,
@@ -76,13 +76,25 @@ func TestPhase35SurfaceManifestWitnesses(t *testing.T) {
 			t.Errorf("independent Phase 35 witness %q is missing", id)
 		}
 	}
+	if !containsPhase35Witness(document.Witnesses, "phase36-grouping-with-helper-call") {
+		t.Error("composed grouping claim lacks its exact Phase 36 helper-call witness")
+	}
 	observed := phase34ObserveSurfaceWitnesses(t, document.Witnesses)
 	if problems := phase34FullSurfaceProblems(surfacemanifest.Current(), document, observed); len(problems) != 0 {
 		t.Fatalf("independent Phase 35 witnesses disagree with the complete source-free manifest: %v", problems)
 	}
-	if document.Calls.ScalarExpressionCalls {
-		t.Fatal("Phase 35 witness composition must keep scalar expression helper calls absent")
+	if !document.Calls.ScalarExpressionCalls {
+		t.Fatal("Phase 36 composition must replace the inherited scalar expression helper-call absence claim")
 	}
+}
+
+func containsPhase35Witness(witnesses []phase34SurfaceWitness, id string) bool {
+	for _, witness := range witnesses {
+		if witness.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 func TestPhase35SurfaceManifestCensus(t *testing.T) {
@@ -180,9 +192,25 @@ func TestPhase35SurfaceManifestControls(t *testing.T) {
 	assert("remove nested-expression depth limit", "constraint_changed", "limit:parser.expression_depth", phase34ManifestContractProblems(withoutDepthLimit, document))
 
 	withoutDepthWitness := document
-	withoutDepthWitness.Witnesses = filterSurfaceWitnesses(document.Witnesses, "phase35-depth-65")
+	withoutDepthWitness.Witnesses = nil
+	removedDepthWitnesses := 0
+	for _, witness := range document.Witnesses {
+		// Composed helper-call depth witnesses cover this same refusal.
+		// Remove its complete copied-data coverage to exercise missing_refusal.
+		if witness.Facet == "refusal:surface.unsupported_expression_depth" {
+			removedDepthWitnesses++
+			continue
+		}
+		withoutDepthWitness.Witnesses = append(withoutDepthWitness.Witnesses, witness)
+	}
+	if removedDepthWitnesses == 0 {
+		t.Fatal("depth-refusal control has no active full-source witness to remove")
+	}
 	withoutDepthObserved := phase34ObserveSurfaceWitnesses(t, withoutDepthWitness.Witnesses)
 	assert("remove over-depth full-source witness", "missing_refusal", "refusal:surface.unsupported_expression_depth", phase34SurfaceProblems(manifest, withoutDepthObserved, []string{"refusal:surface.unsupported_expression_depth"}))
+	if problems := phase34SurfaceProblems(manifest, observed, []string{"refusal:surface.unsupported_expression_depth"}); len(problems) != 0 {
+		t.Fatalf("restored over-depth full-source witnesses must cover the refusal: %v", problems)
+	}
 
 	parserPath := "internal/compiler/syntax/parser.go"
 	parserSource, err := os.ReadFile(testsupport.ProjectPath(filepath.FromSlash(parserPath)))

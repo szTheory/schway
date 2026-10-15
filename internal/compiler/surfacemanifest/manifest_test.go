@@ -128,7 +128,7 @@ func TestPhase34SurfaceDocument(t *testing.T) {
 	if len(wantBuiltins) != 0 {
 		t.Errorf("missing builtins: %v", wantBuiltins)
 	}
-	if manifest.Calls.DeclarationArity != 1 || !reflect.DeepEqual(manifest.Calls.OrdinaryArity, []int{1}) || manifest.Calls.ScalarExpressionCalls {
+	if manifest.Calls.DeclarationArity != 1 || !reflect.DeepEqual(manifest.Calls.OrdinaryArity, []int{1}) || !manifest.Calls.ScalarExpressionCalls {
 		t.Fatalf("call contract = %+v", manifest.Calls)
 	}
 	if manifest.Calls.OrdinaryContexts == nil || manifest.Calls.Constraints == nil {
@@ -227,7 +227,7 @@ func TestPhase35SurfaceDocument(t *testing.T) {
 	}
 	grouping := entryByID(t, manifest.Restrictions, "scalar_expression_grouping")
 	groupingFacts := strings.Join(grouping.Constraints, " ")
-	if grouping.Syntax != "( expression )" || !strings.Contains(groupingFacts, "literal provenance") || !strings.Contains(groupingFacts, "does not admit calls or tuples") {
+	if grouping.Syntax != "( expression )" || !strings.Contains(groupingFacts, "literal provenance") || !strings.Contains(groupingFacts, "admits the scalar call atom") || !strings.Contains(groupingFacts, "does not admit tuples or general tails") {
 		t.Fatalf("transparent grouping facts = %+v", grouping)
 	}
 	hex := entryByID(t, manifest.Restrictions, "u64_hex_spelling")
@@ -263,8 +263,8 @@ func TestPhase35SurfaceDocument(t *testing.T) {
 	if refusal := refusals["surface.unsupported_expression_depth"]; refusal.Hint != "Expression nesting exceeds the parser limit of 64; reduce nested groups or byte_at indices." {
 		t.Fatalf("expression-depth refusal = %+v", refusal)
 	}
-	if manifest.Schema != "schway.surface/1" || manifest.Calls.DeclarationArity != 1 || manifest.Calls.ScalarExpressionCalls {
-		t.Fatalf("Phase 35 changed schema or call authority: schema=%q calls=%+v", manifest.Schema, manifest.Calls)
+	if manifest.Schema != "schway.surface/1" || manifest.Calls.DeclarationArity != 1 || !manifest.Calls.ScalarExpressionCalls {
+		t.Fatalf("Phase 36 changed schema or scalar-call authority: schema=%q calls=%+v", manifest.Schema, manifest.Calls)
 	}
 	data, err := JSON(manifest)
 	if err != nil {
@@ -365,7 +365,7 @@ func TestPhase34SurfaceLimits(t *testing.T) {
 		"module.total_source_bytes":  {"module loading", "all source files in one loaded module program", "bytes", 4194304, []string{"app verify", "build", "check", "debug-map", "run"}},
 		"parser.alternatives":        {"authoring parse bound", "one parsed source program", "alternatives", 4096, nil},
 		"parser.declarations":        {"authoring parse bound", "one source file", "declarations", 4096, nil},
-		"parser.expression_depth":    {"authoring parse bound", "one nested scalar expression including groups and byte_at indices", "levels", 64, nil},
+		"parser.expression_depth":    {"authoring parse bound", "one nested scalar expression including groups, byte_at indices and helper-call arguments", "levels", 64, nil},
 		"parser.functions":           {"authoring parse bound", "one source file", "functions", 1024, nil},
 		"parser.linear_bindings":     {"authoring parse bound", "outer linear bodies across one parsed source program", "bindings", 65536, nil},
 		"parser.primary_diagnostics": {"authoring diagnostic bound", "one parsed source", "diagnostics", 20, nil},
