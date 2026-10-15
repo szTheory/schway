@@ -707,7 +707,8 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		if function.Match == nil && function.Linear == nil {
 			return "", fmt.Errorf("function %q: has no linear body", function.ID)
 		}
-		if function.Match == nil && len(function.Linear.Blocks) > 0 && !(transferFileByteProgram && function.ID == transferHelper.ID) && !hasScalarOperations(function) {
+		if function.Match == nil && len(function.Linear.Blocks) > 0 && !(transferFileByteProgram && function.ID == transferHelper.ID) &&
+			!hasScalarOperations(function) && !(dynamicInvocationSupport && isDynamicScalarFunctionBody(function, byID)) {
 			return "", fmt.Errorf("function %q: multi-function foreign-call bodies are not supported by native emission this phase", function.ID)
 		}
 		// Plan 16-05's human-selected cut-m004 applies to every program
@@ -1004,6 +1005,8 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 			err = emitProgramFixtureBytesFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames)
 		} else if isLocalFileByteFunction(function) {
 			err = emitProgramLocalFileByteFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames)
+		} else if dynamicInvocationSupport && isDynamicScalarFunctionBody(function, byID) {
+			err = emitProgramScalarFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], shell, lookup, childTableNames, true)
 		} else if hasScalarOperations(function) {
 			err = emitProgramScalarFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], shell, lookup, childTableNames, dynamicInvocationSupport)
 		} else {
@@ -2621,34 +2624,78 @@ func hasScalarValueCalls(program core.Program) bool {
 	for _, function := range program.Functions {
 		byID[function.ID] = function
 	}
+	found := false
 	for _, function := range program.Functions {
 		linear := function.Linear
 		if linear == nil {
 			continue
-		}
-		places := make(map[string]core.Place, len(linear.Places))
-		for _, place := range linear.Places {
-			places[place.ID] = place
 		}
 		for _, operation := range linear.Operations {
 			if operation.Kind != core.OpCall {
 				continue
 			}
 			callee, ok := byID[operation.CalleeID]
-			if !ok || (callee.Parameter.Type != "U64" && callee.Parameter.Type != "Bool") || (callee.ReturnType != "U64" && callee.ReturnType != "Bool") {
-				continue
+			if !ok || !isDynamicScalarFunctionBody(function, byID) || !isDynamicScalarCall(function, operation, callee) {
+				// Keep a mixed or ownership-bearing call graph on its established
+				// emitter route. The dynamic branch is admitted only when every
+				// OpCall belongs to the bounded U64/Bool scalar subset.
+				return false
 			}
-			source, sourceOK := places[operation.SourceID]
-			target, targetOK := places[operation.TargetID]
-			if !sourceOK || !targetOK || source.TypeID == "" || target.TypeID == "" || target.TypeID != operation.TypeID {
-				continue
-			}
-			if placesTypeName(linear, source.TypeID) == callee.Parameter.Type && placesTypeName(linear, target.TypeID) == callee.ReturnType {
-				return true
-			}
+			found = true
 		}
 	}
-	return false
+	return found
+}
+
+func isDynamicScalarCall(caller core.Function, operation core.LinearOperation, callee core.Function) bool {
+	if (callee.Parameter.Type != "U64" && callee.Parameter.Type != "Bool") || (callee.ReturnType != "U64" && callee.ReturnType != "Bool") {
+		return false
+	}
+	places := make(map[string]core.Place, len(caller.Linear.Places))
+	for _, place := range caller.Linear.Places {
+		places[place.ID] = place
+	}
+	source, sourceOK := places[operation.SourceID]
+	target, targetOK := places[operation.TargetID]
+	if !sourceOK || !targetOK || source.TypeID == "" || target.TypeID == "" || target.TypeID != operation.TypeID {
+		return false
+	}
+	return placesTypeName(caller.Linear, source.TypeID) == callee.Parameter.Type && placesTypeName(caller.Linear, target.TypeID) == callee.ReturnType
+}
+
+// isDynamicScalarFunctionBody is the checked-core shape admitted by the
+// additive scalar call emitter. In particular, a U64 signature alone does
+// not move ownership, foreign, or other legacy call bodies onto this branch.
+func isDynamicScalarFunctionBody(function core.Function, byID map[string]core.Function) bool {
+	linear := function.Linear
+	if function.Match != nil || linear == nil || len(linear.Blocks) == 0 || function.ForeignContract != nil || len(linear.LoanEndpoints) != 0 {
+		return false
+	}
+	if (function.Parameter.Type != "U64" && function.Parameter.Type != "Bool") ||
+		(function.ReturnType != "U64" && function.ReturnType != "Bool" && !(function.Parameter.Type == "U64" && function.ReturnType == "Unit")) {
+		return false
+	}
+	for _, place := range linear.Places {
+		if name := placesTypeName(linear, place.TypeID); name != "U64" && name != "Bool" {
+			return false
+		}
+	}
+	for _, operation := range linear.Operations {
+		switch operation.Kind {
+		case core.OpConst, core.OpCopy, core.OpAddChecked, core.OpLessU64, core.OpEqualU64,
+			core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64, core.OpShiftLeftU64, core.OpShiftRightU64,
+			core.OpRemainderU64, core.OpScalarStore, core.OpBranch, core.OpWriteU64, core.OpWriteNewline,
+			core.OpWriteText, core.OpReturn, core.OpDefect:
+		case core.OpCall:
+			callee, ok := byID[operation.CalleeID]
+			if !ok || !isDynamicScalarCall(function, operation, callee) {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 func isStraightLineScalarBody(function core.Function) bool {
@@ -2829,7 +2876,7 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 			case core.OpAddChecked:
 				fmt.Fprintf(out, "  if (UINT64_MAX - %s < %s) {\n", locals[op.SourceID], locals[op.RightID])
 				if shell == programApplicationShell {
-					emitProgramApplicationScalarFailure(out, "schway: "+execution.DefectReasonU64AddOverflow, dynamicInvocationSupport)
+					emitProgramApplicationScalarFailure(out, "    ", "schway: "+execution.DefectReasonU64AddOverflow, dynamicInvocationSupport)
 				} else {
 					overflow := op
 					overflow.Reason = execution.DefectReasonU64AddOverflow
@@ -2855,7 +2902,7 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 			case core.OpRemainderU64:
 				fmt.Fprintf(out, "  if (%s == UINT64_C(0)) {\n", locals[op.RightID])
 				if shell == programApplicationShell {
-					emitProgramApplicationScalarFailure(out, "schway: "+execution.DefectReasonU64RemainderByZero, dynamicInvocationSupport)
+					emitProgramApplicationScalarFailure(out, "    ", "schway: "+execution.DefectReasonU64RemainderByZero, dynamicInvocationSupport)
 				} else {
 					defect := op
 					defect.Reason = execution.DefectReasonU64RemainderByZero
@@ -2871,7 +2918,7 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 				// shells: never assert, never elided, even under a loop guard.
 				fmt.Fprintf(out, "  if (%s >= %s.length) {\n", locals[op.RightID], locals[op.SourceID])
 				if shell == programApplicationShell {
-					emitProgramApplicationScalarFailure(out, "schway: "+execution.DefectReasonByteIndexOutOfBounds, dynamicInvocationSupport)
+					emitProgramApplicationScalarFailure(out, "    ", "schway: "+execution.DefectReasonByteIndexOutOfBounds, dynamicInvocationSupport)
 				} else {
 					defect := op
 					defect.Reason = execution.DefectReasonByteIndexOutOfBounds
@@ -2940,7 +2987,7 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 				}
 				terminated = true
 			case core.OpDefect:
-				emitProgramApplicationScalarFailure(out, "schway app: "+op.Reason, dynamicInvocationSupport)
+				emitProgramApplicationScalarFailure(out, "  ", "schway app: "+op.Reason, dynamicInvocationSupport)
 				terminated = true
 			default:
 				return fmt.Errorf("operation %q has unsupported scalar kind %q", op.ID, op.Kind)
@@ -2954,11 +3001,11 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 	return nil
 }
 
-func emitProgramApplicationScalarFailure(out *strings.Builder, message string, dynamicInvocationSupport bool) {
+func emitProgramApplicationScalarFailure(out *strings.Builder, indent, message string, dynamicInvocationSupport bool) {
 	if dynamicInvocationSupport {
-		out.WriteString("    if (!schway_capture_active) schway_write_capacity_capture();\n")
+		fmt.Fprintf(out, "%sif (!schway_capture_active) schway_write_capacity_capture();\n", indent)
 	}
-	fmt.Fprintf(out, "    fputs(%s, stderr);\n    exit(65);\n", strconv.Quote(message+"\n"))
+	fmt.Fprintf(out, "%sfputs(%s, stderr);\n%sexit(65);\n", indent, strconv.Quote(message+"\n"), indent)
 }
 
 // emitProgramTextWrite preserves every admitted byte, including NUL and
