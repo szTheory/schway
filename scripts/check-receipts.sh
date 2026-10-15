@@ -97,12 +97,15 @@ check_log() {
 	done <<EOF
 $program_names
 EOF
-	# Keep the declared-program refusal order, then check the reverse inventory.
-	undeclared_program=$(printf '%s\n%s\n' "$want_programs" "$case_table" | awk '
+	# Keep the declared-program refusal order, then validate the case records.
+	# STDERR is the seventh logical field and consumes the remainder of the row.
+	case_inventory_reason=$(printf '%s\n%s\n' "$want_programs" "$case_table" | awk '
 		NR==1 { n=split($0, programs, ","); for (i=1; i<=n; i++) declared["p" programs[i]]=1; next }
-		!(("p" $3) in declared) { print $3; exit }
+		NF<7 { malformed=1; next }
+		!(("p" $3) in declared) && reason=="" { reason="case_program_not_declared_" $3 }
+		END { if (malformed) print "case_table_malformed"; else if (reason!="") print reason }
 	')
-	[ -z "$undeclared_program" ] || reject "case_program_not_declared_$undeclared_program"
+	[ -z "$case_inventory_reason" ] || reject "$case_inventory_reason"
 	[ "$(field "$result" controls)" = "$control_count" ] || reject "result_control_count_$typed"
 	[ "$(field "$result" cases)" = "$table_count" ] || reject "result_case_count_$typed"
 	[ "$(prefix_count "$label case " "$log")" = "$table_count" ] || reject "case_row_count_$typed"

@@ -84,6 +84,53 @@ func TestReceiptGateProgramInventory(t *testing.T) {
 	}
 }
 
+func TestReceiptGateCaseRecords(t *testing.T) {
+	root := testsupport.ProjectPath()
+	base := string(mustRead(t, testsupport.ProjectPath("testdata", "receipts", "M006.manifest")))
+	for _, row := range []struct {
+		name, record, program, input, exit string
+		malformed                          bool
+	}{
+		{name: "empty-program", record: "# case ", malformed: true},
+		{name: "whitespace-program", record: "# case \t \t", malformed: true},
+		{name: "missing-input", record: "# case checksum", program: "checksum", malformed: true},
+		{name: "missing-exit", record: "# case checksum partial", program: "checksum", input: "partial", malformed: true},
+		{name: "missing-stdout", record: "# case checksum partial 0", program: "checksum", input: "partial", exit: "0", malformed: true},
+		{name: "missing-stderr", record: "# case checksum partial 0 1", program: "checksum", input: "partial", exit: "0", malformed: true},
+		{name: "blank-stderr", record: "# case checksum partial 0 1 \t ", program: "checksum", input: "partial", exit: "0", malformed: true},
+		{name: "multiword-stderr", record: "# case checksum partial 0 1 expected stderr has several words", program: "checksum", input: "partial", exit: "0"},
+		{name: "dash-prefix-stderr", record: "# case checksum partial 0 1 - followed by text", program: "checksum", input: "partial", exit: "0"},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			manifest := filepath.Join(t.TempDir(), "cases.manifest")
+			if err := os.WriteFile(manifest, []byte(base+row.record+"\n"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			logs := make([]string, 2)
+			for i, host := range []string{"macOS", "Linux"} {
+				// Match the existing reader's parsed fields, including empty
+				// values, so malformed cases reach the structural check.
+				extra := fmt.Sprintf("phase32 case program=%s input=%s expected_exit=%s actual_exit=%s stdout=exact stderr=exact status=pass\n", row.program, row.input, row.exit, row.exit)
+				log := phase32ReceiptLog(t, host, phase32GateDigest)
+				log = strings.Replace(log, "phase32 control name=guide ", extra+"phase32 control name=guide ", 1)
+				logs[i] = strings.Replace(log, "cases=39", "cases=40", 1)
+			}
+			got := runGenericReceiptPair(t, root, manifest, logs[0], logs[1], phase32GateDigest)
+			if row.malformed {
+				want := "phase32 receipt gate: status=fail reason=case_table_malformed\n"
+				if got.exit != 1 || got.stdout != "" || got.stderr != want {
+					t.Fatalf("malformed case verdict: got=%#v want exit=1 stderr=%q", got, want)
+				}
+				return
+			}
+			want := "phase32 receipt gate: status=pass hosts=macOS,Linux codedigest=" + phase32GateDigest + " programs=" + strings.Join(phase32ReceiptPrograms, ",") + " cases=40 digest_source=env\n"
+			if got.exit != 0 || got.stdout != want || got.stderr != "" {
+				t.Fatalf("valid case verdict: got=%#v want exit=0 stdout=%q", got, want)
+			}
+		})
+	}
+}
+
 func TestReceiptGateMalformedControls(t *testing.T) {
 	root := testsupport.ProjectPath()
 	base := string(mustRead(t, testsupport.ProjectPath("testdata", "receipts", "M006.manifest")))
