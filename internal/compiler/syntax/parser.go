@@ -602,11 +602,11 @@ func (p *parser) scalarLetStart(parameterType, returnType ast.TypeRef) bool {
 		return false
 	}
 	next := p.peekNonTrivia(4)
-	if value.Kind == TokenIdentifier && next.Kind == TokenLParen {
-		return scalarValueCallTypes(parameterType, returnType) && p.scalarCallHasOneArgument(next)
-	}
 	if value.Kind == TokenIdentifier && (value.Text == "byte_len" || value.Text == "byte_at") && next.Kind == TokenLParen {
 		return true
+	}
+	if value.Kind == TokenIdentifier && next.Kind == TokenLParen {
+		return scalarValueCallTypes(parameterType, returnType) && p.scalarCallHasOneArgument(next)
 	}
 	_, precedence, _ := p.scalarOperatorAt(4)
 	if precedence != 0 {
