@@ -268,6 +268,61 @@ func appendInterpreterEvents(evidence *interpreterEvidence, events []Event, addi
 	return events
 }
 
+func appendFrameEvent(f *frame, events []Event, build func() Event) []Event {
+	if f == nil || !f.captureEnabled {
+		return events
+	}
+	if f.captureProbe != nil {
+		f.captureProbe.eventConstructions++
+	}
+	return appendInterpreterEvents(f.evidence, events, build())
+}
+
+func appendFrameEvents(f *frame, events []Event, build func() []Event) []Event {
+	if f == nil || !f.captureEnabled {
+		return events
+	}
+	additions := build()
+	if f.captureProbe != nil {
+		f.captureProbe.eventConstructions += len(additions)
+	}
+	return appendInterpreterEvents(f.evidence, events, additions...)
+}
+
+func noteEventConstruction(f *frame) {
+	if f != nil && f.captureProbe != nil {
+		f.captureProbe.eventConstructions++
+	}
+}
+
+type captureFrameSnapshot struct {
+	invocation string
+	entryID    string
+	segments   bool
+	ordinals   bool
+	evidence   bool
+}
+
+type capturePolicyProbe struct {
+	evidenceCreations     int
+	eventConstructions    int
+	invocationBuilds      int
+	segmentAllocations    int
+	ordinalMapAllocations int
+	initialEventCapacity  int
+	frames                []captureFrameSnapshot
+}
+
+func (probe *capturePolicyProbe) observeFrame(f *frame) {
+	if probe == nil {
+		return
+	}
+	probe.frames = append(probe.frames, captureFrameSnapshot{
+		invocation: f.invocation, entryID: f.entryID, segments: f.segments != nil,
+		ordinals: f.nextCallOrdinals != nil, evidence: f.evidence != nil,
+	})
+}
+
 // SetEvidenceLimitsForTest installs small scoped capture limits for focused
 // boundary tests. It must not be used by production callers.
 func SetEvidenceLimitsForTest(pathBytes, eventBytes, totalBytes, maxOrdinal int) (restore func()) {
@@ -404,11 +459,13 @@ func drainStackForAbruptExit(stack []frame, evidence *interpreterEvidence, event
 		f := &stack[frameIndex]
 		places := frameLiveResourcePlaces(f)
 		for _, place := range places {
-			events = appendInterpreterEvents(evidence, events, Event{
-				Schema: f.eventSchema(), ID: fmt.Sprintf("%s:event:leaked:%d", f.function.ID, leakIndex), Kind: "resource.leaked", FunctionID: f.function.ID,
-				Invocation:  f.invocation,
-				SourcePlace: place,
-			})
+			if f.captureEnabled {
+				events = appendInterpreterEvents(evidence, events, Event{
+					Schema: f.eventSchema(), ID: fmt.Sprintf("%s:event:leaked:%d", f.function.ID, leakIndex), Kind: "resource.leaked", FunctionID: f.function.ID,
+					Invocation:  f.invocation,
+					SourcePlace: place,
+				})
+			}
 			leakIndex++
 		}
 		liveResources = append(liveResources, places...)
@@ -656,6 +713,130 @@ func RunWithFileBytes(program core.Program, functionName, path string, read func
 	return result, nil
 }
 
+// RunFileApplication interprets the admitted PathToken-to-U64 FileBytes
+// application through the fixed Go reader. Its ordinary production boundary
+// exposes no reader injection and does not construct optional execution
+// evidence.
+func RunFileApplication(program core.Program, functionName, path string) (ApplicationResult, error) {
+	return runFileApplicationWithReader(program, functionName, path, ReadFileBytes, false)
+}
+
+func runFileApplicationWithReader(program core.Program, functionName, path string, read func(string) ([]byte, string), captureEnabled bool) (ApplicationResult, error) {
+	return runFileApplicationWithProbe(program, functionName, path, read, captureEnabled, nil)
+}
+
+func runFileApplicationWithProbe(program core.Program, functionName, path string, read func(string) ([]byte, string), captureEnabled bool, probe *capturePolicyProbe) (ApplicationResult, error) {
+	if read == nil {
+		return ApplicationResult{}, fmt.Errorf("file application requires a reader")
+	}
+	if strings.IndexByte(path, 0) >= 0 || len(path) > maxFileBytesPathBytes {
+		return ApplicationResult{}, fmt.Errorf("file application path must contain no NUL and be at most %d bytes", maxFileBytesPathBytes)
+	}
+	validated := corevalidate.Validate(program)
+	if !validated.Valid {
+		return ApplicationResult{}, fmt.Errorf("core validation failed: %s", validated.Problems[0].Code)
+	}
+	program = validated.Program()
+	function, ok := findFunction(program, functionName)
+	if !ok {
+		return ApplicationResult{}, fmt.Errorf("function %q is absent from checked core", functionName)
+	}
+	ownerOpID, err := validateFileApplicationEntry(program, function)
+	if err != nil {
+		return ApplicationResult{}, err
+	}
+	initial, err := inputValue(program, function, path)
+	if err != nil {
+		return ApplicationResult{}, err
+	}
+	sink := &applicationOutputSink{bytes: []byte{}, limit: execution.MaxApplicationOutputBytes}
+	base := newFlatFrame(function, map[string]value{function.Parameter.ID: initial})
+	base.captureEnabled = captureEnabled
+	base.terminal = &terminalDetails{}
+	base.captureProbe = probe
+	base.fileBytes = read
+	base.copyFileBytes = captureEnabled
+	base.applicationOutput = sink
+	executionResult, runErr := runProgramFrameStack(program, base)
+	capacityErr := errors.Is(runErr, ErrEvidenceCapacityExhausted)
+	if runErr != nil && !capacityErr {
+		return ApplicationResult{}, runErr
+	}
+	if executionResult.Outcome.Kind == execution.OutcomeReturned {
+		if !sink.write([]byte(executionResult.Outcome.Value)) || !sink.write([]byte{'\n'}) {
+			if len(executionResult.Events) > 0 && executionResult.Events[len(executionResult.Events)-1].Kind == "function.returned" {
+				executionResult.Events = executionResult.Events[:len(executionResult.Events)-1]
+			}
+			returnExecution := applicationOutputLimitExecutionWithCapture(executionResult.Schema, "", function.ID, "", "", "", executionResult.Events, executionResult.LiveResources, base.evidence, captureEnabled)
+			executionResult = returnExecution
+		}
+	}
+	if len(executionResult.LiveResources) != 0 {
+		abortLike := isAbortLikeDefect(program, executionResult, ownerOpID)
+		if !captureEnabled {
+			abortLike = isAbortLikeDefectWithoutCapture(program, executionResult, ownerOpID, base.terminal)
+		}
+		if !abortLike {
+			return ApplicationResult{}, fmt.Errorf("model execution reached a terminal outcome with live local resources %v", executionResult.LiveResources)
+		}
+	}
+	if capacityErr {
+		return ApplicationResult{Execution: executionResult, Output: sink.bytes}, runErr
+	}
+	return ApplicationResult{Execution: executionResult, Output: sink.bytes}, nil
+}
+
+func validateFileApplicationEntry(program core.Program, function core.Function) (string, error) {
+	if !function.HasClosedBody() || function.Linear == nil || function.Match != nil || len(function.Linear.Blocks) != 0 || len(function.Linear.Edges) != 0 ||
+		function.Name != "main" || function.Module != "" || function.Parameter.Type != "PathToken" || function.ReturnType != "U64" {
+		return "", fmt.Errorf("file application requires the checked root PathToken-to-U64 main entry")
+	}
+	if len(function.Linear.Operations) != 5 && len(function.Linear.Operations) != 6 {
+		return "", fmt.Errorf("file application requires the exact checked FileBytes entry shape")
+	}
+	var fileError *core.DataType
+	for i := range program.DataTypes {
+		if program.DataTypes[i].Name == "FileError" {
+			fileError = &program.DataTypes[i]
+			break
+		}
+	}
+	if fileError == nil || len(fileError.Alternatives) != 3 || fileError.Alternatives[0] != "FileTooLarge" || fileError.Alternatives[1] != "FileUnavailable" || fileError.Alternatives[2] != "AllocFailed" {
+		return "", fmt.Errorf("file application requires the exact ordered FileError alternatives")
+	}
+	ops := function.Linear.Operations
+	acquire, borrow := ops[0], ops[1]
+	if acquire.Kind != core.OpForeignCall || acquire.Foreign == nil || acquire.Foreign.Symbol != "schway_file_bytes_acquire" || acquire.Foreign.ABIType != "schway_file_bytes_acquire_fn" || acquire.Foreign.Mode != "acquire" || acquire.Foreign.ParameterType != "PathToken" || acquire.Foreign.ResultType != "FileBytes" || acquire.Foreign.Fails != "FileError" || acquire.Foreign.Allocator != "libc_malloc" || acquire.Foreign.Release != "schway_file_bytes_release" || acquire.Foreign.Unwind != "forbidden" || acquire.Foreign.NonlocalExit != "forbidden" || acquire.SourceID != function.Parameter.ID {
+		return "", fmt.Errorf("file application acquire does not match the fixed FileBytes contract")
+	}
+	if borrow.Kind != core.OpForeignCall || borrow.Foreign == nil || borrow.Foreign.Symbol != "schway_file_bytes_view" || borrow.Foreign.ABIType != "schway_file_bytes_view_fn" || borrow.Foreign.Mode != "borrow" || borrow.Foreign.ParameterType != "FileBytes" || borrow.Foreign.ResultType != "ByteView" || borrow.Foreign.Fails != "" || borrow.Foreign.Allocator != "" || borrow.Foreign.Release != "" || borrow.Foreign.Unwind != "forbidden" || borrow.Foreign.NonlocalExit != "forbidden" || borrow.SourceID != acquire.TargetID {
+		return "", fmt.Errorf("file application borrow does not match the fixed FileBytes contract")
+	}
+	call := ops[2]
+	callee, ok := findFunctionByID(program, call.CalleeID)
+	if call.Kind != core.OpCall || !ok || call.SourceID != borrow.TargetID || callee.Parameter.Type != "ByteView" || callee.ReturnType != "U64" {
+		return "", fmt.Errorf("file application must call one checked ByteView-to-U64 consumer")
+	}
+	release := ops[3]
+	if release.Kind != core.OpRelease || release.Foreign == nil || release.Foreign.Symbol != "schway_file_bytes_release" || release.Foreign.ABIType != "schway_file_bytes_release_fn" || release.Foreign.Mode != "consume" || release.Foreign.ParameterType != "FileBytes" || release.Foreign.ResultType != "Unit" || release.Foreign.Allocator != "libc_malloc" || release.Foreign.Unwind != "forbidden" || release.Foreign.NonlocalExit != "forbidden" || release.SourceID != acquire.TargetID || release.ReleasesOperationID != acquire.ID {
+		return "", fmt.Errorf("file application does not release its acquired FileBytes owner")
+	}
+	resultPlace := call.TargetID
+	if len(ops) == 6 {
+		tail := ops[4]
+		tailFunction, found := findFunctionByID(program, tail.CalleeID)
+		if tail.Kind != core.OpCall || !found || tail.SourceID != resultPlace || tailFunction.Parameter.Type != "U64" || tailFunction.ReturnType != "U64" {
+			return "", fmt.Errorf("file application trailing call does not match the checked U64-to-U64 shape")
+		}
+		resultPlace = tail.TargetID
+	}
+	ret := ops[len(ops)-1]
+	if ret.Kind != core.OpReturn || ret.SourceID != resultPlace {
+		return "", fmt.Errorf("file application does not return the FileBytes consumer result")
+	}
+	return acquire.ID, nil
+}
+
 // fileForeignCall replays one file-bytes foreign operation. It returns a
 // terminal Execution (done == true) only for the typed acquire failure.
 func fileForeignCall(program core.Program, top *frame, operation core.LinearOperation, source value, events *[]Event) (Execution, bool, error) {
@@ -663,9 +844,13 @@ func fileForeignCall(program core.Program, top *frame, operation core.LinearOper
 	if contract == nil {
 		return Execution{}, false, fmt.Errorf("foreign operation %q has no checked per-operation contract", operation.ID)
 	}
-	called := Event{
-		Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID, Invocation: top.invocation,
-		SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
+	var called Event
+	if top.captureEnabled {
+		noteEventConstruction(top)
+		called = Event{
+			Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID, Invocation: top.invocation,
+			SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
+		}
 	}
 	switch contract.Mode {
 	case "acquire":
@@ -685,15 +870,22 @@ func fileForeignCall(program core.Program, top *frame, operation core.LinearOper
 			if !known {
 				return Execution{}, false, fmt.Errorf("file acquire %q reader returned unknown alternative %q for %q", operation.ID, alternative, contract.Fails)
 			}
-			called.Kind, called.TypeID = "foreign.failed", contract.Fails
-			*events = appendInterpreterEvents(top.evidence, *events, called, Event{
-				Schema: top.eventSchema(), ID: operation.ID + ":event:failed", Kind: "function.failed",
-				FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: contract.Fails,
-			})
+			if top.captureEnabled {
+				called.Kind, called.TypeID = "foreign.failed", contract.Fails
+				noteEventConstruction(top)
+				*events = appendInterpreterEvents(top.evidence, *events, called, Event{
+					Schema: top.eventSchema(), ID: operation.ID + ":event:failed", Kind: "function.failed",
+					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: contract.Fails,
+				})
+			}
 			return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: "typed_failure", Value: alternative}, Events: *events, LiveResources: []string{}}, true, nil
 		}
+		ownedData := data
+		if top.copyFileBytes {
+			ownedData = append([]byte{}, data...)
+		}
 		top.values[operation.TargetID] = value{
-			bytes: append([]byte{}, data...), isBytes: true,
+			bytes: ownedData, isBytes: true,
 			ownerOperationID: operation.ID, ownerActivationID: ownerActivationID(top, operation.ID),
 		}
 		top.live[operation.ID] = true
@@ -706,7 +898,10 @@ func fileForeignCall(program core.Program, top *frame, operation core.LinearOper
 	default:
 		return Execution{}, false, fmt.Errorf("file route does not support foreign mode %q", contract.Mode)
 	}
-	*events = appendInterpreterEvents(top.evidence, *events, called)
+	if top.captureEnabled {
+		noteEventConstruction(top)
+		*events = appendInterpreterEvents(top.evidence, *events, called)
+	}
 	top.idx++
 	return Execution{}, false, nil
 }
@@ -730,18 +925,29 @@ func isAbortLikeDefect(program core.Program, result Execution, ownerOpID string)
 	if result.Outcome.Kind != execution.OutcomeDefect || len(result.Events) == 0 {
 		return false
 	}
-	if !abortLikeAcceptLive(result.LiveResources, ownerOpID) {
-		return false
-	}
 	final := result.Events[len(result.Events)-1]
 	if final.Kind != "function.defected" || !strings.HasSuffix(final.ID, ":event:defected") {
 		return false
 	}
-	function, ok := findFunctionByID(program, final.FunctionID)
+	operationID := strings.TrimSuffix(final.ID, ":event:defected")
+	return isAbortLikeDefectAt(program, result, ownerOpID, final.FunctionID, operationID, final.Output)
+}
+
+func isAbortLikeDefectWithoutCapture(program core.Program, result Execution, ownerOpID string, terminal *terminalDetails) bool {
+	if result.Outcome.Kind != execution.OutcomeDefect || terminal == nil {
+		return false
+	}
+	return isAbortLikeDefectAt(program, result, ownerOpID, terminal.functionID, terminal.operationID, terminal.reason)
+}
+
+func isAbortLikeDefectAt(program core.Program, result Execution, ownerOpID, functionID, operationID, reason string) bool {
+	if !abortLikeAcceptLive(result.LiveResources, ownerOpID) {
+		return false
+	}
+	function, ok := findFunctionByID(program, functionID)
 	if !ok || function.Linear == nil {
 		return false
 	}
-	operationID := strings.TrimSuffix(final.ID, ":event:defected")
 	for _, operation := range function.Linear.Operations {
 		if operation.ID != operationID {
 			continue
@@ -759,7 +965,7 @@ func isAbortLikeDefect(program core.Program, result Execution, ownerOpID string)
 		default:
 			return false
 		}
-		return abortLikeReasonMatches(final.Output, want)
+		return abortLikeReasonMatches(reason, want)
 	}
 	return false
 }
@@ -793,9 +999,13 @@ func fixtureForeignCall(program core.Program, top *frame, operation core.LinearO
 	if contract == nil {
 		return Execution{}, false, fmt.Errorf("foreign operation %q has no checked per-operation contract", operation.ID)
 	}
-	called := Event{
-		Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID, Invocation: top.invocation,
-		SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
+	var called Event
+	if top.captureEnabled {
+		noteEventConstruction(top)
+		called = Event{
+			Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID, Invocation: top.invocation,
+			SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
+		}
 	}
 	switch contract.Mode {
 	case "acquire":
@@ -813,11 +1023,14 @@ func fixtureForeignCall(program core.Program, top *frame, operation core.LinearO
 			if alternative == "" {
 				return Execution{}, false, fmt.Errorf("fixture acquire %q failure type %q has no alternative", operation.ID, contract.Fails)
 			}
-			called.Kind, called.TypeID = "foreign.failed", contract.Fails
-			*events = appendInterpreterEvents(top.evidence, *events, called, Event{
-				Schema: top.eventSchema(), ID: operation.ID + ":event:failed", Kind: "function.failed",
-				FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: contract.Fails,
-			})
+			if top.captureEnabled {
+				called.Kind, called.TypeID = "foreign.failed", contract.Fails
+				noteEventConstruction(top)
+				*events = appendInterpreterEvents(top.evidence, *events, called, Event{
+					Schema: top.eventSchema(), ID: operation.ID + ":event:failed", Kind: "function.failed",
+					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: contract.Fails,
+				})
+			}
 			return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: "typed_failure", Value: alternative}, Events: *events, LiveResources: []string{}}, true, nil
 		}
 		top.values[operation.TargetID] = value{
@@ -836,7 +1049,10 @@ func fixtureForeignCall(program core.Program, top *frame, operation core.LinearO
 	default:
 		return Execution{}, false, fmt.Errorf("fixture route does not support foreign mode %q", contract.Mode)
 	}
-	*events = appendInterpreterEvents(top.evidence, *events, called)
+	if top.captureEnabled {
+		noteEventConstruction(top)
+		*events = appendInterpreterEvents(top.evidence, *events, called)
+	}
 	top.idx++
 	return Execution{}, false, nil
 }
@@ -1361,6 +1577,12 @@ func inputValue(program core.Program, function core.Function, input string) (val
 // the one frame with hasCaller == false.
 type frame struct {
 	function core.Function
+	// captureEnabled is explicit execution policy. Ordinary interpreter frames
+	// retain historical evidence; fixed file applications turn it off before
+	// any evidence or invocation identity is constructed.
+	captureEnabled bool
+	terminal       *terminalDetails
+	captureProbe   *capturePolicyProbe
 	// applicationOutput is non-nil only for RunApplication. The same sink is
 	// inherited by callees so writes remain ordered on the application stream.
 	applicationOutput *applicationOutputSink
@@ -1437,6 +1659,9 @@ type frame struct {
 	// fileBytes is non-nil only for RunWithFileBytes (Phase 31, D-07); callee
 	// frames inherit it.
 	fileBytes func(path string) ([]byte, string)
+	// copyFileBytes preserves injected-reader ownership semantics. The fixed
+	// production reader returns a fresh owned slice and can transfer it directly.
+	copyFileBytes bool
 
 	// placeTypes and types index this frame's OWN function's declared
 	// places and type facts by ID -- present on every frame shape (not
@@ -1446,6 +1671,20 @@ type frame struct {
 	// place stays live; a non-copyable one is MOVED).
 	placeTypes map[string]string
 	types      map[string]core.TypeFact
+}
+
+type terminalDetails struct {
+	functionID  string
+	operationID string
+	reason      string
+}
+
+func noteTerminalDetails(f *frame, operation core.LinearOperation, reason string) {
+	if f != nil && !f.captureEnabled && f.terminal != nil && reason != "" {
+		f.terminal.functionID = f.function.ID
+		f.terminal.operationID = operation.ID
+		f.terminal.reason = reason
+	}
 }
 
 // value is Phase 12's D-12-17 widened place value: tag names the
@@ -1485,6 +1724,11 @@ type transferredOwner struct {
 }
 
 func ownerActivationID(f *frame, operationID string) string {
+	if !f.captureEnabled {
+		// The bounded FileBytes entry has one statically admitted acquisition;
+		// its operation ID is sufficient for semantic ownership bookkeeping.
+		return operationID
+	}
 	activation := f.invocation
 	if activation == "" {
 		activation = f.entryID
@@ -1566,7 +1810,7 @@ func newFlatFrame(function core.Function, values map[string]value) frame {
 		ids[i] = operation.ID
 	}
 	return frame{
-		function: function, values: values, live: map[string]bool{}, operations: ops, ids: ids,
+		function: function, captureEnabled: true, values: values, live: map[string]bool{}, operations: ops, ids: ids,
 		transferredOwners: map[string]transferredOwner{},
 		placeTypes:        placeTypeIndex(function), types: typeFactIndex(function),
 	}
@@ -1597,7 +1841,7 @@ func newBlockFrame(function core.Function, values map[string]value, startBlockID
 	}
 	nonlocalExitPolicy := function.ForeignContract != nil && function.ForeignContract.NonlocalExit != "" && function.ForeignContract.NonlocalExit != "forbidden"
 	return frame{
-		function: function, values: values, live: map[string]bool{},
+		function: function, captureEnabled: true, values: values, live: map[string]bool{},
 		operations: ops, blocks: blocks, edges: edges, currentBlockID: startBlockID,
 		tracked: tracked, nonlocalExitPolicy: nonlocalExitPolicy,
 		transferredOwners: map[string]transferredOwner{},
@@ -1695,21 +1939,38 @@ func hasScalarValueCalls(program core.Program) bool {
 func runProgramFrameStack(program core.Program, base frame) (Execution, error) {
 	var schema, invocation string
 	var err error
-	if hasScalarValueCalls(program) {
+	if !base.captureEnabled {
+		schema = schemaForProgram(program, execution.Schema1)
+	} else if hasScalarValueCalls(program) {
 		if base.evidence == nil {
 			base.evidence = newInterpreterEvidence()
+			if base.captureProbe != nil {
+				base.captureProbe.evidenceCreations++
+			}
 		}
 		schema = schemaForProgram(program, execution.Schema1)
 		if base.evidence.rootReserved || base.evidence.reserveRoot(base.function.ID) {
+			if base.captureProbe != nil && schema == execution.Schema2 {
+				base.captureProbe.invocationBuilds++
+			}
 			schema, invocation, err = entryIdentity(program, base.function.ID, execution.Schema1)
 		}
 	} else {
+		if base.captureProbe != nil && schemaForProgram(program, execution.Schema1) == execution.Schema2 {
+			base.captureProbe.invocationBuilds++
+		}
 		schema, invocation, err = entryIdentity(program, base.function.ID, execution.Schema1)
 	}
 	if err != nil {
 		return Execution{}, err
 	}
-	base.schema, base.invocation, base.entryID = schema, invocation, base.function.ID
+	base.schema, base.invocation = schema, invocation
+	if base.captureEnabled {
+		base.entryID = base.function.ID
+	}
+	if base.captureProbe != nil {
+		base.captureProbe.observeFrame(&base)
+	}
 	return runFrameStack(program, base)
 }
 
@@ -1722,6 +1983,9 @@ func (f *frame) eventSchema() string {
 
 func (f *frame) configureChild(child *frame, operation core.LinearOperation, segments []execution.InvocationSegment, invocation string) {
 	child.applicationOutput = f.applicationOutput
+	child.captureEnabled = f.captureEnabled
+	child.terminal = f.terminal
+	child.captureProbe = f.captureProbe
 	child.evidence = f.evidence
 	child.schema = f.eventSchema()
 	child.entryID = f.entryID
@@ -1730,17 +1994,26 @@ func (f *frame) configureChild(child *frame, operation core.LinearOperation, seg
 	child.returnOkEdge = operation.OkEdgeID
 	child.errorTarget = operation.ErrTargetID
 	child.errorEdge = operation.ErrEdgeID
+	if child.captureProbe != nil {
+		child.captureProbe.observeFrame(child)
+	}
 }
 
 const applicationOutputLimitDefectReason = "application output limit exceeded"
 
 func applicationOutputLimitExecution(schema, operationID, functionID, invocation, sourcePlace, typeID string, events []Event, liveResources []string, evidence *interpreterEvidence) Execution {
-	event := Event{
-		Schema: schema, ID: operationID + ":event:defected", Kind: "function.defected",
-		FunctionID: functionID, Invocation: invocation, SourcePlace: sourcePlace,
-		TypeID: typeID, Output: applicationOutputLimitDefectReason,
+	return applicationOutputLimitExecutionWithCapture(schema, operationID, functionID, invocation, sourcePlace, typeID, events, liveResources, evidence, true)
+}
+
+func applicationOutputLimitExecutionWithCapture(schema, operationID, functionID, invocation, sourcePlace, typeID string, events []Event, liveResources []string, evidence *interpreterEvidence, captureEnabled bool) Execution {
+	if captureEnabled {
+		event := Event{
+			Schema: schema, ID: operationID + ":event:defected", Kind: "function.defected",
+			FunctionID: functionID, Invocation: invocation, SourcePlace: sourcePlace,
+			TypeID: typeID, Output: applicationOutputLimitDefectReason,
+		}
+		events = appendInterpreterEvents(evidence, events, event)
 	}
-	events = appendInterpreterEvents(evidence, events, event)
 	return Execution{
 		Schema: schema, Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""},
 		Events: events, LiveResources: liveResources,
@@ -1791,11 +2064,20 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 	}
 	seeded := map[string]value{callee.Parameter.ID: argument}
 	var ordinal uint64
-	segments := []execution.InvocationSegment{}
+	var segments []execution.InvocationSegment
 	invocation := ""
-	if caller.evidence == nil {
+	if !caller.captureEnabled {
+		// The file-application policy carries no invocation path or call ordinal.
+	} else if caller.evidence == nil {
+		if caller.captureProbe != nil {
+			caller.captureProbe.segmentAllocations++
+		}
+		segments = []execution.InvocationSegment{}
 		segments = append(append([]execution.InvocationSegment{}, caller.segments...), execution.InvocationSegment{OpCallID: operation.ID, Ordinal: 0})
 		if caller.eventSchema() == execution.Schema2 {
+			if caller.captureProbe != nil {
+				caller.captureProbe.invocationBuilds++
+			}
 			var err error
 			invocation, err = execution.FormatInvocation(caller.entryID, segments)
 			if err != nil {
@@ -1805,6 +2087,9 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 	} else if !caller.evidence.exhausted {
 		if caller.nextCallOrdinals == nil {
 			caller.nextCallOrdinals = make(map[string]uint64)
+			if caller.captureProbe != nil {
+				caller.captureProbe.ordinalMapAllocations++
+			}
 		}
 		ordinal = caller.nextCallOrdinals[operation.ID]
 		if ordinal > caller.evidence.maxOrdinal {
@@ -1812,8 +2097,15 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 		} else {
 			caller.nextCallOrdinals[operation.ID] = ordinal + 1
 			if caller.evidence.reserveChild(caller.invocation, operation.ID, ordinal) {
+				if caller.captureProbe != nil {
+					caller.captureProbe.segmentAllocations++
+				}
+				segments = []execution.InvocationSegment{}
 				segments = append(append([]execution.InvocationSegment{}, caller.segments...), execution.InvocationSegment{OpCallID: operation.ID, Ordinal: int(ordinal)})
 				if caller.eventSchema() == execution.Schema2 {
+					if caller.captureProbe != nil {
+						caller.captureProbe.invocationBuilds++
+					}
 					var err error
 					invocation, err = execution.FormatInvocation(caller.entryID, segments)
 					if err != nil {
@@ -1842,15 +2134,18 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 				continue
 			}
 			if arm.BlockID == "" {
-				event := Event{
-					Schema: caller.eventSchema(), ID: arm.ID + ":event:returned", Kind: "function.returned",
-					Invocation: invocation,
-					FunctionID: callee.ID, Input: argumentText, Output: arm.Value,
-				}
-				if callee.Parameter.Type != callee.ReturnType {
-					event.ID = callee.ID + ":match:return"
-					event.Input, event.Output = "", ""
-					event.SourcePlace, event.TypeID = callee.Parameter.ID, callee.Parameter.Type
+				var event Event
+				if caller.captureEnabled {
+					event = Event{
+						Schema: caller.eventSchema(), ID: arm.ID + ":event:returned", Kind: "function.returned",
+						Invocation: invocation,
+						FunctionID: callee.ID, Input: argumentText, Output: arm.Value,
+					}
+					if callee.Parameter.Type != callee.ReturnType {
+						event.ID = callee.ID + ":match:return"
+						event.Input, event.Output = "", ""
+						event.SourcePlace, event.TypeID = callee.Parameter.ID, callee.Parameter.Type
+					}
 				}
 				return pushResult{
 					immediateValue: arm.Value,
@@ -1948,6 +2243,7 @@ func terminalOutcome(f *frame, operation core.LinearOperation, value string) (Ou
 			FunctionID: f.function.ID, Invocation: f.invocation, SourcePlace: operation.SourceID, TypeID: failureType,
 		}
 	case core.OpDefect:
+		noteTerminalDetails(f, operation, operation.Reason)
 		return Outcome{Kind: execution.OutcomeDefect, Value: ""}, Event{
 			Schema: f.eventSchema(), ID: operation.ID + ":event:defected", Kind: "function.defected",
 			FunctionID: f.function.ID, Invocation: f.invocation, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: operation.Reason,
@@ -1957,6 +2253,21 @@ func terminalOutcome(f *frame, operation core.LinearOperation, value string) (Ou
 			Schema: f.eventSchema(), ID: operation.ID + ":event:returned", Kind: "function.returned",
 			FunctionID: f.function.ID, Invocation: f.invocation, SourcePlace: operation.SourceID, TypeID: operation.TypeID,
 		}
+	}
+}
+
+func terminalOutcomeWithoutEvent(f *frame, operation core.LinearOperation, value string) Outcome {
+	switch operation.Kind {
+	case core.OpFail:
+		if f.modeledFailure != nil {
+			value = f.modeledFailure.Value
+		}
+		return Outcome{Kind: execution.OutcomeTypedFailure, Value: value}
+	case core.OpDefect:
+		noteTerminalDetails(f, operation, operation.Reason)
+		return Outcome{Kind: execution.OutcomeDefect, Value: ""}
+	default:
+		return Outcome{Kind: execution.OutcomeReturned, Value: value}
 	}
 }
 
@@ -1986,20 +2297,28 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			}
 			return
 		}
-		if err := assignEventOccurrences(result.Events); err != nil {
-			result = Execution{}
-			runErr = err
+		if base.captureEnabled {
+			if err := assignEventOccurrences(result.Events); err != nil {
+				result = Execution{}
+				runErr = err
+			}
 		}
 	}()
 	stack := []frame{base}
-	capacity := len(base.operations)
-	if base.evidence != nil && capacity > base.evidence.maxEvents {
-		capacity = base.evidence.maxEvents
+	var events []Event
+	if base.captureEnabled {
+		capacity := len(base.operations)
+		if base.evidence != nil && capacity > base.evidence.maxEvents {
+			capacity = base.evidence.maxEvents
+		}
+		if capacity < 0 {
+			capacity = 0
+		}
+		events = make([]Event, 0, capacity)
 	}
-	if capacity < 0 {
-		capacity = 0
+	if base.captureProbe != nil {
+		base.captureProbe.initialEventCapacity = cap(events)
 	}
-	events := make([]Event, 0, capacity)
 
 	for {
 		top := &stack[len(stack)-1]
@@ -2090,7 +2409,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				if !top.applicationOutput.write(chunk) {
 					drainedEvents, liveResources := drainStackForAbruptExit(stack, top.evidence, events)
 					events = drainedEvents
-					return applicationOutputLimitExecution(top.eventSchema(), operation.ID, top.function.ID, top.invocation, operation.SourceID, operation.TypeID, events, liveResources, top.evidence), nil
+					return applicationOutputLimitExecutionWithCapture(top.eventSchema(), operation.ID, top.function.ID, top.invocation, operation.SourceID, operation.TypeID, events, liveResources, top.evidence, top.captureEnabled), nil
 				}
 			}
 			top.idx++
@@ -2099,7 +2418,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				if !top.applicationOutput.write([]byte{'\n'}) {
 					drainedEvents, liveResources := drainStackForAbruptExit(stack, top.evidence, events)
 					events = drainedEvents
-					return applicationOutputLimitExecution(top.eventSchema(), operation.ID, top.function.ID, top.invocation, "", operation.TypeID, events, liveResources, top.evidence), nil
+					return applicationOutputLimitExecutionWithCapture(top.eventSchema(), operation.ID, top.function.ID, top.invocation, "", operation.TypeID, events, liveResources, top.evidence, top.captureEnabled), nil
 				}
 			}
 			top.idx++
@@ -2108,7 +2427,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				if !top.applicationOutput.write(operation.TextBytes) {
 					drainedEvents, liveResources := drainStackForAbruptExit(stack, top.evidence, events)
 					events = drainedEvents
-					return applicationOutputLimitExecution(top.eventSchema(), operation.ID, top.function.ID, top.invocation, "", operation.TypeID, events, liveResources, top.evidence), nil
+					return applicationOutputLimitExecutionWithCapture(top.eventSchema(), operation.ID, top.function.ID, top.invocation, "", operation.TypeID, events, liveResources, top.evidence, top.captureEnabled), nil
 				}
 			}
 			top.idx++
@@ -2125,10 +2444,13 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				return Execution{}, fmt.Errorf("operation %q has invalid checked-add operands", operation.ID)
 			}
 			if ^uint64(0)-sourceValue.u64 < right.u64 {
-				events = appendInterpreterEvents(top.evidence, events, Event{
-					Schema: top.eventSchema(), ID: operation.ID + ":event:defected", Kind: "function.defected",
-					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
-					TypeID: operation.TypeID, Output: execution.DefectReasonU64AddOverflow,
+				noteTerminalDetails(top, operation, execution.DefectReasonU64AddOverflow)
+				events = appendFrameEvent(top, events, func() Event {
+					return Event{
+						Schema: top.eventSchema(), ID: operation.ID + ":event:defected", Kind: "function.defected",
+						FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
+						TypeID: operation.TypeID, Output: execution.DefectReasonU64AddOverflow,
+					}
 				})
 				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: terminalLiveResources(stack, top)}, nil
 			}
@@ -2155,10 +2477,13 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			}
 			if right.u64 == 0 {
 				const reason = execution.DefectReasonU64RemainderByZero
-				events = appendInterpreterEvents(top.evidence, events, Event{
-					Schema: top.eventSchema(), ID: operation.ID + ":event:defected", Kind: "function.defected",
-					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
-					TypeID: operation.TypeID, Output: reason,
+				noteTerminalDetails(top, operation, reason)
+				events = appendFrameEvent(top, events, func() Event {
+					return Event{
+						Schema: top.eventSchema(), ID: operation.ID + ":event:defected", Kind: "function.defected",
+						FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
+						TypeID: operation.TypeID, Output: reason,
+					}
 				})
 				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: terminalLiveResources(stack, top)}, nil
 			}
@@ -2207,10 +2532,13 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			// The bounds comparison precedes every slice index (BYTE-02).
 			if index.u64 >= uint64(len(sourceValue.bytes)) {
 				const reason = execution.DefectReasonByteIndexOutOfBounds
-				events = appendInterpreterEvents(top.evidence, events, Event{
-					Schema: top.eventSchema(), ID: operation.ID + ":event:defected", Kind: "function.defected",
-					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
-					TypeID: operation.TypeID, Output: reason,
+				noteTerminalDetails(top, operation, reason)
+				events = appendFrameEvent(top, events, func() Event {
+					return Event{
+						Schema: top.eventSchema(), ID: operation.ID + ":event:defected", Kind: "function.defected",
+						FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID,
+						TypeID: operation.TypeID, Output: reason,
+					}
 				})
 				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: terminalLiveResources(stack, top)}, nil
 			}
@@ -2236,20 +2564,20 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			continue
 		case core.OpCopy:
 			top.values[operation.TargetID] = sourceValue
-			events = appendInterpreterEvents(top.evidence, events, ownedEvent(top, operation, "value.copied"))
+			events = appendFrameEvent(top, events, func() Event { return ownedEvent(top, operation, "value.copied") })
 			top.idx++
 		case core.OpMove:
 			delete(top.values, operation.SourceID)
 			top.values[operation.TargetID] = sourceValue
-			events = appendInterpreterEvents(top.evidence, events, ownedEvent(top, operation, "value.transferred"))
+			events = appendFrameEvent(top, events, func() Event { return ownedEvent(top, operation, "value.transferred") })
 			top.idx++
 		case core.OpBorrowShared:
 			top.values[operation.TargetID] = sourceValue
-			events = appendInterpreterEvents(top.evidence, events, ownedEvent(top, operation, "value.borrowed"))
+			events = appendFrameEvent(top, events, func() Event { return ownedEvent(top, operation, "value.borrowed") })
 			top.idx++
 		case core.OpBorrowExclusive:
 			top.values[operation.TargetID] = sourceValue
-			events = appendInterpreterEvents(top.evidence, events, ownedEvent(top, operation, "value.borrowed_exclusive"))
+			events = appendFrameEvent(top, events, func() Event { return ownedEvent(top, operation, "value.borrowed_exclusive") })
 			top.idx++
 		case core.OpConstructPayload:
 			// D-12-05/D-12-14: builds a NEW tagged value from the source
@@ -2278,7 +2606,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				return Execution{}, fmt.Errorf("operation %q: %w", operation.ID, altErr)
 			}
 			top.values[operation.TargetID] = value{tag: altName, payload: sourceValue.payload}
-			events = appendInterpreterEvents(top.evidence, events, ownedEvent(top, operation, "value.payload_constructed"))
+			events = appendFrameEvent(top, events, func() Event { return ownedEvent(top, operation, "value.payload_constructed") })
 			top.idx++
 		case core.OpDestructurePayload:
 			// D-12-05/D-12-14: extracts the source's own payload content
@@ -2287,9 +2615,11 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			// scrutinee alias it moves the payload out of.
 			delete(top.values, operation.SourceID)
 			top.values[operation.PayloadTargetID] = value{tag: "", payload: sourceValue.payload}
-			events = appendInterpreterEvents(top.evidence, events, Event{
-				Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "value.payload_destructured", FunctionID: top.function.ID, Invocation: top.invocation,
-				SourcePlace: operation.SourceID, TargetPlace: operation.PayloadTargetID, TypeID: operation.TypeID,
+			events = appendFrameEvent(top, events, func() Event {
+				return Event{
+					Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "value.payload_destructured", FunctionID: top.function.ID, Invocation: top.invocation,
+					SourcePlace: operation.SourceID, TargetPlace: operation.PayloadTargetID, TypeID: operation.TypeID,
+				}
 			})
 			top.idx++
 		case core.OpRelease:
@@ -2309,7 +2639,7 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				top.transferredOwners[sourceValue.ownerActivationID] = transferred
 			}
 			top.live[operation.ReleasesOperationID] = false
-			events = appendInterpreterEvents(top.evidence, events, ownedEvent(top, operation, "resource.released"))
+			events = appendFrameEvent(top, events, func() Event { return ownedEvent(top, operation, "resource.released") })
 			top.idx++
 		case core.OpForeignCall:
 			if top.fileBytes != nil {
@@ -2345,17 +2675,11 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				if err != nil {
 					return Execution{}, err
 				}
-				event := Event{
-					Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID, Invocation: top.invocation,
-					SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
-				}
 				if !succeeded {
 					top.modeledFailure = &outcome
 					if operation.ErrTargetID != "" {
 						top.values[operation.ErrTargetID] = value{tag: outcome.Type, payload: outcome.Value}
 					}
-					event.Kind = "foreign.failed"
-					event.TypeID = outcome.Type
 				} else {
 					if operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
 						modeledValue.ownerOperationID = operation.ID
@@ -2367,7 +2691,17 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 						top.liveOrder = append(top.liveOrder, operation.ID)
 					}
 				}
-				events = appendInterpreterEvents(top.evidence, events, event)
+				if top.captureEnabled {
+					event := Event{
+						Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID, Invocation: top.invocation,
+						SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
+					}
+					if !succeeded {
+						event.Kind = "foreign.failed"
+						event.TypeID = outcome.Type
+					}
+					events = appendInterpreterEvents(top.evidence, events, event)
+				}
 				if top.blocks != nil && operation.OkEdgeID != "" {
 					edgeID := operation.OkEdgeID
 					if !succeeded {
@@ -2386,18 +2720,22 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			}
 			top.nonlocalExitCalls++
 			if top.nonlocalExitPolicy && top.nonlocalExitCalls == 2 {
-				events = appendInterpreterEvents(top.evidence, events, Event{
-					Schema: top.eventSchema(), ID: top.function.ID + ":event:nonlocal_exit", Kind: "foreign.nonlocal_exit", FunctionID: top.function.ID, Invocation: top.invocation,
-				})
+				if top.captureEnabled {
+					events = appendInterpreterEvents(top.evidence, events, Event{
+						Schema: top.eventSchema(), ID: top.function.ID + ":event:nonlocal_exit", Kind: "foreign.nonlocal_exit", FunctionID: top.function.ID, Invocation: top.invocation,
+					})
+				}
 				// D-10-33: drain EVERY live frame on the stack, not only
 				// top -- this landing pad is one of the two constructs
 				// (D-10-31) that genuinely skip more than one frame.
 				drainedEvents, liveResources := drainStackForAbruptExit(stack, top.evidence, events)
 				events = drainedEvents
-				events = appendInterpreterEvents(top.evidence, events, Event{
-					Schema: top.eventSchema(), ID: top.function.ID + ":event:nonlocal_defect", Kind: "function.defected", FunctionID: top.function.ID, Invocation: top.invocation,
-					SourcePlace: top.function.Parameter.ID, TypeID: top.placeTypes[top.function.Parameter.ID], Output: nonlocalExitDefectReason,
-				})
+				if top.captureEnabled {
+					events = appendInterpreterEvents(top.evidence, events, Event{
+						Schema: top.eventSchema(), ID: top.function.ID + ":event:nonlocal_defect", Kind: "function.defected", FunctionID: top.function.ID, Invocation: top.invocation,
+						SourcePlace: top.function.Parameter.ID, TypeID: top.placeTypes[top.function.Parameter.ID], Output: nonlocalExitDefectReason,
+					})
+				}
 				return Execution{Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""}, Events: events, LiveResources: liveResources}, nil
 			}
 			if operation.Foreign != nil && operation.Foreign.Mode == "acquire" {
@@ -2406,10 +2744,12 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			}
 			top.values[operation.TargetID] = sourceValue
 			top.values[operation.ErrTargetID] = value{tag: "", payload: "err"}
-			events = appendInterpreterEvents(top.evidence, events, Event{
-				Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID, Invocation: top.invocation,
-				SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
-			})
+			if top.captureEnabled {
+				events = appendInterpreterEvents(top.evidence, events, Event{
+					Schema: top.eventSchema(), ID: operation.ID + ":event", Kind: "foreign.called", FunctionID: top.function.ID, Invocation: top.invocation,
+					SourcePlace: operation.SourceID, TargetPlace: operation.TargetID, TypeID: operation.TypeID,
+				})
+			}
 			if top.tracked[operation.ID] && !top.live[operation.ID] {
 				top.live[operation.ID] = true
 				top.liveOrder = append(top.liveOrder, operation.ID)
@@ -2430,10 +2770,12 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				// Immediate arm resolution (a bare match arm): nothing to
 				// push, no callee frame ever ran -- bind directly into the
 				// caller's own TargetID place.
-				if top.eventSchema() == execution.Schema2 {
+				if top.captureEnabled && top.eventSchema() == execution.Schema2 {
 					events = appendInterpreterEvents(top.evidence, events, calledEvent(top, operation, result.calleeID))
 				}
-				events = appendInterpreterEvents(top.evidence, events, result.immediateEvent)
+				if top.captureEnabled {
+					events = appendInterpreterEvents(top.evidence, events, result.immediateEvent)
+				}
 				top.values[operation.TargetID] = value{tag: "", payload: result.immediateValue}
 				continue
 			}
@@ -2452,13 +2794,16 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 				// flattening the nonlocal landing pad uses.
 				drainedEvents, liveResources := drainStackForAbruptExit(stack, top.evidence, events)
 				events = drainedEvents
-				event := Event{
-					Schema: top.eventSchema(), ID: operation.ID + ":event:call_depth_exceeded", Kind: "function.defected",
-					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: callDepthExceededDefectReason,
+				var event Event
+				if top.captureEnabled {
+					event = Event{
+						Schema: top.eventSchema(), ID: operation.ID + ":event:call_depth_exceeded", Kind: "function.defected",
+						FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: operation.TypeID, Output: callDepthExceededDefectReason,
+					}
 				}
 				return Execution{
 					Schema: top.eventSchema(), Outcome: Outcome{Kind: execution.OutcomeDefect, Value: ""},
-					Events: appendInterpreterEvents(top.evidence, events, event), LiveResources: liveResources,
+					Events: appendFrameEvent(top, events, func() Event { return event }), LiveResources: liveResources,
 				}, nil
 			}
 			if top.modeledOutcomes != nil {
@@ -2468,20 +2813,29 @@ func runFrameStack(program core.Program, base frame) (result Execution, runErr e
 			}
 			result.frame.fixtureBytes = top.fixtureBytes
 			result.frame.fileBytes = top.fileBytes
-			if top.eventSchema() == execution.Schema2 {
+			if top.captureEnabled && top.eventSchema() == execution.Schema2 {
 				events = appendInterpreterEvents(top.evidence, events, calledEvent(top, operation, result.calleeID))
 			}
 			stack = append(stack, *result.frame)
 		case core.OpReturn, core.OpFail, core.OpDefect:
-			outcome, event := terminalOutcome(top, operation, sourceValue.terminalString())
-			if operation.Kind == core.OpReturn && top.modeledFailure != nil {
-				outcome = Outcome{Kind: execution.OutcomeTypedFailure, Value: top.modeledFailure.Value}
-				event = Event{
-					Schema: top.eventSchema(), ID: operation.ID + ":event:failed", Kind: "function.failed",
-					FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: top.modeledFailure.Type,
+			var outcome Outcome
+			if top.captureEnabled {
+				var event Event
+				outcome, event = terminalOutcome(top, operation, sourceValue.terminalString())
+				if operation.Kind == core.OpReturn && top.modeledFailure != nil {
+					outcome = Outcome{Kind: execution.OutcomeTypedFailure, Value: top.modeledFailure.Value}
+					event = Event{
+						Schema: top.eventSchema(), ID: operation.ID + ":event:failed", Kind: "function.failed",
+						FunctionID: top.function.ID, Invocation: top.invocation, SourcePlace: operation.SourceID, TypeID: top.modeledFailure.Type,
+					}
+				}
+				events = appendFrameEvent(top, events, func() Event { return event })
+			} else {
+				outcome = terminalOutcomeWithoutEvent(top, operation, sourceValue.terminalString())
+				if operation.Kind == core.OpReturn && top.modeledFailure != nil {
+					outcome = Outcome{Kind: execution.OutcomeTypedFailure, Value: top.modeledFailure.Value}
 				}
 			}
-			events = appendInterpreterEvents(top.evidence, events, event)
 			if operation.Kind == core.OpFail && top.hasCaller && top.errorTarget != "" && top.errorEdge != "" {
 				failure := ForeignOutcome{Kind: "failure", Type: operation.TypeID, Value: sourceValue.terminalString()}
 				if top.modeledFailure != nil {
