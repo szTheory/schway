@@ -22,6 +22,7 @@ type fileBytesDescriptor interface {
 }
 
 type fileBytesOpenFunc func(string) (fileBytesDescriptor, error)
+type fileBytesAllocateFunc func(int) []byte
 
 func openFileBytesDescriptor(path string) (fileBytesDescriptor, error) {
 	return os.OpenFile(path, os.O_RDONLY|syscall.O_NONBLOCK|syscall.O_CLOEXEC|syscall.O_NOCTTY, 0)
@@ -35,7 +36,11 @@ func ReadFileBytes(path string) ([]byte, string) {
 }
 
 func readFileBytesWith(path string, open fileBytesOpenFunc) ([]byte, string) {
-	if open == nil || path == "" || strings.IndexByte(path, 0) >= 0 || len(path) > maxFileBytesPathBytes {
+	return readFileBytesWithAllocator(path, open, func(size int) []byte { return make([]byte, size) })
+}
+
+func readFileBytesWithAllocator(path string, open fileBytesOpenFunc, allocate fileBytesAllocateFunc) ([]byte, string) {
+	if open == nil || allocate == nil || path == "" || strings.IndexByte(path, 0) >= 0 || len(path) > maxFileBytesPathBytes {
 		return nil, fileBytesFileUnavailable
 	}
 	file, err := open(path)
@@ -54,7 +59,12 @@ func readFileBytesWith(path string, open fileBytesOpenFunc) ([]byte, string) {
 		return nil, fileBytesFileUnavailable
 	}
 
-	data := make([]byte, FileBytesLimit+1)
+	data := allocate(FileBytesLimit + 1)
+	if len(data) < FileBytesLimit+1 {
+		_ = closeFile()
+		return nil, fileBytesFileUnavailable
+	}
+	data = data[:FileBytesLimit+1]
 	used := 0
 	var readErr error
 	for used < len(data) {
@@ -75,6 +85,7 @@ func readFileBytesWith(path string, open fileBytesOpenFunc) ([]byte, string) {
 			break
 		}
 		if count == 0 {
+			readErr = errors.New("file reader made no progress")
 			break
 		}
 	}

@@ -125,10 +125,16 @@ func TestPhase37FileReaderBoundControls(t *testing.T) {
 		t.Run(fmt.Sprintf("boundary-%d", size), func(t *testing.T) {
 			data := bytes.Repeat([]byte{0xa5}, size)
 			file := &phase37ReaderDescriptor{mode: 0o600, reportedSize: int64(size), data: data}
+			allocated := 0
+			allocationAtRead := 0
+			file.onRead = func(int) { allocationAtRead = allocated }
 			opens := 0
-			got, alternative := readFileBytesWith("opaque", func(string) (fileBytesDescriptor, error) {
+			got, alternative := readFileBytesWithAllocator("opaque", func(string) (fileBytesDescriptor, error) {
 				opens++
 				return file, nil
+			}, func(length int) []byte {
+				allocated = length
+				return make([]byte, length)
 			})
 			if size <= FileBytesLimit {
 				if alternative != "" || !bytes.Equal(got, data) {
@@ -142,6 +148,9 @@ func TestPhase37FileReaderBoundControls(t *testing.T) {
 			}
 			if len(file.requests) == 0 || file.requests[0] != FileBytesLimit+1 {
 				t.Fatalf("read requests=%v, want initial cap+1 request %d", file.requests, FileBytesLimit+1)
+			}
+			if allocated != FileBytesLimit+1 || allocationAtRead != FileBytesLimit+1 {
+				t.Fatalf("allocation=%d at first read=%d, want exactly cap+1 before read", allocated, allocationAtRead)
 			}
 			for _, request := range file.requests {
 				if request > FileBytesLimit+1 {
