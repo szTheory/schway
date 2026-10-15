@@ -226,3 +226,36 @@ count. The test-only follow-up is committed as `04ce6fa1`.
 
 The dated amendment is present, the scoped test commit `04ce6fa1` is an
 ancestor of HEAD, and both recorded focused verification commands passed.
+
+## Dated T-36-16 census correction — 2026-10-15
+
+This amendment corrects the earlier T-36-16 follow-up: its call-site category
+was still counted from `/* call: ... */` markers. The census now tracks markers
+separately and enumerates actual `SCHWAY_` C function invocations inside the
+bounded emitted user-function body. Expected call counts and symbols come from
+the caller's checked `core.OpCall` contracts and checked callee functions; the
+callee symbol is verified against both its emitted definition and the emitted
+call expression. The invocation scan strips comments and string literals, so
+neither can stand in for a call. It counts any `SCHWAY_` invocation, including
+one with no expected call marker.
+
+The live controls now remove the actual invocation while retaining its marker
+and insert a second actual callee invocation without a marker. They require
+named `missing call site "<callee-symbol>"` and `extra call site
+"<callee-symbol>"` findings. Separate missing/extra marker, event, and
+reservation controls remain, with clean/no-op/restored census checks. These
+T-36-16 mutations are static census assertions; they make no C compile or
+runtime semantic-kill claim. The existing T-36-13 returned-stack mutation and
+native retained-path assertion remain in place. This test-only correction is
+committed as `50b90a30`.
+
+## T-36-16 correction verification
+
+- `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen -run '^TestPhase36EmitterCallInventoryControls$' -count=1 -v -timeout=600s` — PASS; all eight census mutations emitted their named findings, restored positives passed, and the existing native retained-path control ran.
+- `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen ./internal/compiler/core -run '^(TestPhase36EmitterCallInventoryControls|TestPhase35EmitterAdmissionGates|TestPhase35UnsignedShiftEmissionAndEventProjection|TestInvocationPathTableBoundary|TestInvocationPreflightGuardIsNotInert|TestProgramInvocationIndexThreading|TestNativeFunctionCalledPreorder|TestPhase273NamedCapacityExitGate|TestPhase273CapacityContractLiteralsAgree|TestAllOperationKindsHandledAtEverySite)$' -count=1 -v -timeout=600s` — PASS; both roots ran, including the native path control and all eight census mutations.
+- `git diff --check` — PASS.
+
+## T-36-16 correction self-check: PASSED
+
+The amendment is present, scoped test commit `50b90a30` is an ancestor of
+HEAD, and both focused verification commands passed.
