@@ -121,6 +121,14 @@ func phase36CallCausalForgeryControls(t *testing.T) {
 	if err := executionpeer.Validate(program, clonePhase36Execution(clean.Execution)); err != nil {
 		t.Fatalf("no-op trace copy rejected: %v", err)
 	}
+	partial := clonePhase36Execution(clean.Execution)
+	partial.Events = partial.Events[:len(partial.Events)-1]
+	if err := executionpeer.Validate(program, partial); err == nil {
+		t.Fatal("peer accepted an incomplete execution prefix as complete")
+	}
+	if err := executionpeer.Validate(program, clonePhase36Execution(clean.Execution)); err != nil {
+		t.Fatalf("restored full trace rejected after partial-prefix control: %v", err)
+	}
 	mainCalls := phase36Calls(main)
 	var loopCall, laterCall, decoyCall core.LinearOperation
 	for _, call := range mainCalls {
@@ -252,6 +260,17 @@ func phase36CallCausalForgeryControls(t *testing.T) {
 	}
 	if err := executionpeer.Validate(overflowProgram, overflowExecution); err != nil {
 		t.Fatalf("restored actual defect trace rejected: %v", err)
+	}
+	large := execution.Execution{
+		Schema: execution.Schema2, Outcome: execution.Outcome{Kind: execution.OutcomeReturned},
+		Events: make([]execution.Event, execution.MaxDocumentBytes/128+1),
+	}
+	var capacityError *executionpeer.Error
+	if err := executionpeer.Validate(program, large); !errors.As(err, &capacityError) || capacityError.Class != "document_capacity" {
+		t.Fatalf("over-cap observed event document = %v, want executionpeer.document_capacity", err)
+	}
+	if err := executionpeer.Validate(program, clonePhase36Execution(clean.Execution)); err != nil {
+		t.Fatalf("restored positive after document capacity control rejected: %v", err)
 	}
 }
 

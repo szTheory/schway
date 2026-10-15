@@ -1,6 +1,9 @@
 package interp_test
 
 import (
+	"encoding/json"
+	"errors"
+	"strings"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/core"
@@ -75,6 +78,22 @@ fn remainder_main(input: U64) -> U64 {
   }
   let later = bump(value)
   later
+}
+`
+
+const phase36LongCallSource = `module phase36.long_calls
+export { fn main }
+fn add_one(input: U64) -> U64 { let result = input + 1 result }
+fn main(input: U64) -> U64 {
+  write_u64(input)
+  write_newline()
+  var value = input
+  var index = 0
+  while index < 5001 {
+    value = add_one(value)
+    index = index + 1
+  }
+  value
 }
 `
 
@@ -276,6 +295,122 @@ func TestPhase36InterpreterCallAnswersAndDefects(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPhase36InterpreterEvidenceBoundaries(t *testing.T) {
+	checked := session.Check([]byte(phase36RepeatedCallSource))
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("evidence-boundary source diagnostics: %+v", checked.Diagnostics)
+	}
+	clean, err := interp.RunApplication(checked.Program, "main", "0")
+	if err != nil {
+		t.Fatalf("unbounded reference RunApplication: %v", err)
+	}
+	if clean.Execution.Outcome.Value != "9" || string(clean.Output) != "9\n" {
+		t.Fatalf("reference outcome/output = %+v / %q, want 9", clean.Execution.Outcome, clean.Output)
+	}
+	pathBytes, eventBytes := phase36EvidenceBytes(t, clean.Execution.Events)
+	if pathBytes == 0 || eventBytes == 0 {
+		t.Fatalf("reference evidence byte costs = paths %d, events %d", pathBytes, eventBytes)
+	}
+
+	t.Run("path-exact", func(t *testing.T) {
+		restore := interp.SetEvidenceLimitsForTest(pathBytes, execution.MaxDocumentBytes, execution.MaxDocumentBytes, 2147483647)
+		defer restore()
+		result, err := interp.RunApplication(checked.Program, "main", "0")
+		if err != nil || !execution.Equal(result.Execution, clean.Execution) || string(result.Output) != "9\n" {
+			t.Fatalf("exact path budget result = %+v, output %q, err %v", result.Execution, result.Output, err)
+		}
+	})
+	t.Run("path-plus-one-exhausts", func(t *testing.T) {
+		restore := interp.SetEvidenceLimitsForTest(pathBytes-1, execution.MaxDocumentBytes, execution.MaxDocumentBytes, 2147483647)
+		defer restore()
+		result, err := interp.RunApplication(checked.Program, "main", "0")
+		if !errors.Is(err, interp.ErrEvidenceCapacityExhausted) || len(result.Execution.Events) != 0 {
+			t.Fatalf("path plus one err/events = %v / %d, want named evidence exhaustion and no partial trace", err, len(result.Execution.Events))
+		}
+		if result.Execution.Outcome.Value != "9" || string(result.Output) != "9\n" {
+			t.Fatalf("path exhaustion lost actual result/output: %+v / %q", result.Execution.Outcome, result.Output)
+		}
+	})
+	t.Run("event-exact", func(t *testing.T) {
+		restore := interp.SetEvidenceLimitsForTest(execution.MaxDocumentBytes, eventBytes, execution.MaxDocumentBytes, 2147483647)
+		defer restore()
+		result, err := interp.RunApplication(checked.Program, "main", "0")
+		if err != nil || !execution.Equal(result.Execution, clean.Execution) || string(result.Output) != "9\n" {
+			t.Fatalf("exact event budget result = %+v, output %q, err %v", result.Execution, result.Output, err)
+		}
+	})
+	t.Run("event-plus-one-exhausts", func(t *testing.T) {
+		restore := interp.SetEvidenceLimitsForTest(execution.MaxDocumentBytes, eventBytes-1, execution.MaxDocumentBytes, 2147483647)
+		defer restore()
+		result, err := interp.RunApplication(checked.Program, "main", "0")
+		if !errors.Is(err, interp.ErrEvidenceCapacityExhausted) || len(result.Execution.Events) != 0 {
+			t.Fatalf("event plus one err/events = %v / %d, want named evidence exhaustion and no partial trace", err, len(result.Execution.Events))
+		}
+		if result.Execution.Outcome.Value != "9" || string(result.Output) != "9\n" {
+			t.Fatalf("event exhaustion lost actual result/output: %+v / %q", result.Execution.Outcome, result.Output)
+		}
+	})
+	t.Run("ordinal-before-wrap", func(t *testing.T) {
+		restore := interp.SetEvidenceLimitsForTest(execution.MaxDocumentBytes, execution.MaxDocumentBytes, execution.MaxDocumentBytes, 1)
+		defer restore()
+		result, err := interp.RunApplication(checked.Program, "main", "0")
+		if !errors.Is(err, interp.ErrEvidenceCapacityExhausted) || len(result.Execution.Events) != 0 {
+			t.Fatalf("near-limit ordinal err/events = %v / %d, want named evidence exhaustion and no partial trace", err, len(result.Execution.Events))
+		}
+		if result.Execution.Outcome.Value != "9" || string(result.Output) != "9\n" {
+			t.Fatalf("ordinal exhaustion stopped numeric work: %+v / %q", result.Execution.Outcome, result.Output)
+		}
+	})
+	t.Run("more-than-4096-work-and-late-defect", func(t *testing.T) {
+		checked := session.Check([]byte(phase36LongCallSource))
+		if len(checked.Diagnostics) != 0 {
+			t.Fatalf("long-call source diagnostics: %+v", checked.Diagnostics)
+		}
+		const input = "18446744073709546615"
+		restore := interp.SetEvidenceLimitsForTest(4096, 4096, 8192, 2)
+		defer restore()
+		result, err := interp.RunApplication(checked.Program, "main", input)
+		if !errors.Is(err, interp.ErrEvidenceCapacityExhausted) || len(result.Execution.Events) != 0 {
+			t.Fatalf("post-exhaustion err/events = %v / %d, want named evidence error and no partial trace", err, len(result.Execution.Events))
+		}
+		if result.Execution.Outcome.Kind != execution.OutcomeDefect {
+			t.Fatalf("execution after capture exhaustion = %+v, want the 5001st checked addition to defect", result.Execution.Outcome)
+		}
+		if !strings.Contains(err.Error(), execution.DefectReasonU64AddOverflow) {
+			t.Fatalf("evidence error lost the bounded terminal reason: %v", err)
+		}
+		if string(result.Output) != input+"\n" {
+			t.Fatalf("capture exhaustion lost already-produced application output: %q", result.Output)
+		}
+	})
+}
+
+func phase36EvidenceBytes(t *testing.T, events []execution.Event) (int, int) {
+	t.Helper()
+	paths := make(map[string]bool)
+	for _, event := range events {
+		if event.Invocation != "" {
+			paths[event.Invocation] = true
+		}
+	}
+	pathBytes := 0
+	for path := range paths {
+		pathBytes += len(path)
+	}
+	eventBytes := 0
+	for index, event := range events {
+		encoded, err := json.Marshal(event)
+		if err != nil {
+			t.Fatal(err)
+		}
+		eventBytes += len(encoded)
+		if index > 0 {
+			eventBytes++
+		}
+	}
+	return pathBytes, eventBytes
 }
 
 func phase36Function(t *testing.T, program core.Program, name string) core.Function {
