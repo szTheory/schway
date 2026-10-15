@@ -623,3 +623,9 @@ their separate authorities. The context's seven-column transition table owns
 the next three recommendations and scoped dormant-seed dispositions. Final
 hosted binding stays Phase 38 after audit; human readability and whole-loop
 cold/warm distributions remain unmeasured.
+
+Phase 37 research follow-up (2026-10-15): one temporary source passed public check
+and native build/run with `3421780262` for `123456789`. An empty path returned
+`(65, "", "")`, consistent with generated C and the current CLI test; the
+context preserves that tuple. This is one new local constructibility probe,
+not maximum-size/public-interpreter parity or a complete phase test receipt.

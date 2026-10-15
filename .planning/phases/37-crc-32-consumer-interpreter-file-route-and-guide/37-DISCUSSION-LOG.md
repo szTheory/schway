@@ -53,3 +53,7 @@ Concrete source/API/test layout, focused fault injections, exact finite owner se
 ## Deferred Ideas
 
 Phase 38 audit/final hosted binding; M008 named arity-N/record/wc consumer; arbitrary C interpretation; general cancellation/fuel, IO/evidence/docs frameworks, full large-file traces, separate compilation, numeric spelling unification and untriggered query/observation/source-form seeds. See CONTEXT for owners and triggers.
+
+## Research amendment — 2026-10-15
+
+The bounded native source probe produced `3421780262` for `123456789`. It also disproved the initial source-inspection premise in D-10: generated C rejects an empty PathToken before the C adapter and `cmd/schway/main_test.go` already pins `(65, "", "")`. Under the delegated evidence-backed correction rule, D-10 now preserves that existing tuple. No native preflight or old empty-token test is to be changed merely to satisfy the draft premise. The checksum guide statement remains correct. The context now also names the existing project spike-findings skill discovered by research. These corrections do not expand scope or claim phase verification.

@@ -737,3 +737,10 @@ reuse; public file-engine parity plus guide; audited two-host binding in Phase 3
 Relevant z1g/trz/z1s triggers were checked against current sources and remain
 dormant. No runtime dependency, hosted receipt, human readability result or
 whole-loop latency result is claimed by this discussion.
+
+Research follow-up on 2026-10-15 exercised one temporary ordinary-source CRC
+program: public check and native build/run produced `3421780262` for `123456789`.
+The same bounded probe and an existing CLI test show that an empty PathToken
+returns 65 with empty streams before the adapter runs. CONTEXT D-10 is amended
+to preserve this behavior. This is a small constructibility probe, not a
+committed Phase 37 test, maximum-file result or phase acceptance receipt.
