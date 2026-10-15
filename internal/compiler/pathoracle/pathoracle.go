@@ -202,7 +202,11 @@ func validateScalarCallContracts(program core.Program) error {
 				callee, known := callees[operation.CalleeID]
 				touchesScalar := pathScalarType(sourceType) || pathScalarType(targetType) || known && (pathScalarType(callee.Parameter.Type) || pathScalarType(callee.ReturnType))
 				ownerViewCall := sourceType == "ByteView" && targetType == "U64" && pathCallerHasOwnerContract(caller)
-				if touchesScalar && !ownerViewCall {
+				// PathToken probes retain the existing independent fallible
+				// owner-path replay; a scalar result alone is not a helper call.
+				pathProbe := known && caller.Parameter.Type == "PathToken" && sourceType == "PathToken" && callee.Parameter.Type == "PathToken" &&
+					targetType == "U64" && callee.ReturnType == "U64" && operation.ErrTargetID != "" && operation.OkEdgeID != "" && operation.ErrEdgeID != ""
+				if touchesScalar && !ownerViewCall && !pathProbe {
 					resultType := types[operation.TypeID]
 					valid := known && pathScalarType(callee.Parameter.Type) && pathScalarType(callee.ReturnType) && pathScalarCalleeValueOnly(callee) &&
 						sourceType == callee.Parameter.Type && targetType == callee.ReturnType && resultType == callee.ReturnType &&

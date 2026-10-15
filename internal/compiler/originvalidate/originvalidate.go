@@ -314,6 +314,12 @@ func originCallHasScalarEndpoints(function core.Function, operation core.LinearO
 	if function.Linear == nil {
 		return false
 	}
+	// A scalar tail after file-owner release does not turn a PathToken
+	// lifecycle into a scalar CFG. Explicit scalar operations select their
+	// existing analysis independently of this call-only trigger.
+	if function.Parameter.Type != "U64" && function.Parameter.Type != "Bool" && function.Parameter.Type != "Byte" && function.Parameter.Type != "ByteView" {
+		return false
+	}
 	types := make(map[string]string, len(function.Linear.Types))
 	places := make(map[string]string, len(function.Linear.Places))
 	for _, fact := range function.Linear.Types {
@@ -367,7 +373,11 @@ func originScalarCallContractProblem(function core.Function, calleeContracts map
 			// U64. Their dedicated closed state machines remain responsible
 			// for that one mixed boundary; ordinary calls gain no such path.
 			ownerViewCall := sourceType == "ByteView" && targetType == "U64" && (fixtureOwnerPresent(function) || fileBytesOwnerPresent(function))
-			if callTouchesScalar && !ownerViewCall {
+			// The legacy fallible PathToken probe uses the independently
+			// replayed owner/error lifecycle, not the new scalar helper law.
+			pathProbe := calleeKnown && function.Parameter.Type == "PathToken" && sourceType == "PathToken" && callee.ParameterType == "PathToken" &&
+				targetType == "U64" && callee.ReturnType == "U64" && operation.ErrTargetID != "" && operation.OkEdgeID != "" && operation.ErrEdgeID != ""
+			if callTouchesScalar && !ownerViewCall && !pathProbe {
 				resultType := types[operation.TypeID]
 				validContract := calleeKnown && originScalarConstructor(callee.ParameterType) && originScalarConstructor(callee.ReturnType) &&
 					sourceType == callee.ParameterType && targetType == callee.ReturnType && resultType == callee.ReturnType &&
@@ -1467,9 +1477,6 @@ func PublishProblemsFor(function core.Function, calleeContracts map[string]calle
 	if problem := phase29ByteOpProblem(function); problem != nil {
 		return []Problem{*problem}
 	}
-	if problem := originScalarCallContractProblem(function, calleeContracts); problem != nil {
-		return []Problem{*problem}
-	}
 	if originNeedsScalarAnalysis(function) {
 		valid, zeroOperationID := originScalarFixedPointWithFailure(function)
 		if zeroOperationID != "" {
@@ -1494,6 +1501,11 @@ func PublishProblemsFor(function core.Function, calleeContracts map[string]calle
 		if problem := localOwnerOriginProblem(function); problem != nil {
 			return []Problem{*problem}
 		}
+	}
+	// Keep the established owner lifecycle refusals ahead of the new helper
+	// contract. A valid owning wrapper must still pass the contract below.
+	if problem := originScalarCallContractProblem(function, calleeContracts); problem != nil {
+		return []Problem{*problem}
 	}
 	if problem := checkForeignOriginOmitted(function); problem != nil {
 		return []Problem{*problem}

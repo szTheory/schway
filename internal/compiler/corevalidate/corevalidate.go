@@ -4379,16 +4379,21 @@ func (v *validator) checkCallTypeContractForCaller(caller, callee core.Function,
 	}
 	argumentScalar := argumentConstructor == "U64" || argumentConstructor == "Bool"
 	resultScalar := targetConstructor == "U64" || targetConstructor == "Bool"
-	if argumentScalar || resultScalar {
+	// The existing fallible PathToken probe is an ownership/error call, even
+	// though its result is U64. Its complete error edges and cleanup remain
+	// independently checked by validateTransferredOwner, not scalar transfer.
+	pathProbe := caller.Parameter.Type == "PathToken" && argumentConstructor == "PathToken" && callee.Parameter.Type == "PathToken" &&
+		targetConstructor == "U64" && callee.ReturnType == "U64" && operation.ErrTargetID != "" && operation.OkEdgeID != "" && operation.ErrEdgeID != ""
+	if (argumentScalar || resultScalar) && !pathProbe {
 		if argumentScalar && resultScalar {
 			return v.check(scalarCallOperationFieldsClean(operation), "core.scalar_call_operation_invalid", operation.ID)
 		}
-		// The only mixed scalar/non-scalar call retained here is the old
-		// fixture-owned ByteView -> U64 consumer. Its dedicated lifecycle
-		// validator proves the foreign owner, borrow, call, release and return
-		// order; scalar helpers receive no authority to consume resources or
-		// return views.
-		return v.check(fixtureViewCall(&caller, operation, types, places), "core.scalar_call_context_invalid", operation.ID)
+		// Preserve both existing owning-wrapper ByteView -> U64 routes.
+		// The file wrapper must satisfy its complete acquire/borrow/call/
+		// release/return lifecycle, including the optional scalar tail. This
+		// gives scalar helpers no authority to consume resources or return views.
+		fileViewCall := argumentConstructor == "ByteView" && targetConstructor == "U64" && v.fileBytesOwnerLifecycleValid(&caller)
+		return v.check(fixtureViewCall(&caller, operation, types, places) || fileViewCall, "core.scalar_call_context_invalid", operation.ID)
 	}
 	return true
 }
@@ -4783,12 +4788,13 @@ func hasScalarCFG(function *core.Function) bool {
 	}
 	for _, operation := range function.Linear.Operations {
 		if operation.Kind == core.OpCall {
-			// A scalar result or source selects the scalar transfer, including
-			// the existing ByteView-to-U64 wrapper seam. Resource-only calls
-			// retain their separate ownership replay and do not acquire scalar
-			// authority merely because they are calls.
+			// Call-only scalar transfer is for U64/Bool helpers in scalar
+			// callers. A PathToken owner/error wrapper, or a ByteView call
+			// through an owning wrapper, keeps its independent lifecycle replay.
+			// Explicit scalar operations below still select authority checks.
 			source, target := placeByID[operation.SourceID], placeByID[operation.TargetID]
-			if source == "U64" || source == "Bool" || target == "U64" || target == "Bool" || typeByID[operation.TypeID] == "U64" || typeByID[operation.TypeID] == "Bool" {
+			scalarCaller := function.Parameter.Type == "U64" || function.Parameter.Type == "Bool" || function.Parameter.Type == "Byte" || function.Parameter.Type == "ByteView"
+			if scalarCaller && (source == "U64" || source == "Bool") && (target == "U64" || target == "Bool") {
 				return true
 			}
 		}
