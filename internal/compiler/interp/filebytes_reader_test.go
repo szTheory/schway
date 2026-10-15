@@ -229,6 +229,97 @@ func TestPhase37FileReaderBoundControls(t *testing.T) {
 	})
 }
 
+func TestPhase37FileReaderMutationControls(t *testing.T) {
+	original, err := os.ReadFile("filebytes_reader.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mutations := []struct {
+		name        string
+		anchor      string
+		replacement string
+	}{
+		{
+			name:        "wrong-read-bound",
+			anchor:      "\tdata = data[:FileBytesLimit+1]",
+			replacement: "\tdata = data[:FileBytesLimit]",
+		},
+		{
+			name: "omitted-regular-check",
+			anchor: `if !info.Mode().IsRegular() {
+		_ = closeFile()
+		return nil, fileBytesFileUnavailable
+	}`,
+			replacement: "_ = info.Mode().IsRegular()",
+		},
+		{
+			name:        "ignored-close-error",
+			anchor:      "if readErr != nil || closeErr != nil {",
+			replacement: "_ = closeErr\n\tif readErr != nil {",
+		},
+	}
+	for _, mutation := range mutations {
+		t.Run(mutation.name, func(t *testing.T) {
+			if strings.Count(string(original), mutation.anchor) != 1 {
+				t.Fatalf("source mutation anchor occurs %d times; want exactly one", strings.Count(string(original), mutation.anchor))
+			}
+			mutant := strings.Replace(string(original), mutation.anchor, mutation.replacement, 1)
+			phase37RunMutationOverlay(t, "filebytes_reader.go", mutant, "TestPhase37FileReaderMutationTarget", mutation.name, "READER_ASSERTION["+mutation.name+"]")
+		})
+	}
+}
+
+// TestPhase37FileReaderMutationTarget runs clean reader assertions directly
+// and is also invoked by bounded overlays. Each armed child must fail at the
+// semantic reader assertion for its mutant.
+func TestPhase37FileReaderMutationTarget(t *testing.T) {
+	mode := os.Getenv("SCHWAY_PHASE37_MUTANT")
+	if mode == "" {
+		file := &phase37ReaderDescriptor{mode: 0o600, data: bytes.Repeat([]byte{0xa5}, FileBytesLimit+1)}
+		got, alternative := readFileBytesWith("opaque", func(string) (fileBytesDescriptor, error) { return file, nil })
+		if got != nil || alternative != fileBytesFileTooLarge || file.offset != FileBytesLimit+1 || file.closeCalls != 1 {
+			t.Fatalf("clean cap+1 reader target = (len=%d,%q,offset=%d,closes=%d), want (nil,FileTooLarge,%d,1)", len(got), alternative, file.offset, file.closeCalls, FileBytesLimit+1)
+		}
+		file = &phase37ReaderDescriptor{mode: os.ModeDevice | 0o600, data: []byte("device")}
+		got, alternative = readFileBytesWith("opaque", func(string) (fileBytesDescriptor, error) { return file, nil })
+		if got != nil || alternative != fileBytesFileUnavailable || file.readCalls != 0 || file.closeCalls != 1 {
+			t.Fatalf("clean nonregular reader target = (len=%d,%q,reads=%d,closes=%d), want (nil,FileUnavailable,0,1)", len(got), alternative, file.readCalls, file.closeCalls)
+		}
+		file = &phase37ReaderDescriptor{mode: 0o600, data: []byte("ok"), closeErr: errors.New("close")}
+		got, alternative = readFileBytesWith("opaque", func(string) (fileBytesDescriptor, error) { return file, nil })
+		if got != nil || alternative != fileBytesFileUnavailable || file.closeCalls != 1 {
+			t.Fatalf("clean close-error reader target = (bytes=%q,%q,closes=%d), want (nil,FileUnavailable,1)", got, alternative, file.closeCalls)
+		}
+		return
+	}
+	phase37AssertMutationChildRoot(t)
+	switch mode {
+	case "wrong-read-bound":
+		file := &phase37ReaderDescriptor{mode: 0o600, data: bytes.Repeat([]byte{0xa5}, FileBytesLimit+1)}
+		got, alternative := readFileBytesWith("opaque", func(string) (fileBytesDescriptor, error) { return file, nil })
+		if got == nil && alternative == fileBytesFileTooLarge && file.offset == FileBytesLimit+1 {
+			return
+		}
+		t.Fatalf("READER_ASSERTION[wrong-read-bound]: cap+1 must return nil/FileTooLarge after reading %d bytes; got len=%d alternative=%q closes=%d", FileBytesLimit+1, len(got), alternative, file.closeCalls)
+	case "omitted-regular-check":
+		file := &phase37ReaderDescriptor{mode: os.ModeDevice | 0o600, data: []byte("device")}
+		got, alternative := readFileBytesWith("opaque", func(string) (fileBytesDescriptor, error) { return file, nil })
+		if got == nil && alternative == fileBytesFileUnavailable && file.readCalls == 0 && file.closeCalls == 1 {
+			return
+		}
+		t.Fatalf("READER_ASSERTION[omitted-regular-check]: nonregular descriptor must return nil/FileUnavailable without reads and close once; got len=%d alternative=%q reads=%d closes=%d", len(got), alternative, file.readCalls, file.closeCalls)
+	case "ignored-close-error":
+		file := &phase37ReaderDescriptor{mode: 0o600, data: []byte("ok"), closeErr: errors.New("close")}
+		got, alternative := readFileBytesWith("opaque", func(string) (fileBytesDescriptor, error) { return file, nil })
+		if got == nil && alternative == fileBytesFileUnavailable && file.closeCalls == 1 {
+			return
+		}
+		t.Fatalf("READER_ASSERTION[ignored-close-error]: successful read with close error must return nil/FileUnavailable; got bytes=%q alternative=%q closes=%d", got, alternative, file.closeCalls)
+	default:
+		t.Fatalf("unknown reader mutation mode %q", mode)
+	}
+}
+
 func (f *phase37ReaderDescriptor) Close() error {
 	f.closeCalls++
 	return f.closeErr
