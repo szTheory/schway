@@ -869,3 +869,31 @@ evidence/debt, owners, reprioritization conditions and dormant z1g/trz/z1s
 source/consumer dispositions are in [34-REFRESH-CLOSEOUT.md](phases/34-agent-diagnostics-floor-and-surface-manifest/34-REFRESH-CLOSEOUT.md).
 Only EVD-17 remains active; human readability and whole-loop cold/warm latency
 remain unmeasured. No future consumer or dormant experiment was promoted.
+
+
+## Phase 35 verification refresh after Phase 37 — 2026-10-15
+
+This dated amendment supersedes the earlier Phase 35 freshness pointer.
+Phases 33/34/35 now pass current independent verification (60/60, 38/38,
+38/38). Phase 35's report binds 114 stable inputs. All four BIT requirements,
+48 artifact declarations, 24 links and 23 decisions are accounted for, with
+no gaps or human items. Two formerly null prohibition tiers now have explicit
+mechanical descriptors: each false causal/numeric or lane claim fails while
+clean/default subjects pass. No human waiver was inferred.
+
+The final focused regression passed 165 names / 175 root executions in
+16 packages, zero missing/fail/skip, including all 41 actual-source mutants
+and the feature-only O0/O3/O3-LTO/UBSan lanes. Review has zero findings and
+all 24 L1 threats remain closed. These are local source-bound observations;
+no compiler admission, dependency, hosted receipt or human-readability claim
+changed. Earlier receipts remain historical at their stated revisions.
+
+Exact next gate: `$gsd-execute-phase 36`, then stale 37, M007 audit and gap
+closure before Phase 38. Preserve completed plans/UAT and avoid rewriting
+source-bound historical receipts merely to refresh dates. Only EVD-17 is
+active milestone scope. The three recommendations remain audited same-source
+two-host CRC receipts, proposed M008 wc/longest_line, then bounded fixed-schema
+key=value configuration parsing. Their programs, blockers, complete slices,
+checker obligations, evidence/debt, owners and priority-changing observations,
+plus relevant dormant z1g/trz/z1s source/consumer dispositions, are in [35-REFRESH-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH-CLOSEOUT.md).
+Human readability and whole-loop cold/warm latency remain unmeasured.

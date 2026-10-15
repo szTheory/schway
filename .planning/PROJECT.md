@@ -154,14 +154,13 @@ is auto-followed. Copy-local code is preferred over new dependencies.
 
 ## Current State
 
-Amended 2026-10-15 after Phase 34's successor refresh: the ordinary-source
+Amended 2026-10-15 after Phase 35's successor refresh: the ordinary-source
 CRC module, second consumer, public file routes and guide remain implemented.
-Phase 33 passes independent verification at 60/60 and Phase 34 at 38/38.
-Phases 35–37 have complete plans but stale whole-phase reports; preserve
-implementation/UAT and resume gates with `$gsd-execute-phase 35`. Audit M007
-and close gaps before Phase 38 binds new two-host receipts. Current source
-and local checks remain distinct from historical hosted receipts.
-See [34-REFRESH-CLOSEOUT.md](phases/34-agent-diagnostics-floor-and-surface-manifest/34-REFRESH-CLOSEOUT.md).
+Phases 33/34/35 pass independent verification at 60/60, 38/38 and 38/38.
+Phases 36/37 have complete plans but stale reports; preserve implementation/UAT
+and resume gates with `$gsd-execute-phase 36`. Audit M007 and close gaps before
+Phase 38 binds new two-host receipts. Current local evidence remains distinct
+from historical hosted receipts. See [35-REFRESH-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH-CLOSEOUT.md).
 
 **2026-10-12 M006 Bounded Byte Utility and Local Modules shipped** (6 phases,
 63 plans, 158 tasks; archive `.planning/milestones/M006-*`, tag `vM006`).
@@ -865,7 +864,7 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-15 after Phase 34 verification refresh*
+*Last updated: 2026-10-15 after Phase 35 verification refresh*
 
 ### Phase 33 execution amendment — 2026-10-13
 
@@ -951,3 +950,14 @@ review has zero findings; three historical warnings remain fixed and all
 The current next route is `$gsd-execute-phase 35`, then remaining freshness
 and audit before Phase 38. The three capability recommendations and dormant
 seed dispositions are in [34-REFRESH-CLOSEOUT.md](phases/34-agent-diagnostics-floor-and-surface-manifest/34-REFRESH-CLOSEOUT.md).
+
+
+### Phase 35 refreshed verification amendment — 2026-10-15
+
+Phase 35 is current at 38/38 with two mechanically enforced transparency
+prohibitions. The evidence adapter and test-only acceptance wiring were
+repaired; compiler semantics and dependencies are unchanged. Final regression
+passed 175 root executions, including all 41 actual-source mutants and the
+focused optimization/sanitizer lanes. Review is clean, 24 L1 threats are
+closed, and no human item remains. Phase 36 freshness is next, then 37 and
+M007 audit before Phase 38. Current capabilities and dormant seeds: [35-REFRESH-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH-CLOSEOUT.md).
