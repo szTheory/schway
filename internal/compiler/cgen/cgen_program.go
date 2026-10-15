@@ -1089,6 +1089,9 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		// Taking the evidence writers' addresses keeps this shared support
 		// translation unit valid under the strict -Wunused-function build.
 		out.WriteString("  (void)schway_write_events;\n  (void)schway_write_live_resources;\n  (void)schway_application_output_failure;\n")
+		if dynamicInvocationSupport {
+			out.WriteString("  (void)schway_write_capacity_capture;\n")
+		}
 	}
 	out.WriteString("  if (argc != 2) return 64;\n")
 	if shell == programApplicationShell {
@@ -2826,7 +2829,7 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 			case core.OpAddChecked:
 				fmt.Fprintf(out, "  if (UINT64_MAX - %s < %s) {\n", locals[op.SourceID], locals[op.RightID])
 				if shell == programApplicationShell {
-					out.WriteString("    fputs(\"schway: " + execution.DefectReasonU64AddOverflow + "\\n\", stderr);\n    exit(65);\n")
+					emitProgramApplicationScalarFailure(out, "schway: "+execution.DefectReasonU64AddOverflow, dynamicInvocationSupport)
 				} else {
 					overflow := op
 					overflow.Reason = execution.DefectReasonU64AddOverflow
@@ -2852,7 +2855,7 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 			case core.OpRemainderU64:
 				fmt.Fprintf(out, "  if (%s == UINT64_C(0)) {\n", locals[op.RightID])
 				if shell == programApplicationShell {
-					out.WriteString("    fputs(\"schway: " + execution.DefectReasonU64RemainderByZero + "\\n\", stderr);\n    exit(65);\n")
+					emitProgramApplicationScalarFailure(out, "schway: "+execution.DefectReasonU64RemainderByZero, dynamicInvocationSupport)
 				} else {
 					defect := op
 					defect.Reason = execution.DefectReasonU64RemainderByZero
@@ -2868,7 +2871,7 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 				// shells: never assert, never elided, even under a loop guard.
 				fmt.Fprintf(out, "  if (%s >= %s.length) {\n", locals[op.RightID], locals[op.SourceID])
 				if shell == programApplicationShell {
-					out.WriteString("    fputs(\"schway: " + execution.DefectReasonByteIndexOutOfBounds + "\\n\", stderr);\n    exit(65);\n")
+					emitProgramApplicationScalarFailure(out, "schway: "+execution.DefectReasonByteIndexOutOfBounds, dynamicInvocationSupport)
 				} else {
 					defect := op
 					defect.Reason = execution.DefectReasonByteIndexOutOfBounds
@@ -2937,7 +2940,7 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 				}
 				terminated = true
 			case core.OpDefect:
-				fmt.Fprintf(out, "  fputs(%s, stderr);\n  exit(65);\n", strconv.Quote("schway app: "+op.Reason+"\n"))
+				emitProgramApplicationScalarFailure(out, "schway app: "+op.Reason, dynamicInvocationSupport)
 				terminated = true
 			default:
 				return fmt.Errorf("operation %q has unsupported scalar kind %q", op.ID, op.Kind)
@@ -2949,6 +2952,13 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 	}
 	out.WriteString("}\n\n")
 	return nil
+}
+
+func emitProgramApplicationScalarFailure(out *strings.Builder, message string, dynamicInvocationSupport bool) {
+	if dynamicInvocationSupport {
+		out.WriteString("    if (!schway_capture_active) schway_write_capacity_capture();\n")
+	}
+	fmt.Fprintf(out, "    fputs(%s, stderr);\n    exit(65);\n", strconv.Quote(message+"\n"))
 }
 
 // emitProgramTextWrite preserves every admitted byte, including NUL and

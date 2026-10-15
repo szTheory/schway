@@ -199,6 +199,7 @@ var linearFixedNames = []string{
 	"schway_write_bytes", "schway_write_literal", "schway_write_json_string", "schway_write_json_string_content", "schway_application_output_failure",
 	"schway_record_event", "schway_write_events", "schway_write_buffer_hex", "schway_write_byte",
 	"schway_write_u64", "schway_parse_u64_decimal",
+	"schway_write_capacity_capture",
 	// Historical foreign resource-ledger output names remain reserved.
 	"schway_resource_ids", "schway_resource_live", "schway_write_live_resources", "first",
 	// Historical foreign nonlocal-exit output name.
@@ -810,6 +811,7 @@ func emitDynamicInvocationSupport(out *strings.Builder, pathCapacity int, applic
 	out.WriteString("static int schway_reserve_invocation(const char *parent, const char *escaped_call_id, uint64_t *ordinal, const char **child) {\n  size_t parent_length;\n  size_t call_length;\n  size_t digits_length = 0u;\n  size_t required;\n  size_t offset;\n  size_t position;\n  size_t index;\n  char digits[20];\n  uint64_t value;\n  if (!schway_capture_active) { *child = parent; return 1; }\n  if (*ordinal > SCHWAY_INVOCATION_ORDINAL_MAX) goto exhausted;\n  value = *ordinal;\n  do { digits[digits_length++] = (char)('0' + (value % UINT64_C(10))); value /= UINT64_C(10); } while (value != 0u);\n  parent_length = strlen(parent);\n  call_length = strlen(escaped_call_id);\n  if (digits_length > SIZE_MAX - 3u || call_length > SIZE_MAX - digits_length - 3u) goto exhausted;\n  required = call_length + digits_length + 3u;\n  if (parent_length > SIZE_MAX - required) goto exhausted;\n  required += parent_length;\n  if (schway_invocation_used > SCHWAY_INVOCATION_CAPACITY || required > SCHWAY_INVOCATION_CAPACITY - schway_invocation_used) goto exhausted;\n  offset = schway_invocation_used;\n  memcpy(&schway_invocation_arena[offset], parent, parent_length);\n  position = offset + parent_length;\n  schway_invocation_arena[position++] = '/';\n  memcpy(&schway_invocation_arena[position], escaped_call_id, call_length);\n  position += call_length;\n  schway_invocation_arena[position++] = '#';\n  for (index = digits_length; index > 0u; --index) schway_invocation_arena[position++] = digits[index - 1u];\n  schway_invocation_arena[position] = '\\0';\n  schway_invocation_used += required;\n  *child = &schway_invocation_arena[offset];\n  (*ordinal)++;\n  return 1;\nexhausted:\n")
 	if applicationEvidence {
 		out.WriteString("  schway_capture_active = 0;\n  *child = parent;\n  return 1;\n}\n\n")
+		out.WriteString("static void schway_write_capacity_capture(void) {\n  const char *path = getenv(\"SCHWAY_APP_EVIDENCE_PATH\");\n  FILE *capture;\n  static const char marker[] = \"{\\\"schema\\\":\\\"lang.app-capture/1\\\",\\\"status\\\":\\\"capacity_exhausted\\\"}\\n\";\n  if (path == NULL || path[0] == '\\0') return;\n  capture = fopen(path, \"wb\");\n  if (capture == NULL) return;\n  (void)fwrite(marker, 1u, sizeof marker - 1u, capture);\n  (void)fclose(capture);\n}\n\n")
 	} else {
 		out.WriteString("  fputs(\"schway: event capacity exhausted\\n\", stderr);\n  exit(69);\n  return 0;\n}\n\n")
 	}

@@ -2,6 +2,9 @@ package cgen_test
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -196,4 +199,165 @@ func phase36Invocation(t *testing.T, entryID string, segments ...execution.Invoc
 		t.Fatal(err)
 	}
 	return value
+}
+
+func TestPhase36CallEventCapacityBoundary(t *testing.T) {
+	checked := session.Check([]byte(phase36NativeDynamicInvocationSource))
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	baseline, err := native.DefaultRunner().Run(context.Background(), generated, "-O0", []string{"3"})
+	if err != nil || len(baseline.Pairs) != 1 {
+		t.Fatalf("baseline run pairs=%d err=%v", len(baseline.Pairs), err)
+	}
+	eventCount := len(baseline.Pairs[0].Execution.Events)
+	if eventCount < 2 {
+		t.Fatalf("baseline event count=%d; expected a nontrivial trace", eventCount)
+	}
+
+	t.Run("exact", func(t *testing.T) {
+		limited := phase36ReplaceDefine(t, generated, "SCHWAY_EVENT_CAPACITY", fmt.Sprintf("%du", eventCount))
+		result, runErr := native.DefaultRunner().Run(context.Background(), limited, "-O0", []string{"3"})
+		if runErr != nil || len(result.Pairs) != 1 || len(result.Pairs[0].Execution.Events) != eventCount {
+			t.Fatalf("exact event capacity result=%+v err=%v; want %d events", result, runErr, eventCount)
+		}
+	})
+
+	t.Run("plus-one", func(t *testing.T) {
+		limited := phase36ReplaceDefine(t, generated, "SCHWAY_EVENT_CAPACITY", fmt.Sprintf("%du", eventCount-1))
+		_, runErr := native.DefaultRunner().Run(context.Background(), limited, "-O0", []string{"3"})
+		var toolError *native.ToolError
+		if !strings.Contains(fmt.Sprint(runErr), native.CodeEventCapacityExhausted) || !errors.As(runErr, &toolError) || toolError.Code != native.CodeEventCapacityExhausted {
+			t.Fatalf("one-below event capacity err=%v; want %s", runErr, native.CodeEventCapacityExhausted)
+		}
+	})
+}
+
+func TestPhase36NativeOrdinalAndPathBoundaries(t *testing.T) {
+	checked := session.Check([]byte(phase36NativeDynamicInvocationSource))
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", checked.Diagnostics)
+	}
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	baseline, err := native.DefaultRunner().Run(context.Background(), generated, "-O0", []string{"3"})
+	if err != nil || len(baseline.Pairs) != 1 {
+		t.Fatalf("baseline run pairs=%d err=%v", len(baseline.Pairs), err)
+	}
+	uniquePaths := make(map[string]struct{})
+	for _, event := range baseline.Pairs[0].Execution.Events {
+		if event.Invocation != "" {
+			uniquePaths[event.Invocation] = struct{}{}
+		}
+	}
+	pathBytes := 0
+	for path := range uniquePaths {
+		if strings.HasPrefix(path, "inv:entry:") && !strings.Contains(path, "/") {
+			continue
+		}
+		pathBytes += len(path) + 1
+	}
+	if pathBytes < 2 {
+		t.Fatalf("baseline retained child path bytes=%d; want dynamic children", pathBytes)
+	}
+	t.Run("path-exact", func(t *testing.T) {
+		limited := phase36ReplaceDefine(t, generated, "SCHWAY_INVOCATION_CAPACITY", fmt.Sprintf("%du", pathBytes))
+		result, runErr := native.DefaultRunner().Run(context.Background(), limited, "-O0", []string{"3"})
+		if runErr != nil || len(result.Pairs) != 1 {
+			t.Fatalf("exact path capacity result=%+v err=%v; want a complete run at %d bytes", result, runErr, pathBytes)
+		}
+	})
+	t.Run("path-plus-one", func(t *testing.T) {
+		limited := phase36ReplaceDefine(t, generated, "SCHWAY_INVOCATION_CAPACITY", fmt.Sprintf("%du", pathBytes-1))
+		_, runErr := native.DefaultRunner().Run(context.Background(), limited, "-O0", []string{"3"})
+		var toolError *native.ToolError
+		if !errors.As(runErr, &toolError) || toolError.Code != native.CodeEventCapacityExhausted {
+			t.Fatalf("one-below path capacity err=%v; want %s", runErr, native.CodeEventCapacityExhausted)
+		}
+	})
+
+	ordinalSource := `module phase36.ordinal_boundary
+
+export {
+  fn main
+}
+
+fn identity(value: U64) -> U64 {
+  value
+}
+
+fn main(input: U64) -> U64 {
+  var index = 0
+  var result = input
+  while index < input {
+    result = identity(result)
+    index = index + 1
+  }
+  result
+}
+`
+	ordinalChecked := session.Check([]byte(ordinalSource))
+	if len(ordinalChecked.Diagnostics) != 0 {
+		t.Fatalf("ordinal source diagnostics: %+v", ordinalChecked.Diagnostics)
+	}
+	ordinalC, err := cgen.EmitNative(ordinalChecked.Program)
+	if err != nil {
+		t.Fatal(err)
+	}
+	counterPattern := regexp.MustCompile(`uint64_t ([A-Za-z0-9_]*call_ordinal[A-Za-z0-9_]*) = 0u;`)
+	counter := counterPattern.FindStringSubmatch(ordinalC)
+	if len(counter) != 2 {
+		t.Fatal("generated ordinal counter declaration is missing")
+	}
+	marker := counter[0]
+	counterName := counter[1]
+	maxDeclaration := "uint64_t " + counterName + " = SCHWAY_INVOCATION_ORDINAL_MAX;"
+	maxC := strings.Replace(ordinalC, marker, maxDeclaration, 1)
+	maxResult, maxErr := native.DefaultRunner().Run(context.Background(), maxC, "-O0", []string{"1"})
+	if maxErr != nil || len(maxResult.Pairs) != 1 || maxResult.Pairs[0].Execution.Outcome.Value != "1" {
+		t.Fatalf("maximum ordinal run result=%+v err=%v; the canonical maximum must fit", maxResult, maxErr)
+	}
+	maximumPath := false
+	for _, event := range maxResult.Pairs[0].Execution.Events {
+		if strings.HasSuffix(event.Invocation, "#2147483647") {
+			maximumPath = true
+		}
+	}
+	if !maximumPath {
+		t.Fatal("maximum ordinal path was not retained in the successful trace")
+	}
+	_, nextErr := native.DefaultRunner().Run(context.Background(), maxC, "-O0", []string{"2"})
+	var nextToolError *native.ToolError
+	if !errors.As(nextErr, &nextToolError) || nextToolError.Code != native.CodeEventCapacityExhausted {
+		t.Fatalf("ordinal maximum plus one err=%v; want %s before wrap or narrowing", nextErr, native.CodeEventCapacityExhausted)
+	}
+
+	overDeclaration := "uint64_t " + counterName + " = (SCHWAY_INVOCATION_ORDINAL_MAX + UINT64_C(1));"
+	overC := strings.Replace(ordinalC, marker, overDeclaration, 1)
+	_, overErr := native.DefaultRunner().Run(context.Background(), overC, "-O0", []string{"1"})
+	var overToolError *native.ToolError
+	if !errors.As(overErr, &overToolError) || overToolError.Code != native.CodeEventCapacityExhausted {
+		t.Fatalf("out-of-range initial ordinal err=%v; want checked capacity exit", overErr)
+	}
+}
+
+func phase36ReplaceDefine(t *testing.T, generated, name, value string) string {
+	t.Helper()
+	prefix := "#define " + name + " "
+	start := strings.Index(generated, prefix)
+	if start < 0 {
+		t.Fatalf("generated C lacks %s", name)
+	}
+	end := strings.IndexByte(generated[start:], '\n')
+	if end < 0 {
+		t.Fatalf("generated %s definition has no line ending", name)
+	}
+	end += start
+	return generated[:start] + prefix + value + generated[end:]
 }
