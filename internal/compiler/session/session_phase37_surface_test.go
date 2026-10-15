@@ -17,9 +17,26 @@ import (
 )
 
 const (
-	phase37InterpreterFileRun = "run --engine=interpreter SOURCE -- PATH"
-	phase37NativeFileRun      = "run --engine=native SOURCE --manifest MANIFEST -- PATH"
+	phase37InterpreterFileRun   = "run --engine=interpreter SOURCE -- PATH"
+	phase37NativeFileRun        = "run --engine=native SOURCE --manifest MANIFEST -- PATH"
+	phase37SurfaceWitnessSchema = "phase37.surface-witnesses/1"
 )
+
+func phase37ReadSurfaceWitnessAdditions(t *testing.T) phase34SurfaceWitnessDocument {
+	t.Helper()
+	data, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase37", "surface-witnesses.json"))
+	if err != nil {
+		t.Fatalf("read additive Phase 37 surface witnesses: %v", err)
+	}
+	var document phase34SurfaceWitnessDocument
+	if err := json.Unmarshal(data, &document); err != nil {
+		t.Fatalf("decode additive Phase 37 surface witnesses: %v", err)
+	}
+	if document.Schema != phase37SurfaceWitnessSchema || document.Boundary == "" || len(document.Witnesses) == 0 || len(document.Limits) == 0 {
+		t.Fatalf("invalid Phase 37 surface witness header: schema=%q boundary=%q witnesses=%d limits=%d", document.Schema, document.Boundary, len(document.Witnesses), len(document.Limits))
+	}
+	return document
+}
 
 func phase37SurfaceLimit(manifest surfacemanifest.Manifest, id string) (surfacemanifest.Limit, bool) {
 	for _, item := range manifest.Limits {
@@ -37,6 +54,15 @@ func phase37SurfaceType(manifest surfacemanifest.Manifest, id string) (surfacema
 		}
 	}
 	return surfacemanifest.TypeEntry{}, false
+}
+
+func phase37SurfaceEntry(manifest surfacemanifest.Manifest, id string) (surfacemanifest.Entry, bool) {
+	for _, item := range manifest.Restrictions {
+		if item.ID == id {
+			return item, true
+		}
+	}
+	return surfacemanifest.Entry{}, false
 }
 
 func phase37SurfaceWireProblems(encoded []byte) []string {
@@ -69,7 +95,7 @@ func reflectPhase37Strings(left, right []string) bool {
 }
 
 func phase37PathRoutesProblems(routes []string) []string {
-	want := []string{"app run", phase37InterpreterFileRun, phase37NativeFileRun}
+	want := []string{phase37InterpreterFileRun, phase37NativeFileRun}
 	var problems []string
 	for _, route := range want {
 		if !phase34ContainsProblem(routes, route) {
@@ -86,8 +112,16 @@ func phase37PathRoutesProblems(routes []string) []string {
 }
 
 func phase37FileBytesProblems(entry surfacemanifest.TypeEntry) []string {
-	if entry.ID != "file_bytes" || len(entry.Constraints) != 1 || !strings.Contains(entry.Constraints[0], "checked binding configuration") || !strings.Contains(entry.Constraints[0], "fixed 65536-byte interpreter") || !strings.Contains(entry.Constraints[0], "no universal language-wide byte cap") {
+	if entry.ID != "file_bytes" || len(entry.Constraints) != 1 || !strings.Contains(entry.Constraints[0], "checked binding configuration") || !strings.Contains(entry.Constraints[0], "no universal language-wide byte cap") {
 		return []string{"FileBytes facts overstate or omit route-specific cap ownership"}
+	}
+	return nil
+}
+
+func phase37FileRouteRestrictionProblems(entry surfacemanifest.Entry) []string {
+	wantRoutes := []string{phase37InterpreterFileRun, phase37NativeFileRun}
+	if entry.ID != "source_file_run_input" || entry.Syntax != "run --engine={interpreter|native} SOURCE -- PATH" || !reflectPhase37Strings(entry.Contexts, wantRoutes) || len(entry.Constraints) != 1 || !strings.Contains(entry.Constraints[0], "opaque") || !strings.Contains(entry.Constraints[0], "empty") || !strings.Contains(entry.Constraints[0], "NUL") || !strings.Contains(entry.Constraints[0], "4096 bytes") {
+		return []string{"source-file run PathToken grammar or input restrictions changed"}
 	}
 	return nil
 }
@@ -162,14 +196,20 @@ func TestPhase37FileRouteSurfaceFacts(t *testing.T) {
 	if got := interp.FileBytesLimit; got != 65536 {
 		t.Errorf("fixed interpreter FileBytes adapter cap = %d, want independently pinned 65536", got)
 	}
-	if item, ok := phase37SurfaceLimit(manifest, "application.argument_bytes"); !ok {
-		t.Error("surface omits application.argument_bytes")
-	} else if problems := phase37PathRoutesProblems(item.Routes); len(problems) != 0 {
-		t.Errorf("PathToken/application argument consumers: %v", problems)
+	if item, ok := phase37SurfaceLimit(manifest, "application.argument_bytes"); !ok || item.Value != 4096 || !reflectPhase37Strings(item.Routes, []string{"app run"}) {
+		t.Errorf("existing app run argument limit changed: %+v found=%t", item, ok)
+	}
+	if item, ok := phase37SurfaceLimit(manifest, "file_run.path_bytes"); !ok {
+		t.Error("surface omits the source-file run PathToken argument limit")
+	} else {
+		problems := phase37PathRoutesProblems(item.Routes)
+		if item.Category != "source-file run input" || item.Scope != "one opaque PathToken supplied after the file-run separator" || item.Unit != "bytes" || item.Value != 4096 || len(item.Meaning) == 0 || len(problems) != 0 {
+			t.Errorf("source-file run PathToken limit facts = %+v; route findings=%v", item, problems)
+		}
 	}
 	if item, ok := phase37SurfaceLimit(manifest, "interpreter.filebytes_bytes"); !ok {
 		t.Error("surface omits the fixed interpreter FileBytes adapter limit")
-	} else if item.Category != "interpreter file input" || item.Scope != "one regular file read by the fixed interpreter FileBytes adapter" || item.Unit != "bytes" || item.Value != 65536 || !reflectPhase37Strings(item.Routes, []string{phase37InterpreterFileRun}) || !strings.Contains(item.Meaning, "Native binding-selected caps remain independent") {
+	} else if item.Category != "interpreter file input" || item.Scope != "one regular file read by the fixed interpreter FileBytes adapter" || item.Unit != "bytes" || item.Value != 65536 || !reflectPhase37Strings(item.Routes, []string{phase37InterpreterFileRun}) || !strings.Contains(item.Meaning, "native binding-selected caps remain independent") || strings.Contains(item.Meaning, "universal FileBytes cap") {
 		t.Errorf("interpreter FileBytes limit facts = %+v", item)
 	}
 	fileBytes, ok := phase37SurfaceType(manifest, "file_bytes")
@@ -178,9 +218,11 @@ func TestPhase37FileRouteSurfaceFacts(t *testing.T) {
 	} else if problems := phase37FileBytesProblems(fileBytes); len(problems) != 0 {
 		t.Errorf("FileBytes facts overstate or omit route-specific cap ownership: %v; entry=%+v", problems, fileBytes)
 	}
-	pathToken, ok := phase37SurfaceType(manifest, "path_token")
-	if !ok || len(pathToken.Constraints) != 1 || !strings.Contains(pathToken.Constraints[0], "source-file run") || !strings.Contains(pathToken.Constraints[0], "4096 bytes") || !strings.Contains(pathToken.Constraints[0], "NUL") {
-		t.Errorf("PathToken input boundary facts are incomplete: %+v", pathToken)
+	pathRule, ok := phase37SurfaceEntry(manifest, "source_file_run_input")
+	if !ok {
+		t.Error("surface omits the source-file run PathToken restriction")
+	} else if problems := phase37FileRouteRestrictionProblems(pathRule); len(problems) != 0 {
+		t.Errorf("PathToken input boundary facts are incomplete: %v; entry=%+v", problems, pathRule)
 	}
 	consumers := phase37CRCInputConsumers(t)
 	if problems := phase37CRCConsumerProblems(consumers); len(problems) != 0 {
@@ -193,11 +235,11 @@ func TestPhase37FileRouteSurfaceFacts(t *testing.T) {
 	}
 
 	t.Run("negative controls", func(t *testing.T) {
-		validRoutes := []string{"app run", phase37InterpreterFileRun, phase37NativeFileRun}
+		validRoutes := []string{phase37InterpreterFileRun, phase37NativeFileRun}
 		if problems := phase37PathRoutesProblems(validRoutes); len(problems) != 0 {
 			t.Fatalf("valid path-route census findings: %v", problems)
 		}
-		missingRoute := append([]string(nil), validRoutes[:2]...)
+		missingRoute := []string{phase37InterpreterFileRun}
 		if problems := phase37PathRoutesProblems(missingRoute); len(problems) == 0 {
 			t.Fatal("missing path consumer passed the route census")
 		}
@@ -220,6 +262,15 @@ func TestPhase37FileRouteSurfaceFacts(t *testing.T) {
 		universal.Constraints = []string{"All FileBytes values have one universal 65536-byte language-wide limit."}
 		if problems := phase37FileBytesProblems(universal); len(problems) == 0 {
 			t.Fatal("universal FileBytes cap passed the route-scope control")
+		}
+		mutatedRoutes := []string{phase37InterpreterFileRun}
+		if problems := phase37PathRoutesProblems(mutatedRoutes); len(problems) == 0 {
+			t.Fatal("missing native path consumer passed the route-scope control")
+		}
+		mutatedRule := pathRule
+		mutatedRule.Constraints = []string{"All PathToken inputs use a universal cap."}
+		if problems := phase37FileRouteRestrictionProblems(mutatedRule); len(problems) == 0 {
+			t.Fatal("wrong PathToken restriction passed the route-scope control")
 		}
 	})
 }

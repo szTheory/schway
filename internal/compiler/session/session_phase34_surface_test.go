@@ -287,6 +287,29 @@ func phase34ReadSurfaceWitnesses(t *testing.T) phase34SurfaceWitnessDocument {
 	}
 	document.Calls = phase36.Calls
 	document.Supersedes = append(document.Supersedes, phase36.Supersedes...)
+	phase37 := phase37ReadSurfaceWitnessAdditions(t)
+	seenPhase37Witnesses := map[string]bool{}
+	for _, witness := range document.Witnesses {
+		seenPhase37Witnesses[witness.ID] = true
+	}
+	for _, witness := range phase37.Witnesses {
+		if witness.ID == "" || seenPhase37Witnesses[witness.ID] {
+			t.Fatalf("Phase 37 has a duplicate or empty additive surface witness ID %q", witness.ID)
+		}
+		seenPhase37Witnesses[witness.ID] = true
+		document.Witnesses = append(document.Witnesses, witness)
+	}
+	seenPhase37Limits := map[string]bool{}
+	for _, limit := range document.Limits {
+		seenPhase37Limits[limit.ID] = true
+	}
+	for _, limit := range phase37.Limits {
+		if limit.ID == "" || seenPhase37Limits[limit.ID] {
+			t.Fatalf("Phase 37 has a duplicate or empty additive surface limit ID %q", limit.ID)
+		}
+		seenPhase37Limits[limit.ID] = true
+		document.Limits = append(document.Limits, limit)
+	}
 	return document
 }
 

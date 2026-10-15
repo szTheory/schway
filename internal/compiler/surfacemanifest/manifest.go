@@ -11,6 +11,7 @@ import (
 	"github.com/szTheory/schway/internal/compiler/check"
 	"github.com/szTheory/schway/internal/compiler/evidence"
 	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/modload"
 	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/session"
@@ -108,6 +109,8 @@ func limit(id, category, scope, unit string, value int, meaning string, routes .
 func Current() Manifest {
 	bounds := syntax.CurrentAuthoringBounds()
 	moduleRoutes := check.ModuleAwareRoutes()
+	interpreterFileRun := "run --engine=interpreter SOURCE -- PATH"
+	nativeFileRun := "run --engine=native SOURCE --manifest MANIFEST -- PATH"
 	parserRoutes := []string{"app verify", "build", "check", "debug-map", "evidence", "evidence --validate", "explain", "format", "interface core", "interface export", "query", "run", "verify"}
 	checkedRoutes := []string{"app verify", "build", "check", "debug-map", "interface core", "interface export", "query", "run", "verify"}
 	scalarRoutes := []string{"app verify", "build", "check", "debug-map", "evidence", "evidence --validate", "explain", "interface core", "interface export", "query", "run", "verify"}
@@ -183,6 +186,7 @@ func Current() Manifest {
 		Restrictions: []Entry{
 			entry("bool_context", "true | false", []string{"retained Bool identifier and type paths"}, "Unbound Bool literals in result tails are refused; Bool is not a general literal/result feature."),
 			entry("filebytes_limit", "FileBytes binding", []string{"checked build binding configuration"}, "The validated binding selects the maximum; this manifest does not publish a universal 65536-byte FileBytes language limit."),
+			entry("source_file_run_input", "run --engine={interpreter|native} SOURCE -- PATH", []string{interpreterFileRun, nativeFileRun}, "After --, PATH is one opaque argument. The CLI refuses empty PATH, NUL, and values over 4096 bytes with exit 65; a 4096-byte value reaches the file adapter or operating system."),
 			entry("module_loading", "import declarations", moduleRoutes, "Only the listed module-aware routes load imported source; other source routes retain their existing single-file or no-entry behavior."),
 			entry("parse_only_and_ability_only", "grammar and ability facts", []string{"source parser", "sealed ability derivation"}, "Parsing or deriving abilities alone does not establish complete-program checker or engine admission."),
 			entry("scalar_expression_grouping", "( expression )", []string{"scalar expressions"}, "Grouping is transparent, preserves the inner expression kind and literal provenance, admits the scalar call atom, and does not admit tuples or general tails."),
@@ -193,6 +197,8 @@ func Current() Manifest {
 		},
 		Limits: []Limit{
 			limit("application.argument_bytes", "application input", "one application input argument", "bytes", native.MaxApplicationArgumentBytes, "Maximum byte length for the retained application input argument.", "app run"),
+			limit("file_run.path_bytes", "source-file run input", "one opaque PathToken supplied after the file-run separator", "bytes", native.MaxApplicationArgumentBytes, "Maximum byte length for PATH; empty, NUL-containing or over-limit values are refused before file access.", interpreterFileRun, nativeFileRun),
+			limit("interpreter.filebytes_bytes", "interpreter file input", "one regular file read by the fixed interpreter FileBytes adapter", "bytes", interp.FileBytesLimit, "The fixed interpreter adapter reads at most 65536 actual bytes and probes at most one extra byte; native binding-selected caps remain independent.", interpreterFileRun),
 			limit("application.evidence_bytes", "application capture", "one same-run application evidence capture/report", "bytes", execution.MaxApplicationEvidenceBytes, "Maximum encoded application evidence bytes; separate from execution documents.", "app run"),
 			limit("application.output_bytes", "application output", "one retained application stdout stream", "bytes", execution.MaxApplicationOutputBytes, "Maximum bytes streamed by the retained application.", "app run"),
 			limit("check.work", "deterministic checker work", "one checked source program including its loaded modules", "work units", session.MaxCheckWork, "Token count plus explicit checker traversal work; exceeding the bound is refused. debug-map applies this guard only to import-bearing programs; query applies it only through lane/corpus queries.", checkedRoutes...),

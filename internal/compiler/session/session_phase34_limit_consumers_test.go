@@ -20,8 +20,9 @@ import (
 )
 
 // This finite consumer census is separate from the manifest and its literal
-// witness document. It follows named function references in seven current
-// source files; it does not claim whole-program or branch-sensitive analysis.
+// witness document. It follows named function references in bounded command,
+// session and evidence source files; it does not claim whole-program or
+// branch-sensitive analysis.
 func TestPhase34SurfaceLimitConsumers(t *testing.T) {
 	graph := phase34LimitConsumerGraph(t)
 	roots := map[string]string{
@@ -54,6 +55,18 @@ func TestPhase34SurfaceLimitConsumers(t *testing.T) {
 			expected["check.work"] = append(expected["check.work"], route)
 		}
 	}
+	fileRunRoots := map[string]string{
+		phase37InterpreterFileRun: "session.RunInterpreterFileApplication",
+		phase37NativeFileRun:      "main.runNativeFileApplication",
+	}
+	for route, root := range fileRunRoots {
+		if graph[root] == nil {
+			t.Fatalf("consumer census lost public file-run handler %s for %s", root, route)
+		}
+		if !phase34ConsumerReaches(graph, root, "syntax.Parse", map[string]bool{}) || !phase34ConsumerReaches(graph, root, "check.Program", map[string]bool{}) {
+			t.Errorf("public file-run route %s no longer reaches source parsing and checking through %s", route, root)
+		}
+	}
 	for _, routes := range expected {
 		sort.Strings(routes)
 	}
@@ -64,6 +77,7 @@ func TestPhase34SurfaceLimitConsumers(t *testing.T) {
 		expected[id] = expected["parser.functions"]
 	}
 	expected["parser.expression_depth"] = expected["parser.functions"]
+	expected["file_run.path_bytes"] = []string{phase37InterpreterFileRun, phase37NativeFileRun}
 	manifest := surfacemanifest.Current()
 	if problems := phase34LimitConsumerProblems(manifest, expected); len(problems) != 0 {
 		t.Fatalf("manifest differs from current consumers: %v", problems)
@@ -108,17 +122,26 @@ func TestPhase34SurfaceLimitConsumers(t *testing.T) {
 	if problems := phase34LimitConsumerProblems(surfacemanifest.Current(), expected); len(problems) != 0 {
 		t.Fatalf("route controls did not restore: %v", problems)
 	}
+	if problems := phase37CRCConsumerProblems(phase37CRCInputConsumers(t)); len(problems) != 0 {
+		t.Fatalf("CRC FileBytes input census differs from the two explicit entries: %v", problems)
+	}
 }
 
 func phase34LimitConsumerGraph(t *testing.T) map[string][]string {
 	t.Helper()
 	graph := map[string][]string{}
-	for _, relative := range []string{
-		"session/session.go", "session/session_modules.go", "session/session_moduledigests.go",
-		"session/session_app_verify.go", "session/session_phase6_explain.go", "session/session_phase6_query.go",
-		"evidence/evidence.go",
+	for _, sourcePath := range []string{
+		testsupport.ProjectPath("internal/compiler", "session/session.go"),
+		testsupport.ProjectPath("internal/compiler", "session/session_modules.go"),
+		testsupport.ProjectPath("internal/compiler", "session/session_moduledigests.go"),
+		testsupport.ProjectPath("internal/compiler", "session/session_file_application.go"),
+		testsupport.ProjectPath("internal/compiler", "session/session_app_verify.go"),
+		testsupport.ProjectPath("internal/compiler", "session/session_phase6_explain.go"),
+		testsupport.ProjectPath("internal/compiler", "session/session_phase6_query.go"),
+		testsupport.ProjectPath("internal/compiler", "evidence/evidence.go"),
+		testsupport.ProjectPath("cmd", "schway", "main.go"),
 	} {
-		file, err := parser.ParseFile(token.NewFileSet(), testsupport.ProjectPath("internal/compiler", relative), nil, 0)
+		file, err := parser.ParseFile(token.NewFileSet(), sourcePath, nil, 0)
 		if err != nil {
 			t.Fatal(err)
 		}

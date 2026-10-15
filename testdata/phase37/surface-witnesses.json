@@ -1,0 +1,46 @@
+{
+  "schema": "phase37.surface-witnesses/1",
+  "boundary": "Additive source-free surface facts for public file-run input routes. These witnesses bind the two route forms to existing CRC entry programs; they do not widen generic FileBytes authority.",
+  "limits": [
+    {
+      "id": "file_run.path_bytes",
+      "category": "source-file run input",
+      "scope": "one opaque PathToken supplied after the file-run separator",
+      "unit": "bytes",
+      "value": 4096,
+      "meaning": "Maximum byte length for PATH; empty, NUL-containing or over-limit values are refused before file access.",
+      "routes": ["run --engine=interpreter SOURCE -- PATH", "run --engine=native SOURCE --manifest MANIFEST -- PATH"]
+    },
+    {
+      "id": "interpreter.filebytes_bytes",
+      "category": "interpreter file input",
+      "scope": "one regular file read by the fixed interpreter FileBytes adapter",
+      "unit": "bytes",
+      "value": 65536,
+      "meaning": "The fixed interpreter adapter reads at most 65536 actual bytes and probes at most one extra byte; native binding-selected caps remain independent.",
+      "routes": ["run --engine=interpreter SOURCE -- PATH"]
+    }
+  ],
+  "witnesses": [
+    {
+      "id": "phase37-interpreter-file-run-path-token",
+      "facet": "restriction:source_file_run_input",
+      "context": "run --engine=interpreter SOURCE -- PATH",
+      "source_path": "examples/crc32/crc32.schway",
+      "exercise": "fn main(path: PathToken)",
+      "expected_status": "pass",
+      "expected_form": "run --engine={interpreter|native} SOURCE -- PATH",
+      "expected_constraints": ["After --, PATH is one opaque argument. The CLI refuses empty PATH, NUL, and values over 4096 bytes with exit 65; a 4096-byte value reaches the file adapter or operating system."]
+    },
+    {
+      "id": "phase37-native-file-run-path-token",
+      "facet": "restriction:source_file_run_input",
+      "context": "run --engine=native SOURCE --manifest MANIFEST -- PATH",
+      "source_path": "examples/crc32/crc32.schway",
+      "exercise": "fn main(path: PathToken)",
+      "expected_status": "pass",
+      "expected_form": "run --engine={interpreter|native} SOURCE -- PATH",
+      "expected_constraints": ["After --, PATH is one opaque argument. The CLI refuses empty PATH, NUL, and values over 4096 bytes with exit 65; a 4096-byte value reaches the file adapter or operating system."]
+    }
+  ]
+}
