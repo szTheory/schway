@@ -3,20 +3,39 @@ phase: 33
 review: 33-REVIEW.md
 titles: json
 findings:
+  - id: WR-01
+    severity: warning
+    disposition: fixed
+    title: "Coverage checker accepts incomplete verification records"
+  - id: WR-02
+    severity: warning
+    disposition: fixed
+    title: "Receipt gate allows undeclared case programs"
+  - id: WR-03
+    severity: warning
+    disposition: fixed
+    title: "Empty case program bypasses the reverse inventory check"
+  - id: WR-04
+    severity: warning
+    disposition: fixed
+    title: "Coverage checker still accepts incomplete entry metadata"
   - id: CR-01
     severity: critical
     disposition: fixed
     title: "Empty manifest controls bypass receipt control validation"
 open: 0
-total: 1
-unparsed: 2
-recorded: 2026-10-15T19:45:30.058Z
+total: 5
+recorded: 2026-10-15T20:01:32.870Z
 ---
 
 # Phase 33: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
+| WR-01 | warning | fixed | 33-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 33-REVIEW-FIX.md |
+| WR-03 | warning | fixed | 33-REVIEW-FIX.md |
+| WR-04 | warning | fixed | 33-REVIEW-FIX.md |
 | CR-01 | critical | fixed | 33-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
