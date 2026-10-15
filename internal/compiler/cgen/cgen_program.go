@@ -2636,10 +2636,10 @@ func hasScalarValueCalls(program core.Program) bool {
 			}
 			callee, ok := byID[operation.CalleeID]
 			if !ok || !isDynamicScalarFunctionBody(function, byID) || !isDynamicScalarCall(function, operation, callee) {
-				// Keep a mixed or ownership-bearing call graph on its established
-				// emitter route. The dynamic branch is admitted only when every
-				// OpCall belongs to the bounded U64/Bool scalar subset.
-				return false
+				// Legacy calls keep their established emitters, including the
+				// owning wrapper's ByteView call. They must not disable dynamic
+				// scalar calls in another, borrowed-view body in the same graph.
+				continue
 			}
 			found = true
 		}
@@ -2671,11 +2671,15 @@ func isDynamicScalarFunctionBody(function core.Function, byID map[string]core.Fu
 	if function.Match != nil || linear == nil || len(linear.Blocks) == 0 || function.ForeignContract != nil || len(linear.LoanEndpoints) != 0 {
 		return false
 	}
-	if (function.Parameter.Type != "U64" && function.Parameter.Type != "Bool") ||
+	byteViewCaller := function.Parameter.Type == "ByteView" && function.ReturnType == "U64"
+	if (function.Parameter.Type != "U64" && function.Parameter.Type != "Bool" && !byteViewCaller) ||
 		(function.ReturnType != "U64" && function.ReturnType != "Bool" && !(function.Parameter.Type == "U64" && function.ReturnType == "Unit")) {
 		return false
 	}
 	for _, place := range linear.Places {
+		if byteViewCaller && place.ID == function.Parameter.ID && placesTypeName(linear, place.TypeID) == "ByteView" {
+			continue
+		}
 		if name := placesTypeName(linear, place.TypeID); name != "U64" && name != "Bool" {
 			return false
 		}
@@ -2684,6 +2688,7 @@ func isDynamicScalarFunctionBody(function core.Function, byID map[string]core.Fu
 		switch operation.Kind {
 		case core.OpConst, core.OpCopy, core.OpAddChecked, core.OpLessU64, core.OpEqualU64,
 			core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64, core.OpShiftLeftU64, core.OpShiftRightU64,
+			core.OpBytesLen, core.OpBytesAt,
 			core.OpRemainderU64, core.OpScalarStore, core.OpBranch, core.OpWriteU64, core.OpWriteNewline,
 			core.OpWriteText, core.OpReturn, core.OpDefect:
 		case core.OpCall:
