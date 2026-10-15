@@ -34,15 +34,36 @@ fn nested(value: U64) -> U64 {
   result
 }
 
+fn below_ten(value: U64) -> Bool {
+  let result = value < 10
+  result
+}
+
+fn choose(value: Bool) -> U64 {
+  var result = 0
+  if value { result = 7 } else { result = 9 }
+  result
+}
+
+fn identity_bool(value: Bool) -> Bool {
+  let result = value
+  result
+}
+
 fn main(input: U64) -> U64 {
   var index = 0
   var result = input
   var first = 0
   var second = 0
+  var condition = input < 10
+  var selected = 0
   while index < 2 {
     first = nested(result)
     second = nested(first)
-    result = second
+    condition = below_ten(second)
+    selected = choose(condition)
+    condition = identity_bool(condition)
+    if condition { result = selected } else { result = selected + 1 }
     index = index + 1
   }
   result
@@ -73,8 +94,29 @@ func TestPhase36NativeDynamicInvocationPaths(t *testing.T) {
 		t.Fatalf("native O0 run: pairs=%d err=%v", len(got.Pairs), err)
 	}
 	nativeExecution := got.Pairs[0].Execution
-	if nativeExecution.Outcome.Kind != "returned" || nativeExecution.Outcome.Value != "11" {
-		t.Fatalf("native literal answer = %+v, want returned 11", nativeExecution.Outcome)
+	if nativeExecution.Outcome.Kind != "returned" || nativeExecution.Outcome.Value != "10" {
+		t.Fatalf("native literal answer = %+v, want returned 10", nativeExecution.Outcome)
+	}
+	for _, lane := range []struct {
+		name         string
+		optimization string
+		lto          bool
+	}{
+		{name: "O3", optimization: "-O3"},
+		{name: "O3-LTO", optimization: "-O3", lto: true},
+	} {
+		t.Run(lane.name, func(t *testing.T) {
+			runner := native.DefaultRunner()
+			runner.LTO = lane.lto
+			result, runErr := runner.Run(context.Background(), generated, lane.optimization, []string{"3"})
+			if runErr != nil || len(result.Pairs) != 1 {
+				t.Fatalf("native %s run: pairs=%d err=%v", lane.name, len(result.Pairs), runErr)
+			}
+			actual := result.Pairs[0].Execution.Outcome
+			if actual.Kind != "returned" || actual.Value != "10" {
+				t.Fatalf("native %s literal answer = %+v, want returned 10", lane.name, actual)
+			}
+		})
 	}
 
 	entryID := phase36FunctionID(t, checked.Program.Functions, "main")
@@ -155,4 +197,3 @@ func phase36Invocation(t *testing.T, entryID string, segments ...execution.Invoc
 	}
 	return value
 }
-

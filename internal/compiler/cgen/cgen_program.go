@@ -696,6 +696,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	for _, function := range program.Functions {
 		byID[function.ID] = function
 	}
+	dynamicInvocationSupport := hasScalarValueCalls(program)
 	functions := make([]core.Function, 0, len(order))
 	pointerABIFacts := make(map[string]pointerABIFact)
 	for _, id := range order {
@@ -775,6 +776,16 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	if eventCapacity == 0 {
 		eventCapacity = 1
 	}
+	invocationPathCapacity := executionOutputLimit
+	if shell == programApplicationShell {
+		invocationPathCapacity = applicationEvidenceOutputLimit
+	}
+	if dynamicInvocationSupport {
+		eventCapacity = invocationPathCapacity / 128
+		if eventCapacity < 1 {
+			eventCapacity = 1
+		}
+	}
 	liveResources := deriveProgramLiveResources(program)
 	executionBytes, err := schema2ExecutionDocumentSize(entry, preflightNodes, paths, byID, liveResources, program.DataTypes)
 	if err != nil {
@@ -844,6 +855,8 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 				returnTypeNames[index] = "unsigned char"
 			case "U64":
 				returnTypeNames[index] = "uint64_t"
+			case "Bool":
+				returnTypeNames[index] = "int"
 			case "FileByteOwner":
 				returnTypeNames[index] = "schway_file_byte_owner"
 			default:
@@ -910,7 +923,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 			needsBuffer = true
 		}
 	}
-	trackEventOccurrences := hasCyclicScalarCopy(program)
+	trackEventOccurrences := hasCyclicScalarCopy(program) || dynamicInvocationSupport
 
 	invocationSerializationReachedForTest = true
 	var out strings.Builder
@@ -921,7 +934,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	if localFileByteProgram || fixtureOwnerProgram || fileBytesOwnerProgram {
 		out.WriteString("#include \"local/adapter.h\"\n\n")
 	}
-	if needsU64 || trackEventOccurrences {
+	if needsU64 || trackEventOccurrences || dynamicInvocationSupport {
 		out.WriteString("#include <stdint.h>\n\n")
 		if needsU64 {
 			out.WriteString("#if !defined(UINT64_MAX)\n#error \"Schway U64 requires exact-width uint64_t support\"\n#endif\n")
@@ -932,6 +945,9 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		}
 	}
 	emitInvocationPathTable(&out, paths, childTableNames)
+	if dynamicInvocationSupport {
+		emitDynamicInvocationSupport(&out, invocationPathCapacity, shell == programApplicationShell)
+	}
 	if needsByteView {
 		out.WriteString("typedef struct SCHWAY_BYTE_VIEW {\n  const unsigned char *data;\n  uint64_t length;\n} SCHWAY_BYTE_VIEW;\n\n")
 	}
@@ -947,7 +963,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 	if shell == programApplicationShell {
 		cOutputLimit = applicationOutputLimit
 	}
-	emitEventSupportSchema2(&out, eventCapacity, cOutputLimit, needsTerminalJSONContent, shell == programApplicationShell, trackEventOccurrences, applicationEvidenceOutputLimit)
+	emitEventSupportSchema2(&out, eventCapacity, cOutputLimit, needsTerminalJSONContent, shell == programApplicationShell, trackEventOccurrences, applicationEvidenceOutputLimit, dynamicInvocationSupport)
 	if needsDefect {
 		emitDefectSupport(&out)
 	}
@@ -989,7 +1005,7 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 		} else if isLocalFileByteFunction(function) {
 			err = emitProgramLocalFileByteFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames)
 		} else if hasScalarOperations(function) {
-			err = emitProgramScalarFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], shell)
+			err = emitProgramScalarFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], shell, lookup, childTableNames, dynamicInvocationSupport)
 		} else {
 			err = emitProgramFunction(&out, function, parameterTypeNames[index], returnTypeNames[index], functionNames[index], globalNames, lookup, childTableNames, pointerABIFacts[function.ID], shell)
 		}
@@ -1084,6 +1100,10 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 			out.WriteString("  uint64_t schway_entry_input;\n")
 			out.WriteString("  if (!schway_parse_u64_decimal(argv[1], &schway_entry_input)) return 65;\n")
 		}
+		if dynamicInvocationSupport {
+			out.WriteString("  const char *schway_evidence_path = getenv(\"SCHWAY_APP_EVIDENCE_PATH\");\n")
+			out.WriteString("  schway_capture_active = schway_evidence_path != NULL && schway_evidence_path[0] != '\\0';\n")
+		}
 		entryArgument := "schway_entry_input"
 		if fact, ok := pointerABIFacts[entry.ID]; ok && fact.PointerParameter {
 			entryArgument = "&" + entryArgument
@@ -1094,11 +1114,17 @@ func emitProgramWithShell(program core.Program, shell programEntryShell, executi
 			fmt.Fprintf(&out, "  %s schway_entry_output = %s(%s, 0u);\n", entryOutputType, functionNames[entryIndex], entryArgument)
 			out.WriteString("  if (!schway_write_u64_plain(schway_entry_output) || !schway_write_literal(\"\\n\")) schway_application_output_failure();\n")
 		}
-		out.WriteString("  const char *schway_evidence_path = getenv(\"SCHWAY_APP_EVIDENCE_PATH\");\n")
+		if !dynamicInvocationSupport {
+			out.WriteString("  const char *schway_evidence_path = getenv(\"SCHWAY_APP_EVIDENCE_PATH\");\n")
+		}
 		out.WriteString("  if (schway_evidence_path != NULL && schway_evidence_path[0] != '\\0') {\n")
 		out.WriteString("    FILE *schway_evidence_file = fopen(schway_evidence_path, \"wb\");\n")
 		out.WriteString("    if (schway_evidence_file != NULL) {\n      schway_output_stream = schway_evidence_file;\n      schway_output_limit = SCHWAY_EVIDENCE_OUTPUT_LIMIT;\n      schway_output_count = 0u;\n")
-		out.WriteString("      if (schway_event_overflow) {\n        (void)schway_write_literal(\"{\\\"schema\\\":\\\"lang.app-capture/1\\\",\\\"status\\\":\\\"capacity_exhausted\\\"}\\n\");\n      } else {\n")
+		if dynamicInvocationSupport {
+			out.WriteString("      if (schway_event_overflow || !schway_capture_active) {\n        (void)schway_write_literal(\"{\\\"schema\\\":\\\"lang.app-capture/1\\\",\\\"status\\\":\\\"capacity_exhausted\\\"}\\n\");\n      } else {\n")
+		} else {
+			out.WriteString("      if (schway_event_overflow) {\n        (void)schway_write_literal(\"{\\\"schema\\\":\\\"lang.app-capture/1\\\",\\\"status\\\":\\\"capacity_exhausted\\\"}\\n\");\n      } else {\n")
+		}
 		out.WriteString("        (void)schway_write_literal(\"{\\\"schema\\\":\\\"lang.app-capture/1\\\",\\\"status\\\":\\\"complete\\\",\\\"execution\\\":{\\\"schema\\\":\\\"lang.execution/2\\\",\\\"outcome\\\":{\\\"kind\\\":\\\"returned\\\",\\\"value\\\":\");\n")
 		if entry.ReturnType == "Unit" {
 			out.WriteString("        (void)schway_write_literal(\"\\\"\\\"\");\n")
@@ -2405,7 +2431,7 @@ func emitProgramDefectTerminal(out *strings.Builder, function core.Function, ope
 // returns).
 func emitProgramFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, globalNames []string, lookup *emitCallLookup, childTableNames map[string]string, pointerABI pointerABIFact, shell programEntryShell) error {
 	if hasScalarOperations(function) {
-		return emitProgramScalarFunction(out, function, parameterTypeName, returnTypeName, functionName, shell)
+		return emitProgramScalarFunction(out, function, parameterTypeName, returnTypeName, functionName, shell, nil, nil, false)
 	}
 	places := make(map[string]core.Place, len(function.Linear.Places))
 	for _, place := range function.Linear.Places {
@@ -2583,12 +2609,52 @@ func hasScalarOperations(function core.Function) bool {
 	return false
 }
 
+// hasScalarValueCalls selects the additive dynamic invocation branch only
+// when a checked OpCall crosses one of the four admitted U64/Bool signatures.
+// Existing non-scalar call routes and programs without these calls keep their
+// prior emitted text.
+func hasScalarValueCalls(program core.Program) bool {
+	byID := make(map[string]core.Function, len(program.Functions))
+	for _, function := range program.Functions {
+		byID[function.ID] = function
+	}
+	for _, function := range program.Functions {
+		linear := function.Linear
+		if linear == nil {
+			continue
+		}
+		places := make(map[string]core.Place, len(linear.Places))
+		for _, place := range linear.Places {
+			places[place.ID] = place
+		}
+		for _, operation := range linear.Operations {
+			if operation.Kind != core.OpCall {
+				continue
+			}
+			callee, ok := byID[operation.CalleeID]
+			if !ok || (callee.Parameter.Type != "U64" && callee.Parameter.Type != "Bool") || (callee.ReturnType != "U64" && callee.ReturnType != "Bool") {
+				continue
+			}
+			source, sourceOK := places[operation.SourceID]
+			target, targetOK := places[operation.TargetID]
+			if !sourceOK || !targetOK || source.TypeID == "" || target.TypeID == "" || target.TypeID != operation.TypeID {
+				continue
+			}
+			if placesTypeName(linear, source.TypeID) == callee.Parameter.Type && placesTypeName(linear, target.TypeID) == callee.ReturnType {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func isStraightLineScalarBody(function core.Function) bool {
 	linear := function.Linear
 	if function.Match != nil || len(linear.Blocks) == 0 || function.ForeignContract != nil || len(linear.LoanEndpoints) != 0 {
 		return false
 	}
-	if function.Parameter.Type != "U64" || (function.ReturnType != "U64" && function.ReturnType != "Unit") {
+	if (function.Parameter.Type != "U64" && function.Parameter.Type != "Bool") ||
+		(function.ReturnType != "U64" && function.ReturnType != "Bool" && !(function.Parameter.Type == "U64" && function.ReturnType == "Unit")) {
 		return false
 	}
 	for _, place := range linear.Places {
@@ -2688,7 +2754,7 @@ func cfgBlockReachable(adjacency map[string][]string, from, target string) bool 
 	return false
 }
 
-func emitProgramScalarFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, shell programEntryShell) error {
+func emitProgramScalarFunction(out *strings.Builder, function core.Function, parameterTypeName, returnTypeName, functionName string, shell programEntryShell, lookup *emitCallLookup, childTableNames map[string]string, dynamicInvocationSupport bool) error {
 	places := make(map[string]core.Place, len(function.Linear.Places))
 	locals := make(map[string]string, len(function.Linear.Places))
 	for index, place := range function.Linear.Places {
@@ -2700,6 +2766,22 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 		return fmt.Errorf("function %q: scalar parameter place is absent", function.ID)
 	}
 	fmt.Fprintf(out, "static %s %s(%s %s, unsigned int invocation_index) {\n  (void)invocation_index;\n", returnTypeName, functionName, parameterTypeName, locals[parameter.ID])
+	dynamicCallNames := map[string]dynamicCallSiteNames{}
+	if dynamicInvocationSupport {
+		names := newCNames(linearFixedNames...)
+		for _, local := range locals {
+			names.used[local] = struct{}{}
+		}
+		for index, operation := range function.Linear.Operations {
+			if operation.Kind != core.OpCall {
+				continue
+			}
+			ordinal := names.allocate("schway_call_ordinal_"+strconv.Itoa(index), "call_ordinal", index)
+			child := names.allocate("schway_child_invocation_"+strconv.Itoa(index), "child_invocation", index)
+			dynamicCallNames[operation.ID] = dynamicCallSiteNames{ordinal: ordinal, child: child}
+			fmt.Fprintf(out, "  uint64_t %s = 0u;\n  const char *%s = NULL;\n", ordinal, child)
+		}
+	}
 	parameterRead := false
 	for _, op := range function.Linear.Operations {
 		if op.SourceID == parameter.ID || op.RightID == parameter.ID {
@@ -2797,6 +2879,27 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 				fmt.Fprintf(out, "  %s = (uint64_t)%s.data[%s];\n", locals[op.TargetID], locals[op.SourceID], locals[op.RightID])
 			case core.OpScalarStore:
 				fmt.Fprintf(out, "  %s = %s;\n", locals[op.StoreTargetID], locals[op.SourceID])
+			case core.OpCall:
+				if !dynamicInvocationSupport || lookup == nil {
+					return fmt.Errorf("operation %q: scalar call emission requires dynamic invocation support", op.ID)
+				}
+				target, exists := places[op.TargetID]
+				if !exists {
+					return fmt.Errorf("operation %q has invalid call target", op.ID)
+				}
+				calleeName, _, ok := lookup.resolve(op.CalleeID)
+				if !ok {
+					return fmt.Errorf("operation %q: call to unresolved callee %q", op.ID, op.CalleeID)
+				}
+				childTable, ok := childTableNames[op.ID]
+				if !ok {
+					return fmt.Errorf("operation %q has no invocation child table", op.ID)
+				}
+				callNames, ok := dynamicCallNames[op.ID]
+				if !ok {
+					return fmt.Errorf("operation %q has no activation-local invocation counter", op.ID)
+				}
+				emitProgramDynamicCall(out, "  ", function.ID, locals[target.ID], calleeName, locals[op.SourceID], childTable+"[invocation_index]", lookup.takesPointer(op.CalleeID), op, callNames)
 			case core.OpBranch:
 				var yes, no core.Edge
 				for _, edge := range function.Linear.Edges {
@@ -2882,6 +2985,40 @@ func blockOrdinal(blocks []core.Block, id string) int {
 		}
 	}
 	return -1
+}
+
+type dynamicCallSiteNames struct {
+	ordinal string
+	child   string
+}
+
+func emitProgramDynamicCall(out *strings.Builder, indent, functionID, targetLocal, calleeName, argumentLocal, childTable string, pointerArgument bool, operation core.LinearOperation, names dynamicCallSiteNames) {
+	if pointerArgument {
+		argumentLocal = "&" + argumentLocal
+	}
+	fmt.Fprintf(out, "%sif (!schway_record_event(%s, %s, %s, %s, %s, %s, schway_invocations[invocation_index], %s)) abort();\n",
+		indent, strconv.Quote("function.called"), strconv.Quote(operation.ID+":event:called"), strconv.Quote(functionID),
+		strconv.Quote(operation.SourceID), strconv.Quote(operation.TargetID), strconv.Quote(operation.TypeID), strconv.Quote(operation.CalleeID))
+	fmt.Fprintf(out, "%sif (!schway_reserve_invocation(schway_invocations[invocation_index], %s, &%s, &%s)) abort();\n",
+		indent, strconv.Quote(escapeInvocationComponent(operation.ID)), names.ordinal, names.child)
+	fmt.Fprintf(out, "%sschway_invocations[%s] = %s;\n", indent, childTable, names.child)
+	fmt.Fprintf(out, "%s%s = %s(%s, %s); /* call: %s */\n", indent, targetLocal, calleeName, argumentLocal, childTable, operation.ID)
+	fmt.Fprintf(out, "%s(void)%s;\n", indent, targetLocal)
+}
+
+func escapeInvocationComponent(value string) string {
+	const hex = "0123456789ABCDEF"
+	var escaped strings.Builder
+	for _, b := range []byte(value) {
+		if b == ':' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9' || b == '-' || b == '.' || b == '_' || b == '~' {
+			escaped.WriteByte(b)
+			continue
+		}
+		escaped.WriteByte('%')
+		escaped.WriteByte(hex[b>>4])
+		escaped.WriteByte(hex[b&0x0f])
+	}
+	return escaped.String()
 }
 
 // hasFixtureOwnerFacts routes any function that borrows a Phase 29 fixture
