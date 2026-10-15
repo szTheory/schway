@@ -1,0 +1,10 @@
+{
+  "command": "python3 -m unittest testdata.phase36.tdd_red_runner.Phase36Red.test_phase36_helper_answers_red",
+  "exitCode": 1,
+  "output": "F\n======================================================================\nFAIL: test_phase36_helper_answers_red (testdata.phase36.tdd_red_runner.Phase36Red.test_phase36_helper_answers_red)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/jon/projects/schway/testdata/phase36/tdd_red_runner.py\", line 27, in test_phase36_helper_answers_red\n    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 1 != 0 : === RUN   TestPhase36HelperAnswersAndDefects\n    session_phase36_calls_test.go:28: crc_step(1) = 0, want reflected polynomial result 3988292384\n--- FAIL: TestPhase36HelperAnswersAndDefects (0.00s)\nFAIL\nFAIL\tgithub.com/szTheory/schway/internal/compiler/session\t0.007s\nFAIL\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.308s\n\nFAILED (failures=1)\n",
+  "targetTest": "test_phase36_helper_answers_red",
+  "targetFile": "testdata/phase36/tdd_red_runner.py",
+  "expected": "TestPhase36HelperAnswersAndDefects fails on its planned numeric assertion for crc_step(1), reporting 3988292384 as the expected one-step result.",
+  "actual": "The target Go test ran and failed because the intentionally incomplete helper returned 0 for input 1; the unittest adapter propagated that assertion failure.",
+  "semanticAssessment": "The named Go selector executed in the session package and failed only at the exact numeric answer assertion. The Python unittest report is the supported wrapper for that root test; no syntax, load, skip, compile, or unrelated failure occurred."
+}
