@@ -448,7 +448,7 @@ func TestPhase36CallSourceIntentChild(t *testing.T) {
 	case "result":
 		source = []byte("module phase36.intent_result\nexport { fn main }\nfn identity(input: Bool) -> Bool { let result = input result }\nfn main(input: Bool) -> Bool { let result = identity(input) result }\n")
 	default:
-		t.Skip("child selector is invoked only by the source-intent parent")
+		return
 	}
 	checked := session.Check(source)
 	if len(checked.Diagnostics) != 0 {
