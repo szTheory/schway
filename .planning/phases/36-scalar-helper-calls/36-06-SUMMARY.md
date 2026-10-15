@@ -76,7 +76,7 @@ coverage:
         ref: "cmd/schway/main_phase36_test.go#TestPhase36PublicHelperConformance"
         status: pass
       - kind: unit
-        ref: "cmd/schway/main_phase35_test.go#TestPhase321RunInputRequiredCLI"
+        ref: "cmd/schway/main_phase321_run_input_test.go#TestPhase321RunInputRequiredCLI"
         status: pass
     human_judgment: false
   - id: D3
