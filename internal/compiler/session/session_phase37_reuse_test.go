@@ -154,18 +154,27 @@ func phase37ReuseSourceCensus(t *testing.T, crcRoot string) {
 	library := phase37ReuseParseFile(t, libraryPath)
 	crc32Count, crcByteCount := 0, 0
 	crc32Loops, crcByteLoops := 0, 0
+	var crc32Function, crcByteFunction *ast.FuncDecl
 	for _, function := range library.Funcs {
 		switch function.Name {
 		case "crc32":
 			crc32Count++
+			crc32Function = &function
 			crc32Loops += phase37ReuseASTLoops(function.Body.Linear)
 		case "crc_byte":
 			crcByteCount++
+			crcByteFunction = &function
 			crcByteLoops += phase37ReuseASTLoops(function.Body.Linear)
 		}
 	}
-	if library.Module != "lib.crc32" || crc32Count != 1 || crcByteCount != 1 || crc32Loops != 2 || crcByteLoops != 0 {
-		t.Fatalf("shared library AST module=%q crc32=%d loops=%d crc_byte=%d loops=%d; want one byte loop + one bit loop in the library", library.Module, crc32Count, crc32Loops, crcByteCount, crcByteLoops)
+	if library.Module != "lib.crc32" || crc32Count != 1 || crcByteCount != 1 || crc32Loops != 1 || crcByteLoops != 1 {
+		t.Fatalf("shared library AST module=%q crc32=%d loops=%d crc_byte=%d loops=%d; want one byte loop in crc32 and one bit loop in crc_byte", library.Module, crc32Count, crc32Loops, crcByteCount, crcByteLoops)
+	}
+	if crc32Function == nil || crcByteFunction == nil || !phase37ReuseHasLoop(crc32Function.Body.Linear.Statements, "i", "n") || !phase37ReuseHasLoop(crcByteFunction.Body.Linear.Statements, "round", "8") {
+		t.Fatal("shared library must keep the byte loop in crc32 and the exact eight-round loop in crc_byte")
+	}
+	if calls := phase37ReuseCallsInLoop(crc32Function.Body.Linear.Statements, "i", "n", "crc_byte"); calls != 1 {
+		t.Fatalf("crc32 byte-loop helper calls=%d; want exactly one crc_byte call inside the byte loop", calls)
 	}
 
 	for _, name := range []string{"crc32", "crc_low"} {
@@ -225,6 +234,58 @@ func phase37ReuseASTLoops(body *ast.LinearBody) int {
 		return 0
 	}
 	return phase37ReuseASTStatementLoops(body.Statements)
+}
+
+func phase37ReuseHasLoop(statements []ast.Statement, iterator, bound string) bool {
+	for _, statement := range statements {
+		if statement.Kind == "while" && statement.Expr != nil && statement.Expr.Kind == "less" &&
+			statement.Expr.Left != nil && statement.Expr.Left.Kind == "name" && statement.Expr.Left.Name == iterator &&
+			statement.Expr.Right != nil && statement.Expr.Right.Kind == "number" && statement.Expr.Right.Value == bound {
+			return true
+		}
+		if phase37ReuseHasLoop(statement.Then, iterator, bound) || phase37ReuseHasLoop(statement.Else, iterator, bound) {
+			return true
+		}
+	}
+	return false
+}
+
+func phase37ReuseCallsInLoop(statements []ast.Statement, iterator, bound, callee string) int {
+	for _, statement := range statements {
+		if statement.Kind == "while" && statement.Expr != nil && statement.Expr.Kind == "less" &&
+			statement.Expr.Left != nil && statement.Expr.Left.Kind == "name" && statement.Expr.Left.Name == iterator &&
+			statement.Expr.Right != nil && statement.Expr.Right.Kind == "name" && statement.Expr.Right.Name == bound {
+			return phase37ReuseCallsInStatements(statement.Then, callee)
+		}
+		if count := phase37ReuseCallsInLoop(statement.Then, iterator, bound, callee); count > 0 {
+			return count
+		}
+		if count := phase37ReuseCallsInLoop(statement.Else, iterator, bound, callee); count > 0 {
+			return count
+		}
+	}
+	return 0
+}
+
+func phase37ReuseCallsInStatements(statements []ast.Statement, callee string) int {
+	total := 0
+	for _, statement := range statements {
+		total += phase37ReuseCallsInExpr(statement.Expr, callee)
+		total += phase37ReuseCallsInStatements(statement.Then, callee)
+		total += phase37ReuseCallsInStatements(statement.Else, callee)
+	}
+	return total
+}
+
+func phase37ReuseCallsInExpr(expression *ast.Expr, callee string) int {
+	if expression == nil {
+		return 0
+	}
+	total := 0
+	if expression.Kind == "call" && expression.Name == callee {
+		total++
+	}
+	return total + phase37ReuseCallsInExpr(expression.Left, callee) + phase37ReuseCallsInExpr(expression.Right, callee)
 }
 
 func phase37ReuseASTLoopsInProgram(program ast.Program) int {

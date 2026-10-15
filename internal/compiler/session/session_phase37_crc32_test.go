@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/native"
 	"github.com/szTheory/schway/internal/compiler/session"
 	"github.com/szTheory/schway/internal/compiler/testsupport"
@@ -67,6 +68,45 @@ func TestPhase37CRC32NativeTracer(t *testing.T) {
 	}
 	if stdout.String() != "3421780262\n" || stderr.String() != "" {
 		t.Fatalf("native CRC result stdout=%q stderr=%q; want %q and empty stderr", stdout.String(), stderr.String(), "3421780262\n")
+	}
+}
+
+func TestPhase37CRC32ByteHelperCalls(t *testing.T) {
+	entryPath := testsupport.ProjectPath("examples", "crc32", "crc32.schway")
+	checked, err := session.CheckFile(entryPath)
+	if err != nil || len(checked.Diagnostics) != 0 {
+		t.Fatalf("check CRC entry for helper activation: err=%v diagnostics=%+v", err, checked.Diagnostics)
+	}
+	helperID := ""
+	for _, function := range checked.Program.Functions {
+		if function.Name != "crc_byte" || function.Module != "lib.crc32" {
+			continue
+		}
+		if helperID != "" {
+			t.Fatal("checked CRC closure contains more than one private crc_byte helper")
+		}
+		helperID = function.ID
+	}
+	if helperID == "" {
+		t.Fatal("checked CRC closure has no private crc_byte helper")
+	}
+
+	input := []byte{0x12, 0x34, 0x56}
+	result, err := interp.RunByteViewForTest(checked.Program, "crc32", input)
+	if err != nil {
+		t.Fatalf("run actual CRC byte program: %v", err)
+	}
+	if result.Outcome.Kind != "returned" {
+		t.Fatalf("small CRC execution outcome=%+v; want a returned value", result.Outcome)
+	}
+	activations := 0
+	for _, event := range result.Events {
+		if event.Kind == "function.called" && event.CalleeFunctionID == helperID {
+			activations++
+		}
+	}
+	if activations != len(input) {
+		t.Fatalf("crc_byte activations=%d for %d input bytes; want one private helper activation per byte", activations, len(input))
 	}
 }
 
