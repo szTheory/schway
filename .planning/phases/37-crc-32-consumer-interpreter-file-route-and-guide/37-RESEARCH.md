@@ -326,11 +326,33 @@ Keep z1g dormant until a measured reviewer lookup fails; trz until an actual une
 | A1 | Go environment probes on Apple arm64 do not establish correct syscall behavior on Linux. | Standard Stack / Environment | The reader may be target-specific; check both host lanes before claiming support. [ASSUMED] |
 | A2 | A focused maximum-file test can finish within an acceptable local timeout. | Validation Architecture | If measured cost is too high, use a bounded focused lane or address the issue; do not invent a speed target. [ASSUMED] |
 
-## Open Questions
+## Open Questions — RESOLVED planning decisions (2026-10-15)
 
-1. **D-10 empty-path behavior:** Existing source and test contradict the locked sentence. Resolve before writing the shared engine tuple table. The narrow path to honor intended FileUnavailable is to let empty PathToken reach the adapter; otherwise date-amend D-10 to the currently pinned empty stderr. [VERIFIED: internal/compiler/cgen/cgen_program.go:1101-1104; cmd/schway/main_test.go:328-345; examples/checksum/adapter.c:76-80; scratch probe 2026-10-15]
-2. **Go open flags on macOS/Linux:** os covers portable descriptor operations, but nonblocking FIFO behavior must be implemented and tested on both initial hosts. Keep target-specific code isolated; Linux runtime was unavailable in this research environment. [CITED: pkg.go.dev/os, pkg.go.dev/syscall; ASSUMED for cross-host behavior]
-3. **Maximum-case test budget:** D-15 requires observing cost before setting focused test timeouts. The scratch probe covered nine bytes, not the maximum, so no maximum completion time is claimed. [VERIFIED: scratch probe scope 2026-10-15; LOCKED: 37-CONTEXT.md:39, 49]
+All three questions below are resolved for plan acceptance. This resolves implementation strategy, not execution evidence; the original discovery questions remain visible. No local Linux, maximum-case latency, FIFO or descriptor behavior pass is claimed.
+
+1. **D-10 empty-path behavior — RESOLVED:** The dated CONTEXT amendment preserves `(65, "", "")` on both public routes, without generated-C or old-test changes. Original discovery: source/test contradicted the copied locked sentence; letting empty input reach FileUnavailable was an alternative, now superseded. [VERIFIED: internal/compiler/cgen/cgen_program.go:1101-1104; cmd/schway/main_test.go:328-345; examples/checksum/adapter.c:76-80; scratch probe 2026-10-15]
+2. **Go open flags on macOS/Linux — RESOLVED strategy:** Plans 37-02/04 use open-once nonblocking descriptor semantics, a narrow descriptor/read/close seam and isolated target-specific opening code only where needed. Real FIFO-without-writer, regular/symlink/nonregular and descriptor-replacement tests run under bounded subprocess/test deadlines; seam tests separately cover EINTR/short-read/fault precedence. Existing recurring macOS/Linux Go CI discovers these exact owners without a new workflow. Local macOS evidence and any unavailable host subcases stay labeled; Linux was unavailable locally, and the cross-host claim requires actual Linux lane evidence, with final hosted binding owned by Phase38. [LOCKED: D-11/D-19/D-21; planning decision, no new host execution]
+3. **Maximum-case test budget — RESOLVED rule:** Plan37-02-01 first runs the actual 65,536-byte FF CRC with capture disabled under the existing 600s kill bound and records observed duration, root result and host/toolchain. Choose any tighter per-child budget only after that observation; Plan37-05-02 consumes it. Exceeding the existing bound is a failed acceptance check to investigate, not permission to drop the maximum case, invent a latency target or add generic fuel. The nine-byte scratch probe gives no maximum completion or cold/warm guarantee, and arbitrary timeout parity remains unproved per D-15. [LOCKED: D-14/D-15/D-21; planning decision, maximum case not yet executed]
+
+## Additive source-inventory amendment — 2026-10-15
+
+Source inspection during plan review found an additional D-21 safety obligation:
+`session_phase34_prechange_test.go#phase34AdditionProblems` pins exactly three
+Phase36 helper ledger rows, while
+`session_phase36_prechange_test.go#phase36InventoryProblems` closes the entire
+current tracked Schway inventory in both directions. Appending CRC rows to the
+Phase36 ledger alone breaks its Phase34 consumer; leaving the new sources
+unregistered breaks the Phase36 baseline once they are tracked.
+
+Plan37-01 therefore owns a separate exact-three-path Phase37 ledger with actual
+final source hashes/reasons, explicitly composed into both historical consumers.
+Preserve the historical ledger/schema/hashes and both frozen corpora unchanged.
+Create all three complete new sources before registering/staging them, retain
+strict finite path checks and named old controls, and add reached
+omission/hash/duplicate/unsafe/false-exemption controls in both owners. Capture
+the existing four roots before additions and the six-root final owner set after
+explicit owned-source staging. This is inspected source plus a resolved planning
+mechanism; no new ledger or implementation test has run during this revision.
 
 ## Environment Availability
 

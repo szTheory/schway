@@ -1,0 +1,11 @@
+[
+  {
+    "statement": "MUST NOT turn optional capture exhaustion into application success or hide a later checked defect.",
+    "status": "unresolved"
+  },
+  {
+    "statement": "MUST NOT present causal structural acceptance as independent CRC numeric verification.",
+    "status": "unresolved"
+  }
+]
+

@@ -1,0 +1,104 @@
+{
+  "source": "37-EDGE-COVERAGE.json",
+  "source_history": {
+    "applicable": 9,
+    "resolved": 0,
+    "unresolved": 9,
+    "unclassified": 2
+  },
+  "items": [
+    {
+      "requirement_id": "APP-13",
+      "category": "boundary",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Cap-1/cap/cap+1 actual bytes; exact numeric and refusal tuples, no answer for oversize.",
+      "reason": null,
+      "tasks": "37-04-01;37-05-01;37-05-02"
+    },
+    {
+      "requirement_id": "APP-13",
+      "category": "precision",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Exact unsigned U64 state in 0..4294967295, high-bit vectors, exact low16; literal independent IEEE answers.",
+      "reason": null,
+      "tasks": "37-01-01;37-05-01;37-05-02"
+    },
+    {
+      "requirement_id": "APP-13",
+      "category": "concurrency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Two bounded concurrent public applications with isolated inputs/cwd/artifacts preserve independent literal answers; arbitrary interpreter cancellation remains unproved.",
+      "reason": null,
+      "tasks": "37-05-02"
+    },
+    {
+      "requirement_id": "MOD-07",
+      "category": "unclassified",
+      "status": "unresolved",
+      "verification": null,
+      "resolution": null,
+      "reason": "Unclassified classifier result stays a flagged unresolved assumption; no automatic backstop or dismissal.",
+      "tasks": null
+    },
+    {
+      "requirement_id": "APP-14",
+      "category": "adjacency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "First separator owns prefix; suffix token -- and option-shaped strings remain one opaque distinct operand.",
+      "reason": null,
+      "tasks": "37-03-01"
+    },
+    {
+      "requirement_id": "APP-14",
+      "category": "empty",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Empty file yields numeric zero for CRC; empty path is65/empty/empty; zero/multiple suffix operands are64.",
+      "reason": null,
+      "tasks": "37-03-01;37-05-02"
+    },
+    {
+      "requirement_id": "APP-14",
+      "category": "ordering",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Program output chunks keep order before later typed failure/checked defect independently of capture, with exact literal streams.",
+      "reason": null,
+      "tasks": "37-02-02;37-03-02;37-05-02"
+    },
+    {
+      "requirement_id": "APP-14",
+      "category": "concurrency",
+      "status": "resolved",
+      "verification": "explicit",
+      "resolution": "Parallel CLI cases are isolated and bounded; native deadline/launch outcomes retain their codes; no claim of generic interpreter interruption parity.",
+      "reason": null,
+      "tasks": "37-03-01;37-05-02"
+    },
+    {
+      "requirement_id": "DX-24",
+      "category": "unclassified",
+      "status": "unresolved",
+      "verification": null,
+      "resolution": null,
+      "reason": "Unclassified classifier result stays a flagged unresolved assumption; no automatic backstop or dismissal.",
+      "tasks": null
+    }
+  ],
+  "coverage": {
+    "applicable": 9,
+    "resolved": 7,
+    "unresolved": 2,
+    "unclassified": 2,
+    "byVerification": {
+      "explicit": 7,
+      "backstop": 0
+    }
+  },
+  "execution_evidence": "Pending implementation; resolved means a defensible explicit acceptance criterion is planned, not that its test has passed."
+}
+

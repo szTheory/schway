@@ -9,9 +9,9 @@ created: "2026-10-15"
 
 # Phase 37 — Validation Strategy
 
-This draft is seeded from the research validation architecture. The planner
-must replace the provisional rows with exact task IDs, threat IDs, test owners
-and selectors. A named test found in source is not a newly passing check.
+The planner has mapped every task, threat, owner and exact command below.
+Execution remains pending; a named selector or planned control is not a newly
+passing check. The raw probe and descriptorless prohibition history is preserved.
 
 ## Test Infrastructure
 
@@ -40,17 +40,88 @@ and selectors. A named test found in source is not a newly passing check.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| Planner assigns | Pending | Pending | APP-13 | Planner assigns | Ordinary-source CRC with independent literal values and maximum case | integration | Exact new selector to be declared in plan | Wave 0 | pending |
-| Planner assigns | Pending | Pending | MOD-07 | Planner assigns | One library; both output and module identities change under library edit | mutation | Exact new selector to be declared in plan | Wave 0 | pending |
-| Planner assigns | Pending | Pending | APP-14 | Planner assigns | Opaque CLI grammar, full admission and exact outcome mapping | CLI integration | Exact new selector to be declared in plan | Wave 0 | pending |
-| Planner assigns | Pending | Pending | APP-14 | Planner assigns | Open descriptor, regular input, actual cap+1 read and correct close/error behavior | unit/fault | Exact new selector to be declared in plan | Wave 0 | pending |
-| Planner assigns | Pending | Pending | APP-13, APP-14 | Planner assigns | Disabled evidence avoids retention while computation and outcomes continue | runtime/fault | Exact new selector to be declared in plan | Wave 0 | pending |
-| Planner assigns | Pending | Pending | DX-24 | Planner assigns | Actual guide commands from tracked-only inputs, expected tuples and drift control | documentation integration | Exact new selector to be declared in plan | Wave 0 | pending |
-| Planner assigns | Pending | Pending | APP-13, APP-14 | Planner assigns | Recalled prohibitions have real supported bad/clean/default producer proof | enforcement | Canonical prohibition-enforcement request and exact descriptor to be declared in plan | Wave 0 | pending |
+| 37-01-01 | 37-01 | 1 | APP-13,MOD-07 | T-37-01/03/30 | Pre-addition route/C/inventory baseline; runnable tracer; all three final sources and finite additive ledger in both historical owners | baseline/integration/mutation | C01, C02, C25 before mutation; C03, C26 after exact three sources are staged | New roots/ledger planned in this task; four historical roots tracked | pending execution |
+| 37-01-02 | 37-01 | 1 | APP-13,MOD-07 | T-37-01/30 | Shared module and exact binding copies; source hashes/closed inventories unchanged | integration | C04, C26 | New roots planned in Task01/02; prior roots tracked | pending execution |
+| 37-01-03 | 37-01 | 1 | APP-14 | T-37-02/03 | Canonical real bad/clean/default proof | integration | C05, C06 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-02-01 | 37-02 | 2 | APP-13,APP-14 | T-37-04/05/06/07 | Full authority, fixed bounded reader, capture disabled | integration | C07 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-02-02 | 37-02 | 2 | APP-14 | T-37-06 | Actual outcomes independent capture and early new proof | integration | C08, C06 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-03-01 | 37-03 | 3 | APP-14 | T-37-08/10/11 | Opaque argv, private native run, literal input tuples | integration | C09 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-03-02 | 37-03 | 3 | APP-14 | T-37-09/10 | Full/pre-prune/raw-core authority and old outcomes | integration | C10, C11 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-04-01 | 37-04 | 3 | APP-13,APP-14 | T-37-12/13/14 | Actual read/close faults and retention controls | unit/mutation | C12 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-04-02 | 37-04 | 3 | APP-13,APP-14 | T-37-13/15 | Physical cleanup, reached bounds and focused sanitizer | integration | C13 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-05-01 | 37-05 | 4 | APP-13,MOD-07 | T-37-16 | Independent literals/recipes/hash/provenance | unit/mutation | C14 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-05-02 | 37-05 | 4 | APP-13,MOD-07,APP-14 | T-37-17/18/19 | Public expected-first literal tuples and isolated parallel cases | integration | C15 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-06-01 | 37-06 | 4 | APP-13,APP-14 | T-37-20/22 | Four reached numeric semantic defects | mutation | C16 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-06-02 | 37-06 | 4 | MOD-07,APP-13 | T-37-21/22 | Fifth dual flip and module/build identity | mutation/integration | C17, C18 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-07-01 | 37-07 | 4 | APP-14 | T-37-23 | Finite actual parser/source/owner inventory | integration | C19 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-07-02 | 37-07 | 4 | APP-14,DX-24 | T-37-25 | Unchanged exit table and actual route meaning | unit | C20 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-07-03 | 37-07 | 4 | APP-14,APP-13,MOD-07 | T-37-24 | Scoped adapter cap and fixed wire/census | integration | C21 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-08-01 | 37-08 | 5 | DX-24 | T-37-26/27 | Actual marked commands from tracked-only source | integration | C22 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-08-02 | 37-08 | 5 | DX-24 | T-37-26/27 | Guide/fixture/parser/untracked drift killed | mutation/integration | C23 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-08-03 | 37-08 | 5 | APP-13,MOD-07,APP-14,DX-24 | T-37-28/29 | Current source-bound receipts and honest transition | integration | C06, C24 | New roots planned in this task; prior roots tracked | pending execution |
+
+### Exact command registry
+
+All commands are root-relative. C-IDs above are exact references, not test-name patterns inferred at execution. Every Go command requires each selected root's RUN/PASS exactly once; zero tests, any root skip, compilation/tool failure, signal, timeout or unrelated RED is failure. Named unreadable/sanitizer/unsupported-host subcase skips remain individually unproved and are excluded from pass counts. Mutation tests must independently prove check/admit/build reached the named numerical or physical assertion. Final capture records exact source/test/fixture hashes and current root counts.
+
+- **C01**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase23PublicFileByte|TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus|TestPhase22ConformanceRunStillEmitsExecutionDocument)$' -count=1 -v -timeout=600s`
+- **C02**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase36NoCallGeneratedCByteBaseline$' -count=1 -v -timeout=600s`
+- **C03**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase37CRC32NativeTracer$' -count=1 -v -timeout=600s`
+- **C04**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase37CRC32NativeTracer|TestPhase37CRC32Consumers)$' -count=1 -v -timeout=600s`
+- **C05**: `node --test .planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-prohibition-check.test.cjs`
+- **C06**: `node .planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-prohibition-check.test.cjs --prove`
+- **C07**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp ./internal/compiler/session -run '^(TestPhase37InterpreterFileApplication|TestPhase37CaptureDisabledRetention)$' -count=1 -v -timeout=600s`
+- **C08**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase37CaptureDisabledOutcomes|TestPhase37FileReaderBasic|TestPhase36InterpreterEvidenceBoundaries|TestPhase321AbortLikeDefectFileRoute)$' -count=1 -v -timeout=600s`
+- **C09**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37PublicFileRunTracer|TestPhase37FileRunGrammar|TestPhase37OpaqueFilePaths|TestPhase37FileRunInputBoundary)$' -count=1 -v -timeout=600s`
+- **C10**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase37FileApplicationAuthority$' -count=1 -v -timeout=600s`
+- **C11**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37FileRunOutcomes|TestPhase23PublicFileByte|TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus|TestPhase22ConformanceRunStillEmitsExecutionDocument)$' -count=1 -v -timeout=600s`
+- **C12**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase37FileReaderFaults|TestPhase37FileReaderBoundControls|TestPhase37CaptureRetentionControls|TestPhase37CaptureDisabledOutcomes)$' -count=1 -v -timeout=600s`
+- **C13**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^(TestPhase37CRC32PhysicalCleanup|TestPhase37CRC32BoundControls|TestPhase37CRC32Sanitizer)$' -count=1 -v -timeout=600s`
+- **C14**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/testsupport -run '^(TestPhase37CRC32OracleRows|TestPhase37CRC32OracleDriftControls)$' -count=1 -v -timeout=600s`
+- **C15**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37PublicFileMatrix|TestPhase37PublicMatrixDriftControl)$' -count=1 -v -timeout=600s`
+- **C16**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase37CRC32AlgorithmMutants$' -count=1 -v -timeout=600s`
+- **C17**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase37CRC32LibraryDualFlip$' -count=1 -v -timeout=600s`
+- **C18**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase37CRC32SingleCopyAndIdentity$' -count=1 -v -timeout=600s`
+- **C19**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase32PublicRouteAudit|TestPhase34SourceRoutePresentation|TestPhase34DiagnosticRouteInventory|TestPhase37FileRunRouteInventoryControls)$' -count=1 -v -timeout=600s`
+- **C20**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestExitCodeDocsTable|TestPhase37FileRunExitContract)$' -count=1 -v -timeout=600s`
+- **C21**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase34SurfaceLimitConsumers|TestPhase37FileRouteSurfaceFacts)$' -count=1 -v -timeout=600s`
+- **C22**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase37GuideCleanCheckout$' -count=1 -v -timeout=600s`
+- **C23**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37GuideMatchesExpectedJSON|TestPhase37GuideParserNegativeControls|TestPhase32GuideCleanCheckout|TestPhase32GuideMatchesExpectedJSON|TestPhase32GuideParserNegativeControls)$' -count=1 -v -timeout=600s`
+- **C24**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37GuideCleanCheckout|TestPhase37GuideMatchesExpectedJSON|TestPhase37GuideParserNegativeControls)$' -count=1 -v -timeout=600s`
+- **C25**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase34PreChangeCProgramGolden|TestPhase34PreChangeCGoldenIsNotInert|TestPhase36NoCallGeneratedCByteBaseline|TestPhase36NoCallGeneratedCByteBaselineControls)$' -count=1 -v -timeout=600s`
+- **C26**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase34PreChangeCProgramGolden|TestPhase34PreChangeCGoldenIsNotInert|TestPhase36NoCallGeneratedCByteBaseline|TestPhase36NoCallGeneratedCByteBaselineControls|TestPhase37Phase34AdditionLedgerControls|TestPhase37Phase36AdditionLedgerControls)$' -count=1 -v -timeout=600s`
+
+C25 initially runs before source creation/staging or either historical owner edit; its final rerun is a regression receipt, not a replacement baseline. C26 runs after all three complete Phase37 Schway files exist and only those owned sources have been explicitly staged. The new roots live in `internal/compiler/session/session_phase34_prechange_test.go` and `internal/compiler/session/session_phase36_prechange_test.go` respectively, exercise the separate `testdata/phase37/new-fixture-ledger.json`, and require clean closure plus reached omitted-ledger/omitted-track/extra-track/hash/reason/duplicate/order/unsafe/false-old-exemption failures in both owners. Original Phase36 schema/three rows/hashes and both historical C corpora remain byte-identical. Task01 creates the complete `crc_low` source before ledger closure; Task02 only adds its local copied binding and dual-consumer proof, so neither task's gate references an absent later source/adapter. Record actual working hashes and index path census; never stage unrelated files.
+
+37-08-03 executes the full exact registry at the final fixed source and records actual evidence, not only its two immediate verification commands. Earlier pre-change baseline receipts remain bound to their pre-mutation source; rerun regression roots later without relabeling the original baseline. No whole-package/project-wide local command is authorized.
+
+### Wave 0 ownership and activation order
+
+| Asset/owner | Created by | Must exist before | Runnable verification |
+|---|---|---|---|
+| Fixed route/C/initial inventory baseline, retained CRC tracer, three complete sources and separate additive ledger in both historical owners |37-01-01|new-source registration before first task commit; first compiler mutation in37-02-01|C01/C02/C25 before additions; C03/C26 after explicit three-source staging|
+| Existing second importer receives local binding/copy equality |37-01-02|new interpreter/public consumer expansion|C04/C26; no new source path or hash change|
+| Closed canonical proof adapter/fixtures |37-01-03|first runtime expansion; extend interpreter proof in37-02-02|C05, C06|
+| Fixed reader/application/capture tests |37-02-01/02|public parser matrix|C07, C08, C06|
+| Grammar/opaque/input/outcome/authority tests |37-03-01/02|shared public matrix|C09, C10, C11|
+| Reader faults/capture growth/native physical/sanitizer |37-04-01/02|final expected-first matrix acceptance|C12, C13|
+| Inert literals/recipes/Go oracle |37-05-01|37-05-02 and guide table test|C14|
+| Shared public matrix |37-05-02|guide/final capture|C15|
+| Four algorithm mutants/fifth dual flip/identity |37-06-01/02|guide/final capture|C16, C17, C18|
+| Finite routes/exits/scoped surface facts |37-07-01/02/03|guide/final capture|C19, C20, C21|
+| Tracked-only actual guide and drift |37-08-01/02|final capture; stage new tracked owners before copying|C22, C23|
+
+Each new root is created at the beginning of its owning task before the implementation/verification that uses it. No separate scaffold-only wave is needed: first baseline commands are already runnable; subsequent tasks create their own red tests in named existing Go package owners. The package paths are tracked and were checked at planning; new file/root paths are enumerated in PLAN artifacts, not falsely reported existing.
+
+### Probe status
+
+Raw edge report stays9 applicable/0 resolved/9 unresolved/2 unclassified. Derived planning resolution is7 explicit criteria/2 flagged unresolved unclassified/0 backstops; no execution pass is implied. Both canonical prohibition projections start descriptorless and flagged/unverified. Early actual supported proof belongs to37-01-03 and37-02-02, final current proof to37-08-03. See37-PROBE-RESOLUTION.md and37-EDGE-RESOLUTION.json.
+
 
 ## Wave 0 Requirements
 
 - [ ] Ground the pre-change route/empty-input/C baseline before implementation.
+- [ ] Close both historical inventories with the exact three Phase37 source additions, actual source hashes and reached controls while preserving historical corpus/Phase36 ledger bytes; capture C25 initially and C26 after explicit owned-source staging.
 - [ ] Add independently generated CRC rows and byte recipes/digests.
 - [ ] Add exact public matrix and finite malformed/opaque argument controls.
 - [ ] Add independent production reader tests and actual reached fault controls.
