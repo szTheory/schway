@@ -2,7 +2,7 @@
 phase: "36"
 slug: scalar-helper-calls
 status: draft
-threats_open: 2
+threats_open: 1
 asvs_level: 1
 block_on: high
 register_authored_at_plan_time: true
@@ -30,7 +30,7 @@ Independent ASVS Level 1 audit returned OPEN_THREATS at 2026-10-15T05:42:10Z: 22
 | T-36-10 | Denial of service | interpreter event/path/counter retention | high | mitigate | Task 3 checks bytes before allocation/append, portable ordinal ceiling, disabled recording and exact-plus-one controls. | closed |
 | T-36-11 | Tampering | incomplete evidence versus actual interpreter result | high | mitigate | Task 3 returns actual result plus named evidence error and proves later real defect/output survives after capture stops. | closed |
 | T-36-12 | Tampering | C evaluation and call result | high | mitigate | Tasks 1/3 require sequenced statements and literal dropped-argument/result controls. | closed |
-| T-36-13 | Tampering | invocation pointer lifetime and ancestry | high | mitigate | Task 1 uses append-only bounded storage; Tasks 1/3 check post-return paths and stack-pointer mutation. | open |
+| T-36-13 | Tampering | invocation pointer lifetime and ancestry | high | mitigate | Task 1 uses append-only bounded storage; Tasks 1/3 check post-return paths and stack-pointer mutation. | closed |
 | T-36-14 | Denial of service | C event/path/ordinal storage | high | mitigate | Task 2 checks exact-plus-one guards before write/allocation/increment, including canonical ordinal exhaustion. | closed |
 | T-36-15 | Tampering | capture/real process outcome separation | high | mitigate | Task 2 independently pins app streams/outcome and late 65 defect after optional recording stops. | closed |
 | T-36-16 | Tampering | inherited emitter inventory | high | mitigate | Task 3 owns exact census adaptations and live missing/extra-site/preflight controls; old C corpus remains frozen. | open |
@@ -77,3 +77,19 @@ The source checker proves source intent, raw peers prove contract/authority, eng
 | Threats found | 24 |
 | Closed | 22 |
 | Open | 2 |
+
+## Re-audit — 2026-10-15T05:59:22Z
+
+T-36-13 is closed: cgen_phase36_test.go now runs the actual function-local stack-pointer escape/reuse mutant, requires returned value10 plus the named retained post-return path failure, and checks clean/no-op/restored native positives.
+
+T-36-16 remains open. The first follow-up's six mutations operated on actual generated lines, but phase36CheckEmitterCallSiteCensus counted call comments. Required correction: enumerate actual callee invocations using checked call contracts, and reject both marker-preserving call removal and an unmarked extra actual call. Event/reservation controls stay live. No new risk is accepted.
+
+The auditor independently verified the refreshed45-root capture at eddb535ae9fa10f3700143e02f7fc5c11106e8d5 and source equality; other22 closures including T-36-SC remain valid. Current disposition is23closed/1blocking open, superseding the earlier22/2 audit summary while preserving its history. No phase advancement.
+
+## Security Audit 2026-10-15
+
+| Metric | Count |
+|---|---|
+| Threats found | 24 |
+| Closed | 23 |
+| Open | 1 |
