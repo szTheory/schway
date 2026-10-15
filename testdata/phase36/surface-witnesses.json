@@ -1,0 +1,242 @@
+{
+  "schema": "phase36.surface-witnesses/1",
+  "boundary": "Independently authored complete programs bind the source-free U64/Bool call contract to real checker admission. These finite examples do not claim arbitrary-program completeness.",
+  "calls": {
+    "declaration_arity": 1,
+    "ordinary_arity": [1],
+    "ordinary_contexts": ["admitted linear binding and match-arm call paths"],
+    "scalar_expression_calls": true,
+    "constraints": [
+      "Call arguments and results must satisfy current type, ownership and authority checks.",
+      "Foreign calls require their separate declared policy/adapter contract.",
+      "Ordinary calls require a checked signature and acyclic call graph.",
+      "Scalar CFG expressions admit direct arity-one U64/Bool value calls with one argument; imported targets must be explicitly exported and whole-program call graphs remain acyclic."
+    ]
+  },
+  "witnesses": [
+    {
+      "id": "phase36-pair-u64-u64",
+      "facet": "restriction:scalar_expression_calls",
+      "context": "scalar binding and assignment RHS",
+      "signature": "U64 -> U64",
+      "source": "module phase36.witness_u64_u64\nexport { fn main }\nfn adjust(value: U64) -> U64 { value + 1 }\nfn main(n: U64) -> U64 { let result = adjust(n) result }\n",
+      "exercise": "adjust(n)",
+      "expected_status": "pass",
+      "expected_form": "function_call(expression)",
+      "expected_constraints": [
+        "Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
+        "Bool result tails return an initialized Bool local or formal by identifier; bind a call result before returning it.",
+        "Imported targets must be explicitly exported local module functions; whole-program call graphs remain acyclic.",
+        "Only U64 -> U64, U64 -> Bool, Bool -> U64, and Bool -> Bool signatures are admitted; Unit and ByteView calls are absent.",
+        "A direct local function call has exactly one scalar expression argument and returns the declared U64 or Bool result."
+      ]
+    },
+    {
+      "id": "phase36-pair-u64-bool",
+      "facet": "restriction:scalar_expression_calls",
+      "context": "scalar branch and loop conditions",
+      "signature": "U64 -> Bool",
+      "source": "module phase36.witness_u64_bool\nexport { fn main }\nfn is_small(value: U64) -> Bool { let yes = value < 8 yes }\nfn main(n: U64) -> U64 { var result = 0 if is_small(n) { result = 1 } else { result = 2 } result }\n",
+      "exercise": "if is_small(n)",
+      "expected_status": "pass",
+      "expected_form": "function_call(expression)",
+      "expected_constraints": [
+        "Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
+        "Bool result tails return an initialized Bool local or formal by identifier; bind a call result before returning it.",
+        "Imported targets must be explicitly exported local module functions; whole-program call graphs remain acyclic.",
+        "Only U64 -> U64, U64 -> Bool, Bool -> U64, and Bool -> Bool signatures are admitted; Unit and ByteView calls are absent.",
+        "A direct local function call has exactly one scalar expression argument and returns the declared U64 or Bool result."
+      ]
+    },
+    {
+      "id": "phase36-pair-bool-u64",
+      "facet": "restriction:scalar_expression_calls",
+      "context": "scalar binding and assignment RHS",
+      "signature": "Bool -> U64",
+      "source": "module phase36.witness_bool_u64\nexport { fn main }\nfn choose(value: Bool) -> U64 { var result = 0 if value { result = 7 } else { result = 11 } result }\nfn main(n: U64) -> U64 { let yes = n == 8 let result = choose(yes) result }\n",
+      "exercise": "choose(yes)",
+      "expected_status": "pass",
+      "expected_form": "function_call(expression)",
+      "expected_constraints": [
+        "Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
+        "Bool result tails return an initialized Bool local or formal by identifier; bind a call result before returning it.",
+        "Imported targets must be explicitly exported local module functions; whole-program call graphs remain acyclic.",
+        "Only U64 -> U64, U64 -> Bool, Bool -> U64, and Bool -> Bool signatures are admitted; Unit and ByteView calls are absent.",
+        "A direct local function call has exactly one scalar expression argument and returns the declared U64 or Bool result."
+      ]
+    },
+    {
+      "id": "phase36-pair-bool-bool",
+      "facet": "restriction:scalar_expression_calls",
+      "context": "scalar binding and assignment RHS",
+      "signature": "Bool -> Bool",
+      "source": "module phase36.witness_bool_bool\nexport { fn main }\nfn relay(value: Bool) -> Bool { value }\nfn main(n: U64) -> U64 { let yes = n == 8 let result = relay(yes) if result { 1 } else { 2 } }\n",
+      "exercise": "relay(yes)",
+      "expected_status": "pass",
+      "expected_form": "function_call(expression)",
+      "expected_constraints": [
+        "Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
+        "Bool result tails return an initialized Bool local or formal by identifier; bind a call result before returning it.",
+        "Imported targets must be explicitly exported local module functions; whole-program call graphs remain acyclic.",
+        "Only U64 -> U64, U64 -> Bool, Bool -> U64, and Bool -> Bool signatures are admitted; Unit and ByteView calls are absent.",
+        "A direct local function call has exactly one scalar expression argument and returns the declared U64 or Bool result."
+      ]
+    },
+    {
+      "id": "phase36-assignment-rhs",
+      "facet": "restriction:scalar_expression_calls",
+      "context": "scalar binding and assignment RHS",
+      "signature": "U64 -> U64",
+      "source": "module phase36.witness_assignment\nexport { fn main }\nfn adjust(value: U64) -> U64 { value + 1 }\nfn main(n: U64) -> U64 { var result = 0 result = adjust(n) result }\n",
+      "exercise": "result = adjust(n)",
+      "expected_status": "pass",
+      "expected_form": "function_call(expression)",
+      "expected_constraints": [
+        "Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
+        "Bool result tails return an initialized Bool local or formal by identifier; bind a call result before returning it.",
+        "Imported targets must be explicitly exported local module functions; whole-program call graphs remain acyclic.",
+        "Only U64 -> U64, U64 -> Bool, Bool -> U64, and Bool -> Bool signatures are admitted; Unit and ByteView calls are absent.",
+        "A direct local function call has exactly one scalar expression argument and returns the declared U64 or Bool result."
+      ]
+    },
+    {
+      "id": "phase36-arithmetic-operand-and-grouping",
+      "facet": "restriction:scalar_expression_calls",
+      "context": "scalar arithmetic and comparison operands",
+      "signature": "U64 -> U64",
+      "source": "module phase36.witness_operand\nexport { fn main }\nfn adjust(value: U64) -> U64 { value + 1 }\nfn main(n: U64) -> U64 { let result = n + (adjust(n)) result }\n",
+      "exercise": "n + (adjust(n))",
+      "expected_status": "pass",
+      "expected_form": "function_call(expression)",
+      "expected_constraints": [
+        "Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
+        "Bool result tails return an initialized Bool local or formal by identifier; bind a call result before returning it.",
+        "Imported targets must be explicitly exported local module functions; whole-program call graphs remain acyclic.",
+        "Only U64 -> U64, U64 -> Bool, Bool -> U64, and Bool -> Bool signatures are admitted; Unit and ByteView calls are absent.",
+        "A direct local function call has exactly one scalar expression argument and returns the declared U64 or Bool result."
+      ]
+    },
+    {
+      "id": "phase36-loop-condition",
+      "facet": "restriction:scalar_expression_calls",
+      "context": "scalar branch and loop conditions",
+      "signature": "U64 -> Bool",
+      "source": "module phase36.witness_loop_condition\nexport { fn main }\nfn below(value: U64) -> Bool { let yes = value < 4 yes }\nfn main(n: U64) -> U64 { var i = 0 while below(i) { i = i + 1 } i }\n",
+      "exercise": "while below(i)",
+      "expected_status": "pass",
+      "expected_form": "function_call(expression)",
+      "expected_constraints": [
+        "Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
+        "Bool result tails return an initialized Bool local or formal by identifier; bind a call result before returning it.",
+        "Imported targets must be explicitly exported local module functions; whole-program call graphs remain acyclic.",
+        "Only U64 -> U64, U64 -> Bool, Bool -> U64, and Bool -> Bool signatures are admitted; Unit and ByteView calls are absent.",
+        "A direct local function call has exactly one scalar expression argument and returns the declared U64 or Bool result."
+      ]
+    },
+    {
+      "id": "phase36-byte-index",
+      "facet": "restriction:scalar_expression_calls",
+      "context": "scalar byte_at index expressions",
+      "signature": "U64 -> U64",
+      "source": "module phase36.witness_byte_index\nexport { fn main }\nfn offset(value: U64) -> U64 { value + 1 }\nfn read(bytes: ByteView) -> U64 { byte_at(bytes, offset(0)) }\nfn main(n: U64) -> U64 { n }\n",
+      "exercise": "byte_at(bytes, offset(0))",
+      "expected_status": "pass",
+      "expected_form": "function_call(expression)",
+      "expected_constraints": [
+        "Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
+        "Bool result tails return an initialized Bool local or formal by identifier; bind a call result before returning it.",
+        "Imported targets must be explicitly exported local module functions; whole-program call graphs remain acyclic.",
+        "Only U64 -> U64, U64 -> Bool, Bool -> U64, and Bool -> Bool signatures are admitted; Unit and ByteView calls are absent.",
+        "A direct local function call has exactly one scalar expression argument and returns the declared U64 or Bool result."
+      ]
+    },
+    {
+      "id": "phase36-nested-argument",
+      "facet": "restriction:scalar_expression_calls",
+      "context": "nested scalar helper arguments",
+      "signature": "U64 -> U64",
+      "source": "module phase36.witness_nested\nexport { fn main }\nfn inner(value: U64) -> U64 { value + 1 }\nfn outer(value: U64) -> U64 { value + 2 }\nfn main(n: U64) -> U64 { let result = outer(inner(n)) result }\n",
+      "exercise": "outer(inner(n))",
+      "expected_status": "pass",
+      "expected_form": "function_call(expression)",
+      "expected_constraints": [
+        "Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
+        "Bool result tails return an initialized Bool local or formal by identifier; bind a call result before returning it.",
+        "Imported targets must be explicitly exported local module functions; whole-program call graphs remain acyclic.",
+        "Only U64 -> U64, U64 -> Bool, Bool -> U64, and Bool -> Bool signatures are admitted; Unit and ByteView calls are absent.",
+        "A direct local function call has exactly one scalar expression argument and returns the declared U64 or Bool result."
+      ]
+    },
+    {
+      "id": "phase36-imported-exported-helper",
+      "facet": "restriction:scalar_expression_calls",
+      "context": "scalar binding and assignment RHS",
+      "signature": "U64 -> U64",
+      "source": "module phase36.importer\nimport phase36.helper { fn adjust }\nexport { fn main }\nfn main(n: U64) -> U64 { let result = adjust(n) result }\n",
+      "files": [
+        {"path":"helper.schway","source":"module phase36.helper\nexport { fn adjust }\nfn adjust(value: U64) -> U64 { value + 3 }\n"}
+      ],
+      "exercise": "adjust(n)",
+      "expected_status": "pass",
+      "expected_form": "function_call(expression)",
+      "expected_constraints": [
+        "Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
+        "Bool result tails return an initialized Bool local or formal by identifier; bind a call result before returning it.",
+        "Imported targets must be explicitly exported local module functions; whole-program call graphs remain acyclic.",
+        "Only U64 -> U64, U64 -> Bool, Bool -> U64, and Bool -> Bool signatures are admitted; Unit and ByteView calls are absent.",
+        "A direct local function call has exactly one scalar expression argument and returns the declared U64 or Bool result."
+      ]
+    },
+    {
+      "id": "phase36-refuse-arity-two",
+      "facet": "probe:phase36-scalar-call-arity",
+      "source": "module phase36.refuse_arity\nexport { fn main }\nfn helper(value: U64) -> U64 { value }\nfn main(n: U64) -> U64 { let result = helper(n, n) result }\n",
+      "exercise": "helper(n, n)",
+      "expected_status": "invalid",
+      "expected_code": "syntax.scalar_call_arity"
+    },
+    {
+      "id": "phase36-refuse-argument-type",
+      "facet": "probe:phase36-scalar-call-type",
+      "source": "module phase36.refuse_type\nexport { fn main }\nfn helper(value: U64) -> U64 { value }\nfn main(n: U64) -> U64 { let yes = n == n let result = helper(yes) result }\n",
+      "exercise": "helper(yes)",
+      "expected_status": "invalid",
+      "expected_code": "check.call_argument_type_mismatch"
+    },
+    {
+      "id": "phase36-refuse-private-import",
+      "facet": "probe:phase36-private-import",
+      "source": "module phase36.private_importer\nimport phase36.private_helper { fn adjust }\nexport { fn main }\nfn main(n: U64) -> U64 { let result = adjust(n) result }\n",
+      "files": [
+        {"path":"private_helper.schway","source":"module phase36.private_helper\nfn adjust(value: U64) -> U64 { value + 1 }\n"}
+      ],
+      "exercise": "adjust(n)",
+      "expected_status": "invalid",
+      "expected_code": "module.not_exported"
+    },
+    {
+      "id": "phase36-refuse-recursion",
+      "facet": "probe:phase36-call-cycle",
+      "source": "module phase36.refuse_cycle\nexport { fn main }\nfn recurse(value: U64) -> U64 { recurse(value) }\nfn main(n: U64) -> U64 { recurse(n) }\n",
+      "exercise": "recurse(value)",
+      "expected_status": "invalid",
+      "expected_code": "core.call_graph_cycle"
+    },
+    {
+      "id": "phase36-refuse-bool-literal-tail",
+      "facet": "probe:phase36-bool-tail",
+      "source": "module phase36.refuse_bool_tail\nexport { fn main }\nfn helper(value: Bool) -> Bool { true }\nfn main(n: U64) -> U64 { let yes = n == n let result = helper(yes) if result { 1 } else { 2 } }\n",
+      "exercise": "fn helper(value: Bool) -> Bool { true }",
+      "expected_status": "invalid",
+      "expected_code": "surface.unsupported_bool_literal_tail"
+    },
+    {
+      "id": "phase36-refuse-byteview-signature",
+      "facet": "probe:phase36-byteview-call-signature",
+      "source": "module phase36.refuse_byteview_signature\nexport { fn main }\nfn read(bytes: ByteView) -> U64 { byte_len(bytes) }\nfn use_bytes(bytes: ByteView) -> U64 { read(bytes) }\nfn main(n: U64) -> U64 { n }\n",
+      "exercise": "read(bytes)",
+      "expected_status": "invalid",
+      "expected_code": "type.scalar_signature"
+    }
+  ]
+}

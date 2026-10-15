@@ -276,6 +276,72 @@ func TestPhase35SurfaceDocument(t *testing.T) {
 	}
 }
 
+func TestPhase36SurfaceDocument(t *testing.T) {
+	manifest := Current()
+	if manifest.Schema != "schway.surface/1" {
+		t.Fatalf("Phase 36 changed the source-free schema: %q", manifest.Schema)
+	}
+	if manifest.Calls.DeclarationArity != 1 || !reflect.DeepEqual(manifest.Calls.OrdinaryArity, []int{1}) || !manifest.Calls.ScalarExpressionCalls {
+		t.Fatalf("scalar call contract = %+v, want direct arity-one calls in scalar expressions", manifest.Calls)
+	}
+	wantCallConstraints := []string{
+		"Call arguments and results must satisfy current type, ownership and authority checks.",
+		"Foreign calls require their separate declared policy/adapter contract.",
+		"Ordinary calls require a checked signature and acyclic call graph.",
+		"Scalar CFG expressions admit direct arity-one U64/Bool value calls with one argument; imported targets must be explicitly exported and whole-program call graphs remain acyclic.",
+	}
+	if !reflect.DeepEqual(manifest.Calls.Constraints, wantCallConstraints) {
+		t.Fatalf("call constraints = %v, want independently pinned exact contract %v", manifest.Calls.Constraints, wantCallConstraints)
+	}
+	if !reflect.DeepEqual(manifest.Calls.OrdinaryContexts, []string{"admitted linear binding and match-arm call paths"}) {
+		t.Fatalf("legacy ordinary call contexts changed: %v", manifest.Calls.OrdinaryContexts)
+	}
+	boolType := typeByID(t, manifest.Types, "bool")
+	if !reflect.DeepEqual(boolType.Contexts, []string{"scalar comparison results", "scalar function input and result", "scalar local state"}) {
+		t.Fatalf("Bool call contexts = %v", boolType.Contexts)
+	}
+	if !strings.Contains(strings.Join(boolType.Constraints, " "), "initialized Bool locals or formals by identifier") {
+		t.Fatalf("Bool result-tail boundary is not explicit: %v", boolType.Constraints)
+	}
+	calls := entryByID(t, manifest.Restrictions, "scalar_expression_calls")
+	wantContexts := []string{
+		"nested scalar helper arguments",
+		"scalar arithmetic and comparison operands",
+		"scalar binding and assignment RHS",
+		"scalar branch and loop conditions",
+		"scalar byte_at index expressions",
+	}
+	wantCallRuleConstraints := []string{
+		"Argument recursion shares the 64-level expression-depth bound and lowers in source order.",
+		"Bool result tails return an initialized Bool local or formal by identifier; bind a call result before returning it.",
+		"Imported targets must be explicitly exported local module functions; whole-program call graphs remain acyclic.",
+		"Only U64 -> U64, U64 -> Bool, Bool -> U64, and Bool -> Bool signatures are admitted; Unit and ByteView calls are absent.",
+		"A direct local function call has exactly one scalar expression argument and returns the declared U64 or Bool result.",
+	}
+	if calls.Syntax != "function_call(expression)" || !reflect.DeepEqual(calls.Contexts, wantContexts) || !reflect.DeepEqual(calls.Constraints, wantCallRuleConstraints) {
+		t.Fatalf("scalar expression-call surface = %+v", calls)
+	}
+	grouping := entryByID(t, manifest.Restrictions, "scalar_expression_grouping")
+	groupingFacts := strings.Join(grouping.Constraints, " ")
+	if grouping.Syntax != "( expression )" || !strings.Contains(groupingFacts, "literal provenance") || !strings.Contains(groupingFacts, "admitted call atom") || !strings.Contains(groupingFacts, "does not admit tuples or general tails") {
+		t.Fatalf("grouping/call atom boundary = %+v", grouping)
+	}
+	for _, forbidden := range []string{"does not admit calls", "Helper calls are absent", "Bool literals are admitted", "ByteView scalar-call arguments are admitted", "Unit-valued calls are admitted"} {
+		all := strings.Join(manifest.Calls.Constraints, " ") + " " + strings.Join(calls.Constraints, " ") + " " + groupingFacts
+		if strings.Contains(all, forbidden) {
+			t.Errorf("manifest retains or invents forbidden call claim %q", forbidden)
+		}
+	}
+	data, err := JSON(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wire map[string]json.RawMessage
+	if err := json.Unmarshal(data, &wire); err != nil || len(wire) != 10 {
+		t.Fatalf("Phase 36 changed the ten-field wire contract: fields=%d error=%v", len(wire), err)
+	}
+}
+
 func TestPhase34SurfaceLimits(t *testing.T) {
 	manifest := Current()
 	want := map[string]struct {
