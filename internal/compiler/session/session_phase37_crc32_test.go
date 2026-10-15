@@ -159,8 +159,8 @@ func TestPhase37CRC32Consumers(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Count(string(librarySource), "while ") != 2 || strings.Count(string(librarySource), "crc_byte(crc)") != 1 {
-		t.Fatal("byte and eight-round loops must remain in the one shared CRC library")
+	if strings.Count(string(librarySource), "while ") != 2 || strings.Count(string(librarySource), "crc = crc_byte(crc ^ byte_at(bytes, i))") != 1 {
+		t.Fatal("the one shared CRC library must call its private helper once from the byte loop")
 	}
 	for _, entryName := range []string{"crc32.schway", "crc_low.schway"} {
 		entrySource, err := os.ReadFile(filepath.Join(exampleRoot, entryName))

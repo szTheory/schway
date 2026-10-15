@@ -13,7 +13,7 @@
     },
     {
       "path": "examples/crc32/lib/crc32.schway",
-      "source_sha256": "sha256:304d47059ac5f5266776bb250794a3c64ae76ce9fe7b55a2a490facf1e35fb4f",
+      "source_sha256": "sha256:ce98ba7b055625c0e5a627f7d769cfbba948695755aeadb471578153fdea3707",
       "reason": "One table-free reflected CRC-32/ISO-HDLC library owns the byte loop and private eight-round helper."
     }
   ]

@@ -11,12 +11,7 @@ fn crc32(bytes: ByteView) -> U64 {
   var i = 0
   var n = byte_len(bytes)
   while i < n {
-    crc = crc ^ byte_at(bytes, i)
-    var round = 0
-    while round < 8 {
-      crc = crc_byte(crc)
-      round = round + 1
-    }
+    crc = crc_byte(crc ^ byte_at(bytes, i))
     i = i + 1
   }
   crc = crc ^ 0xFFFFFFFF
@@ -24,11 +19,17 @@ fn crc32(bytes: ByteView) -> U64 {
 }
 
 fn crc_byte(mixed: U64) -> U64 {
-  var next = mixed >> 1
-  if mixed & 1 == 1 {
-    next = next ^ 0xEDB88320
-  } else {
-    next = mixed >> 1
+  var state = mixed
+  var round = 0
+  while round < 8 {
+    var next = state >> 1
+    if state & 1 == 1 {
+      next = next ^ 0xEDB88320
+    } else {
+      next = state >> 1
+    }
+    state = next
+    round = round + 1
   }
-  next
+  state
 }

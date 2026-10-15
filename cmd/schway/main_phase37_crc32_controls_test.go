@@ -20,7 +20,7 @@ type phase37CRCFixture struct {
 var phase37CRCOriginHashes = map[string]string{
 	"examples/crc32/crc32.schway":             "8a8c7570409a6bf96258a35b5964dc899a2347871b564fb59e081beb011388c9",
 	"examples/crc32/crc_low.schway":           "797f9cd2e733c3590a593518fe671a1fda553eb6ce22ea50d70f1a26d606dccc",
-	"examples/crc32/lib/crc32.schway":         "304d47059ac5f5266776bb250794a3c64ae76ce9fe7b55a2a490facf1e35fb4f",
+	"examples/crc32/lib/crc32.schway":         "ce98ba7b055625c0e5a627f7d769cfbba948695755aeadb471578153fdea3707",
 	"examples/crc32/adapter.c":                "b758836a1d6dcff2fc6b4f903c0046ba3269ec83a8f3329c03553a90a5fbb1ae",
 	"examples/crc32/adapter.h":                "2c29a00ed8939668179fddf1c41cdd5db23e5a9d8574b5ec3e841dae729b612d",
 	"examples/crc32/file_bytes.bindings.json": "c2f960ff2a92a5d9a60356711812ea60595a2f81cf6c0ff2c4b259ce6380103c",
@@ -48,9 +48,9 @@ func TestPhase37CRC32AlgorithmMutants(t *testing.T) {
 		{
 			name: "non-reflected-recurrence", vector: "\x80", clean: "1069182125",
 			mutate: func(t *testing.T, library string) {
-				phase37CRCReplaceExact(t, library, "crc = crc ^ byte_at(bytes, i)", "crc = crc ^ (byte_at(bytes, i) << 24)", 1)
-				phase37CRCReplaceExact(t, library, "mixed >> 1", "mixed << 1", 2)
-				phase37CRCReplaceExact(t, library, "if mixed & 1 == 1", "if mixed & 0x80000000 == 0x80000000", 1)
+				phase37CRCReplaceExact(t, library, "crc = crc_byte(crc ^ byte_at(bytes, i))", "crc = crc_byte(crc ^ (byte_at(bytes, i) << 24))", 1)
+				phase37CRCReplaceExact(t, library, "state >> 1", "state << 1", 2)
+				phase37CRCReplaceExact(t, library, "if state & 1 == 1", "if state & 0x80000000 == 0x80000000", 1)
 				phase37CRCReplaceExact(t, library, "next = next ^ 0xEDB88320", "next = next ^ 0x04C11DB7", 1)
 			},
 		},
