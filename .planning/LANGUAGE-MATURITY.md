@@ -629,3 +629,40 @@ and native build/run with `3421780262` for `123456789`. An empty path returned
 `(65, "", "")`, consistent with generated C and the current CLI test; the
 context preserves that tuple. This is one new local constructibility probe,
 not maximum-size/public-interpreter parity or a complete phase test receipt.
+
+## Phase 37 source and evidence amendment — 2026-10-15
+
+**Source inspection:** the ordinary CRC-32 module and second importer now sit
+on the existing checked scalar-call/ByteView surface. Public source-file runs
+use the separator-marked opaque path route. The interpreter uses its fixed Go
+reader, including the 65,536-byte cap; native C continues to enforce each
+binding's own cap. The fixed interpreter adapter is not a general foreign-code
+execution facility. The executable guide explains ISO-HDLC versus POSIX
+`cksum`/CRC-32/CKSUM and CRC32C, unsigned decimal output with a newline,
+fixed file errors, empty-file behavior, and the distinct empty-path tuple.
+
+**New local evidence:** C01-C26 ran at code revision
+`b900dfe31abb600a82b31ab6e8cc2a8b9b1e74ca` on Darwin/arm64, Go 1.24.0.
+All 63 Go root invocations passed, the three canonical prohibition subjects
+reached their bad/clean/default assertions, and 78/78 guide tuples passed from
+a copy made only from `git ls-files` entries. The clean-copy manifest bound
+2,691 tracked paths. Focused ASan/UBSan, actual physical cleanup, reader
+fault/bound, five reached CRC mutation, reuse, and public matrix controls ran
+in their named owner commands. The fixed-source command logs and hashes are
+linked from [37-ACCEPTANCE-EVIDENCE.md](phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-ACCEPTANCE-EVIDENCE.md).
+
+**Historical receipts:** pre-addition baselines and older hosted receipts
+remain historical at their recorded source revisions. This local capture is
+not a Linux run, Phase 37 hosted receipt, independent phase verification,
+security audit, review result, human readability assessment, arbitrary
+interpreter cancellation proof, or cold/warm full-loop performance
+distribution. A maximum-size read took 2.46 seconds in one local observation.
+No-edit runs preserved module rows and InputID, while native artifact digest
+and BuildID varied under the existing incomplete/non-cacheable receipt
+contract; no deterministic executable claim follows.
+
+The [Phase 37 transition check](phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-TRANSITION-CHECK.md)
+records the current pending parent gates, three scoped next capabilities,
+source witnesses, and z1g/trz/z1s dormant dispositions. M008
+`wc`/`longest_line`, general arity expansion, and hosted two-host binding
+retain their separate owners.

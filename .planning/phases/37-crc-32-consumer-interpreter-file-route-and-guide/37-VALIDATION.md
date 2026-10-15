@@ -1,7 +1,7 @@
 ---
 phase: "37"
 slug: "crc-32-consumer-interpreter-file-route-and-guide"
-status: draft
+status: focused-capture-complete; parent-phase-gates-pending
 nyquist_compliant: false
 wave_0_complete: false
 created: "2026-10-15"
@@ -9,9 +9,12 @@ created: "2026-10-15"
 
 # Phase 37 — Validation Strategy
 
-The planner has mapped every task, threat, owner and exact command below.
-Execution remains pending; a named selector or planned control is not a newly
-passing check. The raw probe and descriptorless prohibition history is preserved.
+The planner mapped every task, threat, owner and exact command below. C01-C26
+were captured locally against code HEAD
+`b900dfe31abb600a82b31ab6e8cc2a8b9b1e74ca`; see
+`37-ACCEPTANCE-EVIDENCE.md` for reached roots, logs and hashes. A command
+selector is not itself a pass. The raw probe and descriptorless prohibition
+history remain preserved, and parent phase acceptance is pending.
 
 ## Test Infrastructure
 
@@ -40,25 +43,25 @@ passing check. The raw probe and descriptorless prohibition history is preserved
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| 37-01-01 | 37-01 | 1 | APP-13,MOD-07 | T-37-01/03/30 | Pre-addition route/C/inventory baseline; runnable tracer; all three final sources and finite additive ledger in both historical owners | baseline/integration/mutation | C01, C02, C25 before mutation; C03, C26 after exact three sources are staged | New roots/ledger planned in this task; four historical roots tracked | pending execution |
-| 37-01-02 | 37-01 | 1 | APP-13,MOD-07 | T-37-01/30 | Shared module and exact binding copies; source hashes/closed inventories unchanged | integration | C04, C26 | New roots planned in Task01/02; prior roots tracked | pending execution |
-| 37-01-03 | 37-01 | 1 | APP-14 | T-37-02/03 | Canonical real bad/clean/default proof | integration | C05, C06 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-02-01 | 37-02 | 2 | APP-13,APP-14 | T-37-04/05/06/07 | Full authority, fixed bounded reader, capture disabled | integration | C07 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-02-02 | 37-02 | 2 | APP-14 | T-37-06 | Actual outcomes independent capture and early new proof | integration | C08, C06 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-03-01 | 37-03 | 3 | APP-14 | T-37-08/10/11 | Opaque argv, private native run, literal input tuples | integration | C09 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-03-02 | 37-03 | 3 | APP-14 | T-37-09/10 | Full/pre-prune/raw-core authority and old outcomes | integration | C10, C11 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-04-01 | 37-04 | 3 | APP-13,APP-14 | T-37-12/13/14 | Actual read/close faults and retention controls | unit/mutation | C12 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-04-02 | 37-04 | 3 | APP-13,APP-14 | T-37-13/15 | Physical cleanup, reached bounds and focused sanitizer | integration | C13 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-05-01 | 37-05 | 4 | APP-13,MOD-07 | T-37-16 | Independent literals/recipes/hash/provenance | unit/mutation | C14 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-05-02 | 37-05 | 4 | APP-13,MOD-07,APP-14 | T-37-17/18/19 | Public expected-first literal tuples and isolated parallel cases | integration | C15 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-06-01 | 37-06 | 4 | APP-13,APP-14 | T-37-20/22 | Four reached numeric semantic defects | mutation | C16 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-06-02 | 37-06 | 4 | MOD-07,APP-13 | T-37-21/22 | Fifth dual flip and module/build identity | mutation/integration | C17, C18 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-07-01 | 37-07 | 4 | APP-14 | T-37-23 | Finite actual parser/source/owner inventory | integration | C19 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-07-02 | 37-07 | 4 | APP-14,DX-24 | T-37-25 | Unchanged exit table and actual route meaning | unit | C20 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-07-03 | 37-07 | 4 | APP-14,APP-13,MOD-07 | T-37-24 | Scoped adapter cap and fixed wire/census | integration | C21 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-08-01 | 37-08 | 5 | DX-24 | T-37-26/27 | Actual marked commands from tracked-only source | integration | C22 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-08-02 | 37-08 | 5 | DX-24 | T-37-26/27 | Guide/fixture/parser/untracked drift killed | mutation/integration | C23 | New roots planned in this task; prior roots tracked | pending execution |
-| 37-08-03 | 37-08 | 5 | APP-13,MOD-07,APP-14,DX-24 | T-37-28/29 | Current source-bound receipts and honest transition | integration | C06, C24 | New roots planned in this task; prior roots tracked | pending execution |
+| 37-01-01 | 37-01 | 1 | APP-13,MOD-07 | T-37-01/03/30 | Pre-addition route/C/inventory baseline; runnable tracer; all three final sources and finite additive ledger in both historical owners | baseline/integration/mutation | C01, C02, C25 before mutation; C03, C26 after exact three sources are staged | New roots/ledger planned in this task; four historical roots tracked | Current fixed-source roots passed; original baseline receipts stay historical |
+| 37-01-02 | 37-01 | 1 | APP-13,MOD-07 | T-37-01/30 | Shared module and exact binding copies; source hashes/closed inventories unchanged | integration | C04, C26 | New roots planned in Task01/02; prior roots tracked | Passed; current no-edit/build identity limits remain explicit |
+| 37-01-03 | 37-01 | 1 | APP-14 | T-37-02/03 | Canonical real bad/clean/default proof | integration | C05, C06 | New roots planned in this task; prior roots tracked | Passed; three source-bound proof subjects per descriptor |
+| 37-02-01 | 37-02 | 2 | APP-13,APP-14 | T-37-04/05/06/07 | Full authority, fixed bounded reader, capture disabled | integration | C07 | New roots planned in this task; prior roots tracked | Passed after C07 selector correction; see fixed-source receipt |
+| 37-02-02 | 37-02 | 2 | APP-14 | T-37-06 | Actual outcomes independent capture and early new proof | integration | C08, C06 | New roots planned in this task; prior roots tracked | Passed; capture outcomes and canonical proof remain separate |
+| 37-03-01 | 37-03 | 3 | APP-14 | T-37-08/10/11 | Opaque argv, private native run, literal input tuples | integration | C09 | New roots planned in this task; prior roots tracked | Passed |
+| 37-03-02 | 37-03 | 3 | APP-14 | T-37-09/10 | Full/pre-prune/raw-core authority and old outcomes | integration | C10, C11 | New roots planned in this task; prior roots tracked | Passed |
+| 37-04-01 | 37-04 | 3 | APP-13,APP-14 | T-37-12/13/14 | Actual read/close faults and retention controls | unit/mutation | C12 | New roots planned in this task; prior roots tracked | Passed |
+| 37-04-02 | 37-04 | 3 | APP-13,APP-14 | T-37-13/15 | Physical cleanup, reached bounds and focused sanitizer | integration | C13 | New roots planned in this task; prior roots tracked | Passed; sanitizer subcases ran without skips |
+| 37-05-01 | 37-05 | 4 | APP-13,MOD-07 | T-37-16 | Independent literals/recipes/hash/provenance | unit/mutation | C14 | New roots planned in this task; prior roots tracked | Passed |
+| 37-05-02 | 37-05 | 4 | APP-13,MOD-07,APP-14 | T-37-17/18/19 | Public expected-first literal tuples and isolated parallel cases | integration | C15 | New roots planned in this task; prior roots tracked | Passed |
+| 37-06-01 | 37-06 | 4 | APP-13,APP-14 | T-37-20/22 | Four reached numeric semantic defects | mutation | C16 | New roots planned in this task; prior roots tracked | Passed; reached mutation results preserved in owner logs |
+| 37-06-02 | 37-06 | 4 | MOD-07,APP-13 | T-37-21/22 | Fifth dual flip and module/build identity | mutation/integration | C17, C18 | New roots planned in this task; prior roots tracked | Passed; module/InputID stable, full BuildID may vary with executable bytes |
+| 37-07-01 | 37-07 | 4 | APP-14 | T-37-23 | Finite actual parser/source/owner inventory | integration | C19 | New roots planned in this task; prior roots tracked | Passed |
+| 37-07-02 | 37-07 | 4 | APP-14,DX-24 | T-37-25 | Unchanged exit table and actual route meaning | unit | C20 | New roots planned in this task; prior roots tracked | Passed |
+| 37-07-03 | 37-07 | 4 | APP-14,APP-13,MOD-07 | T-37-24 | Scoped adapter cap and fixed wire/census | integration | C21 | New roots planned in this task; prior roots tracked | Passed |
+| 37-08-01 | 37-08 | 5 | DX-24 | T-37-26/27 | Actual marked commands from tracked-only source | integration | C22 | New roots planned in this task; prior roots tracked | Passed; 78/78 documented tuples from git-ls-files-only copy |
+| 37-08-02 | 37-08 | 5 | DX-24 | T-37-26/27 | Guide/fixture/parser/untracked drift killed | mutation/integration | C23 | New roots planned in this task; prior roots tracked | Passed; Phase32 guide roots also passed |
+| 37-08-03 | 37-08 | 5 | APP-13,MOD-07,APP-14,DX-24 | T-37-28/29 | Current source-bound receipts and honest transition | integration | C06, C24 | New roots planned in this task; prior roots tracked | Passed; independent parent phase gates remain pending |
 
 ### Exact command registry
 
@@ -70,7 +73,7 @@ All commands are root-relative. C-IDs above are exact references, not test-name 
 - **C04**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase37CRC32NativeTracer|TestPhase37CRC32Consumers)$' -count=1 -v -timeout=600s`
 - **C05**: `node --test .planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-prohibition-check.test.cjs`
 - **C06**: `node .planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-prohibition-check.test.cjs --prove`
-- **C07**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp ./internal/compiler/session -run '^(TestPhase37InterpreterFileApplication|TestPhase37CaptureDisabledRetention)$' -count=1 -v -timeout=600s`
+- **C07**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp ./internal/compiler/session -run '^(TestPhase37InterpreterFileApplication|TestPhase37CaptureRetentionControls)$' -count=1 -v -timeout=600s`
 - **C08**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase37CaptureDisabledOutcomes|TestPhase37FileReaderBasic|TestPhase36InterpreterEvidenceBoundaries|TestPhase321AbortLikeDefectFileRoute)$' -count=1 -v -timeout=600s`
 - **C09**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37PublicFileRunTracer|TestPhase37FileRunGrammar|TestPhase37OpaqueFilePaths|TestPhase37FileRunInputBoundary)$' -count=1 -v -timeout=600s`
 - **C10**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase37FileApplicationAuthority$' -count=1 -v -timeout=600s`
@@ -150,3 +153,18 @@ sanitizer skip must be named and cannot turn the whole matrix green by omission.
 - [ ] `nyquist_compliant: true` only after the audit establishes compliance.
 
 **Approval:** pending implementation and validation audit.
+
+## Fixed-source execution amendment — 2026-10-15
+
+The final focused owner capture is recorded in
+`37-ACCEPTANCE-EVIDENCE.md`. All C01-C26 commands reached their named owners
+and passed at the fixed code revision; C07's initial nonexistent root selector
+was rejected as zero-test evidence and corrected to the actual
+`TestPhase37CaptureRetentionControls` owner before the final capture. C01,
+C02, and C25 final reruns are regression receipts, not replacements for their
+separately recorded pre-addition baselines.
+
+This capture does not set `nyquist_compliant: true`: the independent phase
+verifier, security, and review gates remain parent-owned. The four Phase 37
+requirements remain pending parent acceptance. No hosted receipt or human
+readability/performance claim is added.

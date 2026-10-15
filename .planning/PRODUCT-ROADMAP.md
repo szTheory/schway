@@ -744,3 +744,44 @@ The same bounded probe and an existing CLI test show that an empty PathToken
 returns 65 with empty streams before the adapter runs. CONTEXT D-10 is amended
 to preserve this behavior. This is a small constructibility probe, not a
 committed Phase 37 test, maximum-file result or phase acceptance receipt.
+
+## Phase 37 focused execution update — 2026-10-15
+
+**Current status:** the bounded CRC consumers, both public file routes, and
+tracked-source guide now have source-bound local evidence. Phase 37 remains
+pending the independent parent verifier, security, review, and requirement
+acceptance gates; this note does not mark the phase complete.
+
+**Source inspection:** `examples/crc32/crc32.schway` and
+`crc_low.schway` import the same table-free CRC-32/ISO-HDLC implementation.
+The new file route retains the fixed interpreter adapter and existing
+binding-specific native reader. The guide records exact exits, stream tuples,
+the 65,536-byte interpreter limit, the formatter limitation, and the scope of
+capture and timeout evidence.
+
+**Newly executed local checks:** at code revision
+`b900dfe31abb600a82b31ab6e8cc2a8b9b1e74ca`, the C01-C26 owner map was run on
+Darwin/arm64 with Go 1.24.0; all 63 Go root invocations passed, the three
+canonical proof subjects passed their bad/clean/default contract, and the
+Phase 32 node-test adapter passed 3/3. The tracked-only guide copied 2,691
+tracked files and ran 78/78 documented CRC tuples across both applications,
+both engines, one-shot native, and retained native runs. The maximum-size
+interpreter case completed in 2.46 seconds in one measured run; this is not a
+distribution or latency guarantee. Per-command logs and file digests are in
+[37-ACCEPTANCE-EVIDENCE.md](phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-ACCEPTANCE-EVIDENCE.md).
+
+**Historical receipts and limits:** earlier baseline receipts remain at their
+recorded source revisions; final C01/C02/C25 runs are regression checks, not
+baseline replacements. Phase 35/36 and prior M006 hosted evidence stay
+historical. No Phase 37 hosted result, local Linux execution, human readability
+assessment, arbitrary timeout parity, or complete cold/warm feedback-loop
+distribution is claimed. The no-edit native artifact digest and BuildID may
+vary while module rows and InputID remain stable under the existing
+incomplete/non-cacheable receipt contract.
+
+The current next capabilities and their seven-column blocker, slice,
+guarantee, evidence, owner, and reprioritization facts are in the
+[Phase 37 transition check](phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-TRANSITION-CHECK.md).
+It keeps z1g, trz, and z1s dormant because their named trigger observations
+remain absent, and leaves M008 `wc`/`longest_line`, general arity expansion,
+and Phase 38 hosted binding with their existing owners.
