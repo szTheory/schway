@@ -41,7 +41,7 @@ history remain preserved, and parent phase acceptance is pending.
 
 ## Per-Task Verification Map
 
-| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
+| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Command IDs | File Exists | Status |
 |---|---|---|---|---|---|---|---|---|---|
 | 37-01-01 | 37-01 | 1 | APP-13,MOD-07 | T-37-01/03/30 | Pre-addition route/C/inventory baseline; runnable tracer; all three final sources and finite additive ledger in both historical owners | baseline/integration/mutation | C01, C02, C25 before mutation; C03, C26 after exact three sources are staged | New roots/ledger planned in this task; four historical roots tracked | Current fixed-source roots passed; original baseline receipts stay historical |
 | 37-01-02 | 37-01 | 1 | APP-13,MOD-07 | T-37-01/30 | Shared module and exact binding copies; source hashes/closed inventories unchanged | integration | C04, C26 | New roots planned in Task01/02; prior roots tracked | Passed; current no-edit/build identity limits remain explicit |
@@ -64,6 +64,17 @@ history remain preserved, and parent phase acceptance is pending.
 | 37-08-03 | 37-08 | 5 | APP-13,MOD-07,APP-14,DX-24 | T-37-28/29 | Current source-bound receipts and honest transition | integration | C06, C24 | New roots planned in this task; prior roots tracked | Passed; independent parent phase gates remain pending |
 
 ### Exact command registry
+
+This is a registry-reference validation schema: the task cells name command
+IDs, and the registry below supplies their executable commands. Like the
+distinct evidence/command columns in Phases 34–36, these references are not
+the archived `Automated Command`/`Grade` schema. The recurring
+`TestPhase37ValidationCommandRegistry` and
+`TestPhase37ValidationCommandRegistryControls` guards check all 21 task rows
+and C01–C28 definitions, references and live Go selector ownership. Static
+resolution establishes that a command can select its named owners; execution
+receipts remain necessary to establish RUN/PASS and do not follow from this
+guard.
 
 All commands are root-relative. C-IDs above are exact references, not test-name patterns inferred at execution. Every Go command requires each selected root's RUN/PASS exactly once; zero tests, any root skip, compilation/tool failure, signal, timeout or unrelated RED is failure. Named unreadable/sanitizer/unsupported-host subcase skips remain individually unproved and are excluded from pass counts. Mutation tests must independently prove check/admit/build reached the named numerical or physical assertion. Final capture records exact source/test/fixture hashes and current root counts.
 
@@ -208,3 +219,17 @@ The earlier compliant verdict was withdrawn after the independent audit.37-09 no
 | Gaps found | 2 |
 | Resolved | 2 |
 | Escalated | 0 |
+
+## Registry schema correction —2026-10-15
+
+The initial 19-row task map carried C-ID references under the archived
+direct-command header `Automated Command`. That header was inaccurate and
+caused the frozen Phase 16 grade-corpus consumer to treat these references
+as graded executable evidence. The column is now `Command IDs`; the two
+37-09 remediation rows remain part of the same 21-task registry obligation.
+The independent recurring registry guards pin those rows and every C01–C28
+definition/reference, reject lost tasks or commands and unresolved or
+misowned Go selectors, and preserve the exact C05/C06 Node exceptions.
+This correction changes no archival grade law, exemption, declared grade,
+frozen receipt, or historical execution claim. Registry resolution itself
+does not establish a passing execution.

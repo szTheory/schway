@@ -243,8 +243,9 @@ func TestPhase273ConformanceCorpusByteIdentity(t *testing.T) {
 			t.Errorf("%s: EmitNative error changed: got %q want %q", want.Path, got.EmitNativeError, want.EmitNativeError)
 		}
 	}
+	successorPaths := phase272SuccessorAcceptedPaths(t)
 	for _, entry := range observed {
-		if !goldenPaths[entry.Path] && !phase273NewlyAcceptedPaths[entry.Path] {
+		if !goldenPaths[entry.Path] && !phase273NewlyAcceptedPaths[entry.Path] && !successorPaths[entry.Path] {
 			t.Errorf("%s: newly accepted source is absent from the golden and not in the allow-list", entry.Path)
 		}
 	}

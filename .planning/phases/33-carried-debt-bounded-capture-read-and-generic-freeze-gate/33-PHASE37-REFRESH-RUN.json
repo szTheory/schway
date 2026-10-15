@@ -1,0 +1,201 @@
+{
+  "source_head": "8a1ed7874877ce00c4d219ac0e1d2f44074f8236",
+  "validation_rows": 18,
+  "package_count": 6,
+  "distinct_names": 47,
+  "root_executions": 47,
+  "wall_seconds": 48.447,
+  "missing": 0,
+  "failed": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "package": "./cmd/schway",
+      "root_tests": [
+        "TestPhase321RunInputRequiredCLI",
+        "TestPhase32PublicRouteAudit"
+      ],
+      "count": 2,
+      "exit": 0,
+      "seconds": 3.161,
+      "command": "go test ./cmd/schway -run '^(TestPhase321RunInputRequiredCLI|TestPhase32PublicRouteAudit)$' -count=1 -json",
+      "log": "/tmp/schway33-p37-refresh-0.log",
+      "log_sha256": "01e31a44ab169d375c4efb14075deaef59b1cc93bfc0120b6228caba388f4bad"
+    },
+    {
+      "package": "./internal/compiler/cgen",
+      "root_tests": [
+        "TestEmittedCExitLiteralsMatchTable"
+      ],
+      "count": 1,
+      "exit": 0,
+      "seconds": 0.392,
+      "command": "go test ./internal/compiler/cgen -run '^(TestEmittedCExitLiteralsMatchTable)$' -count=1 -json",
+      "log": "/tmp/schway33-p37-refresh-1.log",
+      "log_sha256": "6c9f312b220e73ef714b87844f5f3b390eb8051a22ed4a282484a7f782ddc211"
+    },
+    {
+      "package": "./internal/compiler/check",
+      "root_tests": [
+        "TestPhase321ByteViewEntryRefused"
+      ],
+      "count": 1,
+      "exit": 0,
+      "seconds": 0.443,
+      "command": "go test ./internal/compiler/check -run '^(TestPhase321ByteViewEntryRefused)$' -count=1 -json",
+      "log": "/tmp/schway33-p37-refresh-2.log",
+      "log_sha256": "ea51e830ba416d18b888efd3ac6a901d8805b46a26af9474cb9fdd650d1be5df"
+    },
+    {
+      "package": "./internal/compiler/interp",
+      "root_tests": [
+        "TestPhase321AbortLikeDefectFileRoute",
+        "TestPhase321AbortLikeDefectPredicate",
+        "TestPhase33AbortLikeNarrowed",
+        "TestPhase33AbortLikeWideningMutantKilled"
+      ],
+      "count": 4,
+      "exit": 0,
+      "seconds": 0.398,
+      "command": "go test ./internal/compiler/interp -run '^(TestPhase321AbortLikeDefectFileRoute|TestPhase321AbortLikeDefectPredicate|TestPhase33AbortLikeNarrowed|TestPhase33AbortLikeWideningMutantKilled)$' -count=1 -json",
+      "log": "/tmp/schway33-p37-refresh-3.log",
+      "log_sha256": "482d75c2ed3d56d6e122f349b4258ff6fdef668223f5fbccf307d5887019018c"
+    },
+    {
+      "package": "./internal/compiler/native",
+      "root_tests": [
+        "TestPhase22EvidenceMissingPartialAndCapacityControls",
+        "TestPhase25LivingRoadmap",
+        "TestPhase26FailureChannels",
+        "TestPhase27EvidenceCapacity",
+        "TestPhase27OutputEvidenceExactLimit",
+        "TestPhase321DefectParityWithLiveOwner",
+        "TestPhase33CaptureReadBounded",
+        "TestPhase33DefectParityFileRoute",
+        "TestPhase33DefectParityFixtureRoute"
+      ],
+      "count": 9,
+      "exit": 0,
+      "seconds": 5.743,
+      "command": "go test ./internal/compiler/native -run '^(TestPhase22EvidenceMissingPartialAndCapacityControls|TestPhase25LivingRoadmap|TestPhase26FailureChannels|TestPhase27EvidenceCapacity|TestPhase27OutputEvidenceExactLimit|TestPhase321DefectParityWithLiveOwner|TestPhase33CaptureReadBounded|TestPhase33DefectParityFileRoute|TestPhase33DefectParityFixtureRoute)$' -count=1 -json",
+      "log": "/tmp/schway33-p37-refresh-4.log",
+      "log_sha256": "9b3bf305e4d7acea9a398827d3c584d82f1e9a9d60089c9c218a9cae59c62052"
+    },
+    {
+      "package": "./internal/compiler/session",
+      "root_tests": [
+        "TestFreezeGate",
+        "TestFreezeGateDifferential",
+        "TestNoCheckPhase32Caller",
+        "TestPhase16PublicEmitterConsumerInventory",
+        "TestPhase20ValidationLifecycle",
+        "TestPhase272AcceptedCorpusByteIdentity",
+        "TestPhase273ConformanceCorpusByteIdentity",
+        "TestPhase28PrunedEmitMatchesGolden",
+        "TestPhase32CIHostMatrix",
+        "TestPhase32CodeDigest",
+        "TestPhase32HostedCIEnv",
+        "TestPhase32ProducerCaseTable",
+        "TestPhase32ReceiptLivingClaims",
+        "TestReceiptGate",
+        "TestReceiptGateArchivedM006",
+        "TestReceiptGateDifferential",
+        "TestReceiptGateMalformedControls",
+        "TestStaticTestIndexMatchesGoTestList",
+        "TestSummaryCoverageGroundedness",
+        "TestValidationRowGradesAreEarnedOverArchivedCorpus",
+        "TestVerificationGroundedness",
+        "TestVerificationGroundednessClassifier",
+        "TestVerificationGroundednessCorpusIsNotEmpty",
+        "TestVerificationGroundednessFrontierIsPinned",
+        "TestVerificationGroundednessGrepExecution",
+        "TestVerificationGroundednessGrepOverRealCorpus",
+        "TestVerificationGroundednessIsNotInert",
+        "TestVerificationGroundednessPerBranch",
+        "TestVerificationGroundednessScopeByIllocutionaryRole",
+        "TestVerificationGroundednessThreeClassesAreEmpty"
+      ],
+      "count": 30,
+      "exit": 0,
+      "seconds": 35.694,
+      "command": "go test ./internal/compiler/session -run '^(TestFreezeGate|TestFreezeGateDifferential|TestNoCheckPhase32Caller|TestPhase16PublicEmitterConsumerInventory|TestPhase20ValidationLifecycle|TestPhase272AcceptedCorpusByteIdentity|TestPhase273ConformanceCorpusByteIdentity|TestPhase28PrunedEmitMatchesGolden|TestPhase32CIHostMatrix|TestPhase32CodeDigest|TestPhase32HostedCIEnv|TestPhase32ProducerCaseTable|TestPhase32ReceiptLivingClaims|TestReceiptGate|TestReceiptGateArchivedM006|TestReceiptGateDifferential|TestReceiptGateMalformedControls|TestStaticTestIndexMatchesGoTestList|TestSummaryCoverageGroundedness|TestValidationRowGradesAreEarnedOverArchivedCorpus|TestVerificationGroundedness|TestVerificationGroundednessClassifier|TestVerificationGroundednessCorpusIsNotEmpty|TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessGrepExecution|TestVerificationGroundednessGrepOverRealCorpus|TestVerificationGroundednessIsNotInert|TestVerificationGroundednessPerBranch|TestVerificationGroundednessScopeByIllocutionaryRole|TestVerificationGroundednessThreeClassesAreEmpty)$' -count=1 -json",
+      "log": "/tmp/schway33-p37-refresh-5.log",
+      "log_sha256": "0ba315ad803c18a51547386972bdb49fad93ef75ab6ebd21925d347b0ad215d7"
+    }
+  ],
+  "receipt_scope": "Parent-run focused Phase33 validation after successor metadata repairs; source_head is the base commit, repaired worktree bytes are bound below.",
+  "worktree_hashes": {
+    "cmd/schway/main_phase321_run_input_test.go": "c78f7ec065a812e7d765ec8b9927933d561a0059071e3e0cef36d6a6780b84c5",
+    "cmd/schway/main_phase32_routes_test.go": "d3679523fb7db0b48778821098daa857f768aeac0b87f463cdb9b2d8158ebb90",
+    "internal/compiler/cgen/cgen_program.go": "37398adb9d59a8fddad29b67feafc42f80d041b67a70a6fd2e0b2052608571fb",
+    "internal/compiler/execution/defect_reasons.go": "0965bb2d5bc4c834c23dd1216808102369ff48d74c5f391942ee6515166abce2",
+    "internal/compiler/executionpeer/executionpeer.go": "867185ab16461dd079451ead43ae47c68c3339ac6db7b790430f54954a02393c",
+    "internal/compiler/interp/interp.go": "aba3e9245fb5189527faf0b7e95757bfc8c8c5985f063701b0f697dbdfd2afbd",
+    "internal/compiler/interp/interp_phase321_defect_test.go": "0d5ffe12a34bd3099e00f7be4490bf0830e76fa4893df322f9d9f17dab4ac6ba",
+    "internal/compiler/interp/interp_phase33_defect_test.go": "4c2737f73096b271f5622d3de7965697ae2258f1abb8e2e8d201a0edfc4403fd",
+    "internal/compiler/native/native_app.go": "0124d35186677f20a88704968de42c32a5d7f0fb6ea850533bd5b891629bac64",
+    "internal/compiler/native/native_phase33_capture_test.go": "25cd43f11a3397240e5b73b8ccd4aae6c94013804a425500a06c788434d6abff",
+    "internal/compiler/native/native_phase33_defect_parity_test.go": "d66095311906251127443504fc39f8758abfbaceaa2f88218ec6fab58d54581a",
+    "internal/compiler/session/session.go": "9646a37ace6a50afe3d4a5b1c0c4f8d5e3160407d1fc18b0593bf7e4616af831",
+    "internal/compiler/session/session_freeze_gate_test.go": "867780915cf805227545c61018264861d919a5305791e8f34b6cf8df8deed9a7",
+    "internal/compiler/session/session_gate_differential_test.go": "95152bc83cf82176e40d6d62960eb098cb9dc6c345030e67234227e41958d9c6",
+    "internal/compiler/session/session_gate_retire_test.go": "451ae055c034996c11a70e11cda42d12a56246e0b6c5945128441d82188ef186",
+    "internal/compiler/session/session_phase32_receipt_test.go": "a8d98f35ba936d5deaf7aed72420aa70eb16b251808a5359e6a668d5286f1302",
+    "internal/compiler/session/session_phase37_validation_test.go": "425b738aa0c5dad97620baea95abcf5a637520618ec434c0542bd08240d21339",
+    "internal/compiler/session/session_receipt_gate_test.go": "e384affd7457432159d118eb7d8c2960ec5c36333327c30adb4382aeffb0571a",
+    "internal/compiler/session/summary_coverage_test.go": "7db5c86e5ea7bd5a5665008ee151574fbd968be6a5f2d78aee1fd66a14522d65",
+    "scripts/check-freeze.sh": "acc4c21e545b5fda1ef892f5e122d7cb3a8c2c71a790aefb6e05b5f39cec34d2",
+    "scripts/check-receipts.sh": "984ff5c1d95358499679e9008e305ceccb1e3c54631b4f963cb5e6ea4d4d005e",
+    "scripts/codedigest.sh": "9914f8bfda3bcfe0bd9d5c61f2ad5016d672e404ace42f4f5efe18ceb2a50a3e",
+    "scripts/verify-phase32.sh": "ed406a768fdaee8ca1815f5135f478f2eb17a3b7a63c3a06d0e4b96fe7e10aaf",
+    "testdata/phase16/public-emitter-consumers.json": "7132c2bed3bf1561691668b77ef241c36e4399b910a2bcbcc212dfe7c78257ee",
+    "testdata/receipts/M006.manifest": "9b6906304a74b67df57e930b297c91c6c7115ecc1e4d98dac563bdaaf446e9c7",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-02-SUMMARY.md": "61499a3f9cdb2db9a6154c1526c04215cab5c198a708324dd1ada3d780b69a36",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-VALIDATION.md": "fcd4ccedb7f5abdd0e486f7e7837a7776daa5d6ce6c9e40c8591be5f962b3bbf"
+  },
+  "initial_failure_receipts": [
+    {
+      "log": "/tmp/schway33-p37-initial-0.log",
+      "sha256": "4f20a7f9aa36cad11d8f5a98618a773291be3d9c0baaa500ae516bbb02c4c04b",
+      "failed_roots": []
+    },
+    {
+      "log": "/tmp/schway33-p37-initial-1.log",
+      "sha256": "694d9f05113764a9b0af448c5f6881ad79f7fe74800d9d658a7e3ac35241aa45",
+      "failed_roots": []
+    },
+    {
+      "log": "/tmp/schway33-p37-initial-2.log",
+      "sha256": "2746c964645240ecfe50b38f40fe99d6c4ff18f79bbe6bb9616fb7c27cf4715d",
+      "failed_roots": []
+    },
+    {
+      "log": "/tmp/schway33-p37-initial-3.log",
+      "sha256": "9fb80b013e56e50a4963660a533f2eb95ec857401e63d0b9ca0f3342d3786bd0",
+      "failed_roots": []
+    },
+    {
+      "log": "/tmp/schway33-p37-initial-4.log",
+      "sha256": "d41d013678690481d68acbc4fb7b109d03a64e51a322b011b967712063c08235",
+      "failed_roots": []
+    },
+    {
+      "log": "/tmp/schway33-p37-initial-5.log",
+      "sha256": "a13211c87ad15fdf7f615d32bed1527fcc96c01147a635b78fe2904dd09b2e8e",
+      "failed_roots": [
+        "TestValidationRowGradesAreEarnedOverArchivedCorpus",
+        "TestPhase16PublicEmitterConsumerInventory",
+        "TestPhase272AcceptedCorpusByteIdentity",
+        "TestPhase273ConformanceCorpusByteIdentity",
+        "TestSummaryCoverageGroundedness"
+      ]
+    }
+  ],
+  "supplement_log": {
+    "path": "/tmp/schway33-p37-supplement.log",
+    "sha256": "0bdcbfa754ebcd8e7a0b6a6ff6251eef4769914064d9875f96dc8e6d8441cf33",
+    "root_executions": 5,
+    "failed": 0,
+    "skipped": 0
+  }
+}

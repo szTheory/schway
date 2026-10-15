@@ -2,6 +2,76 @@
   "schema": "phase16.public-emitter-consumers/2",
   "entries": [
     {
+      "call": "internal/compiler/cgen/cgen_phase36_test.go:EmitNative:86",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36NativeDynamicInvocationPaths"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase36_test.go:EmitNative:358",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36CallEventCapacityBoundary"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase36_test.go:EmitNative:449",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36NativeOrdinalAndPathBoundaries"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase36_test.go:EmitNative:513",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36NativeOrdinalAndPathBoundaries"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase36_test.go:EmitNative:636",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36EmitterCallInventoryControls"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase36_test.go:EmitNative:819",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36EmitterCallInventoryControls"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase36_test.go:EmitNative:997",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36EmitterCallInventoryControls"
+    },
+    {
+      "call": "internal/compiler/session/session_phase36_calls_test.go:EmitNative:110",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36HelperOptimizationMatrix"
+    },
+    {
+      "call": "internal/compiler/session/session_phase36_calls_test.go:EmitNative:169",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36HelperOptimizationMatrix"
+    },
+    {
+      "call": "internal/compiler/session/session_phase36_calls_test.go:EmitNative:230",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36HelperUBSan"
+    },
+    {
+      "call": "internal/compiler/session/session_phase36_calls_test.go:EmitNative:258",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36HelperUBSan"
+    },
+    {
+      "call": "internal/compiler/session/session_phase36_peer_mutation_test.go:EmitNative:273",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36EngineMutationLaneChild"
+    },
+    {
+      "call": "internal/compiler/session/session_phase36_prechange_test.go:Emit:340",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36NoCallGeneratedCByteBaseline"
+    },
+    {
+      "call": "internal/compiler/session/session_phase36_prechange_test.go:EmitNative:341",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36NoCallGeneratedCByteBaseline"
+    },
+    {
       "call": "internal/compiler/cgen/cgen_phase35_test.go:EmitNative:114",
       "classification": "admitted-dynamic-schema2",
       "witness": "probe:TestPhase35NativeShiftTracer"

@@ -54,6 +54,21 @@ var phase272NewlyAcceptedPaths = map[string]bool{
 	"examples/checksum/adler32.schway": true,
 }
 
+// phase272SuccessorAcceptedPaths composes the byte-checkable Phase36 D-20
+// and Phase37 Plan01 additions with the frozen identity corpora. The existing
+// inventory owner validates both complete finite ledgers, source hashes,
+// reasons, and tracked-source closure before either path gains an allowance.
+// TestPhase34PreChangeCGoldenIsNotInert exercises its omission, hash, path,
+// and old-source-exemption controls; neither historical golden is rewritten.
+func phase272SuccessorAcceptedPaths(t *testing.T) map[string]bool {
+	t.Helper()
+	phase34TrackedSchwayPaths(t)
+	return map[string]bool{
+		"examples/helper_calls/crc_step.schway": true,
+		"examples/crc32/lib/crc32.schway":       true,
+	}
+}
+
 // phase272EntryPrecedencePaths lists the only golden entries whose
 // EmitApplication outcome may differ because main now wins entry resolution.
 // 2026-10-10 (Phase 28, D-01/D-23): the golden is frozen and records the old
@@ -210,8 +225,9 @@ func TestPhase272AcceptedCorpusByteIdentity(t *testing.T) {
 			t.Errorf("%s: EmitApplication error changed: got %q want %q", want.Path, got.EmitApplicationError, want.EmitApplicationError)
 		}
 	}
+	successorPaths := phase272SuccessorAcceptedPaths(t)
 	for _, entry := range observed {
-		if !goldenPaths[entry.Path] && !phase272NewlyAcceptedPaths[entry.Path] {
+		if !goldenPaths[entry.Path] && !phase272NewlyAcceptedPaths[entry.Path] && !successorPaths[entry.Path] {
 			t.Errorf("%s: newly accepted source is absent from the golden and not in the allow-list", entry.Path)
 		}
 	}

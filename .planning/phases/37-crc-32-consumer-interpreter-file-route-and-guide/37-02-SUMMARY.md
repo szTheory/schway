@@ -44,6 +44,29 @@ patterns-established:
   - Fixed file capability: validate the checked FileBytes contract at the interpreter boundary, then use one nonblocking regular descriptor and one bounded read.
   - Capture-free evaluation: bypass event, identity, ordinal, and recorder construction while preserving evaluator behavior.
 requirements-completed: []
+coverage:
+  - id: 37-02-01
+    description: Fixed admitted file application computes CRC with capture disabled before trace retention.
+    requirement: APP-13
+    verification:
+      - kind: integration
+        ref: internal/compiler/session/session_phase37_file_application_test.go#TestPhase37InterpreterFileApplication
+        status: pass
+      - kind: unit
+        ref: internal/compiler/interp/interp_phase37_test.go#TestPhase37CaptureRetentionControls
+        status: pass
+    human_judgment: false
+  - id: 37-02-02
+    description: Capture mode preserves actual outcomes and bounded reader behavior.
+    requirement: APP-14
+    verification:
+      - kind: unit
+        ref: internal/compiler/interp/interp_phase37_test.go#TestPhase37CaptureDisabledOutcomes
+        status: pass
+      - kind: unit
+        ref: internal/compiler/interp/filebytes_reader_test.go#TestPhase37FileReaderBasic
+        status: pass
+    human_judgment: false
 duration: ~20min visible execution window; initial context loading preceded the first recorded task commit
 completed: 2026-10-15
 status: complete
@@ -122,3 +145,12 @@ The summary exists, all five recorded task/proof commits are ancestors of HEAD, 
 ---
 *Phase: 37-crc-32-consumer-interpreter-file-route-and-guide*
 *Completed: 2026-10-15*
+
+## Phase 33 successor-gate metadata correction — 2026-10-15
+
+The inherited summary-coverage gate found this summary omitted the required
+coverage block. The added entries name the current objective owners; all six
+focused interpreter/session roots passed in this refresh without skips. The
+earlier commands and producer-proof receipts remain historical at their
+recorded revision; the renamed retention root is TestPhase37CaptureRetentionControls.
+No implementation, original receipt, or requirement disposition is changed.

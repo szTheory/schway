@@ -96,3 +96,28 @@ This refresh labels the original execution receipts historical and recomputes
 the current verification fingerprint through its canonical owner.
 
 L1 authored-register review retains every closed mitigation: bounded native capture and root/digest shell gates are byte-unchanged; source presentation and byte identity/repair authority are byte-unchanged. Shift/recovery/manifest additions have passing named independent controls and the current Phase 35 review. No new installation or accepted-risk substitution. The configured L1 zero-open short-circuit applies; this is a current source/control applicability review, not a new hosted security run.
+
+
+## Phase 37 successor L1 refresh — 2026-10-15
+
+All five plans contain authored threat models; the register still has
+17 closed dispositions, zero open, and ASVS level 1. Current source inspection
+confirmed one opened-handle `LimitReader(limit+1)` capture read; singleton live
+owner, terminal function/operation and exact reason matching; and root-anchored
+POSIX gates preserving explicit EXPECTED_CODEDIGEST with data-only labels.
+The successor's capture-disabled terminal path delegates to the same narrowed
+owner/function/operation/reason predicate. All mapped capture, parity, narrowing,
+widening-mutant, freeze/receipt and metadata controls passed in the fresh
+47-root validation run. This refresh added only test/metadata corrections,
+with no production or dependency change. The authored-register L1 short-circuit
+applies; no new deep threat-discovery, hosted certification, or authenticity
+guarantee is claimed. See 33-PHASE37-REFRESH-RUN.json for current parent-run
+evidence, distinct from the independent goal verdict.
+
+## Security Audit 2026-10-15
+
+| Metric | Count |
+|---|---|
+| Threats found | 17 |
+| Closed | 17 |
+| Open | 0 |

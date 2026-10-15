@@ -130,3 +130,29 @@ This refresh labels the original execution receipts historical and recomputes
 the current verification fingerprint through its canonical owner.
 
 State A coverage review found no additional unmapped requirement or test gap. Successor-specific syntax and inventory adaptations are explicitly bound in the Phase 35 compatibility/mutation evidence; their frozen before-state fixtures are preserved.
+
+
+## Phase 37 successor validation refresh — 2026-10-15
+
+State A was re-audited after the Phase 37 successor edits. The first complete
+18-row focused run exposed inherited inventory, finite-source allowance and
+evidence-metadata gaps. Those gaps are corrected without changing production
+or frozen receipts. A fresh normalized, timeout-bounded rerun passed all
+47 distinct package-qualified root executions across six packages, with zero
+missing, failed or skipped tests (48.447 seconds wall time). Five supplemental
+ledger/registry roots also passed, including the new 21-task/C01-C28 registry
+guard and its 23 reached refusal controls. All four requirement mappings remain
+covered; no human-only verification item or test gap remains.
+
+The exact commands, root sets, log hashes and repaired worktree hashes are in
+[33-PHASE37-REFRESH-RUN.json](33-PHASE37-REFRESH-RUN.json). Earlier receipts
+remain historical. These are parent-run focused checks on Darwin/arm64,
+not a new hosted or full-suite result. The independent goal verdict is pending.
+
+## Validation Audit 2026-10-15
+
+| Metric | Count |
+|---|---|
+| Gaps found | 4 |
+| Resolved | 4 |
+| Escalated | 0 |
