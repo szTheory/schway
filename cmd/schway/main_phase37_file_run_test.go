@@ -153,3 +153,113 @@ func TestPhase37FileRunInputBoundary(t *testing.T) {
 		})
 	}
 }
+
+func TestPhase37FileRunOutcomes(t *testing.T) {
+	source, manifest := phase37RunFixture()
+	missingInput := filepath.Join(t.TempDir(), "missing input.bin")
+
+	t.Run("source-refusal-is-two", func(t *testing.T) {
+		refused := testsupport.ProjectPath("testdata", "phase3", "public_view_omitted.schway")
+		code, stdout, stderr := captureLangRun(t, phase37RunArgs("interpreter", refused, "", missingInput))
+		if code != 2 || stdout != "" || !strings.Contains(stderr, "core.origin_omitted") {
+			t.Fatalf("source refusal = (%d,%q,%q), want source diagnostic/2", code, stdout, stderr)
+		}
+		if strings.Contains(stderr, missingInput) {
+			t.Fatalf("source refusal leaked the file path: %q", stderr)
+		}
+	})
+
+	t.Run("missing-source-is-three", func(t *testing.T) {
+		missingSource := filepath.Join(t.TempDir(), "not-here.schway")
+		code, stdout, stderr := captureLangRun(t, phase37RunArgs("interpreter", missingSource, "", missingInput))
+		if code != 3 || stdout != "" || stderr != "schway run: unable to read source\n" {
+			t.Fatalf("missing source = (%d,%q,%q)", code, stdout, stderr)
+		}
+	})
+
+	t.Run("missing-clang-is-three", func(t *testing.T) {
+		emptyPath := t.TempDir()
+		t.Setenv("PATH", emptyPath)
+		code, stdout, stderr := captureLangRun(t, phase37RunArgs("native", source, manifest, missingInput))
+		if code != 3 || stdout != "" || stderr != "schway run: native build failed\n" {
+			t.Fatalf("missing Clang = (%d,%q,%q)", code, stdout, stderr)
+		}
+	})
+
+	t.Run("missing-manifest-is-three", func(t *testing.T) {
+		missingManifest := filepath.Join(t.TempDir(), "missing.bindings.json")
+		code, stdout, stderr := captureLangRun(t, phase37RunArgs("native", source, missingManifest, missingInput))
+		if code != 3 || stdout != "" || stderr != "schway run: native build failed\n" {
+			t.Fatalf("missing manifest = (%d,%q,%q)", code, stdout, stderr)
+		}
+	})
+
+	t.Run("typed-file-errors-are-exact", func(t *testing.T) {
+		for _, engine := range []string{"interpreter", "native"} {
+			t.Run(engine, func(t *testing.T) {
+				manifestArg := ""
+				if engine == "native" {
+					manifestArg = manifest
+				}
+				code, stdout, stderr := captureLangRun(t, phase37RunArgs(engine, source, manifestArg, missingInput))
+				if code != 65 || stdout != "" || stderr != "FileError.FileUnavailable\n" {
+					t.Fatalf("typed %s failure = (%d,%q,%q)", engine, code, stdout, stderr)
+				}
+			})
+		}
+	})
+
+	t.Run("checked-defect-is-never-success", func(t *testing.T) {
+		root := t.TempDir()
+		entryBytes, err := os.ReadFile(source)
+		if err != nil {
+			t.Fatal(err)
+		}
+		write := func(relative string, data []byte) string {
+			t.Helper()
+			path := filepath.Join(root, filepath.FromSlash(relative))
+			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(path, data, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			return path
+		}
+		entry := strings.Replace(string(entryBytes), "  let checksum = crc32(view)\n  checksum", "  let checksum = crc32(view)\n  let failed = fail(checksum)\n  failed", 1)
+		if entry == string(entryBytes) || !strings.Contains(entry, "fail(checksum)") {
+			t.Fatal("could not build the checked-defect entry shape")
+		}
+		entry += `
+
+fn fail(value: U64) -> U64 {
+  let maximum = 18446744073709551615
+  let result = value + maximum
+  result
+}
+`
+		entryPath := write("main.schway", []byte(entry))
+		crcLibrary, err := os.ReadFile(testsupport.ProjectPath("examples", "crc32", "lib", "crc32.schway"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		write("lib/crc32.schway", crcLibrary)
+		input := phase37WriteInput(t, root, "defect input.bin")
+		for _, engine := range []string{"interpreter", "native"} {
+			t.Run(engine, func(t *testing.T) {
+				manifestArg := ""
+				if engine == "native" {
+					manifestArg = manifest
+				}
+				code, stdout, stderr := captureLangRun(t, phase37RunArgs(engine, entryPath, manifestArg, input))
+				wantStderr := ""
+				if engine == "native" {
+					wantStderr = "schway: U64 addition overflow\n"
+				}
+				if code != 65 || stdout != "" || stderr != wantStderr {
+					t.Fatalf("checked %s defect = (%d,%q,%q), want (65,empty,%q)", engine, code, stdout, stderr, wantStderr)
+				}
+			})
+		}
+	})
+}

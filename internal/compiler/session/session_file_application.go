@@ -7,6 +7,11 @@ import (
 	"github.com/szTheory/schway/internal/compiler/interp"
 )
 
+// runAdmittedFileApplication is the fixed-reader execution boundary. Its
+// production value is interp.RunFileApplication; same-package tests replace
+// it briefly to prove that failed admission never reaches file IO.
+var runAdmittedFileApplication = interp.RunFileApplication
+
 // RunInterpreterFileApplication checks a source file and its imported module
 // closure, independently admits the complete program, and then runs its
 // checked FileBytes application through the interpreter's fixed host reader.
@@ -35,7 +40,7 @@ func RunInterpreterFileApplication(sourcePath, input string) (interp.Application
 	if entry.Parameter.Type != "PathToken" {
 		return interp.ApplicationResult{}, nil, fmt.Errorf("file application entry %q must accept a PathToken", entry.ID)
 	}
-	result, err := interp.RunFileApplication(program, entry.Name, input)
+	result, err := runAdmittedFileApplication(program, entry.Name, input)
 	if err != nil {
 		return interp.ApplicationResult{}, nil, err
 	}
