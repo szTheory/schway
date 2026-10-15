@@ -729,6 +729,16 @@ func TestPhase37GuideParserNegativeControls(t *testing.T) {
 			t.Fatal("malformed marked fence was accepted")
 		}
 	})
+	t.Run("unknown-block-kind", func(t *testing.T) {
+		mutated := strings.Replace(text, "```sh doc-test=run app=crc32 route=interpreter", "```sh doc-test=run-extra app=crc32 route=interpreter", 1)
+		parsed, err := phase37ParseGuide(mutated)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := phase37GuideStructureError(parsed); err == nil || !strings.Contains(err.Error(), "unknown doc-test block kind") {
+			t.Fatalf("unknown marked block did not reach the closed-structure assertion: %v", err)
+		}
+	})
 	t.Run("expected-answer-drift", func(t *testing.T) {
 		mutated := strings.Replace(text, `(0, "3421780262\n", "")`, `(0, "3421780263\n", "")`, 1)
 		changed, err := phase37ParseGuide(mutated)
