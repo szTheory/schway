@@ -60,3 +60,22 @@ retains all 17 authored L1 threat dispositions; the automated UI hook reuses
 the existing non-graphical review, and its fresh safety gate is false for
 frontend/UI files/UI spec/block. Code review and independent goal verification
 follow these checks. No new implementation plan or hosted binding is added.
+
+### Independent review fixes and final parent gate
+
+The independent 25-file review found two warnings. Their original false accepts
+were reproduced before repair: incomplete per-item coverage records and an
+undeclared case program with matching table/log/result rows. The final parent
+normalized/bounded 18-row run passed 48/48 distinct named roots across six
+packages in 54.506 seconds, with no missing/fail/skip. Six current metadata
+roots also passed after document updates. Exact commands, log hashes, RED/GREEN
+receipts and 25 repaired-worktree input hashes are in
+[33-REVIEW-FIX-RUN.json](33-REVIEW-FIX-RUN.json). The earlier 47-root receipt is
+preserved as its own pre-review snapshot.
+
+The only production-file repair in this follow-up is the small POSIX receipt
+consistency check; compiler/runtime semantics are unchanged. The fixed legacy
+refusal catalog, M006 receipts and frozen corpus/core/C artifacts remain
+unchanged. Both warning dispositions are documented in 33-REVIEW-FIX.md.
+An independent three-file closure review and goal verifier still own their
+respective verdicts; parent checks do not substitute for either.

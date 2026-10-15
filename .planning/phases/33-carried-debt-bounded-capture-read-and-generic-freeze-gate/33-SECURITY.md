@@ -121,3 +121,15 @@ evidence, distinct from the independent goal verdict.
 | Threats found | 17 |
 | Closed | 17 |
 | Open | 0 |
+
+## Review boundary follow-up — 2026-10-15
+
+The earlier 47-root snapshot predates the two independent review fixes.
+WR-02 adds a bounded literal program/case inventory check in the POSIX receipt
+gate under existing T-33-08/T-33-13; default and archived M006 acceptance and
+the fixed refusal catalog remain covered. WR-01 strengthens the coverage
+metadata guard under T-33-14/T-33-15. Reached false-accept controls failed on
+the original implementations and pass after repair. Both use existing
+standard-library/POSIX facilities; no authority, dependency or hosted binding
+is added. The L1 source review retains 17 closed authored dispositions and
+zero open threats. The final verifier must include these changed inputs.

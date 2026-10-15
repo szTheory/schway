@@ -54,7 +54,7 @@ created: "2026-10-13"
 | QLT-15 | Phase 28 VALIDATION/SECURITY accepted; planning-doc meta-tests pass | meta | `go test ./internal/compiler/session -run 'TestPhase20ValidationLifecycle|TestVerificationGroundedness|TestValidationRowGradesAreEarnedOverArchivedCorpus|TestStaticTestIndexMatchesGoTestList' -count=1` | ✅ | ✅ green |
 | EVD-16 | generic gates preserve the catalog through literal goldens (migration step 2) | integration | `go test ./internal/compiler/session -run 'TestReceiptGateDifferential|TestFreezeGateDifferential' -count=1` | ✅ | ✅ green |
 | EVD-16 | archived M006 receipts accepted; armed controls reject | integration | `go test ./internal/compiler/session -run 'TestReceiptGateArchivedM006|TestReceiptGate' -count=1` | ✅ | ✅ green |
-| EVD-16 | malformed control lists cannot waive required control names | integration | `go test ./internal/compiler/session -run 'TestReceiptGateMalformedControls' -count=1` | ✅ | ✅ green |
+| EVD-16 | malformed control/program lists cannot waive required names or case-program membership | integration | `go test ./internal/compiler/session -run 'TestReceiptGateMalformedControls|TestReceiptGateProgramInventory' -count=1` | ✅ | ✅ green |
 | EVD-16 | manifest sha256 pinned and rows grounded in archived logs | unit | `go test ./internal/compiler/session -run 'TestPhase32ProducerCaseTable' -count=1` | ✅ | ✅ green |
 | EVD-16 | no `check-phase32-*` caller; both scripts absent | static | `go test ./internal/compiler/session -run 'TestNoCheckPhase32Caller' -count=1` | ✅ | ✅ green |
 | EVD-16 | living-claim marker check generalized by label | unit | `go test ./internal/compiler/session -run 'TestPhase32ReceiptLivingClaims' -count=1` | ✅ | ✅ green |
@@ -155,4 +155,24 @@ not a new hosted or full-suite result. The independent goal verdict is pending.
 |---|---|
 | Gaps found | 4 |
 | Resolved | 4 |
+| Escalated | 0 |
+
+## Review-control closure — 2026-10-15
+
+Independent review found two additional fail-open cases in existing guards.
+WR-01 now checks each coverage verification item rather than aggregate field
+slices; all 29 controls and 60 summaries pass. WR-02 now enforces literal
+case/program membership in both directions while preserving prior refusal
+positions; the five-root receipt compatibility run passes. Both controls
+failed for their intended reasons before the fix. The EVD-16 row now names
+TestReceiptGateProgramInventory explicitly. The corpus grade law and frozen
+receipt are unchanged. See 33-REVIEW-FIX.md for exact failures and logs;
+the final parent rerun and independent goal verdict remain separate gates.
+
+## Validation Audit 2026-10-15
+
+| Metric | Count |
+|---|---|
+| Gaps found | 6 |
+| Resolved | 6 |
 | Escalated | 0 |
