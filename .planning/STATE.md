@@ -4,18 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 36
 current_phase_name: Scalar Helper Calls
-current_plan: 5
+current_plan: 6
 status: executing
-stopped_at: Completed 36-04-PLAN.md
-last_updated: "2026-10-15T02:54:17.022Z"
+stopped_at: Completed 36-05-PLAN.md
+last_updated: "2026-10-15T03:26:37.289Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 36 execution started
-state_head: 35fb0fe259dee872090a1c8bdc47580ce672eefc
+state_head: 3794dfaabb19d177eb94d689103e0d26ac013c1c
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 29
-  completed_plans: 25
+  completed_plans: 26
   percent: 50
 ---
 
@@ -126,7 +126,7 @@ plans.
 ## Current Position
 
 Phase: 36 (Scalar Helper Calls) — EXECUTING
-Current Plan: 5
+Current Plan: 6
 Total Plans in Phase: 8
 Status: Ready to execute
 Last activity: 2026-10-14 — Phase 36 execution started
@@ -613,6 +613,7 @@ subset alone.
 | Phase 36 P2 | 23min | 3 tasks | 7 files |
 | Phase 36 P03 | 22m | 3 tasks | 7 files |
 | Phase 36 P04 | 27min | 3 tasks | 4 files |
+| Phase 36 P05 | 28m | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -860,6 +861,9 @@ decision history; they no longer describe current status.
 - [Phase 36]: Dynamic scalar-call ordinals increment per parent frame and static call site, resetting with each new parent.
 - [Phase 36]: The execution peer independently validates causal call structure and does not replay scalar arithmetic.
 - [Phase 36]: Evidence exhaustion marks capture incomplete while preserving actual interpreter results and application output.
+- [Phase 36]: Admit checked scalar call-only wrappers while keeping legacy, ownership, and foreign-call refusals in place.
+- [Phase 36]: Use retained bounded path storage so nested call identities survive callee return.
+- [Phase 36]: Keep optional capture exhaustion separate from actual output, exit status, and later defect attribution.
 
 ### Pending Todos
 
@@ -1107,8 +1111,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-15T02:54:16.410Z
-Stopped at: Completed 36-04-PLAN.md
+Last session: 2026-10-15T03:26:37.229Z
+Stopped at: Completed 36-05-PLAN.md
 Resume file: None
 Next action: $gsd-discuss-phase 36
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.

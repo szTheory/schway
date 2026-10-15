@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 4
+open_count: 5
 waived_count: 0
 fixed_count: 8
-total_count: 12
-last_updated: 2026-10-15T02:22:57.466Z
+total_count: 13
+last_updated: 2026-10-15T03:25:17.589Z
 ---
 
 # Broken Windows Ledger
@@ -27,6 +27,7 @@ last_updated: 2026-10-15T02:22:57.466Z
 | 10 | 36 | deviation | internal/compiler/check/check_phase34_refusal_test.go |  | Updated Phase 34's stale one-argument scalar-call rejection assertion to the Phase 36 source contract while retaining its two-argument refusal. | fixed |  | 2026-10-15T01:53:35.425Z | 2026-10-15T01:54:05.136Z |
 | 11 | 36 | deviation | internal/compiler/syntax/parser.go |  | Kept byte_len/byte_at builtin initializer routing ahead of named-call lookahead so nested byte_at indexes parse as source calls. | fixed |  | 2026-10-15T01:54:00.791Z | 2026-10-15T01:54:05.332Z |
 | 12 | 36 | deviation | internal/compiler/corevalidate/corevalidate.go |  | corevalidate had a diagnostic-less early return for a Foreign field on OpCall; malformed call appeared valid; the refusal now records a diagnostic. | fixed |  | 2026-10-15T02:21:37.900Z | 2026-10-15T02:22:57.466Z |
+| 13 | 36 | unmet-truth | internal/compiler/session/session_phase36_prechange_test.go |  | Frozen Phase36-01 no-call corpus has three current core-validator refusal shifts before cgen; generated C byte snapshots match. | open |  | 2026-10-15T03:25:17.589Z |  |
 
 ````json
 [
@@ -183,6 +184,19 @@ last_updated: 2026-10-15T02:22:57.466Z
     "reason": "",
     "recorded_at": "2026-10-15T02:21:37.900Z",
     "resolved_at": "2026-10-15T02:22:57.466Z",
+    "milestone": null
+  },
+  {
+    "id": 13,
+    "kind": "unmet-truth",
+    "phase": "36",
+    "file": "internal/compiler/session/session_phase36_prechange_test.go",
+    "line": null,
+    "description": "Frozen Phase36-01 no-call corpus has three current core-validator refusal shifts before cgen; generated C byte snapshots match.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-15T03:25:17.589Z",
+    "resolved_at": null,
     "milestone": null
   }
 ]
