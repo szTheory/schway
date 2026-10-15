@@ -1,9 +1,10 @@
 ---
 phase: 36-scalar-helper-calls
-reviewed: 2026-10-15T06:27:35Z
+reviewed: 2026-10-15T06:56:52Z
 depth: standard
-files_reviewed: 49
+files_reviewed: 52
 files_reviewed_list:
+  - cmd/schway/main_phase32_routes_test.go
   - cmd/schway/main_phase36_test.go
   - examples/helper_calls/crc_step.schway
   - examples/helper_calls/importer.schway
@@ -35,7 +36,9 @@ files_reviewed_list:
   - internal/compiler/pathoracle/pathoracle_phase36_borrow_test.go
   - internal/compiler/pathoracle/pathoracle_phase36_test.go
   - internal/compiler/session/session_phase34_limit_consumers_test.go
+  - internal/compiler/session/session_phase34_prechange_test.go
   - internal/compiler/session/session_phase34_surface_test.go
+  - internal/compiler/session/session_phase35_admission_mutation_test.go
   - internal/compiler/session/session_phase35_surface_test.go
   - internal/compiler/session/session_phase36_byteview_test.go
   - internal/compiler/session/session_phase36_calls_test.go
@@ -63,22 +66,21 @@ status: clean
 
 # Phase 36: Code Review Report
 
-**Reviewed:** 2026-10-15T06:27:35Z
+**Reviewed:** 2026-10-15T06:56:52Z
 **Depth:** standard
-**Files Reviewed:** 49
+**Files Reviewed:** 52
 **Status:** clean
 
 ## Summary
 
-The fixed peer now reports the expected callee for truncated dynamic invocations at ordinal one, and regression controls cover both pending-child and unterminated-activation cases. No additional concrete bugs, security issues, or quality defects were found in the supplied scope.
+The prior standard review of the original 49-file scope remains clean after its fix and re-review. This pass covered the three added regression files and their contracts: helper routes are module-aware and have named CLI owners; U64 entries require input with matching exit-64 results across engines; and the Phase36 fixture ledger closes over only the three declared helper paths with bounded reads, content hashes, and mutation controls. The Phase35 foreign-field mutant removes the equivalent metadata refusal only for targeted shift operations, leaving other foreign-operation handling intact. No concrete defects were found.
 
 ## Narrative Findings (AI reviewer)
 
-All reviewed files meet quality standards. No issues found.
+All 52 reviewed files meet quality standards. No issues found.
 
 ---
 
-_Reviewed: 2026-10-15T06:27:35Z_
+_Reviewed: 2026-10-15T06:56:52Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
-
