@@ -1,0 +1,71 @@
+{
+  "schema": "schway.crc32-cases/1",
+  "limit": 65536,
+  "provenance": {
+    "generator": "Python zlib",
+    "python": "3.14.4",
+    "zlib_compile": "1.2.12",
+    "zlib_runtime": "1.2.12",
+    "generated_on": "2026-10-15",
+    "command": "python3 -c 'import hashlib,json,sys,zlib; rows=[(\"empty\",b\"\"),(\"zero\",b\"\\x00\"),(\"check\",b\"123456789\"),(\"highbit-80\",b\"\\x80\"),(\"highbit-80ff\",b\"\\x80\\xff\"),(\"all-bytes-00-ff\",bytes(range(256))),(\"cap-minus-one-ff\",b\"\\xff\"*65535),(\"cap-ff\",b\"\\xff\"*65536),(\"cap-plus-one-ff\",b\"\\xff\"*65537),(\"wikipedia\",b\"Wikipedia\")]; print(json.dumps({\"python\":sys.version.split()[0],\"zlib_compile\":zlib.ZLIB_VERSION,\"zlib_runtime\":zlib.ZLIB_RUNTIME_VERSION,\"rows\":[{\"id\":name,\"length\":len(data),\"sha256\":hashlib.sha256(data).hexdigest(),\"crc32\":None if name==\"cap-plus-one-ff\" else zlib.crc32(data),\"low16\":None if name==\"cap-plus-one-ff\" else zlib.crc32(data)&65535,\"adler32\":None if name==\"cap-plus-one-ff\" else zlib.adler32(data),\"adler_low16\":None if name==\"cap-plus-one-ff\" else zlib.adler32(data)&65535} for name,data in rows]},sort_keys=True,separators=(\",\",\":\")))'"
+  },
+  "consumers": [
+    {"id": "crc32", "source": "examples/crc32/crc32.schway", "manifest": "examples/crc32/file_bytes.bindings.json", "answer": "crc32"},
+    {"id": "crc_low", "source": "examples/crc32/crc_low.schway", "manifest": "examples/crc32/file_bytes.bindings.json", "answer": "low16"},
+    {"id": "checksum", "source": "examples/checksum/checksum.schway", "manifest": "examples/checksum/file_bytes.bindings.json", "answer": "adler32"},
+    {"id": "adler_low", "source": "examples/checksum/adler_low.schway", "manifest": "examples/checksum/file_bytes.bindings.json", "answer": "adler_low16"}
+  ],
+  "recipes": [
+    {"id": "empty", "expression": "b\"\"", "length": 0, "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "crc32": 0, "low16": 0, "adler32": 1, "adler_low16": 1},
+    {"id": "zero", "expression": "b\"\\x00\"", "length": 1, "sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d", "crc32": 3523407757, "low16": 61325, "adler32": 65537, "adler_low16": 1},
+    {"id": "check", "expression": "b\"123456789\"", "length": 9, "sha256": "15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225", "crc32": 3421780262, "low16": 14630, "adler32": 152961502, "adler_low16": 478},
+    {"id": "highbit-80", "expression": "b\"\\x80\"", "length": 1, "sha256": "76be8b528d0075f7aae98d6fa57a6d3c83ae480a8469e668d7b0af968995ac71", "crc32": 1069182125, "low16": 27821, "adler32": 8454273, "adler_low16": 129},
+    {"id": "highbit-80ff", "expression": "b\"\\x80\\xff\"", "length": 2, "sha256": "d87d01642f47a0d1901b1dfd2331c9def1bcfc69d8835c6cd911fe4165b804e4", "crc32": 1465410873, "low16": 25913, "adler32": 33620352, "adler_low16": 384},
+    {"id": "all-bytes-00-ff", "expression": "bytes(range(256))", "length": 256, "sha256": "40aff2e9d2d8922e47afd4648e6967497158785fbd1da870e7110266bf944880", "crc32": 688229491, "low16": 35955, "adler32": 2918612865, "adler_low16": 32641},
+    {"id": "cap-minus-one-ff", "expression": "b\"\\xff\"*65535", "length": 65535, "sha256": "c810c1bb9815d632215ce08fda5afad7564a9c52c275422c7c92434232e6126b", "crc32": 529201972, "low16": 64308, "adler32": 1755647475, "adler_low16": 3571},
+    {"id": "cap-ff", "expression": "b\"\\xff\"*65536", "length": 65536, "sha256": "71189f7fb6aed638640078fba3a35fda6c39c8962e74dcc75935aac948da9063", "crc32": 3735780942, "low16": 32334, "adler32": 2006388466, "adler_low16": 3826},
+    {"id": "cap-plus-one-ff", "expression": "b\"\\xff\"*65537", "length": 65537, "sha256": "ef9993e97e36b66b65b16a741da437aecddffa22185e176a49f8cfe9ecc7a07c", "crc32": null, "low16": null, "adler32": null, "adler_low16": null},
+    {"id": "wikipedia", "expression": "b\"Wikipedia\"", "length": 9, "sha256": "d38b38a2dd476e045c299e8ee5d6466834456d97bd592a71746b423a6a05f386", "crc32": 2913648686, "low16": 49198, "adler32": 300286872, "adler_low16": 920}
+  ],
+  "outcomes": {
+    "FileTooLarge": {"exit": 65, "stdout": "", "stderr": "FileError.FileTooLarge\n"},
+    "FileUnavailable": {"exit": 65, "stdout": "", "stderr": "FileError.FileUnavailable\n"},
+    "EmptyPath": {"exit": 65, "stdout": "", "stderr": ""},
+    "InputTooLong": {"exit": 65, "stdout": "", "stderr": "schway run: input exceeds 4096 bytes\n"},
+    "InputContainsNUL": {"exit": 65, "stdout": "", "stderr": "schway run: input contains NUL\n"},
+    "ManifestFailure": {"exit": 3, "stdout": "", "stderr": "schway run: native build failed\n"}
+  },
+  "cases": [
+    {"id": "empty", "kind": "file", "path": "empty.bin", "recipe": "empty"},
+    {"id": "zero", "kind": "file", "path": "zero.bin", "recipe": "zero"},
+    {"id": "check", "kind": "file", "path": "check.bin", "recipe": "check"},
+    {"id": "highbit-80", "kind": "file", "path": "highbit-80.bin", "recipe": "highbit-80"},
+    {"id": "highbit-80ff", "kind": "file", "path": "highbit-80ff.bin", "recipe": "highbit-80ff"},
+    {"id": "all-bytes-00-ff", "kind": "file", "path": "all-bytes.bin", "recipe": "all-bytes-00-ff"},
+    {"id": "cap-minus-one", "kind": "file", "path": "cap-minus-one.bin", "recipe": "cap-minus-one-ff"},
+    {"id": "cap", "kind": "file", "path": "cap.bin", "recipe": "cap-ff"},
+    {"id": "cap-plus-one", "kind": "file", "path": "cap-plus-one.bin", "recipe": "cap-plus-one-ff", "outcome": "FileTooLarge"},
+    {"id": "wikipedia", "kind": "file", "path": "wikipedia.bin", "recipe": "wikipedia"},
+    {"id": "missing", "kind": "missing", "path": "missing.bin", "outcome": "FileUnavailable"},
+    {"id": "directory", "kind": "directory", "path": "directory", "outcome": "FileUnavailable"},
+    {"id": "fifo", "kind": "fifo", "path": "no-writer.fifo", "outcome": "FileUnavailable"},
+    {"id": "device", "kind": "device", "path": "/dev/null", "outcome": "FileUnavailable"},
+    {"id": "unreadable", "kind": "mode000", "path": "mode-000.bin", "recipe": "check", "outcome": "FileUnavailable"},
+    {"id": "input-symlink", "kind": "symlink", "path": "input-link.bin", "target": "target.bin", "recipe": "check"},
+    {"id": "opaque-json", "kind": "file", "path": "--json", "recipe": "check"},
+    {"id": "opaque-depth", "kind": "file", "path": "--depth=2", "recipe": "check"},
+    {"id": "opaque-separator", "kind": "file", "path": "--", "recipe": "check"},
+    {"id": "opaque-leading-dash", "kind": "file", "path": "-leading.bin", "recipe": "check"},
+    {"id": "opaque-space", "kind": "file", "path": "space input.bin", "recipe": "check"},
+    {"id": "opaque-unicode", "kind": "file", "path": "雪-λ.bin", "recipe": "check"},
+    {"id": "opaque-shell", "kind": "file", "path": "x ;$(literal).bin", "recipe": "check"},
+    {"id": "empty-token", "kind": "argument", "argument": "", "outcome": "EmptyPath"},
+    {"id": "path-4096", "kind": "argument", "repeat": "x", "repeat_count": 4096, "outcome": "FileUnavailable"},
+    {"id": "path-4097", "kind": "argument", "repeat": "x", "repeat_count": 4097, "outcome": "InputTooLong"},
+    {"id": "nul-direct-dispatch", "kind": "direct-argument", "argument": "nul\u0000path", "outcome": "InputContainsNUL", "execution": "direct-public-dispatch"}
+  ],
+  "manifest_controls": [
+    {"id": "missing-manifest", "kind": "missing"},
+    {"id": "bad-manifest", "kind": "malformed"}
+  ]
+}
