@@ -163,8 +163,22 @@ func TestPhase34CallArityBoundaries(t *testing.T) {
 	}
 
 	callExpression := session.Check([]byte("module phase34.scalar_call_expression\nexport { fn main }\nfn identity(value: U64) -> U64 { value }\nfn main(n: U64) -> U64 { let result = identity(n) + 1 result }\n"))
-	if len(callExpression.Diagnostics) == 0 || callExpression.Diagnostics[0].Code != "syntax.expected_linear_result" {
-		t.Fatalf("general helper call entered the scalar expression grammar: %+v", callExpression.Diagnostics)
+	if len(callExpression.Diagnostics) != 0 {
+		t.Fatalf("one-argument helper expression was refused: %+v", callExpression.Diagnostics)
+	}
+	var callCount int
+	for _, function := range callExpression.Program.Functions {
+		if function.Name != "main" || function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpCall {
+				callCount++
+			}
+		}
+	}
+	if callCount != 1 {
+		t.Fatalf("one-argument helper expression produced %d OpCall operations, want one", callCount)
 	}
 }
 
