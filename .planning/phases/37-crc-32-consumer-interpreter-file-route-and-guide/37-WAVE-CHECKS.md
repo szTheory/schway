@@ -61,3 +61,7 @@ Fresh parent checks passed:
 All 19 exact roots reached and passed with no root or subtest skips. Every representable matrix case ran for both engines/four consumers, followed by separate direct NUL, manifest and isolated process controls. All five algorithm controls reached independent numeric disagreement; no-edit InputID/module rows stayed stable and actual artifact-bound identity observations remained explicit. Raw command/session output was inspected in /tmp/schway37-wave4-{cmd,session}.log (ephemeral local files, not durable receipt artifacts).
 
 Fresh wave-post hooks: schema and UI block=false, codebase-drift skipped for no structure map. Only37-08 is now ready. Requirements remain pending final phase acceptance.
+
+## Wave5 —2026-10-15
+
+37-08 terminal handoff and committed summary reconcile with5 reachable plan-subject commits; guide README and test exist, no failed self-check. Fresh parent build passed: `GOCACHE=/tmp/ai-lang-verification-gocache go build -o /tmp/schway37-wave5 ./cmd/schway`. Fresh parent guide check passed all3 roots and78 tuples: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37GuideCleanCheckout|TestPhase37GuideMatchesExpectedJSON|TestPhase37GuideParserNegativeControls)$' -count=1 -v -timeout=600s`. Raw26-command audit: all hashes/exact RUN-PASS sets agree,63 Go root executions, no skips. Schema/UI block=false; codebase-drift skipped without structure map. Eight plans are summarized; phase acceptance remains pending independent gates.

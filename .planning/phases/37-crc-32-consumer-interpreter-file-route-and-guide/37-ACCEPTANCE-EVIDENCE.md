@@ -140,3 +140,7 @@ There is no Phase37 hosted receipt, local Linux execution, whole-package or
 project-wide suite, broad native matrix, human readability result, or
 cold/warm full-loop distribution. The four Phase37 requirements remain
 pending parent acceptance.
+
+## Parent owner-reference audit — 2026-10-15
+
+Git source inspection confirms17723f11 renamed the formerly valid TestPhase37CaptureDisabledRetention to TestPhase37CaptureRetentionControls. The final capture correction follows that rename; it was not an originally nonexistent test. Current37-02 plan references are amended, while original successful historical receipts remain unchanged. Parent independently checked all26 command log hashes and exact RUN/PASS sets:63 Go root executions, no missing/extra roots or skips; direct Node/prohibition commands remain separate.

@@ -1,9 +1,9 @@
 ---
 phase: "37"
 slug: "crc-32-consumer-interpreter-file-route-and-guide"
-status: focused-capture-complete; parent-phase-gates-pending
-nyquist_compliant: false
-wave_0_complete: false
+status: validated
+nyquist_compliant: true
+wave_0_complete: true
 created: "2026-10-15"
 ---
 
@@ -123,16 +123,16 @@ Raw edge report stays9 applicable/0 resolved/9 unresolved/2 unclassified. Derive
 
 ## Wave 0 Requirements
 
-- [ ] Ground the pre-change route/empty-input/C baseline before implementation.
-- [ ] Close both historical inventories with the exact three Phase37 source additions, actual source hashes and reached controls while preserving historical corpus/Phase36 ledger bytes; capture C25 initially and C26 after explicit owned-source staging.
-- [ ] Add independently generated CRC rows and byte recipes/digests.
-- [ ] Add exact public matrix and finite malformed/opaque argument controls.
-- [ ] Add independent production reader tests and actual reached fault controls.
-- [ ] Add evidence-disabled result/retention tests; keep prior capture controls.
-- [ ] Add all five reached CRC/reuse mutations and module-digest control.
-- [ ] Add tracked-only guide execution and guide/fixture drift controls.
-- [ ] Declare and exercise supported canonical prohibition descriptors early.
-- [ ] No framework or runtime dependency installation is required.
+- [x] Ground the pre-change route/empty-input/C baseline before implementation.
+- [x] Close both historical inventories with the exact three Phase37 source additions, actual source hashes and reached controls while preserving historical corpus/Phase36 ledger bytes; capture C25 initially and C26 after explicit owned-source staging.
+- [x] Add independently generated CRC rows and byte recipes/digests.
+- [x] Add exact public matrix and finite malformed/opaque argument controls.
+- [x] Add independent production reader tests and actual reached fault controls.
+- [x] Add evidence-disabled result/retention tests; keep prior capture controls.
+- [x] Add all five reached CRC/reuse mutations and module-digest control.
+- [x] Add tracked-only guide execution and guide/fixture drift controls.
+- [x] Declare and exercise supported canonical prohibition descriptors early.
+- [x] No framework or runtime dependency installation is required.
 
 ## Manual-Only Verifications
 
@@ -144,15 +144,15 @@ sanitizer skip must be named and cannot turn the whole matrix green by omission.
 
 ## Validation Sign-Off
 
-- [ ] Every task has exact automated verification or an explicit Wave 0 owner.
-- [ ] No three consecutive tasks lack meaningful automated verification.
-- [ ] All new selector references exist and actually run at phase closeout.
-- [ ] No watch flags, project-wide local suite or broad native matrix.
-- [ ] Actual maximum-case cost observed; no timing promoted into a guarantee.
-- [ ] Unreadable/sanitizer/host skips are individually disclosed.
-- [ ] `nyquist_compliant: true` only after the audit establishes compliance.
+- [x] Every task has exact automated verification or an explicit Wave 0 owner.
+- [x] No three consecutive tasks lack meaningful automated verification.
+- [x] All new selector references exist and actually run at phase closeout.
+- [x] No watch flags, project-wide local suite or broad native matrix.
+- [x] Actual maximum-case cost observed; no timing promoted into a guarantee.
+- [x] Unreadable/sanitizer/host skips are individually disclosed.
+- [x] `nyquist_compliant: true` only after the audit establishes compliance.
 
-**Approval:** pending implementation and validation audit.
+**Approval:** automated coverage audit verified2026-10-15; independent security/review/goal gates remain separate.
 
 ## Fixed-source execution amendment — 2026-10-15
 
@@ -168,3 +168,15 @@ This capture does not set `nyquist_compliant: true`: the independent phase
 verifier, security, and review gates remain parent-owned. The four Phase 37
 requirements remain pending parent acceptance. No hosted receipt or human
 readability/performance claim is added.
+
+## Parent validation audit — 2026-10-15
+
+All19 tasks map to actual automated owners across all4 requirement IDs. Parent inspected implementation/test ownership and independently checked26 raw-log SHA256 bindings plus each exact Go selector set:63 root executions all RUN/PASS, no missing/extra roots or skips. Node TAP and the three canonical prohibition subjects are separate checks. Current owner name correction follows the37-04 rename in17723f11 and is reflected in37-02-PLAN.md. Every Wave0 obligation is now present with concrete receipts; no test gap or human-only acceptance item remains. Nyquist coverage is compliant; independent security/review/goal and requirement acceptance remain pending. Original capture was executor evidence; this dated audit supersedes only its pending-coverage state.
+
+## Validation Audit 2026-10-15
+
+| Metric | Count |
+|---|---|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
