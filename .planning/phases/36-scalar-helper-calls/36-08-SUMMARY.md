@@ -144,3 +144,16 @@ I reran only the amended fixed final owner command at full source/test HEAD `83c
 - All 12 commands exited zero; each log exists and matches its recorded SHA-256.
 - Test-only commit `50b90a30` and the amended-plan commit `83c1f58a` are ancestors of the source-bound capture revision.
 - `git diff --check` passed before this documentation-only append; the final scoped documentation diff is checked before commit.
+
+## Dated WR-01 review-fix capture — 2026-10-15
+
+Code-review fix commit `61217af4` updates `internal/compiler/executionpeer/executionpeer.go` so end-of-stream refusals preserve the expected callee from independently observed dynamic call occurrences. Its two ordinal-1 truncation cases cover pending-child and open-activation boundaries and assert the refusal code, invocation context, and checked callee. The [review-fix report](./36-REVIEW-FIX.md) records the separate focused four-root PASS, including ordinal-zero compatibility. This fix changes neither the accepted source-call contract nor schema, dependencies, fixtures, or corpus.
+
+I ran only the amended fixed final owner command at current source/test HEAD `3697ec2950487bb98723c06262d6d7e6bb2ae1d6`. It passed 45/45 unique roots across 12 owner groups, all commands exited zero, and there was no `FAIL` or `SKIP`. The manifest and log hashes are recorded in [36-ACCEPTANCE-EVIDENCE.md](./36-ACCEPTANCE-EVIDENCE.md); manifest: `/tmp/schway36-final-3697ec295048-safn6e49/owner-results.json`. Earlier captures remain bound to their recorded revisions. The security record reports 24 closed and zero open at source/test HEAD `83c1f58a`; this capture is not a re-audit of `61217af4`, and parent confirmation of the narrow T09 metadata repair remains pending.
+
+## WR-01 capture self-check: PASSED
+
+- The current manifest binds full HEAD `3697ec2950487bb98723c06262d6d7e6bb2ae1d6`, a clean source tree, 12 owner groups, and 45 unique roots including `TestPhase36CallCausalAttributionControls`.
+- All 12 commands exited zero; all logs exist and match their recorded SHA-256 values.
+- Review-fix commit `61217af4` is an ancestor of the capture revision; the separate four-root review-fix result is recorded in `36-REVIEW-FIX.md`.
+- `git diff --check` passed before this documentation-only append; the final scoped documentation diff is checked before commit.
