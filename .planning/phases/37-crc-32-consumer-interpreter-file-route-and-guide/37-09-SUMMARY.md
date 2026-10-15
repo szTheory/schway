@@ -47,10 +47,10 @@ coverage:
     requirement: APP-13
     verification:
       - kind: unit
-        ref: internal/compiler/session/session_phase37_reuse_test.go#TestPhase37CRC32ByteHelperCalls
+        ref: internal/compiler/session/session_phase37_crc32_test.go#TestPhase37CRC32ByteHelperCalls
         status: pass
-    human_judgment: true
-    rationale: Parent phase acceptance and requirement closure remain pending; this plan records focused evidence only.
+    human_judgment: false
+    rationale: Objective automated evidence; parent workflow acceptance is not human-dependent product judgment.
   - id: D2
     description: Capture-growth and Go file-reader defects are rejected by reached semantic assertions.
     requirement: APP-14
@@ -61,8 +61,8 @@ coverage:
       - kind: unit
         ref: internal/compiler/interp/filebytes_reader_test.go#TestPhase37FileReaderMutationControls
         status: pass
-    human_judgment: true
-    rationale: Parent phase acceptance and requirement closure remain pending; this plan records focused evidence only.
+    human_judgment: false
+    rationale: Objective automated evidence; parent workflow acceptance is not human-dependent product judgment.
 duration: 21min
 completed: 2026-10-15
 status: complete

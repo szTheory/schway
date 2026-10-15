@@ -184,3 +184,15 @@ All19 tasks map to actual automated owners across all4 requirement IDs. Parent i
 ## Audit correction —2026-10-15
 
 The independent security audit found missing reached capture-growth mutants under T-37-14. The source also violates D-02: crc32 has both loops and calls crc_byte8 times per byte, while the helper performs one bit. The earlier parent audit established command/root execution but missed these semantic coverage obligations; its compliant verdict is withdrawn.37-09 owns bounded repair, new exact controls and affected evidence refresh. Existing numeric passes remain historical at their recorded source; no missing mutant is treated as passed.
+
+## Remediation task map —2026-10-15
+
+| Task | Requirements | Exact owners | Status |
+|---|---|---|---|
+|37-09-01|APP-13,MOD-07|C27; affected C03/C04/C15/C16/C17/C18/C26|Source correction, current ledger/anchors, actual helper count and independent vectors passed; see37-REMEDIATION-EVIDENCE.md|
+|37-09-02|APP-14,APP-13|C28; affected C06/C07/C08/C12/C13/C14/C22/C23/C24|Five capture-growth and three Go-reader mutants reached exact assertions; meaningful unarmed targets, actual outcomes and affected receipts passed; independent security re-audit pending|
+
+- **C27**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase37CRC32NativeTracer|TestPhase37CRC32Consumers|TestPhase37CRC32SingleCopyAndIdentity|TestPhase37CRC32ByteHelperCalls|TestPhase34PreChangeCProgramGolden|TestPhase34PreChangeCGoldenIsNotInert|TestPhase36NoCallGeneratedCByteBaseline|TestPhase36NoCallGeneratedCByteBaselineControls|TestPhase37Phase34AdditionLedgerControls|TestPhase37Phase36AdditionLedgerControls)$' -count=1 -v -timeout=600s`
+- **C28**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase37CaptureRetentionControls|TestPhase37CaptureRetentionMutationTarget|TestPhase37CaptureDisabledOutcomes|TestPhase37FileReaderFaults|TestPhase37FileReaderBoundControls|TestPhase37FileReaderMutationControls|TestPhase37FileReaderMutationTarget)$' -count=1 -v -timeout=600s`
+
+Current task map21 tasks/9 plans. The initial C01-C26 fixed-source capture remains historical; repaired-source affected receipts are separately recorded without relabeling old baselines. Current production library hash ce98ba7b055625c0e5a627f7d769cfbba948695755aeadb471578153fdea3707. Captured control tests match committed c611acdc bytes. Parent fresh subset reruns verified5roots and all8 named mutation markers; independent gate completion remains pending.

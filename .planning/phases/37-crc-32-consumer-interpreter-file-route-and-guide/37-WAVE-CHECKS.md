@@ -65,3 +65,11 @@ Fresh wave-post hooks: schema and UI block=false, codebase-drift skipped for no 
 ## Wave5 —2026-10-15
 
 37-08 terminal handoff and committed summary reconcile with5 reachable plan-subject commits; guide README and test exist, no failed self-check. Fresh parent build passed: `GOCACHE=/tmp/ai-lang-verification-gocache go build -o /tmp/schway37-wave5 ./cmd/schway`. Fresh parent guide check passed all3 roots and78 tuples: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37GuideCleanCheckout|TestPhase37GuideMatchesExpectedJSON|TestPhase37GuideParserNegativeControls)$' -count=1 -v -timeout=600s`. Raw26-command audit: all hashes/exact RUN-PASS sets agree,63 Go root executions, no skips. Schema/UI block=false; codebase-drift skipped without structure map. Eight plans are summarized; phase acceptance remains pending independent gates.
+
+## Wave6 remediation —2026-10-15
+
+37-09 terminal handoff, committed summary and4 reachable plan commits reconciled. Actual repaired library and new control files exist; no failed self-check marker. Earlier8-plan implementation/coverage claims are superseded only for D-02 helper placement and missing T-37-14/reader mutation controls by37-REMEDIATION-EVIDENCE.md. Historical numeric receipts remain valid at their source.
+
+Fresh parent checks passed: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase37CaptureRetentionControls|TestPhase37CaptureDisabledOutcomes|TestPhase37FileReaderMutationControls)$' -count=1 -v -timeout=600s` (3roots, exactly one named semantic discriminator each for5 capture and3 reader mutants, no skips), and `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase37CRC32ByteHelperCalls|TestPhase37CRC32SingleCopyAndIdentity)$' -count=1 -v -timeout=600s` (2roots, actual3-byte/3-helper trace and stable module/InputID; native BuildID variance explicit).
+
+Parent corrected37-09 summary's objective-coverage human_judgment flags and helper-test file anchor; neither changes test results. Security/validation/phase acceptance remain pending independent re-audit.
