@@ -180,6 +180,11 @@ func TestPhase36HelperOptimizationMatrix(t *testing.T) {
 					if err != nil || len(got.Pairs) != 1 {
 						t.Fatalf("native %s defect pairs=%d err=%v", lane.name, len(got.Pairs), err)
 					}
+					helperName := map[string]string{"u64-helper-overflow": "add_one", "bool-helper-zero-remainder": "remainder_to_bool"}[row.caseName]
+					helperID := phase36FunctionID(checked.Program.Functions, helperName)
+					if helperID == "" || phase36CallsTo(got.Pairs[0].Execution.Events, helperID) == 0 {
+						t.Fatalf("native %s defect trace does not prove entry into helper %q", lane.name, helperName)
+					}
 					if err := phase36CompareExecution("native "+lane.name, got.Pairs[0].Execution, row.expected); err != nil {
 						t.Fatal(err)
 					}
@@ -640,6 +645,47 @@ fn adler32(bytes: ByteView) -> U64 {
 
 		})
 	}
+}
+
+// TestPhase36NativeByteViewCallerArgumentRefusal records a known native
+// boundary: the interpreter proves byte_at faults before identity is entered,
+// but the native application emitter currently refuses this scalar helper
+// call inside a ByteView caller. Passing this test documents the refusal; it
+// does not satisfy the native caller-ordering requirement.
+func TestPhase36NativeByteViewCallerArgumentRefusal(t *testing.T) {
+	const caller = `fn identity(value: U64) -> U64 {
+  let result = value + 1
+  result
+}
+
+fn adler32(bytes: ByteView) -> U64 {
+  let index = byte_len(bytes)
+  var answer = 0
+  answer = identity(byte_at(bytes, index))
+  let later = answer + 2
+  later
+}
+`
+	source := phase29InlineFixture(t, caller)
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("ByteView caller source diagnostics: %+v", checked.Diagnostics)
+	}
+	identityID := phase36FunctionID(checked.Program.Functions, "identity")
+	interpreted, err := interp.RunWithFixtureBytes(checked.Program, "main", "3", testsupport.Phase29FixtureBytes)
+	if err != nil || interpreted.Outcome.Kind != execution.OutcomeDefect || phase36DefectEvent(interpreted.Events) != "byte index out of bounds" || len(interpreted.LiveResources) != 1 || phase36CallsTo(interpreted.Events, identityID) != 0 {
+		t.Fatalf("interpreter caller control outcome=%+v live=%v helper_calls=%d err=%v", interpreted.Outcome, interpreted.LiveResources, phase36CallsTo(interpreted.Events, identityID), err)
+	}
+	manifest := testsupport.ProjectPath("examples", "phase29", "fixture_bytes.bindings.json")
+	_, diagnostics, buildErr := session.BuildApplication(context.Background(), source, filepath.Join(t.TempDir(), "byteview-caller"), native.DefaultRunner(), manifest)
+	if len(diagnostics) != 0 {
+		t.Fatalf("native ByteView caller diagnostics: %+v", diagnostics)
+	}
+	const refusal = `:fn:adler32:op:4": scalar call emission requires dynamic invocation support`
+	if buildErr == nil || !strings.Contains(buildErr.Error(), refusal) {
+		t.Fatalf("native ByteView caller build error=%v, want explicit cgen refusal containing %q", buildErr, refusal)
+	}
+	t.Logf("native semantic caller ordering remains blocked: reproduction=identity(byte_at(bytes, byte_len(bytes))) after caller fixture acquisition; refusal=%q", buildErr)
 }
 
 func TestPhase36LegacyByteViewCalleeBounds(t *testing.T) {
