@@ -57,4 +57,30 @@ func TestPhase36PublicHelperConformance(t *testing.T) {
 			}
 		})
 	}
+
+	for _, entry := range []struct {
+		name string
+		file string
+	}{
+		{name: "local-u64-entry", file: "crc_step.schway"},
+		{name: "imported-u64-entry", file: "importer.schway"},
+	} {
+		t.Run(entry.name, func(t *testing.T) {
+			entryPath := testsupport.ProjectPath("examples", "helper_calls", entry.file)
+			outputs := map[string]string{}
+			for _, engine := range []string{"interpreter", "native"} {
+				code, stdout, stderr := captureLangRun(t, []string{"--json", "run", "--engine=" + engine, entryPath})
+				if code != 64 || stderr != "" || !strings.Contains(stdout, "tool.run_input_required") {
+					t.Fatalf("%s %s U64 entry without input: code=%d stdout=%q stderr=%q, want tool.run_input_required exit 64", entry.name, engine, code, stdout, stderr)
+				}
+				if strings.Contains(stdout, "module.imports_not_loaded") {
+					t.Fatalf("%s %s refused its import instead of reaching the input-required result: %s", entry.name, engine, stdout)
+				}
+				outputs[engine] = stdout
+			}
+			if outputs["interpreter"] != outputs["native"] {
+				t.Fatalf("%s U64 input-required output differs by engine:\n%s\n%s", entry.name, outputs["interpreter"], outputs["native"])
+			}
+		})
+	}
 }

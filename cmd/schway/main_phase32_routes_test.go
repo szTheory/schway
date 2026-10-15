@@ -115,6 +115,9 @@ var phase32RouteRows = []phase32RouteRow{
 	{Key: "examples/phase26/checked_add_overflow.schway", Reason: "not covered because it is owned by TestPhase26PublicAppCLI"},
 	{Key: "examples/phase272/straight_line_copy.schway", Reason: "not covered because it is owned by TestPhase272StraightLineCopyCLI"},
 	{Key: "examples/phase28/unused_function.schway", Reason: "not covered because it is owned by TestUnreachableFunctionProgramRuns"},
+	{Key: "examples/helper_calls/crc_step.schway", Modules: phase32ModuleAware, Reason: "not covered because its module-aware U64 entry returns tool.run_input_required with exit 64 on both engines until explicit input is supplied; TestPhase36PublicHelperConformance owns that CLI result"},
+	{Key: "examples/helper_calls/importer.schway", Modules: phase32ModuleAware, Reason: "not covered because the closed imported crc_step module loads and its U64 entry returns tool.run_input_required with exit 64 on both engines; TestPhase36PublicHelperConformance owns that CLI result"},
+	{Key: "examples/helper_calls/public.schway", Modules: phase32ModuleAware, Reason: "not covered because the imported unused-Byte entry returns 1994146192 on both conformance engines; TestPhase36PublicHelperConformance owns that public result"},
 }
 
 // phase32UsageOmissions is the recorded set of routes present in dispatch but
@@ -689,8 +692,8 @@ func TestPhase32PublicRouteAudit(t *testing.T) {
 	entries := phase32EnumerateEntries(testsupport.ProjectPath("examples"))
 	testNames := phase32ScanTestNames(testsupport.ProjectPath("cmd"), testsupport.ProjectPath("internal"))
 
-	if len(routes) < 20 || len(entries) != 15 {
-		t.Fatalf("enumeration looks wrong: %d routes %v, %d entries %v", len(routes), routes, len(entries), entries)
+	if len(routes) < 20 || len(entries) != 18 {
+		t.Fatalf("enumeration looks wrong: %d routes %v, %d entries %v (want 18 current entry programs)", len(routes), routes, len(entries), entries)
 	}
 	if problems := phase32RouteAuditProblems(routes, entries, phase32RouteRows, testNames); len(problems) > 0 {
 		t.Fatalf("route audit problems:\n%s", strings.Join(problems, "\n"))
