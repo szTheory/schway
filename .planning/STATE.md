@@ -6,11 +6,11 @@ current_phase: 38
 current_phase_name: Milestone Receipts
 current_plan: Not started
 status: planning
-stopped_at: Phase 33 refresh complete; Phase 34 verifier refresh precedes audit and Phase 38
-last_updated: "2026-10-15T20:15:00.726Z"
+stopped_at: Phase 34 refresh complete; Phase 35 verifier refresh precedes audit and Phase 38
+last_updated: "2026-10-15T20:41:28.584Z"
 last_activity: 2026-10-15
-last_activity_desc: Phase 33 verified 60/60; canonical next gate is execute-phase 34
-state_head: 5538da9e041cc59ee88f24edc71f6e17be255b5e
+last_activity_desc: Phase 34 verified 38/38; canonical next gate is execute-phase 35
+state_head: 1055659528289b7362217d65a6ad7ff6065b207f
 progress:
   total_phases: 6
   completed_phases: 5
@@ -57,7 +57,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 33 refreshed; reconcile Phase 34-37 verification, then audit M007 before Phase 38
+**Current focus:** Phases 33/34 refreshed; reconcile Phase 35-37 verification, then audit M007 before Phase 38
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -128,10 +128,10 @@ plans.
 Phase: 38 — Milestone Receipts
 Current Plan: Not started
 Total Plans in Phase: 0 (Phase 38 unplanned)
-Status: Awaiting Phase 34-37 verification freshness and milestone audit before Phase 38
-Last activity: 2026-10-15 — Phase 33 refreshed at 60/60; earliest canonical gate is Phase 34
+Status: Awaiting Phase 35-37 verification freshness and milestone audit before Phase 38
+Last activity: 2026-10-15 — Phase 34 refreshed at 38/38; earliest canonical gate is Phase 35
 
-Progress: [████████████████████] 38/38 authored plans complete (Phase 38 plans TBD); current verification: Phase 33 passed, Phases 34-37 stale
+Progress: 38/38 authored plans complete (Phase 38 plans TBD); current verification: Phases 33/34 passed, Phases 35-37 stale
 
 ## M007 Planning
 
@@ -940,15 +940,15 @@ Carried into M003 as cheap, unowned cleanup:
 
 ### Blockers/Concerns
 
-**Current — Phase 33 refresh closeout (2026-10-15):** Phase 33 passes
-60/60 with all four requirement mappings complete, 17 L1 threats closed and
-zero open review findings. Phases 34-37 have completed plans but stale reports;
-next is `$gsd-execute-phase 34` for gates/verifier only. Preserve completed UAT
-and implementation, re-query progress after each refresh, then audit M007 and
-close gaps before Phase 38. Generic completion projects Phase 38 as the next
-unimplemented phase; it cannot bypass these earlier freshness blockers.
-Scanner-command warnings and the expected uncreated-Phase-38 S004 warning
-are explained in `phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CLOSEOUT.md`.
+**Current — Phase 34 refresh closeout (2026-10-15):** Phases 33/34 pass
+60/60 and 38/38 with zero open review findings. Phase 34 retains all four
+requirement mappings and 19 closed L1 threats. Phases 35-37 have completed
+plans but stale reports; next is `$gsd-execute-phase 35` for gates/verifier
+only. Preserve UAT and implementation, re-query progress after each refresh,
+then audit M007 and close gaps before Phase 38. Generic completion projects
+38 as the next unimplemented phase; it cannot bypass earlier freshness.
+The shortened-summary-path warning and expected uncreated-Phase-38 S004
+warning are explained in `phases/34-agent-diagnostics-floor-and-surface-manifest/34-REFRESH-CLOSEOUT.md`.
 Historical entries below retain their dated debt owners.
 
 **Current — Phase 30 closeout (2026-10-12):** No Phase 30 blocker or human UAT
@@ -1170,10 +1170,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-15T20:17:54Z
-Stopped at: Phase 33 refresh complete; next Phase 34 verifier refresh, then audit before Phase 38
+Last session: 2026-10-15T20:43:06Z
+Stopped at: Phase 34 refresh complete; Phase 35 freshness precedes audit and Phase 38
 Resume file: None
-Next action: `$gsd-execute-phase 34` (gates/verifier only), re-query progress, then remaining stale reports and `$gsd-audit-milestone` before Phase 38
+Next action: `$gsd-execute-phase 35` (gates/verifier only), re-query progress, then remaining stale reports and `$gsd-audit-milestone` before Phase 38
 
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
@@ -1354,7 +1354,7 @@ plans, or reopen Phase 25 implementation.
 
 ## Operator Next Steps
 
-- Phase 33 is refreshed (60/60, five complete plans). Exact next route: `$gsd-execute-phase 34` for gates/verifier only, then re-query progress. Phases 35-37 also remain stale. Complete freshness reconciliation and the M007 audit/gap closure before Phase 38 planning or hosted binding.
+- Phases 33/34 are refreshed (60/60 and 38/38). Exact next route: `$gsd-execute-phase 35` for gates/verifier only, then re-query progress. Phases 35-37 remain stale. Complete freshness reconciliation and the M007 audit/gap closure before Phase 38 planning or hosted binding.
 
 ### Phase 33 completion handoff — 2026-10-13
 
@@ -1408,7 +1408,6 @@ user routing-effort edits remain uncommitted. No Phase 38 planning, push or
 hosted dispatch began. The current three next capability recommendations and
 all dormant-seed dispositions are in the linked closeout.
 
-
 ### Phase 33 refreshed completion handoff — 2026-10-15
 
 The new independent report passes 60/60 and binds 59 files; canonical status
@@ -1424,3 +1423,22 @@ fresh init.progress identifies Phase 34 as the earliest actual gate. Reports
 re-query after each refresh, then audit before Phase 38. Completion's command
 strings were scanner warnings, not missing artifacts. 33-CLOSEOUT.md records
 exact evidence boundaries, dormant seeds and the three next capabilities.
+
+
+### Phase 34 refreshed completion handoff — 2026-10-15
+
+Eight plans/seven waves remain complete; independent verification passes
+38/38 with an 84-file fingerprint. The parent passed 45 mapped validation
+roots and 110 regression roots; independent source/hash checks and seven
+bounded command groups passed. No implementation/UAT replay or new dependency.
+Review is clean with three historical fixed warnings; 19 L1 threats are closed.
+
+phase.complete 34 ran once, projecting next unimplemented phase 38. Fresh
+init.progress identifies Phase 35 as the earliest real gate: 33/34 passed,
+35-37 stale, all their plans complete. Follow `$gsd-execute-phase 35`, preserve
+UAT, re-query after each refresh, then audit M007 and close gaps before 38.
+The generic state.json projection is preserved rather than manually rewritten.
+The summary warning is a shortened presentation.go path; the complete file
+exists and was verified. No placeholder Phase 38 directory is warranted.
+[34-REFRESH-CLOSEOUT.md](phases/34-agent-diagnostics-floor-and-surface-manifest/34-REFRESH-CLOSEOUT.md)
+records evidence limits, scoped dormant seeds and the three capability recommendations.

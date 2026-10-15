@@ -846,3 +846,26 @@ key=value consumer. Their programs, blockers, complete slices, checker laws,
 evidence/debt, owners and reprioritization conditions, plus relevant dormant
 z1g/trz/z1s dispositions, are in [33-CLOSEOUT.md](phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CLOSEOUT.md).
 Only EVD-17 is active milestone scope; no later consumer was promoted.
+
+
+## Phase 34 verification refresh after Phase 37 — 2026-10-15
+
+This dated amendment supersedes the earlier Phase 34 freshness pointer.
+Phases 33 and 34 now pass current independent verification (60/60 and 38/38).
+The Phase 34 report binds 84 current source/evidence files; all 22 validation
+rows passed 42 distinct names / 45 package roots and the regression union
+passed 107 distinct names / 110 roots across 11 packages, zero missing/fail/skip.
+The verifier checked current input/log bindings and ran seven independent
+focused command groups. Review has no new findings and the L1 register remains
+19 closed / zero open. No implementation, dependency, language admission or
+hosted receipt changed. Historical successor capabilities retain their owners.
+
+The exact next gate is `$gsd-execute-phase 35`, followed by stale 36/37 reports,
+the M007 audit and gap closure before Phase 38. Preserve completed plans/UAT.
+The current three recommendations remain audited same-source two-host CRC
+receipts, proposed M008 wc/longest_line, then bounded fixed-schema key=value
+configuration parsing. Their programs, blockers, complete slices, checker laws,
+evidence/debt, owners, reprioritization conditions and dormant z1g/trz/z1s
+source/consumer dispositions are in [34-REFRESH-CLOSEOUT.md](phases/34-agent-diagnostics-floor-and-surface-manifest/34-REFRESH-CLOSEOUT.md).
+Only EVD-17 remains active; human readability and whole-loop cold/warm latency
+remain unmeasured. No future consumer or dormant experiment was promoted.
