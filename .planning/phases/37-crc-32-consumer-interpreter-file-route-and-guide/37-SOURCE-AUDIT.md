@@ -97,3 +97,7 @@ Parent orchestration clarification before independent recheck: Plan01 Task03 exp
 ## Execution evidence amendment — 2026-10-15
 
 37-06's no-edit native BuildID assumption exceeded the existing receipt contract. See [the scoped decision](37-BUILD-IDENTITY-DECISION.md): no-edit module rows/InputID must agree; executable-bound BuildID remains internally consistent and must agree when executable digests agree. Library-only edits still invalidate both module/input identities and both numerical outputs with immutable entry/adapter bytes. Existing incomplete/non-cacheable receipts and production linker behavior remain intact. This records the observed counterexample without a reproducible-binary claim or a new language feature.
+
+## Surface receipt preservation — 2026-10-15
+
+37-07 found Phase35 hash-pins the historical Phase34 surface witness. Its narrow compatibility deviation adds testdata/phase37/surface-witnesses.json, composes it through the finite validator, and updates the independent limit census without changing the archived receipt. The ten-field wire schema remains unchanged; focused old/new owner checks and parent wave checks passed.

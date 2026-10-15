@@ -45,3 +45,19 @@ Fresh parent checks passed:
 All 13 exact roots reached and passed, with no skipped subtests in these runs. Native missing-free and one-byte-short-read mutants built and reached their physical assertions. Combined ASan/UBSan was available and passed generated CRC small/cap success plus an actual-adapter cap-plus-one returning C caller; no leak detection or Linux-host execution claim. The generated application's typed-error exit remains distinct from the returning C caller.
 
 Wave-post schema/UI block=false; codebase-drift skipped for no structure map. Wave 4's three plans are ready and declared file sets disjoint; serialization remains in force for this run. All four phase requirements remain pending final acceptance.
+
+## Wave 4 — 2026-10-15
+
+37-05/06/07 terminal handoffs, summaries, first created files, and reachable plan-subject commits were reconciled (4/3/7 commits respectively, including metadata). No failed self-check markers. Actual scope deviations are retained in the summaries: 37-06's existing InputID semantics (see 37-BUILD-IDENTITY-DECISION.md) and 37-07's additive Phase37 surface witness preserving the Phase35-pinned Phase34 receipt.
+
+Fresh parent checks passed:
+
+- `GOCACHE=/tmp/ai-lang-verification-gocache go build -o /tmp/schway37-wave4 ./cmd/schway`
+- `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37PublicFileMatrix|TestPhase37PublicMatrixDriftControl|TestPhase37CRC32AlgorithmMutants|TestPhase37CRC32LibraryDualFlip|TestPhase32PublicRouteAudit|TestPhase34SourceRoutePresentation|TestPhase34DiagnosticRouteInventory|TestPhase37FileRunRouteInventoryControls)$' -count=1 -v -timeout=600s`
+- `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase37CRC32SingleCopyAndIdentity|TestExitCodeDocsTable|TestPhase37FileRunExitContract|TestPhase34SurfaceLimitConsumers|TestPhase37FileRouteSurfaceFacts)$' -count=1 -v -timeout=600s`
+- `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/testsupport -run '^(TestPhase37CRC32OracleRows|TestPhase37CRC32OracleDriftControls)$' -count=1 -v -timeout=600s`
+- `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/surfacemanifest -run '^(TestPhase34SurfaceDocument|TestPhase34SurfaceLimits|TestPhase35SurfaceDocument|TestPhase36SurfaceDocument)$' -count=1 -v -timeout=600s`
+
+All 19 exact roots reached and passed with no root or subtest skips. Every representable matrix case ran for both engines/four consumers, followed by separate direct NUL, manifest and isolated process controls. All five algorithm controls reached independent numeric disagreement; no-edit InputID/module rows stayed stable and actual artifact-bound identity observations remained explicit. Raw command/session output was inspected in /tmp/schway37-wave4-{cmd,session}.log (ephemeral local files, not durable receipt artifacts).
+
+Fresh wave-post hooks: schema and UI block=false, codebase-drift skipped for no structure map. Only37-08 is now ready. Requirements remain pending final phase acceptance.
