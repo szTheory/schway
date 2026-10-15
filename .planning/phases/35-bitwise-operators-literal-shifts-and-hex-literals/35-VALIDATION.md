@@ -481,3 +481,22 @@ mutation controls are checked in the subsequent regression/verifier gate;
 this paragraph does not claim their current result. Completed implementation,
 UAT, historical evidence, numeric policy and frozen fixtures are preserved.
 Phase 38 remains the final audited hosted two-host receipt owner.
+
+## Mechanical prohibition acceptance amendment — 2026-10-15
+
+The independent 38/38 report identified two null verification tiers rather
+than a behavior gap. Both are now explicitly test-tier with canonical flat
+descriptors and known-bad/clean subjects. The existing Go evidence validator
+is reused by a standard-library TAP adapter; both canonical enforcement
+results are green with machine-proven RED and clean/default GREEN. See
+35-PROHIBITION-WIRING.md and 35-PROHIBITION-ENFORCEMENT.json. The historical
+receipts and earlier validation runs retain their original scope. Final
+post-wiring regression is recorded separately before phase acceptance.
+
+## Validation Audit 2026-10-15
+
+| Metric | Count |
+|---|---|
+| Gaps found | 3 |
+| Resolved | 3 |
+| Escalated | 0 |

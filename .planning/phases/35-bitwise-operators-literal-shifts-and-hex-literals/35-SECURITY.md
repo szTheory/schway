@@ -108,3 +108,13 @@ scope; this dated amendment records current applicability.
 | Threats found | 24 |
 | Closed | 24 |
 | Open | 0 |
+
+## Mechanical prohibition wiring applicability — 2026-10-15
+
+The acceptance repair changes only a test subject path and a standard-library
+TAP bridge to the existing Go checker. Subject selection remains test-only;
+normal tests read the unchanged historical receipt. No compiler/runtime trust
+boundary or dependency changed. Both canonical known-bad/clean causation
+controls passed, preserving T-35-23's false-claim mitigation and T-35-SC's
+no-install constraint. All 24 L1 threats remain closed; this is source and
+focused-control evidence, not a new L2/L3 audit.

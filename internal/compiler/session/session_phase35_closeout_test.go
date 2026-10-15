@@ -324,7 +324,16 @@ func phase35EvidenceProblems(evidence string, index *testIndex) []string {
 func TestPhase35EvidenceGrounding(t *testing.T) {
 	current := phase35CurrentAdlerProjection(t)
 	index := buildTestIndex(t)
-	evidenceBytes, err := os.ReadFile(testsupport.ProjectPath(".planning", "phases", "35-bitwise-operators-literal-shifts-and-hex-literals", "35-EVIDENCE.md"))
+	evidencePath := testsupport.ProjectPath(".planning", "phases", "35-bitwise-operators-literal-shifts-and-hex-literals", "35-EVIDENCE.md")
+	// GSD's prohibition prover supplies a known-bad or clean receipt to this
+	// same checker; normal Go test runs retain the committed historical input.
+	if subject := os.Getenv("GSD_PROHIB_SUBJECT"); subject != "" {
+		if !filepath.IsAbs(subject) {
+			subject = testsupport.ProjectPath(filepath.FromSlash(subject))
+		}
+		evidencePath = subject
+	}
+	evidenceBytes, err := os.ReadFile(evidencePath)
 	if err != nil {
 		t.Fatal(err)
 	}
