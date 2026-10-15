@@ -1,8 +1,8 @@
 ---
 phase: 35-bitwise-operators-literal-shifts-and-hex-literals
-verified: 2026-10-15T07:22:07Z
-status: passed
-score: 38/38 must-haves verified
+verified: 2026-10-15T21:17:32Z
+status: human_needed
+score: "38/38 truths verified"
 covered_files:
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-01-PLAN.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-01-SUMMARY.md"
@@ -20,12 +20,35 @@ covered_files:
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-07-SUMMARY.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-PLAN.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-SUMMARY.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-ADMISSION-MUTATION-EVIDENCE.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-COMPATIBILITY-DELTA.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-CONTEXT.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-EVIDENCE.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-MUTATION-EVIDENCE.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH-FIX.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH-GATES.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH-REGRESSION.json"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH-RUN.json"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REGRESSION.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REVIEW-DISPOSITION.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REVIEW-FIX.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REVIEW.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-SECURITY.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-TRANSITION-CHECK.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-UI-REVIEW.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VALIDATION.md"
   - ".planning/phases/36-scalar-helper-calls/36-ACCEPTANCE-EVIDENCE.md"
   - ".planning/phases/36-scalar-helper-calls/36-REGRESSION.md"
   - ".planning/phases/36-scalar-helper-calls/36-REVIEW-DISPOSITION.md"
   - ".planning/phases/36-scalar-helper-calls/36-REVIEW.md"
+  - ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-ACCEPTANCE-EVIDENCE.md"
+  - ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-PROHIBITION-EVIDENCE.md"
+  - ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-REMEDIATION-EVIDENCE.md"
+  - ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-REVIEW-DISPOSITION.md"
+  - ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-REVIEW.md"
   - "cmd/schway/main_phase32_routes_test.go"
   - "cmd/schway/main_phase35_test.go"
+  - "cmd/schway/main_phase37_file_run_test.go"
   - "docs/agent-surface.md"
   - "examples/bitwise.schway"
   - "examples/checksum/adler32.schway"
@@ -44,8 +67,10 @@ covered_files:
   - "internal/compiler/corevalidate/corevalidate_phase35_test.go"
   - "internal/compiler/executionpeer/executionpeer.go"
   - "internal/compiler/executionpeer/executionpeer_phase35_test.go"
+  - "internal/compiler/interp/filebytes_reader.go"
   - "internal/compiler/interp/interp.go"
   - "internal/compiler/interp/interp_phase35_test.go"
+  - "internal/compiler/interp/interp_phase37_test.go"
   - "internal/compiler/originvalidate/originvalidate.go"
   - "internal/compiler/originvalidate/originvalidate_phase35_test.go"
   - "internal/compiler/pathoracle/pathoracle.go"
@@ -85,7 +110,9 @@ covered_files:
   - "testdata/phase35/surface-census.json"
   - "testdata/phase35/surface-witnesses.json"
   - "testdata/phase35/value-vectors.json"
-covered_digest: "v3:sha256:962c32a51c0db7275a63625ef84eb7768bb4f90733805337e9835fa76742a52e"
+  - "testdata/phase36/new-fixture-ledger.json"
+  - "testdata/phase37/new-fixture-ledger.json"
+covered_digest: "v3:sha256:5ce8e29858b7aaf8791f9bdb6d570b4b04055bf94b0ac821abf5756fff55a3a0"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -94,23 +121,31 @@ re_verification:
   gaps_closed: []
   gaps_remaining: []
   regressions: []
-  scope: "Phase36 successor-staled fingerprint refresh; prior report passed without gaps"
-
+  scope: "Phase37 current-head input/log hash refresh; dated initial and Phase36 refresh history preserved below"
+human_verification:
+  - test: "Resolve the BIT-01 prohibition verification tier and status"
+    expected: "Review the evidence and explicitly resolve the prohibition, recording whether it is test-tier or judgment-tier; keep causal event admission separate from numerical proof."
+    why_human: "35-08-PLAN.md leaves this prohibition status unresolved and verification null, so the verifier cannot assign the missing acceptance tier."
+  - test: "Resolve the BIT-02 prohibition verification tier and status"
+    expected: "Review the current hash-bound receipts and historical lane labels, then explicitly resolve the prohibition and record whether it is test-tier or judgment-tier."
+    why_human: "35-08-PLAN.md leaves this prohibition status unresolved and verification null, so the verifier cannot infer the missing acceptance tier."
 ---
 
 # Phase 35: Bitwise Operators, Literal Shifts, and Hex Literals Verification Report
 
 **Phase Goal:** Ordinary Schway scalar code can use U64 ^, &, |, literal-amount << and >>, and hex literals, with one defined meaning on every engine and optimization level, no C17 shift undefined behavior, and no new defect path.
 
-**Verified:** 2026-10-15T07:22:07Z
-**Status:** passed
-**Re-verification:** Yes — Phase 36 successor-staled fingerprint refresh; the prior report passed without gaps.
+**Verified:** 2026-10-15T21:17:32Z
+**Status:** human_needed
+**Re-verification:** Yes — Phase 37 current-head evidence refresh; the prior Phase 35 and Phase 36 refreshes remain preserved below.
 
 ## Goal Achievement
 
-The phase goal is present in the actual compiler and consumer path: lexer/parser and formatter preserve the new source forms; checking lowers five exact-width operations and admits only literal shift counts from 0 through 63; both independent raw-IR validators enforce the shift shape and independently derive value transfers; the interpreter and C emitter execute the operations; surface metadata and public examples expose the behavior. Focused executions exercise the real interpreter and native paths and compare them to independently authored decimal answers.
+Current source inspection confirms the complete route from scalar parsing and checking through independent raw-core validators to interpreter and C execution. Shift operations carry canonical immediate counts 0..63; the C emitter uses unsigned widened shift operands and literal counts; surface and public witness paths are connected. Independent expected values and wrong-answer controls establish numeric outcomes, while executionpeer coverage is explicitly limited to event-free causal admission.
 
-The two plan prohibition entries were explicitly inspected. Numeric correctness is supported by literal answer vectors, per-engine wrong-answer controls, and transfer mutants in the value-deriving peers. Executionpeer evidence is described only as causal/event-free admission. Fresh local optimization and UBSan runs are distinguished from historical receipts; no hosted or skipped lane is presented as fresh. No synthetic check descriptor or automatic prohibition test result was invented.
+I derived 38 observable truths from the five roadmap criteria plus the plan truths (34 plan-specific, with one duplicate of roadmap criterion R4). All eight artifact queries pass: 48 declarations across 45 unique paths. The plans declare 24 key links; the generic checker recognizes one lexically, and source/test/fixture tracing confirms all 24. The requirement union is BIT-01 through BIT-04, each mapped and satisfied; no Phase35 requirement is orphaned. The context decision check reports 23/23 honored.
+
+Two plan prohibitions remain an escalation item. Their evidence supports the required boundaries, but 35-08-PLAN.md still records each as `status: unresolved` with `verification: null`. The verifier cannot silently resolve that missing tier: the final status is human_needed until a developer records an explicit test- or judgment-tier disposition. This does not reduce the 38/38 truth score.
 
 ### Observable Truths
 
@@ -263,47 +298,35 @@ The generic key-link query recognized only 1 of 24 relationships because most ar
 
 ## Behavioral Spot-Checks
 
-All 22 exact automated selectors from the eight phase plans were run individually with GOCACHE=/tmp/ai-lang-verification-gocache, -count=1, -v and -timeout=600s. The runs covered 15 Go test binaries across 13 import paths (internal/external test packages are separate binaries). They produced 88 root RUN and 88 root PASS records across 66 distinct top-level names, with zero missing expected name multiplicities, failures or skips.
+The Phase 35 task-selector run and Phase 36 successor refresh are retained as dated historical evidence below. This Phase 37 refresh used the two dedicated current-input receipts plus bounded exact-name checks; it did not replay the full 22-selector task set, a broad package suite, or the native matrix.
 
-| Plan command | Named tests observed | Result |
+### Current hash-bound refresh receipts
+
+| Receipt | Bound inputs and logs | Result |
 |---|---|---|
-| 35-01 task selectors | TestPhase35PreChangeEmitterCorpus; TestPhase35PreChangeCorpusControls | PASS, 2/2 |
-| 35-01 regression selectors | TestPhase35NumericPolicyBaseline; TestPhase35NestedIndexBaseline | PASS, 2/2 |
-| 35-02 grammar selectors | TestPhase35ScalarGrammar; TestPhase35FormatterRoundTrip; TestFormatLetBinaryExpressions | PASS, 3/3 |
-| 35-02 recovery/depth selectors | TestPhase34RecoveryCorpus; TestPhase34RecoveryControls; TestPhase35ExpressionDepth; TestPhase35FormatterRoundTrip | PASS, 4/4 |
-| 35-02 numeric selectors | TestPhase35NumericOwnership; Phase19 numeric roundtrip/token/malformed/admission/range/refusal selectors; TestPhase35NumericRoutePolicy | PASS, 9/9 |
-| 35-03 core selectors | TestPhase35CoreShape; TestAllOperationKindsRegistered; TestPhase35ShiftAdmission | PASS, 3/3 |
-| 35-03 source/Byte selectors | TestPhase35ShiftAdmission; TestPhase35UnusedByteSourceAdmission; TestPhase34BoolSpellingsRemainIdentifiers; TestPhase34CallArityBoundaries | PASS, 4/4 |
-| 35-03 checker selectors | TestPhase35ShiftAdmission; TestPhase35NumericRoutePolicy; TestPhase35ScalarTransferMutants; TestPhase35UnusedByteSourceAdmission | PASS, 5/5 |
-| 35-04 raw core admission | TestPhase35ShiftImmediateAdmission; TestPhase35UnusedByteIRAdmission | PASS, 4/4 across both peers |
-| 35-04 validator analysis | TestPhase35ShiftImmediateAdmission; TestPhase35UnusedByteIRAdmission; TestPhase35ScalarTransferMutants; TestPhase35AnalysisTriggers; Phase19 independent OpConst controls | PASS, 6/6 |
-| 35-04 origin/core analysis | TestPhase35ShiftImmediateAdmission; TestPhase35UnusedByteIRAdmission; TestPhase35ScalarTransferMutants; TestPhase35AnalysisTriggers | PASS, 4/4 |
-| 35-05 interpreter/pathoracle | TestPhase35BitwiseShiftVectorsEventFree; TestPhase35PureOperationAncestry | PASS, 2/2 |
-| 35-05 interpreter/Byte | TestPhase35BitwiseShiftVectorsEventFree; TestPhase35InterpreterWrongAnswerControls; TestPhase35UnusedByteRuntime | PASS, 3/3 |
-| 35-05 executionpeer | TestPhase35PureOperationCausalControls | PASS, 1/1 |
-| 35-06 C tracer/gates | TestPhase35NativeShiftTracer; TestPhase35EmitterAdmissionGates | PASS, 2/2 |
-| 35-06 C shift sites | TestPhase35NativeShiftTracer; TestPhase35EmitterAdmissionGates; TestPhase35UnsignedShiftEmissionAndEventProjection; TestPhase35ShiftSiteControls | PASS, 4/4 |
-| 35-07 public CLI/core | TestPhase321RunInputRequiredCLI; TestPhase35PublicConformanceWitness; TestPhase35FocusedValueAnswers; TestAllOperationKindsHandledAtEverySite | PASS, 4/4 |
-| 35-07 native/value/surface | TestPhase35FocusedValueAnswers; TestPhase35BitwiseOptimizationMatrix; TestPhase35ShiftUBSan; TestPhase35EngineWrongAnswerControls; Phase34 and Phase35 surface document/limit selectors | PASS, 7/7 |
-| 35-07 manifest controls | Phase34 surface limit/manifest regression selectors and Phase35 surface witness/census/control/limit selectors | PASS, 8/8 |
-| 35-08 Adler/regressions | TestPhase29InterpreterFixtureVectors; TestPhase29NativeFixtureVectors; TestPhase35ExistingAdlerAnswers; TestPhase35AdlerWrongShiftControl; TestPhase31CaseMatrix | PASS, 5/5 |
-| 35-08 docs/public projection | TestPhase35OperatorDocumentation; TestPhase35PublicDocumentValues | PASS, 2/2 |
-| 35-08 evidence grounding | TestPhase35EvidenceGrounding; TestPhase35PreChangeEmitterCorpus; TestPhase35PreChangeCorpusControls; TestSummaryCoverageGroundedness | PASS, 4/4 |
+| 35-REFRESH-RUN.json | 62 current input hashes; 13 raw logs; 72 package-root executions, 66 distinct test names across 13 packages. Every expected root is RUN/PASS; no missing, failed or skipped roots. | ✓ PASS |
+| 35-REFRESH-REGRESSION.json | 117 current input hashes; 16 raw logs; 175 package-root executions, 165 distinct test names across 16 packages. Every expected root is RUN/PASS; no missing, failed or skipped roots. | ✓ PASS |
 
-Additional post-repair executions:
+Both receipts' input hashes and raw-log hashes match the files currently on disk despite older recorded source_head values. The current regression receipt includes 15 reached arithmetic source mutants and 26 reached admission source mutants. Its feature-only native evidence includes 33 independently authored vectors at O0/O3/O3-LTO and 16 shift UBSan vectors, with all lanes passing and no skip. Those lanes were verified through fresh receipt/log bindings; they were not rerun separately in this refresh.
 
-| Behavior | Command | Result | Status |
-|---|---|---|---|
-| Check/corevalidate/originvalidate wrong-transfer mutants | GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase35PeerTransferMutationControls$' -count=1 -v -timeout=600s | Exit 0; 15 actual implementation mutants were caught at named sinks; 3 no-op overlays were controlled and all changes restored. | ✓ PASS |
-| Admission refusal mutants | GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase35AdmissionRefusalMutationControls$' -count=1 -v -timeout=600s | Exit 0; 26 controls at 55 replacement sites, 46 intended failures; 3 no-op and 3 restored controls. | ✓ PASS |
-| Prior static write target refusals | GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/corevalidate ./internal/compiler/originvalidate -run '^TestPhase35ShiftTargetFreshness$' -count=1 -v -timeout=600s | Exit 0; both peers pass eight left/right prior-write cases. | ✓ PASS |
-| Legitimate shift producers | GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/corevalidate ./internal/compiler/originvalidate -run '^TestPhase35ShiftProducerShapes$' -count=1 -v -timeout=600s | Exit 0; assignment, branch and loop producers pass in both peers. | ✓ PASS |
-| Parser/formatter repairs | GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/syntax -run '^(TestPhase35GroupedNegativeShiftAmountRefusal|TestPhase35FormatterPreservesSeparatedShiftTokens|TestPhase35ScalarGrammar|TestPhase35ExpressionDepth|TestPhase35FormatterRoundTrip|TestPhase35RecoveryDeltaControls)$' -count=1 -v -timeout=600s | Exit 0; all six named roots pass, including grouped-negative and separated-token cases. | ✓ PASS |
-| Native optimization matrix | TestPhase35BitwiseOptimizationMatrix from plan command 18 | 33 independently authored literal rows execute at O0, O3 and O3-LTO; 99 native executions and interpreter comparisons pass. | ✓ PASS |
-| Shift undefined-behavior sanitizer | TestPhase35ShiftUBSan from plan command 18 | All 16 shift fixture rows pass with Clang UBSan; no skip. | ✓ PASS |
-| Generated C site scan and runtime | TestPhase35NativeShiftTracer, TestPhase35UnsignedShiftEmissionAndEventProjection and TestPhase35ShiftSiteControls | Both expected C sites are found; dynamic/64/signed/removed-site controls are reached; native boundary values pass. | ✓ PASS |
+### Bounded exact tests run by this verifier
 
-No full workspace suite, broad package union, build/vet, cross-program matrix, hosted dispatch or install was run.
+All commands used `GOCACHE=/tmp/ai-lang-verification-gocache`, `-count=1 -v -timeout=600s`. Each named root below was observed RUN and PASS.
+
+| Area | Exact selector | Result |
+|---|---|---|
+| Evidence grounding | `go test ./internal/compiler/session -run '^(TestPhase35EvidenceGrounding|TestSummaryCoverageGroundedness)$'` | ✓ PASS; false-evidence controls and shared summary coverage validator pass. |
+| Grammar, recovery and literal ownership | `go test ./internal/compiler/syntax -run '^(TestPhase35ScalarGrammar|TestPhase35ExpressionDepth|TestPhase35FormatterRoundTrip|TestPhase35NumericOwnership|TestPhase35GroupedNegativeShiftAmountRefusal)$'` | ✓ PASS; precedence, bounded grouping, formatter, malformed/overflowing hex and negative shift controls pass. |
+| Checker lowering/transfers | `go test ./internal/compiler/check -run '^(TestPhase35ShiftAdmission|TestPhase35ScalarTransferMutants|TestPhase35NumericRoutePolicy)$'` | ✓ PASS; literal-only shifts, route-local numeric policy and value-transfer controls pass. |
+| Core validator contract/analysis | `go test ./internal/compiler/corevalidate -run '^(TestPhase35ShiftImmediateAdmission|TestPhase35ScalarTransferMutants|TestPhase35AnalysisTriggers|TestPhase35UnusedByteIRAdmission)$'` | ✓ PASS; raw immediate laws, transfer paths and Byte controls pass. |
+| Origin validator contract/analysis | `go test ./internal/compiler/originvalidate -run '^(TestPhase35ShiftImmediateAdmission|TestPhase35ScalarTransferMutants|TestPhase35AnalysisTriggers|TestPhase35UnusedByteIRAdmission)$'` | ✓ PASS; independent raw immediate laws and transfer paths pass. |
+| Interpreter | `go test ./internal/compiler/interp -run '^(TestPhase35BitwiseShiftVectorsEventFree|TestPhase35InterpreterWrongAnswerControls|TestPhase35UnusedByteRuntime)$'` | ✓ PASS; literal vectors, wrong-answer controls and event-free outcomes pass. |
+| Executionpeer | `go test ./internal/compiler/executionpeer -run '^TestPhase35PureOperationCausalControls$'` | ✓ PASS; fabricated event controls pass; this is causal evidence only. |
+| C emission | `go test ./internal/compiler/cgen -run '^(TestPhase35UnsignedShiftEmissionAndEventProjection|TestPhase35ShiftSiteControls)$'` | ✓ PASS; unsigned shifts, positive site count and dynamic/64/signed controls pass. |
+| Public application and Adler | `go test ./internal/compiler/session -run '^(TestPhase35FocusedValueAnswers|TestPhase35ExistingAdlerAnswers|TestPhase35AdlerWrongShiftControl)$'` | ✓ PASS; interpreter/native public output and pinned Adler values pass; wrong-shift control is reached. |
+| CLI witness | `go test ./cmd/schway -run '^TestPhase35PublicConformanceWitness$'` | ✓ PASS; public interpreter/native witness returns 264 and the alternate association control returns 8. |
+
+No server, broad test suite, broad native matrix, hosted job, push or UAT replay was run.
 
 ### Probe Execution
 
@@ -327,26 +350,39 @@ No Phase35-mapped requirement is orphaned. The DX-22 entry is acknowledged as a 
 
 | File | Line | Pattern | Severity | Impact |
 |---|---:|---|---|---|
-| None | — | No TBD, FIXME or XXX markers in the 58 reviewed/changed source, test, fixture and contract paths. | — | The broad empty-return scan found intentional empty derivations for current resource ownership and call-boundary attributes, plus test helpers; none feeds the new scalar value path as a stub. |
+| 53 plan-listed implementation/test/fixture paths | — | No TBD/FIXME/XXX, TODO/HACK/PLACEHOLDER, unfinished-placeholder phrases, empty implementation, hardcoded-empty output, or console.log-only implementation patterns. | — | No stub or unreferenced debt marker was found in the current phase scope. Test setup defaults and intentional empty derivations were not misclassified as production stubs. |
 
-The warning-level scan also matched an existing test comment that uses “placeholder” to describe an unused fixture field. It is not an unfinished implementation. No phase feature value flows from a hardcoded empty fallback.
+The 62-file code review is clean with zero findings; the two earlier WR-01/WR-02 warnings are recorded fixed with no open findings. The authored security register is 24/24 closed at ASVS L1 with zero open items. The UI gate is inapplicable because this phase adds no frontend; no graphical review or human-appearance claim is made.
 
 ## Human Verification Required
 
-None. This phase adds no visual interface, external service flow or subjective runtime interaction that remains unverified. Current execution is local to macOS arm64 with Go 1.24 and Apple Clang 21. The separate Phase38 hosted/two-host receipts remain pending and are not claimed here. Whole-loop cold/warm feedback distributions and human readability were not measured; they are not Phase35 acceptance criteria.
+### 1. Resolve the BIT-01 prohibition verification tier and status
+
+**Test:** Review the unresolved prohibition in 35-08-PLAN.md: “Do not present engine agreement or causal event admission as independent proof of pure numeric results.”
+
+**Expected:** Confirm the separate literal-answer, value-transfer and per-engine wrong-answer evidence meets the prohibition; retain executionpeer's causal-only role; record a test- or judgment-tier disposition and mark the prohibition resolved.
+
+**Why human:** The plan leaves `verification: null`. The verifier must not infer the missing tier or absorb an unresolved prohibition into a passed verdict.
+
+### 2. Resolve the BIT-02 prohibition verification tier and status
+
+**Test:** Review the unresolved prohibition in 35-08-PLAN.md: “Do not describe historical hosted receipts or skipped optimization/sanitizer lanes as fresh Phase 35 evidence.”
+
+**Expected:** Confirm current receipt hashes/logs and dated history are represented accurately; record a test- or judgment-tier disposition and mark the prohibition resolved.
+
+**Why human:** The plan leaves `verification: null`. The verifier confirms the present evidence and labeling, but cannot infer the missing acceptance tier.
 
 ## Gaps Summary
 
-No must-have failed or remains behavior-unverified. The parser/formatter repairs, inherited validator registry wiring, and prior-static-write shift-target refusal were checked against current source, and their relevant tests plus the two current-snapshot mutation harnesses passed. The focused native matrix and UBSan lanes executed without skips.
+No observable truth, artifact, key link, requirement, or behavior-dependent claim failed. All 38 truths are verified and current source/log bindings support the feature evidence. The phase remains human_needed only because two must-NOT plan items are still marked unresolved with no verification tier; resolving those two explicit decisions is the remaining gate.
 
-No new Go dependency or backend was introduced: go.mod remains standard-library-only, and the existing C17/Clang native route is reused. The locally observed host and toolchain are recorded as scope limits; this verification does not claim cross-host results or fresh hosted receipts.
 
 ---
 
 Verified: 2026-10-14T23:30:56Z  
 Verifier: gsd-verifier agent
 
-## Current successor refresh — 2026-10-15T07:22:07Z
+## Preserved Phase 36 successor refresh — 2026-10-15T07:22:07Z
 
 This bounded amendment revalidated the Phase 35 goal after the Phase 36 successor made the former fingerprint stale. It preserves the dated initial Phase 35 verification and review/disposition artifacts as history; it did not replay old plans, prior Phase 35 tests, UAT, or phase.complete.
 
@@ -360,3 +396,14 @@ All eight Phase 35 plan artifact queries passed (48 declared artifact occurrence
 
 _Verified: 2026-10-15T07:22:07Z_
 _Verifier: the agent (gsd-verifier)_
+
+
+## Phase 37 current-head refresh — 2026-10-15T21:17:32Z
+
+This dated refresh preserves the initial Phase 35 report (2026-10-14T23:30:56Z) and the Phase 36 successor-staled refresh (2026-10-15T07:22:07Z) above. It independently re-established the phase contract from the roadmap, all eight plan truth/artifact/link declarations, requirements traceability, current source paths and current Phase35/36/37 receipts. The Phase36 helper and Phase37 public interpreter-file route are included as legitimate current consumers; frozen Phase35 fixtures remain interpreted through their explicit Phase36/37 ledgers.
+
+The current checkout is HEAD `de6cde3d56be24382e38eb3b69f23e28e3721d65`. The run receipt records source_head `d48227882579947201f607814585c42e6ad29bd9`; the regression receipt records `6c5739bb88c150d2aedf8bdb6c4ecde0b6e6061e`. Those older identifiers are not used as a proxy for freshness: all 62 run inputs, 117 regression inputs, and all 29 raw-log hashes were independently compared to current bytes and match. The only current source-tree addition in the earlier closeout repair is the shared-validator-required synthetic coverage description in `session_phase35_closeout_test.go`; compiler/runtime implementation is unchanged by this verifier refresh.
+
+The current source and proof path supports the 38/38 goal truths: checker, corevalidate and originvalidate retain independent value transfer/admission; executionpeer validates causal structure only; interpreter and native expected answers are compared to independent literals; the C emission tests require a positive shift-site count and unsigned widened operands; refusal, high-bit truncation, wrong-answer and false-evidence controls are reached. No C17 undefined-shift path or new defect/event path was found. The present focused commands passed as recorded above, and the two hash-bound receipts cover the broader named evidence without replaying the expensive matrix.
+
+The remaining human decision is limited to the two unresolved 35-08 prohibitions with `verification: null` (BIT-01 and BIT-02). The verification gate cannot silently mark them resolved. The behavior score remains 38/38; status is `human_needed`. The root living documents and configuration are excluded from this fingerprint because they are outside the implementation/evidence slice and may be reconciled after phase acceptance.
