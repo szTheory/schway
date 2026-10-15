@@ -220,8 +220,10 @@ func phase36RequireEngineMutationChild(t *testing.T, output, targetTest, status,
 func TestPhase36EngineMutationLaneChild(t *testing.T) {
 	caseName := os.Getenv("PHASE36_ENGINE_MUTATION_CASE")
 	laneName := os.Getenv("PHASE36_ENGINE_MUTATION_LANE")
-	if caseName == "" || laneName == "" {
-		t.Skip("only invoked by the Phase36 engine mutation harness")
+	if caseName == "" && laneName == "" {
+		caseName, laneName = "local-four-step-loop", "O0"
+	} else if caseName == "" || laneName == "" {
+		t.Fatalf("native mutation child requires both case and lane, got case=%q lane=%q", caseName, laneName)
 	}
 	lanes := map[string]struct {
 		optimization string
