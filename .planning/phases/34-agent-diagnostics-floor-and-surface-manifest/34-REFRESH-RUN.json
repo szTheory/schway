@@ -1,0 +1,197 @@
+{
+  "source_head": "9572d827e4a7206b7eb3c9aa0e13783940a7fe11",
+  "validation_rows": 22,
+  "package_count": 8,
+  "distinct_names": 42,
+  "root_executions": 45,
+  "wall_seconds": 8.343,
+  "missing": 0,
+  "failed": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "package": "./cmd/schway",
+      "root_tests": [
+        "TestPhase32PublicRouteAudit",
+        "TestPhase34CheckDiagnosticPresentation",
+        "TestPhase34DiagnosticRouteInventory",
+        "TestPhase34SourceRoutePresentation",
+        "TestPhase34SurfaceRoute",
+        "TestPhase34SurfaceRouteInventory"
+      ],
+      "count": 6,
+      "exit": 0,
+      "seconds": 2.457,
+      "command": "go test ./cmd/schway -run '^(TestPhase32PublicRouteAudit|TestPhase34CheckDiagnosticPresentation|TestPhase34DiagnosticRouteInventory|TestPhase34SourceRoutePresentation|TestPhase34SurfaceRoute|TestPhase34SurfaceRouteInventory)$' -count=1 -json",
+      "log": "/tmp/schway34-validation-0.log",
+      "log_sha256": "cfc043677014e8cd06bb363354ec23550a64b56d2159c7deeee6d61d4f93c1d1"
+    },
+    {
+      "package": "./cmd/schway-repair",
+      "root_tests": [
+        "TestPhase30RepairDriverDeclinesCrossUnit",
+        "TestPhase34RepairJSONCompatibility",
+        "TestRepairDriverDecodesNoProseFields"
+      ],
+      "count": 3,
+      "exit": 0,
+      "seconds": 0.335,
+      "command": "go test ./cmd/schway-repair -run '^(TestPhase30RepairDriverDeclinesCrossUnit|TestPhase34RepairJSONCompatibility|TestRepairDriverDecodesNoProseFields)$' -count=1 -json",
+      "log": "/tmp/schway34-validation-1.log",
+      "log_sha256": "b3c51053c8c54c3ae1bf6f48c870d2502f04a04edcdba0aab3cfe4741a6e5b3f"
+    },
+    {
+      "package": "./internal/compiler/check",
+      "root_tests": [
+        "TestPhase34BoolSpellingsRemainIdentifiers",
+        "TestPhase34CallArityBoundaries",
+        "TestPhase34RefusalHintsHaveNoRepairs",
+        "TestPhase34UnsupportedSurfaceRefusals"
+      ],
+      "count": 4,
+      "exit": 0,
+      "seconds": 0.281,
+      "command": "go test ./internal/compiler/check -run '^(TestPhase34BoolSpellingsRemainIdentifiers|TestPhase34CallArityBoundaries|TestPhase34RefusalHintsHaveNoRepairs|TestPhase34UnsupportedSurfaceRefusals)$' -count=1 -json",
+      "log": "/tmp/schway34-validation-2.log",
+      "log_sha256": "d067f33c5400bd0480c1559715e6cbd1f1b18065819fdf916c2c413669c1b331"
+    },
+    {
+      "package": "./internal/compiler/diagnostic",
+      "root_tests": [
+        "TestDiagnosticZeroBytesUnchanged",
+        "TestPhase30UnitIdentity",
+        "TestPhase34DiagnosticIdentityProjection",
+        "TestRepairIdentityUsesKindOnly",
+        "TestRepairSpanShiftDoesNotChangeDiagnosticID"
+      ],
+      "count": 5,
+      "exit": 0,
+      "seconds": 0.234,
+      "command": "go test ./internal/compiler/diagnostic -run '^(TestDiagnosticZeroBytesUnchanged|TestPhase30UnitIdentity|TestPhase34DiagnosticIdentityProjection|TestRepairIdentityUsesKindOnly|TestRepairSpanShiftDoesNotChangeDiagnosticID)$' -count=1 -json",
+      "log": "/tmp/schway34-validation-3.log",
+      "log_sha256": "761497d396477cebfb3e03f088518b5520cc873f0e03e54a50d7f390441f5a88"
+    },
+    {
+      "package": "./internal/compiler/protocol",
+      "root_tests": [
+        "TestHumanJSONProjectionParity",
+        "TestPhase30UnitProjection",
+        "TestPhase34DiagnosticLocations",
+        "TestPhase34HumanSnippetRendering"
+      ],
+      "count": 4,
+      "exit": 0,
+      "seconds": 0.231,
+      "command": "go test ./internal/compiler/protocol -run '^(TestHumanJSONProjectionParity|TestPhase30UnitProjection|TestPhase34DiagnosticLocations|TestPhase34HumanSnippetRendering)$' -count=1 -json",
+      "log": "/tmp/schway34-validation-4.log",
+      "log_sha256": "43343a4d1320bfe71063cfa65ae6b59e6351247d090f9ee0c3dd8363460c57b0"
+    },
+    {
+      "package": "./internal/compiler/session",
+      "root_tests": [
+        "TestPhase30ImportedFileDiagnosticNamesFile",
+        "TestPhase30SingleIOSite",
+        "TestPhase34BoolNameBaseline",
+        "TestPhase34CompatibilityDeltaLedger",
+        "TestPhase34DiagnosticRouteInventory",
+        "TestPhase34IdentityBaseline",
+        "TestPhase34ImportedDiagnosticPresentation",
+        "TestPhase34PreChangeCGoldenIsNotInert",
+        "TestPhase34PreChangeCProgramGolden",
+        "TestPhase34PresentationUsesCapturedSource",
+        "TestPhase34SourceRoutePresentation",
+        "TestPhase34SurfaceManifestCensus",
+        "TestPhase34SurfaceManifestControls",
+        "TestPhase34SurfaceManifestWitnesses",
+        "TestPhase34TransitionDocuments"
+      ],
+      "count": 15,
+      "exit": 0,
+      "seconds": 1.5,
+      "command": "go test ./internal/compiler/session -run '^(TestPhase30ImportedFileDiagnosticNamesFile|TestPhase30SingleIOSite|TestPhase34BoolNameBaseline|TestPhase34CompatibilityDeltaLedger|TestPhase34DiagnosticRouteInventory|TestPhase34IdentityBaseline|TestPhase34ImportedDiagnosticPresentation|TestPhase34PreChangeCGoldenIsNotInert|TestPhase34PreChangeCProgramGolden|TestPhase34PresentationUsesCapturedSource|TestPhase34SourceRoutePresentation|TestPhase34SurfaceManifestCensus|TestPhase34SurfaceManifestControls|TestPhase34SurfaceManifestWitnesses|TestPhase34TransitionDocuments)$' -count=1 -json",
+      "log": "/tmp/schway34-validation-5.log",
+      "log_sha256": "97acc0a71ab7ec87a98c712379fe3e95769bf03099f2140272e68fb92df60a59"
+    },
+    {
+      "package": "./internal/compiler/surfacemanifest",
+      "root_tests": [
+        "TestPhase34SurfaceDocument",
+        "TestPhase34SurfaceLimits"
+      ],
+      "count": 2,
+      "exit": 0,
+      "seconds": 0.286,
+      "command": "go test ./internal/compiler/surfacemanifest -run '^(TestPhase34SurfaceDocument|TestPhase34SurfaceLimits)$' -count=1 -json",
+      "log": "/tmp/schway34-validation-6.log",
+      "log_sha256": "19fb8dd72fbacc7310deb711d05a7ea60b9e832bd6c1323c0549a5c123869f2e"
+    },
+    {
+      "package": "./internal/compiler/syntax",
+      "root_tests": [
+        "TestPhase34DraftBaseline",
+        "TestPhase34RecoveryControls",
+        "TestPhase34RecoveryCorpus",
+        "TestPhase34UnsupportedSurfaceRefusals",
+        "TestSkippedRegionCauseSeparatesSpiralTrio",
+        "TestValidProgramUnaffectedBySkippedRegionFix"
+      ],
+      "count": 6,
+      "exit": 0,
+      "seconds": 0.282,
+      "command": "go test ./internal/compiler/syntax -run '^(TestPhase34DraftBaseline|TestPhase34RecoveryControls|TestPhase34RecoveryCorpus|TestPhase34UnsupportedSurfaceRefusals|TestSkippedRegionCauseSeparatesSpiralTrio|TestValidProgramUnaffectedBySkippedRegionFix)$' -count=1 -json",
+      "log": "/tmp/schway34-validation-7.log",
+      "log_sha256": "1d12d9942b48c420883bd12735849f94531b9c1b4b71ee99a18c2890937fc02b"
+    }
+  ],
+  "input_sha256": {
+    "cmd/schway-repair/repair_phase34_test.go": "ab009c5e12fa6283a7dac6188088c5408681df2755125a97a2a979f8280d7934",
+    "cmd/schway/main.go": "bf729e9ccc1169df3d8067e3d9244ba4d7b15db1e9435637ab5b30f33a956086",
+    "cmd/schway/main_phase32_routes_test.go": "d3679523fb7db0b48778821098daa857f768aeac0b87f463cdb9b2d8158ebb90",
+    "cmd/schway/main_phase34_diagnostics_test.go": "8785ef9842a0b8739f86bc84cdc314230bfa05356b7d966828a42650484971d6",
+    "cmd/schway/main_phase34_routes_test.go": "c6a81d534fcc5aa98e77de73df958a91c9e1ab8ccd9cfd624fab4ffd223d1349",
+    "cmd/schway/main_phase34_surface_test.go": "1c0e8ebd73b9ac0727ad80f7e6c0b4e9545d321bac2d45a55ae3116829fdc355",
+    "docs/agent-surface.md": "549f711fa151f39b63cbd36a0cdd1e88cd33276ea99ba4a870a49e1e0918a219",
+    "docs/diagnostics.md": "1540fb6eac02398773bf0cb695b6361d3618b03c3928f19660622bb9a0e4f1dc",
+    "internal/compiler/ast/ast.go": "5afe3698888efdfb0f19ea4129e20b64c76cc95db8e1dc11a0402e63ec0e4ce3",
+    "internal/compiler/check/check.go": "bb9bb3ba9a3d2c8d685245c496ece95d514f09bc63fff8bad793252441bc8982",
+    "internal/compiler/check/check_phase34_refusal_test.go": "422f70560a1486e7e171a76934576fcaebe97281a18d47a9ef343f1e257d009e",
+    "internal/compiler/check/scalar.go": "31537311ef6ad8fcf11f8cd7139f21404e41445d6d4c8ba5974a953ddaa1ec83",
+    "internal/compiler/diagnostic/diagnostic.go": "279994c636ddc1204f9370b7d6e67c722da96421d4fcbf0b98289b8b698f2277",
+    "internal/compiler/diagnostic/diagnostic_phase34_test.go": "0043b1d3bd3c4b6462629da30105f6f1f6b31b8dc01c1f0aadcd1d8a01a1df39",
+    "internal/compiler/protocol/presentation.go": "34260f1e9af50be847bbf80f2f15591ef36649f0f8c72c8ee6eeeaca871a07d3",
+    "internal/compiler/protocol/protocol.go": "1a01641764d28a3a70fedd4ec1a277b4a859a9e6bbed6c2125c04e88a2826d14",
+    "internal/compiler/protocol/protocol_phase34_test.go": "da8f6f2f1931bf8e310be9755c86cbc8d9ad63da6f6a0483ec1ec6a55f786da7",
+    "internal/compiler/session/session.go": "9646a37ace6a50afe3d4a5b1c0c4f8d5e3160407d1fc18b0593bf7e4616af831",
+    "internal/compiler/session/session_app_verify.go": "0bbc9fdaf722e1ee8f7a9f2c732842c2b2c5677ffa376cf3261fa5777a55ec68",
+    "internal/compiler/session/session_modules.go": "585f6a8ae2b6e67e60c20f542b12710c1c0885caa93c54baf0cb67d9d5b810dd",
+    "internal/compiler/session/session_phase34_compat_test.go": "346af8efe6729344e8fb6ac13a20bc72d49563d2c92f955e427007d77aef97ad",
+    "internal/compiler/session/session_phase34_limit_consumers_test.go": "ba44c429fc390a8b6c6176896ee14a9f4b62661881a68a60b1501911b2fa2227",
+    "internal/compiler/session/session_phase34_prechange_test.go": "2ab0f24dd69256c26c88dd2caa32d907c823be01b638f13265349a40d5657fcd",
+    "internal/compiler/session/session_phase34_presentation_test.go": "5028977b2703a7b5a1354fcb4894415c909724b633c8e52760350e92cbddaa5a",
+    "internal/compiler/session/session_phase34_routes_test.go": "4dacb766968a6032c8753d77ad2560bcc31d33812b0572498083ca36acd4c4bb",
+    "internal/compiler/session/session_phase34_surface_test.go": "5f93d5a849fa41d6488c5ea238c24644822e20582c6019fd81a1b06c1f1ed351",
+    "internal/compiler/session/session_phase6_explain.go": "720a2c7d7a6424f7bd1e05e1bac0b56c9340edd0c3a855a409245484c2ab80f1",
+    "internal/compiler/session/session_phase6_query.go": "a735c89bc10caae6c7fe26027c0c652d25b62fd2483e09def689f8a294e0b053",
+    "internal/compiler/session/session_presentation.go": "f528c3c0bfc1278e93dadd3f4911886457742c4de8a72f2932b380f0f4d5160d",
+    "internal/compiler/surface/refusals.go": "d776f7620d198539883627cf77c5554d6d1428f5ba5584a8a9db209e82708014",
+    "internal/compiler/surfacemanifest/manifest.go": "047ccc606cae924e7d974d275e28e82c91f35276b258346e94d40bff1aba5b3d",
+    "internal/compiler/surfacemanifest/manifest_test.go": "920df160f431652681608239462c92ee947ef1dcd10971ade1c5e43b6854479b",
+    "internal/compiler/syntax/lexer.go": "88a32042b98a8fb436ea8e815d8ee9b1dfdcae462c5bb2be51072a04ab9ecb6f",
+    "internal/compiler/syntax/parser.go": "c8ecf18cd7ffeadb4328998e77ed6ebd28aad132f59558ff7239639094adcac3",
+    "internal/compiler/syntax/parser_phase34_baseline_test.go": "ce9264dc37f56d3b3830e74323ab4951e1eab0164ddd369ee10394a8b3e535ce",
+    "internal/compiler/syntax/parser_phase34_limit_scope_test.go": "2a9ec6aecc7d794e5be2aeb3039012b43e1201f94c4ac6a71aa38e1de628c31e",
+    "internal/compiler/syntax/parser_phase34_recovery_test.go": "578af20b57aa76425b2a487bed197c204bd70304ad6880c1ccfd6f898125850c",
+    "internal/compiler/syntax/parser_phase34_refusal_test.go": "61f49170af1e713a542e281a0a70c3d636444797b94b6eb39e137fbf1182c76c",
+    "testdata/phase34/compat-deltas.json": "356d6f087023b46542636bfa244266afe1fbcd73cdb89120cc3d33802f558011",
+    "testdata/phase34/draft-after.json": "1e11ff4a8af6cc03c5d6e3200d0cdf9ef7dad41ee28e6a6fcd3aa2362b272bf3",
+    "testdata/phase34/draft-baseline.json": "6607c9b5e3657c0e65ba6e46d16a1dc281153994f27ca1ab8c645f9e935b8fae",
+    "testdata/phase34/drafts.json": "8774033822c9f47db8236d00a347e7e176a9524437314c182be8555f16a1b9df",
+    "testdata/phase34/identity-baseline.json": "8cdcc4243cecf24b3721a652b6835aae077e62f797826e484fc7a0618273174c",
+    "testdata/phase34/prechange-corpus.json": "903010268526ce71dab023e562714a5a8e18329a4d91adca9678e5d64d50042f",
+    "testdata/phase34/surface-census.json": "3934469136ed0f741dbbbca79428a98bc8134c7bfc0e5862ca440e85a94c256a",
+    "testdata/phase34/surface-witnesses.json": "823ac61fac34274ba6ee4cb8719ab0618443600fc976ca5587e1ffee76869742",
+    "testdata/phase36/new-fixture-ledger.json": "99ee245b707175e1b27846ce825ae6371e7eb7da0e810b2d8edf486c3517eaf4",
+    "testdata/phase37/new-fixture-ledger.json": "2fd2bbf340d95212966aade306a155ab4cb526c077cfb10f9b6405e2dcaded7d"
+  },
+  "scope_note": "Explicit Phase34 source/fixture boundary plus its limit controls and exact successor addition ledgers; degraded wider evaluation scope is not called a phase task union."
+}

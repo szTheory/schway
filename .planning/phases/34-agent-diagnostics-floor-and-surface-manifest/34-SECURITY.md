@@ -75,3 +75,21 @@ This refresh labels the original execution receipts historical and recomputes
 the current verification fingerprint through its canonical owner.
 
 L1 authored-register review retains every closed mitigation: bounded native capture and root/digest shell gates are byte-unchanged; source presentation and byte identity/repair authority are byte-unchanged. Shift/recovery/manifest additions have passing named independent controls and the current Phase 35 review. No new installation or accepted-risk substitution. The configured L1 zero-open short-circuit applies; this is a current source/control applicability review, not a new hosted security run.
+
+## Phase 37 successor applicability review — 2026-10-15
+
+The current State A review found all 30 named mitigation anchors in source,
+all eight plan-time threat models and all 19 authored closed threat rows.
+The fresh 22-row task-map execution passed 42 distinct names / 45 package roots,
+including captured-source immutability, hostile ASCII rendering, raw surface
+argument handling, recovery controls, manifest drift and byte-only repair
+identity. See `34-REFRESH-RUN.json` for exact commands and source/log hashes.
+The existing resolved public-name warning is preserved in UI history; the
+current surface-route check pins `usage: schway` in text and JSON.
+
+Successor inspection retains the explicit file-input route and captured-source
+presentation boundary; current helper-call and bitwise admissions belong to
+Phases 35/36/37, not a new Phase 34 authority grant. `go.mod` still contains
+only the module identity and Go 1.24 directive. No new dependency, installation,
+accepted-risk substitution or hosted security result was introduced. The L1
+zero-open authored-register short-circuit applies, with no L2/L3 claim.
