@@ -81,3 +81,7 @@ key=value/JSON, module-aware query/evidence/interface work, arbitrary
 interpreter cancellation, full large-file causal traces, and whole-loop
 performance measurement remain deferred to their existing consumer triggers.
 No new backend, general planning framework, or runtime dependency is proposed.
+
+## Independent audit remediation closure —2026-10-15
+
+The initial8plans missed D-02 helper placement and the explicit capture/Go-reader negative controls in37-04. Nine plans/21tasks are now summarized.37-09 fixes private eight-round byte-helper placement and adds3byte/3actualcall structural evidence plus5capture-growth/3reader reached mutants. Independent security re-audit31/31 closed (30mitigations,1existing accepted limitation), all repaired hashes checked. Earlier numeric/public/guide receipts stay historical; current affected receipts are in37-REMEDIATION-EVIDENCE.md. Validation restored on actual controls. Phase acceptance, requirement closure and hosted work remain separate; no new capability, dependency, linker flag or wire field.

@@ -1,8 +1,8 @@
 ---
 phase: "37"
 slug: "crc-32-consumer-interpreter-file-route-and-guide"
-status: remediation-pending
-nyquist_compliant: false
+status: validated
+nyquist_compliant: true
 wave_0_complete: true
 created: "2026-10-15"
 ---
@@ -196,3 +196,15 @@ The independent security audit found missing reached capture-growth mutants unde
 - **C28**: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase37CaptureRetentionControls|TestPhase37CaptureRetentionMutationTarget|TestPhase37CaptureDisabledOutcomes|TestPhase37FileReaderFaults|TestPhase37FileReaderBoundControls|TestPhase37FileReaderMutationControls|TestPhase37FileReaderMutationTarget)$' -count=1 -v -timeout=600s`
 
 Current task map21 tasks/9 plans. The initial C01-C26 fixed-source capture remains historical; repaired-source affected receipts are separately recorded without relabeling old baselines. Current production library hash ce98ba7b055625c0e5a627f7d769cfbba948695755aeadb471578153fdea3707. Captured control tests match committed c611acdc bytes. Parent fresh subset reruns verified5roots and all8 named mutation markers; independent gate completion remains pending.
+
+## Validation repair closure —2026-10-15
+
+The earlier compliant verdict was withdrawn after the independent audit.37-09 now supplies the missing actual helper-count and8 reached mutation witnesses. Parent fresh5roots and independent security fresh7roots all passed, observing all5 capture and3 reader markers exactly once with no skips. All21 tasks/9 plans/4 requirements have actual automated owners, including C27/C28; all11 repaired-source hash bindings were independently checked. No coverage gap or human-only UAT remains. Nyquist compliance is restored on this corrected evidence; original incomplete-control history remains above. Code-review and goal verdict remain pending.
+
+## Validation Audit 2026-10-15
+
+| Metric | Count |
+|---|---|
+| Gaps found | 2 |
+| Resolved | 2 |
+| Escalated | 0 |

@@ -1,8 +1,8 @@
 ---
 phase: "37"
 slug: "crc-32-consumer-interpreter-file-route-and-guide"
-status: blocked
-threats_open: 1
+status: verified
+threats_open: 0
 asvs_level: 1
 created: "2026-10-15"
 ---
@@ -34,7 +34,7 @@ Source/module admission to fixed interpreter file capability; opaque argv to des
 | T-37-11 | Tampering | native one-shot outcome | high | mitigate | main.go:334,365; native/bindings.go:224,270,285; native_app.go:414,431 | closed |
 | T-37-12 | Denial of service | special/oversized/changing input | high | mitigate | filebytes_reader.go:46,52,62,70; filebytes_reader_test.go:123,163,178,205,224 | closed |
 | T-37-13 | Tampering | cleanup/error precedence | high | mitigate | filebytes_reader.go:92; examples/crc32/adapter.c:61,98,106,123; native_phase37_filebytes_test.go:224,238,297 | closed |
-| T-37-14 | Tampering | disabled-capture retention | high | mitigate | OPEN: no reached recorder/event/identity/ordinal growth mutants in interp_phase37_test.go. Clean zero-retention assertions pass but do not satisfy37-04-PLAN:57,83. | open |
+| T-37-14 | Tampering | disabled-capture retention | high | mitigate | Independent re-audit at3cb61cde: five real growth overlays and clean/actual-outcome discriminators in interp_phase37_test.go:55,136,158,184,204,241,316; all five markers reached exactly once. | closed |
 | T-37-15 | Repudiation | sanitizer availability | medium | mitigate | native_phase37_filebytes_test.go:331,352,361,379; explicit sanitizer/host/leak boundaries | closed |
 | T-37-16 | Tampering | circular or wrong oracle | high | mitigate | crc32.expected.json; crc32_oracle_test.go:12,84,145,170,202 | closed |
 | T-37-17 | Information disclosure | error/path tuple matrix | high | mitigate | main_phase37_matrix_test.go:75,106,109,116,157 | closed |
@@ -66,3 +66,15 @@ Source/module admission to fixed interpreter file capability; opaque argv to des
 ## Required repair
 
 37-09 closes T-37-14 with reached capture-growth controls, and separately corrects the D-02 byte-helper placement. Security remains blocked until the former is independently reaudited. Validation reopened; phase is incomplete.
+
+## Independent repair re-audit —2026-10-15
+
+At3cb61cde independent gsd-security-auditor returned SECURED31/31 (30 mitigated,1 existing accepted risk), threats_open0. T-37-14 now has actual recorder/event/invocation/segment/ordinal overlays with exact reached semantic failures, real successful/late-defect checks and meaningful unarmed targets. Reader wrong-bound/type/close mutations are reached at filebytes_reader_test.go:232,275. D-02 separately resolved: byte/helper loop placement and bounds pinned,3bytes produce3actualhelper calls (structural, not numeric or measured max count).
+
+Fresh independent5interp+2session roots all passed with no skips; all5RETENTION and3READER markers exactly once. All11 remediation file hashes, canonical source/plan/fixture hashes, current ledger and copied binding equality matched. Earlier source anchors remain audit-history anchors; current T14/D02 anchors above supersede the blocked condition, not its history. Native artifact/BuildID variance and incomplete/noncacheable posture remain explicit; InputID/module checks passed. No new risk acceptance, dependencies or cross-host claim.
+
+| Date | Total | Closed | Blocking open | Auditor |
+|---|---|---|---|---|
+|2026-10-15|31|31|0|Independent gsd-security-auditor repair re-audit|
+
+Sign-off: authored L1 register verified2026-10-15; phase-goal acceptance remains separate.
