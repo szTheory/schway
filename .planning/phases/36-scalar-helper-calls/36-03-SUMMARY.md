@@ -78,7 +78,7 @@ coverage:
         ref: "internal/compiler/pathoracle/pathoracle_phase36_test.go#TestPhase36ScalarCallAuthorityBoundaries"
         status: pass
       - kind: unit
-        ref: "internal/compiler/pathoracle/pathoracle_phase36_test.go#TestPhase35PureOperationAncestry"
+        ref: "internal/compiler/pathoracle/pathoracle_phase35_test.go#TestPhase35PureOperationAncestry"
         status: pass
     human_judgment: false
 
