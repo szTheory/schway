@@ -201,6 +201,10 @@ func TestPhase36NoCallGeneratedCByteBaselineControls(t *testing.T) {
 	if problems := phase36InventoryProblems(corpus, mutatedLedger, phase36TrackedSources(t)); !phase36HasProblem(problems, old.Path+": old corpus source cannot be exempted by the new-fixture ledger") {
 		t.Fatalf("old source false exemption was not rejected: %v", problems)
 	}
+	unsafeLedger := phase36FixtureLedger{Schema: phase36LedgerSchema, Entries: []phase36FixtureLedgerRow{{Path: "../outside.schway", SourceSHA: "sha256:bad", Reason: "control: traversal"}}}
+	if problems := phase36InventoryProblems(corpus, unsafeLedger, phase36TrackedSources(t)); !phase36HasProblem(problems, "../outside.schway: unsafe new-fixture ledger path") {
+		t.Fatalf("unsafe ledger path was not rejected before file access: %v", problems)
+	}
 	if problems := phase36InventoryProblems(corpus, ledger, phase36TrackedSources(t)); len(problems) != 0 {
 		t.Fatalf("restored fixture ledger did not pass: %s", strings.Join(problems, "; "))
 	}
@@ -335,6 +339,11 @@ func phase36InventoryProblems(corpus phase36PreChangeCorpus, ledger phase36Fixtu
 		ledgerPaths = append(ledgerPaths, row.Path)
 		if _, old := base[row.Path]; old {
 			problems = append(problems, row.Path+": old corpus source cannot be exempted by the new-fixture ledger")
+			continue
+		}
+		cleanPath := filepath.Clean(filepath.FromSlash(row.Path))
+		if row.Path == "" || filepath.IsAbs(cleanPath) || cleanPath == ".." || strings.HasPrefix(cleanPath, ".."+string(filepath.Separator)) || filepath.ToSlash(cleanPath) != row.Path {
+			problems = append(problems, row.Path+": unsafe new-fixture ledger path")
 			continue
 		}
 		if row.Path == "" || row.SourceSHA == "" || strings.TrimSpace(row.Reason) == "" {
