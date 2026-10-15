@@ -79,7 +79,6 @@ No material findings.
 
 ---
 
-_Reviewed: 2026-10-15T20:30:56Z_  
-_Reviewer: the agent (gsd-code-reviewer)_  
+_Reviewed: 2026-10-15T20:30:56Z_
+_Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
-
