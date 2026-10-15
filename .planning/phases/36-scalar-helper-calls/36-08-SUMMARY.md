@@ -119,3 +119,15 @@ The acceptance receipt and living-document amendments are ready for independent 
 - Summary and all three task deliverables exist.
 - Task commits `d117ca4058fbf6a727cb5aa634768cf6194bac34` and `92300103d4e64e14718e637c3c5e20281a364164` are ancestors of HEAD.
 - `git diff --check` passed.
+
+## Dated security-audit evidence refresh — 2026-10-15
+
+The independent security audit added test-only commit `04ce6fa1`; it changes `internal/compiler/cgen/cgen_phase36_test.go` and no production code. `TestPhase36EmitterCallInventoryControls` now covers a returned stack-path reuse mutant that still returns 10 but fails the retained-child-path assertion, clean/no-op/restored native positives, and six region-scoped missing/extra controls for call sites, `function.called` events, and invocation reservations. The dated audit record in [36-05-SUMMARY.md](./36-05-SUMMARY.md) preserves its focused verification details.
+
+I reran the exact fixed final command from the amended `36-08-PLAN.md` at source/test HEAD `eddb535ae9fa10f3700143e02f7fc5c11106e8d5`. It passed 45/45 roots across 12 packages, with every command exiting zero and no `FAIL` or `SKIP`. The current manifest and per-package logs are recorded in the acceptance receipt; the manifest is `/tmp/schway36-final-eddb535ae9fa-g7t84c5o/owner-results.json`. Earlier 15-root compatibility captures remain accurately bound to `5474f16e` and `d117ca40`; they were not rerun because the fixed final set freshly includes the compatibility baseline, controls, and affected cgen owner. The independent security review remains open pending re-audit, and Phase 36 plus CALL-01/CALL-02 remain pending their owner gates.
+
+## Refresh self-check: PASSED
+
+- The current manifest records HEAD `eddb535ae9fa10f3700143e02f7fc5c11106e8d5`, a clean source tree, 12 commands, 45 expected roots, and the new `TestPhase36EmitterCallInventoryControls` root.
+- Every command exited zero; all 12 recorded log files exist and match their SHA-256 values in the manifest.
+- The original plan task commits and the audit test commit remain ancestors of the tested HEAD.

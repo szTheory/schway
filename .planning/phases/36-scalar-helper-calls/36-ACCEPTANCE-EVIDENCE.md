@@ -1,7 +1,7 @@
 # Phase 36 Acceptance Evidence
 
 Evidence date: 2026-10-15
-Source revision: d117ca4058fbf6a727cb5aa634768cf6194bac34
+Source revision: eddb535ae9fa10f3700143e02f7fc5c11106e8d5
 Host/toolchain: macOS arm64; Go 1.24.0; Apple Clang 21.0.1
 Application/conformance routes: Public `schway` command conformance, interpreter application and fixture routes, native application C, and direct local/importer helper conformance are separate observations; no hosted receipt is claimed.
 
@@ -58,7 +58,11 @@ Only the exact package and selector lists embedded in `36-08-PLAN.md` are valid 
 
 Observed owner commands (compatibility): PASS — 15/15 expected root selectors across the session, cgen, and public command owners; each command exited 0. Full argv, roots, hashes and logs are in [/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/owner-results.json](/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/owner-results.json) and the linked logs appended below.
 
-Observed owner commands (final): PASS — 45/45 expected root selectors across 12 packages; each command exited 0, with no FAIL/SKIP. The full argv, source binding, roots, hashes and logs are in [/tmp/schway36-final-d117ca4058fb-lo7ctopk/owner-results.json](/tmp/schway36-final-d117ca4058fb-lo7ctopk/owner-results.json) and the linked logs appended below.
+Prior final capture (source HEAD d117ca4058fbf6a727cb5aa634768cf6194bac34): PASS — 45/45 expected roots across 12 packages; all commands exited 0 with no FAIL/SKIP. This remains an accurate receipt for that revision; the fresh audit-follow-up capture below binds the added controls to the current test revision.
+
+## Security-audit follow-up — 2026-10-15
+
+Test-only commit `04ce6fa1` expands `internal/compiler/cgen/cgen_phase36_test.go#TestPhase36EmitterCallInventoryControls`. Its returned stack-path mutant redirects the invocation-table pointer to a local array that a loop reuses; emitted native code still compiles, runs, and returns 10, while the retained-path assertion identifies the missing first canonical child path. Clean, stack-copy no-op, and restored positives retain the first and final paths. The same selector applies six region-scoped removals/additions across call sites, `function.called` events, and invocation reservations, checks named missing/extra findings, and verifies the emitted region is clean again after each mutation. The current fixed final owner command captures this selector at HEAD `eddb535ae9fa10f3700143e02f7fc5c11106e8d5`; its actual output receipt is appended below. The independent security review remains open pending re-audit.
 
 Observed owner commands (compatibility, HEAD 5474f16ecd3e80cf7cdafec73173b2af48c6556f): [/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/owner-results.json](/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/owner-results.json)
 - [/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/1-session.log](/tmp/schway36-compatibility-5474f16ecd3e-1fge23bk/1-session.log), sha256 532732e9b01633f18df764db593f14c1c7ff6b506055e2ccdf4cbc11b554d41b
@@ -97,3 +101,17 @@ Observed owner commands (final, HEAD d117ca4058fbf6a727cb5aa634768cf6194bac34): 
 - [/tmp/schway36-final-d117ca4058fb-evx1nc2r/10-session.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/10-session.log), sha256 c2a81284bb4a3d7ecbc1f18c7a33ee5b1889e0516e5a112516f7036778b536de
 - [/tmp/schway36-final-d117ca4058fb-evx1nc2r/11-schway.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/11-schway.log), sha256 db8d312e2401a130701cc0c0c3f35f3bcfe09d862042a7f04a47d5368612ab01
 - [/tmp/schway36-final-d117ca4058fb-evx1nc2r/12-surfacemanifest.log](/tmp/schway36-final-d117ca4058fb-evx1nc2r/12-surfacemanifest.log), sha256 4e59c6ea26ff967f54daff0c35cb86e5a557af9076b767d68312911fce5c84c2
+
+Observed owner commands (final, HEAD eddb535ae9fa10f3700143e02f7fc5c11106e8d5): [/tmp/schway36-final-eddb535ae9fa-g7t84c5o/owner-results.json](/tmp/schway36-final-eddb535ae9fa-g7t84c5o/owner-results.json)
+- [/tmp/schway36-final-eddb535ae9fa-g7t84c5o/1-syntax.log](/tmp/schway36-final-eddb535ae9fa-g7t84c5o/1-syntax.log), sha256 48f10e44cfab0d212c0f724a78a811534098ab8e3855fc16ccd8ebb72ab90e9a
+- [/tmp/schway36-final-eddb535ae9fa-g7t84c5o/2-check.log](/tmp/schway36-final-eddb535ae9fa-g7t84c5o/2-check.log), sha256 f67033844e27ad3909a09065ad132a763929bca838bb469b2b7d83a9191ad3df
+- [/tmp/schway36-final-eddb535ae9fa-g7t84c5o/3-corevalidate.log](/tmp/schway36-final-eddb535ae9fa-g7t84c5o/3-corevalidate.log), sha256 b04b46c47119e5ddd7232f44653d9ad91c8d845a889e286542acfcfa99f2acf7
+- [/tmp/schway36-final-eddb535ae9fa-g7t84c5o/4-originvalidate.log](/tmp/schway36-final-eddb535ae9fa-g7t84c5o/4-originvalidate.log), sha256 1b6ccfbfaba61226276a876b844722d5c3215db559428cb3759b67e0e49024cb
+- [/tmp/schway36-final-eddb535ae9fa-g7t84c5o/5-pathoracle.log](/tmp/schway36-final-eddb535ae9fa-g7t84c5o/5-pathoracle.log), sha256 67e3baf4746c26d0c037ba06e48c1d56ba23650c0f49d09a03a6f5f8aca33fe6
+- [/tmp/schway36-final-eddb535ae9fa-g7t84c5o/6-interp.log](/tmp/schway36-final-eddb535ae9fa-g7t84c5o/6-interp.log), sha256 19a4c89b05255c3b20c3c8c52d00df4ff37c4a6ef388389947a626694e2e091b
+- [/tmp/schway36-final-eddb535ae9fa-g7t84c5o/7-executionpeer.log](/tmp/schway36-final-eddb535ae9fa-g7t84c5o/7-executionpeer.log), sha256 c8b09ee197361df7aba8780871937005c5f6f18925f5465344117564909d45b7
+- [/tmp/schway36-final-eddb535ae9fa-g7t84c5o/8-cgen.log](/tmp/schway36-final-eddb535ae9fa-g7t84c5o/8-cgen.log), sha256 76af4b7f1d70098c756e346d441b97ecd7ea8a04b648c15433d1f055099ea0af
+- [/tmp/schway36-final-eddb535ae9fa-g7t84c5o/9-native.log](/tmp/schway36-final-eddb535ae9fa-g7t84c5o/9-native.log), sha256 86cc37c9dcece2884ce6c6bd9368ff9333398c16135fe1d52265a831289434f7
+- [/tmp/schway36-final-eddb535ae9fa-g7t84c5o/10-session.log](/tmp/schway36-final-eddb535ae9fa-g7t84c5o/10-session.log), sha256 47d71ecbe86e549040e28a1be493fbfe053c6950fe16c0f347299da52130473d
+- [/tmp/schway36-final-eddb535ae9fa-g7t84c5o/11-schway.log](/tmp/schway36-final-eddb535ae9fa-g7t84c5o/11-schway.log), sha256 893d663a014a3594ccd646861e2583898cc3ceb16f2936e0191c8da6a28919e6
+- [/tmp/schway36-final-eddb535ae9fa-g7t84c5o/12-surfacemanifest.log](/tmp/schway36-final-eddb535ae9fa-g7t84c5o/12-surfacemanifest.log), sha256 4e59c6ea26ff967f54daff0c35cb86e5a557af9076b767d68312911fce5c84c2
