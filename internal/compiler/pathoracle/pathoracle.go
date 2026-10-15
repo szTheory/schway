@@ -242,6 +242,21 @@ func pathScalarCalleeValueOnly(callee core.Function) bool {
 	if callee.Linear == nil || callee.PublicOrigin != nil {
 		return false
 	}
+	// The existing straight-line U64 borrow/copy helpers return an owned
+	// value: their local loan ends at the copy, rather than crossing the
+	// call. Keep this closed shape under its independent loan replay;
+	// borrowing CFG bodies and nested calls gain no scalar authority.
+	if pathU64CopySuccessorHelper(&callee, core.OpBorrowShared) || pathU64CopySuccessorHelper(&callee, core.OpBorrowExclusive) {
+		for index, operation := range callee.Linear.Operations {
+			if index == 0 {
+				operation.LoanID = ""
+			}
+			if operation.CalleeID != "" || !pathScalarCallFieldsClean(operation) {
+				return false
+			}
+		}
+		return validateStraightLinePointerLoans(callee) == nil
+	}
 	types := make(map[string]string, len(callee.Linear.Types))
 	for _, fact := range callee.Linear.Types {
 		types[fact.ID] = fact.Shape.Constructor
