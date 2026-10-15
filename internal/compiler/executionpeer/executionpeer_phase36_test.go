@@ -1,6 +1,7 @@
 package executionpeer_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/core"
@@ -21,6 +22,37 @@ fn main(input: U64) -> U64 {
     index = index + 1
   }
   total
+}
+`
+
+const phase36CausalCallSource = `module phase36.causal_calls
+export { fn main }
+fn bump(input: U64) -> U64 { let result = input + 1 result }
+fn decoy(input: U64) -> U64 { let result = input + 2 result }
+fn main(input: U64) -> U64 {
+  var total = 0
+  var index = 0
+  while index < 3 {
+    total = bump(total + index)
+    index = index + 1
+  }
+  let last = bump(total)
+  let finish = decoy(last)
+  finish
+}
+`
+
+const phase36CausalOverflowSource = `module phase36.causal_overflow
+export { fn main }
+fn overflow_step(input: U64) -> U64 { let result = input + 1 result }
+fn main(input: U64) -> U64 {
+  var value = input
+  var index = 0
+  while index < 2 {
+    value = overflow_step(value)
+    index = index + 1
+  }
+  value
 }
 `
 
@@ -77,6 +109,150 @@ func TestPhase36CallCausalAttributionControls(t *testing.T) {
 	if called != 3 || terminal != 3 {
 		t.Fatalf("causal call/terminal observations = %d/%d, want 3/3", called, terminal)
 	}
+	phase36CallCausalForgeryControls(t)
+}
+
+func phase36CallCausalForgeryControls(t *testing.T) {
+	t.Helper()
+	program, clean, main, bump, decoy := phase36CausalCallRun(t)
+	if err := executionpeer.Validate(program, clean.Execution); err != nil {
+		t.Fatalf("fresh positive trace rejected: %v", err)
+	}
+	if err := executionpeer.Validate(program, clonePhase36Execution(clean.Execution)); err != nil {
+		t.Fatalf("no-op trace copy rejected: %v", err)
+	}
+	mainCalls := phase36Calls(main)
+	var loopCall, laterCall, decoyCall core.LinearOperation
+	for _, call := range mainCalls {
+		switch call.CalleeID {
+		case bump.ID:
+			if loopCall.ID == "" {
+				loopCall = call
+			} else {
+				laterCall = call
+			}
+		case decoy.ID:
+			decoyCall = call
+		}
+	}
+	if loopCall.ID == "" || laterCall.ID == "" || decoyCall.ID == "" {
+		t.Fatalf("expected two bump sites and one decoy site: %+v", mainCalls)
+	}
+	mutants := []struct {
+		name, code string
+		mutate     func(*execution.Execution)
+	}{
+		{"ordinal-gap", "unknown_invocation", func(document *execution.Execution) {
+			index := phase36FindEvent(t, *document, func(event execution.Event) bool {
+				return event.FunctionID == bump.ID && event.Kind == "function.returned"
+			})
+			document.Events[index].Invocation = phase36Path(t, main.ID, loopCall.ID, 7)
+		}},
+		{"ordinal-duplicate", "duplicate_pair", func(document *execution.Execution) {
+			indices := phase36FindEvents(*document, func(event execution.Event) bool {
+				return event.FunctionID == bump.ID && event.Kind == "function.returned"
+			})
+			if len(indices) < 2 {
+				t.Fatalf("trace has only %d bump returns", len(indices))
+			}
+			document.Events[indices[1]].Invocation = phase36Path(t, main.ID, loopCall.ID, 0)
+		}},
+		{"ordinal-reordered", "unknown_invocation", func(document *execution.Execution) {
+			indices := phase36FindEvents(*document, func(event execution.Event) bool {
+				return event.FunctionID == bump.ID && event.Invocation == phase36Path(t, main.ID, loopCall.ID, 0) && event.Kind == "function.returned"
+			})
+			if len(indices) == 0 {
+				t.Fatal("no first loop callee terminal")
+			}
+			document.Events[indices[0]].Invocation = phase36Path(t, main.ID, loopCall.ID, 1)
+		}},
+		{"wrong-parent", "unknown_invocation", func(document *execution.Execution) {
+			index := phase36FindEvent(t, *document, func(event execution.Event) bool { return event.ID == loopCall.ID+":event:called" })
+			document.Events[index].Invocation = phase36Path(t, main.ID, decoyCall.ID, 0)
+		}},
+		{"wrong-static-site", "call_attribution", func(document *execution.Execution) {
+			index := phase36FindEvent(t, *document, func(event execution.Event) bool { return event.ID == loopCall.ID+":event:called" })
+			document.Events[index].ID = laterCall.ID + ":event:called"
+		}},
+		{"wrong-callee", "callee", func(document *execution.Execution) {
+			index := phase36FindEvent(t, *document, func(event execution.Event) bool { return event.ID == loopCall.ID+":event:called" })
+			document.Events[index].CalleeFunctionID = decoy.ID
+		}},
+		{"wrong-source-place", "call_attribution", func(document *execution.Execution) {
+			index := phase36FindEvent(t, *document, func(event execution.Event) bool { return event.ID == loopCall.ID+":event:called" })
+			document.Events[index].SourcePlace = "forged-source"
+		}},
+		{"wrong-target-place", "call_attribution", func(document *execution.Execution) {
+			index := phase36FindEvent(t, *document, func(event execution.Event) bool { return event.ID == loopCall.ID+":event:called" })
+			document.Events[index].TargetPlace = "forged-target"
+		}},
+		{"wrong-result-type", "call_attribution", func(document *execution.Execution) {
+			index := phase36FindEvent(t, *document, func(event execution.Event) bool { return event.ID == loopCall.ID+":event:called" })
+			document.Events[index].TypeID = "forged-type"
+		}},
+		{"missing-call", "unknown_invocation", func(document *execution.Execution) {
+			index := phase36FindEvent(t, *document, func(event execution.Event) bool { return event.ID == loopCall.ID+":event:called" })
+			document.Events = append(document.Events[:index], document.Events[index+1:]...)
+		}},
+		{"missing-return", "preorder", func(document *execution.Execution) {
+			index := phase36FindEvent(t, *document, func(event execution.Event) bool {
+				return event.FunctionID == bump.ID && event.Kind == "function.returned"
+			})
+			document.Events = append(document.Events[:index], document.Events[index+1:]...)
+		}},
+		{"repeated-terminal", "closed_activation", func(document *execution.Execution) {
+			last := document.Events[len(document.Events)-1]
+			last.Occurrence++
+			document.Events = append(document.Events, last)
+		}},
+	}
+	for _, mutant := range mutants {
+		mutant := mutant
+		t.Run(mutant.name, func(t *testing.T) {
+			if err := executionpeer.Validate(program, clean.Execution); err != nil {
+				t.Fatalf("fresh pre-mutant positive rejected: %v", err)
+			}
+			noOp := clonePhase36Execution(clean.Execution)
+			if err := executionpeer.Validate(program, noOp); err != nil {
+				t.Fatalf("fresh no-op negative control rejected: %v", err)
+			}
+			forged := clonePhase36Execution(clean.Execution)
+			mutant.mutate(&forged)
+			var peerError *executionpeer.Error
+			if err := executionpeer.Validate(program, forged); !errors.As(err, &peerError) || peerError.Class != mutant.code {
+				t.Fatalf("mutant Validate() = %v, want executionpeer.%s", err, mutant.code)
+			}
+			if err := executionpeer.Validate(program, clonePhase36Execution(clean.Execution)); err != nil {
+				t.Fatalf("restored positive rejected after %s: %v", mutant.name, err)
+			}
+		})
+	}
+	wrongValue := clonePhase36Execution(clean.Execution)
+	wrongValue.Outcome.Value = "999"
+	if err := executionpeer.Validate(program, wrongValue); err != nil {
+		t.Fatalf("causal peer should accept the structurally plausible false-success trace; numeric replay is not its claim: %v", err)
+	}
+	if clean.Execution.Outcome.Value == wrongValue.Outcome.Value {
+		t.Fatal("numeric interpreter claim is not discriminating from the false-success trace")
+	}
+
+	overflowProgram, overflowExecution := phase36CausalOverflowRun(t)
+	if err := executionpeer.Validate(overflowProgram, overflowExecution); err != nil {
+		t.Fatalf("peer rejected actual nested checked-add defect trace: %v", err)
+	}
+	forgedDefect := clonePhase36Execution(overflowExecution)
+	forgedDefect.Events[len(forgedDefect.Events)-1].Output = "forged arithmetic reason"
+	if err := executionpeer.Validate(overflowProgram, forgedDefect); err == nil {
+		t.Fatal("peer accepted a forged checked-add defect reason")
+	}
+	postDefect := clonePhase36Execution(overflowExecution)
+	postDefect.Events = append(postDefect.Events, postDefect.Events[0])
+	if err := executionpeer.Validate(overflowProgram, postDefect); err == nil {
+		t.Fatal("peer accepted an event after terminal defect")
+	}
+	if err := executionpeer.Validate(overflowProgram, overflowExecution); err != nil {
+		t.Fatalf("restored actual defect trace rejected: %v", err)
+	}
 }
 
 func phase36RepeatedCallRun(t *testing.T) (core.Program, interp.ApplicationResult, core.LinearOperation, core.Function, core.Function) {
@@ -111,4 +287,88 @@ func phase36RepeatedCallRun(t *testing.T) (core.Program, interp.ApplicationResul
 		t.Fatalf("RunApplication: %v", err)
 	}
 	return checked.Program, result, call, bump, main
+}
+
+func phase36CausalCallRun(t *testing.T) (core.Program, interp.ApplicationResult, core.Function, core.Function, core.Function) {
+	t.Helper()
+	checked := session.Check([]byte(phase36CausalCallSource))
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("causal-call source diagnostics: %+v", checked.Diagnostics)
+	}
+	var main, bump, decoy core.Function
+	for _, function := range checked.Program.Functions {
+		switch function.Name {
+		case "main":
+			main = function
+		case "bump":
+			bump = function
+		case "decoy":
+			decoy = function
+		}
+	}
+	run, err := interp.RunApplication(checked.Program, "main", "0")
+	if err != nil {
+		t.Fatalf("causal-call RunApplication: %v", err)
+	}
+	return checked.Program, run, main, bump, decoy
+}
+
+func phase36Calls(function core.Function) []core.LinearOperation {
+	var calls []core.LinearOperation
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpCall {
+			calls = append(calls, operation)
+		}
+	}
+	return calls
+}
+
+func phase36Path(t *testing.T, entry, callID string, ordinal int) string {
+	t.Helper()
+	path, err := execution.FormatInvocation(entry, []execution.InvocationSegment{{OpCallID: callID, Ordinal: ordinal}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func phase36FindEvent(t *testing.T, document execution.Execution, match func(execution.Event) bool) int {
+	t.Helper()
+	for index, event := range document.Events {
+		if match(event) {
+			return index
+		}
+	}
+	t.Fatal("target event was not found")
+	return -1
+}
+
+func phase36FindEvents(document execution.Execution, match func(execution.Event) bool) []int {
+	var indices []int
+	for index, event := range document.Events {
+		if match(event) {
+			indices = append(indices, index)
+		}
+	}
+	return indices
+}
+
+func clonePhase36Execution(document execution.Execution) execution.Execution {
+	clone := document
+	clone.Events = append([]execution.Event(nil), document.Events...)
+	clone.LiveResources = append([]string(nil), document.LiveResources...)
+	return clone
+}
+
+func phase36CausalOverflowRun(t *testing.T) (core.Program, execution.Execution) {
+	t.Helper()
+	checked := session.Check([]byte(phase36CausalOverflowSource))
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("causal overflow source diagnostics: %+v", checked.Diagnostics)
+	}
+	run, err := interp.Run(checked.Program, "main", "18446744073709551614")
+	if err != nil {
+		t.Fatalf("causal overflow Run: %v", err)
+	}
+	return checked.Program, run
 }
