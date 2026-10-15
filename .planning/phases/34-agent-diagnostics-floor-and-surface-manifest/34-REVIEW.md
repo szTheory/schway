@@ -1,69 +1,57 @@
 ---
 phase: 34-agent-diagnostics-floor-and-surface-manifest
-reviewed: 2026-10-14T23:38:46Z
+reviewed: 2026-10-15T20:30:56Z
 depth: standard
-files_reviewed: 60
+files_reviewed: 48
 files_reviewed_list:
+  - cmd/schway-repair/repair_phase34_test.go
+  - cmd/schway/main.go
   - cmd/schway/main_phase32_routes_test.go
-  - cmd/schway/main_phase35_test.go
+  - cmd/schway/main_phase34_diagnostics_test.go
+  - cmd/schway/main_phase34_routes_test.go
+  - cmd/schway/main_phase34_surface_test.go
   - docs/agent-surface.md
-  - examples/bitwise.schway
-  - examples/checksum/adler32.schway
-  - internal/compiler/cgen/cgen_phase35_test.go
-  - internal/compiler/cgen/cgen_program.go
+  - docs/diagnostics.md
+  - internal/compiler/ast/ast.go
   - internal/compiler/check/check.go
-  - internal/compiler/check/check_phase35_baseline_test.go
-  - internal/compiler/check/check_phase35_numeric_test.go
-  - internal/compiler/check/check_phase35_test.go
+  - internal/compiler/check/check_phase34_refusal_test.go
   - internal/compiler/check/scalar.go
-  - internal/compiler/core/core.go
-  - internal/compiler/core/core_phase35_test.go
-  - internal/compiler/core/core_test.go
-  - internal/compiler/corevalidate/corevalidate.go
-  - internal/compiler/corevalidate/corevalidate_phase35_test.go
-  - internal/compiler/executionpeer/executionpeer.go
-  - internal/compiler/executionpeer/executionpeer_phase35_test.go
-  - internal/compiler/interp/interp.go
-  - internal/compiler/interp/interp_phase35_test.go
-  - internal/compiler/originvalidate/originvalidate.go
-  - internal/compiler/originvalidate/originvalidate_phase35_test.go
-  - internal/compiler/pathoracle/pathoracle.go
-  - internal/compiler/pathoracle/pathoracle_phase35_test.go
-  - internal/compiler/session/session_phase272_identity_test.go
-  - internal/compiler/session/session_phase273_identity_test.go
+  - internal/compiler/diagnostic/diagnostic.go
+  - internal/compiler/diagnostic/diagnostic_phase34_test.go
+  - internal/compiler/protocol/presentation.go
+  - internal/compiler/protocol/protocol.go
+  - internal/compiler/protocol/protocol_phase34_test.go
+  - internal/compiler/session/session.go
+  - internal/compiler/session/session_app_verify.go
+  - internal/compiler/session/session_modules.go
   - internal/compiler/session/session_phase34_compat_test.go
   - internal/compiler/session/session_phase34_limit_consumers_test.go
   - internal/compiler/session/session_phase34_prechange_test.go
   - internal/compiler/session/session_phase34_presentation_test.go
+  - internal/compiler/session/session_phase34_routes_test.go
   - internal/compiler/session/session_phase34_surface_test.go
-  - internal/compiler/session/session_phase35_adler_test.go
-  - internal/compiler/session/session_phase35_admission_mutation_test.go
-  - internal/compiler/session/session_phase35_closeout_test.go
-  - internal/compiler/session/session_phase35_peer_mutation_test.go
-  - internal/compiler/session/session_phase35_prechange_test.go
-  - internal/compiler/session/session_phase35_surface_test.go
-  - internal/compiler/session/session_phase35_values_test.go
+  - internal/compiler/session/session_phase6_explain.go
+  - internal/compiler/session/session_phase6_query.go
+  - internal/compiler/session/session_presentation.go
   - internal/compiler/surface/refusals.go
   - internal/compiler/surfacemanifest/manifest.go
   - internal/compiler/surfacemanifest/manifest_test.go
-  - internal/compiler/syntax/format.go
-  - internal/compiler/syntax/numeric_phase35_test.go
+  - internal/compiler/syntax/lexer.go
   - internal/compiler/syntax/parser.go
+  - internal/compiler/syntax/parser_phase34_baseline_test.go
   - internal/compiler/syntax/parser_phase34_limit_scope_test.go
   - internal/compiler/syntax/parser_phase34_recovery_test.go
   - internal/compiler/syntax/parser_phase34_refusal_test.go
-  - internal/compiler/syntax/parser_phase35_baseline_test.go
-  - internal/compiler/syntax/parser_phase35_test.go
-  - testdata/phase16/public-emitter-consumers.json
+  - testdata/phase34/compat-deltas.json
+  - testdata/phase34/draft-after.json
+  - testdata/phase34/draft-baseline.json
+  - testdata/phase34/drafts.json
+  - testdata/phase34/identity-baseline.json
+  - testdata/phase34/prechange-corpus.json
+  - testdata/phase34/surface-census.json
   - testdata/phase34/surface-witnesses.json
-  - testdata/phase35/numeric-delta.json
-  - testdata/phase35/numeric-policy-baseline.json
-  - testdata/phase35/prechange-corpus.json
-  - testdata/phase35/recovery-after.json
-  - testdata/phase35/shift-sites.json
-  - testdata/phase35/surface-census.json
-  - testdata/phase35/surface-witnesses.json
-  - testdata/phase35/value-vectors.json
+  - testdata/phase36/new-fixture-ledger.json
+  - testdata/phase37/new-fixture-ledger.json
 findings:
   critical: 0
   warning: 0
@@ -74,16 +62,16 @@ status: clean
 
 # Phase 34: Code Review Report
 
-**Reviewed:** 2026-10-14T23:38:46Z
+**Reviewed:** 2026-10-15T20:30:56Z
 **Depth:** standard
-**Files Reviewed:** 60
+**Files Reviewed:** 48
 **Status:** clean
 
 ## Summary
 
-The canonical evaluation-scope resolver returned status degraded, source phase-range, reason no-task-commits-since. This 60-path fallback is the supplied phase-range union, not a Phase 34 own-task commit union. I inspected the live surface limit registry, the route-consumer census, the interface producer cap witnesses, and the Phase 35 edits that compose current syntax and manifest evidence into the Phase 34 compatibility checks. The parser and checker route lists now include the relevant interface and debug-map consumers, the linear-binding description matches the aggregate parser guard, and the route controls compare independently discovered consumers with the manifest. WR-01 through WR-03 remain fixed under 34-REVIEW-FIX.md; no current defect or reopening was confirmed.
+The explicit review override defined a 48-file source, test, documentation, and fixture scope; it governed this review instead of the wider degraded resolver result. I traced the diagnostic identity and presentation paths, captured-source handoff, route and refusal handling, parser recovery and limits, source-free manifest facts, legacy compatibility witnesses, and exact Phase 36/37 fixture-addition ledgers. I confirmed no material bug, security issue, or quality defect in the reviewed scope. The prior WR-01 through WR-03 closure remains recorded in the existing review-fix and disposition artifacts; those IDs are not reused.
 
-This is source inspection only. No tests were run in this refresh; the focused results recorded in 34-REVIEW-FIX.md and other phase receipts are historical evidence. No UAT replay or phase-completion claim is made.
+The in-repository refresh receipt records 22 passing validation rows covering 42 distinct test names across 45 root executions at source head `9572d827e4a7206b7eb3c9aa0e13783940a7fe11`. The current head adds only the refresh, security, and validation artifacts, and the 48 reviewed paths retain the receipt's recorded hashes. I did not rerun tests because the receipt is current for the reviewed source snapshot. This report records source inspection and that historical validation receipt; it does not claim UAT replay or phase completion.
 
 ## Narrative Findings (AI reviewer)
 
@@ -91,6 +79,7 @@ No material findings.
 
 ---
 
-_Reviewed: 2026-10-14T23:38:46Z_
+_Reviewed: 2026-10-15T20:30:56Z_  
 _Reviewer: the agent (gsd-code-reviewer)_  
 _Depth: standard_
+
