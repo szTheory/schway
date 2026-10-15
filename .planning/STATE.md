@@ -4,18 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 37
 current_phase_name: CRC-32 Consumer, Interpreter File Route, and Guide
-current_plan: 5
+current_plan: 6
 status: executing
-stopped_at: Completed 37-04-PLAN.md
-last_updated: "2026-10-15T15:57:01.364Z"
+stopped_at: Completed 37-05-PLAN.md
+last_updated: "2026-10-15T16:31:12.076Z"
 last_activity: 2026-10-15
 last_activity_desc: Phase 37 execution started
-state_head: 23f4c90f6a87cd8ec99962cf5c7259b4c01170a7
+state_head: 19e8dc63bb4990a7dce9968292aaf3b2fdea551a
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 37
-  completed_plans: 33
+  completed_plans: 34
   percent: 67
 ---
 
@@ -126,7 +126,7 @@ plans.
 ## Current Position
 
 Phase: 37 (CRC-32 Consumer, Interpreter File Route, and Guide) — EXECUTING
-Current Plan: 5
+Current Plan: 6
 Total Plans in Phase: 8
 Status: Ready to execute
 Last activity: 2026-10-15 — Phase 37 execution started
@@ -622,6 +622,7 @@ subset alone.
 | Phase 37 P02 | 20min | 2 tasks | 12 files |
 | Phase 37 P03 | 18min | 2 tasks | 5 files |
 | Phase 37 P04 | 11m | 2 tasks | 4 files |
+| Phase 37 P5 | 7min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -892,6 +893,9 @@ decision history; they no longer describe current status.
 - [Phase 37]: Allocate exactly cap+1 bytes before the first descriptor read.
 - [Phase 37]: Keep physical native close/free receipts separate from semantic interpreter owner-release counts.
 - [Phase 37]: Use a returning C caller to sanitize the adapter cap+1 error path because generated FileError exits with code 65.
+- [Phase 37]: Pin Python zlib literals and SHA256 digests; use Go hash/crc32.ChecksumIEEE only as a recurring independent cross-check.
+- [Phase 37]: Check both public engines against their own expected tuple before comparing parity.
+- [Phase 37]: Test embedded NUL through explicitly labeled public dispatch because host process argv cannot transport it.
 
 ### Pending Todos
 
@@ -1147,8 +1151,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-15T15:57:01.287Z
-Stopped at: Completed 37-04-PLAN.md
+Last session: 2026-10-15T16:31:11.208Z
+Stopped at: Completed 37-05-PLAN.md
 Resume file: None
 Next action: Continue with Phase 37 Plan 05 after plan 04 execution.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
