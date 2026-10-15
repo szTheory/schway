@@ -6,16 +6,16 @@ current_phase: 36
 current_phase_name: Scalar Helper Calls
 current_plan: 8
 status: executing
-stopped_at: Completed 36-07-PLAN.md
-last_updated: "2026-10-15T05:10:37.140Z"
+stopped_at: Completed 36-08-PLAN.md
+last_updated: "2026-10-15T05:31:00.140Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 36 execution started
-state_head: 5a0df76d618c18a45179b37c2e2214c1526a17ef
+state_head: 92300103d4e64e14718e637c3c5e20281a364164
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 29
-  completed_plans: 28
+  completed_plans: 29
   percent: 50
 ---
 
@@ -616,6 +616,7 @@ subset alone.
 | Phase 36 P05 | 28m | 3 tasks | 9 files |
 | Phase 36 P06 | 38min | 3 tasks | 13 files |
 | Phase 36 P07 | 35min | 2 tasks | 9 files |
+| Phase 36 P08 | not recorded | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -871,6 +872,8 @@ decision history; they no longer describe current status.
 - [Phase 36]: Native ByteView caller composition changes only checked scalar-call applicability and borrowed-view caller admission; the scalar call signature remains U64/Bool.
 - [Phase 36]: Publish only exact arity-one U64/Bool scalar calls and preserve all unrelated refusal boundaries.
 - [Phase 36]: Supersede only exact obsolete no-call witness and branch claims; keep owner/path proof on complete session routes.
+- [Phase 36]: Bind final owner evidence to source HEAD d117ca4058fbf6a727cb5aa634768cf6194bac34; later commits changed planning documents only.
+- [Phase 36]: Keep CALL-01 and CALL-02 pending until the orchestrator-owned Phase 36 verification and audit gates pass.
 
 ### Pending Todos
 
@@ -1118,8 +1121,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-15T05:10:37.083Z
-Stopped at: Completed 36-07-PLAN.md
+Last session: 2026-10-15T05:30:59.600Z
+Stopped at: Completed 36-08-PLAN.md
 Resume file: None
 Next action: $gsd-discuss-phase 36
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
