@@ -1,6 +1,6 @@
 ---
 phase: 34-agent-diagnostics-floor-and-surface-manifest
-verified: 2026-10-15T07:22:07Z
+verified: 2026-10-15T20:38:59Z
 status: passed
 score: 38/38 must-haves verified
 covered_files:
@@ -20,46 +20,34 @@ covered_files:
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-SUMMARY.md"
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-PLAN.md"
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-SUMMARY.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-REFRESH-REGRESSION.json"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-REFRESH-RUN.json"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-REVIEW-DISPOSITION.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-REVIEW-FIX.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-REVIEW.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-SECURITY.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-VALIDATION.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REGRESSION.md"
   - ".planning/phases/36-scalar-helper-calls/36-ACCEPTANCE-EVIDENCE.md"
   - ".planning/phases/36-scalar-helper-calls/36-REGRESSION.md"
-  - ".planning/phases/36-scalar-helper-calls/36-REVIEW-DISPOSITION.md"
-  - ".planning/phases/36-scalar-helper-calls/36-REVIEW.md"
+  - ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-ACCEPTANCE-EVIDENCE.md"
   - "cmd/schway-repair/repair_phase34_test.go"
   - "cmd/schway/main.go"
-  - "cmd/schway/main_phase321_run_input_test.go"
-  - "cmd/schway/main_phase32_routes_test.go"
   - "cmd/schway/main_phase34_diagnostics_test.go"
   - "cmd/schway/main_phase34_routes_test.go"
   - "cmd/schway/main_phase34_surface_test.go"
   - "cmd/schway/main_phase35_test.go"
   - "cmd/schway/main_phase36_test.go"
+  - "cmd/schway/main_phase37_file_run_test.go"
   - "docs/agent-surface.md"
-  - "examples/bitwise.schway"
-  - "examples/checksum/adler32.schway"
+  - "docs/diagnostics.md"
   - "internal/compiler/ast/ast.go"
-  - "internal/compiler/cgen/cgen_phase35_test.go"
   - "internal/compiler/check/check.go"
-  - "internal/compiler/check/check_phase35_baseline_test.go"
-  - "internal/compiler/check/check_phase35_numeric_test.go"
-  - "internal/compiler/check/check_phase35_test.go"
+  - "internal/compiler/check/check_phase34_refusal_test.go"
   - "internal/compiler/check/check_phase36_scalar_calls_test.go"
   - "internal/compiler/check/scalar.go"
-  - "internal/compiler/core/core.go"
-  - "internal/compiler/core/core_phase35_test.go"
-  - "internal/compiler/core/core_test.go"
-  - "internal/compiler/corevalidate/corevalidate.go"
-  - "internal/compiler/corevalidate/corevalidate_phase35_test.go"
   - "internal/compiler/diagnostic/diagnostic.go"
   - "internal/compiler/diagnostic/diagnostic_phase34_test.go"
-  - "internal/compiler/executionpeer/executionpeer.go"
-  - "internal/compiler/executionpeer/executionpeer_phase35_test.go"
-  - "internal/compiler/interp/interp.go"
-  - "internal/compiler/interp/interp_phase35_test.go"
-  - "internal/compiler/originvalidate/originvalidate.go"
-  - "internal/compiler/originvalidate/originvalidate_phase35_test.go"
-  - "internal/compiler/pathoracle/pathoracle.go"
-  - "internal/compiler/pathoracle/pathoracle_phase35_test.go"
   - "internal/compiler/protocol/presentation.go"
   - "internal/compiler/protocol/protocol.go"
   - "internal/compiler/protocol/protocol_phase34_test.go"
@@ -72,47 +60,35 @@ covered_files:
   - "internal/compiler/session/session_phase34_presentation_test.go"
   - "internal/compiler/session/session_phase34_routes_test.go"
   - "internal/compiler/session/session_phase34_surface_test.go"
-  - "internal/compiler/session/session_phase35_adler_test.go"
-  - "internal/compiler/session/session_phase35_admission_mutation_test.go"
-  - "internal/compiler/session/session_phase35_closeout_test.go"
-  - "internal/compiler/session/session_phase35_peer_mutation_test.go"
-  - "internal/compiler/session/session_phase35_prechange_test.go"
   - "internal/compiler/session/session_phase35_surface_test.go"
-  - "internal/compiler/session/session_phase35_values_test.go"
-  - "internal/compiler/session/session_phase36_prechange_test.go"
-  - "internal/compiler/session/session_phase6_explain.go"
-  - "internal/compiler/session/session_phase6_query.go"
+  - "internal/compiler/session/session_phase36_surface_test.go"
+  - "internal/compiler/session/session_phase37_surface_test.go"
   - "internal/compiler/session/session_presentation.go"
   - "internal/compiler/surface/refusals.go"
   - "internal/compiler/surfacemanifest/manifest.go"
   - "internal/compiler/surfacemanifest/manifest_test.go"
-  - "internal/compiler/syntax/format.go"
   - "internal/compiler/syntax/lexer.go"
-  - "internal/compiler/syntax/numeric_phase35_test.go"
   - "internal/compiler/syntax/parser.go"
-  - "internal/compiler/syntax/parser_phase34_baseline_test.go"
-  - "internal/compiler/syntax/parser_phase34_limit_scope_test.go"
   - "internal/compiler/syntax/parser_phase34_recovery_test.go"
   - "internal/compiler/syntax/parser_phase34_refusal_test.go"
-  - "internal/compiler/syntax/parser_phase35_baseline_test.go"
   - "internal/compiler/syntax/parser_phase35_test.go"
   - "internal/compiler/syntax/parser_phase36_test.go"
   - "testdata/phase34/compat-deltas.json"
+  - "testdata/phase34/draft-after.json"
   - "testdata/phase34/draft-baseline.json"
   - "testdata/phase34/drafts.json"
   - "testdata/phase34/identity-baseline.json"
   - "testdata/phase34/prechange-corpus.json"
   - "testdata/phase34/surface-census.json"
   - "testdata/phase34/surface-witnesses.json"
-  - "testdata/phase35/numeric-delta.json"
-  - "testdata/phase35/numeric-policy-baseline.json"
-  - "testdata/phase35/prechange-corpus.json"
-  - "testdata/phase35/recovery-after.json"
   - "testdata/phase35/shift-sites.json"
   - "testdata/phase35/surface-census.json"
   - "testdata/phase35/surface-witnesses.json"
-  - "testdata/phase35/value-vectors.json"
-covered_digest: "v3:sha256:cdfa0ec590831a8d353c2bc6c643853161f88f6fffe8d96f66b0560989b192f5"
+  - "testdata/phase36/surface-census.json"
+  - "testdata/phase36/surface-witnesses.json"
+  - "testdata/phase37/new-fixture-ledger.json"
+  - "testdata/phase37/surface-witnesses.json"
+covered_digest: "v3:sha256:111e68ce10586b177e455fcfa464c85bb9c1f452f6180c829f5147876f77b405"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -121,17 +97,17 @@ re_verification:
   gaps_closed: []
   gaps_remaining: []
   regressions: []
-  scope: "Phase36 successor-staled fingerprint refresh; prior report passed without gaps; current scoped regression and acceptance receipts checked against raw runs and hashes"
+  scope: "Phase 37 successor refresh; original Phase 34 verification passed without gaps; current local receipts and a bounded independent selector set were hash-checked and run"
 ---
 
 # Phase 34: Agent Diagnostics Floor and Surface Manifest Verification Report
 
 **Phase Goal:** An agent drafting Schway gets one precise, locatable diagnostic per real cause and can ask the toolchain what surface is admitted, instead of guessing from cascading, offset-only or misleading errors.
-**Verified:** 2026-10-15T07:22:07Z
+**Verified:** 2026-10-15T20:38:59Z
 **Status:** passed
-**Re-verification:** Yes — Phase 36 successor-staled fingerprint refresh; the prior report passed without gaps.
+**Re-verification:** Yes — Phase 37 successor refresh; the prior report passed without gaps.
 
-The evidence below preserves the dated initial verification, including its then-current DX-22 deferral and 70-selector receipt. The current successor refresh at the end of this report is authoritative for the post-Phase-36 call/refusal surface, source binding, and shared regression receipt.
+The evidence below preserves the dated initial verification and Phase 35/36 successor amendments. The current refresh at the end is authoritative for the post-Phase-37 admission surface, source binding, and shared regression receipts.
 
 ## Goal Achievement
 
@@ -311,3 +287,45 @@ All eight Phase 34 plan artifact queries passed (57 declared artifact occurrence
 
 _Verified: 2026-10-15T07:22:07Z_
 _Verifier: the agent (gsd-verifier)_
+
+
+## Current successor refresh — 2026-10-15T20:38:59Z
+
+This refresh independently checked the Phase 34 goal against current compiler and CLI code after Phases 35–37. It does not replay the eight plans or completed UAT. The verdict remains **passed, 38/38 truths verified**: no missing artifact, unwired link, failing truth, blocker, or new human-verification item was found.
+
+### Current truth check
+
+| Truth | Current result | Evidence |
+|---|---|---|
+| Precise, locatable diagnostics | ✓ VERIFIED | Current protocol presentation still derives 1-based scalar columns and bounded snippets from captured source bytes while preserving byte offsets and source-less diagnostic identity. The focused location, snippet, route, and repair-compatibility checks passed. |
+| One diagnostic per real cause | ✓ VERIFIED | The pinned draft/recovery corpus and negative controls remain in the current source-hash-bound regression receipt; the fresh recovery corpus and controls passed, including cascade, sibling, and independent-cause controls. |
+| Honest admission/refusal surface | ✓ VERIFIED | Phase 34’s seven absent forms retain their dedicated refusals. The current catalog also contains Phase 35’s shift-amount and expression-depth refusals. Phase 35 bitwise operators, Phase 36 scalar helper calls, and the Phase 37 interpreter file route are now admitted and represented by current witnesses. |
+| Source-free current manifest | ✓ VERIFIED | The schway surface --json path still emits the typed, deterministic manifest derived from current compiler facts. Current Phase 34 witness/census/mutation controls and Phase 35/36/37 successor surface tests pass. |
+
+The historical truth rows above remain accurate for Phase 34’s original contract. In particular, the earlier “scalar calls stay absent” rows describe the Phase 34 boundary at that time; Phase 36 deliberately amended that boundary. The current manifest and successor witnesses now describe the admitted scalar helper shapes and retain their arity and signature restrictions. Likewise, Phase 35 closed the historical dynamic-shift deferral, added the shift-amount and expression-depth refusal codes, and admitted bitwise/hex forms. Phase 37 adds the interpreter file-input route and its published bounds/restrictions. These are authorized successor amendments, not regressions or claims that Phase 34 originally shipped those features.
+
+### Current receipts and independent checks
+
+I independently checked both current Phase 34 refresh receipts against their input and raw-log hashes. All 48 source/fixture hashes and 8 raw logs in 34-REFRESH-RUN.json matched; its 22 rows cover 42 distinct selectors and 45 package-qualified root executions across 8 packages (8.343 seconds). All 105 input hashes and 11 raw logs in 34-REFRESH-REGRESSION.json matched; its 43 rows cover 107 distinct selectors and 110 package-qualified root executions across 11 packages (46.825 seconds). The selected root events matched the expected RUN/PASS sets, with zero missing, failed, or skipped roots. The regression set includes all 70 original Phase 34 names, all Phase 33 validation-map matches, and the 11 successor roots. The current checkout adds planning changes after the receipt source revisions; no compiler or test source changes occurred, and the receipt-bound input hashes still match.
+
+I also ran this bounded independent set on the current checkout with GOCACHE=/tmp/ai-lang-verification-gocache, exact -run selectors, -count=1, and a 10-second timeout. Every named test passed; no selected test was skipped:
+
+| Focus | Named selectors | Result |
+|---|---|---|
+| Diagnostic location and text rendering (./internal/compiler/protocol) | TestPhase34DiagnosticLocations, TestPhase34HumanSnippetRendering | PASS (0.56 s) |
+| Recovery corpus and negative controls (./internal/compiler/syntax) | TestPhase34RecoveryCorpus, TestPhase34RecoveryControls | PASS (0.58 s) |
+| Phase 34 manifest witnesses, finite census, and drift controls (./internal/compiler/session) | TestPhase34SurfaceManifestWitnesses, TestPhase34SurfaceManifestCensus, TestPhase34SurfaceManifestControls | PASS (0.88 s) |
+| Public diagnostic and surface routes (./cmd/schway) | TestPhase34CheckDiagnosticPresentation, TestPhase34SurfaceRoute | PASS (0.58 s) |
+| Additive JSON repair compatibility (./cmd/schway-repair) | TestPhase34RepairJSONCompatibility | PASS (0.61 s) |
+| Successor manifest witnesses (./internal/compiler/session) | TestPhase35SurfaceManifestWitnesses, TestPhase36SurfaceManifestCallWitnesses, TestPhase37FileRouteSurfaceFacts | PASS (0.63 s) |
+| Phase 37 file-route grammar (./cmd/schway) | TestPhase37FileRunGrammar | PASS (0.46 s) |
+
+The eight plan-level artifact queries report all 57/57 declared occurrences present and substantive. The path-based link query cannot parse some prose-origin and fixture-target declarations; I manually traced all 22/22 declared links through the implementation and named behavioral controls. The current traces cover captured-source handoff, imported-unit mapping, diagnostic JSON/text projection and identity, parser refusal/recovery wiring, current manifest derivation, CLI argument routing, independent witness comparison, and repair decoding. Level-4 data-flow remains real: presentation uses captured compiler input, recovery consumes the actual draft bytes, and manifest facts come from current typed compiler state rather than static fallback data.
+
+DX-20, DX-21, DX-22, and DX-23 remain satisfied, with no additional Phase 34 requirement orphaned from the plans. The decision-coverage query for the Phase 34 context records 26/26 honored. The existing security register remains 19/19 authored mitigations closed, zero open, ASVS L1 only. The current explicit review scope remains 48 files with zero current critical, warning, or info findings; the three historical warnings are recorded as fixed and none remain open. The wider degraded resolver result is not counted as reviewed.
+
+### Anti-patterns, probes, and limits
+
+The current review-listed implementation and evidence files contain no unresolved TBD, FIXME, or XXX markers. Two uses of “placeholder” are explanatory comments about an unused internal IR place and a layout field; neither is an empty implementation or user-visible behavior. The bounded selector runs above skipped nothing. A separate optional Phase 37 native sanitizer test contains a host-capability skip, but that native test was not selected or represented as executed here. No Phase 34 probe was declared, and no conventional project probe script applies.
+
+No local whole-package/project suite, native matrix, hosted dispatch, new UAT session, or hosted receipt binding was run. Human readability and cold/warm whole-loop latency remain unmeasured as required by the existing scope; this refresh does not claim those qualities. Phase 38 remains the owner of hosted receipt binding. No goal gap or new human-verification item is outstanding.
