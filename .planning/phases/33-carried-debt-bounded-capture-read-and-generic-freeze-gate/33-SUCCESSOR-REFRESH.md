@@ -79,3 +79,18 @@ refusal catalog, M006 receipts and frozen corpus/core/C artifacts remain
 unchanged. Both warning dispositions are documented in 33-REVIEW-FIX.md.
 An independent three-file closure review and goal verifier still own their
 respective verdicts; parent checks do not substitute for either.
+
+### Final closure gate — 2026-10-15
+
+The closure review confirmed WR-01/02 and identified adjacent WR-03/04. All
+four findings now have tested fixes, while historical CR-01 stays fixed.
+Current coverage checks pass 71 controls (12 valid, 59 invalid) and all 60
+summaries; malformed case records and seven reached false-pass controls now
+produce explicit refusal, and both multiword stderr controls remain valid.
+The final normalized/bounded 18-row parent run passed 49/49 distinct named
+roots across six packages in 70.834 seconds, with no missing/fail/skip; seven
+metadata/ledger supplemental roots also passed. This is one observed local
+run, not a performance distribution. Exact logs, root sets, source hashes and
+RED/GREEN provenance are in [33-FINAL-REFRESH-RUN.json](33-FINAL-REFRESH-RUN.json).
+Earlier 47/48-root snapshots remain historical at their own bound inputs.
+The final goal verifier owns the independent verdict and canonical fingerprint.

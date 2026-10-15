@@ -133,3 +133,14 @@ the original implementations and pass after repair. Both use existing
 standard-library/POSIX facilities; no authority, dependency or hosted binding
 is added. The L1 source review retains 17 closed authored dispositions and
 zero open threats. The final verifier must include these changed inputs.
+
+## Closure record-shape follow-up — 2026-10-15
+
+The review's adjacent WR-03/WR-04 cases remain within the same authored
+manifest/metadata boundaries. Case-record validation uses an explicit reason
+so empty program data cannot mean no mismatch, and preserves the producer's
+free-text stderr tail. Coverage metadata now checks required entry fields and
+local canonical scalar/list shapes as well as per-verification fields. The
+fixes add no dependency or new trust boundary; all 17 authored L1 dispositions
+remain closed. Final source-bound controls and the independent goal verifier
+must cover these latest inputs, not reuse the preceding snapshots as current.

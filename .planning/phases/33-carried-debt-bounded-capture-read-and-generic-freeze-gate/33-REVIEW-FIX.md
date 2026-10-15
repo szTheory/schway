@@ -1,7 +1,7 @@
 ---
 phase: "33"
 review: 33-REVIEW.md
-fixed: 3
+fixed: 5
 skipped: 0
 status: complete
 ---
@@ -20,7 +20,9 @@ The six malformed-list subtests and the existing receipt/freeze/golden/producer/
 
 None.
 
-## Fixed Issues — Phase 37 successor refresh, 2026-10-15
+## Fixed Issues
+
+Phase 37 successor refresh, 2026-10-15.
 
 ### WR-01: Coverage checker accepts incomplete verification records
 
@@ -54,3 +56,39 @@ seconds). RED: `/tmp/schway33-wr02-red.log`, exit 1. GREEN:
 Only `scripts/check-receipts.sh` and
 `internal/compiler/session/session_receipt_gate_test.go` changed for WR-02.
 No frozen golden, hosted log, corpus receipt or dependency changed.
+
+## Fixed Issues
+
+Closure boundary cases, 2026-10-15.
+
+### WR-03: Empty case program bypasses the reverse inventory check
+
+The receipt gate now emits an explicit full reason for malformed case records
+rather than using an empty field as a no-mismatch sentinel. Required fields
+are checked before inventory membership. The producer's real grammar is seven
+logical fields: STDERR consumes the remainder and may contain spaces. The
+repair preserves that grammar instead of imposing a false seven-token ceiling.
+Seven malformed rows with matching 40-case logs reached false passes before
+the repair; both multiword stderr controls remain accepted. The repaired six
+receipt roots passed without skips (40.881 seconds); shell syntax and diff
+checks passed. RED: `/tmp/schway33-wr03-red.log`, exit 1. GREEN:
+`/tmp/schway33-wr03-green.log`, exit 0. New refusal: `case_table_malformed`.
+
+### WR-04: Coverage checker still accepts incomplete entry metadata
+
+The local canonical SUMMARY subset now checks nonempty string IDs and
+descriptions, unique IDs, strict boolean human_judgment, nonblank checkpoint
+rationale and optional-but-list verification shape. Scalar or malformed list
+items fail closed; each mapping retains the required item-field checks from
+WR-01. The guard is an explicit indentation/scalar subset, not a full YAML
+implementation. Current summaries retain their valid objective or human
+checkpoint classification. Reached malformed-entry controls and the final
+current-corpus outcome are recorded in the final closure receipt. RED:
+`/tmp/schway33-wr04-red.log`; GREEN: `/tmp/schway33-wr04-green.log`. No
+existing summary needs a metadata rewrite for this repair.
+
+Final WR-04 result: 71 controls (12 valid, 59 invalid) and all 60 current
+summaries pass. The primary RED reproduced 29 false accepts and one valid
+reordered-entry false refusal; the final boundary RED reached five additional
+malformed-shape accepts. Final GREEN package time was 0.246 seconds.
+The intermediate boundary RED is `/tmp/schway33-wr04-shape-red.log`.

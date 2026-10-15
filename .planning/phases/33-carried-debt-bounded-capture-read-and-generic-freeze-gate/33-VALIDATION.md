@@ -54,7 +54,7 @@ created: "2026-10-13"
 | QLT-15 | Phase 28 VALIDATION/SECURITY accepted; planning-doc meta-tests pass | meta | `go test ./internal/compiler/session -run 'TestPhase20ValidationLifecycle|TestVerificationGroundedness|TestValidationRowGradesAreEarnedOverArchivedCorpus|TestStaticTestIndexMatchesGoTestList' -count=1` | ✅ | ✅ green |
 | EVD-16 | generic gates preserve the catalog through literal goldens (migration step 2) | integration | `go test ./internal/compiler/session -run 'TestReceiptGateDifferential|TestFreezeGateDifferential' -count=1` | ✅ | ✅ green |
 | EVD-16 | archived M006 receipts accepted; armed controls reject | integration | `go test ./internal/compiler/session -run 'TestReceiptGateArchivedM006|TestReceiptGate' -count=1` | ✅ | ✅ green |
-| EVD-16 | malformed control/program lists cannot waive required names or case-program membership | integration | `go test ./internal/compiler/session -run 'TestReceiptGateMalformedControls|TestReceiptGateProgramInventory' -count=1` | ✅ | ✅ green |
+| EVD-16 | malformed control/program/case records cannot waive required names or inventory membership | integration | `go test ./internal/compiler/session -run 'TestReceiptGateMalformedControls|TestReceiptGateProgramInventory|TestReceiptGateCaseRecords' -count=1` | ✅ | ✅ green |
 | EVD-16 | manifest sha256 pinned and rows grounded in archived logs | unit | `go test ./internal/compiler/session -run 'TestPhase32ProducerCaseTable' -count=1` | ✅ | ✅ green |
 | EVD-16 | no `check-phase32-*` caller; both scripts absent | static | `go test ./internal/compiler/session -run 'TestNoCheckPhase32Caller' -count=1` | ✅ | ✅ green |
 | EVD-16 | living-claim marker check generalized by label | unit | `go test ./internal/compiler/session -run 'TestPhase32ReceiptLivingClaims' -count=1` | ✅ | ✅ green |
@@ -176,3 +176,22 @@ the final parent rerun and independent goal verdict remain separate gates.
 | Gaps found | 6 |
 | Resolved | 6 |
 | Escalated | 0 |
+
+## Validation Audit 2026-10-15
+
+| Metric | Count |
+|---|---|
+| Gaps found | 8 |
+| Resolved | 8 |
+| Escalated | 0 |
+
+## Final parent refresh evidence — 2026-10-15
+
+After all four review fixes, all 18 current command rows resolve and the
+normalized, 600-second-bounded package runs passed 49 exact roots across six
+packages. Seven metadata/ledger supplemental roots passed with no missing,
+failed or skipped roots. The final registry remains 21 tasks/C01-C28; coverage
+metadata has 71 reached controls and all 60 current summaries pass. All eight
+metadata/review gap categories are resolved with no escalation or human-only
+item. 33-FINAL-REFRESH-RUN.json distinguishes these final parent checks from
+earlier historical snapshots and the pending independent goal verdict.
