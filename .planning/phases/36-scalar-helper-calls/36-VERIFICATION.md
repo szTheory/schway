@@ -1,6 +1,6 @@
 ---
 phase: 36-scalar-helper-calls
-verified: 2026-10-15T07:53:00Z
+verified: 2026-10-15T08:01:22Z
 status: passed
 score: "32/32 must-haves verified"
 covered_files:
@@ -40,6 +40,7 @@ covered_files:
   - ".planning/phases/36-scalar-helper-calls/36-REVIEW-SUPPLEMENT.md"
   - ".planning/phases/36-scalar-helper-calls/36-REVIEW.md"
   - ".planning/phases/36-scalar-helper-calls/36-SECURITY.md"
+  - ".planning/phases/36-scalar-helper-calls/36-TRANSITION-CHECK.md"
   - ".planning/phases/36-scalar-helper-calls/36-UI-REVIEW.md"
   - ".planning/phases/36-scalar-helper-calls/36-VALIDATION.md"
   - ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs"
@@ -91,7 +92,7 @@ covered_files:
   - "testdata/phase36/prechange-corpus.json"
   - "testdata/phase36/surface-census.json"
   - "testdata/phase36/surface-witnesses.json"
-covered_digest: "v3:sha256:67ee4c139122eede2f242c01bc121b275244ef898f1f1916daf85b2bfa5fdfb4"
+covered_digest: "v3:sha256:d70149f072a81475f3adb8caa33acc62ab7f56102bc2e674bdbdf570939af00a"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -109,7 +110,7 @@ re_verification:
 
 **Phase Goal:** A scalar function can be factored into small helpers: it calls another scalar function with one U64 or Bool argument and uses the result, including calls into imported modules, with the same defect behavior on both engines and every peer re-deriving the call independently.
 
-**Verified:** 2026-10-15T07:53:00Z
+**Verified:** 2026-10-15T08:01:22Z
 **Status:** passed
 **Re-verification:** Yes — after closing the two prohibition gaps
 
@@ -248,8 +249,11 @@ No current gaps remain. The initial verification dated 2026-10-15T07:31:00Z pass
 
 The original 45-root feature capture remains bound to 979357388171339005fd6dbd65aa760810ae9384. No tracked compiler/test/corpus/dependency path changed since that capture. The added proof bridge is limited to the named assertions and local Node/Go toolchain recorded in 36-PROHIBITION-EVIDENCE.md; it does not claim broader production-source or hosted validation.
 
+## Post-completion metadata refresh — 2026-10-15
+
+`phase.complete 36` ran once after the 32/32 passed verification, closed CALL-01/CALL-02, and advanced the tracker. The subsequent completion-path correction expanded three RED-receipt paths and the `examples/phase24/error.schway` reference in 36-05-SUMMARY.md; each referenced file exists. The diff from completion commit `5a08f5e5` to metadata commit `6b5ff67c` contains planning-document changes and an empty Phase 37 `.gitkeep`; there are no compiler, test, fixture, example-content, or dependency changes. The transition record was reviewed and added to this report's covered inputs. Because implementation evidence is unchanged, the runtime producers, feature capture, and regressions were not rerun.
 
 ---
 
-_Verified: 2026-10-15T07:53:00Z_
+_Verified: 2026-10-15T08:01:22Z_
 _Verifier: gsd-verifier_
