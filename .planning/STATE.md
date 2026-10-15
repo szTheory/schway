@@ -4,18 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 36
 current_phase_name: Scalar Helper Calls
-current_plan: 6
+current_plan: 7
 status: executing
-stopped_at: Completed 36-05-PLAN.md
-last_updated: "2026-10-15T03:26:37.289Z"
+stopped_at: Completed 36-06-PLAN.md
+last_updated: "2026-10-15T04:26:55.933Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 36 execution started
-state_head: 3794dfaabb19d177eb94d689103e0d26ac013c1c
+state_head: 37687a0c956b7e07121587c2cef77937487b132d
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 29
-  completed_plans: 26
+  completed_plans: 27
   percent: 50
 ---
 
@@ -126,7 +126,7 @@ plans.
 ## Current Position
 
 Phase: 36 (Scalar Helper Calls) — EXECUTING
-Current Plan: 6
+Current Plan: 7
 Total Plans in Phase: 8
 Status: Ready to execute
 Last activity: 2026-10-14 — Phase 36 execution started
@@ -614,6 +614,7 @@ subset alone.
 | Phase 36 P03 | 22m | 3 tasks | 7 files |
 | Phase 36 P04 | 27min | 3 tasks | 4 files |
 | Phase 36 P05 | 28m | 3 tasks | 9 files |
+| Phase 36 P06 | 38min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -864,6 +865,9 @@ decision history; they no longer describe current status.
 - [Phase 36]: Admit checked scalar call-only wrappers while keeping legacy, ownership, and foreign-call refusals in place.
 - [Phase 36]: Use retained bounded path storage so nested call identities survive callee return.
 - [Phase 36]: Keep optional capture exhaustion separate from actual output, exit status, and later defect attribution.
+- [Phase 36]: Independent expected CRC values come from Python integer arithmetic, never from Schway engine output.
+- [Phase 36]: Checker source intent, raw core/origin contracts, causal attribution, and actual numeric engine outcomes remain separate proof owners.
+- [Phase 36]: Native ByteView caller composition changes only checked scalar-call applicability and borrowed-view caller admission; the scalar call signature remains U64/Bool.
 
 ### Pending Todos
 
@@ -1111,8 +1115,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-15T03:26:37.229Z
-Stopped at: Completed 36-05-PLAN.md
+Last session: 2026-10-15T04:26:55.396Z
+Stopped at: Completed 36-06-PLAN.md
 Resume file: None
 Next action: $gsd-discuss-phase 36
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.

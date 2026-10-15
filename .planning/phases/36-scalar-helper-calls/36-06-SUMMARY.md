@@ -13,28 +13,30 @@ provides:
   - Local and imported repeated crc_step source witnesses with independent literal answers.
   - Interpreter and native O0/O3/O3-LTO answer and defect controls for scalar helper calls.
   - Public helper route, legacy ByteView callee bounds, and engine mutation evidence.
-  - Exact native ByteView caller-helper emission refusal retained as an unresolved gate.
+  - Native borrowed-ByteView caller/helper composition for boundary and repeated fixture/FileBytes loops.
 affects: ["36-07", "36-08", native-cgen, CALL-01, CALL-02]
 
 actuals:
-  tokens: 18052.25
-  tasks: 2
-  commits: 8
-commits: 8
+  tokens: 19794.75
+  tasks: 3
+  commits: 11
+commits: 11
 plan_head_before: b2bccdd07107a881a83bb1bc8174e30e3c9eea0c
-plan_head_after: 47aae9946b6be7667451e63fccacd16595820013
+plan_head_after: 37687a0c956b7e07121587c2cef77937487b132d
 
 tech-stack:
   added: []
   patterns:
     - Isolated source overlays run actual interpreter/native consumers and require the named semantic assertion to kill each mutant.
     - Literal fixtures record independent arithmetic provenance separately from engine output.
+    - Mixed borrowed-ByteView callers retain legacy ownership emitters while scalar helper arguments are evaluated before helper entry.
 key-files:
   created:
     - examples/helper_calls/crc_step.schway
     - examples/helper_calls/importer.schway
     - examples/helper_calls/public.schway
     - testdata/phase36/helper-values.json
+    - internal/compiler/session/session_phase36_byteview_test.go
     - internal/compiler/session/session_phase36_calls_test.go
     - internal/compiler/session/session_phase36_peer_mutation_test.go
     - .planning/phases/36-scalar-helper-calls/36-06-task1-red-evidence.json
@@ -43,11 +45,12 @@ key-files:
   modified:
     - testdata/phase36/new-fixture-ledger.json
     - cmd/schway/main_phase36_test.go
+    - internal/compiler/cgen/cgen_program.go
 
 key-decisions:
   - "Independent expected CRC values come from Python integer arithmetic, never from Schway engine output."
   - "Checker source intent, raw core/origin contracts, causal attribution, and actual numeric engine outcomes remain separate proof owners."
-  - "Interpreter caller-before-entry evidence does not discharge the native ByteView caller requirement."
+  - "Native ByteView caller composition changes only checked scalar-call applicability and borrowed-view caller admission; the scalar call signature remains U64/Bool."
 
 patterns-established:
   - "Mutant runs require a fresh no-op positive, the named semantic failure, and a restored positive."
@@ -85,29 +88,45 @@ coverage:
         status: pass
     human_judgment: false
   - id: D4
-    description: "Native caller byte_at bounds before scalar helper entry."
+    description: "Native caller byte_at bounds before scalar helper entry, plus repeated fixture and FileBytes ByteView helper loops."
     requirement: CALL-02
     verification:
       - kind: integration
-        ref: "internal/compiler/session/session_phase36_calls_test.go#TestPhase36NativeByteViewCallerArgumentRefusal"
-        status: fail
-    human_judgment: true
-    rationale: "The native build is refused before a process exists, so automation cannot establish native caller evaluation order. The parent must route the cgen repair through GSD debug and rerun this consumer case."
+        ref: "internal/compiler/session/session_phase36_calls_test.go#TestPhase36NativeByteViewCallerArgumentBoundary"
+        status: pass
+      - kind: integration
+        ref: "internal/compiler/session/session_phase36_byteview_test.go#TestPhase36NativeByteViewLoopHelpers"
+        status: pass
+      - kind: integration
+        ref: "internal/compiler/session/session_phase36_byteview_test.go#TestPhase36NativeFileByteViewLoopHelpers"
+        status: pass
+      - kind: unit
+        ref: "internal/compiler/session/session_phase36_byteview_test.go#TestPhase36ByteViewArgumentOrderMutationControls"
+        status: pass
+    human_judgment: false
+  - id: D5
+    description: "The native argument-order oracle kills early-helper mutants at O0/O3/O3-LTO with clean and restored positives."
+    requirement: CALL-02
+    verification:
+      - kind: unit
+        ref: "internal/compiler/session/session_phase36_byteview_test.go#TestPhase36ByteViewArgumentOrderMutationControls"
+        status: pass
+    human_judgment: false
 
-duration: 23min
+duration: 38min
 completed: 2026-10-15
-status: halted
+status: complete
 ---
 
 # Phase 36 Plan 36-06: Scalar Helper Calls Summary
 
-**Repeated local and imported crc_step calls now have independent interpreter/native witnesses and mutation controls; native ByteView caller ordering remains blocked by a cgen refusal.**
+**Repeated local/imported crc_step helpers and borrowed-ByteView caller, fixture, and FileBytes loops now have literal interpreter/native witnesses and O0/O3/LTO mutation controls.**
 
 ## Performance
 
-- **Duration:** 23 minutes, from the first Task 1 RED commit at 2026-10-15T03:47:03Z through the final verified test commit at 2026-10-15T04:09:36Z.
-- **Tasks:** 2 complete; Task 2's native caller-ordering obligation is blocked.
-- **Files modified:** 11 plan-owned source, fixture, test, and RED-evidence files.
+- **Duration:** 38 minutes across the initial execution and the parent-owned debug repair.
+- **Tasks:** 3/3 complete.
+- **Files modified:** 13 plan source, fixture, test, and RED-evidence files.
 
 ## Accomplishments
 
@@ -117,18 +136,20 @@ status: halted
 - Kept public conformance on its existing interpreter/native route: both return the independent execution value `1994146192`. The existing required-input CLI test remains intact; no U64 default or flag was added. Capture exhaustion and disabled capture remain separate from actual success/defect outcomes.
 - Preserved the separate legacy ByteView callee bounds case through fixture bytes, file bytes, retained native execution, and native O0/O3/O3-LTO. The defect remains `byte index out of bounds`, exit 65, with no stdout; restored controls pass.
 - Killed four interpreter mutants and twelve native mutants at their named value or terminal assertions. Every mutant had a fresh no-op positive and a restored positive; compiler errors and upstream refusal were not counted as kills.
+- Resolved the mixed caller case in parent-owned debug work. The native boundary/loop consumers execute 21 O0/O3/O3-LTO lanes; OOB arguments exit 65 with zero helper calls, valid first/last reads return 90/100, and both fixture and real FileBytes loops return 928 with nine distinct helper returns.
+- Killed three native argument-order mutants across O0/O3/O3-LTO at the exact zero-entry assertion, with fresh no-op and restored positives. Independent executionpeer validation accepts successful fixture and FileBytes traces.
 
-## Native ByteView Caller Blocker
+## Native ByteView Caller Resolution
 
-**Clarification dated 2026-10-15:** The caller fixture `identity(byte_at(bytes, byte_len(bytes)))` still proves interpreter evaluation order: the byte-index defect occurs with one live owner and zero `identity` calls. That interpreter result does not establish native caller ordering.
+**Resolution dated 2026-10-15:** The original interpreter-only boundary evidence did not establish native caller ordering. The parent routed the refusal through GSD debug; RCA found that the scalar-call applicability predicate treated any legacy non-scalar call in the graph as a veto, disabling dynamic support for a borrowed-ByteView caller.
 
-`TestPhase36NativeByteViewCallerArgumentRefusal` attempts the same caller through `session.BuildApplication` with the Phase29 fixture binding manifest. The current native build stops before producing an executable with:
+Commit `5d874384` selects checked scalar calls independently of legacy ownership calls and admits the existing ByteView parameter place in borrowed-view scalar caller bodies. Scalar helper signatures remain U64/Bool; legacy ownership emitters and release pairing remain in place. The earlier exact refusal was reproduced by overlaying only the pre-fix `cgen_program.go` and disappeared on reapply.
 
-```text
-operation "s1:examples.phase29.adler32_fixture:fn:adler32:op:4": scalar call emission requires dynamic invocation support
-```
+The pre-fix native caller had refused with the exact error `operation "s1:examples.phase29.adler32_fixture:fn:adler32:op:4": scalar call emission requires dynamic invocation support`. That was a compiler blocker, not human UAT; the interpreter-only evidence did not satisfy the native consumer requirement. The error was reproduced by overlaying only the pre-fix `cgen_program.go` and disappeared after the repair.
 
-The refusal originates at `internal/compiler/cgen/cgen_program.go:2934`. No native caller-side OOB or helper-entry outcome was observed, so CALL-02 remains incomplete here. The parent will route the cgen repair through GSD debug; after that repair, rerun the exact native consumer at O0/O3/O3-LTO and require zero helper calls on the OOB case plus a valid-index control that enters the helper. This plan is intentionally **halted**, not complete.
+`TestPhase36NativeByteViewCallerArgumentBoundary` runs first-byte, last-byte, at-length, past-length, and empty-view cases at O0/O3/O3-LTO. Valid reads return `90` and `100` with one helper entry. All three OOB cases exit 65 with exact `byte index out of bounds` stderr and zero helper entries. `TestPhase36NativeByteViewLoopHelpers` and `TestPhase36NativeFileByteViewLoopHelpers` each run their successful repeated helper loop at all three lanes and return `928` with nine distinct helper returns; successful evidence passes executionpeer validation.
+
+`TestPhase36ByteViewArgumentOrderMutationControls` moves helper entry before the byte read in source overlays. Across O0/O3/O3-LTO, every mutant fails at `native helper invocation events=1 want 0`, while fresh no-op and restored positives pass. The cgen repair, consumer roots, and mutation controls are documented in [the resolved debug record](../../debug/resolved/phase36-byteview-helper.md), commits `5d874384` and `37687a0c`.
 
 ## Task Commits
 
@@ -140,35 +161,38 @@ The refusal originates at `internal/compiler/cgen/cgen_program.go:2934`. No nati
 6. **Task 2 blocker evidence** — `126ba940` (`test(36-06): record native ByteView caller emission refusal`)
 7. **Task 3 GREEN** — `22bc7db3` (`test(36-06): kill helper call engine mutants`)
 8. **Mutation harness cleanup** — `47aae994` (`refactor(36-06): run native lane child without skips`)
+9. **Initial halted summary** — `57060d8e` (superseded by this completion summary)
+10. **Native ByteView composition repair** — `5d874384` (`fix(36): compose native ByteView callers with scalar helpers`)
+11. **Debug resolution record** — `37687a0c` (`docs(debug): resolve phase36-byteview-helper session`)
 
-The metadata completion commit and STATE/ROADMAP advancement are intentionally pending the parent-owned cgen repair and a complete rerun.
+The final summary/STATE/ROADMAP metadata commit follows this fresh verification.
 
 ## Verification
 
 - Task 1: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase36HelperAnswersAndDefects|TestPhase36HelperOptimizationMatrix|TestPhase36HelperUBSan)$' -count=1 -v -timeout=600s` — PASS.
-- Task 2: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway ./internal/compiler/session -run '^(TestPhase36PublicHelperConformance|TestPhase321RunInputRequiredCLI|TestPhase36ByteViewCallerArgumentBoundary|TestPhase36NativeByteViewCallerArgumentRefusal|TestPhase36LegacyByteViewCalleeBounds|TestPhase36NativeCallCaptureOutcomeSeparation|TestPhase29InterpreterFixtureVectors|TestPhase29InterpreterDefectWithLiveOwner|TestPhase29NativeFixtureVectors)$' -count=1 -v -timeout=600s` — PASS, with the refusal explicitly logged; this is not native semantic coverage.
+- Task 2: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway ./internal/compiler/session -run '^(TestPhase36PublicHelperConformance|TestPhase321RunInputRequiredCLI|TestPhase36ByteViewCallerArgumentBoundary|TestPhase36NativeByteViewCallerArgumentBoundary|TestPhase36NativeByteViewLoopHelpers|TestPhase36NativeFileByteViewLoopHelpers|TestPhase36ByteViewArgumentOrderMutationControls|TestPhase36LegacyByteViewCalleeBounds|TestPhase36NativeCallCaptureOutcomeSeparation|TestPhase29InterpreterFixtureVectors|TestPhase29InterpreterDefectWithLiveOwner|TestPhase29NativeFixtureVectors)$' -count=1 -v -timeout=600s` — PASS; all 21 native consumer lanes and all three ordering mutants ran.
 - Task 3: `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase36EngineCallMutationControls|TestPhase36HelperAnswersAndDefects)$' -count=1 -v -timeout=600s` — PASS; 4 interpreter and 12 native mutants killed, with O0/O3/O3-LTO positives and restorations.
 - RED classifiers for Task 1, Task 2, and Task 3 each returned `RED_EVIDENCE_OK`. Each target failed on its intended numeric, route-value, or mutation-control assertion before GREEN.
+- Parent-manager fresh gates also passed for the four native consumer/control roots, adjacent helper/capture/legacy roots, independent peer/capacity roots, and both frozen C baseline roots after the three ledger hash/schema rows were repaired. This manager receipt is recorded in the debug report; the three task selectors above were rerun locally for this completion.
 - No full suite, broad cross-program matrix, Phase37 CLI, full CRC implementation, or guide was run or added.
 
 ## Deviations from Plan
 
-- Added a focused refusal test so the native ByteView caller gap remains visible as a reproducible compiler boundary instead of being inferred from interpreter evidence. No production cgen change was made; the parent owns its GSD debug route.
-- Task 2 remains incomplete until native caller OOB-before-entry behavior runs successfully. Its public route, interpreter caller case, native legacy callee case, and capture controls pass.
+- The native mixed-call applicability and borrowed-ByteView admission repair was executed as a separate parent-owned GSD debug session, with one production revision and a narrow fixture-ledger source-hash/schema correction. Those commits are included above; the final native semantics were rerun through the exact Task 2 selector.
 
-**Total deviations:** 1 scoped blocker-evidence addition; 1 unresolved plan obligation.
+**Total deviations:** 1 separately routed debug correction and 1 required ledger metadata repair. No dependencies, backend, schema, file CLI, or phase37 scope were added.
 
-## Deferred Issues
+## Next Phase Readiness
 
-- **Native caller-side ByteView OOB before scalar helper entry:** reproduce with the inline Phase29 fixture replacing `adler32` by the function in `TestPhase36NativeByteViewCallerArgumentRefusal` (`internal/compiler/session/session_phase36_calls_test.go:655`). The exact current refusal is `operation "s1:examples.phase29.adler32_fixture:fn:adler32:op:4": scalar call emission requires dynamic invocation support`. Native execution did not begin. Parent-owned next action: route cgen through GSD debug, then implement and verify the native consumer at O0/O3/O3-LTO.
+Plan36-06 is complete. Phase36 remains open: Plans36-07 and 36-08 are still pending and no Phase37 work was started.
 
 ## Self-Check: PASSED
 
-- This summary file exists at the canonical Phase36 Plan36-06 path.
-- All eight recorded task/evidence commits are ancestors of HEAD.
-- The owned source/test scan found no TODO/FIXME/placeholder stubs or skipped tests.
-- The native caller refusal is recorded as a blocker; no completion state is claimed.
+- Summary, test, and debug commits are verified in the current history.
+- The three focused selectors passed with current HEAD; the new native caller, fixture-loop, FileBytes-loop, and mutation roots executed rather than being skipped.
+- The native caller refusal remains recorded above as historical pre-fix evidence, followed by its dated resolution and fresh semantic evidence.
+- No TODO/FIXME/placeholder stubs or skipped roots were found in the owned source/test changes.
 
 ---
 *Phase: 36-scalar-helper-calls*
-*Status: halted on native ByteView caller support*
+*Status: plan complete; Phase36 remains in progress*
