@@ -3,16 +3,20 @@ phase: 36
 review: 36-REVIEW.md
 titles: json
 findings:
-open: 0
-total: 0
-unparsed: 1
-recorded: 2026-10-15T06:23:43.322Z
+  - id: WR-01
+    severity: warning
+    disposition: open
+    title: "Truncated repeated-call traces omit the expected callee"
+open: 1
+total: 1
+recorded: 2026-10-15T06:24:04.838Z
 ---
 
 # Phase 36: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
+| WR-01 | warning | open | - |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
