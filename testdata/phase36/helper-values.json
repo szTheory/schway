@@ -1,0 +1,26 @@
+{
+  "schema": "schway.phase36.helper-values/1",
+  "provenance": {
+    "method": "Independent Python integer arithmetic, with no Schway compiler or engine output used to derive expected values.",
+    "crc_step": "(state >> 1) ^ 0xEDB88320 when state is odd; otherwise state >> 1.",
+    "loop": "Apply crc_step four times, starting at 305419897.",
+    "host": "Darwin arm64; Go 1.24.0; installed Clang version recorded by the native runner."
+  },
+  "cases": [
+    {"source":"crc_step.schway","case":"single-step-odd-one","input":"1","expected_decimal":"3988292384","expected_stdout":"3988292384\n","expected_stderr":"","expected_exit":0,"defect_reason":"","calculation":"(1 >> 1) ^ 0xEDB88320"},
+    {"source":"crc_step.schway","case":"single-step-even-two","input":"2","expected_decimal":"1","expected_stdout":"1\n","expected_stderr":"","expected_exit":0,"defect_reason":"","calculation":"2 >> 1"},
+    {"source":"crc_step.schway","case":"single-step-high-even","input":"305419896","expected_decimal":"152709948","expected_stdout":"152709948\n","expected_stderr":"","expected_exit":0,"defect_reason":"","calculation":"305419896 >> 1"},
+    {"source":"crc_step.schway","case":"single-step-high-odd","input":"305419897","expected_decimal":"3835865116","expected_stdout":"3835865116\n","expected_stderr":"","expected_exit":0,"defect_reason":"","calculation":"(305419897 >> 1) ^ 0xEDB88320"},
+    {"source":"crc_step.schway","case":"single-step-u32-maximum","input":"4294967295","expected_decimal":"2454158559","expected_stdout":"2454158559\n","expected_stderr":"","expected_exit":0,"defect_reason":"","calculation":"(4294967295 >> 1) ^ 0xEDB88320"},
+    {"source":"crc_step.schway","case":"local-four-step-loop","input":"305419897","expected_decimal":"4046247459","expected_stdout":"4046247459\n","expected_stderr":"","expected_exit":0,"defect_reason":"","calculation":"Four independent reflected steps from 305419897."},
+    {"source":"importer.schway","case":"imported-four-step-loop","input":"305419897","expected_decimal":"4046247459","expected_stdout":"4046247459\n","expected_stderr":"","expected_exit":0,"defect_reason":"","calculation":"Same four independently calculated steps through the local import."},
+    {"source":"inline","case":"scalar-pairs-true-branch","input":"1","expected_decimal":"12","expected_stdout":"12\n","expected_stderr":"","expected_exit":0,"defect_reason":"","calculation":"Computed U64 arguments yield 5; U64-to-Bool and Bool-to-Bool preserve true; Bool-to-U64 returns 7, then the true branch adds 3."},
+    {"source":"inline","case":"scalar-pairs-false-branch","input":"10","expected_decimal":"36","expected_stdout":"36\n","expected_stderr":"","expected_exit":0,"defect_reason":"","calculation":"Computed U64 arguments yield 14; U64-to-Bool and Bool-to-Bool preserve false; Bool-to-U64 returns 11."},
+    {"source":"inline","case":"u64-helper-overflow","input":"18446744073709551615","expected_decimal":"","expected_stdout":"","expected_stderr":"schway: U64 addition overflow\n","expected_exit":65,"defect_reason":"U64 addition overflow","calculation":"Dynamic maximum-U64 increment inside a U64-returning callee."},
+    {"source":"inline","case":"bool-helper-overflow","input":"18446744073709551615","expected_decimal":"","expected_stdout":"","expected_stderr":"schway: U64 addition overflow\n","expected_exit":65,"defect_reason":"U64 addition overflow","calculation":"Dynamic maximum-U64 increment inside a Bool-returning callee."},
+    {"source":"inline","case":"u64-helper-zero-remainder","input":"4","expected_decimal":"","expected_stdout":"","expected_stderr":"schway: U64 remainder by zero\n","expected_exit":65,"defect_reason":"U64 remainder by zero","calculation":"A called helper returns 4 % 2 = 0; the enclosing U64 callee then takes 4 % 0."},
+    {"source":"inline","case":"bool-helper-zero-remainder","input":"4","expected_decimal":"","expected_stdout":"","expected_stderr":"schway: U64 remainder by zero\n","expected_exit":65,"defect_reason":"U64 remainder by zero","calculation":"A called helper returns 4 % 2 = 0; the Bool-returning callee then takes 4 % 0."},
+    {"source":"inline","case":"nested-helper-overflow","input":"18446744073709551615","expected_decimal":"","expected_stdout":"","expected_stderr":"schway: U64 addition overflow\n","expected_exit":65,"defect_reason":"U64 addition overflow","calculation":"outer(identity(maximum-U64)) defects on its dynamic increment."},
+    {"source":"inline","case":"late-loop-helper-overflow","input":"18446744073709551613","expected_decimal":"","expected_stdout":"","expected_stderr":"schway: U64 addition overflow\n","expected_exit":65,"defect_reason":"U64 addition overflow","calculation":"The third helper invocation overflows after two successful increments; no application value is printed."}
+  ]
+}

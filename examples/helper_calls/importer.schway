@@ -1,0 +1,19 @@
+module examples.helper_calls.importer
+
+import crc_step {
+  fn crc_step
+}
+
+export {
+  fn main
+}
+
+fn main(seed: U64) -> U64 {
+  var crc = seed
+  var i = 0
+  while i < 4 {
+    crc = crc_step(crc)
+    i = i + 1
+  }
+  crc
+}

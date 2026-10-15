@@ -1,0 +1,26 @@
+module crc_step
+
+export {
+  fn crc_step
+  fn main
+}
+
+fn crc_step(state: U64) -> U64 {
+  var next = state >> 1
+  if state & 1 == 1 {
+    next = next ^ 0xEDB88320
+  } else {
+    next = state >> 1
+  }
+  next
+}
+
+fn main(seed: U64) -> U64 {
+  var crc = seed
+  var i = 0
+  while i < 4 {
+    crc = crc_step(crc)
+    i = i + 1
+  }
+  crc
+}

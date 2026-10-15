@@ -1,4 +1,15 @@
 {
   "schema": "phase36.new-fixture-ledger/1",
-  "entries": []
+  "entries": [
+    {
+      "path": "examples/helper_calls/crc_step.schway",
+      "sha256": "0242b3a253a80d8818310897220494722eda3029e12f67baa34cfeb529a50d0f",
+      "reason": "New local application witness exports reflected-bit crc_step and repeats it four times from its U64 input."
+    },
+    {
+      "path": "examples/helper_calls/importer.schway",
+      "sha256": "da4db4e265aae96bf90ab17c5c4b064500115a93bb5095a192334be53a0bc5ab",
+      "reason": "New local-module application witness imports crc_step and repeats it four times from its U64 input."
+    }
+  ]
 }
