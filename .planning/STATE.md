@@ -2,21 +2,21 @@
 gsd_state_version: "1.0"
 milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
-current_phase: 36
-current_phase_name: Scalar Helper Calls
-current_plan: 8
-status: executing
-stopped_at: Completed 36-08-PLAN.md
-last_updated: "2026-10-15T05:31:00.140Z"
-last_activity: 2026-10-14
-last_activity_desc: Phase 36 execution started
-state_head: 92300103d4e64e14718e637c3c5e20281a364164
+current_phase: 37
+current_phase_name: CRC-32 Consumer, Interpreter File Route, and Guide
+current_plan: Not started
+status: planning
+stopped_at: Phase 36 complete, ready to plan Phase 37
+last_updated: "2026-10-15T07:56:19.284Z"
+last_activity: 2026-10-15
+last_activity_desc: Phase 36 complete, transitioned to Phase 37
+state_head: 8b10dae5cbf351f11a178ab7afe83219f5c27d25
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 29
   completed_plans: 29
-  percent: 50
+  percent: 67
 ---
 
 <!-- schway-current:start -->
@@ -125,13 +125,13 @@ plans.
 
 ## Current Position
 
-Phase: 36 (Scalar Helper Calls) — EXECUTING
-Current Plan: 8
+Phase: 37 — CRC-32 Consumer, Interpreter File Route, and Guide
+Current Plan: Not started
 Total Plans in Phase: 8
-Status: Ready to execute
-Last activity: 2026-10-14 — Phase 36 execution started
+Status: Ready to plan
+Last activity: 2026-10-15 — Phase 36 complete, transitioned to Phase 37
 
-Progress: [█████░░░░░] 50%
+Progress: [███████░░░] 67%
 
 ## M007 Planning
 
@@ -289,7 +289,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 316
+- Total plans completed: 324
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -317,6 +317,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 33 | 5 | - | - |
 | 34 | 8 | - | - |
 | 35 | 8 | - | - |
+| 36 | 8 | - | - |
 
 The archived aggregate preserves the cumulative project total. The detailed
 rows above are the M004 subset; do not recompute the project total from that
@@ -1122,7 +1123,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-10-15T05:30:59.600Z
-Stopped at: Completed 36-08-PLAN.md
+Stopped at: Phase 36 complete, ready to plan Phase 37
 Resume file: None
 Next action: $gsd-discuss-phase 36
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.

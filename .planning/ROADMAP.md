@@ -99,7 +99,7 @@ construct, so the manifest cannot drift.
 - [x] **Phase 33: Carried Debt, Bounded Capture Read, and Generic Freeze Gate** - The native capture file is read through a limit+1 bound before allocation, the 32.1 and Phase 29 review findings are closed or dispositioned, Phase 28 gains VALIDATION/SECURITY, and one milestone-agnostic freeze/receipt gate replaces `check-phase32-*`. (completed 2026-10-13)
 - [x] **Phase 34: Agent Diagnostics Floor and Surface Manifest** - Diagnostics carry line:col and a caret snippet, a syntax error yields one diagnostic, absent constructs get `surface.unsupported_*` hints, and `schway surface --json` prints a meta-tested manifest of the admitted surface. (completed 2026-10-13)
 - [x] **Phase 35: Bitwise Operators, Literal Shifts, and Hex Literals** - U64 `^ & |`, literal-amount `<< >>` and hex literals run with identical answers on both engines at every optimization level, and `adler32` uses `b << 16` with byte-identical pinned answers. (completed 2026-10-14)
-- [ ] **Phase 36: Scalar Helper Calls** - A scalar function calls another scalar function (one U64/Bool argument, including imported module functions), with independent peer derivation and callee defects surfacing on both engines.
+- [x] **Phase 36: Scalar Helper Calls** - A scalar function calls another scalar function (one U64/Bool argument, including imported module functions), with independent peer derivation and callee defects surfacing on both engines. (completed 2026-10-15)
 - [ ] **Phase 37: CRC-32 Consumer, Interpreter File Route, and Guide** - `crc32 FILE` prints exact CRC-32/ISO-HDLC from an ordinary-source module, a second consumer imports it, `schway run --engine=interpreter` runs file-bytes programs from the CLI, and an executable guide is test-run.
 - [ ] **Phase 38: Milestone Receipts** - Hosted ubuntu and macOS receipts for every M007 and earlier pinned program are bound once to the final M007 codedigest, after the milestone audit.
 
@@ -306,7 +306,7 @@ Plans:
 | 33. Carried Debt, Bounded Capture Read, and Generic Freeze Gate | 5/5 | Complete    | 2026-10-13 |
 | 34. Agent Diagnostics Floor and Surface Manifest | 8/8 | Complete    | 2026-10-13 |
 | 35. Bitwise Operators, Literal Shifts, and Hex Literals | 8/8 | Complete    | 2026-10-14 |
-| 36. Scalar Helper Calls | 8/8 | In Progress | - |
+| 36. Scalar Helper Calls | 8/8 | Complete    | 2026-10-15 |
 | 37. CRC-32 Consumer, Interpreter File Route, and Guide | 0/TBD | Not started | - |
 | 38. Milestone Receipts | 0/TBD | Not started | - |
 

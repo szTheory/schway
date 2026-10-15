@@ -43,8 +43,8 @@ acceptance record is kept at
 
 ### Scalar helper calls
 
-- [ ] **CALL-01**: A scalar function can call another scalar function with one U64 or Bool argument and use the U64 or Bool result in an expression or assignment. This includes calls to imported module functions. Recursion stays refused by the call graph. Callee defects (overflow, remainder, bounds) surface with the callee's reason and exit 65 on both engines.
-- [ ] **CALL-02**: Calls are derived independently by check, corevalidate, originvalidate and the execution peer. Mutants that drop the argument, the result or a callee defect are caught. Programs without scalar calls keep byte-identical generated C.
+- [x] **CALL-01**: A scalar function can call another scalar function with one U64 or Bool argument and use the U64 or Bool result in an expression or assignment. This includes calls to imported module functions. Recursion stays refused by the call graph. Callee defects (overflow, remainder, bounds) surface with the callee's reason and exit 65 on both engines.
+- [x] **CALL-02**: Calls are derived independently by check, corevalidate, originvalidate and the execution peer. Mutants that drop the argument, the result or a callee defect are caught. Programs without scalar calls keep byte-identical generated C.
 
 **Phase 36 source-grounded acceptance clarification (2026-10-14):** The original
 CALL-01/02 wording above and the roadmap criteria are preserved as provenance.
@@ -119,8 +119,8 @@ scalar-to-scalar call admission follows. See
 | BIT-02 | Phase 35 | Complete |
 | BIT-03 | Phase 35 | Complete |
 | BIT-04 | Phase 35 | Complete |
-| CALL-01 | Phase 36 | Pending |
-| CALL-02 | Phase 36 | Pending |
+| CALL-01 | Phase 36 | Complete |
+| CALL-02 | Phase 36 | Complete |
 | APP-13 | Phase 37 | Pending |
 | MOD-07 | Phase 37 | Pending |
 | APP-14 | Phase 37 | Pending |

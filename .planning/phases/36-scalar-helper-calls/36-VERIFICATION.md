@@ -1,8 +1,8 @@
 ---
 phase: 36-scalar-helper-calls
-verified: 2026-10-15T07:31:00Z
-status: gaps_found
-score: "30/30 observable truths verified; 0/2 prohibition dispositions green"
+verified: 2026-10-15T07:53:00Z
+status: passed
+score: "32/32 must-haves verified"
 covered_files:
   - ".planning/phases/36-scalar-helper-calls/36-01-PLAN.md"
   - ".planning/phases/36-scalar-helper-calls/36-01-SUMMARY.md"
@@ -32,14 +32,20 @@ covered_files:
   - ".planning/phases/36-scalar-helper-calls/36-CONTEXT.md"
   - ".planning/phases/36-scalar-helper-calls/36-DISCUSSION-LOG.md"
   - ".planning/phases/36-scalar-helper-calls/36-PATTERNS.md"
+  - ".planning/phases/36-scalar-helper-calls/36-PROHIBITION-EVIDENCE.md"
   - ".planning/phases/36-scalar-helper-calls/36-REGRESSION.md"
   - ".planning/phases/36-scalar-helper-calls/36-RESEARCH.md"
   - ".planning/phases/36-scalar-helper-calls/36-REVIEW-DISPOSITION.md"
   - ".planning/phases/36-scalar-helper-calls/36-REVIEW-FIX.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REVIEW-SUPPLEMENT.md"
   - ".planning/phases/36-scalar-helper-calls/36-REVIEW.md"
   - ".planning/phases/36-scalar-helper-calls/36-SECURITY.md"
   - ".planning/phases/36-scalar-helper-calls/36-UI-REVIEW.md"
   - ".planning/phases/36-scalar-helper-calls/36-VALIDATION.md"
+  - ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs"
+  - ".planning/phases/36-scalar-helper-calls/prohibition-causal-violation.json"
+  - ".planning/phases/36-scalar-helper-calls/prohibition-clean.json"
+  - ".planning/phases/36-scalar-helper-calls/prohibition-outcome-violation.json"
   - "cmd/schway/main_phase32_routes_test.go"
   - "cmd/schway/main_phase36_test.go"
   - "examples/helper_calls/crc_step.schway"
@@ -85,41 +91,27 @@ covered_files:
   - "testdata/phase36/prechange-corpus.json"
   - "testdata/phase36/surface-census.json"
   - "testdata/phase36/surface-witnesses.json"
-covered_digest: "v3:sha256:575fb8d66519cd49aebb6bbeff15889772d78c6a6c68bb6833450442810c1167"
+covered_digest: "v3:sha256:67ee4c139122eede2f242c01bc121b275244ef898f1f1916daf85b2bfa5fdfb4"
 behavior_unverified: 0
 overrides_applied: 0
-gaps:
-  - truth: "MUST NOT turn optional evidence exhaustion into application success or suppress the application's actual defect, output, or exit."
-    status: partial
-    reason: "Runtime behavior is verified by native and session capture tests, but the shared prohibition gate has no wired descriptor to produce fail-first enforcement evidence. The phase's --auto fallback deliberately left the descriptorless item flagged."
-    artifacts:
-      - path: ".planning/phases/36-scalar-helper-calls/36-08-PLAN.md"
-        issue: "The prohibition is unresolved and has no check descriptor."
-      - path: "internal/compiler/session/session_phase36_calls_test.go"
-        issue: "Named tests verify success, capture exhaustion, and late-defect preservation, but the shared gate cannot locate these Go selectors."
-    missing:
-      - "A supported resolved/test enforcement descriptor and machine-proven red/clean route for known-violation and clean cases."
-  - truth: "MUST NOT present causal execution-peer acceptance as proof of scalar arithmetic or source argument/result intent."
-    status: partial
-    reason: "Source and numeric proof-scope controls pass, and the causal peer's false-success blind spot is exercised. The shared prohibition gate cannot green this item without a wired fail-first descriptor."
-    artifacts:
-      - path: ".planning/phases/36-scalar-helper-calls/36-08-PLAN.md"
-        issue: "The prohibition is unresolved and has no check descriptor."
-      - path: "internal/compiler/executionpeer/executionpeer_phase36_test.go"
-        issue: "Causal controls are Go tests; the shared gate has no supported descriptor route for them."
-      - path: "internal/compiler/check/check_phase36_scalar_calls_test.go"
-        issue: "Source-intent controls are Go tests, not wired into the descriptor consumer."
-    missing:
-      - "A supported resolved/test enforcement descriptor and machine-proven route that preserves causal, numeric, and source-intent proof boundaries."
+re_verification:
+  previous_status: gaps_found
+  previous_score: "30/30 observable truths; two prohibition gates unverified"
+  gaps_closed:
+    - "MUST NOT turn optional evidence exhaustion into application success or suppress the application's actual defect, output, or exit."
+    - "MUST NOT present causal execution-peer acceptance as proof of scalar arithmetic or source argument/result intent."
+  gaps_remaining: []
+  regressions: []
+
 ---
 
 # Phase 36: Scalar Helper Calls Verification Report
 
 **Phase Goal:** A scalar function can be factored into small helpers: it calls another scalar function with one U64 or Bool argument and uses the result, including calls into imported modules, with the same defect behavior on both engines and every peer re-deriving the call independently.
 
-**Verified:** 2026-10-15T07:31:00Z  
-**Status:** gaps_found  
-**Re-verification:** No — initial goal verification
+**Verified:** 2026-10-15T07:53:00Z
+**Status:** passed
+**Re-verification:** Yes — after closing the two prohibition gaps
 
 ## Goal Achievement
 
@@ -157,23 +149,27 @@ gaps:
 | 28 | Integrated no-call programs retain literal-byte generated C through frozen routes. | ✓ VERIFIED | TestPhase36NoCallGeneratedCByteBaseline; final focused capture includes the exact baseline selector. |
 | 29 | Acceptance evidence separates source, raw-contract, numeric, causal proof and both bounds obligations. | ✓ VERIFIED | 36-ACCEPTANCE-EVIDENCE.md and source/peer/engine/bounds tests. |
 | 30 | Current inspection, fresh evidence, and historical/hosted receipts are separately labeled; next-phase ownership is preserved. | ✓ VERIFIED | 36-ACCEPTANCE-EVIDENCE.md, 36-CONTEXT.md, dated living records; no hosted claim is made for this local capture. |
+| 31 | Optional evidence exhaustion cannot convert success into application success or hide the application's later defect/output/exit. | ✓ VERIFIED | Canonical outcome request returned green/unflagged with failFirstProof=violation-fixture; violation overlay kills both named capture assertions; clean/default controls pass. |
+| 32 | Causal-peer acceptance is not proof of numeric arithmetic or source argument/result intent. | ✓ VERIFIED | Canonical causal request returned green/unflagged with failFirstProof=violation-fixture; numeric-limit mutation kills the named peer assertion; clean/default controls pass.
 
-**Score:** 30/30 observable truths verified. Two separate must-NOT acceptance gates remain unverified and are listed as gaps below.
+**Score:** 32/32 must-haves verified. The 30 runtime/contract truths remain verified; this re-verification closes the two prohibition-evidence gaps.
 
 ### Prohibition Gate Assessment
 
-The two planned prohibitions are deterministic contracts. I checked current tests and runtime behavior rather than inferring a human review need from the plan's status:
+Both descriptors now resolve as test-tier prohibitions through the canonical producer. I compared each request field-for-field against its matching Plan 08 flat projection: statement, resolved/test status, node-test kind/target, statement-specific violation fixture, and shared clean fixture. I then reran the requests sequentially.
 
-| Prohibition | Runtime evidence | Gate disposition |
+This supersedes the initial 2026-10-15T07:31:00Z gap verdict: at that point the two items were descriptorless and only their Go-level behavior tests existed, so the shared producer correctly had no machine evidence to green. The re-verification below closes those exact gaps without changing the original 30-truth evidence.
+
+| Prohibition | Current proof | Gate disposition |
 |---|---|---|
-| MUST NOT turn optional evidence exhaustion into application success or suppress the application's actual defect, output, or exit. | TestPhase36NativeCallCaptureOutcomeSeparation and TestPhase36CaptureOutcomeSeparation pass for successful work and late defects with disabled/exhausted capture. | Partial: shared fail-closed gate has no wired descriptor for these Go checks. |
-| MUST NOT present causal execution-peer acceptance as proof of scalar arithmetic or source argument/result intent. | TestPhase36CallCausalAttributionControls accepts a structurally plausible false-success trace; source-intent and engine mutation controls independently distinguish those claims. | Partial: shared fail-closed gate has no wired descriptor for these Go checks. |
+| MUST NOT turn optional evidence exhaustion into application success or suppress the application's actual defect, output, or exit. | Outcome violation overlay fails the exact existing assertions for changed successful work and hidden later defect; clean and default controls pass. | ✓ VERIFIED — producer status green, flagged false, tier test, kind node-test, failFirst=true, passed=true, failFirstProof=violation-fixture. |
+| MUST NOT present causal execution-peer acceptance as proof of scalar arithmetic or source argument/result intent. | Numeric-limit overlay fails the named false-success assertion; clean and default controls pass. Source intent and arithmetic remain owned by separate checker/engine tests. | ✓ VERIFIED — producer status green, flagged false, tier test, kind node-test, failFirst=true, passed=true, failFirstProof=violation-fixture. |
 
-The shared producer at gsd-core/bin/lib/prohibition-enforcement.cjs accepts flat projection fields check_kind, check_target, optional check_rule, check_violation_fixture, and optional check_clean_fixture. It supports only node-test or lint-rule, machine-proves a known-violation RED, and requires a non-vacuous clean pass (plus an optional known-clean fixture for causation). This repository has no Node test target for these claims, and the named Go selectors do not consume GSD_PROHIB_SUBJECT. Thus the descriptorless --auto fallback correctly remains flagged. A human assertion cannot substitute for that deterministic route; no descriptor or wrapper was invented.
+Exact producer requests and outputs are recorded in 36-PROHIBITION-EVIDENCE.md. The adapter accepts only closed subjects and exact Go roots/assertions; malformed subjects, skips, unrelated failures, source-anchor drift, and infrastructure failures cannot count as red or green. The clean fixture exercises the same subject path, and the producer separately confirms default behavior. The seven-file review supplement reports zero findings and scopes its review to this bridge. No compiler/runtime source, Go test, corpus fixture, dependency, or public interface changed.
 
 ## Required Artifacts
 
-The artifact query passed all 23 plan-declared artifacts. The table groups them by plan; manual source/import and consumer traces verified wiring.
+The original artifact query passed 23/23 plan-declared artifacts. Updated Plan 08 artifact verification passed 4/4; together the current plan-declared total is 24/24. Paths are grouped by plan; source/import and consumer traces verified wiring.
 
 | Plan | Artifacts | Status | Wiring/details |
 |---|---|---|---|
@@ -184,7 +180,8 @@ The artifact query passed all 23 plan-declared artifacts. The table groups them 
 | 36-05 | internal/compiler/cgen/cgen_phase36_test.go; internal/compiler/native/native_phase36_test.go | ✓ VERIFIED (2/2) | C emitter and native application capture boundary are connected. |
 | 36-06 | examples/helper_calls/crc_step.schway; examples/helper_calls/importer.schway; examples/helper_calls/public.schway; testdata/phase36/helper-values.json; internal/compiler/session/session_phase36_calls_test.go | ✓ VERIFIED (5/5) | Programs reach interpreter, native, and public conformance routes. |
 | 36-07 | testdata/phase36/surface-witnesses.json; testdata/phase36/surface-census.json; internal/compiler/session/session_phase36_surface_test.go | ✓ VERIFIED (3/3) | Independent witness and exact census documents are consumed by manifest controls. |
-| 36-08 | .planning/phases/36-scalar-helper-calls/36-ACCEPTANCE-EVIDENCE.md; .planning/PRODUCT-ROADMAP.md; .planning/LANGUAGE-MATURITY.md | ✓ VERIFIED (3/3) | Acceptance receipt and dated living records exist; mutable trackers are excluded from fingerprint inputs. |
+| 36-08 | .planning/phases/36-scalar-helper-calls/36-ACCEPTANCE-EVIDENCE.md; .planning/phases/36-scalar-helper-calls/36-PROHIBITION-EVIDENCE.md; .planning/PRODUCT-ROADMAP.md; .planning/LANGUAGE-MATURITY.md | ✓ VERIFIED (4/4) | Acceptance/prohibition receipts and dated living records exist; updated declared evidence artifact passed. |
+| Proof bridge | 36-prohibition-check.test.cjs; prohibition-clean.json; prohibition-outcome-violation.json; prohibition-causal-violation.json | ✓ VERIFIED | Both canonical producer requests ran violation, clean, and default subjects; review supplement found zero findings. |
 
 ## Key Link Verification
 
@@ -213,6 +210,8 @@ N/A for rendered application data: this compiler/runtime phase has no dynamic UI
 | Source-intent argument/result controls | GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/check -run '^TestPhase36CallSourceIntentControls$' -count=1 -v -timeout=600s | PASS; argument and result mutants are discriminated by checker. | ✓ PASS |
 | Causal-peer negative controls | GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/executionpeer -run '^TestPhase36CallCausalAttributionControls$' -count=1 -v -timeout=600s | PASS; malformed causal traces fail while plausible false-success remains accepted by design. | ✓ PASS |
 | Evidence-exhaustion outcome separation | GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase36NativeCallCaptureOutcomeSeparation$' -count=1 -v -timeout=600s | PASS; process output/exit and later defect survive disabled/exhausted capture. | ✓ PASS |
+| Outcome prohibition producer | gsd_run check prohibition-enforcement /tmp/schway36-prohibition-proof-1aa485499637/outcome-request.json --raw | PASS; exact Plan 08 projection; green, unflagged, failFirst=true, passed=true, failFirstProof=violation-fixture. | ✓ PASS |
+| Causal prohibition producer | gsd_run check prohibition-enforcement /tmp/schway36-prohibition-proof-1aa485499637/causal-request.json --raw | PASS; exact Plan 08 projection; green, unflagged, failFirst=true, passed=true, failFirstProof=violation-fixture. | ✓ PASS |
 | Final Phase 36 owner capture | /tmp/schway36-final-979357388171-x4n9kf3c/owner-results.json | 45 expected roots across 12 packages; 12/12 commands exit 0, matching log SHA-256 values, no FAIL/SKIP; bound to 979357388171339005fd6dbd65aa760810ae9384. Current HEAD 2548fd95d51f3e24805254a5279081622928e30f has no source/test diff from captured revision. | ✓ PASS |
 | Prior-phase scoped regression | /tmp/schway36-regression-b51043c6566f-_h2nianh/owner-results.json | 80 root occurrences / 69 names across 13 packages; source/test unchanged since recorded revision. | ✓ PASS (revision-bound) |
 
@@ -227,9 +226,9 @@ No phase-declared or conventional scripts/*/tests/probe-*.sh probes were found; 
 | Requirement | Source Plan | Description | Status | Evidence |
 |---|---|---|---|---|
 | CALL-01 | 36-01..36-08 | One-argument U64/Bool calls, imported helpers, result use, recursion refusal, and defect behavior. | ✓ SATISFIED | Truths 1–2, 8–10, and 21–24; D-18 bounds cases remain distinct. |
-| CALL-02 | 36-01..36-08 | Independent call derivation, mutant detection, and no-call generated-C compatibility. | ✓ SATISFIED | Truths 3–4, 11–20, and 25–28; prohibition disposition gaps concern the gate route, not those runtime facts. |
+| CALL-02 | 36-01..36-08 | Independent call derivation, mutant detection, and no-call generated-C compatibility. | ✓ SATISFIED | Truths 3–4, 11–20, and 25–28; prohibition dispositions are separately verified by the canonical producer. |
 
-The REQUIREMENTS.md checkboxes remain pending because the phase orchestrator owns tracker updates; implementation evidence satisfies both descriptions.
+The REQUIREMENTS.md checkboxes remain pending because the phase orchestrator owns tracker updates; implementation evidence satisfies both descriptions. This scoped re-verification changes neither requirement ownership nor source-grounded classification.
 
 ### Anti-Patterns Found
 
@@ -241,16 +240,16 @@ The 52-file code review is clean with zero open dispositions; WR-01 is fixed. Se
 
 ### Human Verification Required
 
-None for user-facing behavior. Runtime properties have deterministic tests. The two unresolved items are deterministic gate-wiring gaps, not requests for manual acceptance; they remain in the structured gap list.
+None. Runtime claims and both scope prohibitions have deterministic evidence; no user-facing manual check is needed.
 
 ### Gaps Summary
 
-The Phase 36 compiler/runtime goal is demonstrated by local/imported programs, interpreter/native value and defect checks, independently derived peer contracts, bounded repeated-call evidence, mutation controls, and frozen no-call C outputs. All 30 roadmap and plan truths are verified.
+No current gaps remain. The initial verification dated 2026-10-15T07:31:00Z passed all 30 observable runtime/plan truths but recorded two descriptorless prohibition gates as partial gaps. This re-verification closes both with the Plan 08 projected descriptors, exact fail-first violation fixtures, clean controls, and green canonical producer outputs. The prior 30-truth evidence and initial gap verdict remain in this report as history. Current score is 32/32 and status is passed.
 
-The phase acceptance gate cannot report a full pass while the two explicit must-NOT items remain descriptorless. The shared producer only accepts node-test or lint-rule routes and requires a known-violation fail-first proof plus a non-vacuous clean pass. The current Go tests do not satisfy that route, and the phase's autonomous fallback deliberately kept them flagged. Wire a supported descriptor/consumer path before removing these flags; human attestation cannot replace deterministic enforcement.
+The original 45-root feature capture remains bound to 979357388171339005fd6dbd65aa760810ae9384. No tracked compiler/test/corpus/dependency path changed since that capture. The added proof bridge is limited to the named assertions and local Node/Go toolchain recorded in 36-PROHIBITION-EVIDENCE.md; it does not claim broader production-source or hosted validation.
+
 
 ---
 
-_Verified: 2026-10-15T07:31:00Z_  
+_Verified: 2026-10-15T07:53:00Z_
 _Verifier: gsd-verifier_
-
