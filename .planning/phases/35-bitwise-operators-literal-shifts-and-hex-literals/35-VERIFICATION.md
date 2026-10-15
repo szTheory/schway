@@ -1,7 +1,7 @@
 ---
 phase: 35-bitwise-operators-literal-shifts-and-hex-literals
-verified: 2026-10-15T21:17:32Z
-status: human_needed
+verified: 2026-10-15T21:37:03Z
+status: passed
 score: "38/38 truths verified"
 covered_files:
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-01-PLAN.md"
@@ -25,6 +25,9 @@ covered_files:
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-CONTEXT.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-EVIDENCE.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-MUTATION-EVIDENCE.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-PROHIBITION-ENFORCEMENT.json"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-PROHIBITION-WIRING.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH-FINAL-RUN.json"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH-FIX.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH-GATES.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH-REGRESSION.json"
@@ -105,6 +108,9 @@ covered_files:
   - "testdata/phase35/numeric-delta.json"
   - "testdata/phase35/numeric-policy-baseline.json"
   - "testdata/phase35/prechange-corpus.json"
+  - "testdata/phase35/prohibition-causal-bad.txt"
+  - "testdata/phase35/prohibition-evidence.test.cjs"
+  - "testdata/phase35/prohibition-lanes-bad.txt"
   - "testdata/phase35/recovery-after.json"
   - "testdata/phase35/shift-sites.json"
   - "testdata/phase35/surface-census.json"
@@ -112,32 +118,27 @@ covered_files:
   - "testdata/phase35/value-vectors.json"
   - "testdata/phase36/new-fixture-ledger.json"
   - "testdata/phase37/new-fixture-ledger.json"
-covered_digest: "v3:sha256:5ce8e29858b7aaf8791f9bdb6d570b4b04055bf94b0ac821abf5756fff55a3a0"
+covered_digest: "v3:sha256:787e2bb5d94b4ee7d8c706b041d32b137724dece6ab45c88e4652ad2148b9f1c"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
-  previous_status: passed
+  previous_status: human_needed
   previous_score: 38/38
-  gaps_closed: []
+  gaps_closed:
+    - "BIT-01 test-tier prohibition is enforced with a known-bad causal-evidence fixture that fails and clean evidence that passes."
+    - "BIT-02 test-tier prohibition is enforced with a known-bad freshness claim fixture that fails and clean evidence that passes."
   gaps_remaining: []
   regressions: []
-  scope: "Phase37 current-head input/log hash refresh; dated initial and Phase36 refresh history preserved below"
-human_verification:
-  - test: "Resolve the BIT-01 prohibition verification tier and status"
-    expected: "Review the evidence and explicitly resolve the prohibition, recording whether it is test-tier or judgment-tier; keep causal event admission separate from numerical proof."
-    why_human: "35-08-PLAN.md leaves this prohibition status unresolved and verification null, so the verifier cannot assign the missing acceptance tier."
-  - test: "Resolve the BIT-02 prohibition verification tier and status"
-    expected: "Review the current hash-bound receipts and historical lane labels, then explicitly resolve the prohibition and record whether it is test-tier or judgment-tier."
-    why_human: "35-08-PLAN.md leaves this prohibition status unresolved and verification null, so the verifier cannot infer the missing acceptance tier."
+  scope: "Phase37 test-tier prohibition wiring and current-head evidence refresh; prior human_needed finding closed by explicit plan descriptors and fail-first enforcement, not an override."
 ---
 
 # Phase 35: Bitwise Operators, Literal Shifts, and Hex Literals Verification Report
 
 **Phase Goal:** Ordinary Schway scalar code can use U64 ^, &, |, literal-amount << and >>, and hex literals, with one defined meaning on every engine and optimization level, no C17 shift undefined behavior, and no new defect path.
 
-**Verified:** 2026-10-15T21:17:32Z
-**Status:** human_needed
-**Re-verification:** Yes — Phase 37 current-head evidence refresh; the prior Phase 35 and Phase 36 refreshes remain preserved below.
+**Verified:** 2026-10-15T21:37:03Z
+**Status:** passed
+**Re-verification:** Yes — after the test-tier prohibition wiring closure; the initial Phase 35, Phase 36 refresh, and pre-wiring Phase 37 refresh remain preserved below.
 
 ## Goal Achievement
 
@@ -145,7 +146,9 @@ Current source inspection confirms the complete route from scalar parsing and ch
 
 I derived 38 observable truths from the five roadmap criteria plus the plan truths (34 plan-specific, with one duplicate of roadmap criterion R4). All eight artifact queries pass: 48 declarations across 45 unique paths. The plans declare 24 key links; the generic checker recognizes one lexically, and source/test/fixture tracing confirms all 24. The requirement union is BIT-01 through BIT-04, each mapped and satisfied; no Phase35 requirement is orphaned. The context decision check reports 23/23 honored.
 
-Two plan prohibitions remain an escalation item. Their evidence supports the required boundaries, but 35-08-PLAN.md still records each as `status: unresolved` with `verification: null`. The verifier cannot silently resolve that missing tier: the final status is human_needed until a developer records an explicit test- or judgment-tier disposition. This does not reduce the 38/38 truth score.
+At the prior Phase37 refresh, two plan prohibitions remained an escalation item because the plan had no explicit verification tier. The dated amendment to 35-08-PLAN.md now declares both as resolved test-tier checks. The canonical prohibition-enforcement path parsed those descriptors, ran their violation fixtures and clean controls, and returned green for both; the previous human_needed item is closed by that mechanical evidence, not by an override.
+
+I retained the earlier goal-backward inventory: five roadmap criteria, 34 plan-specific truths with one duplicate, 48 artifact declarations over 45 unique paths, 24 declared links, the BIT-01/02/03/04 requirement set, and 23 context decisions/prohibitions. The two prohibition checks now have concrete test-tier descriptors and executable negative controls. All 38 unique truths remain verified; no plan-mapped requirement is orphaned.
 
 ### Observable Truths
 
@@ -197,8 +200,8 @@ Two plan prohibitions remain an escalation item. Their evidence supports the req
 
 | Prohibition | Status | Evidence |
 |---|---|---|
-| Do not present engine agreement or causal event admission as independent proof of pure numeric results. | ✓ VERIFIED | Independent literal vectors, named wrong-answer controls and the value-peer transfer mutation harness provide numeric evidence. Executionpeer controls are described only as causal/event-free checks. No check descriptor was invented. |
-| Do not describe historical hosted receipts or skipped optimization/sanitizer lanes as fresh Phase35 evidence. | ✓ VERIFIED | The fresh local O0/O3/O3-LTO and UBSan runs are recorded separately below. The report makes no hosted or cross-host claim and records no required lane as skipped. No check descriptor was invented. |
+| Do not present engine agreement or causal event admission as independent proof of pure numeric results. | ✓ VERIFIED | The plan declares a test-tier node-test descriptor. The known-bad causal-evidence fixture fails at the expected scope assertion; the clean evidence and default subject pass. Canonical GSD enforcement reports failFirst=true, passed=true, flagged=false. Numeric evidence remains separately grounded in literal vectors, wrong-answer controls and peer transfer mutants. |
+| Do not describe historical hosted receipts or skipped optimization/sanitizer lanes as fresh Phase35 evidence. | ✓ VERIFIED | The plan declares a test-tier node-test descriptor. Its known-bad freshness-claim fixture fails at the expected scope assertion; clean evidence and default subject pass. Canonical enforcement reports failFirst=true, passed=true, flagged=false. The current final receipt is distinguished from historical receipts below. |
 
 ## Required Artifacts
 
@@ -254,6 +257,11 @@ All 48 artifact declarations across the eight plans passed the artifact verifier
 | 35-08 | internal/compiler/session/session_phase35_closeout_test.go | Evidence/document grounding | ✓ VERIFIED | Evidence grounding and summary coverage selectors pass. |
 | 35-08 | .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-COMPATIBILITY-DELTA.md | Scoped compatibility ledger | ✓ VERIFIED | Cross-checked against source and frozen baselines. |
 | 35-08 | .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-EVIDENCE.md | Fresh/history/incomplete evidence ledger | ✓ VERIFIED | Named receipts resolve to actual tests; freshness controls pass. |
+| 35-08 acceptance | testdata/phase35/prohibition-evidence.test.cjs | Existing Go closeout validator exposed through a test-tier TAP adapter | ✓ VERIFIED | Adapter calls TestPhase35EvidenceGrounding and asserts exact RUN/PASS with no fail or skip; it contains no duplicate evidence rules. |
+| 35-08 acceptance | testdata/phase35/prohibition-causal-bad.txt | Known-bad BIT-01 false-evidence control | ✓ VERIFIED | One false causal/numeric claim is rejected by the existing Go evidence validator. |
+| 35-08 acceptance | testdata/phase35/prohibition-lanes-bad.txt | Known-bad BIT-02 freshness-claim control | ✓ VERIFIED | One false optimization/sanitizer freshness claim is rejected by the existing Go evidence validator. |
+| 35-08 acceptance | 35-PROHIBITION-ENFORCEMENT.json | Canonical test-tier enforcement outcomes | ✓ VERIFIED | Both projected descriptors pass fail-first, violation-fixture, clean-control and default-subject checks. |
+| 35-08 acceptance | 35-REFRESH-FINAL-RUN.json | Current focused regression receipt | ✓ VERIFIED | 122 current input hashes and 16 raw-log hashes match; 175 root executions are RUN/PASS with zero missing, failed or skipped roots. |
 
 ## Key Link Verification
 
@@ -285,6 +293,7 @@ The generic key-link query recognized only 1 of 24 relationships because most ar
 | examples/checksum/adler32.schway | session_phase35_adler_test.go | b<<16 through imported checksum/adler_low consumers | ✓ WIRED | TestPhase35ExistingAdlerAnswers and TestPhase35AdlerWrongShiftControl. |
 | 35-EVIDENCE.md | session_phase35_closeout_test.go | Actual test refs and closed coverage vocabulary | ✓ WIRED | TestPhase35EvidenceGrounding and TestSummaryCoverageGroundedness. |
 | 35-EVIDENCE.md | .planning/LANGUAGE-MATURITY.md | Source facts/receipts and scoped capability owners | ✓ WIRED | Cross-reference inspection plus TestPhase35EvidenceGrounding. |
+| 35-08-PLAN.md | prohibition-evidence.test.cjs | Canonical descriptor projection to fail-first test-tier enforcement | ✓ WIRED | parseMustHavesBlock and descriptorFromProjection produce the exact requests; each check runs its violation fixture, clean fixture, and default subject. |
 
 ## Data-Flow Trace (Level 4)
 
@@ -298,20 +307,38 @@ The generic key-link query recognized only 1 of 24 relationships because most ar
 
 ## Behavioral Spot-Checks
 
-The Phase 35 task-selector run and Phase 36 successor refresh are retained as dated historical evidence below. This Phase 37 refresh used the two dedicated current-input receipts plus bounded exact-name checks; it did not replay the full 22-selector task set, a broad package suite, or the native matrix.
+The 35-REFRESH-RUN and 35-REFRESH-REGRESSION receipts are preserved as history, but are not treated as current input bindings because the closeout test changed after those runs. The current Phase37 follow-up relies on 35-REFRESH-FINAL-RUN.json and the separate prohibition-enforcement evidence. No full local package/project suite, broad native matrix, hosted run, push, or UAT replay was run.
 
-### Current hash-bound refresh receipts
+### Current final regression receipt
 
 | Receipt | Bound inputs and logs | Result |
 |---|---|---|
-| 35-REFRESH-RUN.json | 62 current input hashes; 13 raw logs; 72 package-root executions, 66 distinct test names across 13 packages. Every expected root is RUN/PASS; no missing, failed or skipped roots. | ✓ PASS |
-| 35-REFRESH-REGRESSION.json | 117 current input hashes; 16 raw logs; 175 package-root executions, 165 distinct test names across 16 packages. Every expected root is RUN/PASS; no missing, failed or skipped roots. | ✓ PASS |
+| 35-REFRESH-FINAL-RUN.json | 122 current input hashes; 16 raw-log hashes; 175 package-root executions, 165 distinct root test names across 16 packages. All roots are RUN/PASS; no missing, failed or skipped roots. | ✓ PASS |
 
-Both receipts' input hashes and raw-log hashes match the files currently on disk despite older recorded source_head values. The current regression receipt includes 15 reached arithmetic source mutants and 26 reached admission source mutants. Its feature-only native evidence includes 33 independently authored vectors at O0/O3/O3-LTO and 16 shift UBSan vectors, with all lanes passing and no skip. Those lanes were verified through fresh receipt/log bindings; they were not rerun separately in this refresh.
+I independently checked that all 122 input hashes and 16 raw-log hashes match current bytes. The receipt source_head is c1136586224e06d300b0b96b123db8af05a4be9b; current HEAD is d9f08d495476eb2fb2e522f84ef2c7150c85afd6, and the intervening tracked changes are limited to planning evidence documents. The receipt records all 15 arithmetic and 26 admission source mutants caught. Its feature-only native evidence covers 33 independently authored vectors at O0/O3/O3-LTO and all 16 shift UBSan vectors; every lane passed without skips. The exact multiset includes 175 root executions; repeated test names in separate package roots are preserved by the receipt.
 
-### Bounded exact tests run by this verifier
+### Test-tier prohibition enforcement
 
-All commands used `GOCACHE=/tmp/ai-lang-verification-gocache`, `-count=1 -v -timeout=600s`. Each named root below was observed RUN and PASS.
+I projected both 35-08-PLAN.md prohibition descriptors through the canonical parseMustHavesBlock and descriptorFromProjection helpers and compared the resulting requests with the saved requests. They matched exactly. Each canonical check returned green, with located=true, flagged=false, failFirst=true, passed=true, and failFirstProof=violation-fixture.
+
+~~~sh
+source /tmp/schway34-gsd-run.sh
+gsd_run check prohibition-enforcement /tmp/schway35-prohibition-0.json
+gsd_run check prohibition-enforcement /tmp/schway35-prohibition-1.json
+~~~
+
+The node TAP adapter invokes the existing Go TestPhase35EvidenceGrounding test; it adds no evidence-validation rules. Each known-bad fixture fails the Go test at its intended false-claim/scope assertion. The unchanged clean evidence and the default subject each return exit 0 with one passing test and no skip. Thus each descriptor is fail-first against its own violation fixture, while the ordinary accepted subject stays green.
+
+~~~sh
+GOCACHE=/tmp/ai-lang-verification-gocache GSD_PROHIB_SUBJECT=testdata/phase35/prohibition-causal-bad.txt node --test --test-reporter=tap -- testdata/phase35/prohibition-evidence.test.cjs
+GOCACHE=/tmp/ai-lang-verification-gocache GSD_PROHIB_SUBJECT=testdata/phase35/prohibition-lanes-bad.txt node --test --test-reporter=tap -- testdata/phase35/prohibition-evidence.test.cjs
+GOCACHE=/tmp/ai-lang-verification-gocache GSD_PROHIB_SUBJECT=.planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-EVIDENCE.md node --test --test-reporter=tap -- testdata/phase35/prohibition-evidence.test.cjs
+GOCACHE=/tmp/ai-lang-verification-gocache node --test --test-reporter=tap -- testdata/phase35/prohibition-evidence.test.cjs
+~~~
+
+### Earlier bounded implementation checks retained from the 21:17Z refresh
+
+The following named implementation selectors passed during the pre-wiring Phase37 refresh. They are preserved with their original commands as prior checks; the current final regression receipt above supplies the current source/log-bound regression. No compiler or runtime implementation changed in the wiring follow-up.
 
 **Evidence grounding**
 
@@ -393,6 +420,16 @@ GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase3
 
 ✓ PASS; public interpreter/native witness returns 264 and the alternate association control returns 8.
 
+### Final report-grounding checks
+
+After writing this report, run these exact named tests against the rendered Phase35 verification file. Each must appear as RUN and PASS with no skip.
+
+~~~sh
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessThreeClassesAreEmpty|TestPhase35EvidenceGrounding)$' -count=1 -v -timeout=600s
+~~~
+
+Result: ✓ PASS. All three exact roots appeared RUN and PASS with no skip against the rendered report.
+
 No server, broad test suite, broad native matrix, hosted job, push or UAT replay was run.
 
 ### Probe Execution
@@ -421,27 +458,17 @@ No Phase35-mapped requirement is orphaned. The DX-22 entry is acknowledged as a 
 
 The 62-file code review is clean with zero findings; the two earlier WR-01/WR-02 warnings are recorded fixed with no open findings. The authored security register is 24/24 closed at ASVS L1 with zero open items. The UI gate is inapplicable because this phase adds no frontend; no graphical review or human-appearance claim is made.
 
+## Advisory (New Scope, Unevidenced)
+
+None. Re-verification surfaced no unevidenced new-scope finding.
+
 ## Human Verification Required
 
-### 1. Resolve the BIT-01 prohibition verification tier and status
-
-**Test:** Review the unresolved prohibition in 35-08-PLAN.md: “Do not present engine agreement or causal event admission as independent proof of pure numeric results.”
-
-**Expected:** Confirm the separate literal-answer, value-transfer and per-engine wrong-answer evidence meets the prohibition; retain executionpeer's causal-only role; record a test- or judgment-tier disposition and mark the prohibition resolved.
-
-**Why human:** The plan leaves `verification: null`. The verifier must not infer the missing tier or absorb an unresolved prohibition into a passed verdict.
-
-### 2. Resolve the BIT-02 prohibition verification tier and status
-
-**Test:** Review the unresolved prohibition in 35-08-PLAN.md: “Do not describe historical hosted receipts or skipped optimization/sanitizer lanes as fresh Phase 35 evidence.”
-
-**Expected:** Confirm current receipt hashes/logs and dated history are represented accurately; record a test- or judgment-tier disposition and mark the prohibition resolved.
-
-**Why human:** The plan leaves `verification: null`. The verifier confirms the present evidence and labeling, but cannot infer the missing acceptance tier.
+None. Both previously flagged test-tier items now have canonical fail-first enforcement, violation fixtures that fail at their intended scope assertions, and clean/default controls that pass. The feature has no visual or external-service behavior requiring subjective review.
 
 ## Gaps Summary
 
-No observable truth, artifact, key link, requirement, or behavior-dependent claim failed. All 38 truths are verified and current source/log bindings support the feature evidence. The phase remains human_needed only because two must-NOT plan items are still marked unresolved with no verification tier; resolving those two explicit decisions is the remaining gate.
+No observable truth, artifact, key link, requirement, or behavior-dependent claim failed. All 38 truths are verified; BIT-01 through BIT-04 are satisfied; all 48 declared artifacts, 24 declared links, and 23 context decisions/prohibitions are accounted for. The earlier two-item human gate is closed by executable test-tier enforcement with negative and clean controls. No gaps or human verification items remain.
 
 
 ---
@@ -474,3 +501,19 @@ The current checkout is HEAD `de6cde3d56be24382e38eb3b69f23e28e3721d65`. The run
 The current source and proof path supports the 38/38 goal truths: checker, corevalidate and originvalidate retain independent value transfer/admission; executionpeer validates causal structure only; interpreter and native expected answers are compared to independent literals; the C emission tests require a positive shift-site count and unsigned widened operands; refusal, high-bit truncation, wrong-answer and false-evidence controls are reached. No C17 undefined-shift path or new defect/event path was found. The present focused commands passed as recorded above, and the two hash-bound receipts cover the broader named evidence without replaying the expensive matrix.
 
 The remaining human decision is limited to the two unresolved 35-08 prohibitions with `verification: null` (BIT-01 and BIT-02). The verification gate cannot silently mark them resolved. The behavior score remains 38/38; status is `human_needed`. The root living documents and configuration are excluded from this fingerprint because they are outside the implementation/evidence slice and may be reconciled after phase acceptance.
+
+
+## Phase 37 test-tier prohibition refresh — 2026-10-15T21:37:03Z
+
+This amendment preserves the dated Phase37 pre-wiring report immediately above. Its 38/38 truth result was accurate, and its `human_needed` status correctly identified that the two plan prohibitions lacked explicit verification tiers at that time. That acceptance gap is now closed by the dated 35-08-PLAN.md amendment and executable enforcement; no override or human judgment was applied.
+
+The amended descriptors are test-tier checks for BIT-01's causal-evidence boundary and BIT-02's freshness-claim boundary. I independently derived both requests using the canonical prohibition parser/projection helpers and reran the canonical prohibition-enforcement check for each. Both returned green with fail-first proof from their violation fixture. The existing Go evidence-grounding test rejected each bad fixture at the expected scope assertion, and accepted the unchanged clean evidence and default subject. The TAP adapter only invokes that Go test and asserts the exact RUN/PASS, no-fail/no-skip result.
+
+For current regression acceptance I used 35-REFRESH-FINAL-RUN.json, not the older run/regression receipts whose test metadata input had since changed. All 122 current input hashes and 16 raw-log hashes match; all 175 package-root executions are RUN/PASS across 16 packages, with 165 distinct root test names and no missing/failing/skipped roots. The receipt includes 15 arithmetic and 26 admission source mutants caught, plus 33 vector rows at O0/O3/O3-LTO and 16 shift UBSan rows without skips. Its source_head is c1136586224e06d300b0b96b123db8af05a4be9b; the later commits through current HEAD d9f08d495476eb2fb2e522f84ef2c7150c85afd6 changed only planning evidence documents, and the receipt inputs/logs still match current bytes.
+
+The current score remains 38/38. The derived inventory is five roadmap criteria, 34 unique plan-specific truths after the one duplicate, 48 artifact declarations across 45 unique paths, 24 declared links, 23 context decisions/prohibitions, and requirements BIT-01 through BIT-04 with no orphan. The four added enforcement artifacts are listed separately from the 48 plan declarations. The 66-file review/follow-up union has zero findings, the security register remains 24/24 closed at ASVS L1, and UI review remains inapplicable. No C17 shift undefined behavior, new defect path, gap, or human-verification item remains.
+
+---
+
+_Verified: 2026-10-15T21:37:03Z_
+_Verifier: the agent (gsd-verifier)_
