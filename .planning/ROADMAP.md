@@ -276,6 +276,8 @@ Plans:
 **Research flag**: Moderate. Reuses the M006 file cap, ByteView, module and file adapter unchanged. The interpreter file-bytes CLI route is new public surface: record its exit classes in the Phase 28 exit table. The unreadable-file control uses a named skip when running as root. This is the last code-moving phase before the milestone audit.
 
 **Plans**: TBD (target ≈8)
+- [ ] 37-09-PLAN.md
+
 **Wave 1**
 - [x] 37-01-PLAN.md
 
@@ -324,7 +326,7 @@ Plans:
 | 34. Agent Diagnostics Floor and Surface Manifest | 8/8 | Complete    | 2026-10-13 |
 | 35. Bitwise Operators, Literal Shifts, and Hex Literals | 8/8 | Complete    | 2026-10-14 |
 | 36. Scalar Helper Calls | 8/8 | Complete    | 2026-10-15 |
-| 37. CRC-32 Consumer, Interpreter File Route, and Guide | 8/8 | In Progress | - |
+| 37. CRC-32 Consumer, Interpreter File Route, and Guide | 8/9 | In Progress | - |
 | 38. Milestone Receipts | 0/TBD | Not started | - |
 
 **Coverage:** 19/19 M007 requirements have exactly one phase owner. DX-22 is

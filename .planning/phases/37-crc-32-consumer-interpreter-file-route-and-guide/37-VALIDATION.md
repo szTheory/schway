@@ -1,8 +1,8 @@
 ---
 phase: "37"
 slug: "crc-32-consumer-interpreter-file-route-and-guide"
-status: validated
-nyquist_compliant: true
+status: remediation-pending
+nyquist_compliant: false
 wave_0_complete: true
 created: "2026-10-15"
 ---
@@ -150,7 +150,7 @@ sanitizer skip must be named and cannot turn the whole matrix green by omission.
 - [x] No watch flags, project-wide local suite or broad native matrix.
 - [x] Actual maximum-case cost observed; no timing promoted into a guarantee.
 - [x] Unreadable/sanitizer/host skips are individually disclosed.
-- [x] `nyquist_compliant: true` only after the audit establishes compliance.
+- [x] `nyquist_compliant: false` only after the audit establishes compliance.
 
 **Approval:** automated coverage audit verified2026-10-15; independent security/review/goal gates remain separate.
 
@@ -164,7 +164,7 @@ was rejected as zero-test evidence and corrected to the actual
 C02, and C25 final reruns are regression receipts, not replacements for their
 separately recorded pre-addition baselines.
 
-This capture does not set `nyquist_compliant: true`: the independent phase
+This capture does not set `nyquist_compliant: false`: the independent phase
 verifier, security, and review gates remain parent-owned. The four Phase 37
 requirements remain pending parent acceptance. No hosted receipt or human
 readability/performance claim is added.
@@ -180,3 +180,7 @@ All19 tasks map to actual automated owners across all4 requirement IDs. Parent i
 | Gaps found | 0 |
 | Resolved | 0 |
 | Escalated | 0 |
+
+## Audit correction —2026-10-15
+
+The independent security audit found missing reached capture-growth mutants under T-37-14. The source also violates D-02: crc32 has both loops and calls crc_byte8 times per byte, while the helper performs one bit. The earlier parent audit established command/root execution but missed these semantic coverage obligations; its compliant verdict is withdrawn.37-09 owns bounded repair, new exact controls and affected evidence refresh. Existing numeric passes remain historical at their recorded source; no missing mutant is treated as passed.
