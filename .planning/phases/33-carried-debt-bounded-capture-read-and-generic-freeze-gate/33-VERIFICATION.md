@@ -1,67 +1,76 @@
 ---
 phase: 33-carried-debt-bounded-capture-read-and-generic-freeze-gate
-verified: 2026-10-14T23:46:50Z
+verified: 2026-10-15T07:22:07Z
 status: passed
 score: 60/60 must-haves verified
 covered_files:
-  - .planning/milestones/M006-phases/28-exit-classes-verify-report-and-entry-pruning/28-SECURITY.md
-  - .planning/milestones/M006-phases/28-exit-classes-verify-report-and-entry-pruning/28-VALIDATION.md
-  - .planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/32-RECEIPT.json
-  - .planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/32-RECEIPT.run-38315799626.json
-  - .planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/receipts/receipt-macos-latest.log
-  - .planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/receipts/receipt-ubuntu-latest.log
-  - .planning/milestones/M006-phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/32.1-REVIEW-DISPOSITION.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-01-PLAN.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-01-SUMMARY.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-02-PLAN.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-02-SUMMARY.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-03-PLAN.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-03-SUMMARY.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-04-PLAN.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-04-SUMMARY.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-05-PLAN.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-05-SUMMARY.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CARRIED-DEBT-DISPOSITION.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CONTEXT.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-PATTERNS.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH-AUDIT.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-RESEARCH.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW-DISPOSITION.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW-FIX.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-SECURITY.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-TRANSITION-CHECK.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-UI-REVIEW.md
-  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VALIDATION.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REGRESSION.md
-  - cmd/schway/main_phase321_run_input_test.go
-  - cmd/schway/main_phase32_routes_test.go
-  - internal/compiler/cgen/cgen_phase35_test.go
-  - internal/compiler/cgen/cgen_program.go
-  - internal/compiler/check/check_phase321_byteview_entry_test.go
-  - internal/compiler/execution/defect_reasons.go
-  - internal/compiler/executionpeer/executionpeer.go
-  - internal/compiler/interp/interp.go
-  - internal/compiler/interp/interp_phase33_defect_test.go
-  - internal/compiler/interp/interp_phase35_test.go
-  - internal/compiler/native/native_app.go
-  - internal/compiler/native/native_phase321_defect_parity_test.go
-  - internal/compiler/native/native_phase33_capture_test.go
-  - internal/compiler/native/native_phase33_defect_parity_test.go
-  - internal/compiler/session/session.go
-  - internal/compiler/session/session_freeze_gate_test.go
-  - internal/compiler/session/session_gate_differential_test.go
-  - internal/compiler/session/session_gate_retire_test.go
-  - internal/compiler/session/session_phase32_receipt_test.go
-  - internal/compiler/session/session_receipt_gate_test.go
-  - internal/compiler/session/summary_coverage_test.go
-  - scripts/check-freeze.sh
-  - scripts/check-receipts.sh
-  - scripts/codedigest.sh
-  - scripts/verify-phase32.sh
-  - testdata/phase16/public-emitter-consumers.json
-  - testdata/receipts/M006.manifest
-covered_digest: "v3:sha256:73ad72ba7973b634d16f00c88c93ff49d2c7878769f9a5d7e717500716314809"
+  - ".planning/milestones/M006-phases/28-exit-classes-verify-report-and-entry-pruning/28-SECURITY.md"
+  - ".planning/milestones/M006-phases/28-exit-classes-verify-report-and-entry-pruning/28-VALIDATION.md"
+  - ".planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/32-RECEIPT.json"
+  - ".planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/32-RECEIPT.run-38315799626.json"
+  - ".planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/receipts/receipt-macos-latest.log"
+  - ".planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/receipts/receipt-ubuntu-latest.log"
+  - ".planning/milestones/M006-phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/32.1-REVIEW-DISPOSITION.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-01-PLAN.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-01-SUMMARY.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-02-PLAN.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-02-SUMMARY.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-03-PLAN.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-03-SUMMARY.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-04-PLAN.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-04-SUMMARY.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-05-PLAN.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-05-SUMMARY.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CARRIED-DEBT-DISPOSITION.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CONTEXT.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-PATTERNS.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH-AUDIT.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-RESEARCH.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW-DISPOSITION.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW-FIX.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-SECURITY.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-TRANSITION-CHECK.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-UI-REVIEW.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VALIDATION.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REGRESSION.md"
+  - ".planning/phases/36-scalar-helper-calls/36-ACCEPTANCE-EVIDENCE.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REGRESSION.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REVIEW-DISPOSITION.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REVIEW.md"
+  - "cmd/schway/main_phase321_run_input_test.go"
+  - "cmd/schway/main_phase32_routes_test.go"
+  - "internal/compiler/cgen/cgen_phase35_test.go"
+  - "internal/compiler/cgen/cgen_program.go"
+  - "internal/compiler/check/check_phase321_byteview_entry_test.go"
+  - "internal/compiler/check/check_phase36_scalar_calls_test.go"
+  - "internal/compiler/check/scalar.go"
+  - "internal/compiler/execution/defect_reasons.go"
+  - "internal/compiler/executionpeer/executionpeer.go"
+  - "internal/compiler/interp/interp.go"
+  - "internal/compiler/interp/interp_phase33_defect_test.go"
+  - "internal/compiler/interp/interp_phase35_test.go"
+  - "internal/compiler/native/native_app.go"
+  - "internal/compiler/native/native_phase321_defect_parity_test.go"
+  - "internal/compiler/native/native_phase33_capture_test.go"
+  - "internal/compiler/native/native_phase33_defect_parity_test.go"
+  - "internal/compiler/session/session.go"
+  - "internal/compiler/session/session_freeze_gate_test.go"
+  - "internal/compiler/session/session_gate_differential_test.go"
+  - "internal/compiler/session/session_gate_retire_test.go"
+  - "internal/compiler/session/session_phase32_receipt_test.go"
+  - "internal/compiler/session/session_phase36_prechange_test.go"
+  - "internal/compiler/session/session_receipt_gate_test.go"
+  - "internal/compiler/session/summary_coverage_test.go"
+  - "internal/compiler/syntax/parser.go"
+  - "internal/compiler/syntax/parser_phase36_test.go"
+  - "scripts/check-freeze.sh"
+  - "scripts/check-receipts.sh"
+  - "scripts/codedigest.sh"
+  - "scripts/verify-phase32.sh"
+  - "testdata/phase16/public-emitter-consumers.json"
+  - "testdata/receipts/M006.manifest"
+covered_digest: "v3:sha256:ecbcb705eb7bf4aa5f1ff6a32179ba5b8fb6ea88f20e12399302b277485a4b83"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -70,18 +79,18 @@ re_verification:
   gaps_closed: []
   gaps_remaining: []
   regressions: []
-  scope: "successor-staled fingerprint refresh; prior report had no gaps"
+  scope: "Phase36 successor-staled fingerprint refresh; prior report passed without gaps; current scoped regression and acceptance receipts checked against raw runs and hashes"
 ---
 
 # Phase 33: Carried Debt, Bounded Capture Read, and Generic Freeze Gate Verification Report
 
 **Phase Goal:** The carried M006 debt is paid before any feature work: a child-written capture file can no longer force an unbounded host allocation, the open review warnings are closed or recorded with reasons, Phase 28 has its missing validation and security records, and later milestones reuse one freeze/receipt gate instead of copying phase-specific scripts.
 
-**Verified:** 2026-10-14T23:46:50Z
+**Verified:** 2026-10-15T07:22:07Z
 **Status:** passed
-**Re-verification:** Yes — successor-staled fingerprint refresh; the previous report passed without gaps.
+**Re-verification:** Yes — Phase 36 successor-staled fingerprint refresh; the prior report passed without gaps.
 
-The evidence below preserves the dated prior verification. The current successor refresh at the end of this report is authoritative for the post-Phase-35 source binding and current regression receipt; the earlier Phase 33 named-test receipts remain historical.
+The evidence below preserves the dated prior verification. The current successor refresh at the end of this report is authoritative for the post-Phase-36 source binding and current regression receipt; the earlier Phase 33 named-test receipts remain historical.
 
 ## Goal Achievement
 
@@ -213,4 +222,19 @@ The receipt is a scoped local run, not a full workspace suite, native matrix, ho
 ---
 
 _Verified: 2026-10-14T23:46:50Z_
+_Verifier: the agent (gsd-verifier)_
+
+## Current successor refresh — 2026-10-15T07:22:07Z
+
+This bounded amendment revalidated the Phase 33 goal after the Phase 36 successor made the former fingerprint stale. It preserves the 2026-10-14 Phase 33 verification and dated phase reviews, dispositions, and UAT records as history; it did not replay old plans, prior Phase 33 tests, UAT, or phase.complete.
+
+The Phase 36 prior-phase receipt in `.planning/phases/36-scalar-helper-calls/36-REGRESSION.md` binds source/test state to `b51043c6566f793893c8c4e143493e7ec3af5bcd`, after the last compiler/test edit. I checked the owner-results manifest and all 13 raw log hashes; every expected root was anchored as RUN/PASS, all 13 commands exited 0, with 80 occurrences across 69 selected names and 13 packages, and no FAIL/SKIP. Phase 33 roots included `TestPhase33CaptureReadBounded`, `TestPhase33AbortLikeNarrowed`, `TestPhase33AbortLikeWideningMutantKilled`, `TestFreezeGateDifferential`, and `TestReceiptGateDifferential`. The final acceptance receipt in `36-ACCEPTANCE-EVIDENCE.md` binds a clean source tree at `979357388171339005fd6dbd65aa760810ae9384`; 45 actual roots across 12 packages and matching log hashes corroborate integrated acceptance. A tracked source/test comparison through current `HEAD 66cebc9f` found no changes after the regression revision; later commits are docs-only. This remains bounded exact-selector evidence, not a full suite or hosted result.
+
+Source inspection confirms the successor call/parser work does not alter the bounded capture read, exact-owner abort-like predicate, or generic freeze/receipt wiring. The Phase 36 review covers the successor delta only: 52 files, clean, zero findings; its disposition has zero open findings. Original Phase 33 reviews/disposition remain historical, and this is not a new full Phase 33 code review.
+
+All five Phase 33 plan artifact queries passed (22 declared artifact occurrences); prior manual traces for prose-origin key links remain applicable. QLT-13, QLT-14, QLT-15, and EVD-16 remain satisfied. Nyquist remains validated; the authored L1 register retains 17/17 closed items and zero open, reused for applicability rather than a new full security audit. The UI safety gate remains inapplicable because this phase has no frontend. No new goal gap or human-verification item is outstanding; the score remains **60/60**.
+
+---
+
+_Verified: 2026-10-15T07:22:07Z_
 _Verifier: the agent (gsd-verifier)_

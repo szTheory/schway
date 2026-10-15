@@ -1,6 +1,6 @@
 ---
 phase: 34-agent-diagnostics-floor-and-surface-manifest
-verified: 2026-10-14T23:46:50Z
+verified: 2026-10-15T07:22:07Z
 status: passed
 score: 38/38 must-haves verified
 covered_files:
@@ -21,12 +21,19 @@ covered_files:
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-PLAN.md"
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-SUMMARY.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REGRESSION.md"
+  - ".planning/phases/36-scalar-helper-calls/36-ACCEPTANCE-EVIDENCE.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REGRESSION.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REVIEW-DISPOSITION.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REVIEW.md"
   - "cmd/schway-repair/repair_phase34_test.go"
   - "cmd/schway/main.go"
+  - "cmd/schway/main_phase321_run_input_test.go"
+  - "cmd/schway/main_phase32_routes_test.go"
   - "cmd/schway/main_phase34_diagnostics_test.go"
   - "cmd/schway/main_phase34_routes_test.go"
   - "cmd/schway/main_phase34_surface_test.go"
   - "cmd/schway/main_phase35_test.go"
+  - "cmd/schway/main_phase36_test.go"
   - "docs/agent-surface.md"
   - "examples/bitwise.schway"
   - "examples/checksum/adler32.schway"
@@ -36,6 +43,7 @@ covered_files:
   - "internal/compiler/check/check_phase35_baseline_test.go"
   - "internal/compiler/check/check_phase35_numeric_test.go"
   - "internal/compiler/check/check_phase35_test.go"
+  - "internal/compiler/check/check_phase36_scalar_calls_test.go"
   - "internal/compiler/check/scalar.go"
   - "internal/compiler/core/core.go"
   - "internal/compiler/core/core_phase35_test.go"
@@ -71,6 +79,7 @@ covered_files:
   - "internal/compiler/session/session_phase35_prechange_test.go"
   - "internal/compiler/session/session_phase35_surface_test.go"
   - "internal/compiler/session/session_phase35_values_test.go"
+  - "internal/compiler/session/session_phase36_prechange_test.go"
   - "internal/compiler/session/session_phase6_explain.go"
   - "internal/compiler/session/session_phase6_query.go"
   - "internal/compiler/session/session_presentation.go"
@@ -87,6 +96,7 @@ covered_files:
   - "internal/compiler/syntax/parser_phase34_refusal_test.go"
   - "internal/compiler/syntax/parser_phase35_baseline_test.go"
   - "internal/compiler/syntax/parser_phase35_test.go"
+  - "internal/compiler/syntax/parser_phase36_test.go"
   - "testdata/phase34/compat-deltas.json"
   - "testdata/phase34/draft-baseline.json"
   - "testdata/phase34/drafts.json"
@@ -102,7 +112,7 @@ covered_files:
   - "testdata/phase35/surface-census.json"
   - "testdata/phase35/surface-witnesses.json"
   - "testdata/phase35/value-vectors.json"
-covered_digest: "v3:sha256:226a0651012cf74291645a653c6472c95715cf530593b8f5ac55f82588c9a31f"
+covered_digest: "v3:sha256:cdfa0ec590831a8d353c2bc6c643853161f88f6fffe8d96f66b0560989b192f5"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -111,17 +121,17 @@ re_verification:
   gaps_closed: []
   gaps_remaining: []
   regressions: []
-  scope: "successor-staled fingerprint refresh; prior report passed without gaps; its DX-22 deferral is now resolved by Phase 35"
+  scope: "Phase36 successor-staled fingerprint refresh; prior report passed without gaps; current scoped regression and acceptance receipts checked against raw runs and hashes"
 ---
 
 # Phase 34: Agent Diagnostics Floor and Surface Manifest Verification Report
 
 **Phase Goal:** An agent drafting Schway gets one precise, locatable diagnostic per real cause and can ask the toolchain what surface is admitted, instead of guessing from cascading, offset-only or misleading errors.
-**Verified:** 2026-10-14T23:46:50Z
+**Verified:** 2026-10-15T07:22:07Z
 **Status:** passed
-**Re-verification:** Yes — successor-staled fingerprint refresh; the prior report passed without gaps.
+**Re-verification:** Yes — Phase 36 successor-staled fingerprint refresh; the prior report passed without gaps.
 
-The evidence below preserves the dated initial verification, including its then-current DX-22 deferral and 70-selector receipt. The current successor refresh at the end of this report is authoritative for the post-Phase-35 catalog, source binding, and shared regression receipt.
+The evidence below preserves the dated initial verification, including its then-current DX-22 deferral and 70-selector receipt. The current successor refresh at the end of this report is authoritative for the post-Phase-36 call/refusal surface, source binding, and shared regression receipt.
 
 ## Goal Achievement
 
@@ -281,4 +291,23 @@ The receipt is a scoped local run, not a full workspace suite, native matrix, ho
 ---
 
 _Verified: 2026-10-14T23:46:50Z_
+_Verifier: the agent (gsd-verifier)_
+
+## Current successor refresh — 2026-10-15T07:22:07Z
+
+This bounded amendment revalidated the Phase 34 goal after the Phase 36 successor made the former fingerprint stale. It preserves the dated Phase 34 verification and review/UAT dispositions as history; it did not replay old plans, prior Phase 34 tests, UAT, or phase.complete.
+
+The Phase 36 prior-phase receipt in `.planning/phases/36-scalar-helper-calls/36-REGRESSION.md` binds source/test state to `b51043c6566f793893c8c4e143493e7ec3af5bcd`, after the last compiler/test edit. I checked the owner-results manifest and all 13 raw log hashes; every expected root was anchored as RUN/PASS, all 13 commands exited 0, with 80 occurrences across 69 selected names and 13 packages, and no FAIL/SKIP. Current Phase 34 roots include diagnostic route/source presentation, call-arity and refusal boundaries, recovery corpus/controls, and surface-manifest witnesses/census/controls. The final acceptance receipt in `36-ACCEPTANCE-EVIDENCE.md` binds a clean source tree at `979357388171339005fd6dbd65aa760810ae9384`; 45 actual roots across 12 packages and matching log hashes include Phase 36 call grammar, checker refusal/source-intent, manifest, and public helper route tests. A tracked source/test comparison through current `HEAD 66cebc9f` found no changes after the regression revision; later commits are docs-only. This is bounded exact-selector evidence, not a full suite or hosted result.
+
+Phase 36 adds scalar-call grammar and refusal contracts to the shared compiler surface. `parser_phase36_test.go` exercises direct/nested calls, arity refusal, lossless recovery, and bounded depth; `check_phase36_scalar_calls_test.go` covers signature/type, import, refusal, and source-intent controls; the Phase 36 surface witness/census/control roots passed. The new local/imported U64 examples are covered by `TestPhase36PublicHelperConformance`; the regression receipt also ran `TestPhase321RunInputRequiredCLI`, preserving required-input behavior without adding a default.
+
+The exact changed signature copy at `internal/compiler/check/scalar.go:52` names a U64/Bool pair, an existing U64/ByteView Unit body, or an unused Byte-to-U64 bridge. Checker predicates at lines 46–50 and signature/refusal controls show those are the admitted shapes. Phase 36 grammar tests assert refusal codes and recovery behavior, not exact message bytes; no plan requirement asks for byte-exact explanatory text. This dated source-inspection/copy disposition is not a new human copy review or human-verification gate.
+
+The prior Phase 34 human/UAT disposition remains historical: the verification dated 2026-10-14 records completed UAT preserved and no open human item; this refresh did not replay it. The CLI-only copy review in `34-UI-REVIEW.md` is dated 2026-10-13; its follow-up fixed generic `usage: lang` to `usage: schway` and records three focused route tests passing. That review applies to its tested wording and is not relabeled as reviewing new Phase 36 text. Existing location, presentation, hint, and cascade controls remain intact; source inspection found no inaccurate admission shape.
+
+All eight Phase 34 plan artifact queries passed (57 declared artifact occurrences); manual source traces for prose-origin and JSON-target links remain in force. DX-20 through DX-23 remain satisfied, including Phase 35's closure of the earlier dynamic-shift deferral. Nyquist remains validated; the authored L1 register retains 19/19 closed items and zero open, reused for applicability rather than a new full security audit. The UI safety gate remains inapplicable because there is no frontend. No new goal gap or human-verification item is outstanding; the score remains **38/38**.
+
+---
+
+_Verified: 2026-10-15T07:22:07Z_
 _Verifier: the agent (gsd-verifier)_

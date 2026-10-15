@@ -1,95 +1,110 @@
 ---
 phase: 35-bitwise-operators-literal-shifts-and-hex-literals
-verified: 2026-10-14T23:30:56Z
+verified: 2026-10-15T07:22:07Z
 status: passed
 score: 38/38 must-haves verified
 covered_files:
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-01-PLAN.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-01-SUMMARY.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-02-PLAN.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-02-SUMMARY.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-03-PLAN.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-03-SUMMARY.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-04-PLAN.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-04-SUMMARY.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-05-PLAN.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-05-SUMMARY.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-06-PLAN.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-06-SUMMARY.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-07-PLAN.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-07-SUMMARY.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-PLAN.md
-  - .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-SUMMARY.md
-  - cmd/schway/main_phase32_routes_test.go
-  - cmd/schway/main_phase35_test.go
-  - docs/agent-surface.md
-  - examples/bitwise.schway
-  - examples/checksum/adler32.schway
-  - internal/compiler/cgen/cgen_phase35_test.go
-  - internal/compiler/cgen/cgen_program.go
-  - internal/compiler/check/check.go
-  - internal/compiler/check/check_phase35_baseline_test.go
-  - internal/compiler/check/check_phase35_numeric_test.go
-  - internal/compiler/check/check_phase35_test.go
-  - internal/compiler/check/scalar.go
-  - internal/compiler/core/core.go
-  - internal/compiler/core/core_phase35_test.go
-  - internal/compiler/core/core_test.go
-  - internal/compiler/corevalidate/corevalidate.go
-  - internal/compiler/corevalidate/corevalidate_phase35_test.go
-  - internal/compiler/executionpeer/executionpeer.go
-  - internal/compiler/executionpeer/executionpeer_phase35_test.go
-  - internal/compiler/interp/interp.go
-  - internal/compiler/interp/interp_phase35_test.go
-  - internal/compiler/originvalidate/originvalidate.go
-  - internal/compiler/originvalidate/originvalidate_phase35_test.go
-  - internal/compiler/pathoracle/pathoracle.go
-  - internal/compiler/pathoracle/pathoracle_phase35_test.go
-  - internal/compiler/session/session_phase272_identity_test.go
-  - internal/compiler/session/session_phase273_identity_test.go
-  - internal/compiler/session/session_phase34_compat_test.go
-  - internal/compiler/session/session_phase34_limit_consumers_test.go
-  - internal/compiler/session/session_phase34_prechange_test.go
-  - internal/compiler/session/session_phase34_presentation_test.go
-  - internal/compiler/session/session_phase34_surface_test.go
-  - internal/compiler/session/session_phase35_adler_test.go
-  - internal/compiler/session/session_phase35_admission_mutation_test.go
-  - internal/compiler/session/session_phase35_closeout_test.go
-  - internal/compiler/session/session_phase35_peer_mutation_test.go
-  - internal/compiler/session/session_phase35_prechange_test.go
-  - internal/compiler/session/session_phase35_surface_test.go
-  - internal/compiler/session/session_phase35_values_test.go
-  - internal/compiler/surface/refusals.go
-  - internal/compiler/surfacemanifest/manifest.go
-  - internal/compiler/surfacemanifest/manifest_test.go
-  - internal/compiler/syntax/format.go
-  - internal/compiler/syntax/numeric_phase35_test.go
-  - internal/compiler/syntax/parser.go
-  - internal/compiler/syntax/parser_phase34_recovery_test.go
-  - internal/compiler/syntax/parser_phase34_refusal_test.go
-  - internal/compiler/syntax/parser_phase35_baseline_test.go
-  - internal/compiler/syntax/parser_phase35_test.go
-  - testdata/phase16/public-emitter-consumers.json
-  - testdata/phase35/numeric-delta.json
-  - testdata/phase35/numeric-policy-baseline.json
-  - testdata/phase35/prechange-corpus.json
-  - testdata/phase35/recovery-after.json
-  - testdata/phase35/shift-sites.json
-  - testdata/phase35/surface-census.json
-  - testdata/phase35/surface-witnesses.json
-  - testdata/phase35/value-vectors.json
-covered_digest: "v3:sha256:46c44e74287e82aa7d732c2d781fd33567acdfcd1f5b3906b9ba408ee6dc2f0b"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-01-PLAN.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-01-SUMMARY.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-02-PLAN.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-02-SUMMARY.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-03-PLAN.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-03-SUMMARY.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-04-PLAN.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-04-SUMMARY.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-05-PLAN.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-05-SUMMARY.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-06-PLAN.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-06-SUMMARY.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-07-PLAN.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-07-SUMMARY.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-PLAN.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-SUMMARY.md"
+  - ".planning/phases/36-scalar-helper-calls/36-ACCEPTANCE-EVIDENCE.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REGRESSION.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REVIEW-DISPOSITION.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REVIEW.md"
+  - "cmd/schway/main_phase32_routes_test.go"
+  - "cmd/schway/main_phase35_test.go"
+  - "docs/agent-surface.md"
+  - "examples/bitwise.schway"
+  - "examples/checksum/adler32.schway"
+  - "internal/compiler/cgen/cgen_phase35_test.go"
+  - "internal/compiler/cgen/cgen_program.go"
+  - "internal/compiler/check/check.go"
+  - "internal/compiler/check/check_phase35_baseline_test.go"
+  - "internal/compiler/check/check_phase35_numeric_test.go"
+  - "internal/compiler/check/check_phase35_test.go"
+  - "internal/compiler/check/check_phase36_scalar_calls_test.go"
+  - "internal/compiler/check/scalar.go"
+  - "internal/compiler/core/core.go"
+  - "internal/compiler/core/core_phase35_test.go"
+  - "internal/compiler/core/core_test.go"
+  - "internal/compiler/corevalidate/corevalidate.go"
+  - "internal/compiler/corevalidate/corevalidate_phase35_test.go"
+  - "internal/compiler/executionpeer/executionpeer.go"
+  - "internal/compiler/executionpeer/executionpeer_phase35_test.go"
+  - "internal/compiler/interp/interp.go"
+  - "internal/compiler/interp/interp_phase35_test.go"
+  - "internal/compiler/originvalidate/originvalidate.go"
+  - "internal/compiler/originvalidate/originvalidate_phase35_test.go"
+  - "internal/compiler/pathoracle/pathoracle.go"
+  - "internal/compiler/pathoracle/pathoracle_phase35_test.go"
+  - "internal/compiler/session/session_phase272_identity_test.go"
+  - "internal/compiler/session/session_phase273_identity_test.go"
+  - "internal/compiler/session/session_phase34_compat_test.go"
+  - "internal/compiler/session/session_phase34_limit_consumers_test.go"
+  - "internal/compiler/session/session_phase34_prechange_test.go"
+  - "internal/compiler/session/session_phase34_presentation_test.go"
+  - "internal/compiler/session/session_phase34_surface_test.go"
+  - "internal/compiler/session/session_phase35_adler_test.go"
+  - "internal/compiler/session/session_phase35_admission_mutation_test.go"
+  - "internal/compiler/session/session_phase35_closeout_test.go"
+  - "internal/compiler/session/session_phase35_peer_mutation_test.go"
+  - "internal/compiler/session/session_phase35_prechange_test.go"
+  - "internal/compiler/session/session_phase35_surface_test.go"
+  - "internal/compiler/session/session_phase35_values_test.go"
+  - "internal/compiler/session/session_phase36_prechange_test.go"
+  - "internal/compiler/surface/refusals.go"
+  - "internal/compiler/surfacemanifest/manifest.go"
+  - "internal/compiler/surfacemanifest/manifest_test.go"
+  - "internal/compiler/syntax/format.go"
+  - "internal/compiler/syntax/numeric_phase35_test.go"
+  - "internal/compiler/syntax/parser.go"
+  - "internal/compiler/syntax/parser_phase34_recovery_test.go"
+  - "internal/compiler/syntax/parser_phase34_refusal_test.go"
+  - "internal/compiler/syntax/parser_phase35_baseline_test.go"
+  - "internal/compiler/syntax/parser_phase35_test.go"
+  - "internal/compiler/syntax/parser_phase36_test.go"
+  - "testdata/phase16/public-emitter-consumers.json"
+  - "testdata/phase35/numeric-delta.json"
+  - "testdata/phase35/numeric-policy-baseline.json"
+  - "testdata/phase35/prechange-corpus.json"
+  - "testdata/phase35/recovery-after.json"
+  - "testdata/phase35/shift-sites.json"
+  - "testdata/phase35/surface-census.json"
+  - "testdata/phase35/surface-witnesses.json"
+  - "testdata/phase35/value-vectors.json"
+covered_digest: "v3:sha256:962c32a51c0db7275a63625ef84eb7768bb4f90733805337e9835fa76742a52e"
 behavior_unverified: 0
 overrides_applied: 0
+re_verification:
+  previous_status: passed
+  previous_score: 38/38
+  gaps_closed: []
+  gaps_remaining: []
+  regressions: []
+  scope: "Phase36 successor-staled fingerprint refresh; prior report passed without gaps"
+
 ---
 
 # Phase 35: Bitwise Operators, Literal Shifts, and Hex Literals Verification Report
 
 **Phase Goal:** Ordinary Schway scalar code can use U64 ^, &, |, literal-amount << and >>, and hex literals, with one defined meaning on every engine and optimization level, no C17 shift undefined behavior, and no new defect path.
 
-**Verified:** 2026-10-14T23:30:56Z  
-**Status:** passed  
-**Re-verification:** No — initial verification; no previous 35-VERIFICATION.md existed.
+**Verified:** 2026-10-15T07:22:07Z
+**Status:** passed
+**Re-verification:** Yes — Phase 36 successor-staled fingerprint refresh; the prior report passed without gaps.
 
 ## Goal Achievement
 
@@ -330,3 +345,18 @@ No new Go dependency or backend was introduced: go.mod remains standard-library-
 
 Verified: 2026-10-14T23:30:56Z  
 Verifier: gsd-verifier agent
+
+## Current successor refresh — 2026-10-15T07:22:07Z
+
+This bounded amendment revalidated the Phase 35 goal after the Phase 36 successor made the former fingerprint stale. It preserves the dated initial Phase 35 verification and review/disposition artifacts as history; it did not replay old plans, prior Phase 35 tests, UAT, or phase.complete.
+
+The Phase 36 prior-phase receipt in `.planning/phases/36-scalar-helper-calls/36-REGRESSION.md` binds source/test state to `b51043c6566f793893c8c4e143493e7ec3af5bcd`, after the last compiler/test edit. I checked the owner-results manifest and all 13 raw log hashes; every expected root was anchored as RUN/PASS, all 13 commands exited 0, with 80 occurrences across 69 selected names and 13 packages, and no FAIL/SKIP. Phase 35 roots include shift admission/site controls, event-free interpreter vectors, native shift tracing, optimization matrix, engine wrong-answer controls, transfer mutants, and `TestPhase35ShiftUBSan`. The final acceptance receipt in `36-ACCEPTANCE-EVIDENCE.md` binds a clean source tree at `979357388171339005fd6dbd65aa760810ae9384`; 45 actual roots across 12 packages and matching hashes provide current integrated successor evidence. A tracked source/test comparison through current `HEAD 66cebc9f` found no changes after the regression revision; later commits are docs-only. Neither receipt is a full suite or hosted run.
+
+The Phase 36 successor expands scalar calls, checker/call execution, and emission paths. Current Phase 35 regression roots still exercise bitwise values, admission, optimizer levels, transfer authority, and C17 shift safety; those implementation and refusal boundaries remain covered by current source and named controls. The Phase 36 52-file review is clean with zero findings, and its disposition records zero open findings. This is successor-delta coverage only; Phase 35's original review and disposition remain historical.
+
+All eight Phase 35 plan artifact queries passed (48 declared artifact occurrences); prior source traces and named controls for Phase 35 links remain applicable. BIT-01 through BIT-04 remain satisfied with no new defect path. Nyquist remains validated; the authored L1 register retains 24/24 closed items and zero open, reused for applicability rather than a new full security audit. The UI safety gate remains inapplicable because there is no frontend. No new goal gap or human-verification item is outstanding; the score remains **38/38**.
+
+---
+
+_Verified: 2026-10-15T07:22:07Z_
+_Verifier: the agent (gsd-verifier)_
