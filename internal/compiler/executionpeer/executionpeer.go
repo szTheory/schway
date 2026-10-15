@@ -474,8 +474,10 @@ func (i *index) validate(document execution.Execution) error {
 	exhaustedOccurrence := make(map[string]bool)
 	root := rootInvocation(i.entry)
 	dynamicOccurrences := make(map[string]occurrence)
+	expectedOccurrences := i.occurrences
 	if i.dynamicCallIdentity {
 		dynamicOccurrences[root] = occurrence{functionID: i.entry}
+		expectedOccurrences = dynamicOccurrences
 	}
 	closedActivations := make(map[string]bool)
 	nextOrdinals := make(map[string]uint64)
@@ -678,10 +680,10 @@ func (i *index) validate(document execution.Execution) error {
 		}
 	}
 	if pending != "" {
-		return refusal("orphan_child", len(document.Events), pending, stack[len(stack)-1], i.occurrences[pending].functionID, "caller edge has no child activation")
+		return refusal("orphan_child", len(document.Events), pending, stack[len(stack)-1], expectedOccurrences[pending].functionID, "caller edge has no child activation")
 	}
 	if len(stack) != 0 {
-		return refusal("preorder", len(document.Events), stack[len(stack)-1], "", i.occurrences[stack[len(stack)-1]].functionID, "activation has no terminal event")
+		return refusal("preorder", len(document.Events), stack[len(stack)-1], "", expectedOccurrences[stack[len(stack)-1]].functionID, "activation has no terminal event")
 	}
 	return nil
 }

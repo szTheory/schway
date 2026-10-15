@@ -146,6 +146,41 @@ func phase36CallCausalForgeryControls(t *testing.T) {
 	if loopCall.ID == "" || laterCall.ID == "" || decoyCall.ID == "" {
 		t.Fatalf("expected two bump sites and one decoy site: %+v", mainCalls)
 	}
+	root := clean.Execution.Events[0].Invocation
+	secondLoopCallEvents := phase36FindEvents(clean.Execution, func(event execution.Event) bool {
+		return event.Invocation == root && event.ID == loopCall.ID+":event:called"
+	})
+	if len(secondLoopCallEvents) < 2 {
+		t.Fatalf("trace has only %d repeated loop call events", len(secondLoopCallEvents))
+	}
+	secondChild := phase36Path(t, main.ID, loopCall.ID, 1)
+	orphanPrefix := clonePhase36Execution(clean.Execution)
+	orphanPrefix.Events = orphanPrefix.Events[:secondLoopCallEvents[1]+1]
+	var orphanError *executionpeer.Error
+	if err := executionpeer.Validate(program, orphanPrefix); !errors.As(err, &orphanError) {
+		t.Fatalf("truncated second call = %v, want executionpeer.orphan_child", err)
+	} else if orphanError.Code() != "executionpeer.orphan_child" || orphanError.Index != len(orphanPrefix.Events) || orphanError.Invocation != secondChild || orphanError.ExpectedParent != root || orphanError.ExpectedFunction != loopCall.CalleeID || orphanError.Detail != "caller edge has no child activation" {
+		t.Fatalf("truncated second call refusal = %+v, want orphan child %q under %q with expected callee %q", orphanError, secondChild, root, loopCall.CalleeID)
+	}
+
+	firstSecondChildEvent := phase36FindEvent(t, clean.Execution, func(event execution.Event) bool {
+		return event.Invocation == secondChild
+	})
+	secondChildTerminal := phase36FindEvent(t, clean.Execution, func(event execution.Event) bool {
+		return event.Invocation == secondChild && event.FunctionID == loopCall.CalleeID && (event.Kind == "function.returned" || event.Kind == "function.failed" || event.Kind == "function.defected")
+	})
+	if secondChildTerminal <= firstSecondChildEvent {
+		t.Fatalf("second child has no nonterminal prefix: first=%d terminal=%d", firstSecondChildEvent, secondChildTerminal)
+	}
+	activationPrefix := clonePhase36Execution(clean.Execution)
+	activationPrefix.Events = activationPrefix.Events[:secondChildTerminal]
+	var activationError *executionpeer.Error
+	if err := executionpeer.Validate(program, activationPrefix); !errors.As(err, &activationError) {
+		t.Fatalf("truncated second activation = %v, want executionpeer.preorder", err)
+	} else if activationError.Code() != "executionpeer.preorder" || activationError.Index != len(activationPrefix.Events) || activationError.Invocation != secondChild || activationError.ExpectedParent != "" || activationError.ExpectedFunction != loopCall.CalleeID || activationError.Detail != "activation has no terminal event" {
+		t.Fatalf("truncated second activation refusal = %+v, want open activation %q with expected callee %q", activationError, secondChild, loopCall.CalleeID)
+	}
+
 	mutants := []struct {
 		name, code string
 		mutate     func(*execution.Execution)
