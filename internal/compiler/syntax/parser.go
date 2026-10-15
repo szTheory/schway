@@ -590,7 +590,7 @@ func (p *parser) funcDecl() ast.FuncDecl {
 // scalarLetStart distinguishes scalar value bindings from the generic `let`
 // form, whose right-hand side may be a call or an ownership expression. The
 // scalar grammar only claims a literal/place with an optional scalar operator.
-func (p *parser) scalarLetStart() bool {
+func (p *parser) scalarLetStart(parameterType, returnType ast.TypeRef) bool {
 	if p.peekNonTrivia(0).Kind != TokenLet || p.peekNonTrivia(1).Kind != TokenIdentifier || p.peekNonTrivia(2).Kind != TokenEqual {
 		return false
 	}
@@ -602,6 +602,9 @@ func (p *parser) scalarLetStart() bool {
 		return false
 	}
 	next := p.peekNonTrivia(4)
+	if value.Kind == TokenIdentifier && next.Kind == TokenLParen {
+		return scalarValueCallTypes(parameterType, returnType) && p.scalarCallHasOneArgument(next)
+	}
 	if value.Kind == TokenIdentifier && (value.Text == "byte_len" || value.Text == "byte_at") && next.Kind == TokenLParen {
 		return true
 	}
@@ -616,10 +619,67 @@ func (p *parser) scalarBodyStart(parameterType, returnType ast.TypeRef) bool {
 	if p.atAny(TokenVar, TokenIf, TokenWhile) {
 		return true
 	}
-	if (parameterType.Constructor == "U64" || parameterType.Constructor == "ByteView") && (returnType.Constructor == "U64" || returnType.Constructor == "Unit") && p.scalarLetStart() {
+	if scalarValueCallTypes(parameterType, returnType) && p.scalarLetStart(parameterType, returnType) {
+		return true
+	}
+	if (parameterType.Constructor == "U64" || parameterType.Constructor == "ByteView") && (returnType.Constructor == "U64" || returnType.Constructor == "Unit") && p.scalarLetStart(parameterType, returnType) {
 		return true
 	}
 	return p.isWriteCallStart(p.peek())
+}
+
+func scalarValueCallTypes(parameterType, returnType ast.TypeRef) bool {
+	parameter := parameterType.Constructor
+	result := returnType.Constructor
+	return (parameter == "U64" || parameter == "Bool" || parameter == "ByteView") &&
+		(result == "U64" || result == "Bool")
+}
+
+// scalarCallHasOneArgument keeps empty, multi-argument, and unclosed binding
+// calls on the legacy callArguments path, where checker-owned arity and
+// recovery diagnostics remain stable. A scalar expression owns exactly one
+// complete argument, including any nested delimiter structure.
+func (p *parser) scalarCallHasOneArgument(open Token) bool {
+	openIndex := -1
+	for index := p.position; index < len(p.tokens); index++ {
+		token := p.tokens[index]
+		if token.Kind == TokenLParen && token.Span == open.Span {
+			openIndex = index
+			break
+		}
+	}
+	if openIndex < 0 {
+		return false
+	}
+	depth := 0
+	argument := false
+	for index := openIndex + 1; index < len(p.tokens); index++ {
+		token := p.tokens[index]
+		if token.Trivia() {
+			continue
+		}
+		switch token.Kind {
+		case TokenLParen, TokenLBrace:
+			depth++
+			argument = true
+		case TokenRParen:
+			if depth == 0 {
+				return argument
+			}
+			depth--
+			argument = true
+		case TokenRBrace, TokenEOF:
+			return false
+		case TokenComma:
+			if depth == 0 {
+				return false
+			}
+			argument = true
+		default:
+			argument = true
+		}
+	}
+	return false
 }
 
 func (p *parser) isWriteCallStart(token Token) bool {
@@ -1084,9 +1144,65 @@ func (p *parser) scalarExprAtom() *ast.Expr {
 				end := p.advance()
 				return &ast.Expr{Kind: "byte_at", Name: view.Text, Right: index, Span: diagnostic.Span{Start: leftToken.Span.Start, End: end.Span.End}}
 			}
+			return p.scalarCall(leftToken)
 		}
 		return &ast.Expr{Kind: "name", Name: leftToken.Text, Span: leftToken.Span}
 	}
+}
+
+// scalarCall parses the bounded, direct named-call atom used by scalar
+// expressions. Its one recursive argument shares the depth counter with
+// groups and byte_at indices; ordinary binding calls retain callArguments.
+func (p *parser) scalarCall(callee Token) *ast.Expr {
+	p.advance() // TokenLParen
+	call := &ast.Expr{Kind: "call", Name: callee.Text, Span: callee.Span}
+	const arityMessage = "scalar value calls require exactly one argument"
+	if p.peek().Kind == TokenRParen {
+		end := p.advance()
+		p.problem("syntax.scalar_call_arity", end, arityMessage)
+		call.Span.End = end.Span.End
+		return call
+	}
+	if p.peek().Kind == TokenComma {
+		comma := p.advance()
+		p.problem("syntax.scalar_call_arity", comma, arityMessage)
+		p.recoverDelimited(TokenRParen, TokenRBrace, TokenData, TokenFn, TokenForeign, TokenImport, TokenEOF)
+		if p.peek().Kind == TokenRParen {
+			call.Span.End = p.advance().Span.End
+		}
+		return call
+	}
+	if isCallerOwnedBoundary(p.peek().Kind) {
+		p.problemAtBoundary("syntax.expected_scalar_call_argument", p.peek(), "expected one scalar call argument")
+		return call
+	}
+
+	argument := p.nestedScalarExpr()
+	call.Left = argument
+	call.Span.End = argument.Span.End
+	if p.peek().Kind == TokenComma {
+		comma := p.advance()
+		p.problem("syntax.scalar_call_arity", comma, arityMessage)
+		p.recoverDelimited(TokenRParen, TokenRBrace, TokenData, TokenFn, TokenForeign, TokenImport, TokenEOF)
+		if p.peek().Kind == TokenRParen {
+			call.Span.End = p.advance().Span.End
+		}
+		return call
+	}
+	if p.peek().Kind == TokenRParen {
+		call.Span.End = p.advance().Span.End
+		return call
+	}
+	if isCallerOwnedBoundary(p.peek().Kind) {
+		p.problemAtBoundary("syntax.expected_rparen", p.peek(), "expected `)`")
+		return call
+	}
+	p.problem("syntax.expected_rparen", p.peek(), "expected `)`")
+	p.recoverDelimited(TokenRParen, TokenRBrace, TokenData, TokenFn, TokenForeign, TokenImport, TokenEOF)
+	if p.peek().Kind == TokenRParen {
+		call.Span.End = p.advance().Span.End
+	}
+	return call
 }
 
 // nestedScalarExpr records one recursive source-level expression entry. The
