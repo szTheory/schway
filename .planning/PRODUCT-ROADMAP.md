@@ -640,3 +640,27 @@ The implementation and independent repair work now support the bitwise/Adler sli
 The next three scoped capabilities are: Phase 36 imported `crc_step` calls in a loop; Phase 37 bounded file CRC-32 with a second importer and interpreter CLI parity; Phase 38 reproducible two-host checksum/CRC receipts. The linked transition table names each program, blocker, smallest slice, checker obligations, evidence/debt, owner and priority-changing observation. All three conditional seeds remain dormant on their named source witnesses. Historical M006 receipts remain historical; final hosted binding, human readability and whole-loop cold/warm distributions remain pending or unmeasured.
 
 Phase 35 final acceptance update (2026-10-14): canonical verification now passes 38/38 unique truths; all 33 vectors and 16 UBSan shift rows were freshly rerun locally, together with 15 arithmetic and 26 admission mutation controls. The earlier implementation-only pending notes remain historical. Security/review are closed; final two-host receipts remain Phase 38-owned.
+
+## Phase 36 discussion transition — 2026-10-14
+
+The [Phase 36 context](phases/36-scalar-helper-calls/36-CONTEXT.md) records three
+specialist source-research passes and delegated decisions. Current code has
+direct calls and local imports, but scalar-expression calls, Bool
+formals/results and repeated call activation handling remain absent. Existing
+invocation ordinals are always zero and native evidence reservation counts
+static operations, so enabling a call in the scalar builder alone would not
+complete the loop witness. Keep bounded evidence capture separate from ordinary
+application execution. The source-grounded CALL acceptance clarification in
+REQUIREMENTS preserves the old byte-bounds callee regression and causal/numeric
+proof distinction without widening U64/Bool helper arguments to ByteView.
+
+The current next three capabilities are Phase 36 imported `crc_step` calls in a
+loop, Phase 37 bounded file CRC with second importer/interpreter CLI/guide, and
+Phase 38 final two-host receipts after audit. Their concrete programs, blockers,
+smallest slices, checker obligations, evidence/debt, owners and priority-changing
+observations are in the context's transition table. Seeds z1g/trz/z1s remain
+dormant on their named source witnesses; no measured navigation gap,
+unexplained failure or real source-form dispute was established. This is source
+inspection and primary-document research, with no newly executed compiler
+behavior evidence. Earlier receipts retain their recorded scope; human
+readability and full cold/warm feedback-loop distributions remain unmeasured.

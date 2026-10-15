@@ -46,6 +46,23 @@ acceptance record is kept at
 - [ ] **CALL-01**: A scalar function can call another scalar function with one U64 or Bool argument and use the U64 or Bool result in an expression or assignment. This includes calls to imported module functions. Recursion stays refused by the call graph. Callee defects (overflow, remainder, bounds) surface with the callee's reason and exit 65 on both engines.
 - [ ] **CALL-02**: Calls are derived independently by check, corevalidate, originvalidate and the execution peer. Mutants that drop the argument, the result or a callee defect are caught. Programs without scalar calls keep byte-identical generated C.
 
+**Phase 36 source-grounded acceptance clarification (2026-10-14):** The original
+CALL-01/02 wording above and the roadmap criteria are preserved as provenance.
+`36-CONTEXT.md` D-08/D-15/D-17/D-18 define their reachable evidence: new U64/Bool
+helpers have overflow/remainder callee-defect rows; byte-bounds remains an
+existing owning-wrapper-to-ByteView callee regression, plus a separate new
+`byte_at` argument fault that prevents helper entry. U64/Bool-only helpers have
+no byte input and cannot themselves raise a byte-index defect. Check proves
+source lowering; core/origin independently enforce initialized, typed call
+arguments and fresh results; interpreter/native literal answers and seeded
+faults detect same-typed argument/result substitutions or swallowed numerical
+defects. Executionpeer validates causal call/return/defect attribution and
+repeated activation identity, without scalar-value replay. A structurally valid
+false-success trace is not independent numeric proof. All four U64/Bool
+argument/result pairs remain required. No requirement owner or new ByteView
+scalar-to-scalar call admission follows. See
+[36-CONTEXT.md](phases/36-scalar-helper-calls/36-CONTEXT.md).
+
 ### CRC-32 consumer
 
 - [ ] **APP-13**: `examples/crc32/crc32.schway` reads a file of at most 65,536 bytes and prints its CRC-32/ISO-HDLC as bare decimal. It is built from an ordinary-source `crc32` module that uses a bit-at-a-time loop with no table.

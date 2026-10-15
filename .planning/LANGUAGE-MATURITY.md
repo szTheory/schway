@@ -524,3 +524,30 @@ The implementation and independent repair work now support the bitwise/Adler sli
 The next three scoped capabilities are: Phase 36 imported `crc_step` calls in a loop; Phase 37 bounded file CRC-32 with a second importer and interpreter CLI parity; Phase 38 reproducible two-host checksum/CRC receipts. The linked transition table names each program, blocker, smallest slice, checker obligations, evidence/debt, owner and priority-changing observation. All three conditional seeds remain dormant on their named source witnesses. Historical M006 receipts remain historical; final hosted binding, human readability and whole-loop cold/warm distributions remain pending or unmeasured.
 
 Phase 35 final acceptance update (2026-10-14): canonical verification now passes 38/38 unique truths; all 33 vectors and 16 UBSan shift rows were freshly rerun locally, together with 15 arithmetic and 26 admission mutation controls. The earlier implementation-only pending notes remain historical. Security/review are closed; final two-host receipts remain Phase 38-owned.
+
+## Phase 36 discussion transition — 2026-10-14
+
+Source inspection for the [Phase 36 context](phases/36-scalar-helper-calls/36-CONTEXT.md)
+distinguishes existing general direct-call machinery from missing scalar call
+expressions and Bool signatures. U64/Bool scalar helper results will be
+initialized but value-unknown to independent static analyses. Existing
+InvocationSegment.Ordinal supports unique repeated activations without a new
+wire field, but current producers/peer hard-code zero and repeated-call/event
+capacity support still needs implementation. These are scoped obligations,
+not demonstrated new capability.
+
+An exclusively U64/Bool callee cannot read bytes. CALL-01's bounds row therefore
+retains the existing owning-wrapper/ByteView callee regression and separately
+checks a bounds fault while computing a new helper argument. The causal peer
+receives no scalar values; numerical argument/result/defect claims require
+independent engine answers. See the dated requirements clarification and
+36-CONTEXT D-18. No Go/native behavior check ran during discussion.
+
+The context's transition table records the next three capabilities: imported
+helper in a loop (36), file CRC/second consumer/public interpreter CLI and guide
+(37), final two-host revision binding after audit (38). Each has a named user
+program, blocker, complete slice, guarantee/evidence owner and reprioritization
+observation. All three conditional seeds remain dormant on named witnesses;
+Phase 33 resolved the historical capture-allocation concern. Hosted receipts
+remain historical/pending as previously labelled. Human readability and whole
+feedback-loop cold/warm distributions remain unmeasured.

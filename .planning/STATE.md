@@ -6,11 +6,11 @@ current_phase: 36
 current_phase_name: Scalar Helper Calls
 current_plan: Not started
 status: planning
-stopped_at: Phases 33–35 complete and verified; next is $gsd-discuss-phase 36
-last_updated: "2026-10-14T23:49:48.202Z"
+stopped_at: Phase 36 context gathered; automatic planning next
+last_updated: "2026-10-15T00:13:34.208Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 35 complete, transitioned to Phase 36
-state_head: 3b47d6913299107212996b741e5870238c7c5d1a
+state_head: 3b9776341a9fc532555787468e8c12ec22f6368d
 progress:
   total_phases: 6
   completed_phases: 3
@@ -1030,6 +1030,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 - Phase 27.3 inserted after Phase 27: Address tech debt: app verify capacity abort and guide clean-tree outputs (W1, W4) (URGENT)
 - Phase 32.1 inserted after Phase 32: Address tech debt: CLI exit classes and module-aware routes (from M006 audit, 558cbbae) (URGENT)
 - M007 roadmap (2026-10-13): Phases 33–38 from research/M007/SUMMARY.md order; EVD-17 split into its own post-audit Phase 38.
+- Phase 36 changed: Phase 36 discussion clarifies CALL-01/02 through 36-CONTEXT D-18 and dated REQUIREMENTS amendment: U64/Bool callee overflow/remainder, existing ByteView-callee bounds regression, peer-specific source/IR/value/causal evidence. Original roadmap wording preserved.
 
 ### Quick Tasks Completed
 
@@ -1094,9 +1095,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-14T23:49:48.114Z
-Stopped at: Phases 33–35 complete and verified; next is $gsd-discuss-phase 36
-Resume file: None
+Last session: 2026-10-15T00:13:34.124Z
+Stopped at: Phase 36 context gathered; automatic planning next
+Resume file: .planning/phases/36-scalar-helper-calls/36-CONTEXT.md
 Next action: $gsd-discuss-phase 36
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
