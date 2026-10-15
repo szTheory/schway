@@ -97,8 +97,9 @@ func phase34TrackedSchwayPaths(t *testing.T) []string {
 		}
 	}
 	sort.Strings(additions)
-	if !equalStrings(additions, []string{"examples/bitwise.schway"}) {
-		t.Fatalf("tracked source inventory additions are not the declared Phase 35 witness: %v", additions)
+	ledger := phase34LoadNewFixtureLedger(t)
+	if problems := phase34AdditionProblems(paths, ledger, additions); len(problems) != 0 {
+		t.Fatalf("tracked source inventory additions: %s", strings.Join(problems, "; "))
 	}
 	delta, err := os.ReadFile(testsupport.ProjectPath(".planning", "phases", "35-bitwise-operators-literal-shifts-and-hex-literals", "35-COMPATIBILITY-DELTA.md"))
 	if err != nil {
@@ -108,6 +109,89 @@ func phase34TrackedSchwayPaths(t *testing.T) []string {
 		t.Fatal("Phase 35 compatibility delta does not declare the additive tracked witness")
 	}
 	return paths
+}
+
+// Compose only the Phase35 additive witness and the exact three Phase36 ledger
+// rows. The current git inventory is independent of that ledger; it must close
+// in both directions. No old row gains an exemption from its frozen C checks.
+type phase34NewFixtureLedger struct {
+	Schema  string                 `json:"schema"`
+	Entries []phase34NewFixtureRow `json:"entries"`
+}
+
+type phase34NewFixtureRow struct {
+	Path      string `json:"path"`
+	SourceSHA string `json:"source_sha256"`
+	Reason    string `json:"reason"`
+}
+
+func phase34LoadNewFixtureLedger(t *testing.T) phase34NewFixtureLedger {
+	t.Helper()
+	raw, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase36", "new-fixture-ledger.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ledger phase34NewFixtureLedger
+	if err := json.Unmarshal(raw, &ledger); err != nil {
+		t.Fatalf("decode Phase36 fixture ledger: %v", err)
+	}
+	return ledger
+}
+
+func phase34AdditionProblems(frozen []string, ledger phase34NewFixtureLedger, additions []string) []string {
+	want := []string{
+		"examples/helper_calls/crc_step.schway",
+		"examples/helper_calls/importer.schway",
+		"examples/helper_calls/public.schway",
+	}
+	var problems []string
+	if ledger.Schema != "phase36.new-fixture-ledger/1" {
+		problems = append(problems, "fixture ledger schema changed")
+	}
+	var ledgerPaths []string
+	seen := map[string]bool{}
+	for _, row := range ledger.Entries {
+		ledgerPaths = append(ledgerPaths, row.Path)
+		if phase34Contains(frozen, row.Path) || row.Path == "examples/bitwise.schway" {
+			problems = append(problems, row.Path+": old corpus source cannot be exempted")
+		}
+		if seen[row.Path] {
+			problems = append(problems, "ledger paths must be sorted and unique")
+		}
+		seen[row.Path] = true
+		if !phase34Contains(want, row.Path) {
+			// Never read a ledger-supplied path outside the finite new set.
+			problems = append(problems, row.Path+": unsafe new-fixture ledger path")
+			continue
+		}
+		if row.SourceSHA == "" || strings.TrimSpace(row.Reason) == "" {
+			problems = append(problems, row.Path+": requires path, source hash, and reason")
+		}
+		if len(row.SourceSHA) != len("sha256:")+64 || !strings.HasPrefix(row.SourceSHA, "sha256:") || strings.Trim(row.SourceSHA[len("sha256:"):], "0123456789abcdef") != "" {
+			problems = append(problems, row.Path+": source hash is malformed")
+		}
+		source, err := os.ReadFile(testsupport.ProjectPath(filepath.FromSlash(row.Path)))
+		if err != nil {
+			problems = append(problems, row.Path+": source is missing from the working tree")
+		} else if row.SourceSHA != fmt.Sprintf("sha256:%x", sha256.Sum256(source)) {
+			problems = append(problems, row.Path+": source hash differs from the working tree")
+		}
+	}
+	if !equalStrings(ledgerPaths, want) {
+		problems = append(problems, "Phase36 ledger must contain exactly the three declared helper paths in order")
+	}
+	allowed := append([]string{"examples/bitwise.schway"}, ledgerPaths...)
+	for _, path := range additions {
+		if !phase34Contains(allowed, path) {
+			problems = append(problems, path+": tracked source is neither frozen nor explicitly ledgered")
+		}
+	}
+	for _, path := range allowed {
+		if !phase34Contains(additions, path) {
+			problems = append(problems, path+": frozen or ledgered source is missing from tracked inventory")
+		}
+	}
+	return problems
 }
 
 func phase34ObserveCorpus(t *testing.T) []phase34PreChangeEntry {
@@ -408,6 +492,48 @@ func TestPhase34PreChangeCProgramGolden(t *testing.T) {
 
 func TestPhase34PreChangeCGoldenIsNotInert(t *testing.T) {
 	corpus := phase34LoadCorpus(t)
+	frozen := phase34EntryPaths(corpus.Entries)
+	ledger := phase34LoadNewFixtureLedger(t)
+	additions := []string{"examples/bitwise.schway", "examples/helper_calls/crc_step.schway", "examples/helper_calls/importer.schway", "examples/helper_calls/public.schway"}
+	for _, control := range []struct {
+		name   string
+		mutate func(*phase34NewFixtureLedger, *[]string)
+		want   string
+	}{
+		{"schema", func(l *phase34NewFixtureLedger, _ *[]string) { l.Schema = "invalid" }, "fixture ledger schema"},
+		{"missing-row", func(l *phase34NewFixtureLedger, _ *[]string) { l.Entries = l.Entries[1:] }, "tracked source is neither frozen nor explicitly ledgered"},
+		{"extra-row", func(l *phase34NewFixtureLedger, _ *[]string) {
+			l.Entries = append(l.Entries, phase34NewFixtureRow{Path: "examples/undeclared.schway", SourceSHA: l.Entries[0].SourceSHA, Reason: "control"})
+		}, "exactly the three declared helper paths"},
+		{"malformed-hash", func(l *phase34NewFixtureLedger, _ *[]string) { l.Entries[0].SourceSHA = "bad" }, "source hash is malformed"},
+		{"wrong-hash", func(l *phase34NewFixtureLedger, _ *[]string) {
+			l.Entries[0].SourceSHA = "sha256:" + strings.Repeat("0", 64)
+		}, "source hash differs from the working tree"},
+		{"missing-reason", func(l *phase34NewFixtureLedger, _ *[]string) { l.Entries[0].Reason = " " }, "requires path, source hash, and reason"},
+		{"old-exemption", func(l *phase34NewFixtureLedger, _ *[]string) { l.Entries[0].Path = frozen[0] }, "old corpus source cannot be exempted"},
+		{"phase35-exemption", func(l *phase34NewFixtureLedger, _ *[]string) { l.Entries[0].Path = "examples/bitwise.schway" }, "old corpus source cannot be exempted"},
+		{"unsafe-path", func(l *phase34NewFixtureLedger, _ *[]string) { l.Entries[0].Path = "../outside.schway" }, "unsafe new-fixture ledger path"},
+		{"duplicate-row", func(l *phase34NewFixtureLedger, _ *[]string) { l.Entries[1] = l.Entries[0] }, "paths must be sorted and unique"},
+		{"missing-source", func(_ *phase34NewFixtureLedger, a *[]string) { *a = (*a)[:len(*a)-1] }, "source is missing from tracked inventory"},
+		{"missing-phase35-source", func(_ *phase34NewFixtureLedger, a *[]string) { *a = (*a)[1:] }, "examples/bitwise.schway: frozen or ledgered source is missing"},
+		{"extra-source", func(_ *phase34NewFixtureLedger, a *[]string) { *a = append(*a, "examples/undeclared.schway") }, "tracked source is neither frozen nor explicitly ledgered"},
+	} {
+		t.Run("additions/"+control.name, func(t *testing.T) {
+			if problems := phase34AdditionProblems(frozen, ledger, additions); len(problems) != 0 {
+				t.Fatalf("clean addition closure: %v", problems)
+			}
+			changed := phase34NewFixtureLedger{Schema: ledger.Schema, Entries: append([]phase34NewFixtureRow(nil), ledger.Entries...)}
+			changedAdditions := append([]string(nil), additions...)
+			control.mutate(&changed, &changedAdditions)
+			problems := phase34AdditionProblems(frozen, changed, changedAdditions)
+			if !strings.Contains(strings.Join(problems, "; "), control.want) {
+				t.Fatalf("addition control did not reach %q: %v", control.want, problems)
+			}
+			if problems := phase34AdditionProblems(frozen, ledger, additions); len(problems) != 0 {
+				t.Fatalf("restored addition closure: %v", problems)
+			}
+		})
+	}
 	observed := phase34ObserveCorpus(t)
 	if problems := phase34CompareCorpus(corpus, observed); len(problems) != 0 {
 		t.Fatalf("clean pre-change observation must pass before mutation: %s", strings.Join(problems, "; "))

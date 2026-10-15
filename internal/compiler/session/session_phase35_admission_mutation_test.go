@@ -130,7 +130,13 @@ func TestPhase35AdmissionRefusalMutationControls(t *testing.T) {
 			{
 				name: "unrelated-fields", selector: phase35AdmissionCaseSelector("TestPhase35ShiftImmediateAdmission", "foreign_field"),
 				expected: []phase35AdmissionFailure{{test: "TestPhase35ShiftImmediateAdmission", subtest: "foreign_field", marker: "ADMISSION_ACCEPTED:"}},
-				edits:    []phase35AdmissionEdit{{start: coreShapeStart, end: coreShapeEnd, before: "scalarOperationHasNoUnrelatedFields(operation)", after: "true", sites: 1}},
+				edits: []phase35AdmissionEdit{
+					{start: coreShapeStart, end: coreShapeEnd, before: "scalarOperationHasNoUnrelatedFields(operation)", after: "true", sites: 1},
+					// Phase36 also rejects foreign metadata during preflight.
+					// Remove this equivalent defense only for the targeted shift
+					// law; actual call/release/foreign-call authority stays intact.
+					{start: "func (v *validator) linearStructural", end: "\nfunc ", before: "} else if operation.Foreign != nil {", after: "} else if operation.Foreign != nil && operation.Kind != core.OpShiftLeftU64 && operation.Kind != core.OpShiftRightU64 {", sites: 1},
+				},
 			},
 			{
 				name: "store-and-edge-field-exclusion", selector: phase35AdmissionCaseSelector("TestPhase35ShiftImmediateAdmission", "store_field", "edge_field"),

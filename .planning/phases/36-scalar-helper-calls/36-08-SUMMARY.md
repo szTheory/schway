@@ -41,6 +41,26 @@ patterns-established:
   - "Living roadmap amendments distinguish current source, new focused checks, and historical receipts."
 
 requirements-completed: []
+coverage:
+  - id: D1
+    description: "Task 1 preserves the frozen no-new-call C and refusal inventory with exact new-fixture ledger and drift/omission/exemption controls."
+    requirement: CALL-02
+    verification:
+      - kind: integration
+        ref: "internal/compiler/session/session_phase36_prechange_test.go#TestPhase36NoCallGeneratedCByteBaseline"
+        status: pass
+      - kind: integration
+        ref: "internal/compiler/session/session_phase36_prechange_test.go#TestPhase36NoCallGeneratedCByteBaselineControls"
+        status: pass
+    human_judgment: false
+  - id: D2
+    description: "Task 2 records actual per-knower acceptance and the dated living-document capability/seed transition; the Python artifact checks own document grounding, while named Go owners prove only their respective runtime, raw-contract, causal, or compatibility claims."
+    requirement: CALL-01
+    verification:
+      - kind: other
+        ref: "36-08-PLAN.md Task 2 exact Python final owner/artifact command; historical accepted capture at 3697ec2950487bb98723c06262d6d7e6bb2ae1d6, /tmp/schway36-final-3697ec295048-safn6e49/owner-results.json, and 36-ACCEPTANCE-EVIDENCE.md"
+        status: pass
+    human_judgment: false
 duration: "not recorded; first-to-last accepted owner capture was 7m 25s"
 completed: 2026-10-15
 status: complete
