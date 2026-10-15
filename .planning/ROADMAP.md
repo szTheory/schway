@@ -234,6 +234,27 @@ Plans:
 **Research flag**: Moderate. Arity stays exactly 1 (`core.Function.Parameter`), so the core IR JSON schema does not change. Cost lies in the callee defect path through cgen evidence reservation, interpreter defect events and the execution peer.
 
 **Plans**: TBD (target ≈8)
+**Wave 1**
+- [ ] 36-01-PLAN.md
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 36-02-PLAN.md
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 36-03-PLAN.md
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 36-04-PLAN.md
+- [ ] 36-05-PLAN.md
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 36-06-PLAN.md
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 36-07-PLAN.md
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 36-08-PLAN.md
 
 ### Phase 37: CRC-32 Consumer, Interpreter File Route, and Guide
 
@@ -285,7 +306,7 @@ Plans:
 | 33. Carried Debt, Bounded Capture Read, and Generic Freeze Gate | 5/5 | Complete    | 2026-10-13 |
 | 34. Agent Diagnostics Floor and Surface Manifest | 8/8 | Complete    | 2026-10-13 |
 | 35. Bitwise Operators, Literal Shifts, and Hex Literals | 8/8 | Complete    | 2026-10-14 |
-| 36. Scalar Helper Calls | 0/TBD | Not started | - |
+| 36. Scalar Helper Calls | 0/8 | Planned     | - |
 | 37. CRC-32 Consumer, Interpreter File Route, and Guide | 0/TBD | Not started | - |
 | 38. Milestone Receipts | 0/TBD | Not started | - |
 
