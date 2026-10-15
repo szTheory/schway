@@ -169,3 +169,25 @@ Plan 36-05 is complete. Plans 36-06 through 36-08 remain, and CALL-01/CALL-02 re
 ## Self-Check: PASSED
 
 The summary, all plan-owned source/evidence/deferred files, and the windows ledger exist. All four task commits are ancestors of the current plan head.
+
+## Dated residual resolution — 2026-10-14
+
+The subsequent authorized `phase36-legacy-call-routes` debug investigation
+restored the three historical application-emission routes without changing the
+frozen source corpus or C expectations. The new scalar helper laws had selected
+legacy owning-ByteView and fallible PathToken calls by their scalar result;
+core/origin applicability and the independent PathToken contract gates were
+corrected, with existing lifecycle, cleanup, error-edge and back-edge controls
+retained. Held-out origin file-owner-tail tests also restored the established
+owner refusal precedence.
+
+Fresh exact roots `TestPhase36NoCallGeneratedCByteBaseline` and
+`TestPhase36NoCallGeneratedCByteBaselineControls` both pass. New applicability,
+file-owner and fallible-call tests pass alongside the Phase24/29/31 lifecycle
+controls and Phase36 raw core/origin/path safety selectors. Seven fix-site
+overlay mutants were killed by semantic assertions. Full bounded commands and
+guardrail results are recorded in `.planning/debug/resolved/phase36-legacy-call-routes.md`;
+the original failed verification above remains an accurate historical receipt.
+The implementation residual is cleared for Plan36-06; debug review/archive and
+the exact-file commit are owned by the session manager. This amendment adds no
+hosted/native-matrix or phase-completion claim.

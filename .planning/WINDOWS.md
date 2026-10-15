@@ -194,7 +194,7 @@ last_updated: 2026-10-15T03:25:17.589Z
     "line": null,
     "description": "Frozen Phase36-01 no-call corpus has three current core-validator refusal shifts before cgen; generated C byte snapshots match.",
     "status": "open",
-    "reason": "",
+    "reason": "2026-10-14 resolved in phase36-legacy-call-routes: scoped core/origin call-only scalar applicability; retained full file-owner ByteView lifecycle and typed fallible PathToken probe in each independent peer; restored origin owner-refusal precedence. Unchanged frozen baseline+Controls, new regressions and raw safety/lifecycle controls pass; seven fix-site mutants killed. Session manager independently reran exact final selectors before authorized resolution/archive; original failure receipt retained.",
     "recorded_at": "2026-10-15T03:25:17.589Z",
     "resolved_at": null,
     "milestone": null
