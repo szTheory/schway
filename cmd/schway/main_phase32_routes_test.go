@@ -96,6 +96,8 @@ var phase32RouteRows = []phase32RouteRow{
 	{Key: "debug-map", Modules: "module-aware", Reason: "not covered because it is owned by TestDebugMapCLIAvailability"},
 	{Key: "run --engine= interpreter", Modules: "module-aware", Reason: "not covered because engine agreement is owned by TestPhase29AdlerBothEngines and TestPhase30ModuleRefusalExitCodes"},
 	{Key: "run --engine= native", Modules: "module-aware", Reason: "not covered because engine agreement is owned by TestPhase29AdlerBothEngines and TestPhase30ModuleRefusalExitCodes"},
+	{Key: "run --engine=interpreter SOURCE -- PATH", Modules: "module-aware", Reason: "not covered because the separator-marked source route is exercised by TestPhase37PublicFileRunTracer"},
+	{Key: "run --engine=native SOURCE --manifest MANIFEST -- PATH", Modules: "module-aware", Reason: "not covered because the separator-marked source route is exercised by TestPhase37PublicFileRunTracer"},
 
 	// Entry programs: the seven receipt programs.
 	{Key: "examples/checksum/checksum.schway", Programs: []string{"checksum"}},
@@ -118,6 +120,8 @@ var phase32RouteRows = []phase32RouteRow{
 	{Key: "examples/helper_calls/crc_step.schway", Modules: phase32ModuleAware, Reason: "not covered because its module-aware U64 entry returns tool.run_input_required with exit 64 on both engines until explicit input is supplied; TestPhase36PublicHelperConformance owns that CLI result"},
 	{Key: "examples/helper_calls/importer.schway", Modules: phase32ModuleAware, Reason: "not covered because the closed imported crc_step module loads and its U64 entry returns tool.run_input_required with exit 64 on both engines; TestPhase36PublicHelperConformance owns that CLI result"},
 	{Key: "examples/helper_calls/public.schway", Modules: phase32ModuleAware, Reason: "not covered because the imported unused-Byte entry returns 1994146192 on both conformance engines; TestPhase36PublicHelperConformance owns that public result"},
+	{Key: "examples/crc32/crc32.schway", Modules: phase32ModuleAware, Reason: "not covered because it is outside the M006 receipt set; the imported CRC-32 consumer is owned by TestPhase37CRC32Consumers"},
+	{Key: "examples/crc32/crc_low.schway", Modules: phase32ModuleAware, Reason: "not covered because it is outside the M006 receipt set; the imported low-16 CRC consumer is owned by TestPhase37CRC32Consumers"},
 }
 
 // phase32UsageOmissions is the recorded set of routes present in dispatch but
@@ -282,6 +286,9 @@ func phase32EnumerateRoutes(mainGoSource string) []string {
 				phase32WalkIf(ifStatement, prefix, map[int]string{}, keys)
 			}
 		}
+	}
+	for _, route := range phase37EnumerateFileRunRoutes(mainGoSource) {
+		keys[route] = true
 	}
 	return phase32SortedKeys(keys)
 }
@@ -544,17 +551,19 @@ func phase32ModuleProblems(rows []phase32RouteRow, moduleAware []string, observe
 // examples/checksum/adler32_cli.schway. It never runs in parallel: the import
 // seam is process-global.
 type phase32ModuleObserver struct {
-	t        *testing.T
-	fixture  string
-	bindings string
-	manifest string
-	refusal  string
-	dir      string
+	t            *testing.T
+	fixture      string
+	bindings     string
+	fileBindings string
+	fileInput    string
+	manifest     string
+	refusal      string
+	dir          string
 }
 
 func newPhase32ModuleObserver(t *testing.T) *phase32ModuleObserver {
 	t.Helper()
-	fixture := testsupport.ProjectPath("examples", "checksum", "adler32_cli.schway")
+	fixture := testsupport.ProjectPath("examples", "crc32", "crc32.schway")
 	source, err := os.ReadFile(fixture)
 	if err != nil {
 		t.Fatal(err)
@@ -577,9 +586,15 @@ func newPhase32ModuleObserver(t *testing.T) *phase32ModuleObserver {
 	if err := os.WriteFile(manifest, product.ManifestBytes, 0o600); err != nil {
 		t.Fatal(err)
 	}
+	fileInput := filepath.Join(dir, "file-input.bin")
+	if err := os.WriteFile(fileInput, []byte("123456789"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	return &phase32ModuleObserver{
 		t: t, fixture: fixture, manifest: manifest, refusal: refusal, dir: dir,
-		bindings: testsupport.ProjectPath("examples", "phase29", "fixture_bytes.bindings.json"),
+		bindings:     testsupport.ProjectPath("examples", "phase29", "fixture_bytes.bindings.json"),
+		fileBindings: testsupport.ProjectPath("examples", "checksum", "file_bytes.bindings.json"),
+		fileInput:    fileInput,
 	}
 }
 
@@ -598,6 +613,10 @@ func (o *phase32ModuleObserver) observe(row phase32RouteRow) (int, string) {
 		args = []string{"run", "--engine=interpreter", o.fixture}
 	case "run --engine= native":
 		args = []string{"run", "--engine=native", o.fixture}
+	case "run --engine=interpreter SOURCE -- PATH":
+		args = []string{"run", "--engine=interpreter", o.fixture, "--", o.fileInput}
+	case "run --engine=native SOURCE --manifest MANIFEST -- PATH":
+		args = []string{"run", "--engine=native", o.fixture, "--manifest", o.fileBindings, "--", o.fileInput}
 	case "build --output":
 		args = []string{"build", o.fixture, "--output", out("bin")}
 	case "build --output --manifest":
@@ -692,8 +711,8 @@ func TestPhase32PublicRouteAudit(t *testing.T) {
 	entries := phase32EnumerateEntries(testsupport.ProjectPath("examples"))
 	testNames := phase32ScanTestNames(testsupport.ProjectPath("cmd"), testsupport.ProjectPath("internal"))
 
-	if len(routes) < 20 || len(entries) != 18 {
-		t.Fatalf("enumeration looks wrong: %d routes %v, %d entries %v (want 18 current entry programs)", len(routes), routes, len(entries), entries)
+	if len(routes) < 20 || len(entries) != 20 {
+		t.Fatalf("enumeration looks wrong: %d routes %v, %d entries %v (want 20 current entry programs)", len(routes), routes, len(entries), entries)
 	}
 	if problems := phase32RouteAuditProblems(routes, entries, phase32RouteRows, testNames); len(problems) > 0 {
 		t.Fatalf("route audit problems:\n%s", strings.Join(problems, "\n"))

@@ -52,16 +52,22 @@ func TestPhase34SourceRoutePresentation(t *testing.T) {
 	routes := []struct {
 		name string
 		args []string
+		json bool
 	}{
-		{name: "interpreter", args: []string{"run", "--engine=interpreter", sourcePath}},
-		{name: "native", args: []string{"run", "--engine=native", sourcePath}},
-		{name: "build", args: []string{"build", sourcePath, "--output", filepath.Join(directory, "app")}},
+		{name: "interpreter", args: []string{"run", "--engine=interpreter", sourcePath}, json: true},
+		{name: "native", args: []string{"run", "--engine=native", sourcePath}, json: true},
+		{name: "interpreter-file", args: []string{"run", "--engine=interpreter", sourcePath, "--", filepath.Join(directory, "input.bin")}},
+		{name: "native-file", args: []string{"run", "--engine=native", sourcePath, "--manifest", testsupport.ProjectPath("examples", "checksum", "file_bytes.bindings.json"), "--", filepath.Join(directory, "input.bin")}},
+		{name: "build", args: []string{"build", sourcePath, "--output", filepath.Join(directory, "app")}, json: true},
 	}
 	for _, route := range routes {
 		t.Run(route.name, func(t *testing.T) {
 			code, stdout, stderr := captureLangRun(t, route.args)
 			assertPhase34RouteText(t, route.name, code, stdout, stderr, sourcePath, want.ID, want.Code, want.Primary.Col)
 
+			if !route.json {
+				return
+			}
 			jsonArgs := append([]string{"--json"}, route.args...)
 			jsonCode, jsonStdout, jsonStderr := captureLangRun(t, jsonArgs)
 			if jsonCode != exitcode.Invalid || jsonStderr != "" {
@@ -83,6 +89,36 @@ func TestPhase34SourceRoutePresentation(t *testing.T) {
 			got := result.Diagnostics[0]
 			if got.ID != want.ID || got.Code != want.Code || got.Primary.Line != 3 || got.Primary.Col != want.Primary.Col {
 				t.Fatalf("JSON %s diagnostic=%+v, want check identity/location %+v", route.name, got, want)
+			}
+		})
+	}
+
+	// The separator-marked source routes retain the imported module's relative
+	// source location through the full admission path.
+	importRoot := t.TempDir()
+	importedPath := filepath.Join(importRoot, "lib", "bad.schway")
+	if err := os.MkdirAll(filepath.Dir(importedPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(importedPath, []byte("module lib.bad\nexport { fn bad }\nfn bad(n: U64) -> U64 {\n  let result = n +\n  result\n}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	importEntryPath := filepath.Join(importRoot, "main.schway")
+	importEntry := "module examples.imported_route\nimport lib.bad { fn bad }\nexport { fn main }\nfn main(path: PathToken) -> U64 {\n  let answer = 1\n  answer\n}\n"
+	if err := os.WriteFile(importEntryPath, []byte(importEntry), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, route := range []struct {
+		name string
+		args []string
+	}{
+		{name: "interpreter", args: []string{"run", "--engine=interpreter", importEntryPath, "--", filepath.Join(importRoot, "input.bin")}},
+		{name: "native", args: []string{"run", "--engine=native", importEntryPath, "--manifest", testsupport.ProjectPath("examples", "checksum", "file_bytes.bindings.json"), "--", filepath.Join(importRoot, "input.bin")}},
+	} {
+		t.Run("imported-file-diagnostic/"+route.name, func(t *testing.T) {
+			code, stdout, stderr := captureLangRun(t, route.args)
+			if code != exitcode.Invalid || stdout != "" || !strings.Contains(stderr, "lib/bad.schway") || strings.Contains(stderr, importEntryPath+":") {
+				t.Fatalf("imported source diagnostic = (%d,%q,%q), want imported relative source ownership", code, stdout, stderr)
 			}
 		})
 	}
@@ -163,6 +199,8 @@ var phase34DiagnosticRoutes = []phase34DiagnosticRoute{
 	{Key: "debug-map", Handler: "runDebugMap", Calls: []string{"DebugMapCommandFile"}, ModuleClass: phase32ModuleAware, SourceClass: "module-aware-source", Owner: "TestPhase34DiagnosticRouteInventory", SourceReason: "uses loader-confirmed snapshots and relative imported labels"},
 	{Key: "run --engine= interpreter", Handler: "runInterpreter", Calls: []string{"RunInterpreterCommandFile"}, ModuleClass: phase32ModuleAware, SourceClass: "module-aware-source", Owner: "TestPhase34SourceRoutePresentation", SourceReason: "entry/imported refusal occurs before interpreting"},
 	{Key: "run --engine= native", Handler: "runNative", Calls: []string{"RunNativeCommandFile"}, ModuleClass: phase32ModuleAware, SourceClass: "module-aware-source", Owner: "TestPhase34SourceRoutePresentation", SourceReason: "entry/imported refusal occurs before native execution"},
+	{Key: "run --engine=interpreter SOURCE -- PATH", Handler: "runFileApplication", Calls: []string{"parseFileRun", "CheckCommandFile", "RunInterpreterFileApplication", "runNativeFileApplication"}, ModuleClass: phase32ModuleAware, SourceClass: "module-aware-source", Owner: "TestPhase37PublicFileRunTracer", SourceReason: "full module-aware admission keeps entry and imported diagnostic snapshots before file execution"},
+	{Key: "run --engine=native SOURCE --manifest MANIFEST -- PATH", Handler: "runFileApplication", Calls: []string{"parseFileRun", "CheckCommandFile", "RunInterpreterFileApplication", "runNativeFileApplication"}, ModuleClass: phase32ModuleAware, SourceClass: "module-aware-source", Owner: "TestPhase37PublicFileRunTracer", SourceReason: "native file application uses the admitted source closure before a private build and one run"},
 }
 
 func TestPhase34DiagnosticRouteInventory(t *testing.T) {
