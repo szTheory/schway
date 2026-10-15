@@ -3,6 +3,7 @@ package interp_test
 import (
 	"encoding/json"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/szTheory/schway/internal/compiler/execution"
 	"github.com/szTheory/schway/internal/compiler/interp"
 	"github.com/szTheory/schway/internal/compiler/session"
+	"github.com/szTheory/schway/internal/compiler/testsupport"
 )
 
 const phase36RepeatedCallSource = `module phase36.runtime_calls
@@ -383,6 +385,46 @@ func TestPhase36InterpreterEvidenceBoundaries(t *testing.T) {
 		}
 		if string(result.Output) != input+"\n" {
 			t.Fatalf("capture exhaustion lost already-produced application output: %q", result.Output)
+		}
+	})
+	t.Run("fixture-route-preserves-execution-on-exhaustion", func(t *testing.T) {
+		source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase29", "adler32_fixture.schway"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		text := string(source)
+		start := strings.Index(text, "fn adler32(")
+		if start < 0 {
+			t.Fatal("fixture source no longer has its expected adler32/main layout")
+		}
+		relativeEnd := strings.Index(text[start:], "\nfn main(")
+		if relativeEnd < 0 {
+			t.Fatal("fixture source no longer has its expected adler32/main layout")
+		}
+		end := start + relativeEnd
+		replacement := `fn adler32(bytes: ByteView) -> U64 {
+  var value = 0
+  var index = 0
+  while index < 2 {
+    value = bump(value)
+    index = index + 1
+  }
+  value
+}
+fn bump(input: U64) -> U64 { let result = input + 1 result }
+`
+		checked := session.Check([]byte(text[:start] + replacement + text[end:]))
+		if len(checked.Diagnostics) != 0 {
+			t.Fatalf("fixture-route source diagnostics: %+v", checked.Diagnostics)
+		}
+		restore := interp.SetEvidenceLimitsForTest(execution.MaxDocumentBytes, execution.MaxDocumentBytes, execution.MaxDocumentBytes, 0)
+		defer restore()
+		result, err := interp.RunWithFixtureBytes(checked.Program, "main", "3", testsupport.Phase29FixtureBytes)
+		if !errors.Is(err, interp.ErrEvidenceCapacityExhausted) || len(result.Events) != 0 {
+			t.Fatalf("fixture-route exhaustion = execution %+v, err %v; want named error and no partial trace", result, err)
+		}
+		if result.Outcome.Kind != execution.OutcomeReturned || result.Outcome.Value != "2" {
+			t.Fatalf("fixture route lost completed helper result: %+v, want returned 2", result.Outcome)
 		}
 	})
 }
