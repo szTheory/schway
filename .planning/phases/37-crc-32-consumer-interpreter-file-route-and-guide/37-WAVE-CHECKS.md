@@ -29,3 +29,19 @@ Fresh parent checks passed:
 Requirements remain pending phase acceptance. The new outcome controls found and fixed exhausted capture obscuring a later checked defect. Executor canonical proof receipts are source-bound to its implementation head; final phase proof refresh remains required after later changes.
 
 Wave 3 readiness: 37-03 and 37-04 are both ready and have disjoint declared file sets. They still serialize because this run's negotiated isolation is none.
+
+## Wave 3 — 2026-10-15
+
+37-03 and 37-04 terminal handoffs and committed summaries were reconciled against four reachable plan commits each; first created artifacts exist, no failed self-check markers. Their objective automated coverage is not human UAT: parent corrected 37-03's two `human_judgment` flags, which had described parent workflow ownership rather than human-dependent product qualities. No verification result was changed.
+
+Fresh parent checks passed:
+
+- `GOCACHE=/tmp/ai-lang-verification-gocache go build -o /tmp/schway37-wave3 ./cmd/schway`
+- `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37PublicFileRunTracer|TestPhase37FileRunGrammar|TestPhase37OpaqueFilePaths|TestPhase37FileRunInputBoundary|TestPhase37FileRunOutcomes|TestPhase22ConformanceRunStillEmitsExecutionDocument)$' -count=1 -v -timeout=600s`
+- `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase37FileApplicationAuthority$' -count=1 -v -timeout=600s`
+- `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase37FileReaderFaults|TestPhase37FileReaderBoundControls|TestPhase37CaptureRetentionControls)$' -count=1 -v -timeout=600s`
+- `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^(TestPhase37CRC32PhysicalCleanup|TestPhase37CRC32BoundControls|TestPhase37CRC32Sanitizer)$' -count=1 -v -timeout=600s`
+
+All 13 exact roots reached and passed, with no skipped subtests in these runs. Native missing-free and one-byte-short-read mutants built and reached their physical assertions. Combined ASan/UBSan was available and passed generated CRC small/cap success plus an actual-adapter cap-plus-one returning C caller; no leak detection or Linux-host execution claim. The generated application's typed-error exit remains distinct from the returning C caller.
+
+Wave-post schema/UI block=false; codebase-drift skipped for no structure map. Wave 4's three plans are ready and declared file sets disjoint; serialization remains in force for this run. All four phase requirements remain pending final acceptance.

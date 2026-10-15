@@ -55,16 +55,16 @@ coverage:
       - kind: integration
         ref: "go test ./cmd/schway -run '^(TestPhase37FileRunOutcomes|TestPhase23PublicFileByte|TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus|TestPhase22ConformanceRunStillEmitsExecutionDocument)$' -count=1 -v -timeout=600s"
         status: pass
-    human_judgment: true
-    rationale: "This plan supplies the CLI slice; parent phase acceptance must consider it with the consumer and guide deliverables in the remaining plan."
+    human_judgment: false
+    rationale: "The listed process and admission checks are objective automated evidence. Parent workflow acceptance is not a human-dependent product quality."
   - id: D2
     description: "Whole merged source and raw-core authority checks reject neighboring programs before any host read, including an invalid imported function that entry pruning would omit."
     verification:
       - kind: unit
         ref: "go test ./internal/compiler/session -run '^TestPhase37FileApplicationAuthority$' -count=1 -v -timeout=600s"
         status: pass
-    human_judgment: true
-    rationale: "The parent phase still owns acceptance of the complete capability and its downstream guide evidence."
+    human_judgment: false
+    rationale: "The listed authority checks are objective automated evidence; phase-level completeness remains pending the downstream plans."
 
 # Metrics
 duration: 18min
