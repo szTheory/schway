@@ -23,6 +23,67 @@ func TestReceiptGate(t *testing.T) {
 	testPortedPhase32ReceiptGate(t)
 }
 
+func TestReceiptGateProgramInventory(t *testing.T) {
+	root := testsupport.ProjectPath()
+	base := string(mustRead(t, testsupport.ProjectPath("testdata", "receipts", "M006.manifest")))
+	programs := strings.Join(phase32ReceiptPrograms, ",")
+	for _, row := range []struct {
+		name, programs, extraProgram, dropProgram, reason string
+	}{
+		{name: "known-good", programs: programs},
+		{name: "reordered-programs", programs: "fizzbuzz,sum_to_n,byte_index_oob,adler32_fixture,adler32_cli,adler_low,checksum"},
+		{name: "extra-case-program", programs: programs, extraProgram: "inventory_extra", reason: "case_program_not_declared_inventory_extra"},
+		{name: "declared-program-without-cases", programs: programs, dropProgram: "fizzbuzz", reason: "program_without_table_entry_fizzbuzz"},
+		{name: "empty", programs: "", reason: "programs_line_missing"},
+		{name: "leading-empty", programs: "," + programs, reason: "programs_line_malformed"},
+		{name: "trailing-empty", programs: programs + ",", reason: "programs_line_malformed"},
+		{name: "interior-empty", programs: strings.Replace(programs, ",", ",,", 1), reason: "programs_line_malformed"},
+		{name: "whitespace-member", programs: programs + ", ", reason: "programs_line_malformed"},
+		{name: "duplicate-member", programs: programs + ",checksum", reason: "programs_line_malformed"},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			manifest := strings.Replace(base, "programs="+programs, "programs="+row.programs, 1)
+			if row.extraProgram != "" {
+				manifest += "# case " + row.extraProgram + " matched 0 - -\n"
+			}
+			if row.dropProgram != "" {
+				manifest = dropReceiptRows(t, manifest, "# case "+row.dropProgram+" ")
+			}
+			path := filepath.Join(t.TempDir(), "programs.manifest")
+			if err := os.WriteFile(path, []byte(manifest), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			logs := make([]string, 2)
+			for i, host := range []string{"macOS", "Linux"} {
+				log := phase32ReceiptLog(t, host, phase32GateDigest)
+				if row.extraProgram != "" {
+					// The extra case agrees with the table and both result counts;
+					// only its absence from programs= makes the inventory invalid.
+					extra := "phase32 case program=" + row.extraProgram + " input=matched expected_exit=0 actual_exit=0 stdout=exact stderr=exact status=pass\n"
+					log = strings.Replace(log, "phase32 control name=guide ", extra+"phase32 control name=guide ", 1)
+				}
+				if row.dropProgram != "" {
+					log = dropReceiptRows(t, log, "phase32 case program="+row.dropProgram+" ")
+				}
+				log = strings.Replace(log, "programs="+programs, "programs="+row.programs, 1)
+				logs[i] = strings.Replace(log, "cases=39", fmt.Sprintf("cases=%d", len(phase32ParseCaseTable(t, manifest))), 1)
+			}
+			got := runGenericReceiptPair(t, root, path, logs[0], logs[1], phase32GateDigest)
+			if row.reason == "" {
+				want := "phase32 receipt gate: status=pass hosts=macOS,Linux codedigest=" + phase32GateDigest + " programs=" + row.programs + " cases=39 digest_source=env\n"
+				if got.exit != 0 || got.stdout != want || got.stderr != "" {
+					t.Fatalf("valid inventory verdict: got=%#v want exit=0 stdout=%q", got, want)
+				}
+				return
+			}
+			want := "phase32 receipt gate: status=fail reason=" + row.reason + "\n"
+			if got.exit != 1 || got.stdout != "" || got.stderr != want {
+				t.Fatalf("invalid inventory verdict: got=%#v want exit=1 stderr=%q", got, want)
+			}
+		})
+	}
+}
+
 func TestReceiptGateMalformedControls(t *testing.T) {
 	root := testsupport.ProjectPath()
 	base := string(mustRead(t, testsupport.ProjectPath("testdata", "receipts", "M006.manifest")))

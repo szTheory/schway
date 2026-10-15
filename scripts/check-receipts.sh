@@ -43,6 +43,10 @@ case_table=$(grep '^# case ' "$manifest" || true)
 [ -n "$controls" ] || reject controls_line_missing
 table_count=$(printf '%s\n' "$case_table" | grep -c '^# case ')
 control_count=$(printf '%s' "$controls" | awk -F, '{ for (i=1; i<=NF; i++) if ($i ~ /^[[:space:]]*$/) exit 1; print NF }') || reject controls_line_malformed
+program_names=$(printf '%s\n' "$want_programs" | awk -F, '{
+	for (i=1; i<=NF; i++) if ($i == "" || $i ~ /[[:space:]]/ || seen["p" $i]++) exit 1
+	for (i=1; i<=NF; i++) print $i
+}') || reject programs_line_malformed
 
 prefix_count() { awk -v p="$1" 'index($0,p)==1 { n++ } END { print n+0 }' "$2"; }
 prefix_first() { awk -v p="$1" 'index($0,p)==1 { print; exit }' "$2"; }
@@ -83,10 +87,22 @@ check_log() {
 	[ "$(field "$result" tree)" = clean ] || reject "result_tree_not_clean_$typed"
 	[ "$(field "$result" status)" = pass ] || reject "result_not_pass_$typed"
 	[ "$(field "$result" programs)" = "$want_programs" ] || reject "result_programs_mismatch_$typed"
-	for program in $(printf '%s\n' "$want_programs" | tr ',' ' '); do
-		printf '%s\n' "$case_table" | grep -Fq "# case $program " || reject "program_without_table_entry_$program"
+	while IFS= read -r program; do
+		printf '%s\n%s\n' "$program" "$case_table" | awk '
+			NR==1 { program=$0; next }
+			("p" $3) == ("p" program) { found=1; exit }
+			END { exit !found }
+		' || reject "program_without_table_entry_$program"
 		[ "$(prefix_count "$label case program=$program " "$log")" -ge 1 ] || reject "program_missing_${program}_$typed"
-	done
+	done <<EOF
+$program_names
+EOF
+	# Keep the declared-program refusal order, then check the reverse inventory.
+	undeclared_program=$(printf '%s\n%s\n' "$want_programs" "$case_table" | awk '
+		NR==1 { n=split($0, programs, ","); for (i=1; i<=n; i++) declared["p" programs[i]]=1; next }
+		!(("p" $3) in declared) { print $3; exit }
+	')
+	[ -z "$undeclared_program" ] || reject "case_program_not_declared_$undeclared_program"
 	[ "$(field "$result" controls)" = "$control_count" ] || reject "result_control_count_$typed"
 	[ "$(field "$result" cases)" = "$table_count" ] || reject "result_case_count_$typed"
 	[ "$(prefix_count "$label case " "$log")" = "$table_count" ] || reject "case_row_count_$typed"
