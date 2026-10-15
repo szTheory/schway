@@ -2,9 +2,9 @@
 schema_version: 1
 open_count: 4
 waived_count: 0
-fixed_count: 4
-total_count: 8
-last_updated: 2026-10-14T00:24:48.501Z
+fixed_count: 5
+total_count: 9
+last_updated: 2026-10-15T01:31:07.387Z
 ---
 
 # Broken Windows Ledger
@@ -23,6 +23,7 @@ last_updated: 2026-10-14T00:24:48.501Z
 | 6 | 33 | deviation | .planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/*-SUMMARY.md; .planning/milestones/M006-phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/*-SUMMARY.md |  | Historical Phase 32 and 32.1 coverage refs amended to the Phase 33-04 generic gate test names so groundedness resolves. | open |  | 2026-10-13T17:55:33.809Z |  |
 | 7 | 34 | deviation | internal/compiler/session/session_phase34_prechange_test.go |  | Comparator now compares not_emitted outcomes and reaches a status-mutation control. | open |  | 2026-10-13T21:34:52.574Z |  |
 | 8 | 34 | deviation | internal/compiler/surfacemanifest/manifest.go |  | Removed Box/Pair ability-only and linear-if contexts from the surface manifest after CheckCommandFile rejected their complete programs. | fixed |  | 2026-10-14T00:24:46.705Z | 2026-10-14T00:24:48.501Z |
+| 9 | 36 | deviation | internal/compiler/session/session_phase36_prechange_test.go |  | Reject unsafe new-fixture ledger paths before file reads; traversal control passes. | fixed |  | 2026-10-15T01:31:06.038Z | 2026-10-15T01:31:07.387Z |
 
 ````json
 [
@@ -127,6 +128,19 @@ last_updated: 2026-10-14T00:24:48.501Z
     "reason": "",
     "recorded_at": "2026-10-14T00:24:46.705Z",
     "resolved_at": "2026-10-14T00:24:48.501Z",
+    "milestone": null
+  },
+  {
+    "id": 9,
+    "kind": "deviation",
+    "phase": "36",
+    "file": "internal/compiler/session/session_phase36_prechange_test.go",
+    "line": null,
+    "description": "Reject unsafe new-fixture ledger paths before file reads; traversal control passes.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-10-15T01:31:06.038Z",
+    "resolved_at": "2026-10-15T01:31:07.387Z",
     "milestone": null
   }
 ]

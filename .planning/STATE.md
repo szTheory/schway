@@ -4,18 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 36
 current_phase_name: Scalar Helper Calls
-current_plan: Not started
+current_plan: 2
 status: executing
-stopped_at: Phase 36 context gathered; automatic planning next
-last_updated: "2026-10-15T01:20:43.987Z"
+stopped_at: Completed 36-01-PLAN.md
+last_updated: "2026-10-15T01:32:12.720Z"
 last_activity: 2026-10-14
-last_activity_desc: Phase 35 complete, transitioned to Phase 36
-state_head: c0fb3adb968efa31550165069911dfb50f03642b
+last_activity_desc: Phase 36 execution started
+state_head: b7574b195299c0cd111f95ba8a51dba1008bd415
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 29
-  completed_plans: 21
+  completed_plans: 22
   percent: 50
 ---
 
@@ -125,11 +125,11 @@ plans.
 
 ## Current Position
 
-Phase: 36 (Scalar Helper Calls) — READY TO EXECUTE
-Current Plan: Not started
+Phase: 36 (Scalar Helper Calls) — EXECUTING
+Current Plan: 2
 Total Plans in Phase: 8
 Status: Ready to execute
-Last activity: 2026-10-14 — Phase 35 complete, transitioned to Phase 36
+Last activity: 2026-10-14 — Phase 36 execution started
 
 Progress: [█████░░░░░] 50%
 
@@ -609,6 +609,7 @@ subset alone.
 | Phase 35 P06 | 37min | 2 tasks | 9 files |
 | Phase 35 P7 | 20min | 3 tasks | 9 files |
 | Phase 35 P08 | 16min | 3 tasks | 9 files |
+| Phase 36 P01 | 9min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -1095,9 +1096,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-15T00:13:34.124Z
-Stopped at: Phase 36 context gathered; automatic planning next
-Resume file: .planning/phases/36-scalar-helper-calls/36-CONTEXT.md
+Last session: 2026-10-15T01:32:12.664Z
+Stopped at: Completed 36-01-PLAN.md
+Resume file: None
 Next action: $gsd-discuss-phase 36
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
