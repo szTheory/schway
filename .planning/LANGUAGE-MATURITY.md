@@ -603,3 +603,23 @@ The same transition rechecked the Dashbit appraisal and relevant z1g/trz/z1s
 triggers against named consumers and current source witnesses: retain all three
 dormant, with no measured navigation gap, unexplained failure or source-form
 dispute. Phase 37 discussion is next; it has not started.
+
+## Phase 37 discussion transition — 2026-10-15
+
+The [Phase 37 context](phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-CONTEXT.md)
+records 24 delegated decisions following three specialist reviews and an
+adversarial synthesis. Existing checker/module source appears sufficient for
+the complete table-free CRC library and second importer. This is source
+inspection, not demonstrated execution of a new Schway consumer. The only new
+behavioral calculation is the independent Python/zlib oracle, including
+3735780942 for 65,536 x FF (Python 3.14.4, zlib compile/runtime 1.2.12).
+
+The current blockers are public opaque-path parsing, a production bounded Go
+reader, and file-application execution without automatic evidence accumulation.
+The interpreter's fixed semantic adapter must be distinguished from arbitrary
+native C bindings, and its 65,536-byte cap from the general configuration-dependent
+FileBytes contract. Actual outcomes, numeric results and causal evidence keep
+their separate authorities. The context's seven-column transition table owns
+the next three recommendations and scoped dormant-seed dispositions. Final
+hosted binding stays Phase 38 after audit; human readability and whole-loop
+cold/warm distributions remain unmeasured.

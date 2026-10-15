@@ -716,3 +716,24 @@ The same transition rechecked the Dashbit appraisal and relevant z1g/trz/z1s
 triggers against named consumers and current source witnesses: retain all three
 dormant, with no measured navigation gap, unexplained failure or source-form
 dispute. Phase 37 discussion is next; it has not started.
+
+## Phase 37 discussion transition — 2026-10-15
+
+The [Phase 37 context](phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-CONTEXT.md)
+captures the user-delegated specialist/adversarial synthesis. Source inspection
+supports composing the existing ByteView/scalar-call surface without another
+language feature: one nested `lib.crc32` module, a private eight-round scalar
+byte helper and two importing file entries. The public interpreter route needs
+a fixed production host reader and an explicitly evidence-disabled application
+boundary; the existing file seam auto-captures scalar calls. The new path suffix
+must dispatch before global option extraction so a flag-shaped path stays data.
+
+New execution during discussion was limited to an independent Python/zlib oracle
+calculation (maximum 65,536 x FF gives 3735780942), not Schway behavior. Prior
+Phase 36 receipts remain bound to their recorded source. The context's transition
+table names the three current programs/capabilities, blockers, complete slices,
+guarantees, evidence/debt owners and priority-changing observations: complete CRC
+reuse; public file-engine parity plus guide; audited two-host binding in Phase 38.
+Relevant z1g/trz/z1s triggers were checked against current sources and remain
+dormant. No runtime dependency, hosted receipt, human readability result or
+whole-loop latency result is claimed by this discussion.
