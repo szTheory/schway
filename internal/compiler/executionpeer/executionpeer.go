@@ -58,14 +58,15 @@ type operation struct {
 }
 
 type index struct {
-	functions        map[string]core.Function
-	operations       map[string]operation
-	matchReturns     map[string]string
-	entry            string
-	occurrences      map[string]occurrence
-	loopOperations   map[string]bool
-	scalarLoopCopies map[string]bool
-	eventFreeKinds   map[core.OperationKind]bool
+	functions           map[string]core.Function
+	operations          map[string]operation
+	matchReturns        map[string]string
+	entry               string
+	dynamicCallIdentity bool
+	occurrences         map[string]occurrence
+	loopOperations      map[string]bool
+	scalarLoopCopies    map[string]bool
+	eventFreeKinds      map[core.OperationKind]bool
 }
 
 // Validate checks only observed causal structure. It intentionally does not
@@ -141,8 +142,12 @@ func buildIndex(program core.Program) (*index, error) {
 			}
 			i.operations[op.ID] = operation{functionID: function.ID, value: op}
 			if op.Kind == core.OpCall {
-				if _, ok := i.functions[op.CalleeID]; !ok {
+				callee, ok := i.functions[op.CalleeID]
+				if !ok {
 					return nil, refusal("program", -1, "", "", function.ID, "call names unknown callee "+op.CalleeID)
+				}
+				if scalarValueFunction(callee) {
+					i.dynamicCallIdentity = true
 				}
 			}
 		}
@@ -359,7 +364,10 @@ func (i *index) validate(document execution.Execution) error {
 	nextOccurrence := make(map[string]uint64)
 	exhaustedOccurrence := make(map[string]bool)
 	root := rootInvocation(i.entry)
-	dynamicOccurrences := map[string]occurrence{root: {functionID: i.entry}}
+	dynamicOccurrences := make(map[string]occurrence)
+	if i.dynamicCallIdentity {
+		dynamicOccurrences[root] = occurrence{functionID: i.entry}
+	}
 	closedActivations := make(map[string]bool)
 	nextOrdinals := make(map[string]uint64)
 	stack := make([]string, 0)
@@ -372,9 +380,18 @@ func (i *index) validate(document execution.Execution) error {
 		if parseErr != nil {
 			return refusal("malformed_invocation", n, event.Invocation, "", "", parseErr.Error())
 		}
-		occ, found := dynamicOccurrences[event.Invocation]
+		var occ occurrence
+		var found bool
+		if i.dynamicCallIdentity {
+			occ, found = dynamicOccurrences[event.Invocation]
+		} else {
+			occ, found = i.occurrences[event.Invocation]
+		}
 		if !found {
-			return refusal("unknown_invocation", n, event.Invocation, "", "", "invocation is not derived from an observed call edge")
+			if i.dynamicCallIdentity {
+				return refusal("unknown_invocation", n, event.Invocation, "", "", "invocation is not derived from an observed call edge")
+			}
+			return refusal("unknown_invocation", n, event.Invocation, "", "", "invocation is outside bounded membership")
 		}
 		if parsed.EntryID != i.entry {
 			return refusal("entry", n, event.Invocation, "", i.entry, "wrong entry")
@@ -388,6 +405,13 @@ func (i *index) validate(document execution.Execution) error {
 		if event.FunctionID != occ.functionID {
 			return refusal("function", n, event.Invocation, "", occ.functionID, "event function disagrees with invocation")
 		}
+		if i.dynamicCallIdentity && closedActivations[event.Invocation] {
+			pair := event.Invocation + "\x00" + event.ID
+			if event.Occurrence < nextOccurrence[pair] {
+				return refusal("duplicate_pair", n, event.Invocation, "", occ.functionID, "event pair was already observed in a closed activation")
+			}
+			return refusal("closed_activation", n, event.Invocation, "", occ.functionID, "event follows this activation's terminal")
+		}
 		op, err := i.classify(event)
 		if err != nil {
 			return refusal("unknown_kind", n, event.Invocation, "", occ.functionID, err.Error())
@@ -398,7 +422,7 @@ func (i *index) validate(document execution.Execution) error {
 		checkedOverflow := op.value.Kind == core.OpAddChecked && event.Kind == "function.defected"
 		checkedRemainderZero := op.value.Kind == core.OpRemainderU64 && event.Kind == "function.defected"
 		checkedBytesAt := op.value.Kind == core.OpBytesAt && event.Kind == "function.defected"
-		checkedCall := op.value.Kind == core.OpCall && event.Kind == "function.called"
+		checkedCall := i.dynamicCallIdentity && op.value.Kind == core.OpCall && event.Kind == "function.called"
 		if (i.loopOperations[op.value.ID] || event.Occurrence > 0) && !i.scalarLoopCopies[op.value.ID] && !checkedOverflow && !checkedRemainderZero && !checkedBytesAt && !checkedCall {
 			return refusal("loop_event", n, event.Invocation, "", occ.functionID, "cyclic or repeated event is not an admitted scalar copy")
 		}
@@ -464,18 +488,18 @@ func (i *index) validate(document execution.Execution) error {
 		if exhaustedOccurrence[pair] || event.Occurrence != nextOccurrence[pair] {
 			return refusal("occurrence", n, event.Invocation, "", occ.functionID, fmt.Sprintf("expected occurrence %d", nextOccurrence[pair]))
 		}
-		if closedActivations[event.Invocation] {
-			return refusal("closed_activation", n, event.Invocation, "", occ.functionID, "event follows this activation's terminal")
-		}
 		if event.Occurrence == ^uint64(0) {
 			exhaustedOccurrence[pair] = true
 		} else {
 			nextOccurrence[pair] = event.Occurrence + 1
 		}
+		if pending != "" && event.Invocation != pending {
+			return refusal("preorder", n, event.Invocation, pending, occ.functionID, "caller continued before the called child activation")
+		}
 		if len(stack) == 0 {
 			stack = append(stack, event.Invocation)
-			if event.Invocation != rootInvocation(i.entry) {
-				return refusal("orphan_child", n, event.Invocation, rootInvocation(i.entry), occ.functionID, "first activation is not entry")
+			if event.Invocation != root {
+				return refusal("orphan_child", n, event.Invocation, root, occ.functionID, "first activation is not entry")
 			}
 		} else if stack[len(stack)-1] != event.Invocation {
 			if pending == event.Invocation {
@@ -489,23 +513,40 @@ func (i *index) validate(document execution.Execution) error {
 			return refusal("ownership", n, event.Invocation, "", event.FunctionID, "event ID belongs to another function")
 		}
 		if event.Kind == "function.called" {
-			ordinalKey := event.Invocation + "\x00" + op.value.ID
-			ordinal := nextOrdinals[ordinalKey]
-			if ordinal > 2147483647 {
-				return refusal("ordinal_exhausted", n, event.Invocation, "", event.FunctionID, "dynamic invocation ordinal exceeds the portable capture ceiling")
-			}
-			child, childErr := appendInvocationOrdinal(event.Invocation, op.value.ID, int(ordinal))
-			if childErr != nil {
-				return refusal("malformed_invocation", n, event.Invocation, "", event.FunctionID, childErr.Error())
-			}
-			if _, exists := dynamicOccurrences[child]; exists {
-				return refusal("call_edge", n, event.Invocation, "", event.FunctionID, "call reuses a previously derived child activation")
-			}
 			if event.CalleeFunctionID == "" || event.CalleeFunctionID != op.value.CalleeID {
 				return refusal("callee", n, event.Invocation, "", op.value.CalleeID, "callee function disagrees with call")
 			}
-			dynamicOccurrences[child] = occurrence{functionID: op.value.CalleeID, parent: event.Invocation, callID: op.value.ID}
-			nextOrdinals[ordinalKey] = ordinal + 1
+			var child string
+			if i.dynamicCallIdentity {
+				if event.SourcePlace != op.value.SourceID || event.TargetPlace != op.value.TargetID || event.TypeID != op.value.TypeID || event.Input != "" || event.Output != "" {
+					return refusal("call_attribution", n, event.Invocation, "", event.FunctionID, "call places or result type disagree with core, or scalar payload is present")
+				}
+				ordinalKey := event.Invocation + "\x00" + op.value.ID
+				ordinal := nextOrdinals[ordinalKey]
+				if ordinal > 2147483647 {
+					return refusal("ordinal_exhausted", n, event.Invocation, "", event.FunctionID, "dynamic invocation ordinal exceeds the portable capture ceiling")
+				}
+				var childErr error
+				child, childErr = appendInvocationOrdinal(event.Invocation, op.value.ID, int(ordinal))
+				if childErr != nil {
+					return refusal("malformed_invocation", n, event.Invocation, "", event.FunctionID, childErr.Error())
+				}
+				if _, exists := dynamicOccurrences[child]; exists {
+					return refusal("call_edge", n, event.Invocation, "", event.FunctionID, "call reuses a previously derived child activation")
+				}
+				dynamicOccurrences[child] = occurrence{functionID: op.value.CalleeID, parent: event.Invocation, callID: op.value.ID}
+				nextOrdinals[ordinalKey] = ordinal + 1
+			} else {
+				var childErr error
+				child, childErr = appendInvocation(event.Invocation, op.value.ID)
+				if childErr != nil {
+					return refusal("malformed_invocation", n, event.Invocation, "", event.FunctionID, childErr.Error())
+				}
+				childOcc, exists := i.occurrences[child]
+				if !exists || childOcc.parent != event.Invocation || childOcc.callID != op.value.ID {
+					return refusal("call_edge", n, event.Invocation, "", event.FunctionID, "call is not a declared child occurrence")
+				}
+			}
 			pending = child
 		} else if event.CalleeFunctionID != "" {
 			return refusal("callee", n, event.Invocation, "", "", "callee function is reserved for function.called")
@@ -514,8 +555,17 @@ func (i *index) validate(document execution.Execution) error {
 			if pending != "" {
 				return refusal("preorder", n, event.Invocation, "", event.FunctionID, "function returned before observed child activation")
 			}
-			closedActivations[event.Invocation] = true
-			stack = stack[:len(stack)-1]
+			if i.dynamicCallIdentity {
+				closedActivations[event.Invocation] = true
+			}
+			if i.dynamicCallIdentity && event.Kind == "function.defected" && document.Outcome.Kind == execution.OutcomeDefect {
+				for _, activation := range stack {
+					closedActivations[activation] = true
+				}
+				stack = stack[:0]
+			} else {
+				stack = stack[:len(stack)-1]
+			}
 		}
 	}
 	if pending != "" {
@@ -571,6 +621,12 @@ func eventFreeOperationKinds() map[core.OperationKind]bool {
 		core.OpShiftLeftU64:  true,
 		core.OpShiftRightU64: true,
 	}
+}
+
+func scalarValueFunction(function core.Function) bool {
+	parameter := function.Parameter.Type
+	result := function.ReturnType
+	return (parameter == "U64" || parameter == "Bool") && (result == "U64" || result == "Bool")
 }
 
 func normalKind(kind core.OperationKind) string {

@@ -1024,6 +1024,15 @@ func inputValue(program core.Program, function core.Function, input string) (val
 		}
 		return value{u64: parsed, isU64: true}, nil
 	}
+	if function.Parameter.Type == "Bool" {
+		if input == "true" {
+			return value{boolean: true, isBool: true}, nil
+		}
+		if input == "false" {
+			return value{boolean: false, isBool: true}, nil
+		}
+		return value{}, fmt.Errorf("function %q: invalid Bool input %q", function.ID, input)
+	}
 	for _, dataType := range program.DataTypes {
 		if dataType.Name != function.Parameter.Type {
 			continue
@@ -1242,6 +1251,9 @@ func (v value) String() string {
 	if v.isU64 {
 		return strconv.FormatUint(v.u64, 10)
 	}
+	if v.isBool {
+		return strconv.FormatBool(v.boolean)
+	}
 	return v.payload
 }
 
@@ -1428,8 +1440,6 @@ type pushResult struct {
 	immediateValue string
 	immediateEvent Event
 	calleeID       string
-	segments       []execution.InvocationSegment
-	invocation     string
 }
 
 // partitionFrameForCall is the ONE frame-partition helper D-10-39 permits
@@ -1487,7 +1497,7 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 			f.returnTarget = operation.TargetID
 			f.hasCaller = true
 			caller.configureChild(&f, operation, segments, invocation)
-			return pushResult{frame: &f, calleeID: callee.ID, segments: segments, invocation: invocation}, nil
+			return pushResult{frame: &f, calleeID: callee.ID}, nil
 		}
 		argumentText := argument.String()
 		for _, arm := range callee.Match.Arms {
@@ -1509,15 +1519,13 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 					immediateValue: arm.Value,
 					immediateEvent: event,
 					calleeID:       callee.ID,
-					segments:       segments,
-					invocation:     invocation,
 				}, nil
 			}
 			f := newArmFrame(callee, seeded, arm.BlockID)
 			f.returnTarget = operation.TargetID
 			f.hasCaller = true
 			caller.configureChild(&f, operation, segments, invocation)
-			return pushResult{frame: &f, calleeID: callee.ID, segments: segments, invocation: invocation}, nil
+			return pushResult{frame: &f, calleeID: callee.ID}, nil
 		}
 		return pushResult{}, fmt.Errorf("checked match %q has no arm for %q", callee.Match.ID, argumentText)
 	}
@@ -1531,7 +1539,7 @@ func partitionFrameForCall(program core.Program, caller *frame, operation core.L
 	f.returnTarget = operation.TargetID
 	f.hasCaller = true
 	caller.configureChild(&f, operation, segments, invocation)
-	return pushResult{frame: &f, calleeID: callee.ID, segments: segments, invocation: invocation}, nil
+	return pushResult{frame: &f, calleeID: callee.ID}, nil
 }
 
 func scalarValueFunction(function core.Function) bool {
