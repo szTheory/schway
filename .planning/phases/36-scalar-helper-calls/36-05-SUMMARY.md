@@ -191,3 +191,38 @@ the original failed verification above remains an accurate historical receipt.
 The implementation residual is cleared for Plan36-06; debug review/archive and
 the exact-file commit are owned by the session manager. This amendment adds no
 hosted/native-matrix or phase-completion claim.
+
+## Dated audit follow-up — 2026-10-15
+
+This scoped continuation adds the Task 3 controls requested by the independent
+Phase 36 security review while preserving the original plan history and task
+count. The test-only follow-up is committed as `04ce6fa1`.
+
+- **T-36-13:** `TestPhase36EmitterCallInventoryControls` now redirects the
+  repeated nested helper's invocation-table pointer to a local stack array. A
+  loop reuses that buffer, and a named retained-path assertion catches the
+  missing first canonical child path after the helper returns. Clean, stack-copy
+  no-op, and restored emitted C all run through the normal native result path
+  and retain the first and final expected paths. The mutant compiles with the
+  installed Clang and runs as native code with the correct returned value `10`;
+  its raw execution document is inspected so the retained-path assertion, not
+  earlier native path validation, identifies the lifetime failure.
+- **T-36-16:** The same test now runs a region-scoped census against the emitted
+  user function, keyed by checked call IDs. Separate live mutations remove and
+  insert call, `function.called` event, and invocation-reservation sites. Each
+  mutation yields a named missing/extra category and site finding, and the
+  unmodified region passes again after every mutation. Support-library text is
+  outside the census.
+- No new RED evidence record was created: this audit follow-up changes test
+  coverage only and has no product behavior to implement. The existing Task 3
+  RED receipt remains the historical evidence for the original admission work.
+
+## Audit follow-up verification
+
+- `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen -run '^TestPhase36EmitterCallInventoryControls$' -count=1 -v -timeout=600s` — PASS; clean/no-op/restored native positives, the stack-path semantic control, and all six region census mutations ran.
+- `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen ./internal/compiler/core -run '^(TestPhase36EmitterCallInventoryControls|TestPhase35EmitterAdmissionGates|TestPhase35UnsignedShiftEmissionAndEventProjection|TestInvocationPathTableBoundary|TestInvocationPreflightGuardIsNotInert|TestProgramInvocationIndexThreading|TestNativeFunctionCalledPreorder|TestPhase273NamedCapacityExitGate|TestPhase273CapacityContractLiteralsAgree|TestAllOperationKindsHandledAtEverySite)$' -count=1 -v -timeout=600s` — PASS; both package roots ran and all selected controls passed.
+
+## Audit follow-up self-check: PASSED
+
+The dated amendment is present, the scoped test commit `04ce6fa1` is an
+ancestor of HEAD, and both recorded focused verification commands passed.
