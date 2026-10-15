@@ -280,7 +280,7 @@ Plans:
 - [x] 37-01-PLAN.md
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 37-02-PLAN.md
+- [x] 37-02-PLAN.md
 
 **Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 37-03-PLAN.md
@@ -324,7 +324,7 @@ Plans:
 | 34. Agent Diagnostics Floor and Surface Manifest | 8/8 | Complete    | 2026-10-13 |
 | 35. Bitwise Operators, Literal Shifts, and Hex Literals | 8/8 | Complete    | 2026-10-14 |
 | 36. Scalar Helper Calls | 8/8 | Complete    | 2026-10-15 |
-| 37. CRC-32 Consumer, Interpreter File Route, and Guide | 1/8 | In Progress | - |
+| 37. CRC-32 Consumer, Interpreter File Route, and Guide | 2/8 | In Progress | - |
 | 38. Milestone Receipts | 0/TBD | Not started | - |
 
 **Coverage:** 19/19 M007 requirements have exactly one phase owner. DX-22 is

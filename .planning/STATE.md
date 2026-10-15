@@ -4,18 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 37
 current_phase_name: CRC-32 Consumer, Interpreter File Route, and Guide
-current_plan: 2
+current_plan: 3
 status: executing
-stopped_at: Completed 37-01-PLAN.md
-last_updated: "2026-10-15T14:23:11.567Z"
+stopped_at: Completed 37-02-PLAN.md
+last_updated: "2026-10-15T15:21:42.836Z"
 last_activity: 2026-10-15
 last_activity_desc: Phase 37 execution started
-state_head: 4384e383e39c776448e63480b642251982883dd1
+state_head: 4055a61ab3f6e9c0af37a71ed0c93fe686e28a12
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 37
-  completed_plans: 30
+  completed_plans: 31
   percent: 67
 ---
 
@@ -126,7 +126,7 @@ plans.
 ## Current Position
 
 Phase: 37 (CRC-32 Consumer, Interpreter File Route, and Guide) — EXECUTING
-Current Plan: 2
+Current Plan: 3
 Total Plans in Phase: 8
 Status: Ready to execute
 Last activity: 2026-10-15 — Phase 37 execution started
@@ -619,6 +619,7 @@ subset alone.
 | Phase 36 P07 | 35min | 2 tasks | 9 files |
 | Phase 36 P08 | not recorded | 2 tasks | 3 files |
 | Phase 37 P01 | 21min | 3 tasks | 18 files |
+| Phase 37 P02 | 20min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -879,6 +880,9 @@ decision history; they no longer describe current status.
 - [Phase 37]: Use reflected ISO-HDLC CRC-32 with polynomial 0xEDB88320, all-ones seed/final XOR, and one private crc_byte call per byte.
 - [Phase 37]: Keep the existing FileBytes ABI and copy its local adapter triple byte-for-byte for the second consumer.
 - [Phase 37]: Treat causal acceptance as structural evidence; only the native literal-vector test establishes the CRC numeric result.
+- [Phase 37]: Keep the interpreter production API bound to a fixed reader; reader injection remains a private test seam.
+- [Phase 37]: Capture exhaustion is optional evidence status; preserve real output, terminal outcome, and cleanup semantics independently.
+- [Phase 37]: Leave APP-13 and APP-14 metadata pending parent phase acceptance.
 
 ### Pending Todos
 
@@ -1134,10 +1138,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-15T14:23:10.706Z
-Stopped at: Completed 37-01-PLAN.md
+Last session: 2026-10-15T15:21:12.017Z
+Stopped at: Completed 37-02-PLAN.md
 Resume file: None
-Next action: $gsd-discuss-phase 36
+Next action: Continue with Phase 37 Plan 03 after phase acceptance.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
