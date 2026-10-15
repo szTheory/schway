@@ -93,3 +93,7 @@ Counts remain8 plans,19 tasks,5 waves. Four requirements and all24 decisions rem
 
 
 Parent orchestration clarification before independent recheck: Plan01 Task03 explicitly owns its governing PLAN file only to wire real machine-proven descriptors into the same two prohibition items after canonical proof passes. It checks field-for-field request/descriptor equality and retains initial projection history. This adds one bounded metadata path (17 Plan01 paths total), not a task, feature or implementation claim.
+
+## Execution evidence amendment — 2026-10-15
+
+37-06's no-edit native BuildID assumption exceeded the existing receipt contract. See [the scoped decision](37-BUILD-IDENTITY-DECISION.md): no-edit module rows/InputID must agree; executable-bound BuildID remains internally consistent and must agree when executable digests agree. Library-only edits still invalidate both module/input identities and both numerical outputs with immutable entry/adapter bytes. Existing incomplete/non-cacheable receipts and production linker behavior remain intact. This records the observed counterexample without a reproducible-binary claim or a new language feature.

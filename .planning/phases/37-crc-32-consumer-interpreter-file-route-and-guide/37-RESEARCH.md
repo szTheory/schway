@@ -465,3 +465,7 @@ The sample V2–V6 labels in the generic research template use older ASVS chapte
 **Research date:** 2026-10-15
 **Valid until:** 2026-11-14 for stable source architecture; re-check official Go APIs/target behavior if toolchain baseline changes.
 
+
+## Execution evidence amendment — 2026-10-15
+
+37-06's no-edit native BuildID assumption exceeded the existing receipt contract. See [the scoped decision](37-BUILD-IDENTITY-DECISION.md): no-edit module rows/InputID must agree; executable-bound BuildID remains internally consistent and must agree when executable digests agree. Library-only edits still invalidate both module/input identities and both numerical outputs with immutable entry/adapter bytes. Existing incomplete/non-cacheable receipts and production linker behavior remain intact. This records the observed counterexample without a reproducible-binary claim or a new language feature.
