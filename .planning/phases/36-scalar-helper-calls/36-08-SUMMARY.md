@@ -131,3 +131,16 @@ I reran the exact fixed final command from the amended `36-08-PLAN.md` at source
 - The current manifest records HEAD `eddb535ae9fa10f3700143e02f7fc5c11106e8d5`, a clean source tree, 12 commands, 45 expected roots, and the new `TestPhase36EmitterCallInventoryControls` root.
 - Every command exited zero; all 12 recorded log files exist and match their SHA-256 values in the manifest.
 - The original plan task commits and the audit test commit remain ancestors of the tested HEAD.
+
+## Dated emitted-call census correction — 2026-10-15
+
+Test-only commit `50b90a30` corrected the T-36-16 census control in `internal/compiler/cgen/cgen_phase36_test.go#TestPhase36EmitterCallInventoryControls`. The control now counts actual emitted `SCHWAY_` invocations after removing comments and strings, and derives expected callees from checked `core.OpCall` contracts plus emitted definitions. It reaches both a marker-preserving removal of a real invocation and an unmarked extra invocation, alongside the existing six marker, event, and reservation controls. No production code, fixture, dependency, or schema changed.
+
+I reran only the amended fixed final owner command at full source/test HEAD `83c1f58a1720770e77216ee82737efa3acdbeeaa`. It passed 45/45 unique expected roots across 12 owner groups; all exited zero, and the output contained no `FAIL` or `SKIP`. The actual manifest and log hashes are recorded in [36-ACCEPTANCE-EVIDENCE.md](./36-ACCEPTANCE-EVIDENCE.md); manifest: `/tmp/schway36-final-83c1f58a1720-jikc_g2_/owner-results.json`. The earlier `eddb535a` final capture remains an accurate record of its run, but predates the corrected T-36-16 census and does not evidence those corrected controls. Earlier 15-root compatibility captures remain historical at their recorded revisions and were not rerun. The independent security review remains open; this addendum does not clear security or complete Phase 36/CALL acceptance.
+
+## Census-refresh self-check: PASSED
+
+- The current manifest binds full HEAD `83c1f58a1720770e77216ee82737efa3acdbeeaa`, records a clean source tree, and contains 12 commands covering 45 unique expected roots, including `TestPhase36EmitterCallInventoryControls`.
+- All 12 commands exited zero; each log exists and matches its recorded SHA-256.
+- Test-only commit `50b90a30` and the amended-plan commit `83c1f58a` are ancestors of the source-bound capture revision.
+- `git diff --check` passed before this documentation-only append; the final scoped documentation diff is checked before commit.
