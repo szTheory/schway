@@ -6,16 +6,16 @@ current_phase: 37
 current_phase_name: CRC-32 Consumer, Interpreter File Route, and Guide
 current_plan: 8
 status: executing
-stopped_at: Completed 37-07-PLAN.md
-last_updated: "2026-10-15T17:08:26.505Z"
+stopped_at: Completed 37-08-PLAN.md; Phase37 parent acceptance pending
+last_updated: "2026-10-15T17:39:57Z"
 last_activity: 2026-10-15
-last_activity_desc: Phase 37 execution started
-state_head: 547e21564b5e99ab65e93cfe7ed25f73438e7be0
+last_activity_desc: Phase 37 Plan 08 complete; parent phase acceptance pending
+state_head: 727842b243a372305b8b84e11b0d0f7dc7f95b08
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 37
-  completed_plans: 36
+  completed_plans: 37
   percent: 67
 ---
 
@@ -125,11 +125,11 @@ plans.
 
 ## Current Position
 
-Phase: 37 (CRC-32 Consumer, Interpreter File Route, and Guide) — EXECUTING
-Current Plan: 8
+Phase: 37 (CRC-32 Consumer, Interpreter File Route, and Guide) — PLAN EXECUTION COMPLETE; PARENT ACCEPTANCE PENDING
+Current Plan: 8 (last plan; execution finished)
 Total Plans in Phase: 8
-Status: Ready to execute
-Last activity: 2026-10-15 — Phase 37 execution started
+Status: Awaiting parent phase acceptance
+Last activity: 2026-10-15 — Phase 37 plan execution complete; parent gates pending
 
 Progress: [███████░░░] 67%
 
@@ -625,6 +625,7 @@ subset alone.
 | Phase 37 P5 | 7min | 2 tasks | 4 files |
 | Phase 37 P06 | 13min | 2 tasks | 3 files |
 | Phase 37 P07 | 14m | 3 tasks | 12 files |
+| Phase 37 P08 | 24min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -904,6 +905,9 @@ decision history; they no longer describe current status.
 - [Phase 37]: Keep the source-file PATH ceiling separate from the fixed interpreter FileBytes read cap.
 - [Phase 37]: Preserve native binding-selected FileBytes maxima and the ten-field surface schema.
 - [Phase 37]: Preserve the immutable Phase 34 witness receipt and compose Phase 37 facts additively.
+- [Phase 37]: Keep Phase37 requirements pending until the parent verifier, security, and review gates accept them.
+- [Phase 37]: Treat native executable digest and BuildID variance under the existing incomplete/non-cacheable receipt contract; make no deterministic-binary claim.
+- [Phase 37]: Keep Phase38 hosted binding after milestone audit and gap closure.
 
 ### Pending Todos
 
@@ -1159,8 +1163,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-15T17:08:25.681Z
-Stopped at: Completed 37-07-PLAN.md
+Last session: 2026-10-15T17:39:06.077Z
+Stopped at: Completed 37-08-PLAN.md; Phase37 parent acceptance pending
 Resume file: None
 Next action: Continue with Phase 37 Plan 05 after plan 04 execution.
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
