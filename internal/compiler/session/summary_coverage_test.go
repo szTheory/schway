@@ -43,72 +43,149 @@ func summaryCoverageProblems(markdown string, knownTests map[string]bool) []stri
 	if start < 0 {
 		return []string{"missing coverage: block"}
 	}
+	// This is the canonical SUMMARY indentation/scalar subset, not a general
+	// YAML parser. Preserve the consumer's scalar types for required fields:
+	// quoted booleans/null are strings; bare booleans/null and [] are not.
+	stringValue := func(raw string) string {
+		if len(raw) >= 2 && ((raw[0] == '"' && raw[len(raw)-1] == '"') || (raw[0] == '\'' && raw[len(raw)-1] == '\'')) {
+			return raw[1 : len(raw)-1]
+		}
+		switch raw {
+		case "", "true", "false", "null", "~", "[]":
+			return ""
+		}
+		return raw
+	}
+	field := func(text string) (string, string, bool) {
+		key, raw, ok := strings.Cut(text, ":")
+		if !ok || key == "" {
+			return "", "", false
+		}
+		for _, r := range key {
+			if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_' || r == '-') {
+				return "", "", false
+			}
+		}
+		return key, strings.TrimSpace(raw), true
+	}
 	type verification struct {
 		kind, ref, status string
+		mapping           bool
 	}
 	type entry struct {
-		id, judgment, rationale string
-		verification            []*verification
+		id, description, judgment, rationale       string
+		mapping, hasVerification, verificationList bool
+		verification                               []*verification
 	}
 	var entries []*entry
-	inVerification := false
+	inVerification, verificationBodyStarted := false, false
 	for _, line := range lines[start:] {
-		if line != "" && !strings.HasPrefix(line, " ") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		if !strings.HasPrefix(line, " ") {
 			break
 		}
-		trimmed := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "- "))
-		key, value, _ := strings.Cut(trimmed, ":")
-		value = strings.Trim(strings.TrimSpace(value), `"`)
-		if strings.HasPrefix(line, "  - id:") {
-			entries = append(entries, &entry{id: value})
-			inVerification = false
-			continue
+		indent := len(line) - len(strings.TrimLeft(line, " "))
+		item := strings.HasPrefix(trimmed, "- ") || trimmed == "-"
+		if item && (indent == 2 || indent == 6) {
+			trimmed = strings.TrimSpace(strings.TrimPrefix(trimmed, "-"))
+		}
+		key, raw, mapping := field(trimmed)
+		if item && mapping {
+			_, inline, _ := strings.Cut(trimmed, ":")
+			mapping = inline == "" || strings.HasPrefix(inline, " ")
+		}
+		entryStart := indent == 2 && item
+		if entryStart {
+			// Every item starts an entry, even if id is missing or not first.
+			entries = append(entries, &entry{mapping: mapping || trimmed == ""})
+			inVerification, verificationBodyStarted = false, false
 		}
 		if len(entries) == 0 {
-			continue
+			return []string{"coverage: block is not a list of entries"}
 		}
 		e := entries[len(entries)-1]
-		if strings.HasPrefix(line, "    verification:") {
-			inVerification = true
-			continue
-		}
-		if strings.HasPrefix(line, "    ") && !strings.HasPrefix(line, "      ") {
+		if entryStart || indent == 4 {
 			inVerification = false
-		}
-		// The SUMMARY subset uses six-space verification list items and
-		// eight-space continuation fields. Start a record for any item key,
-		// so an item beginning with ref or status still has its own fields.
-		if inVerification {
-			if strings.HasPrefix(line, "      - ") || line == "      -" {
-				e.verification = append(e.verification, &verification{})
-			}
-			if len(e.verification) != 0 {
-				v := e.verification[len(e.verification)-1]
-				switch key {
-				case "kind":
-					v.kind = value
-				case "ref":
-					v.ref = value
-				case "status":
-					v.status = value
-				}
+			switch key {
+			case "id":
+				e.id = stringValue(raw)
+			case "description":
+				e.description = stringValue(raw)
+			case "human_judgment":
+				e.judgment = raw // Only bare true/false are booleans.
+			case "rationale":
+				e.rationale = stringValue(raw)
+			case "verification":
+				e.hasVerification = true
+				e.verificationList = raw == "[]"
+				e.verification = nil
+				inVerification = raw == ""
+				verificationBodyStarted = false
 			}
 			continue
 		}
+		if !inVerification {
+			continue
+		}
+		if !verificationBodyStarted {
+			verificationBodyStarted = true
+			e.verificationList = indent == 6 && item
+		}
+		if !e.verificationList {
+			continue
+		}
+		verificationStart := indent == 6 && item
+		if verificationStart {
+			e.verification = append(e.verification, &verification{mapping: mapping || trimmed == ""})
+		}
+		if len(e.verification) == 0 || !verificationStart && indent != 8 {
+			continue
+		}
+		v := e.verification[len(e.verification)-1]
 		switch key {
-		case "human_judgment":
-			e.judgment = value
-		case "rationale":
-			e.rationale = value
+		case "kind":
+			v.kind = stringValue(raw)
+		case "ref":
+			v.ref = stringValue(raw)
+		case "status":
+			v.status = stringValue(raw)
 		}
 	}
+
 	if len(entries) == 0 {
 		return []string{"coverage: block has no entries"}
 	}
 	var problems []string
+	seenIDs := make(map[string]bool)
 	for _, e := range entries {
+		if !e.mapping {
+			problems = append(problems, "coverage entry is not a mapping")
+			continue
+		}
+		// Required entry fields mirror coverage.cjs validateEntry, including
+		// uniqueness within this SUMMARY rather than across separate files.
+		if strings.TrimSpace(e.id) == "" {
+			problems = append(problems, "coverage entry has no non-empty string id")
+		} else if seenIDs[e.id] {
+			problems = append(problems, e.id+": duplicate coverage id")
+		} else {
+			seenIDs[e.id] = true
+		}
+		if strings.TrimSpace(e.description) == "" {
+			problems = append(problems, e.id+": no non-empty string description")
+		}
+		if e.hasVerification && !e.verificationList {
+			problems = append(problems, e.id+": verification is not a list")
+		}
 		for i, v := range e.verification {
 			item := e.id + ": verification[" + strconv.Itoa(i) + "]"
+			if !v.mapping {
+				problems = append(problems, item+": verification item is not a mapping")
+				continue
+			}
 			// This enum mirrors gsd-core/bin/lib/coverage.cjs:65-67 (VALID_KINDS).
 			switch v.kind {
 			case "unit", "integration", "e2e", "automated_ui", "manual_procedural", "other":
@@ -128,7 +205,7 @@ func summaryCoverageProblems(markdown string, knownTests map[string]bool) []stri
 		}
 		switch e.judgment {
 		case "true":
-			if e.rationale == "" {
+			if strings.TrimSpace(e.rationale) == "" {
 				problems = append(problems, e.id+": human_judgment true without rationale")
 			}
 		case "false":
@@ -158,13 +235,21 @@ func summaryCoverageProblems(markdown string, knownTests map[string]bool) []stri
 func TestSummaryCoverageGroundedness(t *testing.T) {
 	known := map[string]bool{"TestReal": true}
 	verification := "    verification:\n      - kind: unit\n        ref: \"a_test.go#TestReal\"\n        status: pass\n"
-	good := "---\ncoverage:\n  - id: D1\n" + verification + "    human_judgment: false\nstatus: complete\n---\n"
+	good := "---\ncoverage:\n  - id: D1\n    description: A known test grounds the deliverable\n" + verification + "    human_judgment: false\nstatus: complete\n---\n"
 	human := strings.Replace(good, "human_judgment: false", "human_judgment: true\n    rationale: Inspect the visual result", 1)
+	entry := strings.TrimSuffix(strings.TrimPrefix(good, "---\ncoverage:\n"), "status: complete\n---\n")
+	leadingEntry := func(extra string) string {
+		return strings.Replace(good, "coverage:\n", "coverage:\n"+extra, 1)
+	}
 	valid := []struct{ name, markdown string }{
 		{"automated", good},
+		{"reordered-entry", strings.Replace(good, "  - id: D1\n    description: A known test grounds the deliverable", "  - description: A known test grounds the deliverable\n    id: D1", 1)},
+		{"multiple-entries", leadingEntry(strings.Replace(entry, "id: D1", "id: D2", 1))},
+		{"quoted-string-fields", strings.Replace(strings.Replace(strings.Replace(good, "id: D1", "id: \"false\"", 1), "description: A known test grounds the deliverable", "description: 'true'", 1), "ref: \"a_test.go#TestReal\"", "ref: 'null'", 1)},
 		{"empty-coverage", "---\ncoverage: []\nstatus: complete\n---\n"},
 		{"human", human},
 		{"human-no-verification", strings.Replace(human, verification, "", 1)},
+		{"human-empty-verification-list", strings.Replace(human, verification, "    verification: []\n", 1)},
 		{"human-fail", strings.Replace(human, "status: pass", "status: fail", 1)},
 		{"human-unknown", strings.Replace(human, "status: pass", "status: unknown", 1)},
 		{"reordered-item", strings.Replace(good, verification, "    verification:\n      - ref: a_test.go#TestReal\n        status: pass\n        kind: unit\n", 1)},
@@ -179,6 +264,44 @@ func TestSummaryCoverageGroundedness(t *testing.T) {
 	}
 	invalid := []struct{ name, markdown string }{
 		{"missing", "---\nstatus: complete\n---\n"},
+		{"missing-id", strings.Replace(good, "  - id: D1\n", "  -\n", 1)},
+		{"non-mapping-entry-head-without-space", strings.Replace(good, "- id: D1", "- id:D1", 1)},
+		{"description-as-list-item", strings.Replace(good, "    description:", "    - description:", 1)},
+		{"judgment-as-list-item", strings.Replace(good, "    human_judgment:", "    - human_judgment:", 1)},
+		{"non-mapping-item-head-without-space", strings.Replace(good, "- kind: unit", "- kind:unit", 1)},
+		{"status-as-list-item", strings.Replace(good, "        status:", "        - status:", 1)},
+		{"empty-id", strings.Replace(good, "id: D1", "id: \"\"", 1)},
+		{"whitespace-id", strings.Replace(good, "id: D1", "id: \"   \"", 1)},
+		{"duplicate-id", leadingEntry(entry)},
+		{"missing-description", strings.Replace(good, "    description: A known test grounds the deliverable\n", "", 1)},
+		{"empty-description", strings.Replace(good, "description: A known test grounds the deliverable", "description: \"\"", 1)},
+		{"whitespace-description", strings.Replace(good, "description: A known test grounds the deliverable", "description: \"   \"", 1)},
+		{"missing-id-entry-starting-description", leadingEntry(strings.Replace(entry, "  - id: D1\n    description:", "  - description:", 1))},
+		{"non-mapping-entry-before-valid", leadingEntry("  - null\n")},
+		{"non-mapping-entry-after-valid", strings.Replace(good, "status: complete\n", "  - null\nstatus: complete\n", 1)},
+		{"boolean-id", strings.Replace(good, "id: D1", "id: true", 1)},
+		{"null-id", strings.Replace(good, "id: D1", "id: null", 1)},
+		{"array-id", strings.Replace(good, "id: D1", "id: []", 1)},
+		{"boolean-description", strings.Replace(good, "description: A known test grounds the deliverable", "description: true", 1)},
+		{"null-description", strings.Replace(good, "description: A known test grounds the deliverable", "description: null", 1)},
+		{"array-description", strings.Replace(good, "description: A known test grounds the deliverable", "description: []", 1)},
+		{"quoted-judgment", strings.Replace(good, "human_judgment: false", "human_judgment: \"false\"", 1)},
+		{"human-quoted-judgment", strings.Replace(human, "human_judgment: true", "human_judgment: 'true'", 1)},
+		{"whitespace-rationale", strings.Replace(human, "rationale: Inspect the visual result", "rationale: \"   \"", 1)},
+		{"boolean-rationale", strings.Replace(human, "rationale: Inspect the visual result", "rationale: true", 1)},
+		{"null-rationale", strings.Replace(human, "rationale: Inspect the visual result", "rationale: null", 1)},
+		{"array-rationale", strings.Replace(human, "rationale: Inspect the visual result", "rationale: []", 1)},
+		{"human-scalar-verification", strings.Replace(human, verification, "    verification: manual\n", 1)},
+		{"human-null-verification", strings.Replace(human, verification, "    verification: null\n", 1)},
+		{"human-empty-verification-block", strings.Replace(human, verification, "    verification:\n", 1)},
+		{"human-mapping-verification", strings.Replace(human, verification, "    verification:\n      ref: a_test.go#TestReal\n", 1)},
+		{"non-list-verification-with-items", strings.Replace(good, "verification:\n", "verification: manual\n", 1)},
+		{"non-mapping-item-with-fields", strings.Replace(good, "      - kind: unit\n", "      - null\n        kind: unit\n", 1)},
+		{"non-mapping-item-before-valid", strings.Replace(good, "verification:\n", "verification:\n      - null\n", 1)},
+		{"non-mapping-item-after-valid", strings.Replace(good, "        status: pass\n", "        status: pass\n      - null\n", 1)},
+		{"boolean-ref", strings.Replace(good, "ref: \"a_test.go#TestReal\"", "ref: true", 1)},
+		{"null-ref", strings.Replace(good, "ref: \"a_test.go#TestReal\"", "ref: null", 1)},
+		{"array-ref", strings.Replace(good, "ref: \"a_test.go#TestReal\"", "ref: []", 1)},
 		{"unknown-test", strings.Replace(good, "TestReal", "TestGhost", 1)},
 		{"failing", strings.Replace(good, "status: pass", "status: fail", 1)},
 		{"unknown-status", strings.Replace(good, "status: pass", "status: unknown", 1)},
