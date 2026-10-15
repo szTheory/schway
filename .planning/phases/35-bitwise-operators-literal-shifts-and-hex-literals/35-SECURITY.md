@@ -82,3 +82,29 @@ Source inspection of commit `3800080e` confirms independent shift-scoped prior-w
 `35-ADMISSION-MUTATION-EVIDENCE.md` records the newly executed 26-control matrix (12 core, 12 origin, 2 source), 55 exact source replacement sites, 46 intended assertion failures, and three no-op plus three restored baselines. No compiler/vet/missing-selector/unrelated failure earns credit. Test commit `397bfb6d` and evidence commit `7aac4aca` bind the receipt. T-35-06/T-35-09/T-35-10/T-35-11 remain closed on these stronger controls and the inspected repaired gates. The count stays 24/24 closed, zero open; this amendment does not claim a fresh hosted or graphical audit.
 
 The earlier arithmetic receipt binds older core/origin snapshots. Its durable 15-control harness must be rerun by final verification against the repaired snapshots before claiming current arithmetic proof. The source checker snapshot is unchanged.
+
+## Successor refresh after Phase 37 — 2026-10-15
+
+All eight plan-authored threat models were revisited: 24 distinct threat IDs,
+24 closed, zero open at the configured ASVS L1/high threshold. Current source
+anchors retain expression-depth bounding, exact numeric/refusal ownership,
+literal-only 0..63 shift admission, independent raw-core laws, shift target
+freshness, unused-Byte restrictions, unsigned exact-width C shifts, explicit
+pure-op event/capacity inventories, independent values and manifest controls.
+The 22-task mapped controls passed 72 package-qualified roots after the
+coverage adapter repair (35-REFRESH-RUN.json); the repair changes only test
+metadata and introduces no trust boundary or dependency. Supplemental source
+mutation results remain separately owned by regression and goal verification.
+
+The authored zero-open L1 short-circuit applies. No acceptance or transfer
+replaced mitigation, and no L2/L3, hosted, graphical or human usability result
+is claimed. Historical line numbers and receipts above retain their original
+scope; this dated amendment records current applicability.
+
+## Security Audit 2026-10-15
+
+| Metric | Count |
+|---|---|
+| Threats found | 24 |
+| Closed | 24 |
+| Open | 0 |

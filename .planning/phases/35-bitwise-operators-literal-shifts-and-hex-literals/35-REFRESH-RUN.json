@@ -1,0 +1,293 @@
+{
+  "source_head": "d48227882579947201f607814585c42e6ad29bd9",
+  "validation_rows": 22,
+  "package_count": 13,
+  "distinct_names": 66,
+  "root_executions": 72,
+  "wall_seconds": 25.468,
+  "missing": 0,
+  "failed": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "package": "./cmd/schway",
+      "root_tests": [
+        "TestPhase321RunInputRequiredCLI",
+        "TestPhase35PublicConformanceWitness"
+      ],
+      "count": 2,
+      "exit": 0,
+      "seconds": 0.547,
+      "command": "go test ./cmd/schway -run '^(TestPhase321RunInputRequiredCLI|TestPhase35PublicConformanceWitness)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway35-validation-fixed-0.log",
+      "log_sha256": "e98b8177026b7c8e9a67d69b17baad54bac34758b7b3d2dfb66057e01920ae9e"
+    },
+    {
+      "package": "./internal/compiler/cgen",
+      "root_tests": [
+        "TestPhase35EmitterAdmissionGates",
+        "TestPhase35NativeShiftTracer",
+        "TestPhase35ShiftSiteControls",
+        "TestPhase35UnsignedShiftEmissionAndEventProjection"
+      ],
+      "count": 4,
+      "exit": 0,
+      "seconds": 0.867,
+      "command": "go test ./internal/compiler/cgen -run '^(TestPhase35EmitterAdmissionGates|TestPhase35NativeShiftTracer|TestPhase35ShiftSiteControls|TestPhase35UnsignedShiftEmissionAndEventProjection)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway35-validation-fixed-1.log",
+      "log_sha256": "818a3b9e1da19f1d5b26d99db68b59140b534acbd03992a57393880ef8e3c412"
+    },
+    {
+      "package": "./internal/compiler/check",
+      "root_tests": [
+        "TestPhase19LiteralAdmission",
+        "TestPhase19LiteralRange",
+        "TestPhase19NumericRefusalFrontiers",
+        "TestPhase34BoolSpellingsRemainIdentifiers",
+        "TestPhase34CallArityBoundaries",
+        "TestPhase35NumericPolicyBaseline",
+        "TestPhase35NumericRoutePolicy",
+        "TestPhase35NumericRoutePolicy",
+        "TestPhase35ScalarTransferMutants",
+        "TestPhase35ShiftAdmission",
+        "TestPhase35UnusedByteSourceAdmission"
+      ],
+      "count": 11,
+      "exit": 0,
+      "seconds": 0.34,
+      "command": "go test ./internal/compiler/check -run '^(TestPhase19LiteralAdmission|TestPhase19LiteralRange|TestPhase19NumericRefusalFrontiers|TestPhase34BoolSpellingsRemainIdentifiers|TestPhase34CallArityBoundaries|TestPhase35NumericPolicyBaseline|TestPhase35NumericRoutePolicy|TestPhase35NumericRoutePolicy|TestPhase35ScalarTransferMutants|TestPhase35ShiftAdmission|TestPhase35UnusedByteSourceAdmission)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway35-validation-fixed-2.log",
+      "log_sha256": "5e0e4f7de99008ab670d0f330f399ea477b1aa3e5af7b7d236827bf76169e311"
+    },
+    {
+      "package": "./internal/compiler/core",
+      "root_tests": [
+        "TestAllOperationKindsHandledAtEverySite",
+        "TestAllOperationKindsRegistered",
+        "TestPhase35CoreShape"
+      ],
+      "count": 3,
+      "exit": 0,
+      "seconds": 0.286,
+      "command": "go test ./internal/compiler/core -run '^(TestAllOperationKindsHandledAtEverySite|TestAllOperationKindsRegistered|TestPhase35CoreShape)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway35-validation-fixed-3.log",
+      "log_sha256": "20d3ea5d6990ab5a9fc8b78e1a6f9ca7547db619b533692103f19330acce5695"
+    },
+    {
+      "package": "./internal/compiler/corevalidate",
+      "root_tests": [
+        "TestPhase19ForgedOpConstFactsRefused",
+        "TestPhase19OpConstIndependentAdmission",
+        "TestPhase35AnalysisTriggers",
+        "TestPhase35ScalarTransferMutants",
+        "TestPhase35ShiftImmediateAdmission",
+        "TestPhase35UnusedByteIRAdmission"
+      ],
+      "count": 6,
+      "exit": 0,
+      "seconds": 0.337,
+      "command": "go test ./internal/compiler/corevalidate -run '^(TestPhase19ForgedOpConstFactsRefused|TestPhase19OpConstIndependentAdmission|TestPhase35AnalysisTriggers|TestPhase35ScalarTransferMutants|TestPhase35ShiftImmediateAdmission|TestPhase35UnusedByteIRAdmission)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway35-validation-fixed-4.log",
+      "log_sha256": "36b15ec71926472747eacafb4a6675d37a423aa79a28b65b3060d9ec52fd48ec"
+    },
+    {
+      "package": "./internal/compiler/executionpeer",
+      "root_tests": [
+        "TestPhase35PureOperationCausalControls"
+      ],
+      "count": 1,
+      "exit": 0,
+      "seconds": 0.284,
+      "command": "go test ./internal/compiler/executionpeer -run '^(TestPhase35PureOperationCausalControls)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway35-validation-fixed-5.log",
+      "log_sha256": "561541a5a7e5ab78758a88fd4088efd1d849bc0f9a8d6cd423b03abb2d7f12f4"
+    },
+    {
+      "package": "./internal/compiler/interp",
+      "root_tests": [
+        "TestPhase35BitwiseShiftVectorsEventFree",
+        "TestPhase35InterpreterWrongAnswerControls",
+        "TestPhase35UnusedByteRuntime"
+      ],
+      "count": 3,
+      "exit": 0,
+      "seconds": 0.335,
+      "command": "go test ./internal/compiler/interp -run '^(TestPhase35BitwiseShiftVectorsEventFree|TestPhase35InterpreterWrongAnswerControls|TestPhase35UnusedByteRuntime)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway35-validation-fixed-6.log",
+      "log_sha256": "903110047556984079f7a2bb4741e698f1eec4bfe5af6b3048198e84fd503a7f"
+    },
+    {
+      "package": "./internal/compiler/native",
+      "root_tests": [
+        "TestPhase31CaseMatrix"
+      ],
+      "count": 1,
+      "exit": 0,
+      "seconds": 0.693,
+      "command": "go test ./internal/compiler/native -run '^(TestPhase31CaseMatrix)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway35-validation-fixed-7.log",
+      "log_sha256": "d84335e0797fa4eb6c901c050e52447e0558bacbbd9a479929d48eb31bc22b64"
+    },
+    {
+      "package": "./internal/compiler/originvalidate",
+      "root_tests": [
+        "TestPhase35AnalysisTriggers",
+        "TestPhase35ScalarTransferMutants",
+        "TestPhase35ShiftImmediateAdmission",
+        "TestPhase35UnusedByteIRAdmission"
+      ],
+      "count": 4,
+      "exit": 0,
+      "seconds": 0.334,
+      "command": "go test ./internal/compiler/originvalidate -run '^(TestPhase35AnalysisTriggers|TestPhase35ScalarTransferMutants|TestPhase35ShiftImmediateAdmission|TestPhase35UnusedByteIRAdmission)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway35-validation-fixed-8.log",
+      "log_sha256": "8f81697271be0a37988254baa0c5b5e97d3bee48500febaa5e074fdeca13a363"
+    },
+    {
+      "package": "./internal/compiler/pathoracle",
+      "root_tests": [
+        "TestPhase35PureOperationAncestry"
+      ],
+      "count": 1,
+      "exit": 0,
+      "seconds": 0.288,
+      "command": "go test ./internal/compiler/pathoracle -run '^(TestPhase35PureOperationAncestry)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway35-validation-fixed-9.log",
+      "log_sha256": "858de684f97865a808c3b83d09dc7e3198c23aac6e7a93ba0e1f610c21bc0b0b"
+    },
+    {
+      "package": "./internal/compiler/session",
+      "root_tests": [
+        "TestPhase29InterpreterFixtureVectors",
+        "TestPhase29NativeFixtureVectors",
+        "TestPhase34SurfaceLimitConsumers",
+        "TestPhase34SurfaceManifestCensus",
+        "TestPhase34SurfaceManifestControls",
+        "TestPhase34SurfaceManifestWitnesses",
+        "TestPhase35AdlerWrongShiftControl",
+        "TestPhase35BitwiseOptimizationMatrix",
+        "TestPhase35EngineWrongAnswerControls",
+        "TestPhase35EvidenceGrounding",
+        "TestPhase35ExistingAdlerAnswers",
+        "TestPhase35FocusedValueAnswers",
+        "TestPhase35OperatorDocumentation",
+        "TestPhase35PreChangeCorpusControls",
+        "TestPhase35PreChangeEmitterCorpus",
+        "TestPhase35PublicDocumentValues",
+        "TestPhase35ShiftUBSan",
+        "TestPhase35SurfaceLimitConsumers",
+        "TestPhase35SurfaceManifestCensus",
+        "TestPhase35SurfaceManifestControls",
+        "TestPhase35SurfaceManifestWitnesses",
+        "TestSummaryCoverageGroundedness"
+      ],
+      "count": 22,
+      "exit": 0,
+      "seconds": 15.871,
+      "command": "go test ./internal/compiler/session -run '^(TestPhase29InterpreterFixtureVectors|TestPhase29NativeFixtureVectors|TestPhase34SurfaceLimitConsumers|TestPhase34SurfaceManifestCensus|TestPhase34SurfaceManifestControls|TestPhase34SurfaceManifestWitnesses|TestPhase35AdlerWrongShiftControl|TestPhase35BitwiseOptimizationMatrix|TestPhase35EngineWrongAnswerControls|TestPhase35EvidenceGrounding|TestPhase35ExistingAdlerAnswers|TestPhase35FocusedValueAnswers|TestPhase35OperatorDocumentation|TestPhase35PreChangeCorpusControls|TestPhase35PreChangeEmitterCorpus|TestPhase35PublicDocumentValues|TestPhase35ShiftUBSan|TestPhase35SurfaceLimitConsumers|TestPhase35SurfaceManifestCensus|TestPhase35SurfaceManifestControls|TestPhase35SurfaceManifestWitnesses|TestSummaryCoverageGroundedness)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway35-validation-fixed-10.log",
+      "log_sha256": "c9f268c82aa8a6932691b41a5b37524a895a4e045b61fb7bed04e77c54335d3e"
+    },
+    {
+      "package": "./internal/compiler/surfacemanifest",
+      "root_tests": [
+        "TestPhase34SurfaceDocument",
+        "TestPhase34SurfaceLimits",
+        "TestPhase35SurfaceDocument"
+      ],
+      "count": 3,
+      "exit": 0,
+      "seconds": 0.339,
+      "command": "go test ./internal/compiler/surfacemanifest -run '^(TestPhase34SurfaceDocument|TestPhase34SurfaceLimits|TestPhase35SurfaceDocument)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway35-validation-fixed-11.log",
+      "log_sha256": "a9e76440df4c627d929f9bed09bfdec1459499e42fb51cd754755f2d1ed031f1"
+    },
+    {
+      "package": "./internal/compiler/syntax",
+      "root_tests": [
+        "TestFormatLetBinaryExpressions",
+        "TestPhase19NumericLiteralRoundTrip",
+        "TestPhase19NumericMalformed",
+        "TestPhase19NumericToken",
+        "TestPhase34RecoveryControls",
+        "TestPhase34RecoveryCorpus",
+        "TestPhase35ExpressionDepth",
+        "TestPhase35FormatterRoundTrip",
+        "TestPhase35NestedIndexBaseline",
+        "TestPhase35NumericOwnership",
+        "TestPhase35ScalarGrammar"
+      ],
+      "count": 11,
+      "exit": 0,
+      "seconds": 0.341,
+      "command": "go test ./internal/compiler/syntax -run '^(TestFormatLetBinaryExpressions|TestPhase19NumericLiteralRoundTrip|TestPhase19NumericMalformed|TestPhase19NumericToken|TestPhase34RecoveryControls|TestPhase34RecoveryCorpus|TestPhase35ExpressionDepth|TestPhase35FormatterRoundTrip|TestPhase35NestedIndexBaseline|TestPhase35NumericOwnership|TestPhase35ScalarGrammar)$' -count=1 -json -timeout=600s",
+      "log": "/tmp/schway35-validation-fixed-12.log",
+      "log_sha256": "0c11da349f7b4070b956ac2835a3b3d193ec5bba63cdc99ea4338d1dd3d639e8"
+    }
+  ],
+  "input_hashes": {
+    "cmd/schway/main_phase32_routes_test.go": "d3679523fb7db0b48778821098daa857f768aeac0b87f463cdb9b2d8158ebb90",
+    "cmd/schway/main_phase35_test.go": "061596407ba05f3fc950901a79f04f37d577bca64d8eba5227beb693d4aefc30",
+    "docs/agent-surface.md": "549f711fa151f39b63cbd36a0cdd1e88cd33276ea99ba4a870a49e1e0918a219",
+    "examples/bitwise.schway": "f20f6d458afb536976658c2d30c23d8cbcd5ddcbcee2b05b2cc20bd5904c7b74",
+    "examples/checksum/adler32.schway": "16490db4e53cb9db287727a8e5918745aa412659e799dd2fd53b38805bb3bef1",
+    "internal/compiler/cgen/cgen.go": "a89413e0dda08ccfc2d0aaa7ddcfe7fc93b60606211ac2f655411fe0d6860604",
+    "internal/compiler/cgen/cgen_phase35_test.go": "f263299a0ffce47d932253ea1dc56ac6bee8d28d24b4898d24cd10e9a941cabc",
+    "internal/compiler/cgen/cgen_program.go": "37398adb9d59a8fddad29b67feafc42f80d041b67a70a6fd2e0b2052608571fb",
+    "internal/compiler/check/check.go": "bb9bb3ba9a3d2c8d685245c496ece95d514f09bc63fff8bad793252441bc8982",
+    "internal/compiler/check/check_phase35_baseline_test.go": "e3205ddf6e01f9db0288aa3b2471ce6300a34715488b72f9a54709dd12b50fff",
+    "internal/compiler/check/check_phase35_numeric_test.go": "303f3e767908fa9c8bb205deaf9df2190d1edd8b1058fa3c92e87d5ac794a4ba",
+    "internal/compiler/check/check_phase35_test.go": "955b7d2347ebe575aaeb7713c17b2d2604f508f42418ac1602d73580f9fba74c",
+    "internal/compiler/check/scalar.go": "31537311ef6ad8fcf11f8cd7139f21404e41445d6d4c8ba5974a953ddaa1ec83",
+    "internal/compiler/core/core.go": "893258f0bda7d8e73af2e8ba1a30a8a794d41efbaadd0742afcc48048f0250b3",
+    "internal/compiler/core/core_phase35_test.go": "2820489c817926b1be79ecf2b661e9d0b225e4c317f09a5492adad9ab57c4c77",
+    "internal/compiler/core/core_test.go": "ff434081f1cd6c373095bddec1fbd3c1ceda781df28f06ef682eff67370472c2",
+    "internal/compiler/corevalidate/corevalidate.go": "f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81",
+    "internal/compiler/corevalidate/corevalidate_phase35_test.go": "05be7ec3cbf590ed9233bdea963fbcaafeb479fdd949d7149f1939745beb2df3",
+    "internal/compiler/executionpeer/executionpeer.go": "867185ab16461dd079451ead43ae47c68c3339ac6db7b790430f54954a02393c",
+    "internal/compiler/executionpeer/executionpeer_phase35_test.go": "8baa81db396124108f3d92570b27d31c16ac956b1e9ba38f89f3f3dd9a51a79a",
+    "internal/compiler/interp/interp.go": "aba3e9245fb5189527faf0b7e95757bfc8c8c5985f063701b0f697dbdfd2afbd",
+    "internal/compiler/interp/interp_phase35_test.go": "cd7d9aa2af83733d919e756f0f21fb68b3395080d9c8009b4096ab69cd3b04a1",
+    "internal/compiler/originvalidate/originvalidate.go": "831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272",
+    "internal/compiler/originvalidate/originvalidate_phase35_test.go": "74dd6c145f9b741c92ac5ead0025f51cb55a4d071788b018e80db1d2856d638c",
+    "internal/compiler/pathoracle/pathoracle.go": "e79394ce5998582d6d431a1fe625e739809757149e92da7b0762c6c58f45a0fe",
+    "internal/compiler/pathoracle/pathoracle_phase35_test.go": "33ded83b9401b8451d7f55302c463a99417119afc862b2c50084e555f3ad6a3f",
+    "internal/compiler/session/session_phase272_identity_test.go": "938770997c634557fe1b880dda1b6d66dcdf6d0f5edbeb4ed559be536c3790a1",
+    "internal/compiler/session/session_phase273_identity_test.go": "1c64117f0b41648cbeacccb69411f26ad26695d1582bd54e0abdb9b33e7142f0",
+    "internal/compiler/session/session_phase34_compat_test.go": "346af8efe6729344e8fb6ac13a20bc72d49563d2c92f955e427007d77aef97ad",
+    "internal/compiler/session/session_phase34_limit_consumers_test.go": "ba44c429fc390a8b6c6176896ee14a9f4b62661881a68a60b1501911b2fa2227",
+    "internal/compiler/session/session_phase34_prechange_test.go": "2ab0f24dd69256c26c88dd2caa32d907c823be01b638f13265349a40d5657fcd",
+    "internal/compiler/session/session_phase34_presentation_test.go": "5028977b2703a7b5a1354fcb4894415c909724b633c8e52760350e92cbddaa5a",
+    "internal/compiler/session/session_phase34_surface_test.go": "5f93d5a849fa41d6488c5ea238c24644822e20582c6019fd81a1b06c1f1ed351",
+    "internal/compiler/session/session_phase35_adler_test.go": "4dbf1ccc48481d5fcf3adcef4f2a10c4aafba171ee5ff340db53ac999a273472",
+    "internal/compiler/session/session_phase35_admission_mutation_test.go": "37a8eda7480f891d533371514138e5772aa2abc8eed9fd88114b1d083bb63905",
+    "internal/compiler/session/session_phase35_closeout_test.go": "d2a359af79179f9d36c71a06af6ef03b67bd121048b3bd5522eeec0dd175e1b7",
+    "internal/compiler/session/session_phase35_peer_mutation_test.go": "e193be1a479432b0be02400fcd8927a2c21a813f00300712a803f1b9bd41bee3",
+    "internal/compiler/session/session_phase35_prechange_test.go": "eaad86aa0476fa5d135e86851a7ad54c9adc530732900a4ce107dae723e66cd6",
+    "internal/compiler/session/session_phase35_surface_test.go": "007d7d7d42462a8f76cd5497d8c535703746887ab206d514ad29d252712dcc3f",
+    "internal/compiler/session/session_phase35_values_test.go": "9a02b4d36a928d0e25242e7aa48ff14684b53f8fd90a61ccdfcfca1882545bcc",
+    "internal/compiler/surface/refusals.go": "d776f7620d198539883627cf77c5554d6d1428f5ba5584a8a9db209e82708014",
+    "internal/compiler/surfacemanifest/manifest.go": "047ccc606cae924e7d974d275e28e82c91f35276b258346e94d40bff1aba5b3d",
+    "internal/compiler/surfacemanifest/manifest_test.go": "920df160f431652681608239462c92ee947ef1dcd10971ade1c5e43b6854479b",
+    "internal/compiler/syntax/format.go": "cf31cad5c219849b4b6d2cbfb2155ec43f40a1961c1043672fdffb62f3bc174c",
+    "internal/compiler/syntax/lexer.go": "88a32042b98a8fb436ea8e815d8ee9b1dfdcae462c5bb2be51072a04ab9ecb6f",
+    "internal/compiler/syntax/numeric_phase35_test.go": "3d0da57b64fa89145a399d3e5224d4b1991d7274cc1f193f3ec986c42270eec1",
+    "internal/compiler/syntax/parser.go": "c8ecf18cd7ffeadb4328998e77ed6ebd28aad132f59558ff7239639094adcac3",
+    "internal/compiler/syntax/parser_phase34_recovery_test.go": "578af20b57aa76425b2a487bed197c204bd70304ad6880c1ccfd6f898125850c",
+    "internal/compiler/syntax/parser_phase34_refusal_test.go": "61f49170af1e713a542e281a0a70c3d636444797b94b6eb39e137fbf1182c76c",
+    "internal/compiler/syntax/parser_phase35_baseline_test.go": "4c9a3f516f200fd0b326fe06cb7d5ec2a507a26d457406ba3dd8469e05c0f3e6",
+    "internal/compiler/syntax/parser_phase35_test.go": "8ce609c3481caaf9938529163737f3b5fef9a928336888b807cdc85625761b3d",
+    "testdata/phase16/public-emitter-consumers.json": "7132c2bed3bf1561691668b77ef241c36e4399b910a2bcbcc212dfe7c78257ee",
+    "testdata/phase35/numeric-delta.json": "a0406ebcd47423b5fe97ca567895b7efa9944f54746dc6bec52c8c4837b0547f",
+    "testdata/phase35/numeric-policy-baseline.json": "f43bb2baaa3d492f5e9bb208762239983b981c96ffe57975dfb588fb64876b18",
+    "testdata/phase35/prechange-corpus.json": "ecf045024b00f2f9eb3c463bca0482d3bdcaa1468fb42214a02013fcdc5c3088",
+    "testdata/phase35/recovery-after.json": "9440c2fa4546ad3f60c2368b0f194d9451d980ef49fa097a6cbb00f8574bcabe",
+    "testdata/phase35/shift-sites.json": "ccf15ab99ce82364f15883f10602638515e66030709936cfc3421eb679b09ca7",
+    "testdata/phase35/surface-census.json": "9af1ecafc10e01bfcdca8882b44c85019f637c51790207f01808013e2461c98f",
+    "testdata/phase35/surface-witnesses.json": "0fcfe36a942a5670a9819bdc789b4aebcf2182e336bbef9b9ef9d8a11fd2f64a",
+    "testdata/phase35/value-vectors.json": "ef5edc88f41469ded6b815753b0875596a35007e73d27e35ae391608b973f9e2",
+    "testdata/phase36/new-fixture-ledger.json": "99ee245b707175e1b27846ce825ae6371e7eb7da0e810b2d8edf486c3517eaf4",
+    "testdata/phase37/new-fixture-ledger.json": "2fd2bbf340d95212966aade306a155ab4cb526c077cfb10f9b6405e2dcaded7d"
+  },
+  "scope_note": "22 unchanged final-plan task selectors, matched against actual test roots and deduplicated per package; 600s tool and Go timeout; no local whole suite. Historical receipts preserved."
+}

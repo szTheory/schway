@@ -463,3 +463,21 @@ This receipt supplements the separate 15 arithmetic transfer mutants; that
 harness was unaffected and was not rerun. No production change, broad/native/
 hosted run, phase completion, or review/verification ownership change is
 claimed.
+
+## Successor refresh after Phase 37 — 2026-10-15
+
+All 22 final-plan task selectors were resolved against actual package test
+roots and executed uncached after the evidence adapter repair in
+35-REFRESH-FIX.md. Fresh result: 66 distinct names / 72 package roots across
+13 packages, zero missing/fail/skip, 25.468s wall time. This includes the
+focused 33-vector O0/O3/O3-LTO and 16-shift UBSan tests on this host; these are
+new local executions, separate from the preserved historical lane receipts.
+Exact commands, current input hashes and raw-log hashes: 35-REFRESH-RUN.json.
+
+The sole newly observed gap was the missing description in synthetic coverage
+metadata; repaired and verified without weakening the shared validator. All
+four BIT requirements retain automated coverage. Additional actual-source
+mutation controls are checked in the subsequent regression/verifier gate;
+this paragraph does not claim their current result. Completed implementation,
+UAT, historical evidence, numeric policy and frozen fixtures are preserved.
+Phase 38 remains the final audited hosted two-host receipt owner.

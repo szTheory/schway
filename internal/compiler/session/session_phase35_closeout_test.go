@@ -307,7 +307,7 @@ func phase35EvidenceProblems(evidence string, index *testIndex) []string {
 			problems = append(problems, "unknown or wrong-package test reference: "+ref)
 			continue
 		}
-		coverage := "---\ncoverage:\n  - id: evidence\n    verification:\n      - kind: " + kind + "\n        ref: \"" + ref + "\"\n        status: pass\n    human_judgment: false\nstatus: complete\n---\n"
+		coverage := "---\ncoverage:\n  - id: evidence\n    description: Named Phase 35 execution evidence\n    verification:\n      - kind: " + kind + "\n        ref: \"" + ref + "\"\n        status: pass\n    human_judgment: false\nstatus: complete\n---\n"
 		if coverageProblems := summaryCoverageProblems(coverage, knownTests); len(coverageProblems) != 0 {
 			problems = append(problems, "evidence coverage contract rejected "+ref+": "+strings.Join(coverageProblems, "; "))
 		}
