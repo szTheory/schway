@@ -360,7 +360,7 @@ func Program(program ast.Program) Result {
 			if len(function.Body.Linear.Statements) > 0 {
 				// Structured scalar routing owns the narrow unused-Byte bridge;
 				// bodies without statements continue through the legacy binding path below.
-				checked, diagnostics, work := checkScalarFunction(functionID, function)
+				checked, diagnostics, work := checkScalarFunction(functionID, function, calleeContracts)
 				result.Work += work
 				result.Diagnostics = append(result.Diagnostics, diagnostics...)
 				if len(diagnostics) == 0 {

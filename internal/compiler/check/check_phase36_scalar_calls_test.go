@@ -100,8 +100,6 @@ fn main(input: U64) -> U64 { let result = call_u64_u64(input) result }
 			t.Fatalf("%s call result constructor=%q callee return=%q, want %q", pair.caller, constructor, callee.ReturnType, pair.result)
 		}
 	}
-	_ = functionIDs
-
 	compose := phase36Function(t, checked.Program, "compose")
 	composeCalls := phase36CallOperations(compose)
 	if len(composeCalls) != 3 {
@@ -122,19 +120,48 @@ fn main(input: U64) -> U64 { let result = call_u64_u64(input) result }
 		t.Fatalf("outer call did not consume the completed inner result: inner=%+v outer=%+v", composeCalls[0], composeCalls[1])
 	}
 	composePositions := make(map[string]int, len(compose.Linear.Operations))
+	var addPositions []int
 	for index, operation := range compose.Linear.Operations {
 		composePositions[operation.ID] = index
+		if operation.Kind == core.OpAddChecked {
+			addPositions = append(addPositions, index)
+		}
 	}
-	for _, call := range composeCalls {
+	callPositions := make([]int, len(composeCalls))
+	for index, call := range composeCalls {
 		if sourceIndex, targetIndex := composePositions[call.SourceID], composePositions[call.ID]; sourceIndex >= targetIndex {
 			t.Fatalf("call %s ran before its argument producer %s", call.ID, call.SourceID)
 		}
+		callPositions[index] = composePositions[call.ID]
+	}
+	if len(addPositions) != 3 || !(addPositions[0] < callPositions[0] && callPositions[0] < callPositions[1] &&
+		callPositions[1] < addPositions[1] && addPositions[1] < callPositions[2] && callPositions[2] < addPositions[2]) {
+		t.Fatalf("computed nested/sibling arguments were not materialized left-to-right before the parent add: adds=%v calls=%v", addPositions, callPositions)
 	}
 
 	contexts := phase36Function(t, checked.Program, "contexts")
 	contextCalls := phase36CallOperations(contexts)
 	if len(contextCalls) != 5 {
 		t.Fatalf("initializer/assignment/condition/branch calls = %+v, want 5 calls", contextCalls)
+	}
+	wantContextCallees := []string{functionIDs["inner"], functionIDs["sibling"], functionIDs["less_than_one"], functionIDs["inner"], functionIDs["sibling"]}
+	for index, call := range contextCalls {
+		if call.CalleeID != wantContextCallees[index] {
+			t.Fatalf("context call order[%d] = %q, want %q", index, call.CalleeID, wantContextCallees[index])
+		}
+	}
+	contextPositions := make(map[string]int, len(contexts.Linear.Operations))
+	var stores []core.LinearOperation
+	for index, operation := range contexts.Linear.Operations {
+		contextPositions[operation.ID] = index
+		if operation.Kind == core.OpScalarStore {
+			stores = append(stores, operation)
+		}
+	}
+	if len(stores) < 4 || stores[0].SourceID != contextCalls[0].TargetID ||
+		contextPositions[contextCalls[0].ID] >= contextPositions[stores[0].ID] ||
+		contextPositions[contextCalls[1].ID] >= contextPositions[stores[1].ID] {
+		t.Fatalf("call results were not initialized/stored after var and assignment evaluation: calls=%+v stores=%+v", contextCalls, stores)
 	}
 	branches := 0
 	for _, operation := range contexts.Linear.Operations {

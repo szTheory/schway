@@ -13,19 +13,20 @@ import (
 )
 
 type scalarBuilder struct {
-	function       ast.FuncDecl
-	functionID     string
-	linear         core.LinearBody
-	types          map[string]string
-	places         map[string]core.Place
-	names          map[string]string
-	initialized    map[string]bool
-	blocks         []core.Block
-	edges          []core.Edge
-	current        int
-	work           int
-	diagnostics    []diagnostic.Diagnostic
-	remainderSpans map[string]diagnostic.Span
+	function        ast.FuncDecl
+	functionID      string
+	calleeContracts map[string]calleeContract
+	linear          core.LinearBody
+	types           map[string]string
+	places          map[string]core.Place
+	names           map[string]string
+	initialized     map[string]bool
+	blocks          []core.Block
+	edges           []core.Edge
+	current         int
+	work            int
+	diagnostics     []diagnostic.Diagnostic
+	remainderSpans  map[string]diagnostic.Span
 }
 
 // scalarAnalysisBudgetForTest overrides the deterministic production budget
@@ -34,21 +35,28 @@ var scalarAnalysisBudgetForTest int
 
 const ScalarAnalysisWorkLimit = 65536
 
-func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Function, []diagnostic.Diagnostic, int) {
+func checkScalarFunction(functionID string, function ast.FuncDecl, calleeContracts map[string]calleeContract) (core.Function, []diagnostic.Diagnostic, int) {
 	byteView := function.Parameter.Type.Constructor == "ByteView" && len(function.Parameter.Type.Arguments) == 0
 	byteInput := function.Parameter.Type.Constructor == "Byte" && len(function.Parameter.Type.Arguments) == 0
+	boolInput := function.Parameter.Type.Constructor == "Bool" && len(function.Parameter.Type.Arguments) == 0
+	u64Input := function.Parameter.Type.Constructor == "U64" && len(function.Parameter.Type.Arguments) == 0
 	if byteInput && function.ReturnType.Constructor != "U64" {
 		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.scalar_signature", function.Span, "unused Byte scalar input requires a U64 result")}, 1
 	}
-	if (function.Parameter.Type.Constructor != "U64" && !byteView && !byteInput) || (function.ReturnType.Constructor != "U64" && function.ReturnType.Constructor != "Unit") {
-		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.scalar_signature", function.Span, "scalar CFG functions require U64 input and either U64 or Unit output")}, 1
+	resultType := function.ReturnType.Constructor
+	validResult := resultType == "U64" || resultType == "Bool" || resultType == "Unit"
+	validParameter := u64Input || boolInput || byteView || byteInput
+	validPair := resultType != "Bool" || u64Input || boolInput
+	validUnitBody := resultType != "Unit" || u64Input || byteView
+	if !validParameter || !validResult || !validPair || !validUnitBody {
+		return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.scalar_signature", function.Span, "scalar CFG functions require a U64/Bool pair, an existing U64/ByteView Unit body, or an unused Byte-to-U64 bridge")}, 1
 	}
 	if byteInput {
 		if span, used := scalarByteParameterUse(function.Body.Linear, function.Parameter.Name); used {
 			return core.Function{}, []diagnostic.Diagnostic{diagnostic.Error("type.scalar_byte_parameter_used", span, "Byte input is admitted only when the scalar body leaves it unused")}, 1
 		}
 	}
-	b := &scalarBuilder{function: function, functionID: functionID, types: map[string]string{}, places: map[string]core.Place{}, names: map[string]string{}, initialized: map[string]bool{}, remainderSpans: map[string]diagnostic.Span{}}
+	b := &scalarBuilder{function: function, functionID: functionID, calleeContracts: calleeContracts, types: map[string]string{}, places: map[string]core.Place{}, names: map[string]string{}, initialized: map[string]bool{}, remainderSpans: map[string]diagnostic.Span{}}
 	b.linear = core.LinearBody{ID: functionID + ":linear"}
 	typeNames := []string{"U64", "Bool", "Unit"}
 	parameterType := "U64"
@@ -62,6 +70,8 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 		// U64 and ByteView fact order and IDs remain unchanged.
 		typeNames = []string{"Byte", "U64", "Bool", "Unit"}
 		parameterType = "Byte"
+	} else if boolInput {
+		parameterType = "Bool"
 	}
 	for _, name := range typeNames {
 		shape := core.TypeRef{Constructor: name}
@@ -105,11 +115,11 @@ func checkScalarFunction(functionID string, function ast.FuncDecl) (core.Functio
 		} else if !b.initialized[resultID] {
 			b.refuse("name.uninitialized_place", function.Body.Linear.Span, "scalar result is not definitely initialized")
 		} else {
-			if b.places[resultID].TypeID != b.types["U64"] {
-				b.refuse("type.scalar_result", function.Body.Linear.Span, "scalar function result must be U64")
+			if resultType != "U64" && resultType != "Bool" || b.places[resultID].TypeID != b.types[resultType] {
+				b.refuse("type.scalar_result", function.Body.Linear.Span, "scalar function result must match its declared U64 or Bool type")
 				return core.Function{}, b.diagnostics, b.work
 			}
-			b.addOperation(core.LinearOperation{Kind: core.OpReturn, SourceID: resultID, TypeID: b.types["U64"]})
+			b.addOperation(core.LinearOperation{Kind: core.OpReturn, SourceID: resultID, TypeID: b.types[resultType]})
 		}
 	}
 	if len(b.diagnostics) != 0 {
@@ -150,7 +160,9 @@ func scalarByteParameterUse(body *ast.LinearBody, parameter string) (diagnostic.
 		if expression == nil {
 			return
 		}
-		add(expression.Name, expression.Span)
+		if expression.Kind == "name" || expression.Kind == "byte_len" || expression.Kind == "byte_at" {
+			add(expression.Name, expression.Span)
+		}
 		scanExpression(expression.Left)
 		scanExpression(expression.Right)
 	}
@@ -265,7 +277,7 @@ func checkScalarFixedPointDetailed(function core.Function) (int, string, string)
 			incoming := map[string]checkerScalarFact{}
 			hasIncoming := false
 			if block.PointID == function.EntryPointID {
-				incoming[function.Parameter.ID] = checkerScalarFact{initialized: true}
+				incoming[function.Parameter.ID] = checkerScalarFact{initialized: true, boolType: types[places[function.Parameter.ID].TypeID] == "Bool"}
 				hasIncoming = true
 			}
 			for _, edge := range function.Linear.Edges {
@@ -394,6 +406,14 @@ func checkScalarFixedPointDetailed(function core.Function) (int, string, string)
 						return work, "check.scalar_uninitialized", ""
 					}
 					state[op.TargetID] = checkerScalarFact{initialized: true}
+				case core.OpCall:
+					argumentType := types[places[op.SourceID].TypeID]
+					resultType := types[places[op.TargetID].TypeID]
+					if !source.initialized || op.CalleeID == "" || (argumentType != "U64" && argumentType != "Bool") ||
+						(resultType != "U64" && resultType != "Bool") || op.TypeID != places[op.TargetID].TypeID {
+						return work, "check.scalar_call_shape", ""
+					}
+					state[op.TargetID] = checkerScalarFact{initialized: true, boolType: resultType == "Bool"}
 				case core.OpScalarStore:
 					if !source.initialized {
 						return work, "check.scalar_uninitialized", ""
@@ -555,7 +575,11 @@ func (b *scalarBuilder) lower(statements []ast.Statement) {
 			payload := []byte(decoded)
 			b.addOperation(core.LinearOperation{Kind: core.OpWriteText, TypeID: b.types["Unit"], TextSource: statement.Expr.Value, TextBytes: payload, TextLength: uint64(len(payload))})
 		case "write_u64":
+			diagnosticsBefore := len(b.diagnostics)
 			value, typeName := b.expression(statement.Expr)
+			if len(b.diagnostics) != diagnosticsBefore {
+				continue
+			}
 			if typeName != "U64" {
 				b.refuse("type.scalar_write_operand", statement.Span, "write_u64 requires one U64 operand")
 				continue
@@ -639,7 +663,11 @@ func (b *scalarBuilder) lower(statements []ast.Statement) {
 				b.refuse("ownership.scalar_assignment", statement.Span, "assignment requires a mutable local scalar")
 				continue
 			}
+			diagnosticsBefore := len(b.diagnostics)
 			value, typeName := b.expression(statement.Expr)
+			if len(b.diagnostics) != diagnosticsBefore {
+				continue
+			}
 			if typeName != "U64" && typeName != "Bool" || b.places[target].TypeID != b.types[typeName] {
 				b.refuse("type.scalar_assignment", statement.Span, "scalar assignment types must match")
 				continue
@@ -647,7 +675,11 @@ func (b *scalarBuilder) lower(statements []ast.Statement) {
 			b.addOperation(core.LinearOperation{Kind: core.OpScalarStore, SourceID: value, StoreTargetID: target, TypeID: b.places[target].TypeID})
 			b.initialized[target] = true
 		case "if":
+			diagnosticsBefore := len(b.diagnostics)
 			condition, conditionType := b.expression(statement.Expr)
+			if len(b.diagnostics) != diagnosticsBefore {
+				continue
+			}
 			if conditionType != "Bool" {
 				b.refuse("type.condition_not_bool", statement.Span, "if condition must be Bool")
 				continue
@@ -693,7 +725,11 @@ func (b *scalarBuilder) lower(statements []ast.Statement) {
 			condID := b.newBlock("while-condition")
 			b.edge(preheader, condID, "next")
 			b.current = len(b.blocks) - 1
+			diagnosticsBefore := len(b.diagnostics)
 			condition, conditionType := b.expression(statement.Expr)
+			if len(b.diagnostics) != diagnosticsBefore {
+				continue
+			}
 			if conditionType != "Bool" {
 				b.refuse("type.condition_not_bool", statement.Span, "while condition must be Bool")
 				continue
@@ -764,6 +800,8 @@ func (b *scalarBuilder) expression(expr *ast.Expr) (string, string) {
 			}
 		}
 		return id, ""
+	case "call":
+		return b.lowerScalarCall(expr)
 	case "number":
 		value, err := strconv.ParseUint(expr.Value, 0, 64)
 		if err != nil {
@@ -778,7 +816,11 @@ func (b *scalarBuilder) expression(expr *ast.Expr) (string, string) {
 		b.initialized[place.ID] = true
 		return place.ID, "U64"
 	case "shift_left", "shift_right":
+		diagnosticsBefore := len(b.diagnostics)
 		left, leftType := b.expression(expr.Left)
+		if len(b.diagnostics) != diagnosticsBefore {
+			return "", ""
+		}
 		if leftType != "U64" {
 			b.refuse("type.scalar_operand", expr.Left.Span, "U64 operator requires a U64 operand")
 			return "", ""
@@ -812,8 +854,15 @@ func (b *scalarBuilder) expression(expr *ast.Expr) (string, string) {
 		b.initialized[place.ID] = true
 		return place.ID, "U64"
 	case "add", "less", "equal", "remainder", "bit_xor", "bit_and", "bit_or":
+		diagnosticsBefore := len(b.diagnostics)
 		left, leftType := b.expression(expr.Left)
+		if len(b.diagnostics) != diagnosticsBefore {
+			return "", ""
+		}
 		right, rightType := b.expression(expr.Right)
+		if len(b.diagnostics) != diagnosticsBefore {
+			return "", ""
+		}
 		if leftType != "U64" || rightType != "U64" {
 			b.refuse("type.scalar_operand", expr.Span, "U64 operator requires U64 operands")
 			return "", ""
@@ -866,7 +915,11 @@ func (b *scalarBuilder) expression(expr *ast.Expr) (string, string) {
 			b.initialized[place.ID] = true
 			return place.ID, "U64"
 		}
+		diagnosticsBefore := len(b.diagnostics)
 		index, indexType := b.expression(expr.Right)
+		if len(b.diagnostics) != diagnosticsBefore {
+			return "", ""
+		}
 		if indexType != "U64" {
 			b.refuse("type.scalar_operand", expr.Span, "byte index must be U64")
 			return "", ""
@@ -879,6 +932,41 @@ func (b *scalarBuilder) expression(expr *ast.Expr) (string, string) {
 		b.refuse("syntax.scalar_expression", expr.Span, "unsupported scalar expression")
 		return "", ""
 	}
+}
+
+func (b *scalarBuilder) lowerScalarCall(expr *ast.Expr) (string, string) {
+	contract, ok := b.calleeContracts[expr.Name]
+	if !ok || contract.ID == "" {
+		b.refuse(core.CallCalleeUnresolved, expr.Span, "call target does not resolve to a declared scalar function")
+		return "", ""
+	}
+	if (contract.ParameterType != "U64" && contract.ParameterType != "Bool") ||
+		(contract.ReturnType != "U64" && contract.ReturnType != "Bool") {
+		b.refuse("type.scalar_signature", expr.Span, "scalar value calls require a one-argument U64/Bool function returning U64 or Bool")
+		return "", ""
+	}
+	if expr.Left == nil || expr.Right != nil {
+		b.refuse("syntax.scalar_call_arity", expr.Span, "scalar value calls require exactly one argument")
+		return "", ""
+	}
+	diagnosticsBefore := len(b.diagnostics)
+	argument, argumentType := b.expression(expr.Left)
+	if len(b.diagnostics) != diagnosticsBefore {
+		return "", ""
+	}
+	if argumentType != contract.ParameterType {
+		causes := []diagnostic.Cause{
+			{Kind: "callee", Detail: contract.ID},
+			{Kind: "actual_argument_type", Detail: argumentType},
+			{Kind: "declared_parameter_type", Detail: contract.ParameterType},
+		}
+		b.diagnostics = append(b.diagnostics, diagnostic.Error(checkCallArgumentTypeMismatch, expr.Span, "call argument type does not match the callee's declared parameter type", causes...))
+		return "", ""
+	}
+	place := b.addPlace("call", contract.ReturnType, false)
+	b.addOperation(core.LinearOperation{Kind: core.OpCall, SourceID: argument, TargetID: place.ID, TypeID: place.TypeID, CalleeID: contract.ID})
+	b.initialized[place.ID] = true
+	return place.ID, contract.ReturnType
 }
 
 func cloneInitialized(input map[string]bool) map[string]bool {
