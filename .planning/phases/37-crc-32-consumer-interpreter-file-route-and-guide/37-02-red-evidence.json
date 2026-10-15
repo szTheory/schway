@@ -1,0 +1,10 @@
+{
+  "command": "set -o pipefail; GOCACHE=/tmp/ai-lang-verification-gocache go test -json ./internal/compiler/session -run '^TestPhase37InterpreterFileApplication$' -count=1 -timeout=600s | node -e 'let s=\"\";process.stdin.on(\"data\",d=>s+=d).on(\"end\",()=>{const target=\"TestPhase37InterpreterFileApplication\";const events=s.trim().split(/\\n/).filter(Boolean).map(line=>JSON.parse(line));const run=events.some(e=>e.Action===\"run\"&&e.Test===target);const failed=events.some(e=>e.Action===\"fail\"&&e.Test===target);const lines=[\"TAP version 13\"];for(const e of events){if(e.Action===\"output\"&&e.Test===target){for(const line of e.Output.split(/\\n/)){if(line)lines.push(\"# \"+line)}}}if(run&&failed){lines.push(\"not ok 1 - \"+target,\"1..1\")}else if(run){lines.push(\"ok 1 - \"+target,\"1..1\")}else{lines.push(\"1..0\")}process.stdout.write(lines.join(\"\\n\")+\"\\n\");if(!run||!failed)process.exitCode=2})'",
+  "exitCode": 1,
+  "output": "TAP version 13\n# === RUN   TestPhase37InterpreterFileApplication\n#     session_phase37_file_application_test.go:41: capture-disabled file application retained 150 events; want zero\n# --- FAIL: TestPhase37InterpreterFileApplication (0.00s)\nnot ok 1 - TestPhase37InterpreterFileApplication\n1..1\n",
+  "targetTest": "TestPhase37InterpreterFileApplication",
+  "targetFile": "session_phase37_file_application_test.go",
+  "expected": "returned 3421780262 with zero retained interpreter events",
+  "actual": "returned 3421780262 but retained 150 events; go test process exit=1",
+  "semanticAssessment": "The exact named Go root ran and reached the capture-retention assertion after source checking and evaluation succeeded. The real CRC value matched 3421780262, while the existing evidence-oriented FileBytes route retained 150 events instead of zero. This is the planned semantic mismatch, not compilation, setup, fixture, or test discovery failure. The TAP report is adapted from the actual go test -json run/fail events and preserves the actual target output."
+}
