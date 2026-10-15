@@ -133,3 +133,7 @@ Both gaps are now resolved within TestPhase36EmitterCallInventoryControls, with 
 | Gaps found | 2 |
 | Resolved | 2 |
 | Escalated | 0 |
+
+## Final regression integration — 2026-10-15
+
+The bounded Phase33–35 sample passed80 compiled root occurrences across13 packages atb51043c6566f, including inherited frozen-C controls, actual admission mutants and global summary coverage. The sample caught and corrected exact helper route-inventory rows, Phase34 new-fixture ledger composition, the overlapping shift-law mutation operator, and missing Plan08 coverage metadata. See36-REGRESSION.md and the resolved phase36-regression-consumers debug record. These are recorded follow-up gaps to the earlier audit, not evidence that the original audit found them. Production validation and frozen expected data stay unchanged. All21 task rows remain covered by their named owners plus the corrected integration controls.

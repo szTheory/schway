@@ -118,3 +118,7 @@ Approval: independent GSD security auditor verified2026-10-15.
 | Threats found | 24 |
 | Closed | 24 |
 | Open | 0 |
+
+## Review-fix and regression provenance — 2026-10-15
+
+Independent security confirmation at06:32:13Z retained24/24 closed, threats_open0 after WR-01: dynamic end-of-stream refusal metadata now uses the checked dynamic occurrence map; refusal conditions/classes and authority remain unchanged. The auditor independently verified45 current roots at3697ec2950487bb98723c06262d6d7e6bb2ae1d6. Subsequent edits are only tests/summary metadata: exact helper route inventory and baseline/mutation consumer composition. Their independent debug review and the current80-root regression sample are in36-REGRESSION.md. Production, dependencies and frozen expected data have no change since that independent confirmation. This paragraph records provenance; it does not invent another security audit or hosted claim.
