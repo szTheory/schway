@@ -153,6 +153,11 @@ const AccessConflicting = "conflicting"
 // walk needs beyond a bare bool: the access mode a propagated borrow
 // carries.
 type calleeOriginFact struct {
+	// ParameterType and ReturnType are copied from the declared function
+	// shape so this peer can validate scalar OpCall contracts from its own
+	// program map without borrowing checker or corevalidate verdicts.
+	ParameterType string
+	ReturnType    string
 	// Access is the callee's declared core.PublicOrigin.Access ("shared" or
 	// "exclusive") when Derived is true. Empty when Derived is false.
 	Access string
@@ -177,10 +182,13 @@ type calleeOriginFact struct {
 func BuildCalleeOriginFacts(program core.Program) map[string]calleeOriginFact {
 	facts := make(map[string]calleeOriginFact, len(program.Functions))
 	for _, function := range program.Functions {
+		fact := calleeOriginFact{ParameterType: function.Parameter.Type, ReturnType: function.ReturnType}
 		if function.PublicOrigin == nil {
+			facts[function.ID] = fact
 			continue
 		}
-		facts[function.ID] = calleeOriginFact{Access: function.PublicOrigin.Access, Derived: true}
+		fact.Access, fact.Derived = function.PublicOrigin.Access, true
+		facts[function.ID] = fact
 	}
 	return facts
 }
@@ -292,11 +300,91 @@ func SetOriginScalarTransferBudgetForTest(budget int) func() {
 
 func originHasScalarCFG(function core.Function) bool {
 	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpCall && originCallHasScalarEndpoints(function, operation) {
+			return true
+		}
 		if operation.Kind == core.OpAddChecked || operation.Kind == core.OpLessU64 || operation.Kind == core.OpEqualU64 || operation.Kind == core.OpRemainderU64 || operation.Kind == core.OpBitXorU64 || operation.Kind == core.OpBitAndU64 || operation.Kind == core.OpBitOrU64 || operation.Kind == core.OpShiftLeftU64 || operation.Kind == core.OpShiftRightU64 || operation.Kind == core.OpBytesLen || operation.Kind == core.OpBytesAt || operation.Kind == core.OpScalarStore || operation.Kind == core.OpBranch || operation.Kind == core.OpWriteU64 || operation.Kind == core.OpWriteNewline || operation.Kind == core.OpWriteText {
 			return true
 		}
 	}
 	return false
+}
+
+func originCallHasScalarEndpoints(function core.Function, operation core.LinearOperation) bool {
+	if function.Linear == nil {
+		return false
+	}
+	types := make(map[string]string, len(function.Linear.Types))
+	places := make(map[string]string, len(function.Linear.Places))
+	for _, fact := range function.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	for _, place := range function.Linear.Places {
+		places[place.ID] = types[place.TypeID]
+	}
+	sourceType, targetType := places[operation.SourceID], places[operation.TargetID]
+	isScalar := func(name string) bool { return name == "U64" || name == "Bool" }
+	return isScalar(sourceType) && isScalar(targetType)
+}
+
+func originScalarConstructor(constructor string) bool {
+	return constructor == "U64" || constructor == "Bool"
+}
+
+func originScalarCallFieldsClean(operation core.LinearOperation) bool {
+	return operation.LoanID == "" && operation.Foreign == nil && operation.OkEdgeID == "" && operation.ErrEdgeID == "" && operation.ErrTargetID == "" &&
+		operation.ReleasesOperationID == "" && operation.Allocator == "" && operation.Reason == "" && operation.PayloadType == "" && operation.PayloadTargetID == "" &&
+		operation.ConstU64 == "" && operation.TextSource == "" && len(operation.TextBytes) == 0 && operation.TextLength == 0 && operation.RightID == "" &&
+		operation.StoreTargetID == "" && operation.TrueEdgeID == "" && operation.FalseEdgeID == ""
+}
+
+func originScalarCallContractProblem(function core.Function, calleeContracts map[string]calleeOriginFact) *Problem {
+	if function.Linear == nil {
+		return nil
+	}
+	types := make(map[string]string, len(function.Linear.Types))
+	places := make(map[string]core.Place, len(function.Linear.Places))
+	for _, fact := range function.Linear.Types {
+		types[fact.ID] = fact.Shape.Constructor
+	}
+	for _, place := range function.Linear.Places {
+		places[place.ID] = place
+	}
+	written := map[string]bool{function.Parameter.ID: true}
+	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpCall {
+			sourceType, targetType := "", ""
+			if source, ok := places[operation.SourceID]; ok {
+				sourceType = types[source.TypeID]
+			}
+			if target, ok := places[operation.TargetID]; ok {
+				targetType = types[target.TypeID]
+			}
+			callee, calleeKnown := calleeContracts[operation.CalleeID]
+			callTouchesScalar := originScalarConstructor(sourceType) || originScalarConstructor(targetType) ||
+				originScalarConstructor(callee.ParameterType) || originScalarConstructor(callee.ReturnType)
+			// Existing owner wrappers consume ByteView and return an owned
+			// U64. Their dedicated closed state machines remain responsible
+			// for that one mixed boundary; ordinary calls gain no such path.
+			ownerViewCall := sourceType == "ByteView" && targetType == "U64" && (fixtureOwnerPresent(function) || fileBytesOwnerPresent(function))
+			if callTouchesScalar && !ownerViewCall {
+				resultType := types[operation.TypeID]
+				validContract := calleeKnown && originScalarConstructor(callee.ParameterType) && originScalarConstructor(callee.ReturnType) &&
+					sourceType == callee.ParameterType && targetType == callee.ReturnType && resultType == callee.ReturnType &&
+					operation.SourceID != "" && operation.TargetID != "" && operation.SourceID != operation.TargetID && !written[operation.TargetID] &&
+					operation.TargetID != function.Parameter.ID && originScalarCallFieldsClean(operation)
+				if !validContract && !disableScalarAnalysisLawForTest {
+					return &Problem{Code: "core.scalar_call_contract_invalid", Detail: operation.ID, FunctionID: function.ID}
+				}
+			}
+		}
+		for _, id := range []string{operation.TargetID, operation.StoreTargetID, operation.ErrTargetID, operation.PayloadTargetID} {
+			if id != "" {
+				written[id] = true
+			}
+		}
+	}
+	return nil
 }
 
 func originScalarFixedPoint(function core.Function) bool {
@@ -419,6 +507,14 @@ func originScalarFixedPointWithFailure(function core.Function) (bool, string) {
 func originTransferScalarOperation(operation core.LinearOperation, state originScalarState, placeTypes map[string]string, strict bool, zeroOperationID *string) bool {
 	source := state[operation.SourceID]
 	switch operation.Kind {
+	case core.OpCall:
+		constructor := placeTypes[operation.TargetID]
+		if !source.initialized || !originScalarConstructor(placeTypes[operation.SourceID]) || !originScalarConstructor(constructor) || operation.SourceID == operation.TargetID {
+			return false
+		}
+		// The callee's numeric value is deliberately not summarized here.
+		// It is initialized, but unknown, regardless of the callee's body.
+		state[operation.TargetID] = originScalarValue{initialized: true, isBool: constructor == "Bool"}
 	case core.OpConst:
 		value, err := strconv.ParseUint(operation.ConstU64, 10, 64)
 		if err != nil || strconv.FormatUint(value, 10) != operation.ConstU64 {
@@ -1371,6 +1467,9 @@ func PublishProblemsFor(function core.Function, calleeContracts map[string]calle
 	if problem := phase29ByteOpProblem(function); problem != nil {
 		return []Problem{*problem}
 	}
+	if problem := originScalarCallContractProblem(function, calleeContracts); problem != nil {
+		return []Problem{*problem}
+	}
 	if originNeedsScalarAnalysis(function) {
 		valid, zeroOperationID := originScalarFixedPointWithFailure(function)
 		if zeroOperationID != "" {
@@ -1463,6 +1562,9 @@ func originNeedsScalarAnalysis(function core.Function) bool {
 		return false
 	}
 	for _, operation := range function.Linear.Operations {
+		if operation.Kind == core.OpCall && originCallHasScalarEndpoints(function, operation) {
+			return true
+		}
 		switch operation.Kind {
 		case core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64, core.OpShiftLeftU64, core.OpShiftRightU64:
 			return true
