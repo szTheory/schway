@@ -4,18 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 37
 current_phase_name: CRC-32 Consumer, Interpreter File Route, and Guide
-current_plan: 8
+current_plan: 9 (last plan; execution finished)
 status: executing
-stopped_at: Phase37 eight plans summarized; security T-37-14 and D-02 repair planned as37-09
-last_updated: "2026-10-15T17:50:54.873Z"
+stopped_at: Completed 37-09-PLAN.md
+last_updated: "2026-10-15T18:27:06.922Z"
 last_activity: 2026-10-15
-last_activity_desc: Phase 37 Plan 08 complete; parent phase acceptance pending
-state_head: 538e810e07091645089efc9507db213117266e3e
+last_activity_desc: Phase 37 Plan 09 complete; parent gates pending
+state_head: c611acdcfa4dec959fb5b4d2850c8aed90a4e833
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 38
-  completed_plans: 37
+  completed_plans: 38
   percent: 67
 ---
 
@@ -126,10 +126,10 @@ plans.
 ## Current Position
 
 Phase: 37 (CRC-32 Consumer, Interpreter File Route, and Guide) — PLAN EXECUTION COMPLETE; PARENT ACCEPTANCE PENDING
-Current Plan: 8 (last plan; execution finished)
-Total Plans in Phase: 8
+Current Plan: 9 (last plan; execution finished)
+Total Plans in Phase: 9
 Status: Awaiting parent phase acceptance
-Last activity: 2026-10-15 — Phase 37 plan execution complete; parent gates pending
+Last activity: 2026-10-15 — Phase 37 Plan 09 complete; parent gates pending
 
 Progress: [███████░░░] 67%
 
@@ -626,6 +626,7 @@ subset alone.
 | Phase 37 P06 | 13min | 2 tasks | 3 files |
 | Phase 37 P07 | 14m | 3 tasks | 12 files |
 | Phase 37 P08 | 24min | 3 tasks | 8 files |
+| Phase 37 P09 | 21min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -908,6 +909,8 @@ decision history; they no longer describe current status.
 - [Phase 37]: Keep Phase37 requirements pending until the parent verifier, security, and review gates accept them.
 - [Phase 37]: Treat native executable digest and BuildID variance under the existing incomplete/non-cacheable receipt contract; make no deterministic-binary claim.
 - [Phase 37]: Keep Phase38 hosted binding after milestone audit and gap closure.
+- [Phase 37]: Keep helper activation counts structural and separate from independent CRC numeric truth.
+- [Phase 37]: Mutation overlays must reach the named semantic assertion, while standalone target roots retain clean baseline checks.
 
 ### Pending Todos
 
@@ -1163,10 +1166,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-15T17:50:54.763Z
-Stopped at: Phase37 eight plans summarized; security T-37-14 and D-02 repair planned as37-09
-Resume file: .planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-09-PLAN.md
-Next action: Continue with Phase 37 Plan 05 after plan 04 execution.
+Last session: 2026-10-15T18:25:50.892Z
+Stopped at: Completed 37-09-PLAN.md
+Resume file: None
+Next action: Parent-owned independent Phase 37 acceptance
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
 complete; 27-09 is next. Plan 27-08's literal-answer matrix, reached mutations,
