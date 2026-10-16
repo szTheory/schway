@@ -1,0 +1,5005 @@
+{
+  "version": 1,
+  "state": "resolved-test",
+  "captured_utc": "2026-10-16T18:12:40.728Z",
+  "machine_authority": "Normal GSD test-tier lifecycle promotion delegated for this phase after the recorded semantic RED, clean/default controls, and canonical producers passed.",
+  "transition": {
+    "from_status": "unresolved",
+    "from_verification": null,
+    "to_status": "resolved",
+    "to_verification": "test",
+    "descriptor_unchanged": true,
+    "subjects": {
+      "defect": {
+        "plan": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md",
+        "plan_sha256": "79bcfbfbe3171bc5c9c9383cc83fa14dbfcfdc97251c18a71fb5ac9207d71798",
+        "source_prohibition": {
+          "statement": "MUST NOT accept caller activity after an accepted whole-execution defect or synthesize caller unwind records.",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "canonical_projection": {
+          "statement": "MUST NOT accept caller activity after an accepted whole-execution defect or synthesize caller unwind records.",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "descriptor": {
+          "kind": "node-test",
+          "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "violationFixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json",
+          "cleanFixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "proof_state": "machine-evidence-and-lifecycle-resolved",
+        "proof_manifest": {
+          "path": "/tmp/schway371-prohibition-proof-P6hOMj/evidence-manifest.json",
+          "sha256": "cdd1d3fa449382ca034c88e3c1583f96ac3f40caf626b8b159453feb5ec2b2d5",
+          "bytes": 46348
+        },
+        "current_source_bindings": {
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
+            "sha256": "79bcfbfbe3171bc5c9c9383cc83fa14dbfcfdc97251c18a71fb5ac9207d71798",
+            "bytes": 15388
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+            "sha256": "ea2dd99835f02af8e58d7c298363e6772261da173a2155116d2b61a4dddea4d6",
+            "bytes": 14763
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+            "sha256": "62b55c7519f1d6cff46876544d0ad23134f74632cdbebcdcb96e000c67b7e0c8",
+            "bytes": 14739
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+            "sha256": "2a0d8b81f107b81f678d0977798c413430cad37605370ba236440f323f5d6b00",
+            "bytes": 29841
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
+            "sha256": "672a96a7cddc2a3cec5e72ed75a4b26ff7bc86d19bbd7ec93073bf5eead87552",
+            "bytes": 80585
+          },
+          "internal/compiler/executionpeer/executionpeer.go": {
+            "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+            "bytes": 45046
+          },
+          "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
+            "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+            "bytes": 39087
+          },
+          "internal/compiler/session/session_phase24_model_test.go": {
+            "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+            "bytes": 7377
+          },
+          "internal/compiler/session/session_phase371_defect_reason_test.go": {
+            "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+            "bytes": 11149
+          },
+          "internal/compiler/cgen/cgen_program.go": {
+            "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+            "bytes": 184034
+          },
+          "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+            "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+            "bytes": 14162
+          },
+          "internal/compiler/session/session_phase371_compatibility_test.go": {
+            "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+            "bytes": 47203
+          },
+          "examples/phase24/error.schway": {
+            "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+            "bytes": 1228
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
+            "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+            "bytes": 40
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
+            "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+            "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+            "bytes": 43
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+            "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+            "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+            "bytes": 44
+          },
+          "testdata/phase371/pre-emitter-census.json": {
+            "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+            "bytes": 27223968
+          },
+          "testdata/phase371/compatibility-amendments.json": {
+            "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+            "bytes": 13859
+          }
+        },
+        "canonical_producer": {
+          "status": "green",
+          "flagged": false,
+          "tier": "test",
+          "located": true,
+          "kind": "node-test",
+          "evidence": [
+            {
+              "kind": "node-test",
+              "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+              "failFirst": true,
+              "passed": true,
+              "failFirstProof": "violation-fixture"
+            }
+          ],
+          "request": {
+            "path": "/tmp/schway371-prohibition-proof-P6hOMj/canonical-request.json",
+            "sha256": "d120174f144c3831d897082c61e9234730109acdba0762eca6ed6fdde4b61452",
+            "bytes": 973
+          },
+          "stdout": {
+            "path": "/tmp/schway371-prohibition-proof-P6hOMj/canonical-producer.stdout.json",
+            "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
+            "bytes": 447
+          },
+          "stderr": {
+            "path": "/tmp/schway371-prohibition-proof-P6hOMj/canonical-producer.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "bytes": 0
+          }
+        }
+      },
+      "failure": {
+        "plan": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md",
+        "plan_sha256": "ea2dd99835f02af8e58d7c298363e6772261da173a2155116d2b61a4dddea4d6",
+        "source_prohibition": {
+          "statement": "MUST NOT classify arbitrary OpReturn as propagated failure or treat causal acceptance as payload-value or actual CFG-path proof.",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "canonical_projection": {
+          "statement": "MUST NOT classify arbitrary OpReturn as propagated failure or treat causal acceptance as payload-value or actual CFG-path proof.",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "descriptor": {
+          "kind": "node-test",
+          "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "violationFixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json",
+          "cleanFixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "proof_state": "machine-evidence-and-lifecycle-resolved",
+        "proof_manifest": {
+          "path": "/tmp/schway371-prohibition-proof-0z08Vm/evidence-manifest.json",
+          "sha256": "f8dd4b44847f1ea4699270a37a78be15bc448314fde5da0fc9e754282721f669",
+          "bytes": 47696
+        },
+        "current_source_bindings": {
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
+            "sha256": "79bcfbfbe3171bc5c9c9383cc83fa14dbfcfdc97251c18a71fb5ac9207d71798",
+            "bytes": 15388
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+            "sha256": "ea2dd99835f02af8e58d7c298363e6772261da173a2155116d2b61a4dddea4d6",
+            "bytes": 14763
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+            "sha256": "62b55c7519f1d6cff46876544d0ad23134f74632cdbebcdcb96e000c67b7e0c8",
+            "bytes": 14739
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+            "sha256": "2a0d8b81f107b81f678d0977798c413430cad37605370ba236440f323f5d6b00",
+            "bytes": 29841
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
+            "sha256": "672a96a7cddc2a3cec5e72ed75a4b26ff7bc86d19bbd7ec93073bf5eead87552",
+            "bytes": 80585
+          },
+          "internal/compiler/executionpeer/executionpeer.go": {
+            "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+            "bytes": 45046
+          },
+          "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
+            "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+            "bytes": 39087
+          },
+          "internal/compiler/session/session_phase24_model_test.go": {
+            "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+            "bytes": 7377
+          },
+          "internal/compiler/session/session_phase371_defect_reason_test.go": {
+            "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+            "bytes": 11149
+          },
+          "internal/compiler/cgen/cgen_program.go": {
+            "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+            "bytes": 184034
+          },
+          "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+            "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+            "bytes": 14162
+          },
+          "internal/compiler/session/session_phase371_compatibility_test.go": {
+            "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+            "bytes": 47203
+          },
+          "examples/phase24/error.schway": {
+            "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+            "bytes": 1228
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
+            "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+            "bytes": 40
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
+            "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+            "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+            "bytes": 43
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+            "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+            "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+            "bytes": 44
+          },
+          "testdata/phase371/pre-emitter-census.json": {
+            "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+            "bytes": 27223968
+          },
+          "testdata/phase371/compatibility-amendments.json": {
+            "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+            "bytes": 13859
+          }
+        },
+        "canonical_producer": {
+          "status": "green",
+          "flagged": false,
+          "tier": "test",
+          "located": true,
+          "kind": "node-test",
+          "evidence": [
+            {
+              "kind": "node-test",
+              "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+              "failFirst": true,
+              "passed": true,
+              "failFirstProof": "violation-fixture"
+            }
+          ],
+          "request": {
+            "path": "/tmp/schway371-prohibition-proof-0z08Vm/canonical-request.json",
+            "sha256": "151c7acbdc8084a522f7b7edc22f97042d8b1b8962ea1def7546397196962661",
+            "bytes": 994
+          },
+          "stdout": {
+            "path": "/tmp/schway371-prohibition-proof-0z08Vm/canonical-producer.stdout.json",
+            "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
+            "bytes": 447
+          },
+          "stderr": {
+            "path": "/tmp/schway371-prohibition-proof-0z08Vm/canonical-producer.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "bytes": 0
+          }
+        }
+      },
+      "reason": {
+        "plan": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md",
+        "plan_sha256": "62b55c7519f1d6cff46876544d0ad23134f74632cdbebcdcb96e000c67b7e0c8",
+        "source_prohibition": {
+          "statement": "MUST NOT normalize malformed defect-reason bytes, reject valid UTF-8 control/NUL reasons, decode textual escapes or truncate admitted reason output.",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "canonical_projection": {
+          "statement": "MUST NOT normalize malformed defect-reason bytes, reject valid UTF-8 control/NUL reasons, decode textual escapes or truncate admitted reason output.",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "descriptor": {
+          "kind": "node-test",
+          "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "violationFixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json",
+          "cleanFixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "proof_state": "machine-evidence-and-lifecycle-resolved",
+        "proof_manifest": {
+          "path": "/tmp/schway371-prohibition-proof-5WpG85/evidence-manifest.json",
+          "sha256": "ba79464785372e764c4a60f48b8cc23fefa7e97cbc84498676b96a374a016196",
+          "bytes": 14715
+        },
+        "current_source_bindings": {
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
+            "sha256": "79bcfbfbe3171bc5c9c9383cc83fa14dbfcfdc97251c18a71fb5ac9207d71798",
+            "bytes": 15388
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+            "sha256": "ea2dd99835f02af8e58d7c298363e6772261da173a2155116d2b61a4dddea4d6",
+            "bytes": 14763
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+            "sha256": "62b55c7519f1d6cff46876544d0ad23134f74632cdbebcdcb96e000c67b7e0c8",
+            "bytes": 14739
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+            "sha256": "2a0d8b81f107b81f678d0977798c413430cad37605370ba236440f323f5d6b00",
+            "bytes": 29841
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
+            "sha256": "672a96a7cddc2a3cec5e72ed75a4b26ff7bc86d19bbd7ec93073bf5eead87552",
+            "bytes": 80585
+          },
+          "internal/compiler/executionpeer/executionpeer.go": {
+            "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+            "bytes": 45046
+          },
+          "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
+            "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+            "bytes": 39087
+          },
+          "internal/compiler/session/session_phase24_model_test.go": {
+            "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+            "bytes": 7377
+          },
+          "internal/compiler/session/session_phase371_defect_reason_test.go": {
+            "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+            "bytes": 11149
+          },
+          "internal/compiler/cgen/cgen_program.go": {
+            "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+            "bytes": 184034
+          },
+          "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+            "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+            "bytes": 14162
+          },
+          "internal/compiler/session/session_phase371_compatibility_test.go": {
+            "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+            "bytes": 47203
+          },
+          "examples/phase24/error.schway": {
+            "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+            "bytes": 1228
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
+            "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+            "bytes": 40
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
+            "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+            "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+            "bytes": 43
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+            "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+            "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+            "bytes": 44
+          },
+          "testdata/phase371/pre-emitter-census.json": {
+            "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+            "bytes": 27223968
+          },
+          "testdata/phase371/compatibility-amendments.json": {
+            "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+            "bytes": 13859
+          }
+        },
+        "canonical_producer": {
+          "status": "green",
+          "flagged": false,
+          "tier": "test",
+          "located": true,
+          "kind": "node-test",
+          "evidence": [
+            {
+              "kind": "node-test",
+              "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+              "failFirst": true,
+              "passed": true,
+              "failFirstProof": "violation-fixture"
+            }
+          ],
+          "request": {
+            "path": "/tmp/schway371-prohibition-proof-5WpG85/canonical-request.json",
+            "sha256": "109cb6e427e276337a23e288a5a3d1b9c2788b0db3d23504cd33dea7e11e0316",
+            "bytes": 1012
+          },
+          "stdout": {
+            "path": "/tmp/schway371-prohibition-proof-5WpG85/canonical-producer.stdout.json",
+            "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
+            "bytes": 447
+          },
+          "stderr": {
+            "path": "/tmp/schway371-prohibition-proof-5WpG85/canonical-producer.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "bytes": 0
+          }
+        }
+      },
+      "baseline": {
+        "plan": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md",
+        "plan_sha256": "2a0d8b81f107b81f678d0977798c413430cad37605370ba236440f323f5d6b00",
+        "source_prohibition": {
+          "statement": "MUST NOT regenerate frozen C expectations, exempt a whole path/route family or accept unrelated bytes through an amendment.",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "canonical_projection": {
+          "statement": "MUST NOT regenerate frozen C expectations, exempt a whole path/route family or accept unrelated bytes through an amendment.",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "descriptor": {
+          "kind": "node-test",
+          "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "violationFixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json",
+          "cleanFixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "proof_state": "machine-evidence-and-lifecycle-resolved",
+        "proof_manifest": {
+          "path": "/tmp/schway371-prohibition-proof-2zxDbM/evidence-manifest.json",
+          "sha256": "313e957202dff42d2ef36813f4538824e9b1ff9601011aab03a71321f901f4a0",
+          "bytes": 13023
+        },
+        "current_source_bindings": {
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
+            "sha256": "79bcfbfbe3171bc5c9c9383cc83fa14dbfcfdc97251c18a71fb5ac9207d71798",
+            "bytes": 15388
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+            "sha256": "ea2dd99835f02af8e58d7c298363e6772261da173a2155116d2b61a4dddea4d6",
+            "bytes": 14763
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+            "sha256": "62b55c7519f1d6cff46876544d0ad23134f74632cdbebcdcb96e000c67b7e0c8",
+            "bytes": 14739
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+            "sha256": "2a0d8b81f107b81f678d0977798c413430cad37605370ba236440f323f5d6b00",
+            "bytes": 29841
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
+            "sha256": "672a96a7cddc2a3cec5e72ed75a4b26ff7bc86d19bbd7ec93073bf5eead87552",
+            "bytes": 80585
+          },
+          "internal/compiler/executionpeer/executionpeer.go": {
+            "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+            "bytes": 45046
+          },
+          "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
+            "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+            "bytes": 39087
+          },
+          "internal/compiler/session/session_phase24_model_test.go": {
+            "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+            "bytes": 7377
+          },
+          "internal/compiler/session/session_phase371_defect_reason_test.go": {
+            "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+            "bytes": 11149
+          },
+          "internal/compiler/cgen/cgen_program.go": {
+            "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+            "bytes": 184034
+          },
+          "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+            "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+            "bytes": 14162
+          },
+          "internal/compiler/session/session_phase371_compatibility_test.go": {
+            "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+            "bytes": 47203
+          },
+          "examples/phase24/error.schway": {
+            "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+            "bytes": 1228
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
+            "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+            "bytes": 40
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
+            "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+            "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+            "bytes": 43
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+            "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+            "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+            "bytes": 44
+          },
+          "testdata/phase371/pre-emitter-census.json": {
+            "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+            "bytes": 27223968
+          },
+          "testdata/phase371/compatibility-amendments.json": {
+            "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+            "bytes": 13859
+          }
+        },
+        "canonical_producer": {
+          "status": "green",
+          "flagged": false,
+          "tier": "test",
+          "located": true,
+          "kind": "node-test",
+          "evidence": [
+            {
+              "kind": "node-test",
+              "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+              "failFirst": true,
+              "passed": true,
+              "failFirstProof": "violation-fixture"
+            }
+          ],
+          "request": {
+            "path": "/tmp/schway371-prohibition-proof-2zxDbM/canonical-request.json",
+            "sha256": "3f97395cbfd4d4fb5d65ad5188dda52206973f764c291d116106ba49ac7326b9",
+            "bytes": 991
+          },
+          "stdout": {
+            "path": "/tmp/schway371-prohibition-proof-2zxDbM/canonical-producer.stdout.json",
+            "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
+            "bytes": 447
+          },
+          "stderr": {
+            "path": "/tmp/schway371-prohibition-proof-2zxDbM/canonical-producer.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "bytes": 0
+          }
+        }
+      }
+    },
+    "authority_basis": "Fresh canonical producer runs passed for all four live resolved/test descriptors; every bad lane reached its named semantic assertion; clean/default controls passed with no skips; the bounded 19-root union passed."
+  },
+  "pre_resolution_snapshot": {
+    "captured_utc": "2026-10-16T18:12:40.727Z",
+    "source_binding_revision": "8fe28e30f00104ae62d568db0bf95c349e1da34e",
+    "source_head": "a80a290b059bd6b998f7a87ee7f5ef89ec212d58",
+    "source_plan": {
+      "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md",
+      "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a"
+    },
+    "source_prohibition": {
+      "statement": "MUST NOT accept caller activity after an accepted whole-execution defect or synthesize caller unwind records.",
+      "status": "unresolved",
+      "verification": null,
+      "check_kind": "node-test",
+      "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+      "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json",
+      "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+    },
+    "initial_projection": [
+      {
+        "statement": "MUST NOT accept caller activity after an accepted whole-execution defect or synthesize caller unwind records.",
+        "status": "unresolved",
+        "check_kind": "node-test",
+        "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+        "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json",
+        "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+      }
+    ],
+    "proofs": {
+      "defect": {
+        "subject": "defect",
+        "state": "machine-evidence-complete-pending-lifecycle-resolution",
+        "captured_utc": "2026-10-16T17:54:56.153Z",
+        "candidate_status": "resolved",
+        "candidate_verification": "test",
+        "lifecycle_status": "unresolved",
+        "evidence_directory": "/tmp/schway371-prohibition-proof-iFtiSW",
+        "source_bindings": {
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
+            "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
+            "bytes": 15390
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+            "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
+            "bytes": 14765
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+            "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+            "bytes": 14741
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+            "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+            "bytes": 29843
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
+            "sha256": "3e446dd90b9ee96de2138f0e0dcd8f804b372ec8a38aabcd260818618c808fa6",
+            "bytes": 62896
+          },
+          "internal/compiler/executionpeer/executionpeer.go": {
+            "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+            "bytes": 45046
+          },
+          "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
+            "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+            "bytes": 39087
+          },
+          "internal/compiler/session/session_phase24_model_test.go": {
+            "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+            "bytes": 7377
+          },
+          "internal/compiler/session/session_phase371_defect_reason_test.go": {
+            "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+            "bytes": 11149
+          },
+          "internal/compiler/cgen/cgen_program.go": {
+            "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+            "bytes": 184034
+          },
+          "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+            "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+            "bytes": 14162
+          },
+          "internal/compiler/session/session_phase371_compatibility_test.go": {
+            "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+            "bytes": 47203
+          },
+          "examples/phase24/error.schway": {
+            "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+            "bytes": 1228
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
+            "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+            "bytes": 40
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
+            "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+            "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+            "bytes": 43
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+            "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+            "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+            "bytes": 44
+          },
+          "testdata/phase371/pre-emitter-census.json": {
+            "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+            "bytes": 27223968
+          },
+          "testdata/phase371/compatibility-amendments.json": {
+            "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+            "bytes": 13859
+          }
+        },
+        "current_plan_projection": {
+          "source_plan": {
+            "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md",
+            "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a"
+          },
+          "source_prohibition": {
+            "statement": "MUST NOT accept caller activity after an accepted whole-execution defect or synthesize caller unwind records.",
+            "status": "unresolved",
+            "verification": null,
+            "check_kind": "node-test",
+            "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+            "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json",
+            "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+          },
+          "projection": [
+            {
+              "statement": "MUST NOT accept caller activity after an accepted whole-execution defect or synthesize caller unwind records.",
+              "status": "unresolved",
+              "check_kind": "node-test",
+              "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+              "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json",
+              "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+            }
+          ]
+        },
+        "go_controls": {
+          "bad": {
+            "roots": {
+              "TestPhase371LegacyDefectClosesAllActiveFrames": {
+                "run": 1,
+                "pass": 0,
+                "fail": 1,
+                "skip": 0,
+                "subtestCount": 3,
+                "subtests": {
+                  "legacy-static": {
+                    "run": 1,
+                    "pass": 0,
+                    "fail": 1,
+                    "skip": 0
+                  },
+                  "ordinary-nested-return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase371DefectTerminalControls": {
+                "run": 1,
+                "pass": 0,
+                "fail": 1,
+                "skip": 0,
+                "subtestCount": 11,
+                "subtests": {
+                  "legacy-static": {
+                    "run": 1,
+                    "pass": 0,
+                    "fail": 1,
+                    "skip": 0
+                  },
+                  "dynamic-scalar": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/function": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/invocation": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/reason": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/outcome-kind": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/outcome-value": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/missing-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/duplicate-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase33TerminalAttribution": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 32,
+                "subtests": {
+                  "return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_typed_failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_returned": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_returned": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_typed_failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_reason": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/defect_value": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase36CallCausalAttributionControls": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 12,
+                "subtests": {
+                  "ordinal-gap": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinal-duplicate": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinal-reordered": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-parent": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-static-site": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-callee": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-source-place": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-target-place": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-result-type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "missing-call": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "missing-return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "repeated-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              }
+            },
+            "failureNames": [
+              "TestPhase371LegacyDefectClosesAllActiveFrames",
+              "TestPhase371LegacyDefectClosesAllActiveFrames/legacy-static",
+              "TestPhase371DefectTerminalControls",
+              "TestPhase371DefectTerminalControls/legacy-static"
+            ],
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-iFtiSW/bad-go.log",
+              "sha256": "c16c1e19ecefff08141b3c7228ccd6ec2d58aed9454cad5d248597c87ba16e0b",
+              "bytes": 9628
+            },
+            "overlay": {
+              "originalSourceSha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+              "replacementSourceSha256": "b10207b67a80b5bde699d4ec61564fc4647cfc184f9c40fee0462071085ddd11",
+              "overlayJsonSha256": "da113bc338d421041d2f5e5b8f9390d0b85bb43562b5477420af6eb88c109670",
+              "sourceUnchanged": true
+            }
+          },
+          "clean": {
+            "roots": {
+              "TestPhase371LegacyDefectClosesAllActiveFrames": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 3,
+                "subtests": {
+                  "legacy-static": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinary-nested-return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase371DefectTerminalControls": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 20,
+                "subtests": {
+                  "legacy-static": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/function": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/invocation": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/reason": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/outcome-kind": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/outcome-value": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/missing-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/duplicate-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/function": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/invocation": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/reason": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/outcome-kind": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/outcome-value": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/missing-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/duplicate-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase33TerminalAttribution": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 32,
+                "subtests": {
+                  "return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_typed_failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_returned": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_returned": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_typed_failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_reason": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/defect_value": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase36CallCausalAttributionControls": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 12,
+                "subtests": {
+                  "ordinal-gap": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinal-duplicate": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinal-reordered": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-parent": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-static-site": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-callee": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-source-place": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-target-place": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-result-type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "missing-call": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "missing-return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "repeated-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              }
+            },
+            "failureNames": [],
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-iFtiSW/clean-go.log",
+              "sha256": "77a7524a4fd842a2df75fc927b9ad57c0d681ab3f476d998934e83aa93b1219c",
+              "bytes": 10476
+            }
+          },
+          "default": {
+            "roots": {
+              "TestPhase371LegacyDefectClosesAllActiveFrames": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 3,
+                "subtests": {
+                  "legacy-static": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinary-nested-return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase371DefectTerminalControls": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 20,
+                "subtests": {
+                  "legacy-static": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/function": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/invocation": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/reason": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/outcome-kind": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/outcome-value": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/missing-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "legacy-static/duplicate-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/function": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/invocation": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/reason": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/outcome-kind": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/outcome-value": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/missing-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar/duplicate-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase33TerminalAttribution": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 32,
+                "subtests": {
+                  "return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_typed_failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_returned": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_returned": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_typed_failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_reason": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/defect_value": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase36CallCausalAttributionControls": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 12,
+                "subtests": {
+                  "ordinal-gap": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinal-duplicate": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinal-reordered": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-parent": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-static-site": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-callee": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-source-place": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-target-place": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-result-type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "missing-call": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "missing-return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "repeated-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              }
+            },
+            "failureNames": [],
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-iFtiSW/default-go.log",
+              "sha256": "19f067a282854e2c1b0830addf695a602899270a78b4e337cba3c20e2cbae1fa",
+              "bytes": 10476
+            }
+          }
+        },
+        "tap_controls": {
+          "bad": {
+            "counts": {
+              "tests": 1,
+              "pass": 0,
+              "fail": 1,
+              "cancelled": 0,
+              "skipped": 0,
+              "todo": 0
+            },
+            "status": 1,
+            "sha256": "f59a8c6fdca173fd5039aa1e05badac780fcdf44ae2d0caaf9e4edeebe6732c9",
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-iFtiSW/bad-node.tap",
+              "sha256": "f59a8c6fdca173fd5039aa1e05badac780fcdf44ae2d0caaf9e4edeebe6732c9",
+              "bytes": 1201
+            }
+          },
+          "clean": {
+            "counts": {
+              "tests": 1,
+              "pass": 1,
+              "fail": 0,
+              "cancelled": 0,
+              "skipped": 0,
+              "todo": 0
+            },
+            "status": 0,
+            "sha256": "c01c6db67a01e29995ea6385001edc46d8527a55040e2c567ea5b88839a5e186",
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-iFtiSW/clean-node.tap",
+              "sha256": "c01c6db67a01e29995ea6385001edc46d8527a55040e2c567ea5b88839a5e186",
+              "bytes": 295
+            }
+          },
+          "default": {
+            "counts": {
+              "tests": 1,
+              "pass": 1,
+              "fail": 0,
+              "cancelled": 0,
+              "skipped": 0,
+              "todo": 0
+            },
+            "status": 0,
+            "sha256": "394eeb52aa14ca1f5fb34e0d0b10827e832649662155400cd4173684ee076a18",
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-iFtiSW/default-node.tap",
+              "sha256": "394eeb52aa14ca1f5fb34e0d0b10827e832649662155400cd4173684ee076a18",
+              "bytes": 296
+            }
+          }
+        },
+        "canonical_producer": {
+          "status": "green",
+          "flagged": false,
+          "tier": "test",
+          "located": true,
+          "kind": "node-test",
+          "evidence": [
+            {
+              "kind": "node-test",
+              "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+              "failFirst": true,
+              "passed": true,
+              "failFirstProof": "violation-fixture"
+            }
+          ],
+          "request": {
+            "path": "/tmp/schway371-prohibition-proof-iFtiSW/canonical-request.json",
+            "sha256": "d120174f144c3831d897082c61e9234730109acdba0762eca6ed6fdde4b61452",
+            "bytes": 973
+          },
+          "stdout": {
+            "path": "/tmp/schway371-prohibition-proof-iFtiSW/canonical-producer.stdout.json",
+            "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
+            "bytes": 447
+          },
+          "stderr": {
+            "path": "/tmp/schway371-prohibition-proof-iFtiSW/canonical-producer.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "bytes": 0
+          }
+        },
+        "manifest": {
+          "path": "/tmp/schway371-prohibition-proof-iFtiSW/evidence-manifest.json",
+          "sha256": "7979e3899c0aaa3b5f5e02da6ce8f9ba0d8ed26c04259be0cf53d6b1ea35e446",
+          "bytes": 45694
+        }
+      },
+      "failure": {
+        "subject": "failure",
+        "state": "machine-evidence-complete-pending-lifecycle-resolution",
+        "captured_utc": "2026-10-16T17:54:58.728Z",
+        "candidate_status": "resolved",
+        "candidate_verification": "test",
+        "lifecycle_status": "unresolved",
+        "evidence_directory": "/tmp/schway371-prohibition-proof-9f2alp",
+        "source_bindings": {
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
+            "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
+            "bytes": 15390
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+            "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
+            "bytes": 14765
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+            "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+            "bytes": 14741
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+            "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+            "bytes": 29843
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
+            "sha256": "3e446dd90b9ee96de2138f0e0dcd8f804b372ec8a38aabcd260818618c808fa6",
+            "bytes": 62896
+          },
+          "internal/compiler/executionpeer/executionpeer.go": {
+            "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+            "bytes": 45046
+          },
+          "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
+            "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+            "bytes": 39087
+          },
+          "internal/compiler/session/session_phase24_model_test.go": {
+            "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+            "bytes": 7377
+          },
+          "internal/compiler/session/session_phase371_defect_reason_test.go": {
+            "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+            "bytes": 11149
+          },
+          "internal/compiler/cgen/cgen_program.go": {
+            "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+            "bytes": 184034
+          },
+          "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+            "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+            "bytes": 14162
+          },
+          "internal/compiler/session/session_phase371_compatibility_test.go": {
+            "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+            "bytes": 47203
+          },
+          "examples/phase24/error.schway": {
+            "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+            "bytes": 1228
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
+            "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+            "bytes": 40
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
+            "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+            "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+            "bytes": 43
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+            "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+            "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+            "bytes": 44
+          },
+          "testdata/phase371/pre-emitter-census.json": {
+            "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+            "bytes": 27223968
+          },
+          "testdata/phase371/compatibility-amendments.json": {
+            "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+            "bytes": 13859
+          }
+        },
+        "current_plan_projection": {
+          "source_plan": {
+            "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md",
+            "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd"
+          },
+          "source_prohibition": {
+            "statement": "MUST NOT classify arbitrary OpReturn as propagated failure or treat causal acceptance as payload-value or actual CFG-path proof.",
+            "status": "unresolved",
+            "verification": null,
+            "check_kind": "node-test",
+            "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+            "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json",
+            "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+          },
+          "projection": [
+            {
+              "statement": "MUST NOT classify arbitrary OpReturn as propagated failure or treat causal acceptance as payload-value or actual CFG-path proof.",
+              "status": "unresolved",
+              "check_kind": "node-test",
+              "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+              "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json",
+              "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+            }
+          ]
+        },
+        "go_controls": {
+          "bad": {
+            "roots": {
+              "TestPhase371ForeignFailureOpFailAttribution": {
+                "run": 1,
+                "pass": 0,
+                "fail": 1,
+                "skip": 0,
+                "subtestCount": 2,
+                "subtests": {
+                  "AcquireError.AcquireFailed": {
+                    "run": 1,
+                    "pass": 0,
+                    "fail": 1,
+                    "skip": 0
+                  },
+                  "UseError.UnsupportedByte": {
+                    "run": 1,
+                    "pass": 0,
+                    "fail": 1,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase371ForeignFailureAttributionControls": {
+                "run": 1,
+                "pass": 0,
+                "fail": 1,
+                "skip": 0,
+                "subtestCount": 0,
+                "subtests": {}
+              },
+              "TestPhase371LegacyDefectClosesAllActiveFrames": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 3,
+                "subtests": {
+                  "legacy-static": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinary-nested-return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase33TerminalAttribution": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 32,
+                "subtests": {
+                  "return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_typed_failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_returned": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_returned": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_typed_failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_reason": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/defect_value": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase36CallCausalAttributionControls": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 12,
+                "subtests": {
+                  "ordinal-gap": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinal-duplicate": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinal-reordered": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-parent": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-static-site": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-callee": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-source-place": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-target-place": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-result-type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "missing-call": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "missing-return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "repeated-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              }
+            },
+            "failureNames": [
+              "TestPhase371ForeignFailureOpFailAttribution",
+              "TestPhase371ForeignFailureOpFailAttribution/AcquireError.AcquireFailed",
+              "TestPhase371ForeignFailureOpFailAttribution/UseError.UnsupportedByte",
+              "TestPhase371ForeignFailureAttributionControls"
+            ],
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-9f2alp/bad-go.log",
+              "sha256": "53b77b71387e8f242a478aa4636e2280536783a5a7cc2e1899f0ed0a0ad734a5",
+              "bytes": 16026
+            },
+            "overlay": {
+              "originalSourceSha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+              "replacementSourceSha256": "bbe668ed043305443853f5e84eef155e09e9a81341f924440fef97feed96c1d9",
+              "overlayJsonSha256": "73b9e1fc95321282767f9a38a0b580c1403772f5c13664e9c90df58593760a79",
+              "sourceUnchanged": true,
+              "baselineHead": "8fbd1e51bb6fd97b1a46d5d1015ce5e39d69bfe0"
+            }
+          },
+          "clean": {
+            "roots": {
+              "TestPhase371ForeignFailureOpFailAttribution": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 2,
+                "subtests": {
+                  "AcquireError.AcquireFailed": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "UseError.UnsupportedByte": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase371ForeignFailureAttributionControls": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 24,
+                "subtests": {
+                  "nonexistent-foreign-operation": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "different-foreign-operation": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-function": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-invocation": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-target": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "failure-from-different-call": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-foreign-contract": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-foreign-error-edge": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-caller-source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-caller-target": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-caller-type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-caller-error-target": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-caller-error-edge": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-terminal-source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-terminal-constructor": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-terminal-operation": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-root-kind": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "missing-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "duplicate-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "stale-cross-activation-failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "clean-return-relabeled-as-failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "failure-payload-is-outside-peer-knowledge": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase371LegacyDefectClosesAllActiveFrames": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 3,
+                "subtests": {
+                  "legacy-static": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinary-nested-return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase33TerminalAttribution": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 32,
+                "subtests": {
+                  "return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_typed_failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_returned": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_returned": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_typed_failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_reason": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/defect_value": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase36CallCausalAttributionControls": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 12,
+                "subtests": {
+                  "ordinal-gap": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinal-duplicate": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinal-reordered": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-parent": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-static-site": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-callee": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-source-place": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-target-place": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-result-type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "missing-call": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "missing-return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "repeated-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              }
+            },
+            "failureNames": [],
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-9f2alp/clean-go.log",
+              "sha256": "a230e7661a717f827c391ef799c3a7f042a951a3974b3afa3033049bcdf3af10",
+              "bytes": 11922
+            }
+          },
+          "default": {
+            "roots": {
+              "TestPhase371ForeignFailureOpFailAttribution": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 2,
+                "subtests": {
+                  "AcquireError.AcquireFailed": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "UseError.UnsupportedByte": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase371ForeignFailureAttributionControls": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 24,
+                "subtests": {
+                  "nonexistent-foreign-operation": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "different-foreign-operation": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-function": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-invocation": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-target": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "failure-from-different-call": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-foreign-contract": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-foreign-error-edge": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-caller-source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-caller-target": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-caller-type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-caller-error-target": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-caller-error-edge": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-terminal-source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-terminal-constructor": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-terminal-operation": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-root-kind": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "missing-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "duplicate-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "stale-cross-activation-failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "clean-return-relabeled-as-failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "failure-payload-is-outside-peer-knowledge": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase371LegacyDefectClosesAllActiveFrames": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 3,
+                "subtests": {
+                  "legacy-static": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinary-nested-return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "dynamic-scalar": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase33TerminalAttribution": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 32,
+                "subtests": {
+                  "return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_typed_failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "return/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_returned": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "fail/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_source": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/target_on_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/missing_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/unknown_outcome": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/event_after_root_terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_returned": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_typed_failure": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/outcome_cancelled": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/wrong_reason": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "defect/defect_value": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              },
+              "TestPhase36CallCausalAttributionControls": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 12,
+                "subtests": {
+                  "ordinal-gap": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinal-duplicate": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "ordinal-reordered": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-parent": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-static-site": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-callee": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-source-place": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-target-place": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "wrong-result-type": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "missing-call": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "missing-return": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  },
+                  "repeated-terminal": {
+                    "run": 1,
+                    "pass": 1,
+                    "fail": 0,
+                    "skip": 0
+                  }
+                }
+              }
+            },
+            "failureNames": [],
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-9f2alp/default-go.log",
+              "sha256": "909286be7a882ed9b669b83cbaac2db61392e212373ab6120c6ac8798727636b",
+              "bytes": 11922
+            }
+          }
+        },
+        "tap_controls": {
+          "bad": {
+            "counts": {
+              "tests": 1,
+              "pass": 0,
+              "fail": 1,
+              "cancelled": 0,
+              "skipped": 0,
+              "todo": 0
+            },
+            "status": 1,
+            "sha256": "35972a65c7062db0f2197dbace8efab59a8231f0e33aadd8cdb9f8e513c4dc41",
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-9f2alp/bad-node.tap",
+              "sha256": "35972a65c7062db0f2197dbace8efab59a8231f0e33aadd8cdb9f8e513c4dc41",
+              "bytes": 1199
+            }
+          },
+          "clean": {
+            "counts": {
+              "tests": 1,
+              "pass": 1,
+              "fail": 0,
+              "cancelled": 0,
+              "skipped": 0,
+              "todo": 0
+            },
+            "status": 0,
+            "sha256": "86b1580c0db9937b3c4e68d868988b3beccb6c6a41f19e46fbab8b2daf2e80d9",
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-9f2alp/clean-node.tap",
+              "sha256": "86b1580c0db9937b3c4e68d868988b3beccb6c6a41f19e46fbab8b2daf2e80d9",
+              "bytes": 295
+            }
+          },
+          "default": {
+            "counts": {
+              "tests": 1,
+              "pass": 1,
+              "fail": 0,
+              "cancelled": 0,
+              "skipped": 0,
+              "todo": 0
+            },
+            "status": 0,
+            "sha256": "3d0756a86453e7210cff3907ecaa92c80284655ee0229038c91aec4c6f457913",
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-9f2alp/default-node.tap",
+              "sha256": "3d0756a86453e7210cff3907ecaa92c80284655ee0229038c91aec4c6f457913",
+              "bytes": 296
+            }
+          }
+        },
+        "canonical_producer": {
+          "status": "green",
+          "flagged": false,
+          "tier": "test",
+          "located": true,
+          "kind": "node-test",
+          "evidence": [
+            {
+              "kind": "node-test",
+              "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+              "failFirst": true,
+              "passed": true,
+              "failFirstProof": "violation-fixture"
+            }
+          ],
+          "request": {
+            "path": "/tmp/schway371-prohibition-proof-9f2alp/canonical-request.json",
+            "sha256": "151c7acbdc8084a522f7b7edc22f97042d8b1b8962ea1def7546397196962661",
+            "bytes": 994
+          },
+          "stdout": {
+            "path": "/tmp/schway371-prohibition-proof-9f2alp/canonical-producer.stdout.json",
+            "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
+            "bytes": 447
+          },
+          "stderr": {
+            "path": "/tmp/schway371-prohibition-proof-9f2alp/canonical-producer.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "bytes": 0
+          }
+        },
+        "manifest": {
+          "path": "/tmp/schway371-prohibition-proof-9f2alp/evidence-manifest.json",
+          "sha256": "90d776ec72ed5fb339fca799a85ba2e277d38291014577f7bb6cd6989fdafcd5",
+          "bytes": 47022
+        }
+      },
+      "reason": {
+        "subject": "reason",
+        "state": "machine-evidence-complete-pending-lifecycle-resolution",
+        "captured_utc": "2026-10-16T17:55:40.591Z",
+        "candidate_status": "resolved",
+        "candidate_verification": "test",
+        "lifecycle_status": "unresolved",
+        "evidence_directory": "/tmp/schway371-prohibition-proof-Mj1vFa",
+        "source_bindings": {
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
+            "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
+            "bytes": 15390
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+            "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
+            "bytes": 14765
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+            "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+            "bytes": 14741
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+            "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+            "bytes": 29843
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
+            "sha256": "3e446dd90b9ee96de2138f0e0dcd8f804b372ec8a38aabcd260818618c808fa6",
+            "bytes": 62896
+          },
+          "internal/compiler/executionpeer/executionpeer.go": {
+            "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+            "bytes": 45046
+          },
+          "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
+            "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+            "bytes": 39087
+          },
+          "internal/compiler/session/session_phase24_model_test.go": {
+            "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+            "bytes": 7377
+          },
+          "internal/compiler/session/session_phase371_defect_reason_test.go": {
+            "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+            "bytes": 11149
+          },
+          "internal/compiler/cgen/cgen_program.go": {
+            "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+            "bytes": 184034
+          },
+          "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+            "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+            "bytes": 14162
+          },
+          "internal/compiler/session/session_phase371_compatibility_test.go": {
+            "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+            "bytes": 47203
+          },
+          "examples/phase24/error.schway": {
+            "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+            "bytes": 1228
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
+            "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+            "bytes": 40
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
+            "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+            "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+            "bytes": 43
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+            "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+            "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+            "bytes": 44
+          },
+          "testdata/phase371/pre-emitter-census.json": {
+            "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+            "bytes": 27223968
+          },
+          "testdata/phase371/compatibility-amendments.json": {
+            "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+            "bytes": 13859
+          }
+        },
+        "current_plan_projection": {
+          "source_plan": {
+            "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md",
+            "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df"
+          },
+          "source_prohibition": {
+            "statement": "MUST NOT normalize malformed defect-reason bytes, reject valid UTF-8 control/NUL reasons, decode textual escapes or truncate admitted reason output.",
+            "status": "unresolved",
+            "verification": null,
+            "check_kind": "node-test",
+            "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+            "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json",
+            "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+          },
+          "projection": [
+            {
+              "statement": "MUST NOT normalize malformed defect-reason bytes, reject valid UTF-8 control/NUL reasons, decode textual escapes or truncate admitted reason output.",
+              "status": "unresolved",
+              "check_kind": "node-test",
+              "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+              "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json",
+              "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+            }
+          ]
+        },
+        "go_controls": {
+          "bad": {
+            "roots": {
+              "TestPhase371CountedDefectReasonBytes": {
+                "run": 1,
+                "pass": 0,
+                "fail": 1,
+                "skip": 0
+              },
+              "TestPhase371DefectReasonUTF8Admission": {
+                "run": 1,
+                "pass": 0,
+                "fail": 1,
+                "skip": 0
+              }
+            },
+            "failureNames": [
+              "TestPhase371CountedDefectReasonBytes",
+              "TestPhase371DefectReasonUTF8Admission"
+            ],
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-Mj1vFa/bad-go.log",
+              "sha256": "90096731d443308e5c487d0c10cd7b70a8f5adc7fc2d5997896778f790fcbe1e",
+              "bytes": 39515
+            },
+            "overlay": {
+              "originalSourceSha256": "987bd3d52b7016901d47563011e5f41d133cc901fd7d729f694291e9bea4430c",
+              "replacementSourceSha256": "c32fcfead740cf80e0f13d015c0d35fe9e184b96f6263a2bad344890fd387470",
+              "overlayJsonSha256": "7c528b3da50da2443c755bbacc00f530fade5c112c6c801f4e7f4b0e676cf4b7",
+              "sourceUnchanged": true,
+              "baselineHead": "internal/compiler/cgen/cgen_program.go@8f5b5795c8c31488257567511e807a276b78a10c,internal/compiler/syntax/parser.go@9d09df995f1ab68c7044cda0915608d5d0a3209f,internal/compiler/corevalidate/corevalidate.go@9d09df995f1ab68c7044cda0915608d5d0a3209f",
+              "sources": [
+                {
+                  "path": "internal/compiler/cgen/cgen_program.go",
+                  "originalSourceSha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+                  "replacementSourceSha256": "425328bf3bb9c0bd522ed7e1a22e1791160cd64ff9d17195ca3251f0df92a82e",
+                  "baselineHead": "8f5b5795c8c31488257567511e807a276b78a10c"
+                },
+                {
+                  "path": "internal/compiler/syntax/parser.go",
+                  "originalSourceSha256": "661d9df128ddbae839848ada25af8cfe95ce83c42a7d644844d56e0e265fe5fe",
+                  "replacementSourceSha256": "c8ecf18cd7ffeadb4328998e77ed6ebd28aad132f59558ff7239639094adcac3",
+                  "baselineHead": "9d09df995f1ab68c7044cda0915608d5d0a3209f"
+                },
+                {
+                  "path": "internal/compiler/corevalidate/corevalidate.go",
+                  "originalSourceSha256": "42fdfbab9b7893b18fbfa974ba8a4990bfdca54cdd4d9c1c1546861da04e7d2e",
+                  "replacementSourceSha256": "f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81",
+                  "baselineHead": "9d09df995f1ab68c7044cda0915608d5d0a3209f"
+                }
+              ]
+            }
+          },
+          "clean": {
+            "roots": {
+              "TestPhase371CountedDefectReasonBytes": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0
+              },
+              "TestPhase371DefectReasonUTF8Admission": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0
+              }
+            },
+            "failureNames": [],
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-Mj1vFa/clean-go.log",
+              "sha256": "d1387e1b62ce7af8c7211e84b65c9d2434284214c892d5e6b77b919b6dc08926",
+              "bytes": 15718
+            }
+          },
+          "default": {
+            "roots": {
+              "TestPhase371CountedDefectReasonBytes": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0
+              },
+              "TestPhase371DefectReasonUTF8Admission": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0
+              }
+            },
+            "failureNames": [],
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-Mj1vFa/default-go.log",
+              "sha256": "bec61d5831f52462e1973b412259734ce9bef517328828910f5cddf8b435fe00",
+              "bytes": 15718
+            }
+          }
+        },
+        "tap_controls": {
+          "bad": {
+            "counts": {
+              "tests": 1,
+              "pass": 0,
+              "fail": 1,
+              "cancelled": 0,
+              "skipped": 0,
+              "todo": 0
+            },
+            "status": 1,
+            "sha256": "c8306f361ca381603ac8927cde2731b4a0294f32fe021c93125d0691071927b4",
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-Mj1vFa/bad-node.tap",
+              "sha256": "c8306f361ca381603ac8927cde2731b4a0294f32fe021c93125d0691071927b4",
+              "bytes": 1202
+            }
+          },
+          "clean": {
+            "counts": {
+              "tests": 1,
+              "pass": 1,
+              "fail": 0,
+              "cancelled": 0,
+              "skipped": 0,
+              "todo": 0
+            },
+            "status": 0,
+            "sha256": "a197e57fe4bb653d8e14eac22fc8ce2ebd2b9a297057c8f8044166f40a036a71",
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-Mj1vFa/clean-node.tap",
+              "sha256": "a197e57fe4bb653d8e14eac22fc8ce2ebd2b9a297057c8f8044166f40a036a71",
+              "bytes": 297
+            }
+          },
+          "default": {
+            "counts": {
+              "tests": 1,
+              "pass": 1,
+              "fail": 0,
+              "cancelled": 0,
+              "skipped": 0,
+              "todo": 0
+            },
+            "status": 0,
+            "sha256": "da0244a4226d530dd8aaf4415f2f7073cf599dc2c60ecc4222b68bd4660a7af0",
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-Mj1vFa/default-node.tap",
+              "sha256": "da0244a4226d530dd8aaf4415f2f7073cf599dc2c60ecc4222b68bd4660a7af0",
+              "bytes": 297
+            }
+          }
+        },
+        "canonical_producer": {
+          "status": "green",
+          "flagged": false,
+          "tier": "test",
+          "located": true,
+          "kind": "node-test",
+          "evidence": [
+            {
+              "kind": "node-test",
+              "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+              "failFirst": true,
+              "passed": true,
+              "failFirstProof": "violation-fixture"
+            }
+          ],
+          "request": {
+            "path": "/tmp/schway371-prohibition-proof-Mj1vFa/canonical-request.json",
+            "sha256": "109cb6e427e276337a23e288a5a3d1b9c2788b0db3d23504cd33dea7e11e0316",
+            "bytes": 1012
+          },
+          "stdout": {
+            "path": "/tmp/schway371-prohibition-proof-Mj1vFa/canonical-producer.stdout.json",
+            "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
+            "bytes": 447
+          },
+          "stderr": {
+            "path": "/tmp/schway371-prohibition-proof-Mj1vFa/canonical-producer.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "bytes": 0
+          }
+        },
+        "manifest": {
+          "path": "/tmp/schway371-prohibition-proof-Mj1vFa/evidence-manifest.json",
+          "sha256": "73afc30d72f3be55461592922742707936a7fad240a612c01dc572113dfe5317",
+          "bytes": 14022
+        }
+      },
+      "baseline": {
+        "subject": "baseline",
+        "state": "machine-evidence-complete-pending-lifecycle-resolution",
+        "captured_utc": "2026-10-16T17:55:56.536Z",
+        "candidate_status": "resolved",
+        "candidate_verification": "test",
+        "lifecycle_status": "unresolved",
+        "evidence_directory": "/tmp/schway371-prohibition-proof-vjfw9a",
+        "source_bindings": {
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
+            "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
+            "bytes": 15390
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+            "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
+            "bytes": 14765
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+            "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+            "bytes": 14741
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+            "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+            "bytes": 29843
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
+            "sha256": "3e446dd90b9ee96de2138f0e0dcd8f804b372ec8a38aabcd260818618c808fa6",
+            "bytes": 62896
+          },
+          "internal/compiler/executionpeer/executionpeer.go": {
+            "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+            "bytes": 45046
+          },
+          "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
+            "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+            "bytes": 39087
+          },
+          "internal/compiler/session/session_phase24_model_test.go": {
+            "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+            "bytes": 7377
+          },
+          "internal/compiler/session/session_phase371_defect_reason_test.go": {
+            "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+            "bytes": 11149
+          },
+          "internal/compiler/cgen/cgen_program.go": {
+            "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+            "bytes": 184034
+          },
+          "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+            "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+            "bytes": 14162
+          },
+          "internal/compiler/session/session_phase371_compatibility_test.go": {
+            "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+            "bytes": 47203
+          },
+          "examples/phase24/error.schway": {
+            "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+            "bytes": 1228
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
+            "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+            "bytes": 40
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
+            "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+            "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+            "bytes": 43
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+            "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+            "bytes": 42
+          },
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+            "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+            "bytes": 44
+          },
+          "testdata/phase371/pre-emitter-census.json": {
+            "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+            "bytes": 27223968
+          },
+          "testdata/phase371/compatibility-amendments.json": {
+            "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+            "bytes": 13859
+          }
+        },
+        "current_plan_projection": {
+          "source_plan": {
+            "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md",
+            "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea"
+          },
+          "source_prohibition": {
+            "statement": "MUST NOT regenerate frozen C expectations, exempt a whole path/route family or accept unrelated bytes through an amendment.",
+            "status": "unresolved",
+            "verification": null,
+            "check_kind": "node-test",
+            "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+            "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json",
+            "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+          },
+          "projection": [
+            {
+              "statement": "MUST NOT regenerate frozen C expectations, exempt a whole path/route family or accept unrelated bytes through an amendment.",
+              "status": "unresolved",
+              "check_kind": "node-test",
+              "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+              "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json",
+              "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+            }
+          ]
+        },
+        "go_controls": {
+          "bad": {
+            "roots": {
+              "TestPhase371CompatibilityAmendmentControls": {
+                "run": 1,
+                "pass": 0,
+                "fail": 1,
+                "skip": 0,
+                "subtestCount": 15,
+                "subtestPass": 15,
+                "subtestFail": 0
+              }
+            },
+            "failureNames": [
+              "TestPhase371CompatibilityAmendmentControls"
+            ],
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-vjfw9a/bad-go.log",
+              "sha256": "1a02ed203fa861b50723e6b02dae10b374ac8dc5c0eb19ed753b89e5ac3a42a5",
+              "bytes": 2533
+            },
+            "overlay": {
+              "originalSourceSha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+              "replacementSourceSha256": "4f1b8107829157bf25a8bc1690fff9321875e3fc678a7342540fe53144c7e7f9",
+              "overlayJsonSha256": "bd6bd30d89efcbf8548fb10cf005271c82f42f994d247a08c6fa5ccefabb9b11",
+              "anchorSha256": "d3d1284cb24b1824aecc67c22da1b0e13724be2755db594d847abd6cf18ea204",
+              "sourceUnchanged": true
+            }
+          },
+          "clean": {
+            "roots": {
+              "TestPhase371CompatibilityAmendmentControls": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 15,
+                "subtestPass": 15,
+                "subtestFail": 0
+              }
+            },
+            "failureNames": [],
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-vjfw9a/clean-go.log",
+              "sha256": "a820d15b4506a6910b60ccc5cd684e226ca0e4cef0889241de72a885bfe6196b",
+              "bytes": 2352
+            }
+          },
+          "default": {
+            "roots": {
+              "TestPhase371CompatibilityAmendmentControls": {
+                "run": 1,
+                "pass": 1,
+                "fail": 0,
+                "skip": 0,
+                "subtestCount": 15,
+                "subtestPass": 15,
+                "subtestFail": 0
+              }
+            },
+            "failureNames": [],
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-vjfw9a/default-go.log",
+              "sha256": "a7a865a2ebd99df525e35b73bda5b0cefa87ca6cfce53a63dca18c6729c291e7",
+              "bytes": 2352
+            }
+          }
+        },
+        "tap_controls": {
+          "bad": {
+            "counts": {
+              "tests": 1,
+              "pass": 0,
+              "fail": 1,
+              "cancelled": 0,
+              "skipped": 0,
+              "todo": 0
+            },
+            "status": 1,
+            "sha256": "2e8f8024aca09b76280c33b13d5fa2d34ed65ca54fe5bd732ec311719f3d29b6",
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-vjfw9a/bad-node.tap",
+              "sha256": "2e8f8024aca09b76280c33b13d5fa2d34ed65ca54fe5bd732ec311719f3d29b6",
+              "bytes": 1202
+            }
+          },
+          "clean": {
+            "counts": {
+              "tests": 1,
+              "pass": 1,
+              "fail": 0,
+              "cancelled": 0,
+              "skipped": 0,
+              "todo": 0
+            },
+            "status": 0,
+            "sha256": "704662e82a3cfad78109aa2172cd192eec23639ac60ddbf9afeeb80788b218b4",
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-vjfw9a/clean-node.tap",
+              "sha256": "704662e82a3cfad78109aa2172cd192eec23639ac60ddbf9afeeb80788b218b4",
+              "bytes": 297
+            }
+          },
+          "default": {
+            "counts": {
+              "tests": 1,
+              "pass": 1,
+              "fail": 0,
+              "cancelled": 0,
+              "skipped": 0,
+              "todo": 0
+            },
+            "status": 0,
+            "sha256": "544f6389e89930b0bf5ff2ca8bc7b359d8bb0a9e1345fa3f54a316d9da344532",
+            "log": {
+              "path": "/tmp/schway371-prohibition-proof-vjfw9a/default-node.tap",
+              "sha256": "544f6389e89930b0bf5ff2ca8bc7b359d8bb0a9e1345fa3f54a316d9da344532",
+              "bytes": 297
+            }
+          }
+        },
+        "canonical_producer": {
+          "status": "green",
+          "flagged": false,
+          "tier": "test",
+          "located": true,
+          "kind": "node-test",
+          "evidence": [
+            {
+              "kind": "node-test",
+              "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+              "failFirst": true,
+              "passed": true,
+              "failFirstProof": "violation-fixture"
+            }
+          ],
+          "request": {
+            "path": "/tmp/schway371-prohibition-proof-vjfw9a/canonical-request.json",
+            "sha256": "3f97395cbfd4d4fb5d65ad5188dda52206973f764c291d116106ba49ac7326b9",
+            "bytes": 991
+          },
+          "stdout": {
+            "path": "/tmp/schway371-prohibition-proof-vjfw9a/canonical-producer.stdout.json",
+            "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
+            "bytes": 447
+          },
+          "stderr": {
+            "path": "/tmp/schway371-prohibition-proof-vjfw9a/canonical-producer.stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "bytes": 0
+          }
+        },
+        "manifest": {
+          "path": "/tmp/schway371-prohibition-proof-vjfw9a/evidence-manifest.json",
+          "sha256": "8b2c65dd57623cc365b045e61c138d11c2997f23ab7f97fb927439c76f997d2c",
+          "bytes": 12353
+        }
+      }
+    },
+    "proofs_sha256": "8024616bcf622a53116aa2f79136d097389d86c9e4e136dbe36a6e05bcbb04fa",
+    "final_root_union": {
+      "state": "machine-evidence-complete-pending-lifecycle-resolution",
+      "captured_utc": "2026-10-16T17:56:09.405Z",
+      "root_count": 19,
+      "distinct_package_count": 3,
+      "roots": {
+        "TestPhase371LegacyDefectClosesAllActiveFrames": {
+          "package": "./internal/compiler/executionpeer",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 3,
+          "subtestPass": 3,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase371DefectTerminalControls": {
+          "package": "./internal/compiler/executionpeer",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 20,
+          "subtestPass": 20,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase33TerminalAttribution": {
+          "package": "./internal/compiler/executionpeer",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 32,
+          "subtestPass": 32,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase36CallCausalAttributionControls": {
+          "package": "./internal/compiler/executionpeer",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 12,
+          "subtestPass": 12,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase371ForeignFailureOpFailAttribution": {
+          "package": "./internal/compiler/executionpeer",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 2,
+          "subtestPass": 2,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase371ForeignFailureAttributionControls": {
+          "package": "./internal/compiler/executionpeer",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 24,
+          "subtestPass": 24,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase24ModelReplayIsDeterministicAndModelOnly": {
+          "package": "./internal/compiler/session",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 4,
+          "subtestPass": 4,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase371DefectReasonUTF8Admission": {
+          "package": "./internal/compiler/session",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 14,
+          "subtestPass": 14,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase371PreEmitterRouteCensus": {
+          "package": "./internal/compiler/session",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 0,
+          "subtestPass": 0,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase371CompatibilityAmendmentControls": {
+          "package": "./internal/compiler/session",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 15,
+          "subtestPass": 15,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase34PreChangeCProgramGolden": {
+          "package": "./internal/compiler/session",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 0,
+          "subtestPass": 0,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase34PreChangeCGoldenIsNotInert": {
+          "package": "./internal/compiler/session",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 13,
+          "subtestPass": 13,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase36NoCallGeneratedCByteBaseline": {
+          "package": "./internal/compiler/session",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 0,
+          "subtestPass": 0,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase36NoCallGeneratedCByteBaselineControls": {
+          "package": "./internal/compiler/session",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 0,
+          "subtestPass": 0,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase37Phase34AdditionLedgerControls": {
+          "package": "./internal/compiler/session",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 12,
+          "subtestPass": 12,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase37Phase36AdditionLedgerControls": {
+          "package": "./internal/compiler/session",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 12,
+          "subtestPass": 12,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase371NoCallScalarDefectNativeConformance": {
+          "package": "./internal/compiler/cgen",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 3,
+          "subtestPass": 3,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase371CountedDefectReasonBytes": {
+          "package": "./internal/compiler/cgen",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 75,
+          "subtestPass": 75,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        },
+        "TestPhase33ScalarExplicitDefectShells": {
+          "package": "./internal/compiler/cgen",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "subtestCount": 12,
+          "subtestPass": 12,
+          "subtestFail": 0,
+          "subtestSkip": 0
+        }
+      },
+      "raw_log": {
+        "path": "/tmp/schway371-prohibition-proof-TN3LOW/final-19-root-union.go.log",
+        "sha256": "c24e4fc34fffc911d7f699202c8c1c1df5e274beb2aa97d82b2e11e6fc546e64",
+        "bytes": 42822
+      },
+      "source_bindings": {
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
+          "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
+          "bytes": 15390
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+          "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
+          "bytes": 14765
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+          "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+          "bytes": 14741
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+          "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+          "bytes": 29843
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
+          "sha256": "3e446dd90b9ee96de2138f0e0dcd8f804b372ec8a38aabcd260818618c808fa6",
+          "bytes": 62896
+        },
+        "internal/compiler/executionpeer/executionpeer.go": {
+          "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+          "bytes": 45046
+        },
+        "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
+          "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+          "bytes": 39087
+        },
+        "internal/compiler/session/session_phase24_model_test.go": {
+          "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+          "bytes": 7377
+        },
+        "internal/compiler/session/session_phase371_defect_reason_test.go": {
+          "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+          "bytes": 11149
+        },
+        "internal/compiler/cgen/cgen_program.go": {
+          "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+          "bytes": 184034
+        },
+        "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+          "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+          "bytes": 14162
+        },
+        "internal/compiler/session/session_phase371_compatibility_test.go": {
+          "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+          "bytes": 47203
+        },
+        "examples/phase24/error.schway": {
+          "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+          "bytes": 1228
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
+          "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+          "bytes": 40
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
+          "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
+          "bytes": 42
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+          "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+          "bytes": 43
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+          "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+          "bytes": 42
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+          "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+          "bytes": 44
+        },
+        "testdata/phase371/pre-emitter-census.json": {
+          "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+          "bytes": 27223968
+        },
+        "testdata/phase371/compatibility-amendments.json": {
+          "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+          "bytes": 13859
+        }
+      },
+      "initial_projection_status": "unresolved",
+      "current_plan_status": "unresolved"
+    }
+  },
+  "resolved_utc": "2026-10-16T18:23:33.016Z",
+  "transition_negative_controls": {
+    "evidence_directory": "/tmp/schway371-prohibition-proof-Aa7fnZ",
+    "clean_plan_sha256": "79bcfbfbe3171bc5c9c9383cc83fa14dbfcfdc97251c18a71fb5ac9207d71798",
+    "clean_plan_status": "resolved",
+    "clean_plan_verification": "test",
+    "outcomes": [
+      {
+        "name": "invalid-status",
+        "result": "rejected",
+        "reason": "plan prohibition lifecycle must be unresolved/null or resolved/test",
+        "mutation_copy": {
+          "path": "/tmp/schway371-prohibition-proof-Aa7fnZ/invalid-status.plan.md",
+          "sha256": "86139696a6af85cb185c444d04b4ad1fb5e22abcafaa731417fbf52839421d11",
+          "bytes": 15388
+        }
+      },
+      {
+        "name": "invalid-verification-tier",
+        "result": "rejected",
+        "reason": "plan prohibition lifecycle must be unresolved/null or resolved/test",
+        "mutation_copy": {
+          "path": "/tmp/schway371-prohibition-proof-Aa7fnZ/invalid-verification-tier.plan.md",
+          "sha256": "4848bb2db5209ee514aeb615e6ef398f73047e9628d25c1a8c765abb2a57983a",
+          "bytes": 15392
+        }
+      },
+      {
+        "name": "invalid-partial-transition",
+        "result": "rejected",
+        "reason": "plan prohibition lifecycle must be unresolved/null or resolved/test",
+        "mutation_copy": {
+          "path": "/tmp/schway371-prohibition-proof-Aa7fnZ/invalid-partial-transition.plan.md",
+          "sha256": "b15f0a87c361036235962a17fc81ea744e7a6b1f0a9e8c52e991c442e31f6967",
+          "bytes": 15390
+        }
+      },
+      {
+        "name": "altered-descriptor",
+        "result": "rejected",
+        "reason": "descriptorFromProjection must reconstruct this plan's wired flat fields\n+ actual - expected\n\n  {\n    cleanFixture: '.planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json',\n    kind: 'node-test',\n+   target: 'internal/other.test.cjs',\n-   target: '.planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs',\n    violationFixture: '.planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json'\n  }\n",
+        "mutation_copy": {
+          "path": "/tmp/schway371-prohibition-proof-Aa7fnZ/altered-descriptor.plan.md",
+          "sha256": "75224d32bdd23e30b5122000471fd6d1cb87610f92f811836286d5fb48dbedcd",
+          "bytes": 15324
+        }
+      }
+    ],
+    "restored_clean": true,
+    "prior_state_roundtrip": {
+      "defect": {
+        "plan": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md",
+        "source_revision": "8fe28e30f00104ae62d568db0bf95c349e1da34e",
+        "source_plan_sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
+        "source_status": "unresolved",
+        "source_verification": null,
+        "canonical_candidate": {
+          "statement": "MUST NOT accept caller activity after an accepted whole-execution defect or synthesize caller unwind records.",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "descriptor_unchanged": true
+      },
+      "failure": {
+        "plan": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md",
+        "source_revision": "8fe28e30f00104ae62d568db0bf95c349e1da34e",
+        "source_plan_sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
+        "source_status": "unresolved",
+        "source_verification": null,
+        "canonical_candidate": {
+          "statement": "MUST NOT classify arbitrary OpReturn as propagated failure or treat causal acceptance as payload-value or actual CFG-path proof.",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "descriptor_unchanged": true
+      },
+      "reason": {
+        "plan": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md",
+        "source_revision": "8fe28e30f00104ae62d568db0bf95c349e1da34e",
+        "source_plan_sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+        "source_status": "unresolved",
+        "source_verification": null,
+        "canonical_candidate": {
+          "statement": "MUST NOT normalize malformed defect-reason bytes, reject valid UTF-8 control/NUL reasons, decode textual escapes or truncate admitted reason output.",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "descriptor_unchanged": true
+      },
+      "baseline": {
+        "plan": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md",
+        "source_revision": "8fe28e30f00104ae62d568db0bf95c349e1da34e",
+        "source_plan_sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+        "source_status": "unresolved",
+        "source_verification": null,
+        "canonical_candidate": {
+          "statement": "MUST NOT regenerate frozen C expectations, exempt a whole path/route family or accept unrelated bytes through an amendment.",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "descriptor_unchanged": true
+      }
+    }
+  },
+  "final_root_union": {
+    "state": "machine-evidence-and-lifecycle-resolved",
+    "captured_utc": "2026-10-16T18:23:33.004Z",
+    "root_count": 19,
+    "distinct_package_count": 3,
+    "roots": {
+      "TestPhase371LegacyDefectClosesAllActiveFrames": {
+        "package": "./internal/compiler/executionpeer",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 3,
+        "subtestPass": 3,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371DefectTerminalControls": {
+        "package": "./internal/compiler/executionpeer",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 20,
+        "subtestPass": 20,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase33TerminalAttribution": {
+        "package": "./internal/compiler/executionpeer",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 32,
+        "subtestPass": 32,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase36CallCausalAttributionControls": {
+        "package": "./internal/compiler/executionpeer",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 12,
+        "subtestPass": 12,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371ForeignFailureOpFailAttribution": {
+        "package": "./internal/compiler/executionpeer",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 2,
+        "subtestPass": 2,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371ForeignFailureAttributionControls": {
+        "package": "./internal/compiler/executionpeer",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 24,
+        "subtestPass": 24,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase24ModelReplayIsDeterministicAndModelOnly": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 4,
+        "subtestPass": 4,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371DefectReasonUTF8Admission": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 14,
+        "subtestPass": 14,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371PreEmitterRouteCensus": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 0,
+        "subtestPass": 0,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371CompatibilityAmendmentControls": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 15,
+        "subtestPass": 15,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase34PreChangeCProgramGolden": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 0,
+        "subtestPass": 0,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase34PreChangeCGoldenIsNotInert": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 13,
+        "subtestPass": 13,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase36NoCallGeneratedCByteBaseline": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 0,
+        "subtestPass": 0,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase36NoCallGeneratedCByteBaselineControls": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 0,
+        "subtestPass": 0,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase37Phase34AdditionLedgerControls": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 12,
+        "subtestPass": 12,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase37Phase36AdditionLedgerControls": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 12,
+        "subtestPass": 12,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371NoCallScalarDefectNativeConformance": {
+        "package": "./internal/compiler/cgen",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 3,
+        "subtestPass": 3,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371CountedDefectReasonBytes": {
+        "package": "./internal/compiler/cgen",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 75,
+        "subtestPass": 75,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase33ScalarExplicitDefectShells": {
+        "package": "./internal/compiler/cgen",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 12,
+        "subtestPass": 12,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      }
+    },
+    "raw_log": {
+      "path": "/tmp/schway371-prohibition-proof-d3Qy11/final-19-root-union.go.log",
+      "sha256": "16ddd536635f2a1028fb8e2e435b6e2dad144424184d5383a9a72c91f5f6dda8",
+      "bytes": 42822
+    },
+    "source_bindings": {
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
+        "sha256": "79bcfbfbe3171bc5c9c9383cc83fa14dbfcfdc97251c18a71fb5ac9207d71798",
+        "bytes": 15388
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+        "sha256": "ea2dd99835f02af8e58d7c298363e6772261da173a2155116d2b61a4dddea4d6",
+        "bytes": 14763
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+        "sha256": "62b55c7519f1d6cff46876544d0ad23134f74632cdbebcdcb96e000c67b7e0c8",
+        "bytes": 14739
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+        "sha256": "2a0d8b81f107b81f678d0977798c413430cad37605370ba236440f323f5d6b00",
+        "bytes": 29841
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
+        "sha256": "672a96a7cddc2a3cec5e72ed75a4b26ff7bc86d19bbd7ec93073bf5eead87552",
+        "bytes": 80585
+      },
+      "internal/compiler/executionpeer/executionpeer.go": {
+        "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+        "bytes": 45046
+      },
+      "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
+        "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+        "bytes": 39087
+      },
+      "internal/compiler/session/session_phase24_model_test.go": {
+        "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+        "bytes": 7377
+      },
+      "internal/compiler/session/session_phase371_defect_reason_test.go": {
+        "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+        "bytes": 11149
+      },
+      "internal/compiler/cgen/cgen_program.go": {
+        "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+        "bytes": 184034
+      },
+      "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+        "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+        "bytes": 14162
+      },
+      "internal/compiler/session/session_phase371_compatibility_test.go": {
+        "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+        "bytes": 47203
+      },
+      "examples/phase24/error.schway": {
+        "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+        "bytes": 1228
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
+        "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+        "bytes": 40
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
+        "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
+        "bytes": 42
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+        "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+        "bytes": 43
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+        "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+        "bytes": 42
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+        "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+        "bytes": 44
+      },
+      "testdata/phase371/pre-emitter-census.json": {
+        "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+        "bytes": 27223968
+      },
+      "testdata/phase371/compatibility-amendments.json": {
+        "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+        "bytes": 13859
+      }
+    },
+    "initial_projection_status": "unresolved",
+    "current_plan_status": "resolved",
+    "current_verification": "test"
+  }
+}

@@ -15,6 +15,7 @@ const FAILURE_PLAN_REL = `${PHASE_REL}37.1-02-PLAN.md`;
 const REASON_PLAN_REL = `${PHASE_REL}37.1-03-PLAN.md`;
 const BASELINE_PLAN_REL = `${PHASE_REL}37.1-04-PLAN.md`;
 const PROJECTION_REL = `${PHASE_REL}371-PROHIBITION-PROJECTION.json`;
+const RESOLUTION_REL = `${PHASE_REL}371-PROHIBITION-RESOLUTION.json`;
 const ADAPTER_REL = `${PHASE_REL}371-prohibition-check.test.cjs`;
 const CLEAN_REL = `${PHASE_REL}prohibition-clean.json`;
 const DEFECT_REL = `${PHASE_REL}prohibition-defect-violation.json`;
@@ -786,9 +787,9 @@ function loadGsdProjectionApi() {
   return { projectProhibitions, descriptorFromProjection };
 }
 
-function parsePlanProhibition(planRelative = PLAN_REL, expectedStatement = STATEMENT) {
+function parsePlanProhibition(planRelative = PLAN_REL, expectedStatement = STATEMENT, sourceText = undefined) {
   const planPath = path.join(ROOT, planRelative);
-  const planText = fs.readFileSync(planPath, "utf8");
+  const planText = sourceText === undefined ? fs.readFileSync(planPath, "utf8") : sourceText;
   const match = planText.match(/^  prohibitions:\n([\s\S]*?)(?=^  artifacts:)/m);
   assert.ok(match, `${planRelative} must retain its prohibition block`);
   assert.ok(!/^\s{6}check:\s*$/m.test(match[1]), "plan descriptors must remain flat check_* scalars");
@@ -809,14 +810,15 @@ function parsePlanProhibition(planRelative = PLAN_REL, expectedStatement = STATE
     current[field[1]] = value;
   }
   if (current) items.push(current);
-  assert.equal(items.length, 1, `${planRelative} must carry exactly one unresolved prohibition`);
+  assert.equal(items.length, 1, `${planRelative} must carry exactly one canonical prohibition`);
   assert.equal(items[0].statement, expectedStatement);
-  assert.equal(items[0].status, "unresolved", "plan prohibition must remain unresolved until lifecycle resolution");
-  assert.equal(items[0].verification, null, "plan prohibition verification must remain null until lifecycle resolution");
+  const unresolved = items[0].status === "unresolved" && items[0].verification === null;
+  const resolvedTest = items[0].status === "resolved" && items[0].verification === "test";
+  assert.ok(unresolved || resolvedTest, "plan prohibition lifecycle must be unresolved/null or resolved/test");
   return { item: items[0], planBytes: Buffer.from(planText), planPath };
 }
 
-function projectCurrentPlan(mode = "defect") {
+function projectCurrentPlan(mode = "defect", sourceText = undefined) {
   const { projectProhibitions, descriptorFromProjection } = loadGsdProjectionApi();
   const isFailure = mode === "failure";
   const isReason = mode === "reason";
@@ -826,12 +828,16 @@ function projectCurrentPlan(mode = "defect") {
     ? "MUST NOT normalize malformed defect-reason bytes, reject valid UTF-8 control/NUL reasons, decode textual escapes or truncate admitted reason output."
     : isBaseline ? "MUST NOT regenerate frozen C expectations, exempt a whole path/route family or accept unrelated bytes through an amendment."
       : STATEMENT;
-  const { item, planBytes, planPath } = parsePlanProhibition(planRelative, expectedStatement);
+  const { item, planBytes, planPath } = parsePlanProhibition(planRelative, expectedStatement, sourceText);
   const projection = projectProhibitions([item]);
-  assert.equal(projection.length, 1, "projectProhibitions must preserve one unresolved item");
+  assert.equal(projection.length, 1, "projectProhibitions must preserve one live item");
   const projected = projection[0];
-  assert.equal(projected.status, "unresolved");
-  assert.equal(projected.verification, undefined, "null verification must stay absent in canonical projection");
+  assert.equal(projected.status, item.status, "canonical serializer must preserve current lifecycle status");
+  if (item.status === "unresolved") {
+    assert.equal(projected.verification, undefined, "null verification must stay absent in canonical projection");
+  } else {
+    assert.equal(projected.verification, "test", "canonical serializer must preserve test-tier resolution");
+  }
   const check = descriptorFromProjection(projected);
   assert.deepEqual(check, {
     kind: "node-test",
@@ -848,17 +854,37 @@ function gitHead() {
   return result.stdout.trim();
 }
 
+function gitFileAt(revision, relative) {
+  const result = spawnSync("git", ["show", `${revision}:${relative}`], { cwd: ROOT, encoding: null, shell: false });
+  assert.equal(result.status, 0, `read historical source ${revision}:${relative}: ${result.stderr || "git show failed"}`);
+  return Buffer.from(result.stdout);
+}
+
 function ensureInitialProjection() {
-  const current = projectCurrentPlan();
   const projectionPath = path.join(ROOT, PROJECTION_REL);
   if (fs.existsSync(projectionPath)) {
     const stored = JSON.parse(fs.readFileSync(projectionPath, "utf8"));
-    assert.deepEqual(stored.projection, [current.projected], "preserved initial canonical unresolved projection must match the plan");
-    assert.deepEqual(stored.source_prohibition, current.item, "preserved source status and null verification must match the plan");
-    assert.equal(stored.source_plan.sha256, digest(current.planBytes), "initial projection plan binding changed");
+    assert.equal(stored.source_plan.path, PLAN_REL, "initial source plan path must remain the original plan");
+    const sourceBytes = gitFileAt(stored.source_head, stored.source_plan.path);
+    assert.equal(stored.source_plan.sha256, digest(sourceBytes), "initial projection must bind the original plan bytes at source_head");
+    const original = parsePlanProhibition(PLAN_REL, STATEMENT, sourceBytes.toString("utf8"));
+    assert.equal(original.item.status, "unresolved", "initial source snapshot must retain unresolved status");
+    assert.equal(original.item.verification, null, "initial source snapshot must retain null verification");
+    const { projectProhibitions, descriptorFromProjection } = loadGsdProjectionApi();
+    const projected = projectProhibitions([original.item]);
+    assert.deepEqual(stored.projection, projected, "preserved initial canonical unresolved projection must match historical source bytes");
+    assert.deepEqual(stored.source_prohibition, original.item, "preserved initial source status and null verification must match historical source bytes");
+    assert.deepEqual(descriptorFromProjection(stored.projection[0]), {
+      kind: "node-test", target: ADAPTER_REL, violationFixture: DEFECT_REL, cleanFixture: CLEAN_REL,
+    }, "initial historical projection must retain the original canonical descriptor");
+    const live = projectCurrentPlan("defect");
+    assert.equal(live.item.statement, stored.source_prohibition.statement, "live transition must retain the historical prohibition statement");
+    assert.deepEqual(live.check, descriptorFromProjection(stored.projection[0]), "live transition must preserve the original descriptor");
     assert.equal(stored.source_plan.path, PLAN_REL);
     return stored;
   }
+  const current = projectCurrentPlan();
+  assert.equal(current.item.status, "unresolved", "initial projection can only be captured before lifecycle resolution");
   const stored = {
     version: 1,
     source_head: gitHead(),
@@ -996,7 +1022,9 @@ function runTapControls(evidenceDir, sample = "defect") {
 
 function createResolvedCandidate(current) {
   const { projectProhibitions, descriptorFromProjection } = loadGsdProjectionApi();
-  const candidate = projectProhibitions([{ ...current.item, status: "resolved", verification: "test" }]);
+  const candidate = current.item.status === "resolved"
+    ? [current.projected]
+    : projectProhibitions([{ ...current.item, status: "resolved", verification: "test" }]);
   assert.equal(candidate.length, 1);
   assert.equal(candidate[0].status, "resolved");
   assert.equal(candidate[0].verification, "test");
@@ -1054,28 +1082,278 @@ function sourceBindings(current) {
   }));
 }
 
+function writeJsonAtomic(relative, value) {
+  const target = path.join(ROOT, relative);
+  const temp = `${target}.tmp-${process.pid}-${crypto.randomBytes(5).toString("hex")}`;
+  fs.writeFileSync(temp, `${JSON.stringify(value, null, 2)}\n`, { flag: "wx" });
+  fs.renameSync(temp, target);
+}
+
+function proofSubjects() {
+  return ["defect", "failure", "reason", "baseline"];
+}
+
+function archivedFileRecords(value, records = []) {
+  if (!value || typeof value !== "object") return records;
+  if (typeof value.path === "string" && typeof value.sha256 === "string" && Number.isInteger(value.bytes)) records.push(value);
+  for (const child of Object.values(value)) archivedFileRecords(child, records);
+  return records;
+}
+
+function assertArchivedSourceBindings(proof, sourceRevision) {
+  assert.ok(proof.source_bindings && typeof proof.source_bindings === "object", `${proof.subject}: source bindings are required`);
+  for (const [relative, expected] of Object.entries(proof.source_bindings)) {
+    let actual = fs.existsSync(path.join(ROOT, relative)) ? fs.readFileSync(path.join(ROOT, relative)) : null;
+    if (!actual || digest(actual) !== expected.sha256 || actual.length !== expected.bytes) {
+      assert.ok(sourceRevision, `${proof.subject}: archived source binding revision is required`);
+      actual = gitFileAt(sourceRevision, relative);
+    }
+    assert.equal(digest(actual), expected.sha256, `${proof.subject}: source binding changed for ${relative}`);
+    assert.equal(actual.length, expected.bytes, `${proof.subject}: source binding byte count changed for ${relative}`);
+  }
+}
+
+function assertArchivedProof(subject, proof, sourceRevision) {
+  assert.equal(proof.subject, subject);
+  assert.equal(proof.state, "machine-evidence-complete-pending-lifecycle-resolution");
+  assert.equal(proof.lifecycle_status, "unresolved");
+  assert.equal(proof.candidate_status, "resolved");
+  assert.equal(proof.candidate_verification, "test");
+  assert.equal(proof.current_plan_projection.source_prohibition.status, "unresolved");
+  assert.equal(proof.current_plan_projection.source_prohibition.verification, null);
+  assert.equal(proof.current_plan_projection.source_plan.sha256, proof.source_bindings[proof.current_plan_projection.source_plan.path].sha256);
+  assertArchivedSourceBindings(proof, sourceRevision);
+
+  for (const record of archivedFileRecords(proof)) {
+    const bytes = fs.readFileSync(record.path);
+    assert.equal(bytes.length, record.bytes, `${subject}: archived evidence byte count changed: ${record.path}`);
+    assert.equal(digest(bytes), record.sha256, `${subject}: archived evidence hash changed: ${record.path}`);
+  }
+
+  for (const mode of ["bad", "clean", "default"]) {
+    const control = proof.go_controls[mode];
+    assert.ok(control && control.roots && Object.keys(control.roots).length > 0, `${subject}/${mode}: Go roots are required`);
+    assert.equal(control.failureNames.length > 0, mode === "bad", `${subject}/${mode}: Go semantic result must match its lane`);
+    for (const root of Object.values(control.roots)) assert.equal(root.skip, 0, `${subject}/${mode}: Go root must not skip`);
+    const tap = proof.tap_controls[mode];
+    assert.ok(tap && tap.log, `${subject}/${mode}: TAP record is required`);
+    const tapOutput = fs.readFileSync(tap.log.path, "utf8");
+    assert.deepEqual(parseTapCounts(tapOutput), tap.counts, `${subject}/${mode}: stored TAP counts must match raw output`);
+    const failedNames = [...tapOutput.matchAll(/^not ok \d+ - (.+)$/gm)].map((match) => match[1]);
+    assert.deepEqual(failedNames, mode === "bad" ? [TEST_NAME] : [], `${subject}/${mode}: TAP must reach only the named assertion`);
+    assert.equal(tap.status, mode === "bad" ? 1 : 0, `${subject}/${mode}: TAP exit must match its lane`);
+    assert.equal(tap.counts.skipped, 0, `${subject}/${mode}: TAP must not skip`);
+    assert.equal(tap.counts.todo, 0, `${subject}/${mode}: TAP must not mark todo`);
+  }
+
+  const producer = proof.canonical_producer;
+  assert.equal(producer.status, "green", `${subject}: prior canonical producer must be green`);
+  assert.equal(producer.flagged, false, `${subject}: prior canonical producer must be unflagged`);
+  assert.equal(producer.tier, "test");
+  assert.equal(producer.located, true);
+  assert.equal(producer.evidence.length, 1);
+  assert.equal(producer.evidence[0].failFirst, true);
+  assert.equal(producer.evidence[0].passed, true);
+  const producerStdout = JSON.parse(fs.readFileSync(producer.stdout.path, "utf8"));
+  assert.equal(producerStdout.status, producer.status, `${subject}: producer receipt must match its raw canonical output`);
+  assert.equal(producerStdout.flagged, producer.flagged, `${subject}: producer flag must match its raw canonical output`);
+}
+
+function ensurePreResolutionArchive(initial) {
+  const resolutionPath = path.join(ROOT, RESOLUTION_REL);
+  if (fs.existsSync(resolutionPath)) {
+    const saved = JSON.parse(fs.readFileSync(resolutionPath, "utf8"));
+    assert.equal(saved.version, 1);
+    assert.ok(saved.pre_resolution_snapshot, "pre-resolution receipts must remain archived before any live proof overwrite");
+    assert.ok(saved.pre_resolution_snapshot.source_binding_revision, "archived source binding revision must remain inspectable after this commit");
+    assert.equal(saved.pre_resolution_snapshot.proofs_sha256, digest(Buffer.from(JSON.stringify(saved.pre_resolution_snapshot.proofs))));
+    for (const subject of proofSubjects()) assertArchivedProof(subject, saved.pre_resolution_snapshot.proofs[subject], saved.pre_resolution_snapshot.source_binding_revision);
+    return saved;
+  }
+
+  const oldProofs = initial.proofs;
+  assert.deepEqual(Object.keys(oldProofs || {}).sort(), proofSubjects().sort(), "all four existing proof records must be archived together");
+  const sourceBindingRevision = gitHead();
+  for (const subject of proofSubjects()) assertArchivedProof(subject, oldProofs[subject], sourceBindingRevision);
+  const snapshot = {
+    captured_utc: new Date().toISOString(),
+    source_binding_revision: sourceBindingRevision,
+    source_head: initial.source_head,
+    source_plan: initial.source_plan,
+    source_prohibition: initial.source_prohibition,
+    initial_projection: initial.projection,
+    proofs: JSON.parse(JSON.stringify(oldProofs)),
+    proofs_sha256: digest(Buffer.from(JSON.stringify(oldProofs))),
+    final_root_union: initial.final_root_union,
+  };
+  const record = {
+    version: 1,
+    state: "pre-resolution-archived",
+    captured_utc: new Date().toISOString(),
+    machine_authority: "Normal GSD test-tier lifecycle promotion delegated for this phase after the recorded semantic RED, clean/default controls, and canonical producers passed.",
+    transition: { from_status: "unresolved", from_verification: null, to_status: "resolved", to_verification: "test" },
+    pre_resolution_snapshot: snapshot,
+  };
+  fs.writeFileSync(resolutionPath, `${JSON.stringify(record, null, 2)}\n`, { flag: "wx" });
+  return record;
+}
+
+function replacePlanField(planText, field, value) {
+  const pattern = new RegExp(`^(      ${field}: ).*$`, "m");
+  assert.match(planText, pattern, `negative-control copy must contain ${field}`);
+  return planText.replace(pattern, `$1${value}`);
+}
+
+function runTransitionNegativeControls() {
+  const cleanBytes = fs.readFileSync(path.join(ROOT, PLAN_REL));
+  const cleanText = cleanBytes.toString("utf8");
+  const temporary = tempEvidenceDir();
+  const resolution = JSON.parse(fs.readFileSync(path.join(ROOT, RESOLUTION_REL), "utf8"));
+  const priorSourceRevision = resolution.pre_resolution_snapshot.source_binding_revision;
+  assert.ok(priorSourceRevision, "prior-state round-trip requires the archived source revision");
+  const mutations = [
+    ["invalid-status", (text) => replacePlanField(text, "status", "archived")],
+    ["invalid-verification-tier", (text) => replacePlanField(text, "verification", "judgment")],
+    ["invalid-partial-transition", (text) => replacePlanField(replacePlanField(text, "status", "unresolved"), "verification", "test")],
+    ["altered-descriptor", (text) => replacePlanField(text, "check_target", "internal/other.test.cjs")],
+  ];
+  const outcomes = [];
+  for (const [name, mutate] of mutations) {
+    const mutatedText = mutate(cleanText);
+    const copied = saveRaw(temporary, `${name}.plan.md`, mutatedText);
+    let rejected = false;
+    let reason = "";
+    try {
+      projectCurrentPlan("defect", fs.readFileSync(copied.path, "utf8"));
+    } catch (error) {
+      rejected = true;
+      reason = error.message;
+    }
+    assert.equal(rejected, true, `${name}: malformed lifecycle or descriptor mutation must fail closed`);
+    outcomes.push({ name, result: "rejected", reason, mutation_copy: copied });
+  }
+  assert.deepEqual(fs.readFileSync(path.join(ROOT, PLAN_REL)), cleanBytes, "temporary negative-control mutations must leave the live plan bytes untouched");
+  const restored = projectCurrentPlan("defect");
+  const priorStateRoundTrip = {};
+  for (const subject of proofSubjects()) {
+    const planRelative = subject === "defect" ? PLAN_REL : ({ failure: FAILURE_PLAN_REL, reason: REASON_PLAN_REL, baseline: BASELINE_PLAN_REL })[subject];
+    const historicalBytes = gitFileAt(priorSourceRevision, planRelative);
+    const historical = projectCurrentPlan(subject, historicalBytes.toString("utf8"));
+    assert.equal(historical.item.status, "unresolved", `${subject}: prior-state plan snapshot must remain unresolved`);
+    assert.equal(historical.item.verification, null, `${subject}: prior-state plan snapshot must remain null-tier`);
+    const candidate = createResolvedCandidate(historical);
+    assert.equal(candidate.prohibition.status, "resolved", `${subject}: prior-state canonical candidate must resolve`);
+    assert.equal(candidate.prohibition.verification, "test", `${subject}: prior-state candidate must use the test tier`);
+    assert.deepEqual(candidate.check, historical.check, `${subject}: prior-state round-trip must preserve its descriptor`);
+    priorStateRoundTrip[subject] = {
+      plan: historical.planRelative,
+      source_revision: priorSourceRevision,
+      source_plan_sha256: digest(historicalBytes),
+      source_status: historical.item.status,
+      source_verification: historical.item.verification,
+      canonical_candidate: candidate.prohibition,
+      descriptor_unchanged: true,
+    };
+  }
+  return {
+    evidence_directory: temporary,
+    clean_plan_sha256: digest(cleanBytes),
+    clean_plan_status: restored.item.status,
+    clean_plan_verification: restored.item.verification,
+    outcomes,
+    restored_clean: true,
+    prior_state_roundtrip: priorStateRoundTrip,
+  };
+}
+
+function currentLifecycle() {
+  const current = Object.fromEntries(proofSubjects().map((subject) => [subject, projectCurrentPlan(subject)]));
+  const states = new Set(Object.values(current).map(({ item }) => `${item.status}/${item.verification}`));
+  assert.ok(states.size === 1 && (states.has("unresolved/null") || states.has("resolved/test")), "all four live plans must share one allowed lifecycle state");
+  return { status: Object.values(current)[0].item.status, verification: Object.values(current)[0].item.verification, current };
+}
+
+function finalizeResolutionRecord(stored, lifecycle, negativeControls) {
+  assert.equal(lifecycle.status, "resolved", "only canonical resolved/test live plans can finalize lifecycle resolution");
+  assert.equal(lifecycle.verification, "test");
+  const resolutionPath = path.join(ROOT, RESOLUTION_REL);
+  const record = JSON.parse(fs.readFileSync(resolutionPath, "utf8"));
+  assert.ok(record.state === "pre-resolution-archived" || record.state === "resolved-test", "resolution record must retain its immutable pre-resolution archive");
+  const items = {};
+  for (const subject of proofSubjects()) {
+    const live = lifecycle.current[subject];
+    const proof = stored.proofs[subject];
+    assert.equal(live.item.status, "resolved");
+    assert.equal(live.item.verification, "test");
+    assert.deepEqual(proof.current_plan_projection.projection, [live.projected], `${subject}: fresh proof must bind canonical live projection`);
+    assert.equal(proof.lifecycle_status, "resolved");
+    assert.equal(proof.canonical_producer.status, "green");
+    assert.equal(proof.canonical_producer.flagged, false);
+    items[subject] = {
+      plan: live.planRelative,
+      plan_sha256: digest(live.planBytes),
+      source_prohibition: live.item,
+      canonical_projection: live.projected,
+      descriptor: live.check,
+      proof_state: proof.state,
+      proof_manifest: proof.manifest,
+      current_source_bindings: proof.source_bindings,
+      canonical_producer: proof.canonical_producer,
+    };
+  }
+  record.state = "resolved-test";
+  record.resolved_utc = new Date().toISOString();
+  record.transition = {
+    ...record.transition,
+    descriptor_unchanged: true,
+    subjects: items,
+    authority_basis: "Fresh canonical producer runs passed for all four live resolved/test descriptors; every bad lane reached its named semantic assertion; clean/default controls passed with no skips; the bounded 19-root union passed.",
+  };
+  record.transition_negative_controls = negativeControls;
+  record.final_root_union = stored.final_root_union;
+  writeJsonAtomic(RESOLUTION_REL, record);
+  const resolutionBytes = fs.readFileSync(resolutionPath);
+  stored.live_prohibitions = Object.fromEntries(Object.entries(lifecycle.current).map(([subject, live]) => [subject, {
+    plan: live.planRelative,
+    plan_sha256: digest(live.planBytes),
+    source_prohibition: live.item,
+    canonical_projection: live.projected,
+    descriptor: live.check,
+  }]));
+  stored.lifecycle_status = "resolved";
+  stored.resolution_record = { path: RESOLUTION_REL, sha256: digest(resolutionBytes), bytes: resolutionBytes.length };
+  writeJsonAtomic(PROJECTION_REL, stored);
+  return record;
+}
+
 function runProofMode(subject) {
   if (subject !== "defect" && subject !== "failure" && subject !== "reason" && subject !== "baseline") throw new Error("only closed defect/failure/reason/baseline proofs are supported");
   const initial = ensureInitialProjection();
+  ensurePreResolutionArchive(initial);
   const current = projectCurrentPlan(subject);
-  assert.equal(initial.projection[0].status, "unresolved", "initial history must remain unresolved before producer request");
-  assert.equal(current.item.verification, null, "plan verification must remain null before producer request");
+  const lifecycle = current.item.status;
+  assert.ok(lifecycle === "unresolved" || lifecycle === "resolved", "current lifecycle must be one of the supported states");
+  const lifecycleStatus = lifecycle;
+  const evidenceState = lifecycle === "resolved"
+    ? "machine-evidence-and-lifecycle-resolved"
+    : "machine-evidence-complete-pending-lifecycle-resolution";
 
   const evidenceDir = tempEvidenceDir();
   const goControls = runGoControls(evidenceDir, subject);
   const tapControls = runTapControls(evidenceDir, subject);
-  const candidateRequest = createResolvedCandidate(current);
-  const producer = runCanonicalProducer(candidateRequest, evidenceDir);
+  const canonicalItem = createResolvedCandidate(current);
+  const producer = runCanonicalProducer({ prohibition: canonicalItem.prohibition, check: current.check, mode: "auto" }, evidenceDir);
   const bindings = sourceBindings(current);
   const proof = {
     subject,
-    state: "machine-evidence-complete-pending-lifecycle-resolution",
+    state: evidenceState,
     captured_utc: new Date().toISOString(),
     candidate_status: "resolved",
     candidate_verification: "test",
-    lifecycle_status: "unresolved",
+    lifecycle_status: lifecycleStatus,
     evidence_directory: evidenceDir,
     source_bindings: bindings,
+    canonical_projection: canonicalItem.prohibition,
     current_plan_projection: {
       source_plan: { path: current.planRelative, sha256: digest(current.planBytes) },
       source_prohibition: current.item,
@@ -1105,7 +1383,7 @@ function runProofMode(subject) {
     subject,
     initial_projection_sha256: digest(Buffer.from(JSON.stringify(initial.projection))),
     current_plan_projection: proof.current_plan_projection,
-    lifecycle_status: "unresolved",
+    lifecycle_status: lifecycleStatus,
     proof,
   };
   const manifestRecord = saveRaw(evidenceDir, "evidence-manifest.json", `${JSON.stringify(manifest, null, 2)}\n`);
@@ -1114,34 +1392,56 @@ function runProofMode(subject) {
   const projectionRecord = {
     ...initial,
     proofs: { ...priorProofs, [subject]: proof },
+    lifecycle_status: lifecycleStatus,
+    live_prohibitions: {
+      ...(initial.live_prohibitions || {}),
+      [subject]: {
+        plan: current.planRelative,
+        plan_sha256: digest(current.planBytes),
+        source_prohibition: current.item,
+        canonical_projection: current.projected,
+        descriptor: current.check,
+      },
+    },
     ...(subject === "defect" ? { proof }
       : subject === "failure" ? { failure_plan_projection: proof.current_plan_projection, failure_proof: proof }
         : subject === "reason" ? { reason_plan_projection: proof.current_plan_projection, reason_proof: proof }
           : { baseline_plan_projection: proof.current_plan_projection, baseline_proof: proof }),
   };
-  fs.writeFileSync(path.join(ROOT, PROJECTION_REL), `${JSON.stringify(projectionRecord, null, 2)}\n`);
-  process.stdout.write(`canonical ${subject} proof passed; plan prohibition remains unresolved pending normal lifecycle; evidence ${evidenceDir}\n`);
+  writeJsonAtomic(PROJECTION_REL, projectionRecord);
+  process.stdout.write(`canonical ${subject} proof passed for live ${lifecycleStatus} lifecycle; evidence ${evidenceDir}\n`);
 }
 
 function runAllProofMode() {
+  const initial = ensureInitialProjection();
+  ensurePreResolutionArchive(initial);
+  const negativeControls = runTransitionNegativeControls();
   for (const subject of ["defect", "failure", "reason", "baseline"]) runProofMode(subject);
   const inventory = runRootInventory("all");
   if (inventory.kind !== "green" || Object.keys(inventory.roots).length !== 19) {
     throw new Error(`final 19-root union failed: ${inventory.reason || inventory.kind}`);
   }
+  for (const [name, root] of Object.entries(inventory.roots)) {
+    if (root.run !== 1 || root.pass !== 1 || root.fail !== 0 || root.skip !== 0 || root.subtestFail !== 0 || root.subtestSkip !== 0) {
+      throw new Error(`final root union contains a failed, repeated, or skipped root/subtest: ${name}`);
+    }
+  }
   const projectionPath = path.join(ROOT, PROJECTION_REL);
   const stored = JSON.parse(fs.readFileSync(projectionPath, "utf8"));
+  const lifecycle = currentLifecycle();
   for (const subject of ["defect", "failure", "reason", "baseline"]) {
     const proof = stored.proofs && stored.proofs[subject];
     assert.ok(proof, `${subject} source-bound proof must remain in the projection history`);
     assert.equal(proof.canonical_producer.status, "green", `${subject} canonical producer proof must be green`);
     assert.equal(proof.canonical_producer.flagged, false, `${subject} canonical producer proof must be unflagged`);
-    assert.equal(proof.lifecycle_status, "unresolved", `${subject} lifecycle remains under normal phase ownership`);
+    assert.equal(proof.lifecycle_status, lifecycle.status, `${subject} proof must state the actual current lifecycle`);
+    assert.equal(proof.current_plan_projection.source_prohibition.status, lifecycle.status, `${subject} proof must bind live plan status`);
+    assert.equal(proof.current_plan_projection.source_prohibition.verification, lifecycle.verification, `${subject} proof must bind live verification tier`);
   }
   const evidenceDir = tempEvidenceDir();
   const log = saveRaw(evidenceDir, "final-19-root-union.go.log", inventory.output);
   const union = {
-    state: "machine-evidence-complete-pending-lifecycle-resolution",
+    state: lifecycle.status === "resolved" ? "machine-evidence-and-lifecycle-resolved" : "machine-evidence-complete-pending-lifecycle-resolution",
     captured_utc: new Date().toISOString(),
     root_count: Object.keys(inventory.roots).length,
     distinct_package_count: 3,
@@ -1149,12 +1449,17 @@ function runAllProofMode() {
     raw_log: log,
     source_bindings: sourceBindings(projectCurrentPlan("baseline")),
     initial_projection_status: stored.projection[0].status,
-    current_plan_status: "unresolved",
+    current_plan_status: lifecycle.status,
+    current_verification: lifecycle.verification,
   };
   assert.equal(union.initial_projection_status, "unresolved", "initial unresolved history must be retained");
   stored.final_root_union = union;
-  fs.writeFileSync(projectionPath, `${JSON.stringify(stored, null, 2)}\n`);
-  process.stdout.write(`all prohibition proofs and the final 19-root union passed; lifecycle remains unresolved; evidence ${evidenceDir}\n`);
+  if (lifecycle.status === "resolved") finalizeResolutionRecord(stored, lifecycle, negativeControls);
+  else {
+    stored.lifecycle_status = "unresolved";
+    writeJsonAtomic(PROJECTION_REL, stored);
+  }
+  process.stdout.write(`all prohibition proofs and the final 19-root union passed; live lifecycle is ${lifecycle.status}/${lifecycle.verification}; evidence ${evidenceDir}\n`);
 }
 
 function directMode() {

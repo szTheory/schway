@@ -66,15 +66,16 @@ post-delta C-byte mutation. Original C corpora and historical source, ledger,
 golden, and receipt snapshots were not changed. No path-wide exception,
 normalization, regenerated oracle, or skip was added.
 
-## Source-bound proof records
+## Archived pre-resolution proof records
 
-`371-PROHIBITION-PROJECTION.json` is the machine-readable index. For each
-subject, its bad/clean/default Go and TAP logs are source-bound; the bad run
-reaches the named semantic failure, while clean and default pass. All four
-canonical producers are `green`, `flagged: false`, and report
-`failFirst: true` using their violation fixture. Their lifecycle projections
-remain `unresolved` pending the normal canonical lifecycle owner; the initial
-historical snapshot is preserved.
+`371-PROHIBITION-PROJECTION.json` is the machine-readable current index. The
+four earlier proof records, their source bindings, and the prior root-union
+receipt are copied intact into `371-PROHIBITION-RESOLUTION.json` before the
+live proof entries are refreshed. In those pre-resolution records, each bad
+Go/TAP run reaches the named semantic failure, clean/default pass, and each
+canonical producer is `green`, unflagged, and machine-proves `failFirst: true`.
+The original unresolved projection remains unchanged and is checked against
+the original plan bytes at its recorded Git `source_head`.
 
 | Subject | Bad Go log SHA-256 | Clean / default Go log SHA-256 | Bad / clean / default TAP SHA-256 |
 | --- | --- | --- | --- |
@@ -92,7 +93,7 @@ unchanged after the run. The baseline proof overlay changes only the actual
 compatibility comparator predicate; its source-bound Go root fails because an
 unrelated extra C byte is accepted. Both controls are semantic failures.
 
-Current proof bindings include these source and fixture digests:
+Pre-resolution source bindings include these source and fixture digests:
 
 | Bound input | SHA-256 |
 | --- | --- |
@@ -111,14 +112,15 @@ Current proof bindings include these source and fixture digests:
 
 ## Final bounded root union
 
-The adapter's `--sample all` and final `--prove all` observed 19 distinct
-roots across three packages, all run once with 253/253 observed subtests
-passing and zero skips. The final raw log is
+The pre-transition adapter's `--sample all` and `--prove all` observed 19
+distinct roots across three packages, all run once with 253/253 observed
+subtests passing and zero skips. Its original raw log is
 `/tmp/schway371-prohibition-proof-TN3LOW/final-19-root-union.go.log`, SHA-256
 `c24e4fc34fffc911d7f699202c8c1c1df5e274beb2aa97d82b2e11e6fc546e64`.
 Package counts are executionpeer 6 roots / 93 subtests, session 10 / 70, and
-cgen 3 / 90. The exact names and per-root run/pass/fail/skip and subtest
-counts are serialized in `final_root_union.roots` in the projection.
+cgen 3 / 90. The exact old union is retained inside the resolution archive;
+the current post-transition union is in `final_root_union.roots` in the
+projection.
 
 The roots are `TestPhase371LegacyDefectClosesAllActiveFrames`,
 `TestPhase371DefectTerminalControls`, `TestPhase33TerminalAttribution`,
@@ -137,6 +139,54 @@ The roots are `TestPhase371LegacyDefectClosesAllActiveFrames`,
 `TestPhase371NoCallScalarDefectNativeConformance`,
 `TestPhase371CountedDefectReasonBytes`, and
 `TestPhase33ScalarExplicitDefectShells`.
+
+## Current lifecycle resolution
+
+The four live plan prohibitions now use the canonical test-tier state
+`status: resolved` and `verification: test`. Their statements and flat check
+descriptors are unchanged. The initial projection and its source prohibition
+remain `unresolved` with null verification, bound to the original Plan 37.1-01
+bytes (`source_head` `a80a290b059bd6b998f7a87ee7f5ef89ec212d58`, SHA-256
+`14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a`). The
+resolution record preserves all four pre-transition proofs and their old
+source bindings before replacing the current entries.
+
+Fresh canonical producer runs executed after the plan transition for defect,
+typed failure, reason bytes, and baseline amendment. Each returned
+`green`, `flagged: false`, `tier: test`, and a passing fail-first proof against
+its violation fixture. The source-bound bad Go and TAP lanes reached their
+semantic assertions; clean/default lanes passed without skips. Current plan
+hashes are `79bcfbfbe3171bc5c9c9383cc83fa14dbfcfdc97251c18a71fb5ac9207d71798`
+(Plan 01), `ea2dd99835f02af8e58d7c298363e6772261da173a2155116d2b61a4dddea4d6`
+(Plan 02), `62b55c7519f1d6cff46876544d0ad23134f74632cdbebcdcb96e000c67b7e0c8`
+(Plan 03), and `2a0d8b81f107b81f678d0977798c413430cad37605370ba236440f323f5d6b00`
+(Plan 04). The updated adapter binding is
+`672a96a7cddc2a3cec5e72ed75a4b26ff7bc86d19bbd7ec93073bf5eead87552`.
+
+| Subject | Current proof manifest SHA-256 | Canonical producer request SHA-256 | Producer verdict |
+| --- | --- | --- | --- |
+| Defect | `cdd1d3fa449382ca034c88e3c1583f96ac3f40caf626b8b159453feb5ec2b2d5` | `d120174f144c3831d897082c61e9234730109acdba0762eca6ed6fdde4b61452` | green, unflagged |
+| Typed failure | `f8dd4b44847f1ea4699270a37a78be15bc448314fde5da0fc9e754282721f669` | `151c7acbdc8084a522f7b7edc22f97042d8b1b8962ea1def7546397196962661` | green, unflagged |
+| Reason bytes | `ba79464785372e764c4a60f48b8cc23fefa7e97cbc84498676b96a374a016196` | `109cb6e427e276337a23e288a5a3d1b9c2788b0db3d23504cd33dea7e11e0316` | green, unflagged |
+| Baseline amendment | `313e957202dff42d2ef36813f4538824e9b1ff9601011aab03a71321f901f4a0` | `3f97395cbfd4d4fb5d65ad5188dda52206973f764c291d116106ba49ac7326b9` | green, unflagged |
+
+The fresh post-transition `--prove all` run again observed 19 roots across
+three packages, 253/253 subtests passing, and zero skips. Its raw log is
+`/tmp/schway371-prohibition-proof-d3Qy11/final-19-root-union.go.log`, SHA-256
+`16ddd536635f2a1028fb8e2e435b6e2dad144424184d5383a9a72c91f5f6dda8`. The
+post-transition `--sample all` also passed with the same 19-root inventory;
+its manifest is `/tmp/schway371-prohibition-proof-6OFheN/sample-manifest.json`
+(SHA-256 `1533899b3ae1ea2c0e5e500cca6d4d3b50dcd9fba01b4b4c398cdce61d4597ac`)
+and its raw log is SHA-256
+`a209e6f21c2ded30e2a371cce936e31e2c37f1fe5034da499471bd7996f64af3`.
+Four temporary plan copies were rejected for an unsupported status, tier,
+partial transition, and altered descriptor; the live plan bytes were then
+re-read and accepted as resolved/test. The exact rejection reasons and copy
+hashes are in the resolution record. It also re-parses each prior unresolved
+plan at source-binding revision `8fe28e30f00104ae62d568db0bf95c349e1da34e`,
+then checks that canonical serialization yields the same resolved/test
+candidate with an unchanged descriptor. That record is SHA-256
+`7782c739b780c9d5dcf8d3731105e0bff0b80e43c69874c284aca67108bc114d`.
 
 ## Transition disposition and limits
 
@@ -165,5 +215,7 @@ The local evidence does not claim hosted authorization or receipts, Linux
 execution, physical cleanup/destructor proof, a numeric peer guarantee,
 human-readability results, or whole-loop latency distributions. EVD-17 remains
 unchecked/Pending and Phase 38-owned; CALL-01/02 remain Phase 36-owned. The
-original and current prohibition projections remain unresolved for the normal
-lifecycle owner despite these machine proofs.
+original historical projection remains unresolved by design. The current
+live projections are resolved/test on the basis of the recorded machine
+proofs; independent code review, security, validation, verification freshness,
+and the M007 audit remain downstream phase gates.
