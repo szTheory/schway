@@ -1,0 +1,28 @@
+{
+  "completed_phase": "35",
+  "phase_name": "bitwise-operators-literal-shifts-and-hex-literals",
+  "plans_executed": "8/8",
+  "next_phase": "38",
+  "next_phase_name": "milestone-receipts",
+  "is_last_phase": false,
+  "date": "2026-10-15",
+  "roadmap_updated": false,
+  "state_updated": true,
+  "requirements_updated": false,
+  "auto_pruned": false,
+  "warnings": [],
+  "has_warnings": false,
+  "verification_stale_check_indeterminate": false,
+  "milestone_conflict": null,
+  "preservation_warnings": [],
+  "invocation_note": "phase.complete35 called once after fresh canonical passed; next-unimplemented38 is subordinate to current freshness/audit gates.",
+  "verification_by_phase": {
+    "33": "passed",
+    "34": "passed",
+    "35": "passed",
+    "36": "stale",
+    "37": "stale",
+    "38": "phase_dir_not_found"
+  },
+  "next_freshness_command": "$gsd-execute-phase 36"
+}

@@ -154,15 +154,16 @@ is auto-followed. Copy-local code is preferred over new dependencies.
 
 ## Current State
 
-Amended 2026-10-15 after Phase33's terminal-evidence refresh: CRC/module/file
-programs remain implemented. Phases 33/34 pass;35/36/37 are stale. CR-02's
-causal terminal false accepts are repaired and independently verified.
-CR-03/04 remain critical propagation false-rejection findings deferred to the
-execution-peer maintainer through M007 audit before freeze. Preserve completed
-plans/UAT and run `$gsd-execute-phase 35`, then re-query. Audit/gap closure
-precedes Phase38 hosted binding; current local and historical hosted evidence
+Amended 2026-10-15 after Phase 35's terminal-evidence compatibility refresh:
+CRC/module/file programs remain implemented. Phases 33/34/35 pass; 36/37 are
+stale. Phase 35 independently verifies 38/38 with 87 covered inputs and fresh
+196-root focused regression. CR-03/04 remain critical propagation false-rejection
+findings deferred to the execution-peer maintainer through M007 audit before
+freeze; Phase 36 WR-02 is separate deferred comment debt. Preserve completed
+plans/UAT and run `$gsd-execute-phase 36`, then re-query. Audit/gap closure
+precedes Phase 38 hosted binding. Current local and historical hosted evidence
 retain separate authority. See
-[33-REFRESH2-CLOSEOUT.md](phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH2-CLOSEOUT.md).
+[35-REFRESH2-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH2-CLOSEOUT.md).
 
 **2026-10-12 M006 Bounded Byte Utility and Local Modules shipped** (6 phases,
 63 plans, 158 tasks; archive `.planning/milestones/M006-*`, tag `vM006`).
@@ -866,7 +867,7 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-15 after Phase33 terminal-evidence refresh*
+*Last updated: 2026-10-15 after Phase 35 compatibility refresh*
 
 ### Phase 33 execution amendment — 2026-10-13
 
@@ -1032,3 +1033,32 @@ checker obligations, evidence/debt, owners and reprioritization conditions,
 plus source/consumer dispositions retaining z1g/trz/z1s dormant, are in
 [33-REFRESH2-CLOSEOUT.md](phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH2-CLOSEOUT.md).
 Only EVD-17 is active milestone scope; no future consumer or seed was promoted.
+
+
+## Phase 35 terminal-evidence compatibility refresh — 2026-10-15
+
+Source inspection retains the implemented bitwise/shift/hex and Adler behavior
+with Phase 33's stricter terminal evidence. No compiler admission or dependency
+changed in this refresh. Independent verification passes 38/38 with 87 covered
+inputs, all four BIT requirements, 48 artifact declarations and 24 links.
+The verifier corrected its freshness coverage to bind cited mutation/prohibition
+sources directly; canonical status passed before completion.
+
+New local evidence: all 22 task selectors passed 72 roots / 13 packages; combined
+regression passed 184 names / 196 root executions / 16 packages, zero missing,
+fail or skip, including all 41 source mutants and focused O0/O3/O3-LTO/UBSan.
+Both mechanical prohibitions proved bad RED / clean GREEN / default GREEN.
+Historical and hosted receipts retain their original scope. No current hosted,
+Linux, human-readability or latency-distribution claim follows.
+
+Fresh progress: 33/34/35 passed, 36/37 stale. Exact next gate is
+`$gsd-execute-phase 36`, then re-query; mandatory M007 audit/gap closure precedes
+Phase 38. Phase 33 CR-03/04 remain deferred BLOCKER propagation findings and
+Phase 36 WR-02 remains a deferred comment warning. The current Phase 35 review
+has zero new findings; these separate obligations remain visible and unresolved.
+Only EVD-17 is active. Ranked next capabilities remain audited two-host CRC
+receipts, proposed M008 wc/longest_line, then bounded fixed-schema key=value
+parsing. Programs, blockers, complete slices, checker obligations, evidence/debt,
+owners, reprioritization conditions and source/consumer dispositions retaining
+z1g/trz/z1s dormant are recorded in
+[35-REFRESH2-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH2-CLOSEOUT.md).
