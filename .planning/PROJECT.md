@@ -154,16 +154,19 @@ is auto-followed. Copy-local code is preferred over new dependencies.
 
 ## Current State
 
-Amended 2026-10-15 after Phase 35's terminal-evidence compatibility refresh:
-CRC/module/file programs remain implemented. Phases 33/34/35 pass; 36/37 are
-stale. Phase 35 independently verifies 38/38 with 87 covered inputs and fresh
-196-root focused regression. CR-03/04 remain critical propagation false-rejection
-findings deferred to the execution-peer maintainer through M007 audit before
-freeze; Phase 36 WR-02 is separate deferred comment debt. Preserve completed
-plans/UAT and run `$gsd-execute-phase 36`, then re-query. Audit/gap closure
-precedes Phase 38 hosted binding. Current local and historical hosted evidence
-retain separate authority. See
-[35-REFRESH2-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH2-CLOSEOUT.md).
+Amended 2026-10-15 after Phase 36's caller-shape repair and verification:
+CRC/module/file programs remain implemented. Phase 36 passes independent 32/32
+verification with 94 covered inputs, 24 artifacts, 19 links and 26 decisions.
+Native emission now includes existing structured unused-Byte/ByteView Unit
+callers; two regressions and the exact emitter-consumer record close CR-01.
+Final focused regression passed 239 names / 251 roots across 16 packages.
+WR-02 remains deferred comment debt; Phase 33 CR-03/04 remain separate BLOCKER
+propagation findings for the execution-peer maintainer through M007 audit.
+Phases 34/36 pass; 33/35/37 are stale after the source/record changes.
+Run `$gsd-execute-phase 33`, preserve plans/UAT, re-query after each refresh,
+then audit and close gaps before Phase 38 planning/host binding. Phase 38 is
+explicitly unplanned; no directory or hosted authority was invented. See
+[36-REFRESH2-CLOSEOUT.md](phases/36-scalar-helper-calls/36-REFRESH2-CLOSEOUT.md).
 
 **2026-10-12 M006 Bounded Byte Utility and Local Modules shipped** (6 phases,
 63 plans, 158 tasks; archive `.planning/milestones/M006-*`, tag `vM006`).
@@ -867,7 +870,7 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-15 after Phase 35 compatibility refresh*
+*Last updated: 2026-10-15 after Phase 36 caller-shape repair and verification*
 
 ### Phase 33 execution amendment — 2026-10-13
 
