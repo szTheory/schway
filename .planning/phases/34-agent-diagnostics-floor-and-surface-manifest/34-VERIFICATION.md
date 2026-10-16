@@ -1,7 +1,7 @@
 ---
 phase: 34-agent-diagnostics-floor-and-surface-manifest
-verified: 2026-10-15T20:38:59Z
-status: passed
+verified: 2026-10-16T21:11:45Z
+status: human_needed
 score: 38/38 must-haves verified
 covered_files:
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-01-PLAN.md"
@@ -20,6 +20,7 @@ covered_files:
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-SUMMARY.md"
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-PLAN.md"
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-SUMMARY.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-371-REFRESH-GATES.md"
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-REFRESH-REGRESSION.json"
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-REFRESH-RUN.json"
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-REVIEW-DISPOSITION.md"
@@ -31,6 +32,17 @@ covered_files:
   - ".planning/phases/36-scalar-helper-calls/36-ACCEPTANCE-EVIDENCE.md"
   - ".planning/phases/36-scalar-helper-calls/36-REGRESSION.md"
   - ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-ACCEPTANCE-EVIDENCE.md"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-01.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-02.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-05.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-08.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-14.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-15.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-COMPLETION-2026-10-16.json"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-DISPOSITION-AMENDMENT-2026-10-16.md"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-INVENTORY-20261016.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-SURFACEMANIFEST-20261016.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-SYNTAX-20261016.jsonl"
   - "cmd/schway-repair/repair_phase34_test.go"
   - "cmd/schway/main.go"
   - "cmd/schway/main_phase34_diagnostics_test.go"
@@ -88,26 +100,36 @@ covered_files:
   - "testdata/phase36/surface-witnesses.json"
   - "testdata/phase37/new-fixture-ledger.json"
   - "testdata/phase37/surface-witnesses.json"
-covered_digest: "v3:sha256:111e68ce10586b177e455fcfa464c85bb9c1f452f6180c829f5147876f77b405"
+  - "testdata/phase371/compatibility-amendments.json"
+  - "testdata/phase371/pre-emitter-census.json"
+covered_digest: "v3:sha256:8e7b7ea5b62bee3b1cb00e138e073a9017e91e08bddaa1ef3ac0b5ef27a95656"
 behavior_unverified: 0
 overrides_applied: 0
+decision_coverage:
+  honored: 26
+  total: 26
+  not_honored: []
+human_verification:
+  - test: "Inspect the plain-text diagnostic produced by schway check for an unsupported-form draft."
+    expected: "The location, snippet, caret, and one-line hint make the cause and next step clear without a misleading cascade."
+    why_human: "Exact-output tests establish the diagnostic contract but cannot establish whether its copy is understandable at the CLI."
 re_verification:
   previous_status: passed
   previous_score: 38/38
   gaps_closed: []
   gaps_remaining: []
   regressions: []
-  scope: "Phase 37 successor refresh; original Phase 34 verification passed without gaps; current local receipts and a bounded independent selector set were hash-checked and run"
+  scope: "Stale-report refresh after the Phase 37.1 source delta; all Phase 34 truths were rechecked against current source and current receipts."
 ---
 
 # Phase 34: Agent Diagnostics Floor and Surface Manifest Verification Report
 
 **Phase Goal:** An agent drafting Schway gets one precise, locatable diagnostic per real cause and can ask the toolchain what surface is admitted, instead of guessing from cascading, offset-only or misleading errors.
-**Verified:** 2026-10-15T20:38:59Z
-**Status:** passed
-**Re-verification:** Yes — Phase 37 successor refresh; the prior report passed without gaps.
+**Verified:** 2026-10-16T21:11:45Z
+**Status:** human_needed
+**Re-verification:** Yes — stale-report refresh after the Phase 37.1 source delta; the previous report passed without gaps.
 
-The evidence below preserves the dated initial verification and Phase 35/36 successor amendments. The current refresh at the end is authoritative for the post-Phase-37 admission surface, source binding, and shared regression receipts.
+The dated initial verification and successor amendments below are preserved as history. The final 2026-10-16 section is authoritative for the current source refresh and terminal status.
 
 ## Goal Achievement
 
@@ -328,4 +350,86 @@ DX-20, DX-21, DX-22, and DX-23 remain satisfied, with no additional Phase 34 req
 
 The current review-listed implementation and evidence files contain no unresolved TBD, FIXME, or XXX markers. Two uses of “placeholder” are explanatory comments about an unused internal IR place and a layout field; neither is an empty implementation or user-visible behavior. The bounded selector runs above skipped nothing. A separate optional Phase 37 native sanitizer test contains a host-capability skip, but that native test was not selected or represented as executed here. No Phase 34 probe was declared, and no conventional project probe script applies.
 
-No local whole-package/project suite, native matrix, hosted dispatch, new UAT session, or hosted receipt binding was run. Human readability and cold/warm whole-loop latency remain unmeasured as required by the existing scope; this refresh does not claim those qualities. Phase 38 remains the owner of hosted receipt binding. No goal gap or new human-verification item is outstanding.
+No local whole-package/project suite, native matrix, hosted dispatch, new UAT session, or hosted receipt binding was run. Human readability and cold/warm whole-loop latency remain unmeasured as required by the existing scope; this refresh does not claim those qualities. Phase 38 remains the owner of hosted receipt binding. At that date, no goal gap or human-verification item was outstanding; the current refresh below applies the present verifier-phase gate to the visible CLI diagnostic.
+
+## Current execute-phase refresh — 2026-10-16T21:11:45Z
+
+This is an initial-mode goal-backward refresh because the prior report had no `gaps:` section. The prior `passed` report became stale when its covered source inputs changed. The current code state is commit `20a5194`; `6572cd0` adds documentation only, and the inspected Phase 34 source inputs have no later code changes. The relevant source delta is a parser check for invalid UTF-8 within quoted defect reasons; the adjacent Phase 34 compatibility test now also checks the successor source inventory/ledger. The new parser behavior has its own Phase 37.1 tests, while the existing Phase 34 recovery and refusal cases were rerun in current receipts.
+
+### Current observable truths
+
+| # | Roadmap truth | Status | Current evidence |
+|---|---|---|---|
+| R1 | Text diagnostics show `file:line:col`, one source line and caret; JSON adds 1-based coordinates beside unchanged byte offsets, including UTF-8, CRLF and EOF cases. | ✓ VERIFIED | `protocol/presentation.go` derives positions from captured bytes; current receipts include `TestPhase34DiagnosticLocations`, `TestPhase34CheckDiagnosticPresentation`, and `TestPhase34SourceRoutePresentation`. The prior exact rendering goldens remain covered and presentation code is unchanged. |
+| R2 | The pinned agent-draft corpus emits one diagnostic per real syntax cause, without follow-on expected-brace/declaration cascades. | ✓ VERIFIED | `testdata/phase34/drafts.json` contains 20 explicitly reconstructed fixtures, including CRC-32 and word-counter examples; current syntax receipts show `TestPhase34DraftBaseline`, `TestPhase34RecoveryCorpus`, and `TestPhase34RecoveryControls` passing. Original research scratch sources remain unavailable and are not claimed recovered. |
+| R3 | The seven Phase 34 absent forms each receive a dedicated `surface.unsupported_*` code and one-line hint; prior misleading errors disappear. | ✓ VERIFIED | Current syntax/checker receipts show refusal, Bool-name, call-arity, and hint controls passing. `surface.Refusals()` carries Phase 34 refusals plus successor-owned shift/depth entries; dynamic-shift support is now covered by Phase 35. |
+| R4 | `schway surface --json` emits a versioned deterministic manifest and bidirectional controls reject missing or invented claims. | ✓ VERIFIED | `cmd/schway/main.go` dispatches both documented argument orders to `runSurface`; `surfacemanifest.JSON` canonicalizes arrays before encoding. Current receipts include `TestPhase34SurfaceDocument`, `TestPhase34SurfaceLimits`, `TestPhase34SurfaceRoute`, and the independent witness/census/control tests. |
+
+**Current score:** 38/38 truths verified (0 present, behavior-unverified). The 34 plan-specific truths remain itemized above in the preserved truth table; the source changes do not alter their frozen baselines or wiring contracts. Phase 35 closed the prior dynamic-shift deferral. No requirement is orphaned.
+
+### Current artifact, link, and data-flow checks
+
+The eight current `verify.artifacts` queries passed all 57 declared artifact occurrences. Each has a source, test, fixture, or public route role; none is missing or a stub. The path-based key-link query cannot parse prose-origin declarations, so I manually traced all 22 declared links through current code and behavioral controls. The existing Key Link Verification table records the traced connections: source snapshots reach diagnostic presentation, parser refusal recognizers reach the stable catalog, the catalog feeds the typed manifest, and the CLI route emits its canonical JSON.
+
+Level-4 data flow remains live: source locations and snippets derive from bytes captured for the current invocation; recovery parses each actual reconstructed draft; and the manifest is built from current compiler bounds, route declarations, and refusal entries. The finite seven-file AST census is expressly not treated as a universal admission proof.
+
+### Current behavioral receipts
+
+The current bounded 37.1 completion receipt records 250 selectors, 251 root execution events, 240 distinct names, 16 groups, and zero missing, failed, or skipped selectors. It reuses 220 unchanged passing roots, reruns the five previously failing roots successfully, and passes all 26 previously unrun roots. The explicitly pressure-sensitive Phase 33 capture-read test is excluded. Across current raw receipts, Phase 34 test names account for 122 run events; none has a fail or skip event. Direct current roots include the Phase 34 diagnostic routes, coordinate mapping, repair compatibility, unsupported-form refusals, baseline/recovery controls, surface route, manifest witnesses, finite census, mutation controls, and limit consumers. Relevant logs are fingerprinted above. This is bounded selector evidence, not a full suite or a claim about native pressure, hosted behavior, or whole-loop latency.
+
+| Behavior | Current evidence | Result |
+|---|---|---|
+| Captured-source location, JSON/text presentation, and public diagnostic routes | `37.1-371-REFRESH-REGRESSION-01.jsonl`, `37.1-371-REFRESH-REGRESSION-14.jsonl` | PASS |
+| Exact reconstructed-draft baseline, one-cause recovery and independent-cause controls | `371-REFRESH-SYNTAX-20261016.jsonl`, `37.1-371-REFRESH-REGRESSION-15.jsonl` | PASS |
+| Unsupported forms, preserved Bool identifiers, refusal hints and prior-code controls | `371-REFRESH-SYNTAX-20261016.jsonl`, `37.1-371-REFRESH-REGRESSION-05.jsonl` | PASS |
+| Stable source-free manifest, limits, route, independent witnesses/census and bidirectional controls | `371-REFRESH-SURFACEMANIFEST-20261016.jsonl`, `37.1-371-REFRESH-REGRESSION-01.jsonl`, `37.1-371-REFRESH-REGRESSION-15.jsonl` | PASS |
+| Repair decoder ignores additive presentation while preserving byte-edit authority | `37.1-371-REFRESH-REGRESSION-02.jsonl` | PASS |
+
+### Requirement coverage
+
+| Requirement | Status | Evidence |
+|---|---|---|
+| DX-20 | ✓ SATISFIED | Coordinate, rendering, identity, imported-source, route, and repair-compatibility tests; see current rows and prior exact goldens. |
+| DX-21 | ✓ SATISFIED | Reconstructed 20-draft before/after baselines and current recovery corpus/negative controls. |
+| DX-22 | ✓ SATISFIED | Seven Phase 34 unsupported forms are tested; Phase 35 owns the subsequently added shift-amount refusal, now listed by the current manifest. |
+| DX-23 | ✓ SATISFIED | Versioned canonical manifest, source-free command route, current admission/refusal witnesses and finite bidirectional controls. |
+
+No additional requirement mapped to Phase 34 in `REQUIREMENTS.md` is missing from the plans.
+
+### Decision coverage
+
+All trackable CONTEXT decisions are honored by shipped artifacts: **26/26**, with none unhonored. The gate is non-blocking.
+
+### Test quality audit
+
+| Requirement | Linked tests | Active | Skipped | Circular expected-value generation | Strongest assertion | Verdict |
+|---|---|---:|---:|---:|---|---|
+| DX-20 | `diagnostic_phase34_test.go`, `protocol_phase34_test.go`, `session_phase34_presentation_test.go`, `main_phase34_diagnostics_test.go`, route/repair tests | Yes | 0 | 0 | Exact coordinate/value and rendered-output assertions | PASS |
+| DX-21 | `parser_phase34_baseline_test.go`, `parser_phase34_recovery_test.go`, `session_phase34_compat_test.go` | Yes | 0 | 0 | Literal before/after codes, counts, spans, causes and sibling behavior | PASS |
+| DX-22 | `parser_phase34_refusal_test.go`, `check_phase34_refusal_test.go`, `manifest_test.go`, surface witness controls | Yes | 0 | 0 | Exact refusal code, hint, span, near-miss and admission assertions | PASS |
+| DX-23 | `manifest_test.go`, `main_phase34_surface_test.go`, `session_phase34_surface_test.go` | Yes | 0 | 0 | Canonical bytes plus independent witnesses and armed drift controls | PASS |
+
+**Disabled requirement tests:** 0. **Circular test patterns:** 0. **Insufficient assertions:** 0. The inspected `os.WriteFile` calls create temporary Schway inputs, malformed fixture inputs, or a fake tool executable; tests do not generate their expected values from the system under test. The before/after baselines are committed literal fixtures, and manifest witnesses are separately authored source programs.
+
+### Anti-patterns and probes
+
+No unreferenced `TBD`, `FIXME`, or `XXX` debt markers, empty implementations, or user-visible stubs were found in the Phase 34 implementation scope. The two existing “placeholder” mentions are explanatory comments about an unused internal IR place and a single-byte layout field. No phase-declared or conventional `scripts/**/tests/probe-*.sh` file applies.
+
+### Human verification required
+
+The phase is tooling, but the success criteria expose the `schway check` diagnostic in the CLI. The verifier-phase gate says error-message clarity needs human judgment when the phase describes CLI output visible to its user. The prior report's no-human disposition is retained as historical; its UI review explicitly left human readability unmeasured, so no result is inferred or fabricated here.
+
+#### 1. Inspect CLI diagnostic copy
+
+**Test:** Run `schway check` on one unsupported-form draft, such as the reconstructed logical-`&&` case, and inspect the plain-text output.
+**Expected:** The location, one-line source excerpt, caret, and short hint let a developer identify the cause and next step without a misleading cascade.
+**Why human:** Current tests pin exact bytes and diagnostic counts, but cannot establish whether the copy is understandable in context.
+
+### Gaps summary
+
+No blocking code or artifact gaps were found. All 38 technical truths are verified, all 57 artifact declarations pass, all 22 links are manually traced, and DX-20 through DX-23 are satisfied. One CLI copy-clarity item remains for human verification under Step 8, so the terminal status is `human_needed`, not `passed`.
+
+---
+
+_Verified: 2026-10-16T21:11:45Z_
+_Verifier: the agent (gsd-verifier)_

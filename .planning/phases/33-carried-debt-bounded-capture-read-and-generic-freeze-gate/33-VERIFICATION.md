@@ -1,6 +1,6 @@
 ---
 phase: 33-carried-debt-bounded-capture-read-and-generic-freeze-gate
-verified: 2026-10-16T03:13:25Z
+verified: 2026-10-16T21:11:38Z
 status: passed
 score: 60/60 must-haves verified
 covered_files:
@@ -36,6 +36,9 @@ covered_files:
   - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-04-SUMMARY.md
   - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-05-PLAN.md
   - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-05-SUMMARY.md
+  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-371-REFRESH-2026-10-16-VERIFICATION-HISTORY.md
+  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-371-REFRESH-GATES.md
+  - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-371-REFRESH-RUN.json
   - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CARRIED-DEBT-DISPOSITION.md
   - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CONTEXT.md
   - .planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH3-FIX.md
@@ -85,6 +88,35 @@ covered_files:
   - .planning/phases/36-scalar-helper-calls/prohibition-causal-violation.json
   - .planning/phases/36-scalar-helper-calls/prohibition-clean.json
   - .planning/phases/36-scalar-helper-calls/prohibition-outcome-violation.json
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-15.jsonl
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION.json
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-LIFECYCLE.md
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-REVIEW-DISPOSITION.md
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-REVIEW.md
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-SECURITY.md
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-PROHIBITION-PROJECTION.json
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-PROHIBITION-RESOLUTION.json
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-COMPAT-20261016.jsonl
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-COMPAT-20261016.stderr.log
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-COMPLETION-2026-10-16.json
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-DISPOSITION-AMENDMENT-2026-10-16.md
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-DOC-GUARDS-20261016.jsonl
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-DOC-GUARDS-20261016.stderr.log
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-INHERITED-BASELINE-20261016.jsonl
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-INHERITED-BASELINE-20261016.stderr.log
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-INVENTORY-20261016.jsonl
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-INVENTORY-20261016.stderr.log
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-INVENTORY-COORDINATE-FIX-2026-10-16.md
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-SURFACEMANIFEST-20261016.jsonl
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-SURFACEMANIFEST-20261016.stderr.log
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-SYNTAX-20261016.jsonl
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-SYNTAX-20261016.stderr.log
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json
+  - .planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json
   - cmd/schway-repair/repair_phase34_test.go
   - cmd/schway/main.go
   - cmd/schway/main_phase321_run_input_test.go
@@ -105,11 +137,13 @@ covered_files:
   - go.mod
   - internal/compiler/ast/ast.go
   - internal/compiler/cgen/cgen.go
+  - internal/compiler/cgen/cgen_exit_literals_test.go
   - internal/compiler/cgen/cgen_phase273_test.go
   - internal/compiler/cgen/cgen_phase33_scalar_defect_test.go
   - internal/compiler/cgen/cgen_phase35_test.go
   - internal/compiler/cgen/cgen_phase36_caller_shapes_test.go
   - internal/compiler/cgen/cgen_phase36_test.go
+  - internal/compiler/cgen/cgen_phase371_legacy_defect_test.go
   - internal/compiler/cgen/cgen_program.go
   - internal/compiler/cgen/cgen_program_test.go
   - internal/compiler/check/check.go
@@ -136,6 +170,7 @@ covered_files:
   - internal/compiler/executionpeer/executionpeer_phase33_terminal_test.go
   - internal/compiler/executionpeer/executionpeer_phase35_test.go
   - internal/compiler/executionpeer/executionpeer_phase36_test.go
+  - internal/compiler/executionpeer/executionpeer_phase371_test.go
   - internal/compiler/executionpeer/executionpeer_test.go
   - internal/compiler/interp/interp.go
   - internal/compiler/interp/interp_phase321_defect_test.go
@@ -165,6 +200,7 @@ covered_files:
   - internal/compiler/session/session_modules.go
   - internal/compiler/session/session_phase272_identity_test.go
   - internal/compiler/session/session_phase273_identity_test.go
+  - internal/compiler/session/session_phase28_prune_test.go
   - internal/compiler/session/session_phase32_ci_test.go
   - internal/compiler/session/session_phase32_receipt_test.go
   - internal/compiler/session/session_phase34_compat_test.go
@@ -186,12 +222,14 @@ covered_files:
   - internal/compiler/session/session_phase36_peer_mutation_test.go
   - internal/compiler/session/session_phase36_prechange_test.go
   - internal/compiler/session/session_phase36_surface_test.go
+  - internal/compiler/session/session_phase371_compatibility_test.go
   - internal/compiler/session/session_phase37_surface_test.go
   - internal/compiler/session/session_phase37_validation_test.go
   - internal/compiler/session/session_presentation.go
   - internal/compiler/session/session_receipt_gate_test.go
   - internal/compiler/session/summary_coverage_test.go
   - internal/compiler/session/verification_groundedness_test.go
+  - internal/compiler/session/witness_registry_test.go
   - internal/compiler/surface/refusals.go
   - internal/compiler/surfacemanifest/manifest.go
   - internal/compiler/surfacemanifest/manifest_test.go
@@ -236,136 +274,135 @@ covered_files:
   - testdata/phase37/new-fixture-ledger.json
   - testdata/phase37/surface-witnesses.json
   - testdata/receipts/M006.manifest
-covered_digest: "v3:sha256:d548fa31d1ef2aa73da6159f1c57260a5ef319e6ea74d8ea3f38245ff0bd910f"
+covered_digest: "v3:sha256:b9953741c8d14646d01153049a3a71e7e3ebf2681b2adcc84405f6781ad548bc"
 behavior_unverified: 0
 overrides_applied: 0
+re_verification:
+  previous_status: passed
+  previous_score: 60/60 must-haves verified
+  gaps_closed: []
+  gaps_remaining: []
+  regressions: []
 ---
 
 # Phase 33: Carried Debt, Bounded Capture Read, and Generic Freeze Gate Verification Report
 
-**Phase Goal:** Pay the carried M006 debt before feature work: bound the child-written evidence capture read, close or disposition carried warnings, backfill Phase 28 validation and security records, and reuse generic freeze and receipt gates.
-**Verified:** 2026-10-16T03:13:25Z
+**Phase Goal:** The carried M006 debt is paid before any feature work: a child-written capture file can no longer force an unbounded host allocation, the open review warnings are closed or recorded with reasons, Phase 28 has its missing validation and security records, and later milestones reuse one freeze/receipt gate instead of copying phase-specific scripts.
+**Verified:** 2026-10-16T21:11:38Z
 **Status:** passed
-**Re-verification:** No. The previous report was passed 60/60 and had no gaps section. Per the verifier rules, this is a fresh assessment, not gap-closure credit.
+**Re-verification:** No — the previous report was passed 60/60 and had no `gaps:` section, so this refresh used initial-mode verification rather than gap-closure credit.
 
 ## Goal Achievement
 
-The ROADMAP contract contributes four truths; the five PLAN frontmatters add 56. I parsed and assessed all 60 against current code, named tests, archived evidence, and current receipts. All 60 are VERIFIED. The coverage fingerprint includes all 181 paths from the refresh3 current-input receipt, current ROADMAP/REQUIREMENTS/living marker documents, and cited historical review and validation authorities. STATE.md is excluded as mutable phase-closeout bookkeeping; its current marker claim was cross-checked in the real-checkout test and other living documents. The 27 PLAN prohibitions are plain-string constraints without per-item test/judgment metadata; I checked them as negative constraints against the source, history, manifests, and receipts and found no contradiction.
+The roadmap contributes four non-negotiable success criteria. The five plan frontmatters add 56 specific truths. I assessed all 60 against the current source, declared artifacts, test evidence, and receipts. All 60 remain VERIFIED.
 
-| # | Roadmap truth | Status | Evidence |
+The prior report was `passed` at 60/60. The source-bound 33 refresh record is rooted at commit `20a51946`; the checkout is now `6572cd0c`. The later delta is documentation, tests, receipts, and fixture data; the current Phase 37.1 review lists its eight-file test/data delta and is clean. The latest gate and review/security documents supersede the earlier “review pending” fields retained in the immutable 33 run record. No production-code test or pressure probe was run by this verifier.
+
+| # | Roadmap truth | Status | Current evidence |
 |---|---|---|---|
-| 1 | Oversize child capture reports the named capacity outcome after a limit+1 bounded read. | VERIFIED | native_app.go opens the capture then reads through io.LimitReader(handle, int64(limit)+1); len(data) > limit selects capacity_exhausted and native.evidence_capacity_exhausted. TestPhase33CaptureReadBounded covers exactly-limit, limit+1, and a symlinked sparse 1 GiB file; allocation delta above an in-limit baseline is 271,976 bytes, below 1 MiB. The one-time unbounded os.ReadFile overlay failure is recorded as historical evidence in 33-01-SUMMARY.md; this verification reran the bounded cases only and did not rerun that overlay. |
-| 2 | Freeze verdict is stable from repository root/subdirectory; abort-like defects require the exact live owner and allowed reason. | VERIFIED | TestFreezeGateDifferential and the root/subdirectory cases pass. TestPhase33AbortLikeNarrowed and TestPhase33AbortLikeWideningMutantKilled pass. Both interpreter acquire routes pass their recorded owner operation ID; the predicate checks the single live owner, terminal function/operation, defect outcome, and literal reason. |
-| 3 | Carried debt, Phase 28 records, and planning-document controls are fixed or dispositioned with evidence. | VERIFIED | 33-CARRIED-DEBT-DISPOSITION.md separates each prior item and its witness. Phase 28 VALIDATION.md and SECURITY.md are present, labeled retroactive, and accepted by TestVerificationGroundedness, TestValidationRowGradesAreEarnedOverArchivedCorpus, and TestPhase20ValidationLifecycle. Phase 29 WR-02/WR-03 have distinct named existing witnesses. Coverage-kind, route inventory, receipt and living-claim controls pass. |
-| 4 | Generic milestone-agnostic gates replace phase-specific scripts, preserve refusals, accept archived M006 evidence, and leave no old caller. | VERIFIED | check-freeze.sh/check-receipts.sh read the milestone manifest; codedigest.sh owns digest path and change selection. Differential goldens, refusal/mutation controls, archived M006 receipts, malformed controls, and TestNoCheckPhase32Caller pass. scripts/check-phase32-freeze.sh and scripts/check-phase32-receipts.sh are absent. |
+| 1 | An oversize child-written capture reports the named capacity outcome after a limit+1 bounded read. | VERIFIED | `native_app.go:364-395` computes the limit, calls `readApplicationCapture`, marks capacity exhaustion when `len(data) > limit`, and returns `native.evidence_capacity_exhausted`. The helper at `native_app.go:694-700` opens the file and uses `io.ReadAll(io.LimitReader(file, int64(limit)+1))`; there is no path-based size pre-check. The previous named `TestPhase33CaptureReadBounded` run passed exact-limit, limit+1, and sparse-file allocation controls. The source and test are unchanged; this pressure selector is explicitly excluded from the current bounded registry and was not rerun. |
+| 2 | Freeze verdict is stable from root/subdirectory, and the abort-like defect predicate checks only named reasons with the exact live owner. | VERIFIED | The freeze script resolves the repository root and its subdirectory test checks the changed-tree refusal. `interp.go:913-970` requires exactly the one live owner, the terminal function and operation, a defect outcome, and exact per-kind reason bytes. Prior named differential, narrowing, parity, and widening-mutant tests passed; those Phase 33 sources are unchanged in the current source delta. |
+| 3 | Carried review items are fixed or dispositioned, Phase 28 has retroactive validation/security records, and the planning-document controls accept them. | VERIFIED | `33-CARRIED-DEBT-DISPOSITION.md`, `32.1` and `29` dispositions retain specific reasons/witnesses; the Phase 33 review ledger has zero untriaged open items. Phase 28 `VALIDATION.md` is marked retroactive with named tests and explicit no-hosted/full-suite limits; `SECURITY.md` is marked retroactive, has 5/5 listed controls closed and preserves deferred process risk AR-28-01. Current six-root documentation/lifecycle guard receipt passes with no skips. |
+| 4 | Generic milestone-agnostic freeze and receipt gates replace phase-specific scripts, retain refusal behavior, accept archived M006 receipts, and have no retired caller. | VERIFIED | `check-freeze.sh` reads the supplied manifest, resolves the repository root, and delegates changed-path selection to `codedigest.sh --changed`. `check-receipts.sh` reads the manifest’s label, programs, controls, and case rows and validates the two archived host logs. The prior named differential, refusal, archived-M006, and no-caller tests passed; the current gate inputs are unchanged. |
 
 ### PLAN Truth Audit
 
-| Plan | Truth indices | Status | Independent evidence |
+| Plan | Truth indices | Status | Evidence |
 |---|---:|---|---|
-| 33-01 | 1–14 | VERIFIED | The first phase commit 4e19fcb0 changes only planning files and precedes the code-moving commits. Reopened markers and dated amendments are present; archived M006 receipt artifacts are byte-unchanged; Phase 33 binds no hosted receipt. The current capture check covers the helper and budget edge cases; 33-01-SUMMARY.md records the historical one-time unbounded-read overlay failure and restoration of GREEN. TestPhase321RunInputRequiredCLI and TestSummaryCoverageGroundedness pin the other carried items. |
-| 33-02 | 1–10 | VERIFIED | Fixture and file route parity tests pass for byte-index, overflow, remainder-by-zero, and user-defect outcomes. Source confirms exact one-owner matching, final function scope, literal reason equality, shared reason constants used by interp, executionpeer, cgen, and session. The single-line session.go change has equal add/remove counts and its inventory test passes. The widening mutant test kills both always-true seams and restores them. |
-| 33-03 | 1–13 | VERIFIED | POSIX scripts and manifest are present and substantive; sh -n passes. Freeze/receipt differential goldens, changed-tree, subdirectory, failure ordering, manifest label/control, malformed log, archived-receipt, and mutation controls pass. No eval/bash-only syntax was found; the digest is not recomputed when EXPECTED_CODEDIGEST is supplied. |
-| 33-04 | 1–7 | VERIFIED | The phase-specific scripts are deleted after differential-golden capture; TestNoCheckPhase32Caller passes. TestPhase32ProducerCaseTable and TestPhase32PublicRouteAudit bind programs/cases to the manifest; verify-phase32.sh reads its program/case table and digest path set from the shared inputs. Archived fixture and CI control names remain. |
-| 33-05 | 1–12 | VERIFIED | TestPhase32ReceiptLivingClaims covers the M007 label grammar, reopened-marker rules, and real checkout. Distinct Phase 29 findings retain distinct witnesses. Phase 28 docs follow the required retroactive boundaries and section order; the validation, groundedness, and lifecycle tests pass. The carried-debt ledger and 32.1 disposition record the named items and witnesses. |
+| 33-01 | 1–14 | VERIFIED | The first commit is documented and source-history evidence confirms it was docs-only; reopened-marker grammar, dated amendments, archived receipt immutability, and the no-hosted-binding boundary are preserved. The bounded reader and exact/+1/sparse test are present; the one-time unbounded-read mutant failure and restoration are historical test evidence in the plan summary. The QLT-13 source/test pair is unchanged since that named run. IN-02 and the coverage-kind control remain connected to named tests. |
+| 33-02 | 1–10 | VERIFIED | Fixture/file parity controls cover the four named defect rows. The interpreter predicate requires exact owner identity, terminal function/operation adjacency, and exact reason equality; shared reason constants are used across interpreter, execution peer, C generation, and session paths. The widening-mutation control is retained in the named test evidence. |
+| 33-03 | 1–13 | VERIFIED | The two generic POSIX gates and shared digest script are substantive and manifest-driven. The scripts preserve ordered refusals, root resolution, archived M006 receipt compatibility, malformed-row behavior, and digest filtering/selection. Named differential, mutation, manifest, and subdirectory tests remain wired. |
+| 33-04 | 1–7 | VERIFIED | The retired `check-phase32-freeze.sh` and `check-phase32-receipts.sh` are absent. The producer reads the manifest/codedigest inputs; the static caller test scans tracked non-planning files and checks its armed control. The producer/manifest paths are wired and archived controls remain. |
+| 33-05 | 1–12 | VERIFIED | Living-claim grammar, the distinct Phase 29 WR-02/WR-03 witnesses, Phase 28 retroactive documents, and the 32.1 debt ledger are present. The current six-root receipt passes inventory, groundedness, and validation-lifecycle controls; Phase 28’s deferred process risk remains explicitly recorded rather than silently erased. |
 
-## Required Artifacts
+**Score:** 60/60 truths verified (0 present, behavior-unverified).
 
-All 22 declared artifact occurrences pass the canonical artifact query (21 distinct paths; the differential test is declared by two plans). Each exists, is substantive, and is connected to the named tests or scripts.
+### Required Artifacts
 
-| Plan | Artifacts | Result |
+All 22 declared artifact occurrences (21 distinct paths) pass the canonical artifact query. Each exists and is substantive; manual source/test tracing confirms the key implementation links.
+
+| Plan | Declared artifacts | Result |
 |---|---|---|
-| 33-01 | internal/compiler/native/native_app.go; internal/compiler/native/native_phase33_capture_test.go; .planning/LANGUAGE-MATURITY.md; internal/compiler/session/summary_coverage_test.go | 4/4 VERIFIED |
-| 33-02 | internal/compiler/execution/defect_reasons.go; internal/compiler/interp/interp.go; internal/compiler/native/native_phase33_defect_parity_test.go; internal/compiler/interp/interp_phase33_defect_test.go | 4/4 VERIFIED |
-| 33-03 | scripts/check-freeze.sh; scripts/check-receipts.sh; scripts/codedigest.sh; testdata/receipts/M006.manifest; internal/compiler/session/session_gate_differential_test.go; internal/compiler/session/session_freeze_gate_test.go; internal/compiler/session/session_receipt_gate_test.go | 7/7 VERIFIED |
-| 33-04 | internal/compiler/session/session_gate_retire_test.go; internal/compiler/session/session_gate_differential_test.go; scripts/verify-phase32.sh | 3/3 VERIFIED |
-| 33-05 | Phase 28 VALIDATION.md; Phase 28 SECURITY.md; 33-CARRIED-DEBT-DISPOSITION.md; internal/compiler/session/session_phase32_receipt_test.go | 4/4 VERIFIED |
+| 33-01 | bounded capture reader/test; living maturity marker; coverage-kind test | 4/4 VERIFIED |
+| 33-02 | shared defect reasons; interpreter predicate; native parity tests; predicate/mutant tests | 4/4 VERIFIED |
+| 33-03 | freeze/receipt/digest scripts; M006 manifest; differential, freeze, and receipt tests | 7/7 VERIFIED |
+| 33-04 | retired-caller test; differential test; Phase 32 receipt producer | 3/3 VERIFIED |
+| 33-05 | Phase 28 VALIDATION/SECURITY; carried-debt disposition; living receipt-claim test | 4/4 VERIFIED |
 
-## Key Link Verification
+### Key Link Verification
 
-The canonical link checker reports 3/11 because it requires file paths in the PLAN from field. The remaining entries use prose-valued source descriptions; I traced those links manually in code and tests. All 11 are WIRED.
+The canonical helper cannot resolve several plan links because their `from` fields are descriptive prose rather than relative file paths. I traced the listed links against source and named tests; all 11 are WIRED.
 
 | From | To | Status | Evidence |
 |---|---|---|---|
-| native_app.go application runner | readApplicationCapture | WIRED | The application runner computes the configured bound, calls the opened-handle helper, and branches on data length; TestPhase33CaptureReadBounded exercises the path. |
-| reopened markers in LANGUAGE-MATURITY and PRODUCT-ROADMAP | TestPhase32ReceiptLivingClaims | WIRED | The live-doc check reads the marker grammar and real checkout; current markers are reopened and dated. |
-| RunWithFixtureBytes / RunWithFileBytes acquire loops | isAbortLikeDefect | WIRED | Both record ownerOpID from the acquiring operation and pass it to the exact-owner predicate; fixture/file parity tests exercise both. |
-| cgen scalar reason emission | execution.DefectReason constants | WIRED | Shared constants feed event attribution and emitted dynamic-scalar defect text; the explicit-defect test checks native results and application controls. |
-| scripts/check-freeze.sh | scripts/codedigest.sh --changed | WIRED | Freeze invokes the change selector; the .md-only and changed-code controls are in the differential suite. |
-| scripts/check-receipts.sh | testdata/receipts/M006.manifest | WIRED | The gate consumes label, programs, controls, and case rows; the receipt test exercises manifest mutations. |
-| TestReceiptGateArchivedM006 | archived M006 receipt JSON and macOS/Linux logs | WIRED | The test resolves the archived files through phaseArtifactGlob, validates hashes/digest/hosts/programs, and runs the archived acceptance and refusal controls. |
-| scripts/verify-phase32.sh | M006 manifest and codedigest.sh --paths | WIRED | The producer reads programs and case rows from the manifest and obtains the tree-state path set from codedigest.sh. |
-| TestPhase32PublicRouteAudit | manifest programs line | WIRED | The test parses the manifest program list and compares it to the covered route set, with drift controls. |
-| phase32ReceiptProblems | milestone receipt specification | WIRED | The function derives marker prefix/schema/program/host checks from the supplied milestone spec and defaults to M006; receipt tests exercise M007, ignored-label, and malformed cases. |
-| Phase 28 VALIDATION.md command rows | groundedness/lifecycle meta-tests | WIRED | The live corpus scans document rows and command names; the exact selector run includes TestVerificationGroundedness, TestValidationRowGradesAreEarnedOverArchivedCorpus, and TestPhase20ValidationLifecycle. |
+| Application evidence runner | `readApplicationCapture` | WIRED | Runner computes the limit before the opened-handle call, then branches on `len(data) > limit`; the named capture test covers the boundary behavior. |
+| Living M006 markers | `TestPhase32ReceiptLivingClaims` | WIRED | The marker grammar and real-checkout assertion remain in the receipt-claim test. |
+| Fixture/file acquire loops | `isAbortLikeDefect` | WIRED | Each route passes the operation ID of the single acquired owner to the predicate. |
+| C scalar defect emission | Shared `execution.DefectReason*` values | WIRED | The three constants are centralized in `defect_reasons.go` and used across the interpreter, execution peer, C generator, and session. |
+| Freeze gate | `codedigest.sh --changed` | WIRED | The gate invokes the digest script with freeze/candidate revisions and rejects a nonempty changed-path result. |
+| Receipt gate | M006 manifest | WIRED | The gate consumes its label, program list, controls, and declared case rows. |
+| Archived M006 test | Archived receipt JSON and host logs | WIRED | `TestReceiptGateArchivedM006` reads the archived pair, passes the archived digest into the generic gate, and exercises mutation refusals. |
+| Phase 32 receipt producer | Manifest and `codedigest.sh --paths` | WIRED | The producer derives its case/program table and digest path set from the shared inputs. |
+| Public route audit | Manifest program list | WIRED | The route audit compares manifest programs to the covered routes and includes drift controls. |
+| Living receipt problem checks | Milestone receipt specification | WIRED | The validator derives marker/schema/program/host checks from the supplied milestone specification and retains the M006 default. |
+| Phase 28 validation rows | Groundedness/lifecycle checks | WIRED | Current documentation guard receipt includes `TestVerificationGroundedness` and `TestPhase20ValidationLifecycle`; the records identify named commands and their evidence limits. |
 
-## Data-Flow Trace
+### Data-Flow Trace
 
 | Artifact | Data | Source → result | Status |
 |---|---|---|---|
-| Native capture reader | child-written evidence bytes | capture path → opened file handle → limit+1 reader → capacity decision or capture decode | FLOWING |
-| Generic freeze gate | milestone identity and changed paths | manifest plus freeze/candidate revisions → codedigest change check → stable pass/refusal line | FLOWING |
-| Generic receipt gate | program list, controls, archived host logs, expected digest | manifest and receipt inputs → host/program/control validation → stable pass/refusal line | FLOWING |
-| Defect attribution | typed operation and reason | interpreter/native operation → shared reason constant → terminal event / emitted native output | FLOWING |
+| Native capture reader | Child-written evidence bytes | Capture path → opened file handle → limit+1 reader → named capacity decision or decode | FLOWING |
+| Generic freeze gate | Milestone identity and changed paths | Manifest plus revisions → shared digest selector → stable pass/refusal result | FLOWING |
+| Generic receipt gate | Program list, controls, archived host logs, expected digest | Manifest and receipt inputs → host/program/control validation → stable pass/refusal result | FLOWING |
+| Defect attribution | Typed operation and reason | Interpreter/native operation → shared reason constant → terminal event or emitted native result | FLOWING |
 
-## Behavioral Spot-Checks
+### Behavioral Spot-Checks and Current Receipt Scope
 
-| Check | Command | Result |
+| Evidence | Result | Scope |
 |---|---|---|
-| Bounded capture boundary and allocation | GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^TestPhase33CaptureReadBounded$' -count=1 -timeout=600s -v | PASS; exact-limit, limit+1, sparse 1 GiB input; 271,976-byte allocation delta |
-| Predicate and widening mutants | GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase33AbortLikeNarrowed|TestPhase33AbortLikeWideningMutantKilled)$' -count=1 -timeout=600s -v | PASS |
-| Interpreter/native route parity | GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^(TestPhase33DefectParityFixtureRoute|TestPhase33DefectParityFileRoute)$' -count=1 -timeout=600s -v | PASS; 8 route/kind cases |
-| Native scalar explicit defects | GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen -run '^TestPhase33ScalarExplicitDefectShells$' -count=1 -timeout=600s -v | PASS; U64 entry and nested helper at O0/O3/O3-LTO plus application controls |
-| Generic gate differentials and archived controls | GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestFreezeGateDifferential|TestReceiptGateDifferential|TestReceiptGateArchivedM006|TestReceiptGateMalformedControls|TestNoCheckPhase32Caller)$' -count=1 -timeout=600s -v | PASS; 11.567 seconds |
-| Terminal attribution controls | GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/executionpeer -run '^TestPhase33TerminalAttribution$' -count=1 -timeout=600s -v | PASS |
-| Final exact selector union | Python read root_tests from 33-REFRESH3-RUN.json and ran 16 one-shot commands: go test <package> -run '^(exact selector union)$' -count=1 -timeout=600s -json | 240 distinct root names; 252 root PASS actions; 0 fail, 0 skip; 124.73 seconds |
+| Previous named `TestPhase33CaptureReadBounded` run | PASS: exact-limit, limit+1, sparse 1 GiB, bounded allocation; recorded by the prior verification. | Historical named behavioral evidence; source/test unchanged. Explicitly excluded from this refresh’s bounded registry; not rerun. |
+| Previous named Phase 33 predicate, parity, gate differential, archived M006, and retired-caller tests | PASS as recorded in the prior verification. | Retained because their Phase 33 source/test files are unchanged; no tests rerun by this verifier. |
+| Current bounded predecessor registry in `33-371-REFRESH-GATES.md` | 250 selectors, 251 root events, 16 groups, no fail/skip/missing; 220 prior green roots reused with log/source basis, five prior failures rerun green, 26 previously unrun roots green. | Bounded receipt only; not the full historical inventory. `TestPhase33CaptureReadBounded` is excluded. |
+| Current documentation/lifecycle guards in `371-REFRESH-DOC-GUARDS-20261016.jsonl` | 6/6 roots passed, no skips. | Includes inventory, groundedness, and validation-lifecycle coverage. |
+| Phase 37.1 current review/security context | Eight-file regression-delta review clean; security register 13/13 closed, zero open. Current 19-root union has 254 passing subtests and zero skips. | Follow-on phase evidence; context for the amended review disposition, not counted as Phase 33 acceptance or as hosted/two-host evidence. |
 
-The exact-selector union counts were: cmd/schway 9, cmd/schway-repair 3, cgen 20, check 21, core 3, corevalidate 12, diagnostic 5, executionpeer 18, interp 10, native 11, originvalidate 8, pathoracle 4, protocol 4, session 98, surfacemanifest 4, syntax 22. These are selector executions, not a full package or project suite.
+No test, native executable, full-project run, or pressure test was started by this verifier. The regression receipts are cited as prior recorded evidence, not as commands run in this verification.
 
-The final refresh receipt is source-bound to 28e6cae52769f13e45042f48812669c990df116d, an ancestor of current HEAD b19ad06f. The only later changes through HEAD are planning documents. All 181 input hashes and 16 raw log hashes in 33-REFRESH3-RUN.json match; the final receipt parses as 252 run/pass, zero fail/skip, and no missing roots. All four inputs and six raw-log hashes in 33-REFRESH3-REPAIR.json also match. Its original-source overlay RED log fails the six native explicit-defect compile cases on an undefined application-capacity helper; repaired source passes the focused test. The eight no-call compatibility controls and inventory control pass. The two legacy no-call diagnosis logs intentionally fail and are evidence of CR-06, not green tests. The earlier 33-REFRESH3-VALIDATION.json is explicitly pre-repair (49 roots/six packages); the final union reran its 18 mapped selectors and is the current evidence.
+### Probe Execution
 
-## Probe Execution
+No phase-declared or conventional `scripts/*/tests/probe-*.sh` probe was found. No probe was required or substituted.
 
-No phase-declared or conventional scripts/*/tests/probe-*.sh files were found. No probe was required or substituted.
-
-## Requirements Coverage
+### Requirements Coverage
 
 | Requirement | Source plan | Status | Evidence |
 |---|---|---|---|
-| QLT-13 | 33-01 | SATISFIED | Opened-handle limit+1 read, named capacity result, boundary and sparse-file allocation test, plus the historical one-time overlay receipt in 33-01-SUMMARY.md (not rerun here). |
-| QLT-14 | 33-01 through 33-05 | SATISFIED | Freeze root/subdirectory behavior; exact owner/reason predicate and widening mutant; 32.1 IN-01..03 and coverage-kind findings fixed or recorded with witnesses. |
-| QLT-15 | 33-05 | SATISFIED | Phase 29 WR-02/WR-03 have distinct tested witnesses; Phase 28 retroactive validation/security documents pass lifecycle and groundedness checks. |
-| EVD-16 | 33-03/33-04 | SATISFIED | Generic manifest-driven gates, refusal differential controls, archived M006 receipt acceptance, no old caller, producer migration. |
+| QLT-13 | 33-01 | SATISFIED | Opened-handle limit+1 read and named capacity outcome; exact/+1/sparse allocation behavior is covered by the previous named test run, with current source unchanged. |
+| QLT-14 | 33-01 through 33-05 | SATISFIED | Exact owner/reason predicate and mutant; freeze cwd parity; 32.1 IN-01..03 and coverage-kind items fixed or dispositioned with witnesses. |
+| QLT-15 | 33-05 | SATISFIED | Phase 29 WR-02/WR-03 retain distinct named witnesses; Phase 28 retroactive validation/security records are supported by current lifecycle/groundedness guards. |
+| EVD-16 | 33-03/33-04 | SATISFIED | Manifest-driven generic gates, ordered refusal controls, archived M006 acceptance, shared producer inputs, and no retired caller. |
 
-REQUIREMENTS.md maps no additional requirement to Phase 33. EVD-17 is the only active M007 requirement and belongs to Phase 38; this phase binds no new hosted receipt.
+REQUIREMENTS.md maps no additional requirement to Phase 33. EVD-17 is owned by Phase 38 and remains out of this phase’s scope; no hosted or two-host claim is made.
 
-## Anti-Patterns Found
+### Anti-Patterns Found
 
-No unresolved debt markers or implementation stubs were found in the covered implementation paths. The empty returns in these files are ordinary error/optional branches, not user-visible empty implementations. Archived receipts and logs are unchanged from 7f33f2d1 to HEAD; go.mod and go.sum are also unchanged. The first Phase 33 commit is documentation-only. POSIX sh syntax checks pass for all four gate scripts.
+No unresolved TODO/FIXME/TBD/XXX marker or implementation stub was identified in the Phase 33 implementation paths. The current eight-file Phase 37.1 regression-delta review reports zero findings. Empty returns within the inspected implementation are normal error/optional branches, not rendered stubs.
 
-## Review Findings and Deferred Audit Obligations
+### Review Findings and Disposition
 
-The phase-local review disposition records 10 cumulative findings: 7 fixed, 3 deferred, 0 untriaged open. CR-05, the dynamic native scalar explicit-defect compile/evidence bug, is fixed and independently tested. An initial broad repair broke eight frozen-C no-call controls; the final narrow repair preserves those controls.
+The Phase 33 review disposition retains historical CR-03, CR-04, and CR-06 entries with their original reasons; the ledger has zero untriaged open findings. The dated Phase 37.1 amendment records that CR-03’s active-frame closure, CR-04’s checked foreign-failure attribution, and CR-06’s structured no-call terminal behavior are now implemented; it also records the WR-02 explanatory-comment correction. The amendment preserves older audit bytes. The latest independent Phase 37.1 review is clean on its eight-file delta, and the supplemental security review closes 13/13 scoped controls with zero open threats. These successor findings do not create an unmet Phase 33 roadmap criterion.
 
-Three critical findings remain deferred and are not fixed, waived, or accepted risks:
+Phase 28’s AR-28-01 remains explicitly deferred as a process risk in its retroactive security record. Phase 33 does not claim that risk was removed; it verifies that the record and its reason exist.
 
-| Finding | Remaining issue | Required next action |
-|---|---|---|
-| CR-03 | Legacy child defects can leave caller activation open; peer propagation can falsely reject. | Execution-peer maintainer and M007 audit must explicitly disposition before the Phase 38 freeze. |
-| CR-04 | A propagated typed failure from OpReturn remains unclassifiable. | Execution-peer maintainer and M007 audit must explicitly disposition before the Phase 38 freeze. |
-| CR-06 | Legacy no-call native scalar defects still exit as application failures (exit 65). Original and current-source diagnostic probes both fail in the three native entry lanes; application controls pass. | Emitter maintainer and M007 audit must resolve it before the Phase 38 freeze, with scoped gap work and a dated compatibility amendment if required. |
+### Human Verification Required
 
-These findings do not falsify the four Phase 33 roadmap truths: the carried Phase 32.1 warnings and named Phase 29 items are fixed or recorded, while these newly surfaced critical findings have explicit owners and reasons in 33-REVIEW-DISPOSITION.md and are mandatory M007 audit obligations before Phase 38. They remain a hard freeze gate. Phase 36 WR-02 is a separate comment warning and is not a new Phase 33 acceptance gap.
+None. The phase has no visual or end-user workflow that requires a human-only check; named tests cover its runtime-dependent behavior.
 
-## Human Verification Required
+### Gaps Summary
 
-None. The phase has no graphical or end-user flow, and the runtime-dependent truths have passing named tests. This report makes no claim of new hosted/Linux/macOS receipt binding, subjective readability, full workspace suite coverage, or human UX validation.
-
-## Gaps Summary
-
-No Phase 33 must-have truth failed, and no artifact or key link is missing. The phase goal is achieved at this scope. The three deferred critical review findings above remain explicit blockers for the mandatory M007 audit and Phase 38 freeze; they are not Phase 33 acceptance gaps or accepted risks.
+No Phase 33 truth failed, no declared artifact is missing or stubbed, and all key links are wired. The goal is achieved for QLT-13, QLT-14, QLT-15, and EVD-16. This report makes no whole-project, hosted, two-host, or fresh pressure-test claim.
 
 ---
 
-_Verified: 2026-10-16T03:13:25Z_
+_Verified: 2026-10-16T21:11:38Z_
 _Verifier: the agent (gsd-verifier)_
+

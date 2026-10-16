@@ -1,6 +1,6 @@
 ---
 phase: 35-bitwise-operators-literal-shifts-and-hex-literals
-verified: 2026-10-16T03:41:27Z
+verified: 2026-10-16T21:13:17Z
 status: passed
 score: "38/38 truths verified"
 covered_files:
@@ -22,8 +22,13 @@ covered_files:
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-07-SUMMARY.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-PLAN.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-SUMMARY.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-371-REFRESH-2026-10-16-VERIFICATION-HISTORY.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-371-REFRESH-GATES.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-371-REFRESH-RUN.json"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-COMPATIBILITY-DELTA.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-EVIDENCE.md"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-PROHIBITION-ENFORCEMENT.json"
+  - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-PROHIBITION-WIRING.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH3-GATES.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH3-PROHIBITION.json"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH3-RUN.json"
@@ -31,14 +36,29 @@ covered_files:
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REVIEW-DISPOSITION.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-SECURITY.md"
   - ".planning/phases/36-scalar-helper-calls/36-REFRESH2-GATES.md"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-03.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-04.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-05.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-06.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-07.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-09.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-10.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-12.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-13.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-15.jsonl"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-COMPLETION-2026-10-16.json"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-DISPOSITION-AMENDMENT-2026-10-16.md"
+  - ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-SYNTAX-20261016.jsonl"
   - "cmd/schway/main_phase35_test.go"
   - "docs/agent-surface.md"
   - "examples/bitwise.schway"
   - "examples/checksum/adler32.schway"
   - "internal/compiler/cgen/cgen.go"
+  - "internal/compiler/cgen/cgen_exit_literals_test.go"
   - "internal/compiler/cgen/cgen_phase33_scalar_defect_test.go"
   - "internal/compiler/cgen/cgen_phase35_test.go"
   - "internal/compiler/cgen/cgen_phase36_caller_shapes_test.go"
+  - "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go"
   - "internal/compiler/cgen/cgen_program.go"
   - "internal/compiler/check/check.go"
   - "internal/compiler/check/check_phase35_baseline_test.go"
@@ -53,6 +73,7 @@ covered_files:
   - "internal/compiler/executionpeer/executionpeer.go"
   - "internal/compiler/executionpeer/executionpeer_phase33_terminal_test.go"
   - "internal/compiler/executionpeer/executionpeer_phase35_test.go"
+  - "internal/compiler/executionpeer/executionpeer_phase371_test.go"
   - "internal/compiler/interp/interp.go"
   - "internal/compiler/interp/interp_phase35_test.go"
   - "internal/compiler/native/native.go"
@@ -70,6 +91,7 @@ covered_files:
   - "internal/compiler/session/session_phase35_prechange_test.go"
   - "internal/compiler/session/session_phase35_surface_test.go"
   - "internal/compiler/session/session_phase35_values_test.go"
+  - "internal/compiler/session/session_phase371_compatibility_test.go"
   - "internal/compiler/session/summary_coverage_test.go"
   - "internal/compiler/surface/refusals.go"
   - "internal/compiler/surfacemanifest/manifest.go"
@@ -92,18 +114,25 @@ covered_files:
   - "testdata/phase35/surface-census.json"
   - "testdata/phase35/surface-witnesses.json"
   - "testdata/phase35/value-vectors.json"
-covered_digest: "v3:sha256:45003bdd8adb489f20e3b92db061704de08396230cc788f48d474570f48b6dfb"
+  - "testdata/phase371/compatibility-amendments.json"
+  - "testdata/phase371/pre-emitter-census.json"
+covered_digest: "v3:sha256:533112f30cd6b2885619e81d5efdcd405bddfdd9fe7cc3d8b3a69b30d2ed3c64"
 behavior_unverified: 0
 overrides_applied: 0
-decision_coverage: "23/23 CONTEXT decisions honored"
+decision_coverage:
+  honored: 23
+  total: 23
+  not_honored: []
+human_verification: []
 ---
 
 # Phase 35: Bitwise Operators, Literal Shifts, and Hex Literals Verification Report
 
 **Phase Goal:** Ordinary Schway scalar code can use U64 `^`, `&`, `|`, literal-amount `<<` and `>>`, and hex literals, with one defined meaning on every engine and optimization level, no C17 shift undefined behavior, and no new defect path.
-**Verified:** 2026-10-16T03:41:27Z
+**Verified:** 2026-10-16T21:13:17Z
 **Status:** passed
-**Prior report:** passed, 38/38; no `gaps:` section. This was a freshness verification, not a gap-closure run.
+**Re-verification:** No — the prior passed report had no gaps; must-haves were re-established from the roadmap and eight plans.
+**Prior report:** Passed 38/38 with no `gaps:` section, but became stale after the Phase 37.1 source-delta refresh.
 
 ## Goal Achievement
 
@@ -113,7 +142,7 @@ The contract is the five roadmap success criteria plus the 34 unique plan truths
 
 | # | Truth | Status | Evidence |
 |---|---|---|---|
-| 1 | U64 xor, and, and or have independently pinned values in interpreter and native O0, O3, and O3-LTO; check/core/origin derive transfers independently and executionpeer checks event-free causality. | ✓ VERIFIED | Current value matrix and interpreter vector tests passed; REFRESH3 raw logs independently parsed with 15/15 transfer mutants killed and all 33 vectors passing at O0/O3/LTO. Executionpeer’s causal-only boundary is preserved. |
+| 1 | U64 xor, and, and or have independently pinned values in interpreter and native O0, O3, and O3-LTO; check/core/origin derive transfers independently and executionpeer checks event-free causality. | ✓ VERIFIED | Current Phase 37.1 raw logs and directly rerun value matrix support the three optimization lanes; current source-bound mutation receipts record 15/15 independent transfer mutants killed. Executionpeer’s causal-only boundary is preserved. |
 | 2 | Literal shifts at 0, 31, 32, and 63 agree across engines/optimization levels; low-64 left shift, nonliteral and out-of-range refusal, and safe C sites are defined. | ✓ VERIFIED | Checker/core/origin source enforces literal 0..63; native shift scanner, 33-vector matrix, 16-case UBSan run and admission mutants pass. Emission widens unsigned operands and casts to `uint64_t`. |
 | 3 | Hex digits are case-insensitive, spelling is preserved, and malformed/overflow tokens receive named diagnostics. | ✓ VERIFIED | Lexer/parser ownership, formatter round-trip and refusal registry inspected; syntax grammar, numeric ownership and formatter tests pass. |
 | 4 | Adler uses `b << 16`; pinned checksum and `adler_low` answers remain identical on both engines. | ✓ VERIFIED | `TestPhase35ExistingAdlerAnswers` passed in both engines; source imports and cleanup path inspected. |
@@ -139,7 +168,7 @@ The contract is the five roadmap success criteria plus the 34 unique plan truths
 | 24 | Generated shifts use checked 0..63 literals, unsigned non-promoted operands and exact-width casts; the site scan is non-vacuous. | ✓ VERIFIED | Both simple and branched emitter paths emit unsigned operands and `uint64_t` results; tracer and positive-site/unsafe controls pass. |
 | 25 | Event projection, schema/capacity, scalar signatures and path selectors recognize all five operations without new events or optimizer facts. | ✓ VERIFIED | Emitter/native inventories and exhaustive operation selectors inspected; current cgen roots and regression log roots pass. |
 | 26 | The unused-Byte conformance signature returns U64 without changing application entry, defaults or conversions. | ✓ VERIFIED | Fixture harness retains Byte input and U64 result; public conformance witness is in the fresh receipts. |
-| 27 | Old generated C/core/schema identifiers remain byte-identical outside declared feature/resource amendments. | ✓ VERIFIED | Frozen pre-change comparisons pass; source revision `9bc84d95` has no source change relative to HEAD `04f0ff1b` (only later gate docs). |
+| 27 | Old generated C/core/schema identifiers remain byte-identical outside declared feature/resource amendments. | ✓ VERIFIED | Frozen pre-change comparisons and current regression receipts show the no-feature baseline remains unchanged; current HEAD adds no post-20a source changes. |
 | 28 | Public interpreter/native routes return 264, alternate association returns 8, and application output is `264\n`. | ✓ VERIFIED | Independent literal matrix pins both associations; public witness and application-output roots pass in the receipt logs. |
 | 29 | Literal values hold at O0/O3/O3-LTO and shift UBSan; engine agreement alone is not numeric proof. | ✓ VERIFIED | Direct matrix (33 vectors) and UBSan (16 shift cases) passed; independent expected values and wrong-answer controls are hash-bound. |
 | 30 | `schway.surface/1` retains ten top-level fields and source-free discovery while documenting operators, grouping, precedence, counts, low64, hex and depth. | ✓ VERIFIED | Manifest and guide inspected; source-free route, surface tests and removal/false-admission controls pass in current receipts. |
@@ -154,13 +183,28 @@ The contract is the five roadmap success criteria plus the 34 unique plan truths
 
 **Score:** 38/38 truths verified (0 present, behavior-unverified).
 
-### Freshness evidence and boundaries
+### Current source delta and evidence
 
-I independently verified receipt inputs and raw log hashes against current files and parsed the raw Go test logs. `35-REFRESH3-VALIDATION.json` binds 122/122 current inputs and 13/13 logs; its 72 expected root executions have zero missing, failed or skipped roots. `35-REFRESH3-RUN.json` binds 181/181 inputs and 16/16 logs; its 252 executions represent 251 unique package/name roots and 240 distinct test names, all passing with zero missing/fail/skip. The one-count differences are documented duplicate selectors, not omitted results. These are parent-produced runs; my independent work was hash checking and raw-log parsing, not rerunning their full matrix.
+The original report bytes are preserved in `35-371-REFRESH-2026-10-16-VERIFICATION-HISTORY.md` (SHA-256 `ecaeaa79f187f1f90ecbea3c63a1d2d6abf06b42fe13d369ecf77439f9e05787`). Its five Phase 35-covered production paths were rechecked against the Phase 37.1 delta: `cgen_program.go`, `corevalidate.go`, `executionpeer.go`, `syntax/parser.go`, and the adjacent Phase 33 terminal test. The code changes validate defect-reason UTF-8/provenance and terminal serialization; the Phase 35 scalar transfer, shift-width, and lexer/Pratt behavior remains unchanged. The five pure operations remain in `eventFreeOperationKinds`; the current causal test exercises normal event-free admission and fabricated-event rejection.
 
-The current source revision is `9bc84d95da311beb24cf3e5621f1483346eaf01b`; current HEAD `04f0ff1b` adds only gate documents. I independently ran the focused checks below. Parent evidence also records 15 transfer mutants and 26 admission mutants killed, 33-vector O0/O3/LTO and 16-case UBSan lanes, 24/24 authored security mitigations closed, and a 29-file independent review with zero new Phase 35 findings. The last items are parent evidence and are labeled as such; the mutation suite was not duplicated.
+Current source HEAD is `6572cd0ccf8d9f778d2ea22e4d6e498891c64f32`. The Phase 37.1 source delta ends at `20a519468839a0698e2c4e93fc51300509c6abbf`; `20a519..6572cd` adds no Go, C, or Schway source changes. The new compatibility tests and fixtures are included in the fingerprint below.
 
-The implementation gives each new operation a pure U64 result. C shifts use unsigned widened values and checker-validated literal counts from 0 to 63, so C17’s signed/oversized shift cases do not arise on these sites. The operations do not introduce defect events or reasons. This establishes the Phase 35 “no new defect path” contract for the added operations; it does not assert that every pre-existing defect path has parity.
+The parent-produced bounded regression receipt at `.planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-COMPLETION-2026-10-16.json` records 250 package/test selectors, 251 root events, 240 distinct names, and zero missing, failed, or skipped roots. It reused 220 unchanged green roots with their original source basis, reran five formerly failing roots, and ran 26 previously unrun roots; the pressure selector was excluded. I inspected the current Phase 35 receipt logs and independently ran the focused checks listed below. This is bounded evidence, not a full workspace or two-host run.
+
+| Current raw log slice | SHA-256 | Phase 35 evidence |
+|---|---|---|
+| `371-REFRESH-SYNTAX-20261016.jsonl` | `ff45e01c6fb34463137cde721db26c3f6e19b95ac5ecb03aaee872b5b91a9b77` | Lexer/parser and numeric ownership roots. |
+| `37.1-371-REFRESH-REGRESSION-03.jsonl` / `-04.jsonl` | `b3e09bace8c936ed185d3eb0f051f9f98a5df6ea41c885b3abfb0cd5697026ed` / `fc9196be67943a5c437a9143a376c0c3e860f8f19d6354725e5774b690e7a957` | Native tracer, unsigned shift sites, and emitter controls. |
+| `37.1-371-REFRESH-REGRESSION-05.jsonl` / `-06.jsonl` / `-07.jsonl` | `447e2cc026b29fe8d4035f02ed03e9e3e97c274e718cc3b23f298e24ad5e2743` / `92a2d0ada2c03af592bb2d171389048bdf3dd34fac68049a540920b8acc4190c` / `8d57863fb24598246e02d7d2d888303677f7013149ab3b173c2f6cb3f55a729a` | Checker admission/transfers, core shape, and independent core transfer roots. |
+| `37.1-371-REFRESH-REGRESSION-09.jsonl` / `-10.jsonl` | `01b5bf38c5319f6378d153e7499de3872ddd955785842ddf09027145e2cffc3c` / `accf0ed71574c43316b4cbc24f0a7fe62fbc203946651a6a7c1b08ef17c2ea89` | Causal event controls, interpreter values, and wrong-answer controls. |
+| `37.1-371-REFRESH-REGRESSION-12.jsonl` / `-13.jsonl` | `30241c989eda846408b4c4b48330ff2af7b35c4099e147010a6fbaee8114760e` / `9926fe611d6364d952369e2581cc2b9015045f8bdc2c0be0fe34cc96275e7a9c` | Independent origin transfers/admission and pathoracle ancestry. |
+| `37.1-371-REFRESH-REGRESSION-15.jsonl` | `3a0329496a644dce9acd534d6177437f64f51825d4cb11bed323ba51045eb1c9` | Adler, admission/transfer mutants, value matrix, shift UBSan, surface and evidence roots. |
+
+Current regression/security/review gates are recorded in `35-371-REFRESH-GATES.md`: a 19-root/254-subtest D18 proof union has zero skips; the current delta review is clean; supplemental security controls close 13/13 with zero open; UI is not applicable. These are parent-produced results, distinguished from my source inspection and focused tests. Phase 35 makes no Linux or hosted-receipt claim; the current directly executed native lanes are local Darwin/arm64.
+
+The C emitter shifts an `unsigned long long` operand by a checked decimal literal in 0..63 and casts the result to `uint64_t`. The count stays below the operand width and unsigned left shift supplies low-64-bit behavior after the cast. The interpreter computes on `uint64`; these pure operations add no defect events, terminal reasons, or optimizer facts. Existing Phase 33 audit obligations for unrelated legacy defect paths remain separate and are not closed by this Phase 35 result.
+
+**Verification boundary:** The fingerprint covers the Phase 35 plan/summaries automatically, the original Phase 35 must-have sources/tests/fixtures, current changed test/data files, and the current receipts/raw logs. Planning-root roadmaps are inert inputs and are not fingerprinted.
 
 ### Required artifacts
 
@@ -212,27 +256,26 @@ The generic key-link query found 1/24 by literal path-reference matching. That r
 | `examples/bitwise.schway` | witness result | Parsed and checked source locals executed by interpreter/native compiler | Yes; both engines produce independently pinned 264, and alternate association produces 8. | ✓ FLOWING |
 | `examples/checksum/adler32.schway` | checksum and `adler_low` | Imported Schway source with `b << 16` | Yes; existing checksum answers are observed through both engines. | ✓ FLOWING |
 
-### Focused behavioral checks run for this verification
+### Behavioral Spot-Checks
 
-Every Go command used the isolated cache `GOCACHE=/tmp/ai-lang-verification-gocache`, `-count=1`, and `-timeout=600s`.
+All Go commands used `GOCACHE=/tmp/ai-lang-verification-gocache-count1-v120`, `-count=1`, and `-timeout=600s`. Each command selected named Phase 35 tests; no full package or workspace suite was run.
 
-Three grouped Go commands are shown exactly as run:
+| Behavior | Command | Result | Status |
+|---|---|---|---|
+| Values agree at O0/O3/O3-LTO | `go test ./internal/compiler/session -run '^TestPhase35BitwiseOptimizationMatrix$' -count=1 -v -timeout=600s` | Exit 0; 33 independently expected vectors pass across all three native lanes. | ✓ PASS |
+| C17-safe shift results | `go test ./internal/compiler/session -run '^TestPhase35ShiftUBSan$' -count=1 -v -timeout=600s` | Exit 0; all 16 shift UBSan cases pass. | ✓ PASS |
+| Checker literal-shift admission and transfer | `go test ./internal/compiler/check -run '^(TestPhase35ShiftAdmission|TestPhase35ScalarTransferMutants)$' -count=1 -v -timeout=600s` | Exit 0; valid counts and invalid/nonliteral controls plus five operator transfers pass. | ✓ PASS |
+| Independent core validation | `go test ./internal/compiler/corevalidate -run '^TestPhase35ScalarTransferMutants$' -count=1 -v -timeout=600s` | Exit 0; core validator rejects five transfer faults and CFG variants. | ✓ PASS |
+| Independent origin validation | `go test ./internal/compiler/originvalidate -run '^TestPhase35ScalarTransferMutants$' -count=1 -v -timeout=600s` | Exit 0; origin validator rejects five transfer faults and CFG variants. | ✓ PASS |
+| Parser, numeric ownership, and spelling | `go test ./internal/compiler/syntax -run '^(TestPhase35ScalarGrammar|TestPhase35NumericOwnership|TestPhase35FormatterRoundTrip|TestPhase35ExpressionDepth)$' -count=1 -v -timeout=600s` | Exit 0; precedence/grouping, hex case/spelling, overflow/malformed refusals, and depth boundaries pass. | ✓ PASS |
+| Emitted unsigned shift sites and event projection | `go test ./internal/compiler/cgen -run '^TestPhase35UnsignedShiftEmissionAndEventProjection$' -count=1 -v -timeout=600s` | Exit 0; checked C sites and pure event projection pass. | ✓ PASS |
+| Event-free causal controls | `go test ./internal/compiler/executionpeer -run '^TestPhase35PureOperationCausalControls$' -count=1 -v -timeout=600s` | Exit 0; all five operations admit no-event execution and reject fabricated events. This is causal evidence only. | ✓ PASS |
+| Frozen emitter compatibility and Adler answers | `go test ./internal/compiler/session -run '^(TestPhase35PreChangeEmitterCorpus|TestPhase35PreChangeCorpusControls|TestPhase35ExistingAdlerAnswers)$' -count=1 -v -timeout=600s` | Exit 0; old emitter outputs stay frozen and checksum/adler_low answers match on both engines. | ✓ PASS |
+| Engine values and wrong-answer controls | `go test ./internal/compiler/session -run '^(TestPhase35FocusedValueAnswers|TestPhase35EngineWrongAnswerControls)$' -count=1 -v -timeout=600s` | Exit 0; exact values pass and all five wrong-answer controls are rejected. | ✓ PASS |
+| Public source witness | `go test ./cmd/schway -run '^TestPhase35PublicConformanceWitness$' -count=1 -v -timeout=600s` | Exit 0; public interpreter/native witness returns 264, alternate grouping returns 8. | ✓ PASS |
+| Evidence-prohibition adapter | `node --test testdata/phase35/prohibition-evidence.test.cjs` | Exit 0; the active adapter invokes the named Go evidence-grounding test and rejects false causal/lane claims. | ✓ PASS |
 
-```sh
-GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/syntax -run '^(TestPhase35ScalarGrammar|TestPhase35FormatterRoundTrip|TestPhase35ExpressionDepth|TestPhase35NumericOwnership)$' -count=1 -v -timeout=600s
-GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen -run '^(TestPhase35NativeShiftTracer|TestPhase35ShiftSiteControls|TestPhase33ScalarExplicitDefectShells|TestPhase36UnusedByteStructuredHelper)$' -count=1 -v -timeout=600s
-GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase35PreChangeEmitterCorpus|TestPhase35PreChangeCorpusControls|TestPhase35ExistingAdlerAnswers)$' -count=1 -v -timeout=600s
-```
-
-| Behavior | Result | Status |
-|---|---|---|
-| Grammar, formatting, depth and number ownership | Exit 0; all 4 roots and boundary subcases pass. | ✓ PASS |
-| Interpreter bitwise/shift vectors and event freedom — `go test ./internal/compiler/interp -run '^TestPhase35BitwiseShiftVectorsEventFree$' -count=1 -v -timeout=600s` | Exit 0; 33 vector cases pass. | ✓ PASS |
-| Native shift C tracer/site controls and adjacent defect/Byte compatibility tests | Exit 0; four named roots pass. The defect test exercises dynamic caller shells and does not prove no-call parity. | ✓ PASS |
-| Frozen emitters and Adler outputs | Exit 0; frozen corpus, controls and both-engine Adler outputs pass. | ✓ PASS |
-| Optimization matrix — `go test ./internal/compiler/session -run '^TestPhase35BitwiseOptimizationMatrix$' -count=1 -v -timeout=600s` | Exit 0; 33 vectors across O0/O3/O3-LTO pass. | ✓ PASS |
-| Shift undefined-behavior sanitizer — `go test ./internal/compiler/session -run '^TestPhase35ShiftUBSan$' -count=1 -v -timeout=600s` | Exit 0; all 16 UBSan shift cases pass. | ✓ PASS |
-| Test-tier prohibition adapter — `node --test testdata/phase35/prohibition-evidence.test.cjs` | Exit 0; violation fixture proves fail-first, clean fixture passes. Both BIT-01 and BIT-02 prohibitions are green/unflagged in the receipt. | ✓ PASS |
+These checks complement the current hash-bound receipt roots above. The native matrix and UBSan runs were directly re-executed on the current checkout; the rest are exact named tests, not broad suites.
 
 ### Requirements coverage
 
@@ -244,6 +287,36 @@ All eight plans declare BIT-01 through BIT-04 only. `REQUIREMENTS.md` assigns ex
 | BIT-02 | 02, 03, 04, 06, 07 | Literal U64 shifts only for counts 0..63; named refusals for invalid/nonliteral shifts; defined low64 behavior and no unsafe generated C. | ✓ SATISFIED | Literal admission, unsigned C-site inspection, 33-vector matrix, positive unsafe-site controls and 16-case UBSan pass. |
 | BIT-03 | 02, 07 | Case-insensitive hex digits, exact spelling retention, malformed/overflow refusal with named codes. | ✓ SATISFIED | Lexer/parser/formatter and named refusal tests pass. |
 | BIT-04 | 08 | Adler uses `b << 16`; pinned outputs remain identical on interpreter and native. | ✓ SATISFIED | Direct `TestPhase35ExistingAdlerAnswers` passed for both engines. |
+
+### Test Quality Audit
+
+Requirement-linked Phase 35 tests were scanned for disabled/skipped patterns and circular fixture generation. Writes in requirement-linked tests create temporary alternate source, corpus inputs, mutation overlays, or compiler wrappers; tests do not write expected value fixtures from the system under test. `value-vectors.json` contains the fixed decimal expectations consumed by the interpreter/native comparators.
+
+| Test files | Linked requirements | Active / skipped | Circular | Assertion strength | Verdict |
+|---|---|---|---|---|---|
+| `syntax/*phase35*`, `syntax/numeric_phase35_test.go` | BIT-02, BIT-03 | Active; 0 disabled | No | Value, refusal, spelling, recovery | PASS |
+| `check/check_phase35*`, `corevalidate/corevalidate_phase35_test.go`, `originvalidate/originvalidate_phase35_test.go` | BIT-01, BIT-02 | Active; 0 disabled | No | Independent transfer and negative controls | PASS |
+| `interp/interp_phase35_test.go`, `session/session_phase35_values_test.go`, `cmd/schway/main_phase35_test.go` | BIT-01, BIT-02, BIT-03 | Active; 0 disabled | No | Fixed expected values and public behavior | PASS |
+| `cgen/cgen_phase35_test.go`, `executionpeer/executionpeer_phase35_test.go`, `pathoracle/pathoracle_phase35_test.go` | BIT-01, BIT-02 | Active; 0 disabled | No | Generated-site, causal, and ancestry assertions | PASS |
+| `session/session_phase35_adler_test.go`, `session/session_phase35_prechange_test.go` | BIT-04, compatibility | Active; 0 disabled | No | Both-engine expected answers and frozen output comparisons | PASS |
+| `testdata/phase35/prohibition-evidence.test.cjs` | BIT-01, BIT-02 prohibitions | Active; 0 skipped | No | Violation fixtures plus clean evidence subject | PASS |
+
+**Disabled requirement tests:** 0. **Circular expected-value patterns:** 0. **Insufficient assertions:** 0.
+
+### Test-tier prohibitions
+
+Both plan prohibitions are wired to `testdata/phase35/prohibition-evidence.test.cjs`; current `35-PROHIBITION-ENFORCEMENT.json` reports `green`, `flagged: false`, and `failFirst: true` for each.
+
+| Requirement | Must not claim | Enforcement evidence | Result |
+|---|---|---|---|
+| BIT-01 | Engine agreement or causal event admission is independent numeric proof. | Violation fixture plus clean Phase 35 evidence subject; named adapter test passed. | ✓ VERIFIED |
+| BIT-02 | Historical hosted receipts or skipped optimization/sanitizer lanes are fresh Phase 35 evidence. | Lane-claim violation fixture plus clean Phase 35 evidence subject; named adapter test passed. | ✓ VERIFIED |
+
+Neither test-tier prohibition is unverified or flagged.
+
+### Decision Coverage
+
+The fresh non-blocking context decision query returned `total: 23`, `honored: 23`, and `not_honored: []`. The relevant `z1g`, `trz`, and `z1s` seeds remain dormant on their named current source witnesses; no seed was promoted by this Phase 35 refresh.
 
 ### Anti-patterns and probes
 
@@ -257,7 +330,9 @@ No unreferenced `TBD`, `FIXME` or `XXX` marker was found in the inspected change
 
 The Phase 33 ledger still records CR-03 and CR-04 as deferred BLOCKER audit obligations, and CR-06 as a deferred BLOCKER for the legacy no-call native scalar defect path. CR-05 is fixed for dynamic scalar callers. Phase 36 WR-02 remains deferred comment warning. These are not Phase 35 requirements and do not falsify the added operators’ defined numeric semantics or the “no new defect path” result. In particular, preservation of legacy no-call C bytes does not establish native no-call defect-document parity. The Phase 35 checks establish that the new pure operators themselves produce no new defect/event path; the external obligations remain open for the required audit before Phase 38.
 
-No human-only verification item remains for this software contract. UI applicability is false; no visual claim is made. There is no Phase 35 gap to defer to a later roadmap phase.
+### Human Verification Required
+
+N/A — infrastructure/foundation phase with no visual or external-service UX. All acceptance criteria are verifiable programmatically; there are no behavior-unverified truths. There is no Phase 35 gap to defer to a later roadmap phase.
 
 ### Gaps summary
 
@@ -265,5 +340,5 @@ No Phase 35 goal gap was found. The independent source inspection and focused ch
 
 ---
 
-_Verified: 2026-10-16T03:41:27Z_
+_Verified: 2026-10-16T21:13:17Z_
 _Verifier: gsd-verifier agent_
