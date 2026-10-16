@@ -690,7 +690,7 @@ func (i *index) validate(document execution.Execution) error {
 				return refusal("preorder", n, event.Invocation, "", event.FunctionID, "function returned before observed child activation")
 			}
 			closedActivations[event.Invocation] = true
-			if i.dynamicCallIdentity && event.Kind == "function.defected" && document.Outcome.Kind == execution.OutcomeDefect {
+			if event.Kind == "function.defected" {
 				for _, activation := range stack {
 					closedActivations[activation] = true
 				}
