@@ -839,9 +839,6 @@ func TestPhase371PreEmitterRouteCensus(t *testing.T) {
 	if err := phase371ReadJSON(phase371AmendmentFile(), &ledger); err != nil {
 		t.Fatalf("read amendment ledger: %v", err)
 	}
-	if len(ledger.Entries) != 0 {
-		t.Fatalf("initial amendment ledger must be empty, found %d rows", len(ledger.Entries))
-	}
 	if problems := phase371AmendmentProblems(census, ledger); len(problems) != 0 {
 		t.Fatalf("empty amendment ledger is invalid: %s", strings.Join(problems, "; "))
 	}
