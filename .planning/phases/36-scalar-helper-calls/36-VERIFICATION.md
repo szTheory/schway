@@ -1,7 +1,7 @@
 ---
 phase: 36-scalar-helper-calls
-verified: 2026-10-16T00:07:46Z
-status: gaps_found
+verified: 2026-10-16T00:12:21Z
+status: passed
 score: "32/32 must-haves verified"
 covered_files:
   - ".planning/REQUIREMENTS.md"
@@ -25,9 +25,16 @@ covered_files:
   - ".planning/phases/36-scalar-helper-calls/36-ACCEPTANCE-EVIDENCE.md"
   - ".planning/phases/36-scalar-helper-calls/36-CONTEXT.md"
   - ".planning/phases/36-scalar-helper-calls/36-PROHIBITION-EVIDENCE.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REFRESH-GATES.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REFRESH-METADATA-FIX.md"
   - ".planning/phases/36-scalar-helper-calls/36-REFRESH-PROHIBITIONS.json"
   - ".planning/phases/36-scalar-helper-calls/36-REFRESH-REGRESSION.json"
   - ".planning/phases/36-scalar-helper-calls/36-REFRESH-RUN.json"
+  - ".planning/phases/36-scalar-helper-calls/36-REVIEW-DISPOSITION.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REVIEW.md"
+  - ".planning/phases/36-scalar-helper-calls/36-SECURITY.md"
+  - ".planning/phases/36-scalar-helper-calls/36-UI-REVIEW.md"
+  - ".planning/phases/36-scalar-helper-calls/36-VALIDATION.md"
   - ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs"
   - "cmd/schway/main_phase36_test.go"
   - "examples/helper_calls/crc_step.schway"
@@ -59,31 +66,29 @@ covered_files:
   - "testdata/phase36/helper-values.json"
   - "testdata/phase36/surface-census.json"
   - "testdata/phase36/surface-witnesses.json"
-covered_digest: "v3:sha256:31f5932a47bd7dcba04361735613ec7a6fad31d0a65c05fe89c2fc6fdbfe1806"
+covered_digest: "v3:sha256:4f46995f362e3f195d977d7498baf71be8ab33c2cde97ae60e898cacd9a30db0"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
   honored: 26
   total: 26
   not_honored: []
-gaps:
-  - truth: "Phase-modified roadmap entries replace TBD plan counts for completed phases with the recorded completed counts."
-    status: failed
-    reason: "The modified roadmap still labels completed Phases 34, 35, 36, and 37 as Plans: TBD, despite its progress table recording 8/8, 8/8, 8/8, and 9/9. These are unreferenced debt markers under the Phase 36 anti-pattern gate."
-    artifacts:
-      - path: ".planning/ROADMAP.md"
-        issue: "Lines 162, 207, 236, and 278 contain stale TBD plan counts for completed phases; the Phase 36 summary lists this roadmap as modified."
-    missing:
-      - "Replace or remove the four completed-phase TBD plan counts so the roadmap agrees with its completion table."
+re_verification:
+  previous_status: gaps_found
+  previous_score: "32/32 must-haves verified"
+  gaps_closed:
+    - "Completed Phase 34–37 roadmap plan counts agree with actual plan/summary counts and progress rows."
+  gaps_remaining: []
+  regressions: []
 ---
 
 # Phase 36: Scalar Helper Calls Verification Report
 
 **Phase Goal:** A scalar function can be factored into small helpers: it calls another scalar function with one U64 or Bool argument and uses the result, including calls into imported modules, with the same defect behavior on both engines and every peer re-deriving the call independently.
 
-**Verified:** 2026-10-16T00:07:46Z  
-**Status:** gaps_found  
-**Verification mode:** Initial under Step 0; the prior report had no top-level `gaps:` section. Its claims and fingerprint were treated as historical context, not evidence.
+**Verified:** 2026-10-16T00:12:21Z
+**Status:** passed
+**Verification mode:** Re-verification after closing the prior roadmap metadata gap.
 
 ## Goal Achievement
 
@@ -126,7 +131,22 @@ The four roadmap success criteria, all distinct plan-frontmatter truths, and bot
 | 31 | Optional evidence exhaustion cannot turn success into application success or hide later application output/defect/exit. | ✓ VERIFIED | Independently rerun canonical outcome-prohibition producer is green/unflagged with `failFirst=true`, `passed=true`, and `failFirstProof=violation-fixture`; violation, clean, and default controls passed. |
 | 32 | Causal-peer acceptance does not prove scalar arithmetic or source argument/result intent. | ✓ VERIFIED | Independently rerun causal-prohibition producer has the same green fail-first disposition; numeric-limit mutation fails the named peer assertion, while source and arithmetic claims remain separately tested. |
 
-**Score:** 32/32 must-haves verified. The implementation goal is achieved. Overall status remains `gaps_found` because the Step 7 debt-marker gate found stale completed-phase plan counts in a Phase 36-modified roadmap file.
+**Score:** 32/32 must-haves verified. The implementation goal remains achieved, and the prior metadata blocker is closed.
+
+### Re-verification of Prior Gap
+
+The prior report had one frontmatter gap: completed-phase plan counts in `.planning/ROADMAP.md` were marked TBD. I independently counted actual plans and summaries in each phase directory, compared each count with its Phase Details line and Progress row, and scanned the roadmap for completed-phase TBD plan fields.
+
+| Phase | Plans | Summaries | Roadmap count | Progress row | Status |
+|---:|---:|---:|---|---|---|
+| 34 | 8 | 8 | 8 (8/8 complete) | 8/8 Complete | ✓ CLOSED |
+| 35 | 8 | 8 | 8 (8/8 complete) | 8/8 Complete | ✓ CLOSED |
+| 36 | 8 | 8 | 8 (8/8 complete) | 8/8 Complete | ✓ CLOSED |
+| 37 | 9 | 9 | 9 (9/9 complete) | 9/9 Complete | ✓ CLOSED |
+
+No completed phase retains a TBD plan count. Phase 38's `Plans: TBD (expected 3...)` and `0/TBD | Not started` progress row remain, correctly describing the unstarted milestone-receipts phase. The read-only metadata assertion passed all four count comparisons and the Phase 38 preservation check. `36-VALIDATION.md` records the metadata audit as one finding resolved; `/tmp/schway36-roadmap-counts.json` records the independent count evidence.
+
+No production source, test source, example, fixture, or dependency path changed from the prior verified HEAD `d52cc00726221401f3a7688d8af0567aeeed6b9f` to current HEAD `d60ae944c2fdf0bfbaf5b1cb84e52536006d9052`. Both current bound receipts also revalidate: 82/82 owner-capture inputs and 172/172 regression inputs match, with 13/13 and 16/16 log hashes matching respectively and all recorded commands at exit 0. Thus the prior 32 source/behavior/prohibition truths have no regression; the only failed item has been repaired.
 
 ### Prohibition Gate Assessment
 
@@ -233,26 +253,48 @@ gsd_run run-with-timeout 30 -- env GOCACHE=/tmp/ai-lang-verification-gocache go 
 
 I inspected the receipt hashes and raw logs rather than relying on the receipt summary text. In `36-REFRESH-RUN.json`, all 82 bound inputs and all 13 Go-log hashes match; its 19 Go commands covered 84 exact roots across 13 packages, with no missing, failed, or skipped roots. The two historical Plan 08 Python capture producers were represented through extracted owner lists only; neither was replayed and no archived capture was appended.
 
-In `36-REFRESH-REGRESSION.json`, all 172 bound inputs and 16 raw-log hashes match; logs contain 167 distinct test names and 179 root executions, all passing, with no missing/fail/skip. The receipt is bound to source revision `534fac4d0ec9e2ff6ade8da20a4627b888f12792`. The relevant source, tests, examples, fixtures, and dependency files are unchanged from that revision through current HEAD `d52cc00726221401f3a7688d8af0567aeeed6b9f`. These historical receipts were inspected, not replayed.
+In `36-REFRESH-REGRESSION.json`, all 172 bound inputs and 16 raw-log hashes match; logs contain 167 distinct test names and 179 root executions, all passing, with no missing/fail/skip. The receipt is bound to source revision `534fac4d0ec9e2ff6ade8da20a4627b888f12792`. The relevant source, tests, examples, fixtures, and dependency files remain unchanged from that revision through the prior verification HEAD `d52cc00726221401f3a7688d8af0567aeeed6b9f`. These historical receipts were inspected, not replayed.
 
 The current 36-REFRESH-RUN owner set binds 82 inputs to source revision `3d647e44554cdce5a12525b81da1add1ff2f8f1e`; the read-only grounding record preserves the historical receipt revision separately from current owners. Production code, fixtures, and dependencies were unchanged throughout this verification.
 
 ## Verification Report Validation
 
-After writing this report, both required groundedness guards passed, and the directly applicable Phase 36 baseline, manifest-control, and Phase 37 addition-ledger guards passed. The status readback below is the canonical status-owner result.
+After writing this report, both required groundedness guards passed, the focused Phase 36 lowering/import tests passed, and the direct metadata assertion passed. The canonical status owner returned `passed` with exit 0, matching the frontmatter.
 
 ```sh
 source /tmp/schway34-root-pin.sh
 source /tmp/schway34-gsd-run.sh
 gsd_run run-with-timeout 30 -- env GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestVerificationGroundednessFrontierIsPinned$' -count=1 -timeout=60s
 gsd_run run-with-timeout 30 -- env GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestVerificationGroundednessThreeClassesAreEmpty$' -count=1 -timeout=60s
-gsd_run run-with-timeout 30 -- env GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase36NoCallGeneratedCByteBaselineControls$' -count=1 -timeout=20s
-gsd_run run-with-timeout 30 -- env GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase36SurfaceManifestCallControls$' -count=1 -timeout=20s
-gsd_run run-with-timeout 30 -- env GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase37Phase36AdditionLedgerControls$' -count=1 -timeout=20s
-gsd_run query verification.status .planning/phases/36-scalar-helper-calls --pick status
+gsd_run run-with-timeout 30 -- env GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/check -run '^TestPhase36ScalarCallLoweringAndTypePairs$' -count=1 -timeout=20s
+gsd_run run-with-timeout 30 -- env GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/check -run '^TestPhase36CallImportAndRefusalBoundaries$' -count=1 -timeout=20s
+node <<'NODE'
+const fs = require("fs");
+const phaseDir = ".planning/phases";
+const roadmap = fs.readFileSync(".planning/ROADMAP.md", "utf8");
+const expected = {34: 8, 35: 8, 36: 8, 37: 9};
+for (const [raw, count] of Object.entries(expected)) {
+  const n = Number(raw);
+  const dirName = fs.readdirSync(phaseDir).find(x => x.startsWith(n + "-"));
+  const names = fs.readdirSync(phaseDir + "/" + dirName);
+  const plans = names.filter(x => x.startsWith(n + "-") && x.endsWith("-PLAN.md")).length;
+  const summaries = names.filter(x => x.startsWith(n + "-") && x.endsWith("-SUMMARY.md")).length;
+  const start = roadmap.indexOf("### Phase " + n + ":");
+  const next = roadmap.indexOf("### Phase " + (n + 1) + ":", start + 1);
+  const section = roadmap.slice(start, next < 0 ? roadmap.length : next);
+  const field = section.split("\n").find(x => x.startsWith("**Plans**:"));
+  const progress = roadmap.split("\n").find(x => x.startsWith("| " + n + "."));
+  const expectedField = "**Plans**: " + count + " (" + count + "/" + count + " complete)";
+  if (plans !== count || summaries !== count || field !== expectedField || !progress || !progress.includes("| " + count + "/" + count + " | Complete")) process.exit(1);
+}
+const phase38 = roadmap.slice(roadmap.indexOf("### Phase 38:"));
+if (!phase38.includes("**Plans**: TBD (expected 3") || !phase38.includes("| 38. Milestone Receipts | 0/TBD | Not started")) process.exit(1);
+if (roadmap.split("\n").filter(x => x.startsWith("**Plans**: TBD")).length !== 1) process.exit(1);
+NODE
+gsd_run query verification.status /Users/jon/projects/schway/.planning/phases/36-scalar-helper-calls --pick status
 ```
 
-The test commands all passed; the status owner returned `gaps_found` with exit 0.
+The test commands and metadata assertion all passed. The status owner returned `passed` with exit 0.
 
 ## Probe Execution
 
@@ -275,13 +317,9 @@ The canonical decision-coverage query reports 26/26 honored, with no unhonored C
 
 | File | Line | Pattern | Severity | Impact |
 |---|---:|---|---|---|
-| `.planning/ROADMAP.md` | 162 | `Plans: TBD` for completed Phase 34 | 🛑 BLOCKER | Progress table says 8/8 Complete; stale marker is not tied to follow-up work. |
-| `.planning/ROADMAP.md` | 207 | `Plans: TBD` for completed Phase 35 | 🛑 BLOCKER | Progress table says 8/8 Complete; stale marker is not tied to follow-up work. |
-| `.planning/ROADMAP.md` | 236 | `Plans: TBD` for completed Phase 36 | 🛑 BLOCKER | Progress table says 8/8 Complete; stale marker is not tied to follow-up work. |
-| `.planning/ROADMAP.md` | 278 | `Plans: TBD` for completed Phase 37 | 🛑 BLOCKER | Progress table says 9/9 Complete; stale marker is not tied to follow-up work. |
 | `internal/compiler/corevalidate/corevalidate.go` | 4248 | WR-02 stale explanatory comment | ⚠️ WARNING | Comment describes obsolete same-type-only call validation; current implementation derives from `sourceTypeID` and separate contracts correctly. Tests and cross-typed controls support runtime behavior. Review disposition defers the comment to the core-validator maintainer's next semantic edit; it is not fixed and review is not clean. |
 
-The four roadmap markers are grouped as one planning-metadata gap in frontmatter. The later Phase 38 `TBD` and `0/TBD` entries describe not-started work and are not treated as completed-phase debt. The Phase 36 summaries name `.planning/ROADMAP.md` as modified, which brings its stale completed-phase markers into the explicit debt-marker scan. The roadmap's progress table currently gives the counts that should replace the stale markers. No later phase explicitly owns that correction, so it is not deferred.
+No completed phase retains an unresolved plan-count placeholder. The remaining roadmap `TBD` and `0/TBD` entries belong to Phase 38, which is explicitly not started and retains its expected-plan placeholder.
 
 No implementation TBD/FIXME/XXX debt markers, functional stubs, empty handlers, or hardcoded empty values flowing to runtime output were found in the implementation paths reviewed. The two plan prohibitions passed their canonical producer controls. Security review records 24/24 authored high/L1 threats closed and zero open; this is not an L2/L3 claim. The UI applicability gate reports no frontend files or UI spec, so no visual review is needed.
 
@@ -295,9 +333,9 @@ None. The goal's output, defects, refusals, and independent-peer invariants have
 
 The codebase achieves the Phase 36 scalar helper-call goal: local and imported U64/Bool helper calls return used values, interpreter/native defect behavior matches, call derivation is independently checked, and no-call generated C remains byte-identical. The two test-tier prohibitions also pass independent canonical enforcement.
 
-The phase gate remains `gaps_found` because the Phase 36-modified `.planning/ROADMAP.md` leaves plan-count fields as `TBD` for completed Phases 34–37 despite recording exact completion counts in the progress table. Fix those four planning entries to clear the debt-marker blocker. No implementation gap or human verification item remains.
+The prior metadata gap is closed: the four completed-phase roadmap counts match actual plan and summary files and the progress table. All 32 must-haves remain verified; no gap, regression, or human verification item remains. WR-02 remains a documentation warning deferred to the core-validator maintainer's next semantic edit and does not affect the Phase 36 runtime truths.
 
 ---
 
-_Verified: 2026-10-16T00:07:46Z_  
+_Verified: 2026-10-16T00:12:21Z_
 _Verifier: the agent (gsd-verifier)_
