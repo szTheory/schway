@@ -20,11 +20,51 @@
 # whole remainder of the line (compared as that text plus a newline).
 set -eu
 
+receipt_label=phase32
+m007_mode=false
 fail() {
-	echo "phase32 verify: $1" >&2
-	printf 'phase32 host result status=fail reason=%s\n' "$2"
+	echo "$receipt_label verify: $1" >&2
+	printf '%s host result status=fail reason=%s\n' "$receipt_label" "$2"
 	exit 1
 }
+
+if [ "$#" -gt 0 ]; then
+	if [ "$#" -eq 2 ] && [ "$1" = --milestone ] && [ "$2" = M007 ]; then
+		receipt_label=phase38
+		m007_mode=true
+	elif [ "$#" -eq 4 ] && [ "$1" = --milestone ] && [ "$2" = M007 ] && [ "$3" = --probe ] && [ "$4" = crc32/check ]; then
+		:
+	else
+		printf 'phase38 probe result status=fail reason=invalid_selector\n'
+		exit 2
+	fi
+fi
+
+if [ "$#" -eq 4 ]; then
+	for tool in go clang mktemp rm dirname cmp printf; do
+		command -v "$tool" >/dev/null 2>&1 || { printf 'phase38 probe result status=fail reason=unavailable_tool_%s\n' "$tool"; exit 1; }
+	done
+	verify_root=$(CDPATH= cd "$(dirname "$0")/.." && pwd -P)
+	cd "$verify_root"
+	probe_tmp=$(mktemp -d "${TMPDIR:-/tmp}/schway-phase38-probe.XXXXXX") || { printf 'phase38 probe result status=fail reason=tempdir_failed\n'; exit 1; }
+	trap 'rm -rf "$probe_tmp"' EXIT HUP INT TERM
+	printf '123456789' >"$probe_tmp/check.bin"
+	go build -o "$probe_tmp/schway" ./cmd/schway || { printf 'phase38 probe result status=fail reason=build_failed\n'; exit 1; }
+	for engine in interpreter native; do
+		set +e
+		if [ "$engine" = native ]; then
+			"$probe_tmp/schway" run --engine=native examples/crc32/crc32.schway --manifest examples/crc32/file_bytes.bindings.json -- "$probe_tmp/check.bin" >"$probe_tmp/$engine.out" 2>"$probe_tmp/$engine.err"
+		else
+			"$probe_tmp/schway" run --engine=interpreter examples/crc32/crc32.schway -- "$probe_tmp/check.bin" >"$probe_tmp/$engine.out" 2>"$probe_tmp/$engine.err"
+		fi
+		probe_status=$?
+		set -e
+		printf '3421780262\n' >"$probe_tmp/want.out"
+		[ "$probe_status" -eq 0 ] && cmp -s "$probe_tmp/want.out" "$probe_tmp/$engine.out" && [ ! -s "$probe_tmp/$engine.err" ] || { printf 'phase38 probe result status=fail reason=crc_tuple_%s\n' "$engine"; exit 1; }
+	done
+	printf 'phase38 probe result status=pass\n'
+	exit 0
+fi
 
 for tool in go clang git uname mktemp rm cat sed cmp mkdir dirname printf head tr; do
 	if ! command -v "$tool" >/dev/null 2>&1; then
@@ -35,6 +75,7 @@ done
 verify_root=$(CDPATH= cd "$(dirname "$0")/.." && pwd -P)
 cd "$verify_root"
 receipt_manifest="$verify_root/testdata/receipts/M006.manifest"
+[ "$m007_mode" = false ] || receipt_manifest="$verify_root/testdata/receipts/M007.manifest"
 receipt_programs=$(sed -n 's/^programs=//p' "$receipt_manifest" | sed -n '1p')
 [ -n "$receipt_programs" ] || fail "programs line is missing" "programs_line_missing"
 verify_tmp=$(mktemp -d "${TMPDIR:-/tmp}/schway-phase32.XXXXXX")
@@ -64,9 +105,9 @@ if [ -z "$host_arch" ] || [ -z "$go_host" ] || [ -z "$clang_version" ] || [ -z "
 fi
 tree_start=$(tree_state)
 
-printf 'phase32 host identity host=%s arch=%s go=%s clang_target=%s headsha=%s codedigest=%s tree=%s\n' \
-	"$host_name" "$host_arch" "$go_host" "$clang_target" "$headsha" "$codedigest" "$tree_start"
-printf 'phase32 toolchain go="%s" clang="%s"\n' "$go_version" "$clang_version"
+printf '%s host identity host=%s arch=%s go=%s clang_target=%s headsha=%s codedigest=%s tree=%s\n' \
+	"$receipt_label" "$host_name" "$host_arch" "$go_host" "$clang_target" "$headsha" "$codedigest" "$tree_start"
+printf '%s toolchain go="%s" clang="%s"\n' "$receipt_label" "$go_version" "$clang_version"
 
 case_table=$(grep '^# case ' "$receipt_manifest" || true)
 [ -n "$case_table" ] || fail "case table is empty" "case_table_empty"
@@ -92,10 +133,14 @@ build_program adler32_fixture examples/phase29/adler32_fixture.schway examples/p
 build_program byte_index_oob examples/phase29/byte_index_oob.schway examples/phase29/fixture_bytes.bindings.json
 build_program sum_to_n examples/sum_to_n.schway
 build_program fizzbuzz examples/fizzbuzz.schway
+if [ "$m007_mode" = true ]; then
+	build_program crc32 examples/crc32/crc32.schway examples/crc32/file_bytes.bindings.json
+fi
 
 mkdir -p "$verify_tmp/in"
 : >"$verify_tmp/in/empty"
 printf '\000' >"$verify_tmp/in/zero"
+printf '123456789' >"$verify_tmp/in/check"
 printf 'Wikipedia' >"$verify_tmp/in/wikipedia"
 head -c 65536 /dev/zero | LC_ALL=C tr '\000' '\377' >"$verify_tmp/in/ff65536"
 head -c 65537 /dev/zero | LC_ALL=C tr '\000' '\377' >"$verify_tmp/in/ff65537"
@@ -107,7 +152,7 @@ case_count=0
 run_case() {
 	program=$1; key=$2; want_exit=$3; want_out=$4; want_err=$5
 	case "$program" in
-		checksum|adler_low) arg="$verify_tmp/in/$key" ;;
+		checksum|adler_low|crc32) arg="$verify_tmp/in/$key" ;;
 		*) arg=$key ;;
 	esac
 	case "$want_out" in
@@ -131,8 +176,8 @@ run_case() {
 	cmp -s "$out_file" "$got_out" || { stdout=mismatch; status=fail; }
 	cmp -s "$err_file" "$got_err" || { stderr=mismatch; status=fail; }
 	[ "$got_exit" = "$want_exit" ] || status=fail
-	printf 'phase32 case program=%s input=%s expected_exit=%s actual_exit=%s stdout=%s stderr=%s status=%s\n' \
-		"$program" "$key" "$want_exit" "$got_exit" "$stdout" "$stderr" "$status"
+	printf '%s case program=%s input=%s expected_exit=%s actual_exit=%s stdout=%s stderr=%s status=%s\n' \
+		"$receipt_label" "$program" "$key" "$want_exit" "$got_exit" "$stdout" "$stderr" "$status"
 	[ "$status" = pass ] || fail "case failed: program=$program input=$key" "case_failed_${program}_$key"
 	case_count=$((case_count + 1))
 }
@@ -156,7 +201,7 @@ run_control() {
 	for test_name in "$@"; do
 		grep -Fq -- "--- PASS: $test_name " "$log" || fail "native control did not pass: $test_name" "control_missing_$test_name"
 	done
-	printf 'phase32 control name=%s package=%s tests=%s status=pass\n' "$name" "$pkg" "$*"
+	printf '%s control name=%s package=%s tests=%s status=pass\n' "$receipt_label" "$name" "$pkg" "$*"
 	control_count=$((control_count + 1))
 }
 run_control guide ./cmd/schway '^TestPhase32GuideCleanCheckout$' TestPhase32GuideCleanCheckout
@@ -167,5 +212,5 @@ run_control receipt-rules ./internal/compiler/session '^TestPhase32ReceiptLiving
 tree_end=$(tree_state)
 [ "$tree_end" = "$tree_start" ] || fail "tree moved during the run" "tree_moved"
 [ "$case_count" = "$table_count" ] || fail "incomplete case count: $case_count of $table_count" "incomplete_cases"
-printf 'phase32 host result host=%s codedigest=%s tree=%s cases=%s controls=%s programs=%s status=pass\n' \
-	"$host_name" "$codedigest" "$tree_end" "$case_count" "$control_count" "$receipt_programs"
+printf '%s host result host=%s codedigest=%s tree=%s cases=%s controls=%s programs=%s status=pass\n' \
+	"$receipt_label" "$host_name" "$codedigest" "$tree_end" "$case_count" "$control_count" "$receipt_programs"

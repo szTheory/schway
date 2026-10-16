@@ -120,6 +120,7 @@ jobs:
       - name: scripts/verify-phase27.sh
         shell: bash
         run: |
+          set -o pipefail
           mkdir -p "$RUNNER_TEMP/phase27"
           sh scripts/verify-phase27.sh 2>&1 | tee "$RUNNER_TEMP/phase27/receipt-${{ matrix.os }}.log"
       - name: Upload Phase 27 host receipt
@@ -133,6 +134,7 @@ jobs:
       - name: scripts/verify-phase32.sh
         shell: bash
         run: |
+          set -o pipefail
           mkdir -p "$RUNNER_TEMP/phase32"
           sh scripts/verify-phase32.sh 2>&1 | tee "$RUNNER_TEMP/phase32/receipt-${{ matrix.os }}.log"
       - name: Upload Phase 32 host receipt
@@ -141,6 +143,20 @@ jobs:
         with:
           name: phase32-receipt-${{ matrix.os }}-${{ github.sha }}
           path: ${{ runner.temp }}/phase32/receipt-${{ matrix.os }}.log
+          if-no-files-found: error
+          retention-days: 14
+      - name: scripts/verify-phase32.sh M007
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/phase38"
+          sh scripts/verify-phase32.sh --milestone M007 2>&1 | tee "$RUNNER_TEMP/phase38/receipt-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}.log"
+      - name: Upload M007 host receipt
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase38-receipt-${{ matrix.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/phase38/receipt-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}.log
           if-no-files-found: error
           retention-days: 14
       - name: scripts/verify-phase24.sh

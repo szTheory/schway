@@ -50,6 +50,23 @@ func TestPhase38ReceiptTracer(t *testing.T) {
 		})
 	}
 
+	t.Run("bounded-public-probe", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, "sh", testsupport.ProjectPath("scripts", "verify-phase32.sh"), "--milestone", "M007", "--probe", "crc32/check")
+		cmd.Dir = testsupport.ProjectPath()
+		var stdout, stderr bytes.Buffer
+		cmd.Stdout, cmd.Stderr = &stdout, &stderr
+		if err := cmd.Run(); ctx.Err() != nil {
+			t.Fatalf("bounded receipt probe exceeded its deadline: %v", ctx.Err())
+		} else if err != nil {
+			t.Fatalf("bounded receipt probe failed: %v; stdout=%q stderr=%q", err, stdout.String(), stderr.String())
+		}
+		if !strings.Contains(stdout.String(), "phase38 probe result status=pass") || strings.Contains(stdout.String(), "phase38 host result") {
+			t.Fatalf("probe output did not have its bounded marker: %q", stdout.String())
+		}
+	})
+
 	t.Run("synthetic-two-host-binding-and-revisions", func(t *testing.T) {
 		fixture := phase38NewBindingFixture(t)
 		got := phase38RunBinding(t, fixture, fixture.run, fixture.linuxLog, fixture.macosLog)
