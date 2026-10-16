@@ -8,8 +8,9 @@ schway_write_capacity_capture, which only the application shell defines;
 all six native O0/O3/O3-LTO cases fail compilation. Application controls pass.
 This is a real source defect, not merely a missing terminal at runtime.
 
-The repair branches on the existing shell: application keeps its stderr and
-exit65 handler; native uses emitProgramDefectTerminal plus exit0, exactly as
+The final repair branches on shell and dynamic invocation support: application
+and legacy no-call emission retain their handler; native scalar callers use
+emitProgramDefectTerminal plus exit0, exactly as
 adjacent checked-add/remainder/bounds native defects already do. The native
 runner expects a structured defect document; exit0 is a harness transport
 choice, not successful language evaluation. No numeric replay, checker law,
@@ -45,3 +46,26 @@ caller-shape/exit-only description to these observed limits.
 CR-03/04 remain separate deferred BLOCKER propagation findings for the mandatory
 M007 audit before Phase38 freeze. WR-02 in Phase36 remains deferred comment debt.
 Final broad regression and independent goal verification are separate gates.
+
+## Compatibility correction and residual legacy debt
+
+The first broad shell branch, committed at4b9d2ff8, changed eight frozen-C
+baseline/control roots for the no-call sum_to_n corpus. That failed union is
+preserved in /tmp/schway33-r3-regression-13.log and is not green evidence.
+The final branch repairs native explicit defects only when dynamic invocation
+support is active; application and legacy no-call emission retain their bytes.
+/tmp/schway33-r3-fix-final-safety.log passes five cgen roots, and
+/tmp/schway33-r3-nocall-final.log passes all eight baseline/control roots.
+No frozen golden, historical receipt or compatibility test was rewritten.
+
+The remaining no-call defect behavior is real audit debt, not silently waived:
+/tmp/schway33-r3-nocall-debt.log uses a temporary test overlay removing the only
+helper call; all three native lanes reach exit65 and the application stderr
+rather than a structured terminal. /tmp/schway33-r3-nocall-original-debt.log
+repeats the identical probe against original639b4965 and reaches the same
+failure. The application control passes in both. These are deliberately
+failing diagnostic probes, not credited green tests or native parity.
+The emitter maintainer and M007 auditor must explicitly resolve this debt
+against the no-call byte-baseline obligation before Phase38 freeze, through
+scoped gap work and a dated compatibility amendment when required. Independent
+review owns its finding ID and severity. CR-03/04 retain separate peer owners.

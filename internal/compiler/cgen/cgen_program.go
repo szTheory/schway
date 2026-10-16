@@ -3005,7 +3005,7 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 				}
 				terminated = true
 			case core.OpDefect:
-				if shell == programApplicationShell {
+				if shell == programApplicationShell || !dynamicInvocationSupport {
 					emitProgramApplicationScalarFailure(out, "  ", "schway app: "+op.Reason, dynamicInvocationSupport)
 				} else {
 					emitProgramDefectTerminal(out, function, op)
