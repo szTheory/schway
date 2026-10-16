@@ -1,7 +1,7 @@
 ---
 phase: 34-agent-diagnostics-floor-and-surface-manifest
-verified: 2026-10-16T21:11:45Z
-status: human_needed
+verified: 2026-10-16T21:37:48Z
+status: passed
 score: 38/38 must-haves verified
 covered_files:
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-01-PLAN.md"
@@ -27,6 +27,7 @@ covered_files:
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-REVIEW-FIX.md"
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-REVIEW.md"
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-SECURITY.md"
+  - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-UAT.md"
   - ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-VALIDATION.md"
   - ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REGRESSION.md"
   - ".planning/phases/36-scalar-helper-calls/36-ACCEPTANCE-EVIDENCE.md"
@@ -102,34 +103,30 @@ covered_files:
   - "testdata/phase37/surface-witnesses.json"
   - "testdata/phase371/compatibility-amendments.json"
   - "testdata/phase371/pre-emitter-census.json"
-covered_digest: "v3:sha256:8e7b7ea5b62bee3b1cb00e138e073a9017e91e08bddaa1ef3ac0b5ef27a95656"
+covered_digest: "v3:sha256:d1e0db6f377c637ab4ca269f1cfe661b01d1d7a18f4815fddbfaaa576e6bf39b"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
   honored: 26
   total: 26
   not_honored: []
-human_verification:
-  - test: "Inspect the plain-text diagnostic produced by schway check for an unsupported-form draft."
-    expected: "The location, snippet, caret, and one-line hint make the cause and next step clear without a misleading cascade."
-    why_human: "Exact-output tests establish the diagnostic contract but cannot establish whether its copy is understandable at the CLI."
 re_verification:
   previous_status: passed
   previous_score: 38/38
   gaps_closed: []
   gaps_remaining: []
   regressions: []
-  scope: "Stale-report refresh after the Phase 37.1 source delta; all Phase 34 truths were rechecked against current source and current receipts."
+  scope: "Stale-report refresh after the Phase 37.1 source delta, followed by the scoped user-delegated disposition of the one CLI-copy clarity item; all Phase 34 truths remain verified against current source and receipts."
 ---
 
 # Phase 34: Agent Diagnostics Floor and Surface Manifest Verification Report
 
 **Phase Goal:** An agent drafting Schway gets one precise, locatable diagnostic per real cause and can ask the toolchain what surface is admitted, instead of guessing from cascading, offset-only or misleading errors.
-**Verified:** 2026-10-16T21:11:45Z
-**Status:** human_needed
-**Re-verification:** Yes — stale-report refresh after the Phase 37.1 source delta; the previous report passed without gaps.
+**Verified:** 2026-10-16T21:37:48Z
+**Status:** passed
+**Re-verification:** Yes — stale-report refresh after the Phase 37.1 source delta, with a later scoped disposition of the pending copy item; the previous report passed without gaps.
 
-The dated initial verification and successor amendments below are preserved as history. The final 2026-10-16 section is authoritative for the current source refresh and terminal status.
+The dated initial verification and successor amendments below are preserved as history. The latest 2026-10-16 refresh and disposition sections are authoritative for the current source check and terminal status.
 
 ## Goal Achievement
 
@@ -415,9 +412,9 @@ All trackable CONTEXT decisions are honored by shipped artifacts: **26/26**, wit
 
 No unreferenced `TBD`, `FIXME`, or `XXX` debt markers, empty implementations, or user-visible stubs were found in the Phase 34 implementation scope. The two existing “placeholder” mentions are explanatory comments about an unused internal IR place and a single-byte layout field. No phase-declared or conventional `scripts/**/tests/probe-*.sh` file applies.
 
-### Human verification required
+### Human verification disposition (as of 2026-10-16T21:11:45Z)
 
-The phase is tooling, but the success criteria expose the `schway check` diagnostic in the CLI. The verifier-phase gate says error-message clarity needs human judgment when the phase describes CLI output visible to its user. The prior report's no-human disposition is retained as historical; its UI review explicitly left human readability unmeasured, so no result is inferred or fabricated here.
+At this refresh checkpoint the item below was pending, so the interim verifier decision was `human_needed`. The report preserves this as-of assessment; it is superseded by the scoped disposition recorded below, not by a claim that readability was independently measured.
 
 #### 1. Inspect CLI diagnostic copy
 
@@ -427,9 +424,22 @@ The phase is tooling, but the success criteria expose the `schway check` diagnos
 
 ### Gaps summary
 
-No blocking code or artifact gaps were found. All 38 technical truths are verified, all 57 artifact declarations pass, all 22 links are manually traced, and DX-20 through DX-23 are satisfied. One CLI copy-clarity item remains for human verification under Step 8, so the terminal status is `human_needed`, not `passed`.
+No blocking code or artifact gaps were found. All 38 technical truths are verified, all 57 artifact declarations pass, all 22 links are manually traced, and DX-20 through DX-23 are satisfied. At this checkpoint the CLI copy-clarity item remained pending, so the interim status was `human_needed`.
 
 ---
 
 _Verified: 2026-10-16T21:11:45Z_
+_Verifier: the agent (gsd-verifier)_
+
+## Current disposition — 2026-10-16T21:37:48Z
+
+The user delegated the open wording choice with “what do u rec? do that”. The scoped UAT at `34-UAT.md` records the recommendation to keep the existing diagnostic wording, the user's delegated acceptance, and a complete 1/1 result with zero issues or pending items. It covers only this outstanding copy checkpoint; it is not a new full Phase 34 UAT campaign or an independent human readability measurement.
+
+The existing CLI diagnostic identifies the exact `&&` operator and says `Logical && is unsupported; use explicit if/else control flow.` The verified source-backed output remains pinned by the technical checks. The delegated editorial choice resolves the pending checkpoint without changing source or wording. Human readability remains unmeasured; no independent readability result is claimed. The current human-verification list is empty, and the terminal status is `passed` at 38/38.
+
+`34-UAT.md` is included in the current fingerprint. The canonical fingerprint command returned `covered_files` and digest `v3:sha256:d1e0db6f377c637ab4ca269f1cfe661b01d1d7a18f4815fddbfaaa576e6bf39b`.
+
+---
+
+_Verified: 2026-10-16T21:37:48Z_
 _Verifier: the agent (gsd-verifier)_
