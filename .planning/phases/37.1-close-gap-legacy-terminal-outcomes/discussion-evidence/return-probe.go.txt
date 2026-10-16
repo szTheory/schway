@@ -1,0 +1,104 @@
+package session_test
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/szTheory/schway/internal/compiler/check"
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
+	"github.com/szTheory/schway/internal/compiler/interp"
+	"github.com/szTheory/schway/internal/compiler/syntax"
+)
+
+func TestSchway371ReturnFailureReachabilityProbe(t *testing.T) {
+	source, err := os.ReadFile(filepath.Join("..", "..", "..", "examples", "phase24", "error.schway"))
+	if err != nil { t.Fatal(err) }
+	parsed := syntax.Parse(source)
+	if len(parsed.Diagnostics) != 0 { t.Fatalf("parse: %+v", parsed.Diagnostics) }
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 { t.Fatalf("check: %+v", checked.Diagnostics) }
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid { t.Fatalf("corevalidate: %+v", validated.Problems) }
+	program := validated.Program()
+	operations := map[string]core.LinearOperation{}
+	acquireID, useID := "", ""
+	for _, fn := range program.Functions {
+		if fn.Linear == nil { continue }
+		for _, op := range fn.Linear.Operations {
+			operations[op.ID] = op
+			if fn.Name == "acquire" && op.Foreign != nil && op.Foreign.Mode == "acquire" { acquireID = op.ID }
+			if fn.Name == "probe" && op.Foreign != nil && op.Foreign.Mode == "borrow" { useID = op.ID }
+		}
+	}
+	if acquireID == "" || useID == "" { t.Fatalf("missing operations acquire=%q use=%q", acquireID, useID) }
+	for _, test := range []struct{name string; outcomes map[string]interp.ForeignOutcome}{
+		{name: "nested UseError", outcomes: map[string]interp.ForeignOutcome{
+			acquireID: {Kind: "success", Type: "FileByteOwner", Value: "67"},
+			useID: {Kind: "failure", Type: "UseError", Value: "UnsupportedByte"},
+		}},
+		{name: "callee AcquireError", outcomes: map[string]interp.ForeignOutcome{
+			acquireID: {Kind: "failure", Type: "AcquireError", Value: "AcquireFailed"},
+		}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := interp.RunWithForeignOutcomes(program, "main", "opaque-path-token", test.outcomes)
+			if err != nil { t.Fatal(err) }
+			t.Logf("outcome=%+v evidence_scope=%s actual_host_io=%t", result.Execution.Outcome, result.EvidenceScope, result.ActualHostIO)
+			for i, event := range result.Execution.Events {
+				if event.Kind != "foreign.failed" && event.Kind != "function.failed" { continue }
+				base := event.ID
+				for _, suffix := range []string{":event:failed", ":event"} {
+					if len(base) >= len(suffix) && base[len(base)-len(suffix):] == suffix { base = base[:len(base)-len(suffix)]; break }
+				}
+				t.Logf("failure-event[%d] fn=%s id=%s kind=%s source=%s type=%s core_op=%s", i, event.FunctionID, event.ID, event.Kind, event.SourcePlace, event.TypeID, operations[base].Kind)
+			}
+		})
+	}
+}
+
+func TestSchway371RawCoreCanReachModeledFailureOpReturn(t *testing.T) {
+	source, err := os.ReadFile(filepath.Join("..", "..", "..", "examples", "phase24", "error.schway"))
+	if err != nil { t.Fatal(err) }
+	parsed := syntax.Parse(source)
+	checked := check.Program(parsed.Program)
+	if len(checked.Diagnostics) != 0 { t.Fatalf("check: %+v", checked.Diagnostics) }
+	program := checked.Program
+	var probe *core.Function
+	var use core.LinearOperation
+	for i := range program.Functions {
+		fn := &program.Functions[i]
+		if fn.Name != "probe" || fn.Linear == nil { continue }
+		probe = fn
+		for _, op := range fn.Linear.Operations {
+			if op.Foreign != nil && op.Foreign.Mode == "borrow" { use = op; break }
+		}
+	}
+	if probe == nil || use.ID == "" { t.Fatal("missing probe/use") }
+	var errBlock *core.Block
+	for i := range probe.Linear.Blocks {
+		if probe.Linear.Blocks[i].ID == edgeTarget(probe.Linear.Edges, use.ErrEdgeID) { errBlock = &probe.Linear.Blocks[i]; break }
+	}
+	if errBlock == nil || len(errBlock.OperationIDs) == 0 { t.Fatal("missing error block") }
+	lastID := errBlock.OperationIDs[len(errBlock.OperationIDs)-1]
+	for i := range probe.Linear.Operations {
+		op := &probe.Linear.Operations[i]
+		if op.ID != lastID { continue }
+		if op.Kind != core.OpFail { t.Fatalf("expected source-generated OpFail, got %s", op.Kind) }
+		op.Kind = core.OpReturn
+		op.SourceID = use.TargetID
+		for _, place := range probe.Linear.Places { if place.ID == use.TargetID { op.TypeID = place.TypeID } }
+	}
+	validated := corevalidate.Validate(program)
+	if validated.Valid { t.Fatal("checker-produced Phase 24 OpReturn rewrite unexpectedly passed corevalidate") }; t.Logf("candidate OpReturn rewrite refused by corevalidate: %+v", validated.Problems); return
+	result, err := interp.RunWithForeignOutcomes(validated.Program(), "main", "opaque-path-token", map[string]interp.ForeignOutcome{
+		use.ID: {Kind: "failure", Type: "UseError", Value: "UnsupportedByte"},
+	})
+	if err != nil { t.Fatal(err) }
+	t.Logf("outcome=%+v", result.Execution.Outcome)
+	for _, event := range result.Execution.Events { if event.Kind == "function.failed" { t.Logf("function.failed id=%s fn=%s source=%s eventType=%s", event.ID, event.FunctionID, event.SourcePlace, event.TypeID) } }
+}
+
+func edgeTarget(edges []core.Edge, id string) string { for _, edge := range edges { if edge.ID == id { return edge.ToBlockID } }; return "" }
+

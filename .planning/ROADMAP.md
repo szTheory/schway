@@ -24,7 +24,9 @@ manifest) without changing semantics. Phase 35 adds U64 `^ & |`, literal-amount
 differential witness. Phase 36 lets a scalar function call another scalar
 function. Phase 37 delivers the `crc32` module, the `crc32` program, a second
 consumer, the interpreter file-bytes CLI route, and the clean-checkout guide.
-Phase 38 binds hosted two-host receipts once, after `/gsd-audit-milestone`.
+The pre-receipt audit inserts Phase 37.1 to close three carried terminal-outcome
+blockers. Phase 38 binds hosted two-host receipts once, after that closure and
+a fresh `/gsd-audit-milestone`.
 
 The current requirements are in [REQUIREMENTS.md](REQUIREMENTS.md). The
 [M007 research synthesis](research/M007/SUMMARY.md) records the consumer choice
@@ -101,6 +103,7 @@ construct, so the manifest cannot drift.
 - [x] **Phase 35: Bitwise Operators, Literal Shifts, and Hex Literals** - U64 `^ & |`, literal-amount `<< >>` and hex literals run with identical answers on both engines at every optimization level, and `adler32` uses `b << 16` with byte-identical pinned answers. (completed 2026-10-14)
 - [x] **Phase 36: Scalar Helper Calls** - A scalar function calls another scalar function (one U64/Bool argument, including imported module functions), with independent peer derivation and callee defects surfacing on both engines. (completed 2026-10-15)
 - [x] **Phase 37: CRC-32 Consumer, Interpreter File Route, and Guide** - `crc32 FILE` prints exact CRC-32/ISO-HDLC from an ordinary-source module, a second consumer imports it, `schway run --engine=interpreter` runs file-bytes programs from the CLI, and an executable guide is test-run. (completed 2026-10-15)
+- [ ] **Phase 37.1: Close gap: legacy terminal outcomes (INSERTED)** - Close CR-03/04/06 with independently admissible terminal evidence and an explicit compatibility decision before changing frozen no-call C.
 - [ ] **Phase 38: Milestone Receipts** - Hosted ubuntu and macOS receipts for every M007 and earlier pinned program are bound once to the final M007 codedigest, after the milestone audit.
 
 ## Phase Details
@@ -296,11 +299,39 @@ Plans:
 **Wave 5** *(blocked on Wave 4 completion)*
 - [x] 37-08-PLAN.md
 
+### Phase 37.1: Close gap: legacy terminal outcomes (INSERTED)
+
+**Goal:** A legacy child defect, a propagated modeled typed failure, and an admitted no-call explicit defect each produce the correct terminal outcome and independently admissible evidence, closing audit blockers CR-03, CR-04 and CR-06 before the M007 freeze.
+
+**Requirements**: Audit integration gaps CR-03/04/06; carried CALL-01/CALL-02 boundaries and EVD-17 freeze prerequisites. Canonical requirement ownership stays in Phases 36 and 38; this closure adds no requirement or language surface.
+
+**Depends on:** Phase 37
+
+**Success Criteria** (what must be TRUE):
+
+1. Real interpreter/peer runs close every active frame on a whole-execution child defect in legacy and dynamic call-identity modes while preserving ordinary one-frame returns (CR-03). Reached forged-terminal and post-terminal controls remain refused.
+2. The peer accepts the real checked-source modeled-failure path `foreign.failed → OpFail`, independently binding operation/source, checked failure type, represented error links and root outcome kind (CR-04, dated correction below). Child failures retain one-frame/error-edge behavior; wrong-source/type/outcome-kind and relabeled-clean-return controls fail. No acceptance follows from an event's spelling or an unsubstantiated `OpReturn` probe.
+3. Checker-admitted no-call `OpDefect` programs produce structured native defect evidence with the exact reason bytes at O0, O3 and O3-LTO (CR-06), accepted by the independent peer. Application exit 65, empty stdout and ordinary-reason stderr stay fixed; reached control/NUL reason corruption is corrected with byte-counted output under the dated compatibility decision. The repaired dynamic CR-05 path stays green. The audit diagnostic becomes a permanent meaningful regression.
+4. Before changing frozen no-call C, record a dated, source-grounded compatibility decision and limit any baseline amendment to affected rows, preserving unaffected bytes and original history. Refresh affected verification evidence after source changes, preserve completed UAT and historical summaries, record closure requirement dispositions after its gates, and rerun the milestone audit before Phase 38 planning or freeze.
+
+**Runnable gain**: The three named legacy programs yield correct terminal outcomes and independently accepted evidence on their applicable routes, removing the carried semantic blockers to final receipts.
+
+**Discussion amendment — 2026-10-16:** [37.1-CONTEXT.md](phases/37.1-close-gap-legacy-terminal-outcomes/37.1-CONTEXT.md) D-04..07 preserve the original `OpReturn` criterion and correct CR-04 to the witnessed checked-source `foreign.failed → OpFail` path. Fresh model-only Phase 24 probes reached that path; a modified `OpReturn` candidate failed core validation. The historical audit's synthetic return probe is not admitted-source evidence, and no universal raw-core impossibility is claimed. D-10 records three newly reached native application reason-byte mismatches; D-12..13 authorize exact additive path/route C amendments before emitter edits while preserving original goldens and unaffected bytes. Current causal evidence does not prove numerical values, absent failure payloads or actual CFG branch choices. Original audit, summaries and completed UAT remain historical.
+
+**Scope and evidence**: [M007 audit](M007-MILESTONE-AUDIT.md) and its durable integration probes own the diagnosis. The peer probes were synthetic core/events, so source-admitted interpreter/peer regressions are required here. The native probe reached the real failure but is not a permanent red/green regression. Passing frozen C bytes alone does not prove native defect parity. Phase 36 WR-02 remains separate nonblocking comment debt with its existing next-semantic-edit owner. This is one bounded safety closure; no hosted binding occurs here.
+
+**Transition review — 2026-10-16**: The audit's [three useful next capabilities](M007-MILESTONE-AUDIT.md#three-useful-next-capabilities) remain ranked: audited same-source two-host CRC/checksum receipts, proposed M008 `wc FILE` / `longest_line FILE`, then bounded fixed-schema `key=value` checking. That table names each program, blocker, smallest slice, guarantee changes, evidence/debt, owner and reprioritizing observation. Phase 37.1 now owns terminal closure; Phase 38 retains final receipts. The audit's [dormant seed dispositions](M007-MILESTONE-AUDIT.md#dormant-seed-dispositions) remain applicable to current source/consumers: z1g (query/helper navigation), trz (capture/CRC failure diagnosis), z1s (formatter/checker/source review) all retain dormant status; existing evidence explains these failures and no measured query gap or contested source-form choice triggers an experiment. The local Dashbit appraisal is historical. No implementation or capability claim changed in this insertion.
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run $gsd-plan-phase 37.1 to break down)
+
 ### Phase 38: Milestone Receipts
 
 **Goal**: Every native claim made in M007 and earlier milestones is bound to hosted ubuntu and macOS receipts at the final M007 source, taken once after the milestone audit so no later fix silently invalidates them.
 
-**Depends on**: Phase 37 and a completed `/gsd-audit-milestone` run (plus any audit gap-closure phase it inserts, for example 37.1)
+**Depends on**: Phase 37.1 and a fresh `/gsd-audit-milestone` run after closure
 
 **Requirements**: EVD-17
 
@@ -318,7 +349,7 @@ Plans:
 
 ## Progress
 
-**Execution order:** 33 → 34 → 35 → 36 → 37 → `/gsd-audit-milestone` → 38
+**Execution order:** 33 → 34 → 35 → 36 → 37 → initial audit (`gaps_found`) → 37.1 → `/gsd-audit-milestone` → 38
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -327,6 +358,7 @@ Plans:
 | 35. Bitwise Operators, Literal Shifts, and Hex Literals | 8/8 | Complete    | 2026-10-14 |
 | 36. Scalar Helper Calls | 8/8 | Complete    | 2026-10-15 |
 | 37. CRC-32 Consumer, Interpreter File Route, and Guide | 9/9 | Complete    | 2026-10-15 |
+| 37.1. Close gap: legacy terminal outcomes (INSERTED) | 0 planned | Not started | - |
 | 38. Milestone Receipts | 0 planned | Not started | - |
 
 **Coverage:** 19/19 M007 requirements have exactly one phase owner. DX-22 is

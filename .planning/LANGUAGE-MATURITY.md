@@ -308,11 +308,11 @@ language specification.
 
 ## Corpus and guard census
 
-Corpus: **162 `.schway` programs, 5,352 lines total** (~33 lines average,
+Corpus: **169 `.schway` programs, 5,551 lines total** (~33 lines average,
 193-line maximum). These counts match the current machine-checked tree; the
 corpus predominantly contains focused semantic fixtures, not applications.
 
-A non-test AST census finds **19 `len(Functions) != 1` guards across 6 files in 1 packages** (55 including tests):
+A non-test AST census finds **19 `len(Functions) != 1` guards across 6 files in 1 packages** (70 including tests):
 
 | Package | Guards | Notable sites |
 |---|---|---|
@@ -976,3 +976,35 @@ and reprioritization observations plus scoped z1g/trz/z1s dormant dispositions
 are in [35-REFRESH3-GATES.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH3-GATES.md).
 No seed or future consumer was promoted. See [35-REFRESH3-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH3-CLOSEOUT.md)
 for acceptance provenance and transition limits.
+
+
+## Phase 37.1 terminal-outcome discussion amendment — 2026-10-16
+
+The M007 audit inserted Phase 37.1 for CR-03/04/06. Discussion source inspection
+and bounded probes corrected the CR-04 acceptance target to the admitted
+foreign.failed → OpFail path; the historical synthetic OpReturn probe does not
+establish source admission. Newly executed model-only Phase 24 traces and a
+refused modified-core candidate support that correction, without a universal
+raw-core claim. A separate actual native application probe reproduced admitted
+control/NUL reason-byte corruption. No production repair is claimed yet.
+
+The [37.1 context](phases/37.1-close-gap-legacy-terminal-outcomes/37.1-CONTEXT.md)
+records exact counted-reason semantics, independent causal limits and the dated
+compatibility decision before emitter edits: preserve original C goldens and
+amend active expectations only by reviewed exact path/route rows. It also owns
+the current three program/blocker/slice/guarantee/evidence/owner/reprioritization
+rows and source/consumer dispositions retaining z1g/trz/z1s dormant. Order stays
+audited same-source two-host CRC/checksum receipts, proposed M008 wc/longest_line,
+then bounded fixed-schema key=value checking. No future capability or experiment
+is promoted. Fresh gates and audit follow implementation; EVD-17 remains pending
+and Phase 38-owned. Historical receipts, summaries and completed UAT retain their
+scope. No current hosted/Linux, readability or cold/warm latency result follows.
+
+### Mechanically checked census correction — 2026-10-16
+
+The fresh Go AST/document guard observed 169 source programs / 5,551 lines and
+70 including-tests single-function guard predicates; the earlier current
+paragraph stated 162 / 5,352 / 55. The current paragraph is corrected. The
+non-test census remains 19 predicates across six files in one package. These
+are tree facts, not language-completeness or public-admission measures. No
+source, test or fixture was changed to obtain the corrected counts.

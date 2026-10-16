@@ -1,0 +1,13 @@
+=== RUN   TestSchway371ReasonByteProbe
+=== RUN   TestSchway371ReasonByteProbe/control_then_hex
+    zz_schway371_reason_probe_test.go:56: checker/native emitter admitted exact reason="\x01A"; app exit=65 actual stderr="schway app: \x1a\n" required reason bytes="schway app: \x01A\n"
+=== RUN   TestSchway371ReasonByteProbe/nul_then_hex
+    zz_schway371_reason_probe_test.go:56: checker/native emitter admitted exact reason="\x00A"; app exit=65 actual stderr="schway app: \n\n" required reason bytes="schway app: \x00A\n"
+=== RUN   TestSchway371ReasonByteProbe/nul_then_nonhex
+    zz_schway371_reason_probe_test.go:56: checker/native emitter admitted exact reason="\x00Z"; app exit=65 actual stderr="schway app: " required reason bytes="schway app: \x00Z\n"
+--- PASS: TestSchway371ReasonByteProbe (0.51s)
+    --- PASS: TestSchway371ReasonByteProbe/control_then_hex (0.36s)
+    --- PASS: TestSchway371ReasonByteProbe/nul_then_hex (0.08s)
+    --- PASS: TestSchway371ReasonByteProbe/nul_then_nonhex (0.07s)
+PASS
+ok  	github.com/szTheory/schway/internal/compiler/cgen	0.515s

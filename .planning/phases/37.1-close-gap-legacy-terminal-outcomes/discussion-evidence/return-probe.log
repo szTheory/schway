@@ -1,0 +1,19 @@
+=== RUN   TestSchway371ReturnFailureReachabilityProbe
+=== RUN   TestSchway371ReturnFailureReachabilityProbe/nested_UseError
+    zz_schway371_return_probe_test.go:48: outcome={Kind:typed_failure Value:UnsupportedByte} evidence_scope=interpreter_model_only actual_host_io=false
+    zz_schway371_return_probe_test.go:55: failure-event[10] fn=s1:phase24.error:fn:probe id=s1:phase24.error:fn:probe:op:1:event kind=foreign.failed source=s1:phase24.error:fn:probe:place:1 type=UseError core_op=foreign_call
+    zz_schway371_return_probe_test.go:55: failure-event[12] fn=s1:phase24.error:fn:probe id=s1:phase24.error:fn:probe:op:6:event:failed kind=function.failed source=s1:phase24.error:fn:probe:place:4 type=UseError core_op=fail
+    zz_schway371_return_probe_test.go:55: failure-event[15] fn=s1:phase24.error:fn:main id=s1:phase24.error:fn:main:op:10:event:failed kind=function.failed source=s1:phase24.error:fn:main:place:6 type=UseError core_op=fail
+=== RUN   TestSchway371ReturnFailureReachabilityProbe/callee_AcquireError
+    zz_schway371_return_probe_test.go:48: outcome={Kind:typed_failure Value:AcquireFailed} evidence_scope=interpreter_model_only actual_host_io=false
+    zz_schway371_return_probe_test.go:55: failure-event[1] fn=s1:phase24.error:fn:acquire id=s1:phase24.error:fn:acquire:op:0:event kind=foreign.failed source=s1:phase24.error:fn:acquire:place:0 type=AcquireError core_op=foreign_call
+    zz_schway371_return_probe_test.go:55: failure-event[2] fn=s1:phase24.error:fn:acquire id=s1:phase24.error:fn:acquire:op:2:event:failed kind=function.failed source=s1:phase24.error:fn:acquire:place:2 type=AcquireError core_op=fail
+    zz_schway371_return_probe_test.go:55: failure-event[3] fn=s1:phase24.error:fn:main id=s1:phase24.error:fn:main:op:8:event:failed kind=function.failed source=s1:phase24.error:fn:main:place:4 type=AcquireError core_op=fail
+--- PASS: TestSchway371ReturnFailureReachabilityProbe (0.00s)
+    --- PASS: TestSchway371ReturnFailureReachabilityProbe/nested_UseError (0.00s)
+    --- PASS: TestSchway371ReturnFailureReachabilityProbe/callee_AcquireError (0.00s)
+=== RUN   TestSchway371RawCoreCanReachModeledFailureOpReturn
+    zz_schway371_return_probe_test.go:94: candidate OpReturn rewrite refused by corevalidate: [{Code:core.owner_transfer_cleanup Detail:s1:phase24.error:fn:probe:op:6 FunctionID:}]
+--- PASS: TestSchway371RawCoreCanReachModeledFailureOpReturn (0.00s)
+PASS
+ok  	github.com/szTheory/schway/internal/compiler/session	0.009s

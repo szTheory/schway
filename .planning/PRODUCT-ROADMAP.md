@@ -1095,3 +1095,26 @@ and reprioritization observations plus scoped z1g/trz/z1s dormant dispositions
 are in [35-REFRESH3-GATES.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH3-GATES.md).
 No seed or future consumer was promoted. See [35-REFRESH3-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH3-CLOSEOUT.md)
 for acceptance provenance and transition limits.
+
+
+## Phase 37.1 terminal-outcome discussion amendment — 2026-10-16
+
+The M007 audit inserted Phase 37.1 for CR-03/04/06. Discussion source inspection
+and bounded probes corrected the CR-04 acceptance target to the admitted
+foreign.failed → OpFail path; the historical synthetic OpReturn probe does not
+establish source admission. Newly executed model-only Phase 24 traces and a
+refused modified-core candidate support that correction, without a universal
+raw-core claim. A separate actual native application probe reproduced admitted
+control/NUL reason-byte corruption. No production repair is claimed yet.
+
+The [37.1 context](phases/37.1-close-gap-legacy-terminal-outcomes/37.1-CONTEXT.md)
+records exact counted-reason semantics, independent causal limits and the dated
+compatibility decision before emitter edits: preserve original C goldens and
+amend active expectations only by reviewed exact path/route rows. It also owns
+the current three program/blocker/slice/guarantee/evidence/owner/reprioritization
+rows and source/consumer dispositions retaining z1g/trz/z1s dormant. Order stays
+audited same-source two-host CRC/checksum receipts, proposed M008 wc/longest_line,
+then bounded fixed-schema key=value checking. No future capability or experiment
+is promoted. Fresh gates and audit follow implementation; EVD-17 remains pending
+and Phase 38-owned. Historical receipts, summaries and completed UAT retain their
+scope. No current hosted/Linux, readability or cold/warm latency result follows.

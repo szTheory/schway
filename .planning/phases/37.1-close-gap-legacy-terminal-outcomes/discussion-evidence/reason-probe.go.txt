@@ -1,0 +1,59 @@
+package cgen_test
+
+import (
+ "bytes"
+ "context"
+ "path/filepath"
+ "strings"
+ "testing"
+
+ "github.com/szTheory/schway/internal/compiler/cgen"
+ "github.com/szTheory/schway/internal/compiler/core"
+ "github.com/szTheory/schway/internal/compiler/native"
+ "github.com/szTheory/schway/internal/compiler/session"
+)
+
+func TestSchway371ReasonByteProbe(t *testing.T) {
+ const template = `module probe.reason
+export { fn main }
+fn main(input: U64) -> U64 {
+  var result = input
+  if result < 12 { defect "REASON" } else { result = result + 1 }
+  result
+}
+`
+ for _, tc := range []struct{name, reason string}{
+  {"control_then_hex", string([]byte{1, 'A'})},
+  {"nul_then_hex", string([]byte{0, 'A'})},
+  {"nul_then_nonhex", string([]byte{0, 'Z'})},
+ } {
+  t.Run(tc.name, func(t *testing.T) {
+   source := []byte(strings.Replace(template, "REASON", tc.reason, 1))
+   checked := session.Check(source)
+   if len(checked.Diagnostics) != 0 { t.Fatalf("source refused: %+v", checked.Diagnostics) }
+   found := false
+   for _, fn := range checked.Program.Functions {
+    if fn.Linear == nil { continue }
+    for _, op := range fn.Linear.Operations {
+     if op.Kind == core.OpCall { t.Fatal("unexpected call") }
+     if op.Kind == core.OpDefect {
+      if op.Reason != tc.reason { t.Fatalf("reason=%q want=%q", op.Reason, tc.reason) }
+      found = true
+     }
+    }
+   }
+   if !found { t.Fatal("missing defect") }
+   if _, err := cgen.EmitNative(checked.Program); err != nil { t.Fatal(err) }
+   generated, err := cgen.EmitApplication(checked.Program)
+   if err != nil { t.Fatal(err) }
+   artifact := filepath.Join(t.TempDir(), "reason-probe")
+   if _, err := native.BuildApplication(context.Background(), source, generated, artifact); err != nil { t.Fatal(err) }
+   var out, stderr bytes.Buffer
+   result, err := native.RunApplication(context.Background(), artifact, "7", &out, &stderr)
+   if err != nil || result.ExitCode != 65 || out.Len() != 0 { t.Fatalf("app=%+v stdout=%q err=%v", result, out.String(), err) }
+   want := "schway app: " + tc.reason + "\n"
+   if stderr.String() == want { t.Fatalf("diagnostic mismatch no longer reproduces; got=%q", stderr.String()) }
+   t.Logf("checker/native emitter admitted exact reason=%q; app exit=%d actual stderr=%q required reason bytes=%q", tc.reason, result.ExitCode, stderr.String(), want)
+  })
+ }
+}

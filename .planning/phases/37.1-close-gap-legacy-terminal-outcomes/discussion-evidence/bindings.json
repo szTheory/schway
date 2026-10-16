@@ -1,0 +1,28 @@
+{
+  "schema": "schway.phase371.discussion-evidence/1",
+  "date": "2026-10-16",
+  "head": "1377621dab55dca229c4b5a1e5acd24c13f5d144",
+  "evidence_scope": "selected source bindings and bounded decision probes; not hermetic closure or phase acceptance",
+  "files": {
+    "examples/phase24/error.schway": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+    "internal/compiler/check/check.go": "bb9bb3ba9a3d2c8d685245c496ece95d514f09bc63fff8bad793252441bc8982",
+    "internal/compiler/corevalidate/corevalidate.go": "f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81",
+    "internal/compiler/originvalidate/originvalidate.go": "831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272",
+    "internal/compiler/executionpeer/executionpeer.go": "a884b40df2c5ef2dcb51082d2b6b6400b56bb7d07bf9c72e9a2f7e45a5124ba4",
+    "internal/compiler/interp/interp.go": "aba3e9245fb5189527faf0b7e95757bfc8c8c5985f063701b0f697dbdfd2afbd",
+    "internal/compiler/syntax/lexer.go": "88a32042b98a8fb436ea8e815d8ee9b1dfdcae462c5bb2be51072a04ab9ecb6f",
+    "internal/compiler/syntax/parser.go": "c8ecf18cd7ffeadb4328998e77ed6ebd28aad132f59558ff7239639094adcac3",
+    "internal/compiler/cgen/cgen.go": "a89413e0dda08ccfc2d0aaa7ddcfe7fc93b60606211ac2f655411fe0d6860604",
+    "internal/compiler/cgen/cgen_program.go": "d2de11e73c39a13d99ca3087f4366711d0ade28ff550cfa9ea45b31eccc281e0",
+    "internal/compiler/native/native.go": "63b61bced4d8b516c1874ddfdd6617ada299b89bf0090279bc0b64f60dda3741",
+    "internal/compiler/native/native_app.go": "0124d35186677f20a88704968de42c32a5d7f0fb6ea850533bd5b891629bac64",
+    ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/discussion-evidence/reason-probe.command": "5dd71b127da966a578b8a682c0a1d52a4f9b5628a597d3b9d0c868f7918b9907",
+    ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/discussion-evidence/reason-probe.go.txt": "7b50375d0c27a3cec0e82a3f00182ee922202cb9b51ab8e79660db786938d37a",
+    ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/discussion-evidence/reason-probe.log": "8b2a3d26c0a6a2337c7915ab45f6553fc6f18d2dd703cd4d00998aceef01543d",
+    ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/discussion-evidence/return-probe.command": "9d5ecf5c17ad50c12e8aba2707d7b865466291595c45d64b97b1dd740e60307f",
+    ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/discussion-evidence/return-probe.go.txt": "5cd4660f55c5f6082a7803108590fb73ff8849a3c7d8dc821e7f83c5678ae59e",
+    ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/discussion-evidence/return-probe.log": "800b2cb9f1a8581b48717476da7694cea1ed1e6908277f1683d595e71764adc0"
+  },
+  "go": "go version go1.24.0 darwin/arm64",
+  "clang": "Apple clang version 21.0.0 (clang-2100.1.1.101)"
+}
