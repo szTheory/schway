@@ -2,21 +2,21 @@
 gsd_state_version: "1.0"
 milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
-current_phase: 38
-current_phase_name: Milestone Receipts
+current_phase: "37.1"
+current_phase_name: "Close gap: legacy terminal outcomes"
 current_plan: Not started
-status: Ready to insert M007 audit gap closure before Phase 38
-stopped_at: M007 audit gaps_found; insert terminal-outcome closure before Phase 38
-last_updated: "2026-10-16T13:12:13.602Z"
+status: Ready for planning Phase 37.1
+stopped_at: Phase 37.1 context gathered; dated CR-04 correction and exact-reason compatibility decision recorded; auto-advancing to planning
+last_updated: "2026-10-16T14:14:05.741Z"
 last_activity: 2026-10-16
-last_activity_desc: "M007 audit gaps_found: 18/19 requirements; CR-03/04/06 reproduced"
-state_head: 502ab55edb501dbe2c6b3c101b45852bb7ec29bb
+last_activity_desc: Inserted Phase 37.1 for M007 audit blockers CR-03/04/06
+state_head: 0a8e1a1e5d0f8b4ef18fff72a91e12c9d75acc01
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 5
   total_plans: 38
   completed_plans: 38
-  percent: 83
+  percent: 71
 ---
 
 <!-- schway-current:start -->
@@ -57,7 +57,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Insert M007 terminal-outcome gap closure before Phase 38
+**Current focus:** Plan Phase 37.1 terminal-outcome gap closure before Phase 38
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -125,16 +125,16 @@ plans.
 
 ## Current Position
 
-Phase: 38 — Milestone Receipts
+Phase: 37.1 — Close gap: legacy terminal outcomes
 Current Plan: Not started
 Total Plans in Phase: 0
-Status: Ready to insert M007 audit gap closure before Phase 38
-Last activity: 2026-10-16 — M007 audit gaps_found: 18/19 requirements; CR-03/04/06 reproduced
+Status: Ready for planning Phase 37.1
+Last activity: 2026-10-16 — Inserted Phase 37.1 for M007 audit blockers CR-03/04/06
 
-Progress: [████████░░] 83%
+Progress: [███████░░░] 71%
 
-Implementation: 38/38 authored plans complete; Phase 38 remains unplanned.
-Current verification: phases 33/34/35/36/37 passed; Phase 38 unplanned.
+Implementation: 38/38 authored plans complete; Phases 37.1 and 38 remain unplanned.
+Current verification: phases 33/34/35/36/37 passed; Phases 37.1 and 38 unplanned.
 
 ## M007 Planning
 
@@ -950,6 +950,7 @@ execution-peer owner; CR-06 belongs to the emitter owner and requires an
 explicit dated compatibility amendment if the repair changes frozen no-call
 C. Propose one closure phase after 37, then rerun the audit before planning
 38. EVD-17 remains expected pending under 38; WR-02 is separate comment debt.
+
 The three summary-metadata partials were manually resolved without rewriting
 history. See [M007-MILESTONE-AUDIT.md](M007-MILESTONE-AUDIT.md).
 
@@ -1129,6 +1130,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 - Phase 32.1 inserted after Phase 32: Address tech debt: CLI exit classes and module-aware routes (from M006 audit, 558cbbae) (URGENT)
 - M007 roadmap (2026-10-13): Phases 33–38 from research/M007/SUMMARY.md order; EVD-17 split into its own post-audit Phase 38.
 - Phase 36 changed: Phase 36 discussion clarifies CALL-01/02 through 36-CONTEXT D-18 and dated REQUIREMENTS amendment: U64/Bool callee overflow/remainder, existing ByteView-callee bounds regression, peer-specific source/IR/value/causal evidence. Original roadmap wording preserved.
+- Phase 37.1 inserted after Phase 37: Close gap: legacy terminal outcomes; owns M007 audit CR-03/04/06 closure before Phase 38; plan 37.1, then audit again (URGENT)
 
 ### Quick Tasks Completed
 
@@ -1193,10 +1195,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-16T13:12:13.489Z
-Stopped at: M007 audit gaps_found; insert terminal-outcome closure before Phase 38
-Resume file: .planning/M007-MILESTONE-AUDIT.md
-Next action: `$gsd-phase --insert 37 "Close gap: legacy terminal outcomes"`; discuss/plan/execute the returned decimal phase, then audit again before Phase 38
+Last session: 2026-10-16T14:14:05.641Z
+Stopped at: Phase 37.1 context gathered; dated CR-04 correction and exact-reason compatibility decision recorded; auto-advancing to planning
+Resume file: .planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-CONTEXT.md
+Next action: `$gsd-plan-phase 37.1`; zero plans exist, so the generic missing-verification execute hint is not the next step. Close CR-03/04/06 and rerun the milestone audit before Phase 38.
 
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans

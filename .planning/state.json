@@ -29,6 +29,11 @@
       "status": "complete"
     },
     {
+      "number": "37.1",
+      "name": "Close gap: legacy terminal outcomes (INSERTED)",
+      "status": "pending"
+    },
+    {
       "number": "38",
       "name": "Milestone Receipts",
       "status": "pending"
@@ -36,8 +41,8 @@
   ],
   "next": {
     "command": "/gsd:progress --next",
-    "label": "Advance to the next step (plan phase 38)",
-    "reason": "Phase 38 of 6 — needs a plan"
+    "label": "Advance to the next step (plan phase 37.1)",
+    "reason": "Phase 37.1 of 7 — needs a plan"
   },
-  "updated_at": "2026-10-16T12:46:56.658Z"
+  "updated_at": "2026-10-16T14:14:05.839Z"
 }
