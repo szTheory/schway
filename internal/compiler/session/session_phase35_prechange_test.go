@@ -418,7 +418,27 @@ func phase35ComparePreChangeCorpus(want phase35PreChangeCorpus, observed []phase
 			problems = append(problems, before.Path+": semantic IDs changed")
 		}
 		for _, route := range phase35RouteAccessors {
-			phase35CompareEmission(&problems, before.Path, route.name, *route.get(&before), *route.get(&after))
+			wantEmission := *route.get(&before)
+			gotEmission := *route.get(&after)
+			if before.Path == "examples/sum_to_n.schway" &&
+				(route.name == "emit" || route.name == "emit_native") &&
+				wantEmission.Outcome == "emitted" && gotEmission.Outcome == "emitted" {
+				if wantEmission.Schema != gotEmission.Schema {
+					problems = append(problems, fmt.Sprintf("%s: %s schema changed", before.Path, route.name))
+				}
+				_, compatibilityProblems := phase371OlderCompare(
+					"phase36",
+					before.Path,
+					route.name,
+					strings.TrimPrefix(after.SourceSHA, "sha256:"),
+					strings.TrimPrefix(after.CoreSHA, "sha256:"),
+					[]byte(wantEmission.CSource),
+					[]byte(gotEmission.CSource),
+				)
+				problems = append(problems, compatibilityProblems...)
+			} else {
+				phase35CompareEmission(&problems, before.Path, route.name, wantEmission, gotEmission)
+			}
 		}
 	}
 	return problems

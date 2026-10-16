@@ -580,6 +580,82 @@ func phase371ObserveComparison(problems *[]string, corpus, path, route, sourceSH
 	return true
 }
 
+// phase371CompareBoundLegacyEmission composes an older comparator with the
+// already-measured Phase371 delta. The older comparator's source/core/C inputs
+// must still identify the exact census row, and the final bytes are checked by
+// the same strict projection used by the Phase371 route census.
+func phase371CompareBoundLegacyEmission(
+	problems *[]string,
+	corpus, path, route, sourceSHA, coreSHA string,
+	legacyC []byte,
+	observed phase371ObservedRoute,
+) []byte {
+	census, ledger, artifactProblems, loaded := phase371Artifacts()
+	if !loaded {
+		*problems = append(*problems, "Phase371 census/amendment comparator hooks were not loaded")
+		return nil
+	}
+	if len(artifactProblems) != 0 {
+		for _, problem := range artifactProblems {
+			*problems = append(*problems, "Phase371 census/amendment: "+problem)
+		}
+		return nil
+	}
+	if exactProblems := phase371ActualAmendmentProblems(census, ledger); len(exactProblems) != 0 {
+		for _, problem := range exactProblems {
+			*problems = append(*problems, "Phase371 exact amendment inventory: "+problem)
+		}
+		return nil
+	}
+	entry, baseline := phase371FindCensusRoute(census, corpus, path, route)
+	if entry == nil || baseline == nil || baseline.Outcome != "emitted" {
+		*problems = append(*problems, fmt.Sprintf("%s/%s/%s: older comparator has no emitted Phase371 census binding", corpus, path, route))
+		return nil
+	}
+	if entry.SourceSHA != sourceSHA || entry.CoreSHA != coreSHA {
+		*problems = append(*problems, fmt.Sprintf("%s/%s/%s: source or checked-core bytes changed since the Phase371 census", corpus, path, route))
+		return nil
+	}
+	oldC, err := base64.StdEncoding.DecodeString(baseline.CBase64)
+	if err != nil {
+		*problems = append(*problems, fmt.Sprintf("%s/%s/%s: invalid Phase371 old C binding: %v", corpus, path, route, err))
+		return nil
+	}
+	if len(legacyC) != 0 && !bytes.Equal(legacyC, oldC) {
+		*problems = append(*problems, fmt.Sprintf("%s: %s older comparator C bytes do not match the measured old-C binding", path, route))
+		return nil
+	}
+	if !phase371ObserveComparison(problems, corpus, path, route, sourceSHA, coreSHA, observed) {
+		*problems = append(*problems, fmt.Sprintf("%s/%s/%s: strict Phase371 comparator could not be applied", corpus, path, route))
+		return nil
+	}
+	return oldC
+}
+
+// Phase371CompareOlderEmission is the test-only bridge from external legacy
+// comparator tests to this package's strict census/amendment projection.
+func Phase371CompareOlderEmission(corpus, path, route, sourceSHA, coreSHA string, legacyC, observedC []byte) ([]byte, []string) {
+	var problems []string
+	// Phase34's frozen C corpus predates route schema identifiers; its legacy
+	// comparator binds source, checked core, and C bytes only. Phase36 includes
+	// route schemas, so retain that check there.
+	schema := cgen.Schema
+	if corpus == "phase34" {
+		schema = ""
+	}
+	oldC := phase371CompareBoundLegacyEmission(
+		&problems,
+		corpus,
+		path,
+		route,
+		sourceSHA,
+		coreSHA,
+		legacyC,
+		phase371ObservedRoute{Outcome: "emitted", Schema: schema, CSource: string(observedC)},
+	)
+	return oldC, problems
+}
+
 func phase371Outcome(outcome string) string {
 	if outcome == "not_emitted" {
 		return "inapplicable"
@@ -1025,11 +1101,23 @@ func TestPhase371CompatibilityAmendmentControls(t *testing.T) {
 	mutated := phase371ObservedRoute{Outcome: emitted.Outcome, Schema: emitted.Schema, Code: emitted.Code,
 		Error: emitted.Error, Reason: emitted.Reason, CSource: string(mutatedC)}
 	var comparatorProblems []string
-	if !phase371ObserveComparison(&comparatorProblems, "phase34", current.Path, "emit", current.SourceSHA, current.CoreSHA, mutated) {
-		t.Fatal("actual Phase34 comparator hook did not load for the unrelated-byte control")
-	}
+	phase371CompareBoundLegacyEmission(&comparatorProblems, "phase34", current.Path, "emit", current.SourceSHA, current.CoreSHA, nil, mutated)
 	if !phase371HasProblem(comparatorProblems, "C byte mismatch at byte 0") {
-		t.Fatalf("unrelated extra C-byte mutation was accepted by the actual comparator: %v", comparatorProblems)
+		t.Fatalf("unrelated extra C-byte mutation was accepted by the older-comparator projection: %v", comparatorProblems)
+	}
+
+	clean := phase371ObservedRoute{Outcome: emitted.Outcome, Schema: emitted.Schema, Code: emitted.Code,
+		Error: emitted.Error, Reason: emitted.Reason, CSource: string(currentC)}
+	var staleSourceProblems []string
+	phase371CompareBoundLegacyEmission(&staleSourceProblems, "phase34", current.Path, "emit", strings.Repeat("0", 64), current.CoreSHA, nil, clean)
+	if !phase371HasProblem(staleSourceProblems, "source or checked-core bytes changed") {
+		t.Fatalf("stale source binding was not rejected by the older-comparator projection: %v", staleSourceProblems)
+	}
+
+	var wrongRouteProblems []string
+	phase371CompareBoundLegacyEmission(&wrongRouteProblems, "phase34", current.Path, "emit_application", current.SourceSHA, current.CoreSHA, nil, clean)
+	if !phase371HasProblem(wrongRouteProblems, "emit_application C byte mismatch") {
+		t.Fatalf("wrong older route reused the emit amendment projection: %v", wrongRouteProblems)
 	}
 }
 

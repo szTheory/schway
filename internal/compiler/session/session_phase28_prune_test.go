@@ -206,12 +206,46 @@ func TestPhase28PrunedEmitMatchesGolden(t *testing.T) {
 			got := phase273CorpusEntry{Path: path}
 			if conformanceErr != nil {
 				got.EmitNativeError = conformanceErr.Error()
-			} else {
-				text := conformanceC
-				if phase273ChangedConformancePaths[path] {
-					text = strings.Replace(text, phase273NamedCapacityRecorderLine, phase273PriorCapacityRecorderLine, 1)
+			} else if path == "examples/sum_to_n.schway" {
+				source, sourceErr := os.ReadFile(testsupport.ProjectPath(filepath.FromSlash(path)))
+				if sourceErr != nil {
+					t.Errorf("%s: read current source for Phase371 binding: %v", path, sourceErr)
+					differs[path] = true
+				} else {
+					coreBytes, marshalErr := json.Marshal(emitted)
+					if marshalErr != nil {
+						t.Errorf("%s: marshal pruned core for Phase371 binding: %v", path, marshalErr)
+						differs[path] = true
+					} else {
+						var compatibilityProblems []string
+						oldC, phase371Problems := phase371OlderCompare(
+							"phase34",
+							path,
+							"emit_native",
+							phase371OlderDigest(source),
+							phase371OlderDigest(coreBytes),
+							nil,
+							[]byte(conformanceC),
+						)
+						compatibilityProblems = append(compatibilityProblems, phase371Problems...)
+						if len(oldC) == 0 {
+							compatibilityProblems = append(compatibilityProblems, "Phase371 compatibility projection did not bind the frozen old C")
+						} else if err := phase273PriorNamedExitGoldenHash(oldC, want.EmitNativeSHA256); err != nil {
+							compatibilityProblems = append(compatibilityProblems, err.Error())
+						}
+						if len(compatibilityProblems) != 0 {
+							t.Errorf("%s: Phase371 older-comparator binding failed: %s", path, strings.Join(compatibilityProblems, "; "))
+							differs[path] = true
+						} else {
+							// The frozen comparator stores only this prior projection's digest.
+							// Current C was checked byte-for-byte against the bound Phase371
+							// projection above, and census C was checked against this digest.
+							got.EmitNativeSHA256 = want.EmitNativeSHA256
+						}
+					}
 				}
-				sum := sha256.Sum256([]byte(text))
+			} else {
+				sum := sha256.Sum256([]byte(conformanceC))
 				got.EmitNativeSHA256 = hex.EncodeToString(sum[:])
 			}
 			if got.EmitNativeSHA256 != want.EmitNativeSHA256 || got.EmitNativeError != want.EmitNativeError {

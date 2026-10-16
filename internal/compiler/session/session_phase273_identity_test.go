@@ -1,9 +1,11 @@
 package session_test
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -150,6 +152,27 @@ func phase273ConformanceCorpusWithC(t *testing.T) ([]phase273CorpusEntry, map[st
 	return entries, observedC
 }
 
+func phase273PriorNamedExitGoldenHash(c []byte, expected string) error {
+	if count := bytes.Count(c, []byte(phase273NamedCapacityRecorderLine)); count != 1 {
+		return fmt.Errorf("measured pre-change C contains %d named capacity-exit lines, want exactly one", count)
+	}
+	reversed := bytes.Replace(c, []byte(phase273NamedCapacityRecorderLine), []byte(phase273PriorCapacityRecorderLine), 1)
+	sum := sha256.Sum256(reversed)
+	if got := hex.EncodeToString(sum[:]); got != expected {
+		return fmt.Errorf("measured pre-change C after the prior named-exit projection hashes to %s, want frozen golden %s", got, expected)
+	}
+	return nil
+}
+
+func phase371OlderDigest(data []byte) string {
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+func phase371OlderCompare(corpus, path, route, sourceSHA, coreSHA string, legacyC, observedC []byte) ([]byte, []string) {
+	return session.Phase371CompareOlderEmission(corpus, path, route, sourceSHA, coreSHA, legacyC, observedC)
+}
+
 func TestPhase273ConformanceCorpusByteIdentity(t *testing.T) {
 	observed, observedC := phase273ConformanceCorpusWithC(t)
 	goldenPath := phase273GoldenPath()
@@ -225,14 +248,41 @@ func TestPhase273ConformanceCorpusByteIdentity(t *testing.T) {
 				t.Errorf("%s: conformance C no longer emitted: %q", want.Path, got.EmitNativeError)
 				continue
 			}
-			if n := strings.Count(c, phase273NamedCapacityRecorderLine); n > 1 {
-				t.Errorf("%s: named capacity line appears %d times, want at most 1", want.Path, n)
+			source, err := os.ReadFile(testsupport.ProjectPath(filepath.FromSlash(want.Path)))
+			if err != nil {
+				t.Errorf("%s: read current source for Phase371 binding: %v", want.Path, err)
 				continue
 			}
-			reversed := strings.Replace(c, phase273NamedCapacityRecorderLine, phase273PriorCapacityRecorderLine, 1)
-			sum := sha256.Sum256([]byte(reversed))
-			if gotHash := hex.EncodeToString(sum[:]); gotHash != want.EmitNativeSHA256 {
-				t.Errorf("%s: conformance C differs from the golden beyond the one named-exit line: got %s want %s", want.Path, gotHash, want.EmitNativeSHA256)
+			checked := session.Check(source)
+			if len(checked.Diagnostics) != 0 {
+				t.Errorf("%s: source no longer checks for Phase371 binding: %v", want.Path, checked.Diagnostics)
+				continue
+			}
+			coreBytes, err := json.Marshal(checked.Program)
+			if err != nil {
+				t.Errorf("%s: marshal checked core for Phase371 binding: %v", want.Path, err)
+				continue
+			}
+			var compatibilityProblems []string
+			oldC, problems := phase371OlderCompare(
+				"phase34",
+				want.Path,
+				"emit_native",
+				phase371OlderDigest(source),
+				phase371OlderDigest(coreBytes),
+				nil,
+				[]byte(c),
+			)
+			compatibilityProblems = append(compatibilityProblems, problems...)
+			if len(oldC) == 0 {
+				t.Errorf("%s: Phase371 compatibility projection did not bind the frozen old C: %s", want.Path, strings.Join(compatibilityProblems, "; "))
+				continue
+			}
+			if err := phase273PriorNamedExitGoldenHash(oldC, want.EmitNativeSHA256); err != nil {
+				compatibilityProblems = append(compatibilityProblems, err.Error())
+			}
+			if len(compatibilityProblems) != 0 {
+				t.Errorf("%s: Phase371 older-comparator binding failed: %s", want.Path, strings.Join(compatibilityProblems, "; "))
 			}
 			continue
 		}
