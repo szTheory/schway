@@ -59,7 +59,16 @@ type operation struct {
 	value      core.LinearOperation
 }
 
+type failureProvenance struct {
+	constructor             string
+	errorTargetID           string
+	errorEdgeID             string
+	expectedFailOperationID string
+	originOperationID       string
+}
+
 type index struct {
+	program             core.Program
 	functions           map[string]core.Function
 	operations          map[string]operation
 	matchReturns        map[string]string
@@ -218,6 +227,7 @@ func ValidateFullCoverage(program core.Program, document execution.Execution) er
 
 func buildIndex(program core.Program) (*index, error) {
 	i := &index{
+		program:   program,
 		functions: make(map[string]core.Function), operations: make(map[string]operation),
 		matchReturns: make(map[string]string), occurrences: make(map[string]occurrence),
 		loopOperations: make(map[string]bool), scalarLoopCopies: make(map[string]bool),
@@ -296,6 +306,270 @@ func buildIndex(program core.Program) (*index, error) {
 		}
 	}
 	return i, nil
+}
+
+func (i *index) typeConstructor(functionID, typeID string) (string, bool) {
+	function, ok := i.functions[functionID]
+	if !ok || function.Linear == nil || typeID == "" {
+		return "", false
+	}
+	constructor := ""
+	for _, fact := range function.Linear.Types {
+		if fact.ID != typeID {
+			continue
+		}
+		if fact.Shape.Constructor == "" || constructor != "" {
+			return "", false
+		}
+		constructor = fact.Shape.Constructor
+	}
+	return constructor, constructor != ""
+}
+
+func (i *index) place(functionID, placeID string) (core.Place, bool) {
+	function, ok := i.functions[functionID]
+	if !ok || function.Linear == nil || placeID == "" {
+		return core.Place{}, false
+	}
+	var found core.Place
+	for _, candidate := range function.Linear.Places {
+		if candidate.ID != placeID {
+			continue
+		}
+		if found.ID != "" {
+			return core.Place{}, false
+		}
+		found = candidate
+	}
+	return found, found.ID != ""
+}
+
+// errorRoute independently binds an error-producing operation to the exact
+// error edge, target place, and terminal in its destination block. It reads
+// only the indexed core; it does not trust checker or interpreter verdicts.
+func (i *index) errorRoute(functionID string, operation core.LinearOperation) (core.Place, core.LinearOperation, bool) {
+	function, ok := i.functions[functionID]
+	if !ok || function.Linear == nil || operation.ErrTargetID == "" || operation.ErrEdgeID == "" {
+		return core.Place{}, core.LinearOperation{}, false
+	}
+	target, ok := i.place(functionID, operation.ErrTargetID)
+	if !ok {
+		return core.Place{}, core.LinearOperation{}, false
+	}
+	if _, ok := i.typeConstructor(functionID, target.TypeID); !ok {
+		return core.Place{}, core.LinearOperation{}, false
+	}
+	operationBlockID := ""
+	for _, block := range function.Linear.Blocks {
+		for _, operationID := range block.OperationIDs {
+			if operationID != operation.ID {
+				continue
+			}
+			if operationBlockID != "" {
+				return core.Place{}, core.LinearOperation{}, false
+			}
+			operationBlockID = block.ID
+		}
+	}
+	if operationBlockID == "" {
+		return core.Place{}, core.LinearOperation{}, false
+	}
+	var sourceBlock, targetBlock core.Block
+	var edge core.Edge
+	var sourceCount, targetCount, edgeCount int
+	for _, block := range function.Linear.Blocks {
+		if block.ID == operationBlockID {
+			sourceBlock = block
+			sourceCount++
+		}
+	}
+	for _, candidate := range function.Linear.Edges {
+		if candidate.ID == operation.ErrEdgeID {
+			edge = candidate
+			edgeCount++
+		}
+	}
+	if edgeCount != 1 || sourceCount != 1 || edge.FromBlockID != operationBlockID || edge.Pattern != "err" || !containsString(sourceBlock.Successors, edge.ToBlockID) {
+		return core.Place{}, core.LinearOperation{}, false
+	}
+	for _, block := range function.Linear.Blocks {
+		if block.ID == edge.ToBlockID {
+			targetBlock = block
+			targetCount++
+		}
+	}
+	if targetCount != 1 || len(targetBlock.OperationIDs) == 0 {
+		return core.Place{}, core.LinearOperation{}, false
+	}
+	var fail core.LinearOperation
+	failCount := 0
+	for _, operationID := range targetBlock.OperationIDs {
+		candidate, exists := i.operations[operationID]
+		if !exists || candidate.functionID != functionID {
+			return core.Place{}, core.LinearOperation{}, false
+		}
+		if candidate.value.Kind == core.OpFail {
+			fail = candidate.value
+			failCount++
+		}
+	}
+	if failCount != 1 || targetBlock.OperationIDs[len(targetBlock.OperationIDs)-1] != fail.ID || fail.SourceID != target.ID || fail.TypeID != target.TypeID {
+		return core.Place{}, core.LinearOperation{}, false
+	}
+	return target, fail, true
+}
+
+func containsString(values []string, wanted string) bool {
+	for _, value := range values {
+		if value == wanted {
+			return true
+		}
+	}
+	return false
+}
+
+func (i *index) declaredFailureTypes(functionID string) map[string]bool {
+	failures := make(map[string]bool)
+	seenFunctions := make(map[string]bool)
+	queue := []string{functionID}
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+		if seenFunctions[current] {
+			continue
+		}
+		seenFunctions[current] = true
+		function, ok := i.functions[current]
+		if !ok || function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			switch operation.Kind {
+			case core.OpFail:
+				if constructor, known := i.typeConstructor(current, operation.TypeID); known {
+					failures[constructor] = true
+				}
+			case core.OpForeignCall:
+				if operation.Foreign != nil && operation.Foreign.Fails != "" {
+					failures[operation.Foreign.Fails] = true
+				}
+			case core.OpCall:
+				if operation.ErrTargetID != "" {
+					if target, known := i.place(current, operation.ErrTargetID); known {
+						if constructor, mapped := i.typeConstructor(current, target.TypeID); mapped {
+							failures[constructor] = true
+						}
+					}
+					queue = append(queue, operation.CalleeID)
+				}
+			}
+		}
+	}
+	return failures
+}
+
+func (i *index) errorEnvelopeIncludes(calleeID, envelope, observedFailure string) bool {
+	if envelope == "" {
+		return false
+	}
+	var envelopeType *core.DataType
+	for index := range i.program.DataTypes {
+		candidate := &i.program.DataTypes[index]
+		if candidate.Name != envelope {
+			continue
+		}
+		if envelopeType != nil || len(candidate.AlternativeDetails) != 0 || len(candidate.Alternatives) == 0 {
+			return false
+		}
+		envelopeType = candidate
+	}
+	if envelopeType == nil {
+		return false
+	}
+	envelopeAlternatives := make(map[string]bool, len(envelopeType.Alternatives))
+	for _, alternative := range envelopeType.Alternatives {
+		if alternative == "" || envelopeAlternatives[alternative] {
+			return false
+		}
+		envelopeAlternatives[alternative] = true
+	}
+	failureTypes := i.declaredFailureTypes(calleeID)
+	if observedFailure != "" && !failureTypes[observedFailure] {
+		return false
+	}
+	for failureType := range failureTypes {
+		var failureDataType *core.DataType
+		for index := range i.program.DataTypes {
+			candidate := &i.program.DataTypes[index]
+			if candidate.Name != failureType {
+				continue
+			}
+			if failureDataType != nil || len(candidate.AlternativeDetails) != 0 || len(candidate.Alternatives) == 0 {
+				return false
+			}
+			failureDataType = candidate
+		}
+		if failureDataType == nil {
+			return false
+		}
+		for _, alternative := range failureDataType.Alternatives {
+			if !envelopeAlternatives[alternative] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (i *index) validateForeignEvent(event execution.Event, operation operation) (failureProvenance, error) {
+	function := i.functions[operation.functionID]
+	contract := operation.value.Foreign
+	if function.Linear == nil || contract == nil || event.ID != operation.value.ID+":event" {
+		return failureProvenance{}, fmt.Errorf("foreign event is not bound to an indexed foreign operation")
+	}
+	source, sourceKnown := i.place(operation.functionID, operation.value.SourceID)
+	target, targetKnown := i.place(operation.functionID, operation.value.TargetID)
+	sourceType, sourceTypeKnown := i.typeConstructor(operation.functionID, source.TypeID)
+	targetType, targetTypeKnown := i.typeConstructor(operation.functionID, target.TypeID)
+	if !sourceKnown || !targetKnown || !sourceTypeKnown || !targetTypeKnown || sourceType != contract.ParameterType || targetType != contract.ResultType || operation.value.TypeID != target.TypeID {
+		return failureProvenance{}, fmt.Errorf("foreign source, target, or contract type disagrees with indexed type facts")
+	}
+	if event.SourcePlace != operation.value.SourceID || event.TargetPlace != operation.value.TargetID || event.Input != "" || event.Output != "" || event.CalleeFunctionID != "" {
+		return failureProvenance{}, fmt.Errorf("foreign event source or target disagrees with its indexed operation")
+	}
+	if event.Kind == "foreign.called" {
+		if event.TypeID != operation.value.TypeID {
+			return failureProvenance{}, fmt.Errorf("successful foreign event type disagrees with its checked result place")
+		}
+		return failureProvenance{}, nil
+	}
+	if event.Kind != "foreign.failed" || contract.Fails == "" || event.TypeID != contract.Fails {
+		return failureProvenance{}, fmt.Errorf("foreign failure is absent from the indexed operation contract")
+	}
+	errTarget, failOperation, routeKnown := i.errorRoute(operation.functionID, operation.value)
+	errConstructor, errTypeKnown := i.typeConstructor(operation.functionID, errTarget.TypeID)
+	if !routeKnown || !errTypeKnown || errConstructor != contract.Fails {
+		return failureProvenance{}, fmt.Errorf("foreign failure contract is not bound to its checked error target and OpFail route")
+	}
+	return failureProvenance{
+		constructor: contract.Fails, errorTargetID: errTarget.ID, errorEdgeID: operation.value.ErrEdgeID,
+		expectedFailOperationID: failOperation.ID, originOperationID: operation.value.ID,
+	}, nil
+}
+
+func (i *index) validateCallFailureRoute(operation operation) (failureProvenance, error) {
+	if operation.value.Kind != core.OpCall || operation.value.ErrTargetID == "" {
+		return failureProvenance{}, fmt.Errorf("call has no checked error target")
+	}
+	target, failOperation, known := i.errorRoute(operation.functionID, operation.value)
+	envelope, envelopeKnown := i.typeConstructor(operation.functionID, target.TypeID)
+	if !known || !envelopeKnown || !i.errorEnvelopeIncludes(operation.value.CalleeID, envelope, "") {
+		return failureProvenance{}, fmt.Errorf("call error edge, target, or failure envelope is not represented by checked core facts")
+	}
+	return failureProvenance{
+		errorTargetID: target.ID, errorEdgeID: operation.value.ErrEdgeID,
+		expectedFailOperationID: failOperation.ID,
+	}, nil
 }
 
 func (i *index) indexLoopOperations(program core.Program) {
@@ -481,6 +755,8 @@ func (i *index) validate(document execution.Execution) error {
 	}
 	closedActivations := make(map[string]bool)
 	nextOrdinals := make(map[string]uint64)
+	observedErrorCalls := make(map[string]bool)
+	failureByInvocation := make(map[string]failureProvenance)
 	stack := make([]string, 0)
 	pending := ""
 	checkedAddDefect := -1
@@ -623,9 +899,34 @@ func (i *index) validate(document execution.Execution) error {
 		if op.functionID != event.FunctionID {
 			return refusal("ownership", n, event.Invocation, "", event.FunctionID, "event ID belongs to another function")
 		}
+		if op.value.Kind == core.OpForeignCall && (event.Kind == "foreign.called" || event.Kind == "foreign.failed") {
+			provenance, attributionErr := i.validateForeignEvent(event, op)
+			if attributionErr != nil {
+				class := "foreign_attribution"
+				if event.Kind == "foreign.failed" {
+					class = "foreign_failure_attribution"
+				}
+				return refusal(class, n, event.Invocation, "", event.FunctionID, attributionErr.Error())
+			}
+			if event.Kind == "foreign.failed" {
+				if _, alreadyFailed := failureByInvocation[event.Invocation]; alreadyFailed {
+					return refusal("foreign_failure_provenance", n, event.Invocation, "", event.FunctionID, "activation already has an unconsumed failure")
+				}
+				failureByInvocation[event.Invocation] = provenance
+			}
+		}
 		if event.Kind == "function.called" {
 			if event.CalleeFunctionID == "" || event.CalleeFunctionID != op.value.CalleeID {
 				return refusal("callee", n, event.Invocation, "", op.value.CalleeID, "callee function disagrees with call")
+			}
+			if op.value.ErrTargetID != "" {
+				if event.SourcePlace != op.value.SourceID || event.TargetPlace != op.value.TargetID || event.TypeID != op.value.TypeID || event.Input != "" || event.Output != "" {
+					return refusal("call_attribution", n, event.Invocation, "", event.FunctionID, "fallible call places or result type disagree with core, or scalar payload is present")
+				}
+				if _, routeErr := i.validateCallFailureRoute(op); routeErr != nil {
+					return refusal("call_error_route", n, event.Invocation, "", event.FunctionID, routeErr.Error())
+				}
+				observedErrorCalls[event.Invocation+"\x00"+op.value.ID] = true
 			}
 			var child string
 			if i.dynamicCallIdentity {
@@ -665,13 +966,33 @@ func (i *index) validate(document execution.Execution) error {
 		if terminal(event.Kind) {
 			// These are core attribution facts, not a replay of the returned value.
 			switch op.value.Kind {
-			case core.OpReturn, core.OpFail, core.OpDefect:
+			case core.OpReturn, core.OpDefect:
 				if event.SourcePlace != op.value.SourceID || event.TypeID != op.value.TypeID || event.TargetPlace != "" {
 					return refusal("terminal_attribution", n, event.Invocation, "", event.FunctionID, "terminal places or type disagree with core")
 				}
 				if op.value.Kind == core.OpDefect && event.Output != op.value.Reason {
 					return refusal("terminal_attribution", n, event.Invocation, "", event.FunctionID, "user-defect reason disagrees with core")
 				}
+			case core.OpFail:
+				if event.SourcePlace != op.value.SourceID || event.TargetPlace != "" {
+					return refusal("terminal_attribution", n, event.Invocation, "", event.FunctionID, "failure terminal source or target disagrees with core")
+				}
+				source, sourceKnown := i.place(op.functionID, op.value.SourceID)
+				constructor, constructorKnown := i.typeConstructor(op.functionID, op.value.TypeID)
+				if !sourceKnown || !constructorKnown || source.TypeID != op.value.TypeID {
+					return refusal("terminal_attribution", n, event.Invocation, "", event.FunctionID, "failure terminal type fact does not match its source place")
+				}
+				if provenance, hasProvenance := failureByInvocation[event.Invocation]; hasProvenance {
+					if op.value.ID != provenance.expectedFailOperationID || op.value.SourceID != provenance.errorTargetID || event.TypeID != provenance.constructor {
+						return refusal("failure_provenance", n, event.Invocation, "", event.FunctionID, "failure terminal is not the OpFail reached through its activation's checked error target")
+					}
+				} else if event.TypeID != constructor {
+					return refusal("terminal_attribution", n, event.Invocation, "", event.FunctionID, "failure event constructor disagrees with the source type fact")
+				}
+			}
+			provenance, hasProvenance := failureByInvocation[event.Invocation]
+			if hasProvenance && event.Kind != "function.failed" {
+				return refusal("failure_provenance", n, event.Invocation, "", event.FunctionID, "activation with an admitted foreign failure did not reach its indexed OpFail")
 			}
 			// A child return does not determine its caller's eventual outcome.
 			// A defect, however, terminates the whole observed execution.
@@ -688,6 +1009,32 @@ func (i *index) validate(document execution.Execution) error {
 			}
 			if pending != "" {
 				return refusal("preorder", n, event.Invocation, "", event.FunctionID, "function returned before observed child activation")
+			}
+			if hasProvenance {
+				delete(failureByInvocation, event.Invocation)
+				if occ.parent != "" {
+					callOperation, exists := i.operations[occ.callID]
+					callKey := occ.parent + "\x00" + occ.callID
+					parentOccurrence, parentExists := expectedOccurrences[occ.parent]
+					if !exists || !parentExists || callOperation.functionID != parentOccurrence.functionID || callOperation.value.Kind != core.OpCall || callOperation.value.CalleeID != occ.functionID || !observedErrorCalls[callKey] {
+						return refusal("failure_provenance", n, event.Invocation, occ.parent, event.FunctionID, "failed activation has no observed caller-owned error edge")
+					}
+					parentProvenance, routeErr := i.validateCallFailureRoute(callOperation)
+					if routeErr != nil {
+						return refusal("call_error_route", n, event.Invocation, occ.parent, callOperation.functionID, routeErr.Error())
+					}
+					envelopeTarget, targetKnown := i.place(callOperation.functionID, callOperation.value.ErrTargetID)
+					envelope, envelopeKnown := i.typeConstructor(callOperation.functionID, envelopeTarget.TypeID)
+					if !targetKnown || !envelopeKnown || !i.errorEnvelopeIncludes(callOperation.value.CalleeID, envelope, provenance.constructor) {
+						return refusal("call_error_route", n, event.Invocation, occ.parent, callOperation.functionID, "child failure constructor is outside the caller's checked error envelope")
+					}
+					if _, alreadyFailed := failureByInvocation[occ.parent]; alreadyFailed {
+						return refusal("failure_provenance", n, event.Invocation, occ.parent, callOperation.functionID, "caller already has unconsumed failure provenance")
+					}
+					parentProvenance.constructor = provenance.constructor
+					parentProvenance.originOperationID = provenance.originOperationID
+					failureByInvocation[occ.parent] = parentProvenance
+				}
 			}
 			closedActivations[event.Invocation] = true
 			if event.Kind == "function.defected" {
@@ -730,6 +1077,9 @@ func (i *index) classify(event execution.Event) (operation, error) {
 			return op, nil
 		}
 		if event.ID == id+":event" && normalKind(op.value.Kind) == event.Kind {
+			return op, nil
+		}
+		if event.ID == id+":event" && event.Kind == "foreign.failed" && op.value.Kind == core.OpForeignCall && op.value.Foreign != nil && op.value.Foreign.Fails != "" {
 			return op, nil
 		}
 		if event.ID == id+":event:returned" && op.value.Kind == core.OpReturn && event.Kind == "function.returned" {
