@@ -897,3 +897,42 @@ key=value configuration parsing. Their programs, blockers, complete slices,
 checker obligations, evidence/debt, owners and priority-changing observations,
 plus relevant dormant z1g/trz/z1s source/consumer dispositions, are in [35-REFRESH-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH-CLOSEOUT.md).
 Human readability and whole-loop cold/warm latency remain unmeasured.
+
+
+## Phase 36 verification refresh after Phase 37 — 2026-10-15
+
+Source inspection: scalar helper calls and the ordinary-source CRC/module/file
+consumers remain implemented. Independent Phase 36 verification passes 32/32
+with 62 bound inputs, 24 artifacts and 26/26 decisions; CALL-01/02 remain
+complete. Four stale completed-phase roadmap plan counters were corrected.
+WR-02 is a documentation-only core-validator comment warning deferred to its
+next semantic edit; the runtime implementation is correct and the review is
+not described as clean.
+
+New focused checks: mapped 84 roots / 13 packages and prior-phase regression
+167 names / 179 root executions / 16 packages passed, zero missing/fail/skip.
+Both canonical prohibition producers independently proved actual-source bad
+RED / clean GREEN / default GREEN. The verifier checked current hashes/logs,
+ran critical behavior and report-grounding checks, then independently closed
+the metadata gap. All 24 authored L1 threats remain closed. No implementation,
+dependency or admission law changed.
+
+Historical receipts: original source-bound Phase 36 captures and earlier
+hosted receipts retain their revisions and limits; no current hosted/Linux,
+human-readability or latency-distribution claim is made. Completed UAT was
+preserved.
+
+Fresh init.progress reports 34/36 passed and 33/35/37 stale. The new Phase 36
+review/disposition records are covered by the earlier 33/35 reports. Exact
+next gate is `$gsd-execute-phase 33`, then re-query (currently 35, 37); M007
+audit/gap closure still precedes Phase 38. The canonical next-unimplemented
+projection remains 38.
+
+The current three recommendations remain audited same-source two-host CRC
+receipts, proposed M008 wc/longest_line, then bounded fixed-schema key=value
+parsing. Their programs, blockers, smallest complete slices, checker
+obligations, evidence/debt, owners and priority-changing observations, plus
+relevant dormant z1g/trz/z1s source/consumer dispositions, are in
+[36-REFRESH-CLOSEOUT.md](phases/36-scalar-helper-calls/36-REFRESH-CLOSEOUT.md).
+No future consumer or dormant experiment was promoted; only EVD-17 is active
+M007 scope.
