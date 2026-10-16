@@ -298,5 +298,284 @@
     "open": 0,
     "note": "Additional scoped assurance; does not replace any predecessor threat register."
   },
-  "verifier_dispatch": "not dispatched"
+  "verifier_dispatch": "not dispatched",
+  "resumption": {
+    "captured_utc": "2026-10-16T20:20:49.167Z",
+    "current_head": "02680cc801f738661ebf33021d8e72f2c970efa6",
+    "status": "halted_on_resumed_regression_failure_before_verifier_dispatch",
+    "historical_initial_attempt_preserved": true,
+    "test_fix": {
+      "commit": "02680cc801f738661ebf33021d8e72f2c970efa6",
+      "file": "internal/compiler/cgen/cgen_exit_literals_test.go",
+      "sha256": "703a4b513cb920016b9691abd9a369a340a9df9ee358ec65692ae8657edfa216",
+      "classification": "test-only contract correction; opaque generated-child write-failure status 74 is not a host exitcode",
+      "change": "Named childWriteFailure=74 in TestEmittedCExitLiteralsMatchTable; exact emitted-exit set and positive count require it; generated-return inventory reuses it; old 65/69 checks remain.",
+      "focused_check": "GOCACHE=/tmp/ai-lang-verification-gocache-count1-v120 go test ./internal/compiler/cgen -count=1 -json -timeout=600s -run '^TestEmittedCExitLiteralsMatchTable$' — PASS",
+      "focused_check_repeated_in": "REGRESSION-04.jsonl"
+    },
+    "current_bindings": {
+      "current_head": "02680cc801f738661ebf33021d8e72f2c970efa6",
+      "selector_registry_path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-REFRESH-REGRESSION.json",
+      "selector_registry_sha256": "76361d99ba4cd7820cda5f4bb9c5ce8e440abb539b38d39928bff14114fc3957",
+      "config_sha256": "148ccc4c56db8516788c264216ae277d9860d43e00b92de299d8ccff2fd59521",
+      "milestone_lock_sha256": "29836b244619659e98bce8dc11271d819929de35d7229c8793796c4b587a9a35",
+      "implementation_or_testdata_changes_since_initial_receipt": [],
+      "test_only_followup": "internal/compiler/cgen/cgen_exit_literals_test.go",
+      "verifier_dispatch": false
+    },
+    "reused_initial_groups": [
+      {
+        "registry_group": 1,
+        "package": "./cmd/schway",
+        "root_executions": 9,
+        "passed": 9,
+        "failed": 0,
+        "skipped": 0,
+        "log": "37.1-371-REFRESH-REGRESSION-01.jsonl",
+        "log_sha256": "28bf6147ca166f25256918f6c4094a0743df8f1d84803ed601a7ce06765cf5d5"
+      },
+      {
+        "registry_group": 2,
+        "package": "./cmd/schway-repair",
+        "root_executions": 3,
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "log": "37.1-371-REFRESH-REGRESSION-02.jsonl",
+        "log_sha256": "1a52f519564361a91abdc05478ee2181cb35366d8212454dbd8caaa9104a2882"
+      }
+    ],
+    "resumed_groups": [
+      {
+        "registry_group": 3,
+        "package": "./internal/compiler/cgen",
+        "expected_root_executions": 20,
+        "root_executions_run": 20,
+        "passed": 20,
+        "failed": 0,
+        "skipped": 0,
+        "missing": [],
+        "status": "passed",
+        "log": "37.1-371-REFRESH-REGRESSION-04.jsonl",
+        "log_sha256": "fc9196be67943a5c437a9143a376c0c3e860f8f19d6354725e5774b690e7a957",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "registry_group": 4,
+        "package": "./internal/compiler/check",
+        "expected_root_executions": 21,
+        "root_executions_run": 21,
+        "passed": 21,
+        "failed": 0,
+        "skipped": 0,
+        "missing": [],
+        "status": "passed",
+        "log": "37.1-371-REFRESH-REGRESSION-05.jsonl",
+        "log_sha256": "447e2cc026b29fe8d4035f02ed03e9e3e97c274e718cc3b23f298e24ad5e2743",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "registry_group": 5,
+        "package": "./internal/compiler/core",
+        "expected_root_executions": 3,
+        "root_executions_run": 3,
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "missing": [],
+        "status": "passed",
+        "log": "37.1-371-REFRESH-REGRESSION-06.jsonl",
+        "log_sha256": "92a2d0ada2c03af592bb2d171389048bdf3dd34fac68049a540920b8acc4190c",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "registry_group": 6,
+        "package": "./internal/compiler/corevalidate",
+        "expected_root_executions": 12,
+        "root_executions_run": 12,
+        "passed": 12,
+        "failed": 0,
+        "skipped": 0,
+        "missing": [],
+        "status": "passed",
+        "log": "37.1-371-REFRESH-REGRESSION-07.jsonl",
+        "log_sha256": "8d57863fb24598246e02d7d2d888303677f7013149ab3b173c2f6cb3f55a729a",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "registry_group": 7,
+        "package": "./internal/compiler/diagnostic",
+        "expected_root_executions": 5,
+        "root_executions_run": 5,
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0,
+        "missing": [],
+        "status": "passed",
+        "log": "37.1-371-REFRESH-REGRESSION-08.jsonl",
+        "log_sha256": "9ecbe6030eeb032133162e640225427985853cfa2a8f42592cacacd2636d60a8",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "registry_group": 8,
+        "package": "./internal/compiler/executionpeer",
+        "expected_root_executions": 18,
+        "root_executions_run": 18,
+        "passed": 18,
+        "failed": 0,
+        "skipped": 0,
+        "missing": [],
+        "status": "passed",
+        "log": "37.1-371-REFRESH-REGRESSION-09.jsonl",
+        "log_sha256": "01b5bf38c5319f6378d153e7499de3872ddd955785842ddf09027145e2cffc3c",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "registry_group": 9,
+        "package": "./internal/compiler/interp",
+        "expected_root_executions": 10,
+        "root_executions_run": 10,
+        "passed": 10,
+        "failed": 0,
+        "skipped": 0,
+        "missing": [],
+        "status": "passed",
+        "log": "37.1-371-REFRESH-REGRESSION-10.jsonl",
+        "log_sha256": "accf0ed71574c43316b4cbc24f0a7fe62fbc203946651a6a7c1b08ef17c2ea89",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "registry_group": 10,
+        "package": "./internal/compiler/native",
+        "expected_root_executions": 10,
+        "root_executions_run": 10,
+        "passed": 10,
+        "failed": 0,
+        "skipped": 0,
+        "missing": [],
+        "status": "passed",
+        "log": "37.1-371-REFRESH-REGRESSION-11.jsonl",
+        "log_sha256": "b448c240e1d843afaed31820a9fffceda276cc128527a34ce26d477bed3b58a9",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "registry_group": 11,
+        "package": "./internal/compiler/originvalidate",
+        "expected_root_executions": 8,
+        "root_executions_run": 8,
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0,
+        "missing": [],
+        "status": "passed",
+        "log": "37.1-371-REFRESH-REGRESSION-12.jsonl",
+        "log_sha256": "30241c989eda846408b4c4b48330ff2af7b35c4099e147010a6fbaee8114760e",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "registry_group": 12,
+        "package": "./internal/compiler/pathoracle",
+        "expected_root_executions": 4,
+        "root_executions_run": 4,
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0,
+        "missing": [],
+        "status": "passed",
+        "log": "37.1-371-REFRESH-REGRESSION-13.jsonl",
+        "log_sha256": "9926fe611d6364d952369e2581cc2b9015045f8bdc2c0be0fe34cc96275e7a9c",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "registry_group": 13,
+        "package": "./internal/compiler/protocol",
+        "expected_root_executions": 4,
+        "root_executions_run": 4,
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0,
+        "missing": [],
+        "status": "passed",
+        "log": "37.1-371-REFRESH-REGRESSION-14.jsonl",
+        "log_sha256": "fe9efd0691f7ad7db12f4e0c99704e0505e314b312eaae24d6c698d456d97154",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "registry_group": 14,
+        "package": "./internal/compiler/session",
+        "expected_root_executions": 98,
+        "root_executions_run": 98,
+        "passed": 93,
+        "failed": 5,
+        "skipped": 0,
+        "missing": [],
+        "status": "failed",
+        "log": "37.1-371-REFRESH-REGRESSION-15.jsonl",
+        "log_sha256": "3a0329496a644dce9acd534d6177437f64f51825d4cb11bed323ba51045eb1c9",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "terminal_failure": {
+      "registry_group": 14,
+      "package": "./internal/compiler/session",
+      "expected_root_executions": 98,
+      "root_executions_run": 98,
+      "passed": 93,
+      "failed": 5,
+      "skipped": 0,
+      "missing": [],
+      "log": "37.1-371-REFRESH-REGRESSION-15.jsonl",
+      "log_sha256": "3a0329496a644dce9acd534d6177437f64f51825d4cb11bed323ba51045eb1c9",
+      "failing_roots": [
+        {
+          "test": "TestPhase16PublicEmitterConsumerInventory",
+          "reason": "12 new D18 test-source Emit/EmitNative entries are absent from the frozen inventory; two Phase36 entries are stale; source/registry cardinality is 127/117."
+        },
+        {
+          "test": "TestPhase273ConformanceCorpusByteIdentity",
+          "reason": "sum_to_n generated C differs from the frozen golden beyond the named-exit allowance; a Phase29 entry-precedence flip is also observed."
+        },
+        {
+          "test": "TestPhase28PrunedEmitMatchesGolden",
+          "reason": "sum_to_n pruned C differs from its frozen golden and is not allow-listed."
+        },
+        {
+          "test": "TestPhase35PreChangeEmitterCorpus",
+          "reason": "sum_to_n pre-change C differs at byte 10977 (actual length 13522, expected 12185) for emit and emit_native."
+        },
+        {
+          "test": "TestPhase35PreChangeCorpusControls",
+          "reason": "clean pre-change observation fails on the same sum_to_n byte mismatch at byte 10977 (actual length 13522, expected 12185)."
+        }
+      ]
+    },
+    "unrun_after_halt": [
+      {
+        "registry_group": 15,
+        "package": "./internal/compiler/surfacemanifest",
+        "named_selectors": 4,
+        "expected_root_executions": 4
+      },
+      {
+        "registry_group": 16,
+        "package": "./internal/compiler/syntax",
+        "named_selectors": 22,
+        "expected_root_executions": 22
+      }
+    ],
+    "aggregate": {
+      "selected_unique_package_selectors_after_pressure_exclusion": 250,
+      "attempted_unique_package_selectors": 224,
+      "passed_unique_package_selectors": 219,
+      "failed_unique_package_selectors": 5,
+      "unrun_unique_package_selectors": 26,
+      "expected_root_execution_events_after_pressure_exclusion": 251,
+      "current_root_execution_events_attempted": 225,
+      "current_root_execution_events_passed": 220,
+      "current_root_execution_events_failed": 5,
+      "current_root_execution_events_unrun": 26,
+      "skipped": 0,
+      "excluded_pressure_selector": "TestPhase33CaptureReadBounded"
+    }
+  }
 }

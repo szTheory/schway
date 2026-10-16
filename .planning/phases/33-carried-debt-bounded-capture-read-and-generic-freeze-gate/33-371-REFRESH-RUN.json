@@ -9,8 +9,8 @@
     "QLT-15",
     "EVD-16"
   ],
-  "captured_utc": "2026-10-16T20:07:07.683Z",
-  "current_head": "a7b21e292e289fd82a40d6c39af499e78aa54199",
+  "captured_utc": "2026-10-16T20:20:49.169Z",
+  "current_head": "02680cc801f738661ebf33021d8e72f2c970efa6",
   "init_execute_phase": {
     "plan_count": 5,
     "summary_count": 5,
@@ -38,7 +38,7 @@
   },
   "source_delta": {
     "base_head": "9258a7360222ff17a3267e1ccb873a0dfae79346",
-    "current_head": "a7b21e292e289fd82a40d6c39af499e78aa54199",
+    "current_head": "02680cc801f738661ebf33021d8e72f2c970efa6",
     "covered_paths": [
       "internal/compiler/cgen/cgen_program.go",
       "internal/compiler/corevalidate/corevalidate.go",
@@ -48,7 +48,8 @@
       "internal/compiler/session/session_phase36_prechange_test.go",
       "internal/compiler/syntax/parser.go"
     ],
-    "complete_delta_path": "../37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION.json"
+    "complete_delta_path": "../37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION.json",
+    "test_only_followup": "internal/compiler/cgen/cgen_exit_literals_test.go"
   },
   "gates": {
     "nyquist": {
@@ -59,7 +60,7 @@
         "skipped": 0,
         "sha256": "6d1f2be2b1cfb067e3bd0ccf8e6356cd28b697e3f788dca3cebbad49948971b1"
       },
-      "predecessor_registry_refresh": "incomplete after regression abort"
+      "predecessor_registry_refresh": "incomplete: resumed fixed registry halted at group 14 after five failures; groups 15–16 remain unrun"
     },
     "security": {
       "status": "verified zero-open register reused",
@@ -87,13 +88,32 @@
       "section_manifest_excludes": "gap-closure-artifacts"
     },
     "regression": {
-      "status": "aborted",
+      "status": "halted_on_resumed_failure",
       "receipt": "../37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION.json",
-      "passed_prefix": 31,
-      "failed": 1,
-      "skipped": 0,
-      "missing": 0,
-      "blocked_test": "TestEmittedCExitLiteralsMatchTable"
+      "historical_initial_attempt": {
+        "status": "aborted",
+        "receipt": "../37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION.json",
+        "passed_prefix": 31,
+        "failed": 1,
+        "skipped": 0,
+        "missing": 0,
+        "blocked_test": "TestEmittedCExitLiteralsMatchTable"
+      },
+      "current_attempt": {
+        "reused_groups_1_2_passed": 12,
+        "cgen_group_3_rerun": "20/20 passed",
+        "groups_4_13": "95/95 passed",
+        "group_14": "98 run, 93 passed, 5 failed, 0 skipped",
+        "group_15_16_unrun_selectors": 26,
+        "skipped": 0,
+        "failing_roots": [
+          "TestPhase16PublicEmitterConsumerInventory",
+          "TestPhase273ConformanceCorpusByteIdentity",
+          "TestPhase28PrunedEmitMatchesGolden",
+          "TestPhase35PreChangeEmitterCorpus",
+          "TestPhase35PreChangeCorpusControls"
+        ]
+      }
     }
   },
   "verifier": {

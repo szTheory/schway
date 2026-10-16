@@ -1,0 +1,16 @@
+{"Time":"2026-10-16T16:15:03.885432-04:00","Action":"start","Package":"github.com/szTheory/schway/internal/compiler/core"}
+{"Time":"2026-10-16T16:15:03.892012-04:00","Action":"run","Package":"github.com/szTheory/schway/internal/compiler/core","Test":"TestPhase35CoreShape"}
+{"Time":"2026-10-16T16:15:03.892061-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/core","Test":"TestPhase35CoreShape","Output":"=== RUN   TestPhase35CoreShape\n"}
+{"Time":"2026-10-16T16:15:03.8922-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/core","Test":"TestPhase35CoreShape","Output":"--- PASS: TestPhase35CoreShape (0.00s)\n"}
+{"Time":"2026-10-16T16:15:03.89221-04:00","Action":"pass","Package":"github.com/szTheory/schway/internal/compiler/core","Test":"TestPhase35CoreShape","Elapsed":0}
+{"Time":"2026-10-16T16:15:03.89222-04:00","Action":"run","Package":"github.com/szTheory/schway/internal/compiler/core","Test":"TestAllOperationKindsRegistered"}
+{"Time":"2026-10-16T16:15:03.892225-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/core","Test":"TestAllOperationKindsRegistered","Output":"=== RUN   TestAllOperationKindsRegistered\n"}
+{"Time":"2026-10-16T16:15:03.892238-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/core","Test":"TestAllOperationKindsRegistered","Output":"--- PASS: TestAllOperationKindsRegistered (0.00s)\n"}
+{"Time":"2026-10-16T16:15:03.892247-04:00","Action":"pass","Package":"github.com/szTheory/schway/internal/compiler/core","Test":"TestAllOperationKindsRegistered","Elapsed":0}
+{"Time":"2026-10-16T16:15:03.892254-04:00","Action":"run","Package":"github.com/szTheory/schway/internal/compiler/core","Test":"TestAllOperationKindsHandledAtEverySite"}
+{"Time":"2026-10-16T16:15:03.892257-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/core","Test":"TestAllOperationKindsHandledAtEverySite","Output":"=== RUN   TestAllOperationKindsHandledAtEverySite\n"}
+{"Time":"2026-10-16T16:15:03.911972-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/core","Test":"TestAllOperationKindsHandledAtEverySite","Output":"--- PASS: TestAllOperationKindsHandledAtEverySite (0.02s)\n"}
+{"Time":"2026-10-16T16:15:03.91201-04:00","Action":"pass","Package":"github.com/szTheory/schway/internal/compiler/core","Test":"TestAllOperationKindsHandledAtEverySite","Elapsed":0.02}
+{"Time":"2026-10-16T16:15:03.912098-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/core","Output":"PASS\n"}
+{"Time":"2026-10-16T16:15:03.912821-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/core","Output":"ok  \tgithub.com/szTheory/schway/internal/compiler/core\t0.027s\n"}
+{"Time":"2026-10-16T16:15:03.912844-04:00","Action":"pass","Package":"github.com/szTheory/schway/internal/compiler/core","Elapsed":0.027}
