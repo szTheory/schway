@@ -1,7 +1,7 @@
 ---
 phase: 36-scalar-helper-calls
-verified: 2026-10-16T02:06:09Z
-status: gaps_found
+verified: 2026-10-16T02:14:06Z
+status: passed
 score: "32/32 must-haves verified"
 covered_files:
   - ".planning/LANGUAGE-MATURITY.md"
@@ -32,6 +32,7 @@ covered_files:
   - ".planning/phases/36-scalar-helper-calls/36-PROHIBITION-EVIDENCE.md"
   - ".planning/phases/36-scalar-helper-calls/36-REFRESH2-FIX.md"
   - ".planning/phases/36-scalar-helper-calls/36-REFRESH2-GATES.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REFRESH2-METADATA-FIX.md"
   - ".planning/phases/36-scalar-helper-calls/36-REFRESH2-PROHIBITIONS.json"
   - ".planning/phases/36-scalar-helper-calls/36-REFRESH2-REGRESSION.json"
   - ".planning/phases/36-scalar-helper-calls/36-REFRESH2-RUN.json"
@@ -39,6 +40,7 @@ covered_files:
   - ".planning/phases/36-scalar-helper-calls/36-REVIEW-SUPPLEMENT.md"
   - ".planning/phases/36-scalar-helper-calls/36-REVIEW.md"
   - ".planning/phases/36-scalar-helper-calls/36-SECURITY.md"
+  - ".planning/phases/36-scalar-helper-calls/36-TRANSITION-CHECK.md"
   - ".planning/phases/36-scalar-helper-calls/36-UI-REVIEW.md"
   - ".planning/phases/36-scalar-helper-calls/36-VALIDATION.md"
   - ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs"
@@ -46,6 +48,9 @@ covered_files:
   - ".planning/phases/36-scalar-helper-calls/prohibition-clean.json"
   - ".planning/phases/36-scalar-helper-calls/prohibition-outcome-violation.json"
   - "cmd/schway/main_phase36_test.go"
+  - "examples/helper_calls/crc_step.schway"
+  - "examples/helper_calls/importer.schway"
+  - "examples/helper_calls/public.schway"
   - "internal/compiler/ast/ast.go"
   - "internal/compiler/cgen/cgen.go"
   - "internal/compiler/cgen/cgen_phase36_caller_shapes_test.go"
@@ -60,10 +65,12 @@ covered_files:
   - "internal/compiler/corevalidate/corevalidate_phase36_legacy_internal_test.go"
   - "internal/compiler/corevalidate/corevalidate_phase36_test.go"
   - "internal/compiler/executionpeer/executionpeer.go"
+  - "internal/compiler/executionpeer/executionpeer_phase33_terminal_test.go"
   - "internal/compiler/executionpeer/executionpeer_phase36_test.go"
   - "internal/compiler/interp/interp.go"
   - "internal/compiler/interp/interp_phase36_test.go"
   - "internal/compiler/native/native.go"
+  - "internal/compiler/native/native_app.go"
   - "internal/compiler/native/native_phase36_test.go"
   - "internal/compiler/originvalidate/originvalidate.go"
   - "internal/compiler/originvalidate/originvalidate_phase36_test.go"
@@ -75,10 +82,14 @@ covered_files:
   - "internal/compiler/session/session_phase35_surface_test.go"
   - "internal/compiler/session/session_phase36_byteview_test.go"
   - "internal/compiler/session/session_phase36_calls_test.go"
+  - "internal/compiler/session/session_phase36_legacy_calls_test.go"
   - "internal/compiler/session/session_phase36_peer_mutation_test.go"
   - "internal/compiler/session/session_phase36_prechange_test.go"
   - "internal/compiler/session/session_phase36_surface_test.go"
   - "internal/compiler/session/verification_groundedness_test.go"
+  - "internal/compiler/surfacemanifest/manifest.go"
+  - "internal/compiler/surfacemanifest/manifest_test.go"
+  - "internal/compiler/syntax/format.go"
   - "internal/compiler/syntax/parser.go"
   - "internal/compiler/syntax/parser_phase36_test.go"
   - "testdata/phase16/public-emitter-consumers.json"
@@ -87,35 +98,33 @@ covered_files:
   - "testdata/phase36/prechange-corpus.json"
   - "testdata/phase36/surface-census.json"
   - "testdata/phase36/surface-witnesses.json"
-covered_digest: "v3:sha256:212690faea1ee94bcc41805a1a31856ebe6423fb4d9835e33aeea22fc28ac4cc"
+covered_digest: "v3:sha256:5b64fbab5ee94a1a53fc96d493b27932d7934b0c5498b2eb93cfc380b84fb7de"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
   honored: 26
   total: 26
   not_honored: []
-gaps:
-  - truth: "Phase-modified roadmap has no unreferenced TBD/FIXME/XXX debt markers."
-    status: failed
-    reason: "The Phase 36 summary lists .planning/ROADMAP.md as modified, and that file contains two TBD markers at lines 317 and 330. They explicitly describe unstarted Phase 38 work, but neither marker line carries an issue, PR, or DEF-* follow-up reference required by the debt-marker gate."
-    artifacts:
-      - path: ".planning/ROADMAP.md"
-        issue: "Unreferenced TBD markers remain in the phase-modified roadmap file."
-    missing:
-      - "Replace or formally track both Phase 38 plan-count placeholders so the modified roadmap contains no unresolved debt markers."
+re_verification:
+  previous_status: gaps_found
+  previous_score: "32/32 must-haves verified"
+  gaps_closed:
+    - "The unreferenced Phase 38 plan-count placeholders in the Phase 36-modified roadmap were replaced with explicit Not planned / 0 planned wording while preserving the Phase 38 Not started state and audit-before-planning order."
+  gaps_remaining: []
+  regressions: []
 ---
 
 # Phase 36: Scalar Helper Calls Verification Report
 
 **Phase Goal:** A scalar function can be factored into small helpers: it calls another scalar function with one U64 or Bool argument and uses the result, including calls into imported modules, with the same defect behavior on both engines and every peer re-deriving the call independently.
 
-**Verified:** 2026-10-16T02:06:09Z
-**Status:** gaps_found
-**Verification mode:** Initial verification. The prior report has no top-level `gaps:` section, so its historical re-verification metadata did not put this refresh into gap-closure mode.
+**Verified:** 2026-10-16T02:14:06Z
+**Status:** passed
+**Verification mode:** Re-verification after closing the inherited roadmap metadata gap preserved at commit `7d007160`.
 
 ## Goal Achievement
 
-The four roadmap success criteria, all 26 distinct plan-frontmatter truths, and both Plan 08 test-tier prohibitions produce 32 must-haves. All 32 are verified. The overall status is `gaps_found` only because Step 7's debt-marker gate also applies to the phase-modified roadmap.
+The four roadmap success criteria, all 26 distinct plan-frontmatter truths, and both Plan 08 test-tier prohibitions produce 32 must-haves. All 32 remain verified. The prior blocker was limited to two future-phase plan-count markers in the phase-modified roadmap; re-verification confirms that metadata gap is closed and found no regression.
 
 | # | Truth | Status | Evidence |
 |---:|---|---|---|
@@ -154,6 +163,14 @@ The four roadmap success criteria, all 26 distinct plan-frontmatter truths, and 
 
 **Score:** 32/32 must-haves verified; behavior-unverified: 0.
 
+### Re-verification of Prior Gap
+
+The prior report, preserved at `7d007160`, had one blocker: `.planning/ROADMAP.md` used `TBD` for Phase 38's plan count and `0/TBD` in its progress row. Commit `5eb7ef71` changes these to `Plans: Not planned (expected 3: ...; planning follows the M007 audit)` and `0 planned | Not started`. This preserves the expected three slices and audit-before-planning order without implying a Phase 38 directory, plan, receipt, or dispatch approval; no Phase 38 directory exists.
+
+`36-REFRESH2-METADATA-FIX.md` records the repair. Current source and fixtures are unchanged from the final 251-root regression receipt; I independently rechecked its 179 input hashes and 16 log hashes, the 85 owner-receipt inputs and 14 logs, and the 22 prohibition inputs plus two raw results. All hashes match. The five focused living-document/groundedness roots pass, and the prior 32 truths have no source regression. The living roadmap documents are included in the refreshed fingerprint and should remain byte-stable after this report.
+
+The five re-verification roots were `TestPhase32ReceiptLivingClaims`, `TestPhase34TransitionDocuments`, `TestPhase35OperatorDocumentation`, `TestVerificationGroundednessFrontierIsPinned`, and `TestVerificationGroundednessThreeClassesAreEmpty`. The last two also pass against this rendered report.
+
 ## Required Artifacts
 
 The canonical artifact query passed all 24 declared artifacts across eight plans: each exists and has no stub issue. Wiring was traced separately.
@@ -172,6 +189,8 @@ The canonical artifact query passed all 24 declared artifacts across eight plans
 The cgen repair is narrowly scoped: `isDynamicScalarFunctionBody` admits the existing unused-Byte-to-U64 caller and ByteView-to-U64/Unit caller forms; the Byte formal must be unused across the six reference fields, and accepted helper callee signatures remain U64/Bool. `TestPhase36UnusedByteStructuredHelper` returns 11 in interpreter/native O0/O3/O3-LTO and validates its causal peer. `TestPhase36ByteViewUnitHelperEmission` compiles and links an uncalled Unit-returning body, then runs only an unrelated U64 entry that prints 7. It does not prove execution of that Unit body or a ByteView value-call entry. The repair test failed both exact emission assertions over the pre-fix source overlay and passes on the repaired source.
 
 The Phase 16 emitter-consumer inventory initially found 116 source callsites against 115 registered consumers. Commit `0e56a3be` adds the new `EmitNative` consumer row; the inventory and its omission/stale/duplicate/invalid/missing controls pass on the final registry. The initial red is retained in the gate record and is not counted as a pass.
+
+The refreshed fingerprint now directly includes the helper example sources, formatter implementation, source-free manifest implementation and tests, native application-capture implementation, Phase 36 legacy-call tests, and the Phase 33 terminal-attribution tests. These were material to the program-output, formatting, surface-authority, capture, compatibility, and separate-debt claims; they are not represented only by receipt JSON.
 
 ## Key Link Verification
 
@@ -197,7 +216,9 @@ There is no rendered UI or database-backed value in this phase. Program data rea
 | Helper example modules | U64/Bool inputs and helper results | Source → parser → checker → core call → interpreter/native → captured output | ✓ FLOWING |
 | `interp.go` | Callee return or defect | Runtime call frames execute the callee and return its result/reason to the caller | ✓ FLOWING |
 | `cgen_program.go` | Typed native call result | Emits the invocation and captures the generated program's result | ✓ FLOWING |
+| `native_app.go` | Process stdout, stderr, and exit plus separate optional evidence status | Runs the emitted application and retains its actual process outcome when evidence capture is disabled or exhausted | ✓ FLOWING |
 | `executionpeer.go` | Call identity and causal path | Derives path and ordinal from runtime events, without proving scalar arithmetic | ✓ FLOWING |
+| `surfacemanifest/manifest.go` | Bounded source-free language contract | `Current()` publishes call arity, types, contexts, and restrictions consumed by surface tests and CLI route | ✓ FLOWING |
 
 ## Behavioral Spot-Checks
 
@@ -227,7 +248,14 @@ GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 30 -- go test
 GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 30 -- go test ./internal/compiler/session -run '^(TestPhase36LegacyByteViewCalleeBounds|TestPhase36ByteViewCallerArgumentBoundary|TestPhase36NativeByteViewCallerArgumentBoundary)$' -count=1 -v -timeout=600s
 GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 30 -- go test ./internal/compiler/session -run '^TestPhase36NoCallGeneratedCByteBaseline$' -count=1 -v -timeout=20s
 GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 30 -- go test ./internal/compiler/session -run '^(TestPhase16PublicEmitterConsumerInventory|TestPhase16EmitterInventoryMutationControls)$' -count=1 -v -timeout=20s
+GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 60 -- go test ./internal/compiler/session -run '^(TestPhase32ReceiptLivingClaims|TestPhase34TransitionDocuments|TestPhase35OperatorDocumentation|TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessThreeClassesAreEmpty)$' -count=1 -v -timeout=50s
+GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 45 -- go test ./internal/compiler/syntax -run '^TestPhase36ScalarCallFormatting$' -count=1 -v -timeout=35s
+GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 45 -- go test ./internal/compiler/surfacemanifest -run '^TestPhase36SurfaceDocument$' -count=1 -v -timeout=35s
+GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 60 -- go test ./internal/compiler/session -run '^(TestPhase36NativeCallCaptureOutcomeSeparation|TestPhase36LegacyFallibleCallRoutes|TestPhase36LegacyFileOwnerPeerRoutes)$' -count=1 -v -timeout=50s
+GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 45 -- go test ./internal/compiler/executionpeer -run '^TestPhase33TerminalAttribution$' -count=1 -v -timeout=35s
 ```
+
+The metadata closure check was also read directly: `.planning/ROADMAP.md` now contains `Plans: Not planned (expected 3...)` for Phase 38 and `0 planned | Not started`, with no `TBD`, `FIXME`, or `XXX` markers; `.planning/phases/38-milestone-receipts` is absent.
 
 ## Freshness and Regression Evidence
 
@@ -248,10 +276,9 @@ Both requirements are mapped to Phase 36 in `REQUIREMENTS.md`; no phase-mapped r
 
 | File | Line | Finding | Severity | Impact |
 |---|---:|---|---|---|
-| `.planning/ROADMAP.md` | 317, 330 | Unreferenced `TBD` markers in Phase 38 plan-count fields | 🛑 BLOCKER | Phase 36 touched the roadmap, and the verifier debt-marker rule blocks unresolved markers in a phase-modified file. The entries correctly describe Phase 38 as not started, but the marker lines have no issue/PR/DEF-* reference. |
 | `internal/compiler/corevalidate/corevalidate.go` | 4248 | WR-02 stale explanatory comment | ⚠️ WARNING | Comment describes the obsolete same-type-only invariant; implementation derives the argument type from `sourceTypeID`. Disposition defers the comment to the core-validator maintainer's next semantic edit; review is not clean. |
 
-No runtime stub, empty handler, or empty value flowing to observable output was found. The grep matches for empty slices are intentional empty-result/diagnostic helpers and do not stand in for missing call behavior. The roadmap markers predate the current implementation changes and are about the explicitly unstarted Phase 38 planning work, but Step 7 applies to the modified file and does not exempt them for phase scope.
+No unresolved `TBD`, `FIXME`, or `XXX` marker remains in the modified roadmap. No runtime stub, empty handler, or empty value flowing to observable output was found. The grep matches for empty slices are intentional empty-result/diagnostic helpers and do not stand in for missing call behavior.
 
 The Phase 33 review separately retains CR-03 and CR-04 as blockers for the execution-peer maintainer's mandatory M007 audit before the Phase 38 freeze. I inspected the overlap: those findings concern legacy nested defect-unwind and typed-failure-through-return behavior, while Phase 36's new scalar-call obligations and D-18 bounds controls are distinct. They are not closed or accepted risk by this report, and this is not a global-clean verdict.
 
@@ -263,9 +290,9 @@ None. Named deterministic tests exercise the phase's observable call, output, de
 
 ## Gaps Summary
 
-The code achieves the scalar-helper-call goal: local and imported U64/Bool helper calls return used values, interpreter/native defect behavior matches, peers independently derive call facts, and no-call generated C remains byte-identical. All 32 must-haves pass, with no behavior-unverified truth. The overall verifier status is nevertheless `gaps_found` because the phase-modified roadmap retains two unreferenced Phase 38 `TBD` markers at lines 317 and 330, which the mandatory debt-marker rule treats as a blocker. The review also retains WR-02 and the separate Phase 33 M007 audit debt described above.
+The code achieves the scalar-helper-call goal: local and imported U64/Bool helper calls return used values, interpreter/native defect behavior matches, peers independently derive call facts, and no-call generated C remains byte-identical. The prior Phase 38 metadata blocker is closed, all 32 must-haves pass, and there is no behavior-unverified truth or remaining Phase 36 gap. WR-02 remains a documentation warning; the separate Phase 33 CR-03/CR-04 M007 audit debt remains outside this phase's verified scope.
 
 ---
 
-_Verified: 2026-10-16T02:06:09Z_
+_Verified: 2026-10-16T02:14:06Z_
 _Verifier: the agent (gsd-verifier)_
