@@ -154,6 +154,7 @@ const FAILURE_ROOTS = [
 const FAILURE_EXACT_RUN = "^(TestPhase371ForeignFailureOpFailAttribution|TestPhase371ForeignFailureAttributionControls|TestPhase371LegacyDefectClosesAllActiveFrames|TestPhase33TerminalAttribution|TestPhase36CallCausalAttributionControls)$";
 const REASON_EXACT_RUN = "^TestPhase371CountedDefectReasonBytes$";
 const REASON_ROOT = "TestPhase371CountedDefectReasonBytes";
+const REASON_ADMISSION_ROOT = "TestPhase371DefectReasonUTF8Admission";
 const REASON_STORAGE_SUBTEST = `${REASON_ROOT}/static_readonly_counted_storage`;
 const BASELINE_ROOT = "TestPhase371CompatibilityAmendmentControls";
 const EXECUTIONPEER_ROOTS = [
@@ -361,6 +362,52 @@ function expectedSubtests(root, mode, original) {
     return root.subtests.filter((name) => !name.startsWith("legacy-static/"));
   }
   return root.subtests;
+}
+
+function exactRootNamesForMode(mode) {
+  const names = mode === "failure" ? FAILURE_ROOTS.map(({ name }) => name)
+    : mode === "reason" ? [REASON_ROOT, REASON_ADMISSION_ROOT]
+      : mode === "baseline" ? [BASELINE_ROOT]
+        : mode === "defect" ? ROOTS.map(({ name }) => name)
+          : null;
+  if (!names) throw new Error(`unsupported canonical producer suite: ${mode}`);
+  return names.sort();
+}
+
+function canonicalControlLane(selection) {
+  if (selection.source === "default") return "default";
+  if (selection.source === CLEAN_REL && selection.subject === "none") return "clean";
+  if (selection.subject !== "none" && FIXTURES[selection.subject]?.relative === selection.source) return "bad";
+  throw new Error(`canonical producer used an unknown control subject: ${selection.source}`);
+}
+
+function recordCanonicalProducerSuiteSelection(selection, result) {
+  const directory = process.env.GSD_PROHIB_PRODUCER_RECEIPT_DIR;
+  if (!directory) return;
+
+  const evidenceDir = fs.realpathSync(path.resolve(directory));
+  const tempRoot = fs.realpathSync(TMP_ROOT);
+  assert.ok(evidenceDir.startsWith(`${tempRoot}${path.sep}`), "canonical producer receipt directory must be under the bounded temp root");
+  assert.ok(path.basename(evidenceDir).startsWith("schway371-prohibition-proof-"), "canonical producer receipt directory must use the phase proof prefix");
+
+  const lane = canonicalControlLane(selection);
+  const expectedRoots = exactRootNamesForMode(selection.mode);
+  const observedRoots = Object.keys(result.roots || {}).sort();
+  assert.deepEqual(observedRoots, expectedRoots, `${lane}: canonical producer must select the exact ${selection.mode} root inventory`);
+  assert.equal(process.env.GSD_PROHIB_MODE, selection.mode, `${lane}: canonical producer mode must be explicit in its child environment`);
+
+  const receipt = {
+    version: 1,
+    control: lane,
+    subject: selection.subject,
+    source: selection.source,
+    mode: selection.mode,
+    exact_root_inventory: observedRoots,
+    semantic_result: result.kind,
+  };
+  const recordPath = path.join(evidenceDir, `canonical-suite-${lane}.json`);
+  const bytes = Buffer.from(`${JSON.stringify(receipt, null, 2)}\n`);
+  fs.writeFileSync(recordPath, bytes, { flag: "wx" });
 }
 
 function parseFailureName(line) {
@@ -1036,14 +1083,48 @@ function createResolvedCandidate(current) {
   return { prohibition: candidate[0], check, mode: "auto" };
 }
 
-function runCanonicalProducer(request, evidenceDir) {
+function readCanonicalProducerSuiteSelections(evidenceDir, subject) {
+  const expectedRoots = exactRootNamesForMode(subject);
+  const controls = {};
+  for (const lane of ["bad", "clean", "default"]) {
+    const recordPath = path.join(evidenceDir, `canonical-suite-${lane}.json`);
+    const bytes = fs.readFileSync(recordPath);
+    const receipt = JSON.parse(bytes.toString("utf8"));
+    const expectedSubject = lane === "bad" ? subject : "none";
+    const expectedSource = lane === "bad" ? FIXTURES[subject].relative
+      : lane === "clean" ? CLEAN_REL : "default";
+    const expectedResult = lane === "bad" ? "violation" : "green";
+    assert.equal(receipt.version, 1, `${lane}: canonical suite receipt version`);
+    assert.equal(receipt.control, lane, `${lane}: canonical suite receipt lane`);
+    assert.equal(receipt.subject, expectedSubject, `${lane}: canonical producer must use the intended fixture subject`);
+    assert.equal(receipt.source, expectedSource, `${lane}: canonical producer must use the intended fixture source`);
+    assert.equal(receipt.mode, subject, `${lane}: canonical producer must retain the requested proof mode`);
+    assert.deepEqual(receipt.exact_root_inventory, expectedRoots, `${lane}: canonical producer exact root inventory`);
+    assert.equal(receipt.semantic_result, expectedResult, `${lane}: canonical producer semantic result`);
+    controls[lane] = {
+      ...receipt,
+      evidence: { path: recordPath, sha256: digest(bytes), bytes: bytes.length },
+    };
+  }
+  const recordedControls = fs.readdirSync(evidenceDir)
+    .filter((name) => /^canonical-suite-(bad|clean|default)\.json$/.test(name))
+    .sort();
+  assert.deepEqual(recordedControls, ["canonical-suite-bad.json", "canonical-suite-clean.json", "canonical-suite-default.json"],
+    "canonical producer must record exactly its bad, clean and default suite selections");
+  return { mode: subject, root_inventory: expectedRoots, controls };
+}
+
+function runCanonicalProducer(request, evidenceDir, subject) {
   const cli = path.join(os.homedir(), ".codex", "gsd-core", "bin", "gsd-tools.cjs");
   assert.ok(fs.existsSync(cli), `installed canonical GSD producer is missing at ${cli}`);
   const requestText = `${JSON.stringify(request, null, 2)}\n`;
   const requestRecord = saveRaw(evidenceDir, "canonical-request.json", requestText);
+  const env = { ...process.env, GOCACHE, GOFLAGS: "", GSD_PROHIB_MODE: subject,
+    GSD_PROHIB_PRODUCER_RECEIPT_DIR: evidenceDir };
+  delete env.GSD_PROHIB_SUBJECT;
   const result = spawnSync(process.execPath, [cli, "check", "prohibition-enforcement", requestRecord.path, "--raw"], {
     cwd: ROOT,
-    env: { ...process.env, GOCACHE, GOFLAGS: "" },
+    env,
     encoding: "utf8",
     timeout: 120_000,
     maxBuffer: MAX_OUTPUT,
@@ -1069,7 +1150,8 @@ function runCanonicalProducer(request, evidenceDir) {
   assert.equal(verdict.evidence[0].failFirst, true);
   assert.equal(verdict.evidence[0].passed, true);
   assert.equal(verdict.evidence[0].failFirstProof, "violation-fixture");
-  return { verdict, requestRecord, stdoutRecord, stderrRecord };
+  const suiteSelection = readCanonicalProducerSuiteSelections(evidenceDir, subject);
+  return { verdict, requestRecord, stdoutRecord, stderrRecord, suiteSelection };
 }
 
 function sourceBindings(current) {
@@ -1170,6 +1252,19 @@ function assertArchivedProof(subject, proof, sourceRevision) {
   const producerStdout = JSON.parse(fs.readFileSync(producer.stdout.path, "utf8"));
   assert.equal(producerStdout.status, producer.status, `${subject}: producer receipt must match its raw canonical output`);
   assert.equal(producerStdout.flagged, producer.flagged, `${subject}: producer flag must match its raw canonical output`);
+  if (producer.suite_selection) {
+    const selection = producer.suite_selection;
+    const expectedRoots = exactRootNamesForMode(subject);
+    assert.equal(selection.mode, subject, `${subject}: canonical producer mode must be recorded`);
+    assert.deepEqual(selection.root_inventory, expectedRoots, `${subject}: canonical producer root inventory must be exact`);
+    assert.deepEqual(Object.keys(selection.controls).sort(), ["bad", "clean", "default"], `${subject}: canonical producer controls must be complete`);
+    for (const [lane, expectedResult] of [["bad", "violation"], ["clean", "green"], ["default", "green"]]) {
+      const control = selection.controls[lane];
+      assert.equal(control.mode, subject, `${subject}/${lane}: canonical producer mode`);
+      assert.deepEqual(control.exact_root_inventory, expectedRoots, `${subject}/${lane}: exact canonical roots`);
+      assert.equal(control.semantic_result, expectedResult, `${subject}/${lane}: expected canonical result`);
+    }
+  }
 }
 
 function ensurePreResolutionArchive(initial) {
@@ -1442,7 +1537,7 @@ function runProofMode(subject) {
   const goControls = runGoControls(evidenceDir, subject);
   const tapControls = runTapControls(evidenceDir, subject);
   const canonicalItem = createResolvedCandidate(current);
-  const producer = runCanonicalProducer({ prohibition: canonicalItem.prohibition, check: current.check, mode: "auto" }, evidenceDir);
+  const producer = runCanonicalProducer({ prohibition: canonicalItem.prohibition, check: current.check, mode: "auto" }, evidenceDir, subject);
   const bindings = sourceBindings(current);
   const proof = {
     subject,
@@ -1476,6 +1571,7 @@ function runProofMode(subject) {
       request: producer.requestRecord,
       stdout: producer.stdoutRecord,
       stderr: producer.stderrRecord,
+      suite_selection: producer.suiteSelection,
     },
   };
   const manifest = {
@@ -1594,7 +1690,11 @@ try {
       if (result.kind === "invalid") invalidReason = result.reason;
     }
     test(TEST_NAME, { skip: invalidReason || false }, () => {
-      const rootCount = (selection.mode === "failure" ? FAILURE_ROOTS : ROOTS).length;
+      const expectedRoots = exactRootNamesForMode(selection.mode);
+      assert.deepEqual(Object.keys(result.roots || {}).sort(), expectedRoots,
+        `${selection.source}: exact ${selection.mode} root inventory must be selected`);
+      recordCanonicalProducerSuiteSelection(selection, result);
+      const rootCount = expectedRoots.length;
       assert.equal(result.kind, "green", `${selection.source}: exact ${rootCount}-root Go suite produced ${result.kind}`);
     });
   }
