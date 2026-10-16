@@ -27,6 +27,7 @@ const CGEN_REL = "internal/compiler/cgen/cgen_program.go";
 const REASON_TEST_REL = "internal/compiler/session/session_phase371_defect_reason_test.go";
 const CGEN_TEST_REL = "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go";
 const COMPATIBILITY_TEST_REL = "internal/compiler/session/session_phase371_compatibility_test.go";
+const STORAGE_EVOLUTION_PATHS = [ADAPTER_REL, CGEN_REL, CGEN_TEST_REL].sort();
 const TEST_REL = "internal/compiler/executionpeer/executionpeer_phase371_test.go";
 const MODEL_REL = "internal/compiler/session/session_phase24_model_test.go";
 const FAILURE_BASE_HEAD = "8fbd1e51bb6fd97b1a46d5d1015ce5e39d69bfe0";
@@ -153,6 +154,7 @@ const FAILURE_ROOTS = [
 const FAILURE_EXACT_RUN = "^(TestPhase371ForeignFailureOpFailAttribution|TestPhase371ForeignFailureAttributionControls|TestPhase371LegacyDefectClosesAllActiveFrames|TestPhase33TerminalAttribution|TestPhase36CallCausalAttributionControls)$";
 const REASON_EXACT_RUN = "^TestPhase371CountedDefectReasonBytes$";
 const REASON_ROOT = "TestPhase371CountedDefectReasonBytes";
+const REASON_STORAGE_SUBTEST = `${REASON_ROOT}/static_readonly_counted_storage`;
 const BASELINE_ROOT = "TestPhase371CompatibilityAmendmentControls";
 const EXECUTIONPEER_ROOTS = [
   "TestPhase371LegacyDefectClosesAllActiveFrames",
@@ -463,9 +465,10 @@ function validateReasonGoResult(result, subject) {
   if (runCount !== 1 || /^--- SKIP:/m.test(output)) return { kind: "invalid", reason: "reason root missing, duplicated or skipped", output };
   if (subject === "reason") {
     if (result.status !== 1 || passCount !== 0 || failCount !== 1
-        || !output.includes("native O0 lost reason bytes")
-        || !output.includes("application outcome=")) {
-      return { kind: "invalid", reason: "original reason emitter missed exact native/application byte assertions", output };
+        || exactCount(output, `=== RUN   ${REASON_STORAGE_SUBTEST}`) !== 1
+        || exactCount(output, `--- FAIL: ${REASON_STORAGE_SUBTEST} (`) !== 1
+        || !output.includes("generated native and application counted reason buffers must be static readonly without automatic compound literals")) {
+      return { kind: "invalid", reason: "original reason emitter missed the exact static-storage invariant", output };
     }
     if (/syntax\.|undefined reference|no tests to run|timed out|^FAIL\s/m.test(output)) {
       return { kind: "invalid", reason: "reason RED was replaced by a syntax/tool/timeout or missing-root failure", output };
@@ -482,7 +485,7 @@ function runReasonExactRoots(subject) {
   const original = subject === "reason";
   const roots = [
     { name: REASON_ROOT, package: "./internal/compiler/cgen", run: REASON_EXACT_RUN,
-      requiredOnRed: ["native O0 lost reason bytes", "application outcome="] },
+      requiredOnRed: [`--- FAIL: ${REASON_STORAGE_SUBTEST} (`, "generated native and application counted reason buffers must be static readonly without automatic compound literals"] },
     { name: "TestPhase371DefectReasonUTF8Admission", package: "./internal/compiler/session",
       run: "^TestPhase371DefectReasonUTF8Admission$",
       requiredOnRed: ["missing stable syntax.invalid_utf8 byte span", "raw-core malformed reason was not independently refused as core.final_claim_mismatch"] },
@@ -1082,6 +1085,16 @@ function sourceBindings(current) {
   }));
 }
 
+function sourceBindingChanges(from, to) {
+  const changed = {};
+  for (const relative of [...new Set([...Object.keys(from), ...Object.keys(to)])].sort()) {
+    const before = from[relative] || null;
+    const after = to[relative] || null;
+    if (JSON.stringify(before) !== JSON.stringify(after)) changed[relative] = { from: before, to: after };
+  }
+  return changed;
+}
+
 function writeJsonAtomic(relative, value) {
   const target = path.join(ROOT, relative);
   const temp = `${target}.tmp-${process.pid}-${crypto.randomBytes(5).toString("hex")}`;
@@ -1198,6 +1211,62 @@ function ensurePreResolutionArchive(initial) {
   return record;
 }
 
+function beginSourceEvolution(initial, current) {
+  if (current.item.status === "unresolved") {
+    assert.equal(current.item.verification, null, "unresolved lifecycle source evolution must retain null verification");
+    return null;
+  }
+  assert.equal(current.item.status, "resolved", "source evolution only supports the two declared plan lifecycle states");
+  const resolutionPath = path.join(ROOT, RESOLUTION_REL);
+  const record = JSON.parse(fs.readFileSync(resolutionPath, "utf8"));
+  assert.equal(record.state, "resolved-test", "source evolution requires the existing resolved/test lifecycle");
+  const toBindings = sourceBindings(current);
+  const existing = record.source_evolution_history || [];
+  const sameTarget = existing.find((entry) => JSON.stringify(entry.to_source_bindings) === JSON.stringify(toBindings));
+  if (sameTarget) {
+    assert.ok(sameTarget.status === "pending-fresh-proofs" || sameTarget.status === "verified", "source evolution record has an unsupported state");
+    return sameTarget;
+  }
+
+  const resolvedSubjects = record.transition.subjects;
+  assert.ok(resolvedSubjects && resolvedSubjects.baseline, "resolved lifecycle source bindings are required");
+  const fromBindings = resolvedSubjects.baseline.current_source_bindings;
+  assert.ok(fromBindings && typeof fromBindings === "object", "resolved baseline source bindings are required");
+  const changed = sourceBindingChanges(fromBindings, toBindings);
+  if (Object.keys(changed).length === 0) return null;
+  const changedPaths = Object.keys(changed).sort();
+  assert.ok(changedPaths.every((relative) => STORAGE_EVOLUTION_PATHS.includes(relative)),
+    "storage source evolution is limited to the emitter, its existing test root, and this phase-local adapter");
+
+  const priorProofs = initial.proofs;
+  assert.deepEqual(Object.keys(priorProofs || {}).sort(), proofSubjects().sort(), "all four current resolved proofs must be snapshotted before replacement");
+  for (const subject of proofSubjects()) {
+    const proof = priorProofs[subject];
+    assert.equal(proof.lifecycle_status, "resolved", `${subject}: previous proof must record the resolved lifecycle`);
+    assert.deepEqual(proof.source_bindings, resolvedSubjects[subject].current_source_bindings,
+      `${subject}: prior proof bindings must match the previous resolved record`);
+  }
+  assert.ok(initial.final_root_union && initial.final_root_union.raw_log, "previous resolved root union must be preserved before proof replacement");
+
+  const event = {
+    id: `T-37.1-08-counted-storage-repair-${existing.length + 1}`,
+    captured_utc: new Date().toISOString(),
+    status: "pending-fresh-proofs",
+    reason: "Bounded source evolution for block-scoped static readonly counted defect-reason bytes; prior resolved proof facts are preserved below.",
+    lifecycle: { status: "resolved", verification: "test" },
+    from_source_bindings: fromBindings,
+    to_source_bindings: toBindings,
+    changed_bindings: changed,
+    previous_resolved_proofs: JSON.parse(JSON.stringify(priorProofs)),
+    previous_resolved_proofs_sha256: digest(Buffer.from(JSON.stringify(priorProofs))),
+    previous_final_root_union: JSON.parse(JSON.stringify(initial.final_root_union)),
+    previous_final_root_union_sha256: digest(Buffer.from(JSON.stringify(initial.final_root_union))),
+  };
+  record.source_evolution_history = [...existing, event];
+  writeJsonAtomic(RESOLUTION_REL, record);
+  return event;
+}
+
 function replacePlanField(planText, field, value) {
   const pattern = new RegExp(`^(      ${field}: ).*$`, "m");
   assert.match(planText, pattern, `negative-control copy must contain ${field}`);
@@ -1301,6 +1370,28 @@ function finalizeResolutionRecord(stored, lifecycle, negativeControls) {
       canonical_producer: proof.canonical_producer,
     };
   }
+  const sourceEvolution = (record.source_evolution_history || []).find((entry) =>
+    entry.status === "pending-fresh-proofs" && JSON.stringify(entry.to_source_bindings) === JSON.stringify(sourceBindings(projectCurrentPlan("baseline"))));
+  if (sourceEvolution) {
+    assert.equal(sourceEvolution.previous_resolved_proofs_sha256,
+      digest(Buffer.from(JSON.stringify(sourceEvolution.previous_resolved_proofs))), "prior resolved proofs must remain byte-for-byte archived");
+    assert.equal(sourceEvolution.previous_final_root_union_sha256,
+      digest(Buffer.from(JSON.stringify(sourceEvolution.previous_final_root_union))), "prior resolved root union must remain byte-for-byte archived");
+    sourceEvolution.status = "verified";
+    sourceEvolution.verified_utc = new Date().toISOString();
+    sourceEvolution.fresh_proofs = Object.fromEntries(proofSubjects().map((subject) => {
+      const proof = stored.proofs[subject];
+      assert.deepEqual(proof.source_bindings, sourceEvolution.to_source_bindings,
+        `${subject}: fresh proof must bind every current source-evolution target`);
+      return [subject, {
+        proof_sha256: digest(Buffer.from(JSON.stringify(proof))),
+        proof_manifest: proof.manifest,
+        source_bindings: proof.source_bindings,
+        canonical_producer: proof.canonical_producer,
+      }];
+    }));
+    sourceEvolution.final_root_union = stored.final_root_union;
+  }
   record.state = "resolved-test";
   record.resolved_utc = new Date().toISOString();
   record.transition = {
@@ -1322,6 +1413,14 @@ function finalizeResolutionRecord(stored, lifecycle, negativeControls) {
   }]));
   stored.lifecycle_status = "resolved";
   stored.resolution_record = { path: RESOLUTION_REL, sha256: digest(resolutionBytes), bytes: resolutionBytes.length };
+  if (sourceEvolution) {
+    stored.source_evolution = {
+      id: sourceEvolution.id,
+      status: sourceEvolution.status,
+      changed_bindings: sourceEvolution.changed_bindings,
+      fresh_proofs: sourceEvolution.fresh_proofs,
+    };
+  }
   writeJsonAtomic(PROJECTION_REL, stored);
   return record;
 }
@@ -1331,6 +1430,7 @@ function runProofMode(subject) {
   const initial = ensureInitialProjection();
   ensurePreResolutionArchive(initial);
   const current = projectCurrentPlan(subject);
+  beginSourceEvolution(initial, current);
   const lifecycle = current.item.status;
   assert.ok(lifecycle === "unresolved" || lifecycle === "resolved", "current lifecycle must be one of the supported states");
   const lifecycleStatus = lifecycle;

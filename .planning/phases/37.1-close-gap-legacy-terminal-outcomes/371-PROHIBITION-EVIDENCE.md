@@ -219,3 +219,33 @@ original historical projection remains unresolved by design. The current
 live projections are resolved/test on the basis of the recorded machine
 proofs; independent code review, security, validation, verification freshness,
 and the M007 audit remain downstream phase gates.
+
+## Dated T-37.1-08 counted-storage follow-up
+
+The preceding proof paths and bindings record the initial resolved/test
+snapshot. The bounded storage repair adds block-scoped `static const unsigned
+char` arrays to both counted reason emitters, retains `sizeof`-based counted
+lengths and the existing output bounds, and leaves the printable-ASCII path
+unchanged. The `static_readonly_counted_storage` subtest checks both generated
+shells and rejects their prior automatic reason compound literals.
+
+The phase-local adapter's precise original-source overlay reaches that exact
+storage assertion against the prior emitter; its source files are verified
+unchanged after the run. Fresh post-repair producers for defect, typed failure,
+reason bytes, and baseline amendment are green/unflagged. The final root union
+has 19 distinct roots and 254 passing subtests, with no skips. The counted
+reason root has 76 subtests, including the new storage invariant (75 in the
+preceding snapshot). The lifecycle remains `resolved/test`; the original
+unresolved/null projection and the archived pre-resolution proofs remain
+intact. The machine resolution record appends three verified, dated source
+evolution entries: the emitter correction, the combined native/application
+invariant refinement, and the adapter's two-state lifecycle guard. Each
+preserves the earlier proof set before refreshing current bindings.
+
+Detailed source hashes, original-helper RED, post-fix logs, producer manifests,
+and the root inventory are in
+[`NEW37.1-STORAGE-FIX.md`](NEW37.1-STORAGE-FIX.md) and
+[`371-STORAGE-EVIDENCE.json`](371-STORAGE-EVIDENCE.json). This addendum records
+the local implementation evidence; it does not replace the parent-owned
+read-only security rerun, independent review, or remaining phase gates. The
+cause of the earlier diagnostic native signal remains unestablished.

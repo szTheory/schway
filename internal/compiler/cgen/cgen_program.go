@@ -2435,9 +2435,9 @@ func emitProgramDefectReasonJSON(out *strings.Builder, reason string) {
 		return
 	}
 	encoded, _ := json.Marshal(reason) // Core admission guarantees valid UTF-8.
-	out.WriteString("      if (!schway_write_bytes((const char *)(const unsigned char[]){")
+	out.WriteString("      { static const unsigned char schway_defect_reason_json_bytes[] = {")
 	emitProgramByteConstants(out, encoded)
-	fmt.Fprintf(out, "}, %du)) abort();\n", len(encoded))
+	out.WriteString("}; if (!schway_write_bytes((const char *)schway_defect_reason_json_bytes, sizeof schway_defect_reason_json_bytes)) abort(); }\n")
 }
 
 func phase371PrintableASCII(text string) bool {
@@ -3063,9 +3063,9 @@ func emitProgramApplicationScalarFailure(out *strings.Builder, indent, message s
 	}
 	if !phase371PrintableASCII(message) {
 		messageBytes := []byte(message + "\n")
-		fmt.Fprintf(out, "%sif (fwrite((const unsigned char[]){", indent)
+		fmt.Fprintf(out, "%s{ static const unsigned char schway_application_failure_bytes[] = {", indent)
 		emitProgramByteConstants(out, messageBytes)
-		fmt.Fprintf(out, "}, 1u, %du, stderr) != %du) exit(74);\n", len(messageBytes), len(messageBytes))
+		fmt.Fprintf(out, "}; if (fwrite(schway_application_failure_bytes, 1u, sizeof schway_application_failure_bytes, stderr) != sizeof schway_application_failure_bytes) exit(74); }\n")
 		fmt.Fprintf(out, "%sexit(65);\n", indent)
 		return
 	}

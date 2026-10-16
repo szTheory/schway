@@ -144,6 +144,34 @@ func TestPhase371NoCallScalarDefectNativeConformance(t *testing.T) {
 }
 
 func TestPhase371CountedDefectReasonBytes(t *testing.T) {
+	t.Run("static_readonly_counted_storage", func(t *testing.T) {
+		source := phase371NoCallReasonSource([]byte("\x01A"))
+		checked := session.Check(source)
+		if len(checked.Diagnostics) != 0 {
+			t.Fatalf("storage witness refused: %+v", checked.Diagnostics)
+		}
+		nativeC, err := cgen.EmitNative(checked.Program)
+		if err != nil {
+			t.Fatalf("storage witness EmitNative: %v", err)
+		}
+		nativeStatic := strings.Contains(nativeC, "static const unsigned char schway_defect_reason_json_bytes[] = {") &&
+			strings.Contains(nativeC, "schway_write_bytes((const char *)schway_defect_reason_json_bytes, sizeof schway_defect_reason_json_bytes)")
+		nativeAutomatic := strings.Contains(nativeC, "schway_write_bytes((const char *)(const unsigned char[]){")
+		appC, err := cgen.EmitApplication(checked.Program)
+		if err != nil {
+			t.Fatalf("storage witness EmitApplication: %v", err)
+		}
+		appStatic := strings.Contains(appC, "static const unsigned char schway_application_failure_bytes[] = {") &&
+			strings.Contains(appC, "fwrite(schway_application_failure_bytes, 1u, sizeof schway_application_failure_bytes, stderr)")
+		appAutomatic := strings.Contains(appC, "fwrite((const unsigned char[]){")
+		if !nativeStatic || nativeAutomatic || !appStatic || appAutomatic {
+			t.Fatal("generated native and application counted reason buffers must be static readonly without automatic compound literals")
+		}
+	})
+	if t.Failed() {
+		return
+	}
+
 	reasons := []struct {
 		name  string
 		value string

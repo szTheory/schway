@@ -1,0 +1,222 @@
+{
+  "version": 1,
+  "captured_utc": "2026-10-16T18:51:53Z",
+  "scope": "T-37.1-08 bounded counted-reason static-storage correction",
+  "implementation": {
+    "native_json": {
+      "file": "internal/compiler/cgen/cgen_program.go",
+      "buffer": "schway_defect_reason_json_bytes",
+      "storage": "block-scoped static const unsigned char",
+      "length": "sizeof schway_defect_reason_json_bytes",
+      "writer": "existing bounded schway_write_bytes"
+    },
+    "application_stderr": {
+      "file": "internal/compiler/cgen/cgen_program.go",
+      "buffer": "schway_application_failure_bytes",
+      "storage": "block-scoped static const unsigned char",
+      "length": "sizeof schway_application_failure_bytes",
+      "writer": "existing counted fwrite with exit 74 on short write"
+    },
+    "printable_ascii_path_unchanged": true,
+    "output_bounds_and_capture_failure_preserved": true,
+    "dependencies_or_runtime_changes": false
+  },
+  "source_evolution": {
+    "lifecycle": {
+      "live_status": "resolved",
+      "live_verification": "test",
+      "initial_projection_status": "unresolved",
+      "initial_projection_verification": null,
+      "pre_resolution_proof_snapshot_sha256": "8024616bcf622a53116aa2f79136d097389d86c9e4e136dbe36a6e05bcbb04fa",
+      "pre_resolution_snapshot_hash_verified": true
+    },
+    "resolution_record": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-PROHIBITION-RESOLUTION.json",
+    "verified_events": [
+      {
+        "id": "T-37.1-08-counted-storage-repair",
+        "status": "verified",
+        "changed_paths": [
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go",
+          "internal/compiler/cgen/cgen_program.go"
+        ],
+        "previous_resolved_proofs_sha256": "24cb5e0a0544d44eec59d46369a61a8694410d718645b07fb029b79785967731",
+        "previous_root_union_sha256": "76c3b333372bc71eba5983603664c7397828bc8045df3ba3bcbcbd7fe3e5bc2c"
+      },
+      {
+        "id": "T-37.1-08-counted-storage-repair-2",
+        "status": "verified",
+        "changed_paths": [
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go"
+        ],
+        "previous_resolved_proofs_sha256": "d26aac29b7e7d3be0e7bb9bc6dfce06eba5b6aec31e0b1a0aacd35e36dc07c0d",
+        "previous_root_union_sha256": "0ad26330ca9d567598b34830b8c99dbbe44ba103ff645d4e3d7f68fcd08de21c"
+      },
+      {
+        "id": "T-37.1-08-counted-storage-repair-3",
+        "status": "verified",
+        "changed_paths": [
+          ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs"
+        ],
+        "previous_resolved_proofs_sha256": "225720c1dfc234dfac3a9d00022a447925da47cbd0edf7dc8ea171af38c18491",
+        "previous_root_union_sha256": "758a9b65f916bfcac4125400b71d1b3eac6ef03ea91ae040a11e19ab57c2ef22"
+      }
+    ],
+    "original_to_final_source_bindings": {
+      "internal/compiler/cgen/cgen_program.go": {
+        "from": {"sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2", "bytes": 184034},
+        "to": {"sha256": "da90877d7cd6cf87cfc6efb3e6bf1efc2ece56c5070c009ed23bfcd6cf7c6d56", "bytes": 184244}
+      },
+      "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+        "from": {"sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302", "bytes": 14162},
+        "to": {"sha256": "d60af29d1d1abc686c27f61dba41fbaa19afa603ae36d72287552936ceac19c3", "bytes": 15585}
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
+        "from": {"sha256": "672a96a7cddc2a3cec5e72ed75a4b26ff7bc86d19bbd7ec93073bf5eead87552", "bytes": 80585},
+        "to": {"sha256": "3285aef3aa30fd94b57c6c33b78c42879f3ff2e5a380c52685caeb8bb9d69860", "bytes": 86539}
+      }
+    }
+  },
+  "original_helper_storage_red": {
+    "adapter_command": "node .planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs --sample reason",
+    "result": "expected semantic RED accepted by the closed adapter",
+    "failing_root": "TestPhase371CountedDefectReasonBytes",
+    "failing_subtest": "static_readonly_counted_storage",
+    "assertion": "generated native and application counted reason buffers must be static readonly without automatic compound literals",
+    "overlay": {
+      "baseline_head": "internal/compiler/cgen/cgen_program.go@8f5b5795c8c31488257567511e807a276b78a10c,internal/compiler/syntax/parser.go@9d09df995f1ab68c7044cda0915608d5d0a3209f,internal/compiler/corevalidate/corevalidate.go@9d09df995f1ab68c7044cda0915608d5d0a3209f",
+      "source_sha256": "b9b5c8f2ec988371c80ab62c36a195ec9c405a45b97818a67dcd45ca83a32583",
+      "replacement_sha256": "c32fcfead740cf80e0f13d015c0d35fe9e184b96f6263a2bad344890fd387470",
+      "overlay_sha256": "9df26f5e04a42402a87232830fca555ce28968db5312425a42d6b47bd99e8b7e",
+      "tracked_sources_unchanged_after_run": true
+    },
+    "manifest": {
+      "path": "/tmp/schway371-prohibition-proof-vpEkcS/sample-manifest.json",
+      "sha256": "902d5ed972f5222e2eee26524d933b07cee9fe476518905bc1eabfe495cb85ef",
+      "bytes": 1484
+    },
+    "raw_log": {
+      "path": "/tmp/schway371-prohibition-proof-vpEkcS/reason-go.log",
+      "sha256": "a4a5c5eb5253b62af4b221bb5fb087c7c1c96a2e1fa87508a330404ddf2a3123",
+      "bytes": 3888
+    }
+  },
+  "bounded_validation": {
+    "cgen_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen -run '^(TestPhase371CountedDefectReasonBytes|TestPhase371NoCallScalarDefectNativeConformance|TestPhase33ScalarExplicitDefectShells)$' -count=1 -v -timeout=120s",
+    "cgen_result": "passed",
+    "cgen_log": {
+      "path": "/tmp/phase371-storage-cgen-green.log",
+      "sha256": "9797387edc6c7ec4185712c9ed3d88f0e26ebd7a16541bf1bc821782808ad0ff",
+      "bytes": 15680
+    },
+    "counted_reason": {
+      "root": "TestPhase371CountedDefectReasonBytes",
+      "subtest_count": 76,
+      "previous_subtest_count": 75,
+      "added_subtests": ["static_readonly_counted_storage"],
+      "native_witnesses": ["no_call", "dynamic_entry", "dynamic_helper"],
+      "reason_cases": ["ascii", "control_then_hex_digit", "nul_then_a", "nul_then_z", "other_controls", "non_ascii", "replacement_character", "literal_backslash_escapes"],
+      "native_lanes": ["O0", "O3", "O3-LTO"],
+      "application_byte_tuples_passed": true
+    },
+    "focused_sanitizer": {
+      "available": true,
+      "runtime": "address sanitizer with heap-use-after-free smoke probe",
+      "counted_reason_path": "passed with exit 0"
+    },
+    "six_frozen_baseline_roots": {
+      "result": "passed",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase34PreChangeCProgramGolden|TestPhase34PreChangeCGoldenIsNotInert|TestPhase36NoCallGeneratedCByteBaseline|TestPhase36NoCallGeneratedCByteBaselineControls|TestPhase37Phase34AdditionLedgerControls|TestPhase37Phase36AdditionLedgerControls)$' -count=1 -v -timeout=600s",
+      "log": {
+        "path": "/tmp/phase371-storage-baseline-six.log",
+        "sha256": "2324375e7b7210a9190da9b7c59d2792433a41b18f30e08fcd091022f3ff4cdf",
+        "bytes": 6282
+      }
+    }
+  },
+  "fresh_canonical_proofs": {
+    "lifecycle": "resolved/test",
+    "all_producers": "green and unflagged",
+    "subjects": {
+      "defect": {
+        "manifest": {"path": "/tmp/schway371-prohibition-proof-NV6JfY/evidence-manifest.json", "sha256": "7d9fea566df2beda94b5408fbf828b921fb98fd7dc8561dc8506c619aa1a60df", "bytes": 46348},
+        "request_sha256": "d120174f144c3831d897082c61e9234730109acdba0762eca6ed6fdde4b61452",
+        "producer_stdout_sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
+        "bad_clean_default_skips": 0
+      },
+      "failure": {
+        "manifest": {"path": "/tmp/schway371-prohibition-proof-uhi4qf/evidence-manifest.json", "sha256": "0a317863d97a7451daed828fcb77fa4a39cca509d773ce2bacc9fb5d2917b248", "bytes": 47696},
+        "request_sha256": "151c7acbdc8084a522f7b7edc22f97042d8b1b8962ea1def7546397196962661",
+        "producer_stdout_sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
+        "bad_clean_default_skips": 0
+      },
+      "reason": {
+        "manifest": {"path": "/tmp/schway371-prohibition-proof-82fnFj/evidence-manifest.json", "sha256": "8ec98cdb2a5fe622069961107305ae256f8ce93bd35e4f5905d630db2a4aaa65", "bytes": 14714},
+        "request_sha256": "109cb6e427e276337a23e288a5a3d1b9c2788b0db3d23504cd33dea7e11e0316",
+        "producer_stdout_sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
+        "bad_log": {"path": "/tmp/schway371-prohibition-proof-82fnFj/bad-go.log", "sha256": "4702c45156a122f03d12cf3ad51399f889610205ae103704154316fca899ab86", "bytes": 3888},
+        "clean_log": {"path": "/tmp/schway371-prohibition-proof-82fnFj/clean-go.log", "sha256": "4394748dec2d1c36bc7ea7e1d7b2d854d32250c3e93bc6d7b1762b08c77261e0", "bytes": 15888},
+        "default_log": {"path": "/tmp/schway371-prohibition-proof-82fnFj/default-go.log", "sha256": "574b53196a7500b70519bb600029b369b2c3857d275198b4a3f193ef5d8f97b4", "bytes": 15888},
+        "bad_clean_default_skips": 0
+      },
+      "baseline": {
+        "manifest": {"path": "/tmp/schway371-prohibition-proof-zGcIZS/evidence-manifest.json", "sha256": "a5eb3d100edc8a0a7be5be3a2adfba5bf0e018807ae8c83a8f7e24de1e2e10ce", "bytes": 13023},
+        "request_sha256": "3f97395cbfd4d4fb5d65ad5188dda52206973f764c291d116106ba49ac7326b9",
+        "producer_stdout_sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
+        "bad_clean_default_skips": 0
+      }
+    }
+  },
+  "root_union": {
+    "root_count": 19,
+    "subtest_count": 254,
+    "skip_count": 0,
+    "registered_roots": [
+      "TestPhase371LegacyDefectClosesAllActiveFrames",
+      "TestPhase371DefectTerminalControls",
+      "TestPhase33TerminalAttribution",
+      "TestPhase36CallCausalAttributionControls",
+      "TestPhase371ForeignFailureOpFailAttribution",
+      "TestPhase371ForeignFailureAttributionControls",
+      "TestPhase24ModelReplayIsDeterministicAndModelOnly",
+      "TestPhase371DefectReasonUTF8Admission",
+      "TestPhase371PreEmitterRouteCensus",
+      "TestPhase371CompatibilityAmendmentControls",
+      "TestPhase34PreChangeCProgramGolden",
+      "TestPhase34PreChangeCGoldenIsNotInert",
+      "TestPhase36NoCallGeneratedCByteBaseline",
+      "TestPhase36NoCallGeneratedCByteBaselineControls",
+      "TestPhase37Phase34AdditionLedgerControls",
+      "TestPhase37Phase36AdditionLedgerControls",
+      "TestPhase371NoCallScalarDefectNativeConformance",
+      "TestPhase371CountedDefectReasonBytes",
+      "TestPhase33ScalarExplicitDefectShells"
+    ],
+    "packages": {
+      "executionpeer": {"roots": 6, "subtests": 93, "skips": 0},
+      "session": {"roots": 10, "subtests": 70, "skips": 0},
+      "cgen": {"roots": 3, "subtests": 91, "skips": 0}
+    },
+    "reason_root_count": 76,
+    "raw_log": {
+      "path": "/tmp/schway371-prohibition-proof-2KJYAW/final-19-root-union.go.log",
+      "sha256": "d2b5a0b8d64dc8b326a9d0243d6631c50cfb1d685494c3e9843d08faf1e893a0",
+      "bytes": 42992
+    },
+    "independent_sample": {
+      "manifest": {"path": "/tmp/schway371-prohibition-proof-twSoKw/sample-manifest.json", "sha256": "e3779d61593ca37da1ea56e381a8b88543fd9e21080289922ae7cb162eab7389", "bytes": 9511},
+      "raw_log": {"path": "/tmp/schway371-prohibition-proof-twSoKw/all-go.log", "sha256": "0d8c3d6f3a7bc4559ff3e384015c2eb01c8ba920fea3c8d9f0bcac22a5e404b5", "bytes": 42992}
+    }
+  },
+  "current_resolution_record": {
+    "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-PROHIBITION-RESOLUTION.json",
+    "sha256": "139c8fa996081cf9d96b1e996db9e541c97aff4adc5ff7ae1ecffb7388d39a76",
+    "bytes": 772776
+  },
+  "explicit_limits": [
+    "No memory-pressure experiment, large-input construction, stack-exhaustion reproduction, or native stress probe was run.",
+    "The earlier diagnostic native signal's cause remains unestablished.",
+    "Parent-owned read-only security rerun, independent review, and other phase gates remain pending."
+  ]
+}
