@@ -11,18 +11,23 @@ const { test } = require("node:test");
 const ROOT = path.resolve(__dirname, "../../..");
 const PHASE_REL = ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/";
 const PLAN_REL = `${PHASE_REL}37.1-01-PLAN.md`;
+const FAILURE_PLAN_REL = `${PHASE_REL}37.1-02-PLAN.md`;
 const PROJECTION_REL = `${PHASE_REL}371-PROHIBITION-PROJECTION.json`;
 const ADAPTER_REL = `${PHASE_REL}371-prohibition-check.test.cjs`;
 const CLEAN_REL = `${PHASE_REL}prohibition-clean.json`;
 const DEFECT_REL = `${PHASE_REL}prohibition-defect-violation.json`;
+const FAILURE_REL = `${PHASE_REL}prohibition-failure-violation.json`;
 const SOURCE_REL = "internal/compiler/executionpeer/executionpeer.go";
 const TEST_REL = "internal/compiler/executionpeer/executionpeer_phase371_test.go";
+const MODEL_REL = "internal/compiler/session/session_phase24_model_test.go";
+const FAILURE_BASE_HEAD = "8fbd1e51bb6fd97b1a46d5d1015ce5e39d69bfe0";
 const PACKAGE = "./internal/compiler/executionpeer";
 const TMP_ROOT = "/tmp";
 const GOCACHE = "/tmp/ai-lang-verification-gocache";
 const MAX_OUTPUT = 8 * 1024 * 1024;
 const GO_TIMEOUT_MS = 120_000;
 const TEST_NAME = "legacy defect closure rejects whole-execution defects";
+const FAILURE_STATEMENT = "MUST NOT classify arbitrary OpReturn as propagated failure or treat causal acceptance as payload-value or actual CFG-path proof.";
 const STATEMENT = "MUST NOT accept caller activity after an accepted whole-execution defect or synthesize caller unwind records.";
 const CURRENT_GUARD = "\t\t\tif event.Kind == \"function.defected\" {";
 const ORIGINAL_GUARD = "\t\t\tif i.dynamicCallIdentity && event.Kind == \"function.defected\" && document.Outcome.Kind == execution.OutcomeDefect {";
@@ -85,6 +90,56 @@ const ROOTS = [
   },
 ];
 const EXACT_RUN = "^(TestPhase371LegacyDefectClosesAllActiveFrames|TestPhase371DefectTerminalControls|TestPhase33TerminalAttribution|TestPhase36CallCausalAttributionControls)$";
+const FAILURE_ROOTS = [
+  {
+    name: "TestPhase371ForeignFailureOpFailAttribution",
+    subtests: ["AcquireError.AcquireFailed", "UseError.UnsupportedByte"],
+    failsOnFailure: true,
+  },
+  {
+    name: "TestPhase371ForeignFailureAttributionControls",
+    subtests: [
+      "nonexistent-foreign-operation", "different-foreign-operation", "wrong-function", "wrong-invocation",
+      "wrong-source", "wrong-target", "wrong-type", "failure-from-different-call", "wrong-foreign-contract",
+      "wrong-foreign-error-edge", "wrong-caller-source", "wrong-caller-target", "wrong-caller-type",
+      "wrong-caller-error-target", "wrong-caller-error-edge", "wrong-terminal-source", "wrong-terminal-constructor",
+      "wrong-terminal-operation", "wrong-root-kind", "missing-terminal", "duplicate-terminal",
+      "stale-cross-activation-failure", "clean-return-relabeled-as-failure", "failure-payload-is-outside-peer-knowledge",
+    ],
+    failsOnFailure: true,
+  },
+  {
+    name: "TestPhase371LegacyDefectClosesAllActiveFrames",
+    subtests: ["legacy-static", "ordinary-nested-return", "dynamic-scalar"],
+    failsOnFailure: false,
+  },
+  {
+    name: "TestPhase33TerminalAttribution",
+    subtests: [
+      "return", "return/wrong_source", "return/wrong_type", "return/target_on_terminal",
+      "return/missing_outcome", "return/unknown_outcome", "return/event_after_root_terminal",
+      "return/outcome_typed_failure", "return/outcome_defect", "return/outcome_cancelled",
+      "fail", "fail/wrong_source", "fail/wrong_type", "fail/target_on_terminal",
+      "fail/missing_outcome", "fail/unknown_outcome", "fail/event_after_root_terminal",
+      "fail/outcome_returned", "fail/outcome_defect", "fail/outcome_cancelled",
+      "defect", "defect/wrong_source", "defect/wrong_type", "defect/target_on_terminal",
+      "defect/missing_outcome", "defect/unknown_outcome", "defect/event_after_root_terminal",
+      "defect/outcome_returned", "defect/outcome_typed_failure", "defect/outcome_cancelled",
+      "defect/wrong_reason", "defect/defect_value",
+    ],
+    failsOnFailure: false,
+  },
+  {
+    name: "TestPhase36CallCausalAttributionControls",
+    subtests: [
+      "ordinal-gap", "ordinal-duplicate", "ordinal-reordered", "wrong-parent", "wrong-static-site",
+      "wrong-callee", "wrong-source-place", "wrong-target-place", "wrong-result-type", "missing-call",
+      "missing-return", "repeated-terminal",
+    ],
+    failsOnFailure: false,
+  },
+];
+const FAILURE_EXACT_RUN = "^(TestPhase371ForeignFailureOpFailAttribution|TestPhase371ForeignFailureAttributionControls|TestPhase371LegacyDefectClosesAllActiveFrames|TestPhase33TerminalAttribution|TestPhase36CallCausalAttributionControls)$";
 const MUTATED_FAILURE_NAMES = [
   "TestPhase371LegacyDefectClosesAllActiveFrames",
   "TestPhase371LegacyDefectClosesAllActiveFrames/legacy-static",
@@ -92,10 +147,17 @@ const MUTATED_FAILURE_NAMES = [
   "TestPhase371DefectTerminalControls/legacy-static",
 ];
 const LEGACY_ASSERTION = "peer rejected actual legacy child defect trace";
+const FAILURE_FAILURE_NAMES = [
+  "TestPhase371ForeignFailureOpFailAttribution",
+  "TestPhase371ForeignFailureOpFailAttribution/AcquireError.AcquireFailed",
+  "TestPhase371ForeignFailureOpFailAttribution/UseError.UnsupportedByte",
+  "TestPhase371ForeignFailureAttributionControls",
+];
 
 const FIXTURES = {
   none: { relative: CLEAN_REL, data: { version: 1, subject: "none" } },
   defect: { relative: DEFECT_REL, data: { version: 1, subject: "defect" } },
+  failure: { relative: FAILURE_REL, data: { version: 1, subject: "failure" } },
 };
 
 function digest(bytes) {
@@ -112,7 +174,9 @@ function escapeRegex(text) {
 
 function selectSubject() {
   const raw = process.env.GSD_PROHIB_SUBJECT;
-  if (raw === undefined) return { subject: "none", source: "default" };
+  const mode = process.env.GSD_PROHIB_MODE || "defect";
+  if (!new Set(["defect", "failure"]).has(mode)) return { error: `unsupported closed sample mode: ${mode}` };
+  if (raw === undefined) return { subject: "none", source: "default", mode };
   for (const [subject, fixture] of Object.entries(FIXTURES)) {
     const absolute = path.resolve(ROOT, fixture.relative);
     if (raw !== fixture.relative && raw !== absolute) continue;
@@ -123,7 +187,7 @@ function selectSubject() {
       if (JSON.stringify(parsed) !== JSON.stringify(fixture.data)) {
         return { error: `fixture differs from its closed schema: ${fixture.relative}` };
       }
-      return { subject, source: fixture.relative };
+      return { subject, source: fixture.relative, mode };
     } catch (error) {
       return { error: `fixture unavailable or malformed (${fixture.relative}): ${error.message}` };
     }
@@ -150,8 +214,40 @@ function originalModeOverlay(sourcePath, tempDir) {
   };
 }
 
-function expectedSubtests(root, mutated) {
-  if (mutated && root.name === "TestPhase371DefectTerminalControls") {
+function originalFailureModeOverlay(sourcePath, tempDir) {
+  const currentBytes = fs.readFileSync(sourcePath);
+  const baseline = spawnSync("git", ["show", `${FAILURE_BASE_HEAD}:${SOURCE_REL}`], {
+    cwd: ROOT,
+    encoding: "buffer",
+    timeout: 10_000,
+    shell: false,
+  });
+  if (baseline.error || baseline.status !== 0 || !Buffer.isBuffer(baseline.stdout) || baseline.stdout.length === 0) {
+    throw new Error(`read fixed pre-failure peer source ${FAILURE_BASE_HEAD}: ${baseline.error || baseline.stderr || baseline.status}`);
+  }
+  const replacementText = baseline.stdout.toString("utf8");
+  if (replacementText.includes('event.ID == id+":event" && event.Kind == "foreign.failed"')) {
+    throw new Error("failure baseline unexpectedly contains the foreign.failed classifier repair");
+  }
+  if (!replacementText.includes('if event.Kind == "function.defected" {')) {
+    throw new Error("failure baseline does not retain the completed Plan01 defect-closure guard");
+  }
+  const replacementPath = path.join(tempDir, "pre-failure-executionpeer.go");
+  const overlayPath = path.join(tempDir, "overlay.json");
+  fs.writeFileSync(replacementPath, baseline.stdout, { flag: "wx" });
+  fs.writeFileSync(overlayPath, JSON.stringify({ Replace: { [sourcePath]: replacementPath } }), { flag: "wx" });
+  return {
+    overlayPath,
+    originalBytes: currentBytes,
+    replacementSha256: digest(baseline.stdout),
+    overlaySha256: digest(fs.readFileSync(overlayPath)),
+    baselineHead: FAILURE_BASE_HEAD,
+  };
+}
+
+function expectedSubtests(root, mode, original) {
+  if (original && mode === "failure" && root.name === "TestPhase371ForeignFailureAttributionControls") return [];
+  if (original && mode === "defect" && root.name === "TestPhase371DefectTerminalControls") {
     return root.subtests.filter((name) => !name.startsWith("legacy-static/"));
   }
   return root.subtests;
@@ -162,7 +258,10 @@ function parseFailureName(line) {
   return match ? match[1] : null;
 }
 
-function validateGoResult(result, mutated) {
+function validateGoResult(result, subject, requestedMode) {
+  const original = subject !== "none";
+  const mode = original ? subject : requestedMode;
+  const rootsForMode = mode === "failure" ? FAILURE_ROOTS : ROOTS;
   const stdout = typeof result.stdout === "string" ? result.stdout : "";
   const stderr = typeof result.stderr === "string" ? result.stderr : "";
   const output = `${stdout}\n${stderr}`;
@@ -174,8 +273,8 @@ function validateGoResult(result, mutated) {
   const failures = lines.map((line) => line.trimStart()).filter((line) => line.startsWith("--- FAIL:"));
   const failureNames = failures.map(parseFailureName);
   const roots = {};
-  const expectedFailureNames = mutated ? MUTATED_FAILURE_NAMES : [];
-  for (const root of ROOTS) {
+  const expectedFailureNames = original ? (mode === "failure" ? FAILURE_FAILURE_NAMES : MUTATED_FAILURE_NAMES) : [];
+  for (const root of rootsForMode) {
     const escaped = escapeRegex(root.name);
     const run = new RegExp(`^=== RUN   ${escaped}$`);
     const pass = new RegExp(`^--- PASS: ${escaped} \\([0-9]+(?:\\.[0-9]+)?s\\)$`);
@@ -185,18 +284,20 @@ function validateGoResult(result, mutated) {
     const passCount = lines.filter((line) => pass.test(line.trimStart())).length;
     const failCount = lines.filter((line) => fail.test(line.trimStart())).length;
     const skipCount = lines.filter((line) => skip.test(line.trimStart())).length;
-    const shouldFail = mutated && root.failsOnDefect;
+    const shouldFail = original && (mode === "failure" ? root.failsOnFailure : root.failsOnDefect);
     if (runCount !== 1 || passCount !== (shouldFail ? 0 : 1) || failCount !== (shouldFail ? 1 : 0) || skipCount !== 0) {
       return { kind: "invalid", reason: `${root.name} exact root count/result mismatch`, output };
     }
     const subtests = {};
-    for (const subtest of expectedSubtests(root, mutated)) {
+    for (const subtest of expectedSubtests(root, mode, original)) {
       const fullName = `${root.name}/${subtest}`;
       const subtestRun = new RegExp(`^=== RUN   ${escapeRegex(fullName)}$`);
       const subtestPass = new RegExp(`^--- PASS: ${escapeRegex(fullName)} \\([0-9]+(?:\\.[0-9]+)?s\\)$`);
       const subtestFail = new RegExp(`^--- FAIL: ${escapeRegex(fullName)} \\([0-9]+(?:\\.[0-9]+)?s\\)$`);
       const subtestSkip = new RegExp(`^--- SKIP: ${escapeRegex(fullName)}(?:\\s|$)`);
-      const shouldSubtestFail = mutated && (fullName === MUTATED_FAILURE_NAMES[1] || fullName === MUTATED_FAILURE_NAMES[3]);
+      const shouldSubtestFail = original && (mode === "defect"
+        ? fullName === MUTATED_FAILURE_NAMES[1] || fullName === MUTATED_FAILURE_NAMES[3]
+        : fullName === FAILURE_FAILURE_NAMES[1] || fullName === FAILURE_FAILURE_NAMES[2]);
       const runCountSubtest = lines.filter((line) => subtestRun.test(line)).length;
       const passCountSubtest = lines.filter((line) => subtestPass.test(line.trimStart())).length;
       const failCountSubtest = lines.filter((line) => subtestFail.test(line.trimStart())).length;
@@ -223,34 +324,43 @@ function validateGoResult(result, mutated) {
     return { kind: "invalid", reason: "Go run failed outside the exact original-mode semantic assertions", output };
   }
 
-  const expectedStatus = mutated ? 1 : 0;
+  const expectedStatus = original ? 1 : 0;
   if (result.status !== expectedStatus) return { kind: "invalid", reason: `Go exit status ${result.status}, expected ${expectedStatus}`, output };
-  if (mutated) {
+  if (original && mode === "defect") {
     if (exactCount(output, LEGACY_ASSERTION) !== 2 || exactCount(output, "activation has no terminal event") !== 2) {
       return { kind: "invalid", reason: "original-mode failures missed their exact child-defect semantic assertions", output };
     }
     return { kind: "violation", output, roots, failureNames };
   }
-  if (/^--- FAIL:|^FAIL(?:\s|$)/m.test(output)) return { kind: "invalid", reason: "unmutated four-root command failed", output };
+  if (original && mode === "failure") {
+    if (exactCount(output, "peer rejected checked") !== 2 || exactCount(output, "executionpeer.unknown_kind") !== 3
+        || exactCount(output, "fresh UseError child-to-root failure rejected") !== 1) {
+      return { kind: "invalid", reason: "pre-failure peer run missed its exact foreign-failure semantic assertions", output };
+    }
+    return { kind: "violation", output, roots, failureNames };
+  }
+  if (/^--- FAIL:|^FAIL(?:\s|$)/m.test(output)) return { kind: "invalid", reason: "unmutated exact-root command failed", output };
   return { kind: "green", output, roots, failureNames };
 }
 
-function runExactRoots(subject) {
+function runExactRoots(subject, requestedMode = "defect") {
+  const mode = subject === "none" ? requestedMode : subject;
+  if (!new Set(["defect", "failure"]).has(mode)) throw new Error(`unsupported exact-root suite: ${mode}`);
+  const original = subject !== "none";
   const sourcePath = path.resolve(ROOT, SOURCE_REL);
   const originalBytes = fs.readFileSync(sourcePath);
-  const mutated = subject === "defect";
   let tempDir = null;
   let overlay = null;
   let captured;
   let cleanupError = "";
   try {
     const args = ["test"];
-    if (mutated) {
-      tempDir = fs.mkdtempSync(path.join(TMP_ROOT, "schway371-defect-overlay-"));
-      overlay = originalModeOverlay(sourcePath, tempDir);
+    if (original) {
+      tempDir = fs.mkdtempSync(path.join(TMP_ROOT, `schway371-${mode}-overlay-`));
+      overlay = mode === "defect" ? originalModeOverlay(sourcePath, tempDir) : originalFailureModeOverlay(sourcePath, tempDir);
       args.push("-overlay", overlay.overlayPath);
     }
-    args.push(PACKAGE, "-run", EXACT_RUN, "-count=1", "-v", "-timeout=120s");
+    args.push(PACKAGE, "-run", mode === "failure" ? FAILURE_EXACT_RUN : EXACT_RUN, "-count=1", "-v", "-timeout=120s");
     const env = { ...process.env, GOCACHE, GOFLAGS: "" };
     delete env.GSD_PROHIB_SUBJECT;
     const result = spawnSync("go", args, {
@@ -263,15 +373,16 @@ function runExactRoots(subject) {
       shell: false,
       windowsHide: true,
     });
-    captured = validateGoResult(result, mutated);
+    captured = validateGoResult(result, subject, mode);
     const afterBytes = fs.readFileSync(sourcePath);
     if (!afterBytes.equals(originalBytes)) captured = { kind: "invalid", reason: "tracked executionpeer.go changed during overlay run", output: captured.output };
-    if (mutated && overlay) {
+    if (original && overlay) {
       captured.overlay = {
         originalSourceSha256: digest(originalBytes),
         replacementSourceSha256: overlay.replacementSha256,
         overlayJsonSha256: overlay.overlaySha256,
         sourceUnchanged: afterBytes.equals(originalBytes),
+        ...(overlay.baselineHead ? { baselineHead: overlay.baselineHead } : {}),
       };
     }
   } catch (error) {
@@ -298,11 +409,11 @@ function loadGsdProjectionApi() {
   return { projectProhibitions, descriptorFromProjection };
 }
 
-function parsePlanProhibition() {
-  const planPath = path.join(ROOT, PLAN_REL);
+function parsePlanProhibition(planRelative = PLAN_REL, expectedStatement = STATEMENT) {
+  const planPath = path.join(ROOT, planRelative);
   const planText = fs.readFileSync(planPath, "utf8");
   const match = planText.match(/^  prohibitions:\n([\s\S]*?)(?=^  artifacts:)/m);
-  assert.ok(match, "37.1-01 plan must retain its prohibition block");
+  assert.ok(match, `${planRelative} must retain its prohibition block`);
   assert.ok(!/^\s{6}check:\s*$/m.test(match[1]), "plan descriptors must remain flat check_* scalars");
   let current = null;
   const items = [];
@@ -321,16 +432,19 @@ function parsePlanProhibition() {
     current[field[1]] = value;
   }
   if (current) items.push(current);
-  assert.equal(items.length, 1, "37.1-01 must carry exactly one source/terminal prohibition");
-  assert.equal(items[0].statement, STATEMENT);
+  assert.equal(items.length, 1, `${planRelative} must carry exactly one unresolved prohibition`);
+  assert.equal(items[0].statement, expectedStatement);
   assert.equal(items[0].status, "unresolved", "plan prohibition must remain unresolved until lifecycle resolution");
   assert.equal(items[0].verification, null, "plan prohibition verification must remain null until lifecycle resolution");
   return { item: items[0], planBytes: Buffer.from(planText), planPath };
 }
 
-function projectCurrentPlan() {
+function projectCurrentPlan(mode = "defect") {
   const { projectProhibitions, descriptorFromProjection } = loadGsdProjectionApi();
-  const { item, planBytes, planPath } = parsePlanProhibition();
+  const isFailure = mode === "failure";
+  const planRelative = isFailure ? FAILURE_PLAN_REL : PLAN_REL;
+  const expectedStatement = isFailure ? FAILURE_STATEMENT : STATEMENT;
+  const { item, planBytes, planPath } = parsePlanProhibition(planRelative, expectedStatement);
   const projection = projectProhibitions([item]);
   assert.equal(projection.length, 1, "projectProhibitions must preserve one unresolved item");
   const projected = projection[0];
@@ -340,10 +454,10 @@ function projectCurrentPlan() {
   assert.deepEqual(check, {
     kind: "node-test",
     target: ADAPTER_REL,
-    violationFixture: DEFECT_REL,
+    violationFixture: isFailure ? FAILURE_REL : DEFECT_REL,
     cleanFixture: CLEAN_REL,
-  }, "descriptorFromProjection must reconstruct the wired flat plan fields");
-  return { item, projected, check, planBytes, planPath };
+  }, "descriptorFromProjection must reconstruct this plan's wired flat fields");
+  return { item, projected, check, planBytes, planPath, planRelative };
 }
 
 function gitHead() {
@@ -387,26 +501,30 @@ function tempEvidenceDir() {
 }
 
 function runSampleMode(subject) {
-  if (subject !== "defect") throw new Error("only the closed 'defect' sample is supported");
+  if (subject !== "defect" && subject !== "failure") throw new Error("only the closed 'defect' and 'failure' samples are supported");
   const initial = ensureInitialProjection();
-  const result = runExactRoots(subject);
-  if (result.kind !== "violation") throw new Error(`defect sample did not reach the expected semantic RED: ${result.reason || result.kind}`);
+  const current = projectCurrentPlan(subject);
+  const result = runExactRoots(subject, subject);
+  if (result.kind !== "violation") throw new Error(`${subject} sample did not reach the expected semantic RED: ${result.reason || result.kind}`);
   const directory = tempEvidenceDir();
-  const log = saveRaw(directory, "defect-go.log", result.output);
+  const log = saveRaw(directory, `${subject}-go.log`, result.output);
   const manifest = {
-    mode: "sample-defect",
+    mode: `sample-${subject}`,
     source_head: initial.source_head,
     projection_sha256: digest(Buffer.from(JSON.stringify(initial.projection))),
+    current_plan: current.planRelative,
+    current_plan_sha256: digest(current.planBytes),
     source_sha256: result.overlay.originalSourceSha256,
     replacement_sha256: result.overlay.replacementSourceSha256,
     overlay_sha256: result.overlay.overlayJsonSha256,
     source_unchanged: result.overlay.sourceUnchanged,
+    ...(result.overlay.baselineHead ? { baseline_head: result.overlay.baselineHead } : {}),
     roots: result.roots,
     failures: result.failureNames,
     raw_log: log,
   };
   saveRaw(directory, "sample-manifest.json", `${JSON.stringify(manifest, null, 2)}\n`);
-  process.stdout.write(`defect sample passed: four roots reached; two exact legacy semantic REDs; evidence ${directory}\n`);
+  process.stdout.write(`${subject} sample passed: exact original-source semantic REDs reached; evidence ${directory}\n`);
 }
 
 function parseTapCounts(output) {
@@ -417,12 +535,13 @@ function parseTapCounts(output) {
   return { tests: value("tests"), pass: value("pass"), fail: value("fail"), cancelled: value("cancelled"), skipped: value("skipped"), todo: value("todo") };
 }
 
-function runDirectTap(mode) {
+function runDirectTap(mode, sample = "defect") {
   const env = { ...process.env, GOCACHE, GOFLAGS: "" };
   delete env.NODE_TEST_CONTEXT;
   delete env.NODE_OPTIONS;
   delete env.GSD_PROHIB_SUBJECT;
-  if (mode === "bad") env.GSD_PROHIB_SUBJECT = DEFECT_REL;
+  env.GSD_PROHIB_MODE = sample;
+  if (mode === "bad") env.GSD_PROHIB_SUBJECT = FIXTURES[sample].relative;
   if (mode === "clean") env.GSD_PROHIB_SUBJECT = CLEAN_REL;
   const result = spawnSync(process.execPath, ["--test", "--test-reporter=tap", "--", ADAPTER_REL], {
     cwd: ROOT,
@@ -448,13 +567,13 @@ function runDirectTap(mode) {
   return { output, counts, status: result.status, sha256: digest(Buffer.from(output)) };
 }
 
-function runGoControls(evidenceDir) {
+function runGoControls(evidenceDir, sample = "defect") {
   const controls = {};
   for (const mode of ["bad", "clean", "default"]) {
-    const subject = mode === "bad" ? "defect" : "none";
-    const result = runExactRoots(subject);
+    const subject = mode === "bad" ? sample : "none";
+    const result = runExactRoots(subject, sample);
     const expected = mode === "bad" ? "violation" : "green";
-    assert.equal(result.kind, expected, `${mode}: exact four-root Go result must be ${expected}: ${result.reason || ""}`);
+    assert.equal(result.kind, expected, `${mode}: exact ${sample} Go roots must be ${expected}: ${result.reason || ""}`);
     const log = saveRaw(evidenceDir, `${mode}-go.log`, result.output);
     controls[mode] = { roots: result.roots, failureNames: result.failureNames, log };
     if (result.overlay) controls[mode].overlay = result.overlay;
@@ -462,10 +581,10 @@ function runGoControls(evidenceDir) {
   return controls;
 }
 
-function runTapControls(evidenceDir) {
+function runTapControls(evidenceDir, sample = "defect") {
   const controls = {};
   for (const mode of ["bad", "clean", "default"]) {
-    const tap = runDirectTap(mode);
+    const tap = runDirectTap(mode, sample);
     controls[mode] = { ...tap, log: saveRaw(evidenceDir, `${mode}-node.tap`, tap.output) };
   }
   return controls;
@@ -519,26 +638,31 @@ function runCanonicalProducer(request, evidenceDir) {
 }
 
 function sourceBindings(current) {
-  return Object.fromEntries([PLAN_REL, ADAPTER_REL, SOURCE_REL, TEST_REL, CLEAN_REL, DEFECT_REL].map((relative) => {
+  const selected = new Set([
+    PLAN_REL, FAILURE_PLAN_REL, ADAPTER_REL, SOURCE_REL, TEST_REL, MODEL_REL,
+    "examples/phase24/error.schway", CLEAN_REL, DEFECT_REL, FAILURE_REL,
+  ]);
+  return Object.fromEntries([...selected].map((relative) => {
     const bytes = fs.readFileSync(path.join(ROOT, relative));
     return [relative, { sha256: digest(bytes), bytes: bytes.length }];
   }));
 }
 
 function runProofMode(subject) {
-  if (subject !== "defect") throw new Error("only the closed 'defect' proof is supported");
+  if (subject !== "defect" && subject !== "failure") throw new Error("only closed 'defect' and 'failure' proofs are supported");
   const initial = ensureInitialProjection();
-  const current = projectCurrentPlan();
+  const current = projectCurrentPlan(subject);
   assert.equal(initial.projection[0].status, "unresolved", "initial history must remain unresolved before producer request");
   assert.equal(current.item.verification, null, "plan verification must remain null before producer request");
 
   const evidenceDir = tempEvidenceDir();
-  const goControls = runGoControls(evidenceDir);
-  const tapControls = runTapControls(evidenceDir);
+  const goControls = runGoControls(evidenceDir, subject);
+  const tapControls = runTapControls(evidenceDir, subject);
   const candidateRequest = createResolvedCandidate(current);
   const producer = runCanonicalProducer(candidateRequest, evidenceDir);
   const bindings = sourceBindings(current);
   const proof = {
+    subject,
     state: "machine-evidence-complete-pending-lifecycle-resolution",
     captured_utc: new Date().toISOString(),
     candidate_status: "resolved",
@@ -546,6 +670,11 @@ function runProofMode(subject) {
     lifecycle_status: "unresolved",
     evidence_directory: evidenceDir,
     source_bindings: bindings,
+    current_plan_projection: {
+      source_plan: { path: current.planRelative, sha256: digest(current.planBytes) },
+      source_prohibition: current.item,
+      projection: [current.projected],
+    },
     go_controls: goControls,
     tap_controls: Object.fromEntries(Object.entries(tapControls).map(([mode, control]) => [mode, {
       counts: control.counts,
@@ -567,26 +696,37 @@ function runProofMode(subject) {
   };
   const manifest = {
     version: 1,
+    subject,
     initial_projection_sha256: digest(Buffer.from(JSON.stringify(initial.projection))),
+    current_plan_projection: proof.current_plan_projection,
     lifecycle_status: "unresolved",
     proof,
   };
   const manifestRecord = saveRaw(evidenceDir, "evidence-manifest.json", `${JSON.stringify(manifest, null, 2)}\n`);
   proof.manifest = manifestRecord;
-  const projectionRecord = { ...initial, proof };
+  const priorProofs = initial.proofs || { defect: initial.proof };
+  const projectionRecord = {
+    ...initial,
+    proofs: { ...priorProofs, [subject]: proof },
+    ...(subject === "defect" ? { proof } : { failure_plan_projection: proof.current_plan_projection, failure_proof: proof }),
+  };
   fs.writeFileSync(path.join(ROOT, PROJECTION_REL), `${JSON.stringify(projectionRecord, null, 2)}\n`);
-  process.stdout.write(`canonical defect proof passed; plan prohibition remains unresolved pending normal lifecycle; evidence ${evidenceDir}\n`);
+  process.stdout.write(`canonical ${subject} proof passed; plan prohibition remains unresolved pending normal lifecycle; evidence ${evidenceDir}\n`);
 }
 
 function directMode() {
   const sampleIndex = process.argv.indexOf("--sample");
   if (sampleIndex >= 0) {
-    runSampleMode(process.argv[sampleIndex + 1]);
+    const subject = process.argv[sampleIndex + 1];
+    if (subject !== "defect" && subject !== "failure") throw new Error(`unsupported sample: ${subject}`);
+    runSampleMode(subject);
     return true;
   }
   const proveIndex = process.argv.indexOf("--prove");
   if (proveIndex >= 0) {
-    runProofMode(process.argv[proveIndex + 1]);
+    const subject = process.argv[proveIndex + 1];
+    if (subject !== "defect" && subject !== "failure") throw new Error(`unsupported proof: ${subject}`);
+    runProofMode(subject);
     return true;
   }
   return false;
@@ -598,11 +738,12 @@ try {
     let result = null;
     let invalidReason = selection.error || "";
     if (!invalidReason) {
-      result = runExactRoots(selection.subject);
+      result = runExactRoots(selection.subject, selection.mode);
       if (result.kind === "invalid") invalidReason = result.reason;
     }
     test(TEST_NAME, { skip: invalidReason || false }, () => {
-      assert.equal(result.kind, "green", `${selection.source}: exact four-root Go suite produced ${result.kind}`);
+      const rootCount = (selection.mode === "failure" ? FAILURE_ROOTS : ROOTS).length;
+      assert.equal(result.kind, "green", `${selection.source}: exact ${rootCount}-root Go suite produced ${result.kind}`);
     });
   }
 } catch (error) {

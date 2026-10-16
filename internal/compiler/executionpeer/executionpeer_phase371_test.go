@@ -2,6 +2,7 @@ package executionpeer_test
 
 import (
 	"crypto/sha256"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -306,6 +307,35 @@ func phase371Phase24FailureProgram(t *testing.T) (core.Program, core.LinearOpera
 	return program, acquire, use
 }
 
+func phase371Phase24FailureDocument(t *testing.T, program core.Program, acquire, use core.LinearOperation, scenario string) execution.Execution {
+	t.Helper()
+	outcomes := make(map[string]interp.ForeignOutcome)
+	switch scenario {
+	case "acquire":
+		outcomes[acquire.ID] = interp.ForeignOutcome{Kind: "failure", Type: "AcquireError", Value: "AcquireFailed"}
+	case "use":
+		outcomes[acquire.ID] = interp.ForeignOutcome{Kind: "success", Type: acquire.Foreign.ResultType, Value: "67"}
+		outcomes[use.ID] = interp.ForeignOutcome{Kind: "failure", Type: "UseError", Value: "UnsupportedByte"}
+	case "success":
+		outcomes[acquire.ID] = interp.ForeignOutcome{Kind: "success", Type: acquire.Foreign.ResultType, Value: "65"}
+		outcomes[use.ID] = interp.ForeignOutcome{Kind: "success", Type: "U64", Value: "65"}
+	default:
+		t.Fatalf("unsupported Phase24 trace scenario %q", scenario)
+	}
+	model, err := interp.RunWithForeignOutcomes(program, "main", "opaque-path-token", outcomes)
+	if err != nil {
+		t.Fatalf("checked Phase24 %s model execution: %v", scenario, err)
+	}
+	if model.EvidenceScope != interp.EvidenceScopeModelOnly || model.ActualHostIO || model.PhysicalCleanup {
+		t.Fatalf("Phase24 %s trace crossed model-only evidence boundary: %+v", scenario, model)
+	}
+	document, err := session.ProjectExecutionSchema2(program, model.Execution)
+	if err != nil {
+		t.Fatalf("project checked Phase24 %s trace: %v", scenario, err)
+	}
+	return document
+}
+
 func rootInvocationForPhase371(t *testing.T, program core.Program) string {
 	t.Helper()
 	for _, function := range program.Functions {
@@ -323,6 +353,288 @@ func rootInvocationForPhase371(t *testing.T, program core.Program) string {
 
 func executionpeerValidatePhase371(program core.Program, document execution.Execution) bool {
 	return executionpeer.Validate(program, document) == nil
+}
+
+func TestPhase371ForeignFailureAttributionControls(t *testing.T) {
+	program, acquire, use := phase371Phase24FailureProgram(t)
+	useFailure := phase371Phase24FailureDocument(t, program, acquire, use, "use")
+	acquireFailure := phase371Phase24FailureDocument(t, program, acquire, use, "acquire")
+	clean := phase371Phase24FailureDocument(t, program, acquire, use, "success")
+	if err := executionpeer.Validate(program, useFailure); err != nil {
+		t.Fatalf("fresh UseError child-to-root failure rejected: %v", err)
+	}
+	if err := executionpeer.Validate(program, acquireFailure); err != nil {
+		t.Fatalf("fresh AcquireError child-to-root failure rejected: %v", err)
+	}
+	if err := executionpeer.Validate(program, clean); err != nil {
+		t.Fatalf("fresh ordinary-return trace rejected: %v", err)
+	}
+	if err := executionpeer.Validate(program, clonePhase371Execution(clean)); err != nil {
+		t.Fatalf("no-op ordinary-return trace rejected: %v", err)
+	}
+
+	root := rootInvocationForPhase371(t, program)
+	foreignIndex := phase371FindEventIndex(useFailure, func(event execution.Event) bool { return event.Kind == "foreign.failed" })
+	childTerminalIndex := phase371FindEventIndex(useFailure, func(event execution.Event) bool {
+		return event.Kind == "function.failed" && event.Invocation != root
+	})
+	rootTerminalIndex := phase371FindEventIndex(useFailure, func(event execution.Event) bool {
+		return event.Kind == "function.failed" && event.Invocation == root
+	})
+	callIndex := phase371FindEventIndex(useFailure, func(event execution.Event) bool {
+		return event.Kind == "function.called" && event.CalleeFunctionID == phase371FunctionID(program, "probe")
+	})
+	if foreignIndex < 0 || childTerminalIndex < 0 || rootTerminalIndex < 0 || callIndex < 0 {
+		t.Fatalf("checked UseError trace omitted required call/failure/terminal events: %+v", useFailure.Events)
+	}
+	if !phase371HasEventAfter(useFailure, childTerminalIndex, func(event execution.Event) bool { return event.Kind == "resource.released" && event.Invocation == root }) {
+		t.Fatal("child failure did not leave the parent active for admitted error-route release work")
+	}
+	if err := executionpeer.Validate(program, clonePhase371Execution(useFailure)); err != nil {
+		t.Fatalf("deep-copy failure trace rejected: %v", err)
+	}
+
+	wrongCallID := "missing-operation:event"
+	for _, control := range []struct {
+		name     string
+		wantCode string
+		mutate   func(*core.Program, *execution.Execution)
+	}{
+		{"nonexistent-foreign-operation", "executionpeer.unknown_kind", func(_ *core.Program, document *execution.Execution) { document.Events[foreignIndex].ID = wrongCallID }},
+		{"different-foreign-operation", "executionpeer.ownership", func(_ *core.Program, document *execution.Execution) {
+			document.Events[foreignIndex].ID = acquire.ID + ":event"
+		}},
+		{"wrong-function", "executionpeer.function", func(_ *core.Program, document *execution.Execution) {
+			document.Events[foreignIndex].FunctionID = phase371FunctionID(program, "main")
+		}},
+		{"wrong-invocation", "executionpeer.function", func(_ *core.Program, document *execution.Execution) { document.Events[foreignIndex].Invocation = root }},
+		{"wrong-source", "executionpeer.foreign_failure_attribution", func(_ *core.Program, document *execution.Execution) {
+			document.Events[foreignIndex].SourcePlace = "forged-source"
+		}},
+		{"wrong-target", "executionpeer.foreign_failure_attribution", func(_ *core.Program, document *execution.Execution) {
+			document.Events[foreignIndex].TargetPlace = "forged-target"
+		}},
+		{"wrong-type", "executionpeer.foreign_failure_attribution", func(_ *core.Program, document *execution.Execution) {
+			document.Events[foreignIndex].TypeID = "AcquireError"
+		}},
+		{"failure-from-different-call", "executionpeer.unknown_kind", func(_ *core.Program, document *execution.Execution) {
+			document.Events[foreignIndex].ID = phase371MainCallID(program, "acquire") + ":event"
+		}},
+		{"wrong-foreign-contract", "executionpeer.foreign_failure_attribution", func(candidate *core.Program, _ *execution.Execution) {
+			phase371MutateOperation(candidate, use.ID, func(operation *core.LinearOperation) { operation.Foreign.Fails = "AcquireError" })
+		}},
+		{"wrong-foreign-error-edge", "executionpeer.foreign_failure_attribution", func(candidate *core.Program, _ *execution.Execution) {
+			phase371MutateOperation(candidate, use.ID, func(operation *core.LinearOperation) { operation.ErrEdgeID = operation.OkEdgeID })
+		}},
+		{"wrong-caller-source", "executionpeer.call_attribution", func(_ *core.Program, document *execution.Execution) {
+			document.Events[callIndex].SourcePlace = "forged-source"
+		}},
+		{"wrong-caller-target", "executionpeer.call_attribution", func(_ *core.Program, document *execution.Execution) {
+			document.Events[callIndex].TargetPlace = "forged-target"
+		}},
+		{"wrong-caller-type", "executionpeer.call_attribution", func(_ *core.Program, document *execution.Execution) {
+			document.Events[callIndex].TypeID = "forged-type"
+		}},
+		{"wrong-caller-error-target", "executionpeer.call_error_route", func(candidate *core.Program, _ *execution.Execution) {
+			phase371MutateOperation(candidate, phase371MainCallID(program, "probe"), func(operation *core.LinearOperation) { operation.ErrTargetID = operation.TargetID })
+		}},
+		{"wrong-caller-error-edge", "executionpeer.call_error_route", func(candidate *core.Program, _ *execution.Execution) {
+			phase371MutateOperation(candidate, phase371MainCallID(program, "probe"), func(operation *core.LinearOperation) { operation.ErrEdgeID = operation.OkEdgeID })
+		}},
+		{"wrong-terminal-source", "executionpeer.terminal_attribution", func(_ *core.Program, document *execution.Execution) {
+			document.Events[rootTerminalIndex].SourcePlace = "forged-source"
+		}},
+		{"wrong-terminal-constructor", "executionpeer.failure_provenance", func(_ *core.Program, document *execution.Execution) {
+			document.Events[rootTerminalIndex].TypeID = "ResourceError"
+		}},
+		{"wrong-terminal-operation", "executionpeer.terminal_attribution", func(_ *core.Program, document *execution.Execution) {
+			document.Events[childTerminalIndex].ID = phase371OpFailID(program, "probe", 5) + ":event:failed"
+		}},
+		{"wrong-root-kind", "executionpeer.terminal_outcome", func(_ *core.Program, document *execution.Execution) {
+			document.Outcome.Kind = execution.OutcomeReturned
+		}},
+		{"missing-terminal", "executionpeer.preorder", func(_ *core.Program, document *execution.Execution) {
+			document.Events = document.Events[:rootTerminalIndex]
+		}},
+		{"duplicate-terminal", "executionpeer.closed_activation", func(_ *core.Program, document *execution.Execution) {
+			duplicate := document.Events[rootTerminalIndex]
+			duplicate.Occurrence++
+			document.Events = append(document.Events, duplicate)
+		}},
+	} {
+		t.Run(control.name, func(t *testing.T) {
+			if err := executionpeer.Validate(program, clonePhase371Execution(useFailure)); err != nil {
+				t.Fatalf("pre-mutation failure positive rejected: %v", err)
+			}
+			candidate := clonePhase371CoreProgram(program)
+			mutant := clonePhase371Execution(useFailure)
+			control.mutate(&candidate, &mutant)
+			err := executionpeer.Validate(candidate, mutant)
+			if peerErr, ok := err.(*executionpeer.Error); !ok || peerErr.Code() != control.wantCode {
+				t.Fatalf("forged control returned %v, want %s", err, control.wantCode)
+			}
+			if err := executionpeer.Validate(program, clonePhase371Execution(useFailure)); err != nil {
+				t.Fatalf("restored failure positive rejected after %s: %v", control.name, err)
+			}
+		})
+	}
+
+	t.Run("stale-cross-activation-failure", func(t *testing.T) {
+		entryID := phase371FunctionID(program, "main")
+		calls := phase371MainCalls(program, "acquire")
+		if len(calls) < 2 {
+			t.Fatalf("Phase24 source has %d main acquire call sites, want at least two", len(calls))
+		}
+		stale := clonePhase371Execution(acquireFailure)
+		stale.Events[foreignIndexForPhase371(acquireFailure)].Invocation = mustPhase371Invocation(t, entryID, calls[1].ID)
+		if err := executionpeer.Validate(program, stale); err == nil {
+			t.Fatal("peer accepted a failure event reassigned to a sibling activation")
+		}
+		if err := executionpeer.Validate(program, clonePhase371Execution(acquireFailure)); err != nil {
+			t.Fatalf("restored AcquireError positive rejected after stale-activation control: %v", err)
+		}
+	})
+
+	t.Run("clean-return-relabeled-as-failure", func(t *testing.T) {
+		mutant := clonePhase371Execution(clean)
+		mutant.Outcome.Kind = execution.OutcomeTypedFailure
+		if err := executionpeer.Validate(program, mutant); err == nil {
+			t.Fatal("peer accepted a clean ordinary-return trace relabeled as typed failure")
+		}
+	})
+
+	t.Run("failure-payload-is-outside-peer-knowledge", func(t *testing.T) {
+		mutant := clonePhase371Execution(useFailure)
+		mutant.Outcome.Value = "changed-without-payload-proof"
+		if err := executionpeer.Validate(program, mutant); err != nil {
+			t.Fatalf("peer inferred an absent failure payload: %v", err)
+		}
+	})
+}
+
+func phase371FindEventIndex(document execution.Execution, match func(execution.Event) bool) int {
+	for index, event := range document.Events {
+		if match(event) {
+			return index
+		}
+	}
+	return -1
+}
+
+func phase371HasEventAfter(document execution.Execution, start int, match func(execution.Event) bool) bool {
+	for index := start + 1; index < len(document.Events); index++ {
+		if match(document.Events[index]) {
+			return true
+		}
+	}
+	return false
+}
+
+func phase371FunctionID(program core.Program, name string) string {
+	for _, function := range program.Functions {
+		if function.Name == name {
+			return function.ID
+		}
+	}
+	return ""
+}
+
+func phase371MainCalls(program core.Program, callee string) []core.LinearOperation {
+	mainID := phase371FunctionID(program, "main")
+	var calls []core.LinearOperation
+	for _, function := range program.Functions {
+		if function.ID != mainID || function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpCall && strings.HasSuffix(operation.CalleeID, ":fn:"+callee) {
+				calls = append(calls, operation)
+			}
+		}
+	}
+	return calls
+}
+
+func phase371MainCallID(program core.Program, callee string) string {
+	calls := phase371MainCalls(program, callee)
+	if len(calls) == 0 {
+		return ""
+	}
+	return calls[0].ID
+}
+
+func phase371OpFailID(program core.Program, functionName string, ordinal int) string {
+	for _, function := range program.Functions {
+		if function.Name != functionName || function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpFail && strings.HasSuffix(operation.ID, fmt.Sprintf(":op:%d", ordinal)) {
+				return operation.ID
+			}
+		}
+	}
+	return ""
+}
+
+func foreignIndexForPhase371(document execution.Execution) int {
+	return phase371FindEventIndex(document, func(event execution.Event) bool { return event.Kind == "foreign.failed" })
+}
+
+func mustPhase371Invocation(t *testing.T, entryID, callID string) string {
+	t.Helper()
+	invocation, err := execution.FormatInvocation(entryID, []execution.InvocationSegment{{OpCallID: callID, Ordinal: 0}})
+	if err != nil {
+		t.Fatalf("format Phase24 sibling activation: %v", err)
+	}
+	return invocation
+}
+
+func clonePhase371CoreProgram(program core.Program) core.Program {
+	clone := program
+	clone.DataTypes = append([]core.DataType(nil), program.DataTypes...)
+	clone.Functions = append([]core.Function(nil), program.Functions...)
+	for functionIndex := range clone.Functions {
+		function := &clone.Functions[functionIndex]
+		if function.Linear == nil {
+			continue
+		}
+		linear := *function.Linear
+		linear.Types = append([]core.TypeFact(nil), function.Linear.Types...)
+		linear.Places = append([]core.Place(nil), function.Linear.Places...)
+		linear.Operations = append([]core.LinearOperation(nil), function.Linear.Operations...)
+		linear.Blocks = append([]core.Block(nil), function.Linear.Blocks...)
+		linear.Edges = append([]core.Edge(nil), function.Linear.Edges...)
+		for operationIndex := range linear.Operations {
+			if linear.Operations[operationIndex].Foreign != nil {
+				contract := *linear.Operations[operationIndex].Foreign
+				linear.Operations[operationIndex].Foreign = &contract
+			}
+		}
+		for blockIndex := range linear.Blocks {
+			linear.Blocks[blockIndex].OperationIDs = append([]string(nil), linear.Blocks[blockIndex].OperationIDs...)
+			linear.Blocks[blockIndex].Successors = append([]string(nil), linear.Blocks[blockIndex].Successors...)
+		}
+		function.Linear = &linear
+	}
+	return clone
+}
+
+func phase371MutateOperation(program *core.Program, operationID string, mutate func(*core.LinearOperation)) bool {
+	for functionIndex := range program.Functions {
+		function := &program.Functions[functionIndex]
+		if function.Linear == nil {
+			continue
+		}
+		for operationIndex := range function.Linear.Operations {
+			operation := &function.Linear.Operations[operationIndex]
+			if operation.ID == operationID {
+				mutate(operation)
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func TestPhase371DefectTerminalControls(t *testing.T) {

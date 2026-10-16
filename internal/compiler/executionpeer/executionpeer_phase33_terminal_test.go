@@ -23,6 +23,13 @@ func TestPhase33TerminalAttribution(t *testing.T) {
 			p := core.Program{Functions: []core.Function{function("entry", op)}}
 			e := event(inv(t, "entry"), op.ID+":event:"+terminal.suffix, terminal.event, "entry")
 			e.SourcePlace, e.TypeID = op.SourceID, op.TypeID
+			if terminal.kind == core.OpFail {
+				// This synthetic terminal uses a constructor named like its local
+				// type ID; the checked Phase24 tracer separately proves non-identity
+				// TypeFact-ID-to-constructor mapping.
+				p.Functions[0].Linear.Types = []core.TypeFact{{ID: op.TypeID, Shape: core.TypeRef{Constructor: op.TypeID}}}
+				p.Functions[0].Linear.Places = []core.Place{{ID: op.SourceID, TypeID: op.TypeID}}
+			}
 			if terminal.kind == core.OpDefect {
 				e.Output = op.Reason
 			}

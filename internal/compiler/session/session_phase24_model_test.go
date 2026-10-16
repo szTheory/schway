@@ -17,15 +17,17 @@ import (
 func TestPhase24ModelReplayIsDeterministicAndModelOnly(t *testing.T) {
 	program, acquireID, useID := checkedPhase24ModelProgram(t)
 	for _, test := range []struct {
-		name      string
-		inputByte byte
-		wantKind  string
-		wantValue string
-		wantType  string
+		name        string
+		inputByte   byte
+		wantKind    string
+		wantValue   string
+		wantType    string
+		failAcquire bool
 	}{
 		{name: "0x41 returns independent answer 65", inputByte: 0x41, wantKind: "returned", wantValue: "65"},
 		{name: "0x42 returns independent answer 66", inputByte: 0x42, wantKind: "returned", wantValue: "66"},
 		{name: "0x43 returns typed UseError.UnsupportedByte", inputByte: 0x43, wantKind: "typed_failure", wantValue: "UnsupportedByte", wantType: "UseError"},
+		{name: "AcquireError.AcquireFailed has an independent literal answer", wantKind: "typed_failure", wantValue: "AcquireFailed", wantType: "AcquireError", failAcquire: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			byteValue := "65"
@@ -37,10 +39,14 @@ func TestPhase24ModelReplayIsDeterministicAndModelOnly(t *testing.T) {
 				byteValue = "67"
 				use = interp.ForeignOutcome{Kind: "failure", Type: test.wantType, Value: test.wantValue}
 			}
-			result, err := interp.RunWithForeignOutcomes(program, "main", "opaque-path-token", map[string]interp.ForeignOutcome{
-				acquireID: {Kind: "success", Type: "FileByteOwner", Value: byteValue},
-				useID:     use,
-			})
+			outcomes := map[string]interp.ForeignOutcome{}
+			if test.failAcquire {
+				outcomes[acquireID] = interp.ForeignOutcome{Kind: "failure", Type: test.wantType, Value: test.wantValue}
+			} else {
+				outcomes[acquireID] = interp.ForeignOutcome{Kind: "success", Type: "FileByteOwner", Value: byteValue}
+				outcomes[useID] = use
+			}
+			result, err := interp.RunWithForeignOutcomes(program, "main", "opaque-path-token", outcomes)
 			if err != nil {
 				t.Fatalf("model replay failed: %v", err)
 			}
