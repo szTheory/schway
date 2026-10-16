@@ -154,19 +154,24 @@ is auto-followed. Copy-local code is preferred over new dependencies.
 
 ## Current State
 
-Amended 2026-10-15 after Phase 36's caller-shape repair and verification:
-CRC/module/file programs remain implemented. Phase 36 passes independent 32/32
-verification with 94 covered inputs, 24 artifacts, 19 links and 26 decisions.
-Native emission now includes existing structured unused-Byte/ByteView Unit
-callers; two regressions and the exact emitter-consumer record close CR-01.
-Final focused regression passed 239 names / 251 roots across 16 packages.
-WR-02 remains deferred comment debt; Phase 33 CR-03/04 remain separate BLOCKER
-propagation findings for the execution-peer maintainer through M007 audit.
-Phases 34/36 pass; 33/35/37 are stale after the source/record changes.
-Run `$gsd-execute-phase 33`, preserve plans/UAT, re-query after each refresh,
-then audit and close gaps before Phase 38 planning/host binding. Phase 38 is
-explicitly unplanned; no directory or hosted authority was invented. See
-[36-REFRESH2-CLOSEOUT.md](phases/36-scalar-helper-calls/36-REFRESH2-CLOSEOUT.md).
+Amended 2026-10-15 after Phase 33's dynamic scalar defect repair:
+CRC/module/file consumers remain implemented. Native dynamic scalar callers
+now emit attributed explicit-defect records; application outcomes and legacy
+no-call C bytes are preserved. Current local regression passes 240 names /
+252 root executions across 16 packages. CR-05 is independently closed;
+CR-03/04/06 remain deferred BLOCKER audit obligations for the peer/emitter
+maintainers before Phase 38 freeze. The legacy no-call native explicit-defect
+failure is reproduced on original and current source; no fix or risk acceptance
+is implied. Phase 36 WR-02 remains separate comment debt.
+
+Independent Phase 33 acceptance and current freshness are owned by
+[33-VERIFICATION.md](phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VERIFICATION.md).
+Re-query after this refresh; the next outstanding gate is currently Phase 35,
+then remaining stale reports, M007 audit and scoped gap work before Phase 38
+planning/host binding. Preserve completed plans/UAT and historical receipts.
+Only EVD-17 is active; Phase 38 remains unplanned. No dependency, backend,
+checker admission or hosted result changed. See
+[33-REFRESH3-GATES.md](phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH3-GATES.md).
 
 **2026-10-12 M006 Bounded Byte Utility and Local Modules shipped** (6 phases,
 63 plans, 158 tasks; archive `.planning/milestones/M006-*`, tag `vM006`).
@@ -870,7 +875,7 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update context with adopter, performance, and correctness evidence.
 
 ---
-*Last updated: 2026-10-15 after Phase 36 caller-shape repair and verification*
+*Last updated: 2026-10-15 after Phase 33 dynamic scalar repair and gate refresh*
 
 ### Phase 33 execution amendment — 2026-10-13
 

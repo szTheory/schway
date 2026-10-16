@@ -1,0 +1,19 @@
+{
+  "source_head": "28e6cae52769f13e45042f48812669c990df116d",
+  "original_head": "639b4965d7f9c71fca8088c723ec9fac32725e6e",
+  "scope": "Final narrowed dynamic caller repair. Identical final test original-source overlay RED, repaired focused GREEN, and8 no-call compatibility roots. Legacy no-call original/current failing debt probes are diagnostic failures, not passing tests.",
+  "inputs": {
+    "internal/compiler/cgen/cgen_program.go": "d2de11e73c39a13d99ca3087f4366711d0ade28ff550cfa9ea45b31eccc281e0",
+    "internal/compiler/cgen/cgen_phase33_scalar_defect_test.go": "943f5769f78033c1cef07539a6d4c7e9c7ec082e23e2f40b02856b168583033e",
+    "testdata/phase16/public-emitter-consumers.json": "2399464d228fa06828f3a21e259f1a2d4a26ea5af7457965801ed305e629be90",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH3-FIX.md": "3af07ff227a84fa83f8df54bc9008110e839755f88f67b404e5c03a8891f2d3c"
+  },
+  "logs": {
+    "/tmp/schway33-r3-explicit-defect-final-red.log": "9a885ba378cb125444e97e54193039244d77c6e9ff1dba47a8a475709c4a7318",
+    "/tmp/schway33-r3-fix-final-safety.log": "aa96be377a3b67292ea202722a3b5a911f11f2d327fd31cc24db826b72543096",
+    "/tmp/schway33-r3-nocall-final.log": "33944a73e479d7c4463aa7fb538dedbfc4be8225e2fc7abd5e8f70a81a765073",
+    "/tmp/schway33-r3-inventory-final.log": "c8a54d4444091f7eb44ad48503af94a120da4b19fbf00cb9f4a0e9c33dbb3204",
+    "/tmp/schway33-r3-nocall-debt.log": "48eff5fe5f1b442466fa9a4a5a2508e247462523d8f57a145a938613143d0c29",
+    "/tmp/schway33-r3-nocall-original-debt.log": "0c6ebe30e1b5de44bb35ddb5e355360db5506c00d92f54e5803e97d7d1b7735e"
+  }
+}

@@ -15,6 +15,14 @@ findings:
     severity: critical
     disposition: deferred
     title: "Propagated typed failure from OpReturn is unclassifiable"
+  - id: CR-05
+    severity: critical
+    disposition: fixed
+    title: "Dynamic native scalar callers emit application-only output for explicit defects [CLOSED]"
+  - id: CR-06
+    severity: critical
+    disposition: deferred
+    title: "Legacy no-call native scalar defects still exit as application failures"
   - id: WR-01
     severity: warning
     disposition: fixed
@@ -36,8 +44,8 @@ findings:
     disposition: fixed
     title: "Empty manifest controls bypass receipt control validation"
 open: 0
-total: 8
-recorded: 2026-10-16T00:37:20.623Z
+total: 10
+recorded: 2026-10-16T02:53:36.270Z
 ---
 
 # Phase 33: Code Review Disposition
@@ -47,6 +55,8 @@ recorded: 2026-10-16T00:37:20.623Z
 | CR-02 | critical | fixed | 33-REFRESH2-FIX.md; independent four-file closure review |
 | CR-03 | critical | deferred | Execution-peer maintainer via M007 audit before Phase38 freeze; pre-existing nested legacy-defect false rejection outside the Phase33 capture/predicate/gate witnesses |
 | CR-04 | critical | deferred | Execution-peer maintainer via M007 audit before Phase38 freeze; pre-existing modeled-failure propagation requires its own contract/edge evidence rather than broadening terminal classification without proof |
+| CR-05 | critical | fixed | 33-REFRESH3-FIX.md; independent final three-file closure, dynamic scalar caller scope; renamed title does not undo closure |
+| CR-06 | critical | deferred | Emitter maintainer through mandatory M007 audit before Phase38 freeze; original/current no-call native defect probes reach exit65; resolve against frozen-C obligation through scoped gap work and dated compatibility amendment when required |
 | WR-01 | warning | fixed | 33-REVIEW-FIX.md (not in the current review) |
 | WR-02 | warning | fixed | 33-REVIEW-FIX.md (not in the current review) |
 | WR-03 | warning | fixed | 33-REVIEW-FIX.md (not in the current review) |

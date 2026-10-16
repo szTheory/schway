@@ -157,3 +157,28 @@ CR-03/04 remain explicitly deferred propagation false rejections in the
 review disposition, owned by the execution-peer maintainer through M007
 audit before freeze. This is L1 applicability, not L2/L3 certification or
 a claim that the whole peer covers every interpreter propagation route.
+
+
+## Caller-shape successor applicability — 2026-10-15
+
+All five plans retain authored threat models; the17-disposition register
+remains closed, zero open, ASVS L1/high. Current source inspection confirms
+one opened-handle LimitReader(limit+1) capture read, exact singleton owner /
+function / operation / reason checks, root-anchored POSIX gates, data-only
+manifest labels and preservation of explicit EXPECTED_CODEDIGEST. Fresh
+49-root mapped controls include capture limits, native parity, narrowing and
+its widening mutant, generic gates and metadata. The successor cgen repair
+classifies existing caller bodies without changing these mitigation laws.
+The authored-register L1 short-circuit applies; no deeper audit or hosted
+certification is inferred. CR-03/04 remain deferred BLOCKER propagation
+findings owned through the mandatory M007 audit; they are not accepted risks.
+
+
+## Dynamic scalar defect closure and retained debt — 2026-10-15
+
+Independent CR-05 closure confirms the native dynamic scalar defect record
+and exact application outcome controls; the compatibility correction retains
+legacy no-call bytes. Current mapped and focused controls passed in
+33-REFRESH3-RUN.json. No register mitigation, dependency or authority expanded;
+17L1 dispositions remain closed. CR-03/04/06 remain separate deferred BLOCKER
+review debt for M007 audit, not new accepted risks or claimed global correctness.

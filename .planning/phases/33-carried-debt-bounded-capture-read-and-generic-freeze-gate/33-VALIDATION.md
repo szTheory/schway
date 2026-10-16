@@ -217,3 +217,35 @@ pass and retain the deliberate false-numeric-value acceptance boundary.
 The final focused union and source/log hashes are recorded separately in
 33-REFRESH2-RUN.json. Original plans, summaries, receipts and UAT remain
 historical at their stated revisions.
+
+
+## Caller-shape successor refresh — 2026-10-15
+
+State A retains all15 tasks and18 mapped rows. Every row resolves against
+the live Go inventory; fresh normalized exact-name commands passed49 roots
+across six packages, zero missing/fail/skip, in40.025 seconds at639b4965.
+33-REFRESH3-VALIDATION.json owns the new commands and raw-log hashes.
+No requirement/test gap or human item was found; original execution, mutation
+and hosted receipts remain historical. The independent goal verdict follows
+review and the separately recorded regression gate.
+
+
+## Final repaired caller refresh — 2026-10-15
+
+All18 mapped rows are covered by the fresh post-repair union: 240names /
+252root executions /16packages, zero missing/fail/skip. CR-05 adds the
+independent TestPhase33ScalarExplicitDefectShells root; all8frozen-C baseline
+controls pass after narrowing repair to dynamic scalar callers. Original
+rows/tasks remain intact. Source/log bindings are in33-REFRESH3-RUN.json;
+actual-source RED/GREEN and legacy no-call debt probes are distinguished
+in33-REFRESH3-REPAIR.json. The latter expected failures are not passing
+regression evidence or a waived Phase33 acceptance gap. Independent goal
+verification owns that assessment. CR-03/04/06 retain audit owners/deadline.
+
+## Validation Audit 2026-10-16
+
+| Metric | Count |
+|---|---|
+| Gaps found | 1 |
+| Resolved | 1 |
+| Escalated | 0 |

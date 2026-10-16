@@ -1035,3 +1035,31 @@ same-source two-host CRC receipts, proposed M008 wc/longest_line, then bounded
 fixed-schema key=value parsing. The complete program/blocker/slice/guarantee/
 evidence/owner/reprioritization and dormant-seed dispositions are recorded in
 [36-REFRESH2-GATES.md](phases/36-scalar-helper-calls/36-REFRESH2-GATES.md).
+
+
+## Phase 33 dynamic scalar defect repair — 2026-10-15
+
+**Source inspection:** explicit defects in dynamic scalar callers now select
+the native structured terminal writer; application exit65/stderr and legacy
+no-call emission bytes are preserved. No checker admission, wire field,
+dependency or backend changed. New local evidence at28e6cae5 passed
+240names /252roots /16packages, zero missing/fail/skip. The
+identical new entry/nested-helper test fails on original source at an undefined
+application-only helper and passes at O0/O3/O3-LTO after repair; independent
+causal attribution and literal expected defects remain separate checks.
+
+**Limits and debt:** the legacy no-call native explicit-defect path still
+exits65 without a structured document, reproduced on original/currentsource.
+CR-06 joins CR-03/04 as deferred BLOCKER audit obligations; no accepted-risk
+or fix is implied. Current independent acceptance/fingerprint is owned by
+[33-VERIFICATION.md](phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VERIFICATION.md).
+Historical captures/goldens/hosted receipts retain their revisions; no full
+local suite, hosted/Linux result, human readability or latency distribution
+is claimed. EVD-17 remains active; mandatory M007 audit/gap closure precedes38.
+
+The three next capabilities, complete slices/checker obligations, owners and
+priority-changing observations plus scoped dormant z1g/trz/z1s dispositions
+are in [33-REFRESH3-GATES.md](phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH3-GATES.md).
+Capability order remains audited two-host CRC receipts, proposed M008
+wc/longest_line, then bounded fixed-schema key=value parsing. No seed or future
+consumer was promoted. Re-query canonical freshness after each report refresh.

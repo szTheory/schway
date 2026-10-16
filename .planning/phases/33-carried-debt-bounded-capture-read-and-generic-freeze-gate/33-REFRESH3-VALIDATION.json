@@ -1,0 +1,129 @@
+{
+  "source_head": "639b4965d7f9c71fca8088c723ec9fac32725e6e",
+  "validation_rows": 18,
+  "package_count": 6,
+  "distinct_names": 49,
+  "root_executions": 49,
+  "wall_seconds": 40.025,
+  "missing": 0,
+  "failed": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "package": "./cmd/schway",
+      "root_tests": [
+        "TestPhase321RunInputRequiredCLI",
+        "TestPhase32PublicRouteAudit"
+      ],
+      "count": 2,
+      "exit": 0,
+      "seconds": 2.636,
+      "command": "go test ./cmd/schway -run '^(TestPhase321RunInputRequiredCLI|TestPhase32PublicRouteAudit)$' -count=1 -json",
+      "log": "/tmp/schway33-r3-validation-0.log",
+      "log_sha256": "720aede1156f0fa3458a85d4ff68f22d0cd37c40b9fadfb7fdac8a828c0310cc"
+    },
+    {
+      "package": "./internal/compiler/cgen",
+      "root_tests": [
+        "TestEmittedCExitLiteralsMatchTable"
+      ],
+      "count": 1,
+      "exit": 0,
+      "seconds": 0.281,
+      "command": "go test ./internal/compiler/cgen -run '^(TestEmittedCExitLiteralsMatchTable)$' -count=1 -json",
+      "log": "/tmp/schway33-r3-validation-1.log",
+      "log_sha256": "bf86cbbd1e7defc2ab6500d19d93c7beaf9032745c64dd9ba04860ff1712b457"
+    },
+    {
+      "package": "./internal/compiler/check",
+      "root_tests": [
+        "TestPhase321ByteViewEntryRefused"
+      ],
+      "count": 1,
+      "exit": 0,
+      "seconds": 0.288,
+      "command": "go test ./internal/compiler/check -run '^(TestPhase321ByteViewEntryRefused)$' -count=1 -json",
+      "log": "/tmp/schway33-r3-validation-2.log",
+      "log_sha256": "9a465e28da1544a18723771216b3f19f6f1e236dc9b32984e58a9b7ea5398e41"
+    },
+    {
+      "package": "./internal/compiler/interp",
+      "root_tests": [
+        "TestPhase321AbortLikeDefectFileRoute",
+        "TestPhase321AbortLikeDefectPredicate",
+        "TestPhase33AbortLikeNarrowed",
+        "TestPhase33AbortLikeWideningMutantKilled"
+      ],
+      "count": 4,
+      "exit": 0,
+      "seconds": 0.279,
+      "command": "go test ./internal/compiler/interp -run '^(TestPhase321AbortLikeDefectFileRoute|TestPhase321AbortLikeDefectPredicate|TestPhase33AbortLikeNarrowed|TestPhase33AbortLikeWideningMutantKilled)$' -count=1 -json",
+      "log": "/tmp/schway33-r3-validation-3.log",
+      "log_sha256": "f4d5a2d7c9a2dda6a42edc204f74b5af52b684c63463424ba9bcaeecc10c9336"
+    },
+    {
+      "package": "./internal/compiler/native",
+      "root_tests": [
+        "TestPhase22EvidenceMissingPartialAndCapacityControls",
+        "TestPhase25LivingRoadmap",
+        "TestPhase26FailureChannels",
+        "TestPhase27EvidenceCapacity",
+        "TestPhase27OutputEvidenceExactLimit",
+        "TestPhase321DefectParityWithLiveOwner",
+        "TestPhase33CaptureReadBounded",
+        "TestPhase33DefectParityFileRoute",
+        "TestPhase33DefectParityFixtureRoute"
+      ],
+      "count": 9,
+      "exit": 0,
+      "seconds": 4.145,
+      "command": "go test ./internal/compiler/native -run '^(TestPhase22EvidenceMissingPartialAndCapacityControls|TestPhase25LivingRoadmap|TestPhase26FailureChannels|TestPhase27EvidenceCapacity|TestPhase27OutputEvidenceExactLimit|TestPhase321DefectParityWithLiveOwner|TestPhase33CaptureReadBounded|TestPhase33DefectParityFileRoute|TestPhase33DefectParityFixtureRoute)$' -count=1 -json",
+      "log": "/tmp/schway33-r3-validation-4.log",
+      "log_sha256": "bcfdee61939c50922be36c83834ba57b06dd2939ec2ed59f369324020129f880"
+    },
+    {
+      "package": "./internal/compiler/session",
+      "root_tests": [
+        "TestFreezeGate",
+        "TestFreezeGateDifferential",
+        "TestNoCheckPhase32Caller",
+        "TestPhase16PublicEmitterConsumerInventory",
+        "TestPhase20ValidationLifecycle",
+        "TestPhase272AcceptedCorpusByteIdentity",
+        "TestPhase273ConformanceCorpusByteIdentity",
+        "TestPhase28PrunedEmitMatchesGolden",
+        "TestPhase32CIHostMatrix",
+        "TestPhase32CodeDigest",
+        "TestPhase32HostedCIEnv",
+        "TestPhase32ProducerCaseTable",
+        "TestPhase32ReceiptLivingClaims",
+        "TestReceiptGate",
+        "TestReceiptGateArchivedM006",
+        "TestReceiptGateCaseRecords",
+        "TestReceiptGateDifferential",
+        "TestReceiptGateMalformedControls",
+        "TestReceiptGateProgramInventory",
+        "TestStaticTestIndexMatchesGoTestList",
+        "TestSummaryCoverageGroundedness",
+        "TestValidationRowGradesAreEarnedOverArchivedCorpus",
+        "TestVerificationGroundedness",
+        "TestVerificationGroundednessClassifier",
+        "TestVerificationGroundednessCorpusIsNotEmpty",
+        "TestVerificationGroundednessFrontierIsPinned",
+        "TestVerificationGroundednessGrepExecution",
+        "TestVerificationGroundednessGrepOverRealCorpus",
+        "TestVerificationGroundednessIsNotInert",
+        "TestVerificationGroundednessPerBranch",
+        "TestVerificationGroundednessScopeByIllocutionaryRole",
+        "TestVerificationGroundednessThreeClassesAreEmpty"
+      ],
+      "count": 32,
+      "exit": 0,
+      "seconds": 30.148,
+      "command": "go test ./internal/compiler/session -run '^(TestFreezeGate|TestFreezeGateDifferential|TestNoCheckPhase32Caller|TestPhase16PublicEmitterConsumerInventory|TestPhase20ValidationLifecycle|TestPhase272AcceptedCorpusByteIdentity|TestPhase273ConformanceCorpusByteIdentity|TestPhase28PrunedEmitMatchesGolden|TestPhase32CIHostMatrix|TestPhase32CodeDigest|TestPhase32HostedCIEnv|TestPhase32ProducerCaseTable|TestPhase32ReceiptLivingClaims|TestReceiptGate|TestReceiptGateArchivedM006|TestReceiptGateCaseRecords|TestReceiptGateDifferential|TestReceiptGateMalformedControls|TestReceiptGateProgramInventory|TestStaticTestIndexMatchesGoTestList|TestSummaryCoverageGroundedness|TestValidationRowGradesAreEarnedOverArchivedCorpus|TestVerificationGroundedness|TestVerificationGroundednessClassifier|TestVerificationGroundednessCorpusIsNotEmpty|TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessGrepExecution|TestVerificationGroundednessGrepOverRealCorpus|TestVerificationGroundednessIsNotInert|TestVerificationGroundednessPerBranch|TestVerificationGroundednessScopeByIllocutionaryRole|TestVerificationGroundednessThreeClassesAreEmpty)$' -count=1 -json",
+      "log": "/tmp/schway33-r3-validation-5.log",
+      "log_sha256": "ab4860bb8a57cbb5c83545790f21cfa0b733c57c2dd416469d4ee87fea06b942"
+    }
+  ],
+  "scope": "Pre-repair mapped-row run at invocation source639b4965. Final post-repair mapped coverage is re-executed in33-REFRESH3-RUN.json; no initial result is relabeled current."
+}
