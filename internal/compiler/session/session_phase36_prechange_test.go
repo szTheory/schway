@@ -47,17 +47,18 @@ type phase36PreChangeCorpus struct {
 }
 
 type phase36PreChangeEntry struct {
-	Path        string                `json:"path"`
-	Source      string                `json:"source"`
-	SourceSHA   string                `json:"source_sha256"`
-	Check       phase36Admission      `json:"check"`
-	Modules     []phase36ModuleDigest `json:"modules,omitempty"`
-	CoreSchema  string                `json:"checked_core_schema,omitempty"`
-	CoreSHA     string                `json:"checked_core_sha256,omitempty"`
-	SemanticIDs []string              `json:"semantic_ids,omitempty"`
-	Emit        phase36Emission       `json:"emit"`
-	EmitNative  phase36Emission       `json:"emit_native"`
-	Application phase36Emission       `json:"emit_application"`
+	Path             string                `json:"path"`
+	Source           string                `json:"source"`
+	SourceSHA        string                `json:"source_sha256"`
+	Check            phase36Admission      `json:"check"`
+	Modules          []phase36ModuleDigest `json:"modules,omitempty"`
+	CoreSchema       string                `json:"checked_core_schema,omitempty"`
+	CoreSHA          string                `json:"checked_core_sha256,omitempty"`
+	SemanticIDs      []string              `json:"semantic_ids,omitempty"`
+	Emit             phase36Emission       `json:"emit"`
+	EmitNative       phase36Emission       `json:"emit_native"`
+	Application      phase36Emission       `json:"emit_application"`
+	checkedCoreBytes []byte                `json:"-"`
 }
 
 type phase36ModuleDigest struct {
@@ -335,6 +336,7 @@ func phase36ObservePreChangeCorpus(t *testing.T, corpus phase36PreChangeCorpus) 
 				t.Fatalf("marshal checked core for %s: %v", before.Path, marshalErr)
 			}
 			entry.CoreSchema = checked.Program.Schema
+			entry.checkedCoreBytes = append([]byte(nil), coreBytes...)
 			entry.CoreSHA = phase36Digest(coreBytes)
 			entry.SemanticIDs = phase36SemanticIDs(coreBytes)
 			entry.Emit = phase36EmitResult(cgen.Emit(checked.Program))
@@ -587,7 +589,19 @@ func phase36ComparePreChangeCorpus(want phase36PreChangeCorpus, observed []phase
 			problems = append(problems, before.Path+": semantic IDs changed")
 		}
 		for _, route := range phase36RouteAccessors {
-			phase36CompareEmission(&problems, before.Path, route.name, *route.get(&before), *route.get(&after))
+			got := *route.get(&after)
+			handled := phase371ObserveComparison(
+				&problems,
+				"phase36",
+				before.Path,
+				route.name,
+				strings.TrimPrefix(after.SourceSHA, "sha256:"),
+				strings.TrimPrefix(after.CoreSHA, "sha256:"),
+				phase371Observed36(got),
+			)
+			if !handled {
+				phase36CompareEmission(&problems, before.Path, route.name, *route.get(&before), got)
+			}
 		}
 	}
 	return problems

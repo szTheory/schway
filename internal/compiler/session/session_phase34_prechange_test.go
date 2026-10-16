@@ -3,6 +3,7 @@ package session_test
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/cgen"
@@ -38,6 +40,12 @@ type phase34PreChangeEntry struct {
 	CheckCommandFile phase34Admission `json:"check_command_file"`
 	EmitApplication  phase34Emission  `json:"emit_application"`
 	ControlNativeC   phase34Emission  `json:"control_native_c"`
+	Emit             phase34Emission  `json:"-"`
+	EmitNative       phase34Emission  `json:"-"`
+	sourceBytes      []byte           `json:"-"`
+	sourceSHA        string           `json:"-"`
+	checkedCoreBytes []byte           `json:"-"`
+	coreSHA          string           `json:"-"`
 }
 
 type phase34Admission struct {
@@ -61,6 +69,71 @@ type phase34Diagnostic struct {
 	Start   int    `json:"start"`
 	End     int    `json:"end"`
 }
+
+type phase34Phase371Census struct {
+	Schema  string                 `json:"schema"`
+	Entries []phase34Phase371Entry `json:"entries"`
+}
+
+type phase34Phase371Entry struct {
+	Corpus    string                 `json:"corpus"`
+	Path      string                 `json:"path"`
+	SourceSHA string                 `json:"source_sha256"`
+	CoreSHA   string                 `json:"checked_core_sha256"`
+	Routes    []phase34Phase371Route `json:"routes"`
+}
+
+type phase34Phase371Route struct {
+	Name            string `json:"route"`
+	Outcome         string `json:"outcome"`
+	Code            string `json:"code,omitempty"`
+	Error           string `json:"error,omitempty"`
+	Reason          string `json:"reason,omitempty"`
+	CBase64         string `json:"c_base64,omitempty"`
+	CBytes          int    `json:"c_bytes,omitempty"`
+	CSHA            string `json:"c_sha256,omitempty"`
+	FrozenOutcome   string `json:"frozen_outcome,omitempty"`
+	FrozenCBytes    int    `json:"frozen_c_bytes,omitempty"`
+	FrozenCSHA      string `json:"frozen_c_sha256,omitempty"`
+	PriorProjection string `json:"prior_projection,omitempty"`
+}
+
+type phase34Phase371Ledger struct {
+	Schema  string                     `json:"schema"`
+	Entries []phase34Phase371Amendment `json:"entries"`
+}
+
+type phase34Phase371Amendment struct {
+	Corpus          string                    `json:"corpus"`
+	Path            string                    `json:"path"`
+	Route           string                    `json:"route"`
+	SourceSHA       string                    `json:"source_sha256"`
+	CoreSHA         string                    `json:"checked_core_sha256"`
+	OldCSHA         string                    `json:"old_c_sha256"`
+	PriorProjection string                    `json:"prior_projection,omitempty"`
+	Edits           []phase34Phase371ByteEdit `json:"edits"`
+	ExpectedCSHA    string                    `json:"expected_c_sha256"`
+}
+
+type phase34Phase371ByteEdit struct {
+	Offset       int    `json:"offset"`
+	BeforeB64    string `json:"before_base64"`
+	AfterB64     string `json:"after_base64"`
+	AnchorB64    string `json:"anchor_base64"`
+	AnchorOffset int    `json:"anchor_offset"`
+	AnchorCount  int    `json:"anchor_count"`
+}
+
+var (
+	phase34Phase371Once sync.Once
+	phase34Phase371Rows map[string]struct {
+		entry phase34Phase371Entry
+		route phase34Phase371Route
+	}
+	phase34Phase371Amendments map[string]phase34Phase371Amendment
+	phase34Phase371Problems   []string
+	phase34Phase371Loaded     bool
+)
 
 func phase34PreChangePath() string {
 	return testsupport.ProjectPath("testdata", "phase34", "prechange-corpus.json")
@@ -270,6 +343,12 @@ func phase34ObserveCorpus(t *testing.T) []phase34PreChangeEntry {
 	for _, relative := range paths {
 		path := testsupport.ProjectPath(filepath.FromSlash(relative))
 		entry := phase34PreChangeEntry{Path: relative}
+		var sourceErr error
+		entry.sourceBytes, sourceErr = os.ReadFile(path)
+		if sourceErr != nil {
+			t.Fatalf("read source bytes for %s: %v", relative, sourceErr)
+		}
+		entry.sourceSHA = phase34Digest(entry.sourceBytes)
 		checked, checkErr := session.CheckFile(path)
 		entry.CheckFile = phase34CheckFileAdmission(checked.Diagnostics, checkErr)
 		commandResult, commandErr := session.CheckCommandFile(path)
@@ -278,6 +357,8 @@ func phase34ObserveCorpus(t *testing.T) []phase34PreChangeEntry {
 		if checkErr != nil {
 			entry.EmitApplication = phase34NotEmitted("CheckFile error: " + checkErr.Error())
 			entry.ControlNativeC = phase34NotEmitted("CheckFile error: " + checkErr.Error())
+			entry.Emit = phase34NotEmitted("CheckFile error: " + checkErr.Error())
+			entry.EmitNative = phase34NotEmitted("CheckFile error: " + checkErr.Error())
 		} else if len(checked.Diagnostics) != 0 {
 			codes := phase34DiagnosticCodes(checked.Diagnostics)
 			reason := "CheckFile diagnostics"
@@ -286,7 +367,19 @@ func phase34ObserveCorpus(t *testing.T) []phase34PreChangeEntry {
 			}
 			entry.EmitApplication = phase34NotEmitted(reason)
 			entry.ControlNativeC = phase34NotEmitted(reason)
+			entry.Emit = phase34NotEmitted(reason)
+			entry.EmitNative = phase34NotEmitted(reason)
 		} else {
+			var marshalErr error
+			entry.checkedCoreBytes, marshalErr = json.Marshal(checked.Program)
+			if marshalErr != nil {
+				t.Fatalf("marshal checked core for %s: %v", relative, marshalErr)
+			}
+			entry.coreSHA = phase34Digest(entry.checkedCoreBytes)
+			emitted, emitErr := cgen.Emit(checked.Program)
+			entry.Emit = phase34EmissionResult(emitted, emitErr)
+			native, nativeErr := cgen.EmitNative(checked.Program)
+			entry.EmitNative = phase34EmissionResult(native, nativeErr)
 			application, applicationErr := cgen.EmitApplication(checked.Program)
 			entry.EmitApplication = phase34EmissionResult(application, applicationErr)
 			control, controlErr := session.Phase16ControlNativeC(checked.Program, "phase34-prechange")
@@ -295,6 +388,10 @@ func phase34ObserveCorpus(t *testing.T) []phase34PreChangeEntry {
 		entries = append(entries, entry)
 	}
 	return entries
+}
+
+func phase34Digest(data []byte) string {
+	return fmt.Sprintf("%x", sha256.Sum256(data))
 }
 
 func phase34CheckFileAdmission(diagnostics []diagnostic.Diagnostic, err error) phase34Admission {
@@ -367,13 +464,208 @@ func phase34CompareCorpus(want phase34PreChangeCorpus, observed []phase34PreChan
 		if before.CheckCommandFile.Status == "pass" && after.CheckCommandFile.Status != "pass" {
 			problems = append(problems, before.Path+": previously successful CheckCommandFile admission changed")
 		}
-		phase34CompareEmission(&problems, before.Path, "emit_application", before.EmitApplication, after.EmitApplication)
-		phase34CompareEmission(&problems, before.Path, "control_native_c", before.ControlNativeC, after.ControlNativeC)
+		phase34CompareEmission(&problems, before.Path, "emit_application", before.EmitApplication, after.EmitApplication, after.sourceSHA, after.coreSHA)
+		phase34CompareEmission(&problems, before.Path, "control_native_c", before.ControlNativeC, after.ControlNativeC, after.sourceSHA, after.coreSHA)
+		phase34Phase371Projection(&problems, before.Path, "emit", after.sourceSHA, after.coreSHA, after.Emit)
+		phase34Phase371Projection(&problems, before.Path, "emit_native", after.sourceSHA, after.coreSHA, after.EmitNative)
 	}
 	return problems
 }
 
-func phase34CompareEmission(problems *[]string, path, name string, want, got phase34Emission) {
+func phase34Phase371Projection(problems *[]string, path, route, sourceSHA, coreSHA string, got phase34Emission) bool {
+	censusPath := testsupport.ProjectPath("testdata", "phase371", "pre-emitter-census.json")
+	if _, err := os.Stat(censusPath); err != nil {
+		return false
+	}
+	phase34Phase371Once.Do(func() {
+		phase34Phase371Rows = map[string]struct {
+			entry phase34Phase371Entry
+			route phase34Phase371Route
+		}{}
+		phase34Phase371Amendments = map[string]phase34Phase371Amendment{}
+		var census phase34Phase371Census
+		if err := phase34ReadJSON(censusPath, &census); err != nil {
+			phase34Phase371Problems = append(phase34Phase371Problems, "census: "+err.Error())
+			return
+		}
+		if census.Schema != "phase371.pre-emitter-census/1" {
+			phase34Phase371Problems = append(phase34Phase371Problems, "census schema changed")
+		}
+		ledgerPath := testsupport.ProjectPath("testdata", "phase371", "compatibility-amendments.json")
+		var ledger phase34Phase371Ledger
+		if err := phase34ReadJSON(ledgerPath, &ledger); err != nil {
+			phase34Phase371Problems = append(phase34Phase371Problems, "amendments: "+err.Error())
+			return
+		}
+		if ledger.Schema != "phase371.compatibility-amendments/1" {
+			phase34Phase371Problems = append(phase34Phase371Problems, "amendment ledger schema changed")
+		}
+		for _, entry := range census.Entries {
+			if entry.Corpus != "phase34" {
+				continue
+			}
+			for _, row := range entry.Routes {
+				key := entry.Path + "\x00" + row.Name
+				phase34Phase371Rows[key] = struct {
+					entry phase34Phase371Entry
+					route phase34Phase371Route
+				}{entry, row}
+			}
+		}
+		seen := map[string]bool{}
+		last := ""
+		for _, amendment := range ledger.Entries {
+			if amendment.Corpus != "phase34" {
+				continue
+			}
+			key := amendment.Corpus + "\x00" + amendment.Path + "\x00" + amendment.Route
+			if seen[key] {
+				phase34Phase371Problems = append(phase34Phase371Problems, key+": duplicate amendment row")
+			}
+			if last != "" && key < last {
+				phase34Phase371Problems = append(phase34Phase371Problems, key+": amendment rows must be sorted")
+			}
+			seen[key] = true
+			last = key
+			bound, ok := phase34Phase371Rows[amendment.Path+"\x00"+amendment.Route]
+			if !ok {
+				phase34Phase371Problems = append(phase34Phase371Problems, key+": extra, wrong-path, or wrong-route amendment")
+				continue
+			}
+			if bound.route.Outcome != "emitted" || amendment.SourceSHA != bound.entry.SourceSHA || amendment.CoreSHA != bound.entry.CoreSHA || amendment.OldCSHA != bound.route.CSHA || amendment.PriorProjection != bound.route.PriorProjection {
+				phase34Phase371Problems = append(phase34Phase371Problems, key+": stale or wrong old source/core/C binding")
+			}
+			old, err := base64.StdEncoding.DecodeString(bound.route.CBase64)
+			if err != nil {
+				phase34Phase371Problems = append(phase34Phase371Problems, key+": invalid census C bytes")
+				continue
+			}
+			updated, err := phase34Phase371Apply(old, amendment.Edits)
+			if err != nil || phase34Digest(updated) != amendment.ExpectedCSHA {
+				phase34Phase371Problems = append(phase34Phase371Problems, key+": exact reviewed delta or expected post-delta digest mismatch")
+			}
+			phase34Phase371Amendments[bound.entry.Path+"\x00"+bound.route.Name] = amendment
+		}
+		phase34Phase371Loaded = true
+	})
+	phase34Phase371Loaded = true
+	for _, problem := range phase34Phase371Problems {
+		*problems = append(*problems, "Phase371 census/amendment: "+problem)
+	}
+	key := path + "\x00" + route
+	bound, ok := phase34Phase371Rows[key]
+	if !ok {
+		*problems = append(*problems, path+"/"+route+": missing from complete Phase371 census")
+		return true
+	}
+	if bound.entry.SourceSHA != sourceSHA || bound.entry.CoreSHA != coreSHA {
+		*problems = append(*problems, path+"/"+route+": source or checked-core bytes changed since the pre-emitter census")
+	}
+	gotOutcome := got.Outcome
+	if gotOutcome == "not_emitted" {
+		gotOutcome = "inapplicable"
+	}
+	if bound.route.Outcome != gotOutcome {
+		*problems = append(*problems, fmt.Sprintf("%s: %s outcome changed: got %q want %q", path, route, gotOutcome, bound.route.Outcome))
+		return true
+	}
+	if bound.route.Outcome == "inapplicable" {
+		return true
+	}
+	if bound.route.Outcome == "refused" {
+		if bound.route.Code != got.Code || bound.route.Error != got.Error {
+			*problems = append(*problems, fmt.Sprintf("%s: %s refusal changed", path, route))
+		}
+		return true
+	}
+	if bound.route.PriorProjection != "" {
+		binding, exists := phase34AdlerRewriteCRow(path, route)
+		if !exists || bound.route.CBytes != binding.outputBytes || bound.route.CSHA != binding.outputSHA || bound.route.FrozenCBytes != binding.beforeBytes || bound.route.FrozenCSHA != binding.beforeSHA || !phase34AdlerCompatibilityDeltaBound() {
+			*problems = append(*problems, path+": Phase35 exact prior projection no longer binds the Phase371 census")
+		}
+	}
+	want, err := base64.StdEncoding.DecodeString(bound.route.CBase64)
+	if err != nil {
+		*problems = append(*problems, path+"/"+route+": invalid census C bytes")
+		return true
+	}
+	if amendment, amended := phase34Phase371Amendments[key]; amended {
+		want, err = phase34Phase371Apply(want, amendment.Edits)
+		if err != nil {
+			*problems = append(*problems, path+"/"+route+": "+err.Error())
+			return true
+		}
+	}
+	if !bytes.Equal(want, []byte(got.CSource)) {
+		index := firstByteDifference(want, []byte(got.CSource))
+		*problems = append(*problems, fmt.Sprintf("%s: %s C byte mismatch at byte %d (got length %d, want length %d)", path, route, index, len(got.CSource), len(want)))
+	}
+	return true
+}
+
+func phase34ReadJSON(path string, target any) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(raw, target)
+}
+
+func phase34Phase371Apply(old []byte, edits []phase34Phase371ByteEdit) ([]byte, error) {
+	if len(edits) == 0 {
+		return nil, fmt.Errorf("amendment has no reviewed byte edits")
+	}
+	ordered := append([]phase34Phase371ByteEdit(nil), edits...)
+	sort.Slice(ordered, func(i, j int) bool { return ordered[i].Offset > ordered[j].Offset })
+	lastStart := len(old) + 1
+	result := append([]byte(nil), old...)
+	for _, edit := range ordered {
+		before, e1 := base64.StdEncoding.DecodeString(edit.BeforeB64)
+		after, e2 := base64.StdEncoding.DecodeString(edit.AfterB64)
+		anchor, e3 := base64.StdEncoding.DecodeString(edit.AnchorB64)
+		if e1 != nil || e2 != nil || e3 != nil || len(before) == 0 || len(after) == 0 || len(anchor) == 0 || bytes.Equal(before, after) {
+			return nil, fmt.Errorf("invalid before/after/anchor bytes")
+		}
+		if edit.AnchorCount != 1 || edit.AnchorOffset < 0 || edit.AnchorOffset > len(anchor)-len(before) || !bytes.Equal(anchor[edit.AnchorOffset:edit.AnchorOffset+len(before)], before) {
+			return nil, fmt.Errorf("anchor must declare one exact match and contain old bytes at its offset")
+		}
+		if phase34CountOccurrences(old, anchor) != 1 {
+			return nil, fmt.Errorf("anchor must occur exactly once in bound old C bytes")
+		}
+		start, end := edit.Offset, edit.Offset+len(before)
+		if start < 0 || start > len(result)-len(before) {
+			return nil, fmt.Errorf("reviewed byte offset is outside bound old C bytes")
+		}
+		anchorStart := start - edit.AnchorOffset
+		if anchorStart < 0 || anchorStart > len(old)-len(anchor) || !bytes.Equal(old[anchorStart:anchorStart+len(anchor)], anchor) {
+			return nil, fmt.Errorf("reviewed byte offset does not point to the unique declared anchor")
+		}
+		if end > lastStart || !bytes.Equal(result[start:end], before) {
+			return nil, fmt.Errorf("reviewed byte edits overlap or old bytes differ at the declared offset")
+		}
+		result = append(append(append([]byte(nil), result[:start]...), after...), result[end:]...)
+		lastStart = start
+	}
+	return result, nil
+}
+
+func phase34CountOccurrences(data, pattern []byte) int {
+	if len(pattern) == 0 {
+		return 0
+	}
+	count := 0
+	for offset := 0; offset+len(pattern) <= len(data); offset++ {
+		if bytes.Equal(data[offset:offset+len(pattern)], pattern) {
+			count++
+		}
+	}
+	return count
+}
+
+func phase34CompareEmission(problems *[]string, path, name string, want, got phase34Emission, sourceSHA, coreSHA string) {
+	if phase34Phase371Projection(problems, path, name, sourceSHA, coreSHA, got) {
+		return
+	}
 	if want.Outcome != got.Outcome {
 		*problems = append(*problems, fmt.Sprintf("%s: %s outcome changed: got %q want %q", path, name, got.Outcome, want.Outcome))
 		return
