@@ -362,6 +362,14 @@ Plans:
 **Research flag**: Standard. Hosted runs need explicit user approval for push and dispatch (one human checkpoint line naming the freeze commit); everything else is automated. Hosted runs take about 15–22 minutes and have failed transiently, so the plan allows one re-dispatch at the same freeze commit before treating a failure as real.
 
 **Plans**: Not planned (expected 3: freeze, push-and-dispatch checkpoint, `.planning`-only ingest; planning follows the M007 audit)
+**Wave 1**
+- [ ] 38-01-PLAN.md
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 38-02-PLAN.md
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 38-03-PLAN.md
 
 ## Progress
 
@@ -375,7 +383,7 @@ Plans:
 | 36. Scalar Helper Calls | 8/8 | Complete    | 2026-10-15 |
 | 37. CRC-32 Consumer, Interpreter File Route, and Guide | 9/9 | Complete    | 2026-10-15 |
 | 37.1. Close gap: legacy terminal outcomes (INSERTED) | 4/4 | Complete    | 2026-10-16 |
-| 38. Milestone Receipts | 0 planned | Not started | - |
+| 38. Milestone Receipts | 0/3 | Planned     | - |
 
 **Coverage:** 19/19 M007 requirements have exactly one phase owner. DX-22 is
 owned by Phase 34; its dynamic-shift-amount item is delivered by Phase 35's

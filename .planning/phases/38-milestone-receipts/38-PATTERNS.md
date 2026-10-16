@@ -12,7 +12,7 @@
 | `scripts/check-milestone-binding.sh` (new) | utility / gate | batch | `scripts/check-phase27-receipts.sh`; `scripts/check-receipts.sh` | role-match |
 | `testdata/receipts/M007.manifest` (new) | config / fixture | batch | `testdata/receipts/M006.manifest` | exact |
 | `.github/workflows/ci.yml` (modify) | config / workflow | event-driven, batch | `.github/workflows/ci.yml` | exact |
-| `internal/compiler/session/session_gate_differential_test.go` (modify; inferred test owner) | test | request-response | `internal/compiler/session/session_gate_differential_test.go` | exact |
+| `internal/compiler/session/session_phase38_receipts_test.go` (new; planned test owner) | test | request-response | `internal/compiler/session/session_gate_differential_test.go` | role-match |
 | `.planning/phases/38-milestone-receipts/` (new copied host logs and bounded run metadata; final plan) | evidence artifact | batch | None tracked | none |
 
 The final artifact basenames and metadata encoding remain planning choices. The final plan should copy both raw host logs and bounded run/attempt provenance, then check the copied bytes. A hosted log is run-specific evidence, so no persisted receipt artifact is used as a source-code analog.
@@ -99,9 +99,9 @@ The Phase 32 upload runs after the producer and retains the artifact even when e
 
 Add the M007 receipt artifact to the existing Ubuntu/macOS checks matrix and retain upload-on-failure plus missing-file failure. The current receipt pipeline uses `tee`; enable Bash `pipefail` in the producer step so `tee` cannot hide a failed producer. Keep the existing full and race lanes as required evidence; do not add a redundant broad job.
 
-### `internal/compiler/session/session_gate_differential_test.go` (test, request-response)
+### `internal/compiler/session/session_phase38_receipts_test.go` (new test, request-response)
 
-**Analog:** the existing differential tests for freeze and receipt shell gates (tracked).
+**Analog:** `internal/compiler/session/session_gate_differential_test.go`, the tracked existing differential tests for freeze and receipt shell gates. The Phase38 file is new planned output, not an existing tracked analog. Keep the generic differential file unchanged; the new file uses the same session_test package so it can reuse its existing helpers and preserve the generic refusal goldens.
 
 Use its `phase33RunAtEnv` helper to execute a shell gate in an isolated working directory and capture exit/stdout/stderr (`internal/compiler/session/session_gate_differential_test.go:21-33`):
 
@@ -117,7 +117,7 @@ func phase33RunAtEnv(t *testing.T, cwd, script string, environment []string, arg
 }
 ```
 
-Add focused positive and wrong-revision cases for the binding seam using the existing table-driven gate style (`TestReceiptGateDifferential`, line 114 onward). Keep the fixture self-contained and assert the named refusal reason, not only a nonzero status.
+In the new Phase38 test file, add TestPhase38ReceiptTracer, TestPhase38ProducerInventoryControls, TestPhase38ManifestConsumerBindings, TestPhase38BindingControls, TestPhase38FreezeWorktreeControls and TestPhase38WorkflowFailureControls. Reuse the existing table-driven gate style (`TestReceiptGateDifferential`, line 114 onward) and phase33RunAtEnv helper for real script execution. Keep the fixture self-contained and assert named refusal reasons, not only nonzero status. The existing generic differential roots remain unchanged regression checks in Plan01's focused union.
 
 ### Final copied logs and bounded metadata (evidence artifacts, batch)
 

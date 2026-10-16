@@ -91,7 +91,7 @@ No package install is needed. [VERIFIED: 38-CONTEXT.md:38-43]
 
 ### Supporting
 
-Official GitHub run, attempt-specific job, artifact, and rerun documentation informs the bounded provenance projection. Consult only after the D-10 checkpoint; local gh 2.101.0 exists, but auth and remote state were not probed. [CITED: https://docs.github.com/en/rest/actions/workflow-runs; https://docs.github.com/en/rest/actions/workflow-jobs; https://docs.github.com/en/rest/actions/artifacts; https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs?tool=cli; VERIFIED: local probe]
+Official GitHub run, attempt-specific job, artifact, and rerun documentation informs the bounded provenance projection. Primary-document lookup and read-only remote/ref inspection are allowed before the D-10 checkpoint; remote writes remain gated. Local gh 2.101.0 exists, but auth and remote state were not probed. [CITED: https://docs.github.com/en/rest/actions/workflow-runs; https://docs.github.com/en/rest/actions/workflow-jobs; https://docs.github.com/en/rest/actions/artifacts; https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs?tool=cli; VERIFIED: local probe]
 
 ### Alternatives Considered
 
@@ -247,9 +247,9 @@ Signing, hermetic builds, a new backend and a general evidence framework are out
 
 ## Open Questions
 
-1. Can both hosted OSes execute all environment-dependent CRC rows without skips? No hosted run was observed; if a required row cannot run, report the host blocker and leave EVD-17 pending. [VERIFIED: internal/compiler/testsupport/crc32_oracle.go:229-296]
-2. What metadata schema will the binding seam use? D-12 fixes fields; encoding/file boundary are discretionary. Add positive and wrong-revision controls. [VERIFIED: 38-CONTEXT.md:65-75]
-3. Will authorized remote access and a complete run be available? Authentication and current remote state were not probed; resolve at D-10 and keep pending if unavailable. [VERIFIED: 38-CONTEXT.md:55-60]
+1. **RESOLVED — fail-closed execution policy, availability unobserved.** Can both hosted OSes execute all environment-dependent CRC rows without skips? Plan01's `TestPhase38ProducerInventoryControls` and `TestPhase38ManifestConsumerBindings` require the exact reached inventory, and Plan02 task38-02-02 rejects skipped/missing permission/FIFO/device/symlink controls. An unavailable required host row is a stated external blocker with EVD-17 Pending; this resolution does not assert either host can run it. [SOURCE: internal/compiler/testsupport/crc32_oracle.go:229-296; 38-01-PLAN.md; 38-02-PLAN.md]
+2. **RESOLVED — concrete schema and checker selected.** The freeze record is `.planning/phases/38-milestone-receipts/38-FREEZE.json`, schema `schway.m007-freeze/1`; final run provenance is `38-HOST-RUN.json` in that directory, schema `schway.m007-hosted-run/1`. Plan01's Exact interfaces and ownership section fixes the bounded fields, full SHA/digest strings, exact integer identities, artifact/log distinctions and ingest_base_sha. `scripts/check-milestone-binding.sh` exposes freeze/run/final modes, using installed Python3 standard-library parsing and delegating the existing generic gates. `TestPhase38BindingControls` arms positive, wrong-revision/attempt/identity/bytes and precision refusals; `TestPhase38FreezeWorktreeControls` owns source/worktree/descendant controls in the new `internal/compiler/session/session_phase38_receipts_test.go`. These are planning choices; implementation and passing evidence remain future execution. [SOURCE: 38-CONTEXT.md D-12; 38-01-PLAN.md; 38-03-PLAN.md]
+3. **RESOLVED — explicit authority and result gates, access unobserved.** Will authorized remote access and a complete run be available? Plan02 task38-02-01 performs read-only inspection and requires non-autoapproved human authorization naming the actual freeze SHA/digest/repository/ref/workflow/inputs/push scope. Task38-02-02 then requires one complete successful same-source run/attempt with both hosts and all required jobs/artifacts/controls; one diagnosed transient same-freeze retry is the limit. Missing access, approval or required results leaves EVD-17 Pending with its external blocker, and any code fix reopens audited freeze and approval. No current remote availability or human approval is asserted. [SOURCE: 38-CONTEXT.md D-10..D-15; 38-02-PLAN.md]
 
 ## Environment Availability
 
@@ -259,8 +259,8 @@ Signing, hermetic builds, a new backend and a general evidence framework are out
 | Clang | Native build | Yes | Apple clang 21.0.1 |
 | Shell/Bash | Producer and CI | Yes | /bin/sh and Bash; use Bash pipefail |
 | Git | Freeze/digest | Yes | git 2.41.0 |
-| GitHub CLI/API | Remote inspection after checkpoint | CLI present; auth/remote unobserved | gh 2.101.0; unavailable authority/results mean pending blocker |
-| Python | Fixture provenance only | Yes | Python 3.14.4; no new phase dependency |
+| GitHub CLI/API | Read-only inspection before checkpoint; approved writes afterward | CLI present; auth/remote unobserved | gh 2.101.0; unavailable authority/results mean pending blocker |
+| Python | Existing fixture provenance and planned narrow binding JSON parser | Locally observed; hosted availability checked during execution | Python3 standard library and installed tool only; no package install; unavailable tool fails closed |
 
 Fresh local probes only. No tests or compiler/native suite were run; these probes do not establish hosted availability or authentication. [VERIFIED: local command probes]
 
