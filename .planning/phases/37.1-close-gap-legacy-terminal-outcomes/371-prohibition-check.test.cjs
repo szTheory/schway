@@ -24,10 +24,14 @@ const REASON_REL = `${PHASE_REL}prohibition-reason-violation.json`;
 const BASELINE_REL = `${PHASE_REL}prohibition-baseline-violation.json`;
 const SOURCE_REL = "internal/compiler/executionpeer/executionpeer.go";
 const CGEN_REL = "internal/compiler/cgen/cgen_program.go";
+const PARSER_REL = "internal/compiler/syntax/parser.go";
+const COREVALIDATE_REL = "internal/compiler/corevalidate/corevalidate.go";
+const REASON_OVERLAY_SOURCE_RELATIVES = [CGEN_REL, PARSER_REL, COREVALIDATE_REL];
 const REASON_TEST_REL = "internal/compiler/session/session_phase371_defect_reason_test.go";
 const CGEN_TEST_REL = "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go";
 const COMPATIBILITY_TEST_REL = "internal/compiler/session/session_phase371_compatibility_test.go";
 const STORAGE_EVOLUTION_PATHS = [ADAPTER_REL, CGEN_REL, CGEN_TEST_REL].sort();
+const PROOF_BINDING_EVOLUTION_PATHS = [ADAPTER_REL, PARSER_REL, COREVALIDATE_REL].sort();
 const TEST_REL = "internal/compiler/executionpeer/executionpeer_phase371_test.go";
 const MODEL_REL = "internal/compiler/session/session_phase24_model_test.go";
 const FAILURE_BASE_HEAD = "8fbd1e51bb6fd97b1a46d5d1015ce5e39d69bfe0";
@@ -37,6 +41,7 @@ const PACKAGE = "./internal/compiler/executionpeer";
 const TMP_ROOT = "/tmp";
 const GOCACHE = "/tmp/ai-lang-verification-gocache";
 const MAX_OUTPUT = 8 * 1024 * 1024;
+const CURRENT_PROOF_FORMAT_VERSION = 2;
 const GO_TIMEOUT_MS = 120_000;
 const TEST_NAME = "legacy defect closure rejects whole-execution defects";
 const FAILURE_STATEMENT = "MUST NOT classify arbitrary OpReturn as propagated failure or treat causal acceptance as payload-value or actual CFG-path proof.";
@@ -404,6 +409,7 @@ function recordCanonicalProducerSuiteSelection(selection, result) {
     mode: selection.mode,
     exact_root_inventory: observedRoots,
     semantic_result: result.kind,
+    ...(selection.mode === "reason" ? { reason_overlay_binding_controls: runReasonOverlayBindingNegativeControls() } : {}),
   };
   const recordPath = path.join(evidenceDir, `canonical-suite-${lane}.json`);
   const bytes = Buffer.from(`${JSON.stringify(receipt, null, 2)}\n`);
@@ -1101,6 +1107,13 @@ function readCanonicalProducerSuiteSelections(evidenceDir, subject) {
     assert.equal(receipt.mode, subject, `${lane}: canonical producer must retain the requested proof mode`);
     assert.deepEqual(receipt.exact_root_inventory, expectedRoots, `${lane}: canonical producer exact root inventory`);
     assert.equal(receipt.semantic_result, expectedResult, `${lane}: canonical producer semantic result`);
+    if (subject === "reason") {
+      assert.equal(receipt.reason_overlay_binding_controls?.baseline, "accepted", `${lane}: matching reason overlay bindings must pass`);
+      assert.deepEqual(receipt.reason_overlay_binding_controls?.controls?.map(({ name, result }) => ({ name, result })), [
+        { name: "omit-parser-source-binding", result: "rejected" },
+        { name: "change-corevalidate-overlay-original-source-hash", result: "rejected" },
+      ], `${lane}: missing binding and changed overlay hash controls must be refused`);
+    }
     controls[lane] = {
       ...receipt,
       evidence: { path: recordPath, sha256: digest(bytes), bytes: bytes.length },
@@ -1157,7 +1170,8 @@ function runCanonicalProducer(request, evidenceDir, subject) {
 function sourceBindings(current) {
   const selected = new Set([
     PLAN_REL, FAILURE_PLAN_REL, REASON_PLAN_REL, BASELINE_PLAN_REL, ADAPTER_REL,
-    SOURCE_REL, TEST_REL, MODEL_REL, REASON_TEST_REL, CGEN_REL, CGEN_TEST_REL, COMPATIBILITY_TEST_REL,
+    SOURCE_REL, TEST_REL, MODEL_REL, REASON_TEST_REL, CGEN_REL, PARSER_REL, COREVALIDATE_REL,
+    CGEN_TEST_REL, COMPATIBILITY_TEST_REL,
     "examples/phase24/error.schway", CLEAN_REL, DEFECT_REL, FAILURE_REL, REASON_REL, BASELINE_REL,
     "testdata/phase371/pre-emitter-census.json", "testdata/phase371/compatibility-amendments.json",
   ]);
@@ -1165,6 +1179,74 @@ function sourceBindings(current) {
     const bytes = fs.readFileSync(path.join(ROOT, relative));
     return [relative, { sha256: digest(bytes), bytes: bytes.length }];
   }));
+}
+
+function assertReasonOverlaySourceBindings(proof) {
+  assert.equal(proof.subject, "reason", "reason overlay bindings belong to the reason proof");
+  const sources = proof.go_controls?.bad?.overlay?.sources;
+  assert.ok(Array.isArray(sources), "reason proof must retain per-source overlay records");
+  assert.deepEqual(sources.map((source) => source.path).sort(), [...REASON_OVERLAY_SOURCE_RELATIVES].sort(),
+    "reason overlay must bind exactly the emitter, parser and core validator inputs");
+  for (const relative of REASON_OVERLAY_SOURCE_RELATIVES) {
+    const source = sources.find((item) => item.path === relative);
+    const binding = proof.source_bindings?.[relative];
+    assert.ok(binding && typeof binding.sha256 === "string" && Number.isInteger(binding.bytes),
+      `reason proof source binding missing: ${relative}`);
+    assert.equal(source.originalSourceSha256, binding.sha256,
+      `reason overlay original source hash mismatch: ${relative}`);
+  }
+}
+
+function assertLegacyReasonOverlaySourceHashes(proof, sourceRevision) {
+  const sources = proof.go_controls?.bad?.overlay?.sources;
+  assert.ok(Array.isArray(sources), "historical reason proof must retain its original per-source overlay records");
+  for (const relative of [PARSER_REL, COREVALIDATE_REL]) {
+    assert.equal(proof.source_bindings[relative], undefined,
+      `historical reason proof must preserve its recorded omission for ${relative}`);
+    const source = sources.find((item) => item.path === relative);
+    assert.ok(source && typeof source.originalSourceSha256 === "string",
+      `historical reason overlay must preserve the recorded original hash for ${relative}`);
+    const archived = gitFileAt(sourceRevision, relative);
+    assert.equal(digest(archived), source.originalSourceSha256,
+      `historical reason overlay hash must match the preserved source revision for ${relative}`);
+  }
+}
+
+function runReasonOverlayBindingNegativeControls() {
+  const currentBindings = sourceBindings(projectCurrentPlan("reason"));
+  const currentOverlaySources = REASON_OVERLAY_SOURCE_RELATIVES.map((relative) => ({
+    path: relative,
+    originalSourceSha256: currentBindings[relative].sha256,
+    replacementSourceSha256: "0".repeat(64),
+    baselineHead: "negative-control-fixture",
+  }));
+  const baseline = {
+    subject: "reason",
+    source_bindings: currentBindings,
+    go_controls: { bad: { overlay: { sources: currentOverlaySources } } },
+  };
+  assert.doesNotThrow(() => assertReasonOverlaySourceBindings(baseline),
+    "complete current source bindings must accept the matching reason overlay");
+
+  const missingBinding = JSON.parse(JSON.stringify(baseline));
+  delete missingBinding.source_bindings[PARSER_REL];
+  assert.throws(() => assertReasonOverlaySourceBindings(missingBinding),
+    new RegExp(`reason proof source binding missing: ${escapeRegex(PARSER_REL)}`),
+    "omitting parser.go must be refused by the reason overlay archive check");
+
+  const changedOverlayHash = JSON.parse(JSON.stringify(baseline));
+  changedOverlayHash.go_controls.bad.overlay.sources.find((source) => source.path === COREVALIDATE_REL).originalSourceSha256 = "f".repeat(64);
+  assert.throws(() => assertReasonOverlaySourceBindings(changedOverlayHash),
+    new RegExp(`reason overlay original source hash mismatch: ${escapeRegex(COREVALIDATE_REL)}`),
+    "changing the corevalidate.go overlay source hash must be refused by the archive check");
+
+  return {
+    baseline: "accepted",
+    controls: [
+      { name: "omit-parser-source-binding", result: "rejected", reason: `reason proof source binding missing: ${PARSER_REL}` },
+      { name: "change-corevalidate-overlay-original-source-hash", result: "rejected", reason: `reason overlay original source hash mismatch: ${COREVALIDATE_REL}` },
+    ],
+  };
 }
 
 function sourceBindingChanges(from, to) {
@@ -1218,6 +1300,15 @@ function assertArchivedProof(subject, proof, sourceRevision) {
   assert.equal(proof.current_plan_projection.source_prohibition.verification, null);
   assert.equal(proof.current_plan_projection.source_plan.sha256, proof.source_bindings[proof.current_plan_projection.source_plan.path].sha256);
   assertArchivedSourceBindings(proof, sourceRevision);
+  if (proof.proof_format_version === CURRENT_PROOF_FORMAT_VERSION) {
+    for (const relative of [PARSER_REL, COREVALIDATE_REL]) {
+      assert.ok(proof.source_bindings[relative], `${subject}: current proof format must bind ${relative}`);
+    }
+    if (subject === "reason") assertReasonOverlaySourceBindings(proof);
+  } else {
+    assert.equal(proof.proof_format_version, undefined, `${subject}: archived proof format must be explicitly current or preserved legacy`);
+    if (subject === "reason") assertLegacyReasonOverlaySourceHashes(proof, sourceRevision);
+  }
 
   for (const record of archivedFileRecords(proof)) {
     const bytes = fs.readFileSync(record.path);
@@ -1330,8 +1421,11 @@ function beginSourceEvolution(initial, current) {
   const changed = sourceBindingChanges(fromBindings, toBindings);
   if (Object.keys(changed).length === 0) return null;
   const changedPaths = Object.keys(changed).sort();
-  assert.ok(changedPaths.every((relative) => STORAGE_EVOLUTION_PATHS.includes(relative)),
-    "storage source evolution is limited to the emitter, its existing test root, and this phase-local adapter");
+  const proofBindingCorrection = changedPaths.some((relative) => relative === PARSER_REL || relative === COREVALIDATE_REL)
+    && changedPaths.every((relative) => PROOF_BINDING_EVOLUTION_PATHS.includes(relative));
+  const storageEvolution = changedPaths.every((relative) => STORAGE_EVOLUTION_PATHS.includes(relative));
+  assert.ok(proofBindingCorrection || storageEvolution,
+    "source evolution is limited to the existing storage repair or this phase-local proof-binding correction");
 
   const priorProofs = initial.proofs;
   assert.deepEqual(Object.keys(priorProofs || {}).sort(), proofSubjects().sort(), "all four current resolved proofs must be snapshotted before replacement");
@@ -1341,13 +1435,42 @@ function beginSourceEvolution(initial, current) {
     assert.deepEqual(proof.source_bindings, resolvedSubjects[subject].current_source_bindings,
       `${subject}: prior proof bindings must match the previous resolved record`);
   }
+  const priorReceiptsIncomplete = proofSubjects().some((subject) => {
+    const proof = priorProofs[subject];
+    const selection = proof.canonical_producer?.suite_selection;
+    return proof.proof_format_version !== CURRENT_PROOF_FORMAT_VERSION
+      || !selection || selection.mode !== subject
+      || !selection.controls || Object.keys(selection.controls).sort().join(",") !== "bad,clean,default";
+  });
+  {
+    const historicalSourceRevision = record.pre_resolution_snapshot?.source_binding_revision;
+    if (priorProofs.reason.proof_format_version === CURRENT_PROOF_FORMAT_VERSION) {
+      assertReasonOverlaySourceBindings(priorProofs.reason);
+    } else {
+      assert.ok(historicalSourceRevision, "historical reason proof source revision must remain available for the correction amendment");
+      assertLegacyReasonOverlaySourceHashes(priorProofs.reason, historicalSourceRevision);
+    }
+  }
   assert.ok(initial.final_root_union && initial.final_root_union.raw_log, "previous resolved root union must be preserved before proof replacement");
 
   const event = {
-    id: `T-37.1-08-counted-storage-repair-${existing.length + 1}`,
+    id: proofBindingCorrection
+      ? `T-37.1-${priorReceiptsIncomplete ? "CR01-CR02-proof-binding-correction" : "CR02-proof-binding-reverification"}-${existing.length + 1}`
+      : `T-37.1-08-counted-storage-repair-${existing.length + 1}`,
     captured_utc: new Date().toISOString(),
     status: "pending-fresh-proofs",
-    reason: "Bounded source evolution for block-scoped static readonly counted defect-reason bytes; prior resolved proof facts are preserved below.",
+    reason: proofBindingCorrection
+      ? priorReceiptsIncomplete
+        ? "Dated CR-01/CR-02 correction: prior green receipts remain preserved as historical but incomplete because the canonical clean/default mode was not recorded and reason parser/corevalidate bindings were omitted; this event supersedes them only after fresh current-format proofs."
+        : "Dated CR-02 follow-up: prior current-format proofs already carry complete canonical modes and reason source bindings; their immutable payloads are preserved while this adapter guard edit receives fresh source-bound proofs."
+      : "Bounded source evolution for block-scoped static readonly counted defect-reason bytes; prior resolved proof facts are preserved below.",
+    ...(proofBindingCorrection ? {
+      amendment_date: "2026-10-16",
+      review_findings: priorReceiptsIncomplete ? ["CR-01", "CR-02"] : ["CR-02"],
+      prior_receipt_qualification: priorReceiptsIncomplete
+        ? "Historical only; the original proof payloads and hashes are preserved unchanged, but their clean/default canonical producer mode and parser.go/corevalidate.go reason bindings were incomplete."
+        : "Prior current-format proof payloads and hashes are preserved unchanged; their canonical producer mode and parser.go/corevalidate.go reason bindings were complete, and this event records a fresh proof set for the subsequent adapter guard edit.",
+    } : {}),
     lifecycle: { status: "resolved", verification: "test" },
     from_source_bindings: fromBindings,
     to_source_bindings: toBindings,
@@ -1540,6 +1663,7 @@ function runProofMode(subject) {
   const producer = runCanonicalProducer({ prohibition: canonicalItem.prohibition, check: current.check, mode: "auto" }, evidenceDir, subject);
   const bindings = sourceBindings(current);
   const proof = {
+    proof_format_version: CURRENT_PROOF_FORMAT_VERSION,
     subject,
     state: evidenceState,
     captured_utc: new Date().toISOString(),
@@ -1574,6 +1698,10 @@ function runProofMode(subject) {
       suite_selection: producer.suiteSelection,
     },
   };
+  for (const relative of [PARSER_REL, COREVALIDATE_REL]) {
+    assert.ok(proof.source_bindings[relative], `${subject}: current proof must bind ${relative}`);
+  }
+  if (subject === "reason") assertReasonOverlaySourceBindings(proof);
   const manifest = {
     version: 1,
     subject,
@@ -1628,6 +1756,12 @@ function runAllProofMode() {
   for (const subject of ["defect", "failure", "reason", "baseline"]) {
     const proof = stored.proofs && stored.proofs[subject];
     assert.ok(proof, `${subject} source-bound proof must remain in the projection history`);
+    assert.equal(proof.proof_format_version, CURRENT_PROOF_FORMAT_VERSION,
+      `${subject} must use the current complete source-binding proof format`);
+    for (const relative of [PARSER_REL, COREVALIDATE_REL]) {
+      assert.ok(proof.source_bindings[relative], `${subject} current source bindings must include ${relative}`);
+    }
+    if (subject === "reason") assertReasonOverlaySourceBindings(proof);
     assert.equal(proof.canonical_producer.status, "green", `${subject} canonical producer proof must be green`);
     assert.equal(proof.canonical_producer.flagged, false, `${subject} canonical producer proof must be unflagged`);
     assert.equal(proof.lifecycle_status, lifecycle.status, `${subject} proof must state the actual current lifecycle`);
