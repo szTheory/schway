@@ -33,3 +33,14 @@ remain separate BLOCKER propagation debt through the M007 audit before freeze.
 
 - /tmp/schway36-r2-caller-shapes-original-red.log, sha256 656dcc55f0e5393148222ff96346db66f6628e0acd12ce6b11433640641083dd
 - /tmp/schway36-r2-caller-shapes-green.log, sha256 0c955c68870d5536659fce4bb5bb7852eff00d5ffef72f750449e6f7dfd7cf64
+
+
+## Public emitter consumer registration
+
+The first bounded regression exposed the new direct EmitNative caller's missing
+inventory row (source116, registry115). The registry now records that exact
+call at cgen_phase36_caller_shapes_test.go:41 with
+probe:TestPhase36UnusedByteStructuredHelper and admitted-dynamic-schema2.
+The inventory and its omission/stale/duplicate controls pass freshly. This is
+a new safety-consumer record, not a changed frozen source/C expectation.
+The first failed union remains historical; a fresh final union follows.
