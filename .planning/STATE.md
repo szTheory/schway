@@ -4,18 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: "37.1"
 current_phase_name: "Close gap: legacy terminal outcomes"
-current_plan: 1
+current_plan: 2
 status: executing
-stopped_at: Phase 37.1 context gathered; dated CR-04 correction and exact-reason compatibility decision recorded; auto-advancing to planning
-last_updated: "2026-10-16T15:21:16.248Z"
+stopped_at: Completed 37.1-01-PLAN.md
+last_updated: "2026-10-16T15:55:10.392Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 37.1 execution started
-state_head: 4c7660b9e58ae6f68dc850a2129f56d3d458be1e
+state_head: 9bb7ecac0a580aaa7e3212e67fec19b18c17dad3
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 42
-  completed_plans: 38
+  completed_plans: 39
   percent: 71
 ---
 
@@ -126,9 +126,9 @@ plans.
 ## Current Position
 
 Phase: 37.1 (Close gap: legacy terminal outcomes) — EXECUTING
-Current Plan: 1
+Current Plan: 2
 Total Plans in Phase: 4
-Status: Executing Phase 37.1
+Status: Ready to execute
 Last activity: 2026-10-16 — Phase 37.1 execution started
 
 Progress: [███████░░░] 71%
@@ -631,6 +631,7 @@ subset alone.
 | Phase 37 P07 | 14m | 3 tasks | 12 files |
 | Phase 37 P08 | 24min | 3 tasks | 8 files |
 | Phase 37 P09 | 21min | 2 tasks | 9 files |
+| Phase 37.1 P01 | 33 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -915,6 +916,8 @@ decision history; they no longer describe current status.
 - [Phase 37]: Keep Phase38 hosted binding after milestone audit and gap closure.
 - [Phase 37]: Keep helper activation counts structural and separate from independent CRC numeric truth.
 - [Phase 37]: Mutation overlays must reach the named semantic assertion, while standalone target roots retain clean baseline checks.
+- [Phase 37.1]: Legacy and dynamic call identities share one invocation lifecycle, so accepted defects close the active stack mode-independently.
+- [Phase 37.1]: The supported producer supplied machine evidence only; prohibition resolution remains for the normal execution lifecycle.
 
 ### Pending Todos
 
@@ -1195,9 +1198,9 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-16T14:14:05.641Z
-Stopped at: Phase 37.1 context gathered; dated CR-04 correction and exact-reason compatibility decision recorded; auto-advancing to planning
-Resume file: .planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-CONTEXT.md
+Last session: 2026-10-16T15:55:10.298Z
+Stopped at: Completed 37.1-01-PLAN.md
+Resume file: None
 Next action: `$gsd-plan-phase 37.1`; zero plans exist, so the generic missing-verification execute hint is not the next step. Close CR-03/04/06 and rerun the milestone audit before Phase 38.
 
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.

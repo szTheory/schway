@@ -326,11 +326,11 @@ Plans:
 
 **Transition review — 2026-10-16**: The audit's [three useful next capabilities](M007-MILESTONE-AUDIT.md#three-useful-next-capabilities) remain ranked: audited same-source two-host CRC/checksum receipts, proposed M008 `wc FILE` / `longest_line FILE`, then bounded fixed-schema `key=value` checking. That table names each program, blocker, smallest slice, guarantee changes, evidence/debt, owner and reprioritizing observation. Phase 37.1 now owns terminal closure; Phase 38 retains final receipts. The audit's [dormant seed dispositions](M007-MILESTONE-AUDIT.md#dormant-seed-dispositions) remain applicable to current source/consumers: z1g (query/helper navigation), trz (capture/CRC failure diagnosis), z1s (formatter/checker/source review) all retain dormant status; existing evidence explains these failures and no measured query gap or contested source-form choice triggers an experiment. The local Dashbit appraisal is historical. No implementation or capability claim changed in this insertion.
 
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 Plans:
 **Wave 1**
-- [ ] 37.1-01-PLAN.md — Close active peer frames on legacy and dynamic child defects
+- [x] 37.1-01-PLAN.md — Close active peer frames on legacy and dynamic child defects
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 37.1-02-PLAN.md — Admit checked foreign.failed → OpFail evidence and pin model answers
@@ -372,7 +372,7 @@ Plans:
 | 35. Bitwise Operators, Literal Shifts, and Hex Literals | 8/8 | Complete    | 2026-10-14 |
 | 36. Scalar Helper Calls | 8/8 | Complete    | 2026-10-15 |
 | 37. CRC-32 Consumer, Interpreter File Route, and Guide | 9/9 | Complete    | 2026-10-15 |
-| 37.1. Close gap: legacy terminal outcomes (INSERTED) | 0 planned | Not started | - |
+| 37.1. Close gap: legacy terminal outcomes (INSERTED) | 1/4 | In Progress | - |
 | 38. Milestone Receipts | 0 planned | Not started | - |
 
 **Coverage:** 19/19 M007 requirements have exactly one phase owner. DX-22 is
