@@ -1,0 +1,40 @@
+=== RUN   TestPhase35ExistingAdlerAnswers
+=== RUN   TestPhase35ExistingAdlerAnswers/checksum
+=== RUN   TestPhase35ExistingAdlerAnswers/adler_low
+--- PASS: TestPhase35ExistingAdlerAnswers (0.72s)
+    --- PASS: TestPhase35ExistingAdlerAnswers/checksum (0.36s)
+    --- PASS: TestPhase35ExistingAdlerAnswers/adler_low (0.36s)
+=== RUN   TestPhase36HelperAnswersAndDefects
+=== RUN   TestPhase36HelperAnswersAndDefects/local-four-step-loop
+=== RUN   TestPhase36HelperAnswersAndDefects/imported-four-step-loop
+=== RUN   TestPhase36HelperAnswersAndDefects/single-step-odd-one
+=== RUN   TestPhase36HelperAnswersAndDefects/single-step-even-two
+=== RUN   TestPhase36HelperAnswersAndDefects/single-step-high-even
+=== RUN   TestPhase36HelperAnswersAndDefects/single-step-high-odd
+=== RUN   TestPhase36HelperAnswersAndDefects/single-step-u32-maximum
+=== RUN   TestPhase36HelperAnswersAndDefects/scalar-pairs-true-branch
+=== RUN   TestPhase36HelperAnswersAndDefects/scalar-pairs-false-branch
+=== RUN   TestPhase36HelperAnswersAndDefects/u64-helper-overflow
+=== RUN   TestPhase36HelperAnswersAndDefects/bool-helper-overflow
+=== RUN   TestPhase36HelperAnswersAndDefects/u64-helper-zero-remainder
+=== RUN   TestPhase36HelperAnswersAndDefects/bool-helper-zero-remainder
+=== RUN   TestPhase36HelperAnswersAndDefects/nested-helper-overflow
+=== RUN   TestPhase36HelperAnswersAndDefects/late-loop-helper-overflow
+--- PASS: TestPhase36HelperAnswersAndDefects (1.16s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/local-four-step-loop (0.07s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/imported-four-step-loop (0.08s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/single-step-odd-one (0.08s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/single-step-even-two (0.08s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/single-step-high-even (0.08s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/single-step-high-odd (0.07s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/single-step-u32-maximum (0.07s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/scalar-pairs-true-branch (0.08s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/scalar-pairs-false-branch (0.08s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/u64-helper-overflow (0.08s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/bool-helper-overflow (0.08s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/u64-helper-zero-remainder (0.08s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/bool-helper-zero-remainder (0.08s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/nested-helper-overflow (0.08s)
+    --- PASS: TestPhase36HelperAnswersAndDefects/late-loop-helper-overflow (0.08s)
+PASS
+ok  	github.com/szTheory/schway/internal/compiler/session	1.888s

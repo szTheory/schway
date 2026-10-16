@@ -1,0 +1,6 @@
+=== RUN   TestPhase34CheckDiagnosticPresentation
+--- PASS: TestPhase34CheckDiagnosticPresentation (0.00s)
+=== RUN   TestPhase34SurfaceRoute
+--- PASS: TestPhase34SurfaceRoute (0.00s)
+PASS
+ok  	github.com/szTheory/schway/cmd/schway	0.008s

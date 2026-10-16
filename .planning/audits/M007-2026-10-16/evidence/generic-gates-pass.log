@@ -1,0 +1,98 @@
+=== RUN   TestFreezeGate
+=== RUN   TestFreezeGate/zero-args-usage
+=== RUN   TestFreezeGate/manifest-missing
+=== RUN   TestFreezeGate/label-less-manifest
+=== RUN   TestFreezeGate/no-repo-root
+=== RUN   TestFreezeGate/paths-match-digest
+=== RUN   TestFreezeGate/hash-length-derived
+=== RUN   TestFreezeGate/m006-real-repo
+=== RUN   TestFreezeGate/same-commit-accepted
+=== RUN   TestFreezeGate/same-as-mismatch
+=== RUN   TestFreezeGate/planning-only-and-code-change
+=== RUN   TestFreezeGate/md-only-change-after-freeze-accepted
+=== RUN   TestFreezeGate/non-ascii-md-path-filtered
+=== RUN   TestFreezeGate/revert-inside-range-rejected
+=== RUN   TestFreezeGate/subdirectory
+=== RUN   TestFreezeGate/base-witness
+=== RUN   TestFreezeGate/real-repo
+=== RUN   TestFreezeGate/planning-only-head-move-accepted
+=== RUN   TestFreezeGate/same-commit-accepted#01
+=== RUN   TestFreezeGate/headsha-mismatch
+=== RUN   TestFreezeGate/origin-mismatch
+=== RUN   TestFreezeGate/post-freeze-digest-change
+=== RUN   TestFreezeGate/md-only-change-after-freeze-accepted#01
+=== RUN   TestFreezeGate/not-descendant
+=== RUN   TestFreezeGate/bad-sha
+=== RUN   TestFreezeGate/unknown-commit
+--- PASS: TestFreezeGate (2.27s)
+    --- PASS: TestFreezeGate/zero-args-usage (0.01s)
+    --- PASS: TestFreezeGate/manifest-missing (0.01s)
+    --- PASS: TestFreezeGate/label-less-manifest (0.01s)
+    --- PASS: TestFreezeGate/no-repo-root (0.01s)
+    --- PASS: TestFreezeGate/paths-match-digest (0.00s)
+    --- PASS: TestFreezeGate/hash-length-derived (0.06s)
+    --- PASS: TestFreezeGate/m006-real-repo (0.48s)
+    --- PASS: TestFreezeGate/same-commit-accepted (0.05s)
+    --- PASS: TestFreezeGate/same-as-mismatch (0.01s)
+    --- PASS: TestFreezeGate/planning-only-and-code-change (0.10s)
+    --- PASS: TestFreezeGate/md-only-change-after-freeze-accepted (0.20s)
+    --- PASS: TestFreezeGate/non-ascii-md-path-filtered (0.15s)
+    --- PASS: TestFreezeGate/revert-inside-range-rejected (0.20s)
+    --- PASS: TestFreezeGate/subdirectory (0.06s)
+    --- PASS: TestFreezeGate/base-witness (0.00s)
+    --- PASS: TestFreezeGate/real-repo (0.05s)
+    --- PASS: TestFreezeGate/planning-only-head-move-accepted (0.26s)
+    --- PASS: TestFreezeGate/same-commit-accepted#01 (0.05s)
+    --- PASS: TestFreezeGate/headsha-mismatch (0.03s)
+    --- PASS: TestFreezeGate/origin-mismatch (0.01s)
+    --- PASS: TestFreezeGate/post-freeze-digest-change (0.05s)
+    --- PASS: TestFreezeGate/md-only-change-after-freeze-accepted#01 (0.21s)
+    --- PASS: TestFreezeGate/not-descendant (0.03s)
+    --- PASS: TestFreezeGate/bad-sha (0.02s)
+    --- PASS: TestFreezeGate/unknown-commit (0.02s)
+=== RUN   TestNoCheckPhase32Caller
+=== RUN   TestNoCheckPhase32Caller/armed-control
+--- PASS: TestNoCheckPhase32Caller (0.09s)
+    --- PASS: TestNoCheckPhase32Caller/armed-control (0.00s)
+=== RUN   TestReceiptGateProgramInventory
+=== RUN   TestReceiptGateProgramInventory/known-good
+=== RUN   TestReceiptGateProgramInventory/reordered-programs
+=== RUN   TestReceiptGateProgramInventory/extra-case-program
+=== RUN   TestReceiptGateProgramInventory/declared-program-without-cases
+=== RUN   TestReceiptGateProgramInventory/empty
+=== RUN   TestReceiptGateProgramInventory/leading-empty
+=== RUN   TestReceiptGateProgramInventory/trailing-empty
+=== RUN   TestReceiptGateProgramInventory/interior-empty
+=== RUN   TestReceiptGateProgramInventory/whitespace-member
+=== RUN   TestReceiptGateProgramInventory/duplicate-member
+--- PASS: TestReceiptGateProgramInventory (1.20s)
+    --- PASS: TestReceiptGateProgramInventory/known-good (0.40s)
+    --- PASS: TestReceiptGateProgramInventory/reordered-programs (0.40s)
+    --- PASS: TestReceiptGateProgramInventory/extra-case-program (0.13s)
+    --- PASS: TestReceiptGateProgramInventory/declared-program-without-cases (0.12s)
+    --- PASS: TestReceiptGateProgramInventory/empty (0.02s)
+    --- PASS: TestReceiptGateProgramInventory/leading-empty (0.03s)
+    --- PASS: TestReceiptGateProgramInventory/trailing-empty (0.03s)
+    --- PASS: TestReceiptGateProgramInventory/interior-empty (0.03s)
+    --- PASS: TestReceiptGateProgramInventory/whitespace-member (0.03s)
+    --- PASS: TestReceiptGateProgramInventory/duplicate-member (0.03s)
+=== RUN   TestReceiptGateArchivedM006
+=== RUN   TestReceiptGateArchivedM006/archived-pair-passes
+=== RUN   TestReceiptGateArchivedM006/one-byte-mutated
+=== RUN   TestReceiptGateArchivedM006/digest-mismatch
+=== RUN   TestReceiptGateArchivedM006/host-dropped
+=== RUN   TestReceiptGateArchivedM006/program-missing
+=== RUN   TestReceiptGateArchivedM006/malformed-row
+=== RUN   TestReceiptGateArchivedM006/dirty-tree
+=== RUN   TestReceiptGateArchivedM006/manifest-equals-producer-table
+--- PASS: TestReceiptGateArchivedM006 (1.17s)
+    --- PASS: TestReceiptGateArchivedM006/archived-pair-passes (0.37s)
+    --- PASS: TestReceiptGateArchivedM006/one-byte-mutated (0.13s)
+    --- PASS: TestReceiptGateArchivedM006/digest-mismatch (0.07s)
+    --- PASS: TestReceiptGateArchivedM006/host-dropped (0.20s)
+    --- PASS: TestReceiptGateArchivedM006/program-missing (0.29s)
+    --- PASS: TestReceiptGateArchivedM006/malformed-row (0.05s)
+    --- PASS: TestReceiptGateArchivedM006/dirty-tree (0.07s)
+    --- PASS: TestReceiptGateArchivedM006/manifest-equals-producer-table (0.00s)
+PASS
+ok  	github.com/szTheory/schway/internal/compiler/session	4.742s

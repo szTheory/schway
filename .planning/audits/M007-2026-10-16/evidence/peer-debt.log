@@ -1,0 +1,11 @@
+=== RUN   TestM007AuditResidualPeerDebt
+=== RUN   TestM007AuditResidualPeerDebt/CR03-legacy-child-defect
+    zz_m007_audit_test.go:30: CR-03 reproduced: valid whole-execution child defect is refused: executionpeer.preorder: event index 2 invocation "inv:entry:audit_entry" expected function "audit_entry": activation has no terminal event
+=== RUN   TestM007AuditResidualPeerDebt/CR04-opreturn-propagated-failure
+    zz_m007_audit_test.go:46: CR-04 reproduced: valid propagated OpReturn failure is refused: executionpeer.unknown_kind: event index 0 invocation "inv:entry:audit_failure_entry" expected function "audit_failure_entry": unclassified event kind or ID
+--- FAIL: TestM007AuditResidualPeerDebt (0.00s)
+    --- FAIL: TestM007AuditResidualPeerDebt/CR03-legacy-child-defect (0.00s)
+    --- FAIL: TestM007AuditResidualPeerDebt/CR04-opreturn-propagated-failure (0.00s)
+FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/executionpeer	0.005s
+FAIL

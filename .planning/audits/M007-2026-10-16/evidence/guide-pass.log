@@ -1,0 +1,173 @@
+=== RUN   TestPhase37GuideCleanCheckout
+    main_phase37_guide_test.go:530: RUN root=TestPhase37GuideCleanCheckout
+    main_phase37_guide_test.go:547: SOURCE_MANIFEST files=2782 sha256=1aaabd37ee5a016f6577542fa10b5fba7c3a3cbab4bd988f16bb541d1be3fd0a copied=git-ls-files-only
+    main_phase37_guide_test.go:571: RUN guide setup: go build -o ./schway ./cmd/schway
+    main_phase37_guide_test.go:576: PASS guide setup: go build -o ./schway ./cmd/schway
+    main_phase37_guide_test.go:571: RUN guide setup: mkdir -p .schway/crc32/inputs .schway/crc32
+    main_phase37_guide_test.go:576: PASS guide setup: mkdir -p .schway/crc32/inputs .schway/crc32
+    main_phase37_guide_test.go:571: RUN guide setup: python3 -c 'from pathlib import Path; p=Path(".schway/crc32/inputs"); data={"empty.bin":b"","zero.bin":b"\x00","check.bin":b"123456789","highbit-80ff.bin":b"\x80\xff","all-bytes.bin":bytes(range(256)),"cap-minus-one.bin":b"\xff"*65535,"cap.bin":b"\xff"*65536,"cap-plus-one.bin":b"\xff"*65537,"--json":b"123456789","space input.bin":b"123456789","x ;$(literal).bin":b"123456789"}; [(p/name).write_bytes(value) for name,value in data.items()]; (p/"directory").mkdir(exist_ok=True)'
+    main_phase37_guide_test.go:576: PASS guide setup: python3 -c 'from pathlib import Path; p=Path(".schway/crc32/inputs"); data={"empty.bin":b"","zero.bin":b"\x00","check.bin":b"123456789","highbit-80ff.bin":b"\x80\xff","all-bytes.bin":bytes(range(256)),"cap-minus-one.bin":b"\xff"*65535,"cap.bin":b"\xff"*65536,"cap-plus-one.bin":b"\xff"*65537,"--json":b"123456789","space input.bin":b"123456789","x ;$(literal).bin":b"123456789"}; [(p/name).write_bytes(value) for name,value in data.items()]; (p/"directory").mkdir(exist_ok=True)'
+    main_phase37_guide_test.go:590: RUN guide retained build app=crc32
+    main_phase37_guide_test.go:600: PASS guide retained build app=crc32 artifact=.schway/crc32/crc32
+    main_phase37_guide_test.go:590: RUN guide retained build app=crc_low
+    main_phase37_guide_test.go:600: PASS guide retained build app=crc_low artifact=.schway/crc32/crc_low
+    main_phase37_guide_test.go:622: RUN guide case=empty/crc32/interpreter command=./schway run --engine=interpreter examples/crc32/crc32.schway -- '.schway/crc32/inputs/empty.bin'
+    main_phase37_guide_test.go:632: PASS guide case=empty/crc32/interpreter tuple=(0,"0\n","")
+    main_phase37_guide_test.go:622: RUN guide case=zero/crc32/interpreter command=./schway run --engine=interpreter examples/crc32/crc32.schway -- '.schway/crc32/inputs/zero.bin'
+    main_phase37_guide_test.go:632: PASS guide case=zero/crc32/interpreter tuple=(0,"3523407757\n","")
+    main_phase37_guide_test.go:622: RUN guide case=check/crc32/interpreter command=./schway run --engine=interpreter examples/crc32/crc32.schway -- '.schway/crc32/inputs/check.bin'
+    main_phase37_guide_test.go:632: PASS guide case=check/crc32/interpreter tuple=(0,"3421780262\n","")
+    main_phase37_guide_test.go:622: RUN guide case=highbit-80ff/crc32/interpreter command=./schway run --engine=interpreter examples/crc32/crc32.schway -- '.schway/crc32/inputs/highbit-80ff.bin'
+    main_phase37_guide_test.go:632: PASS guide case=highbit-80ff/crc32/interpreter tuple=(0,"1465410873\n","")
+    main_phase37_guide_test.go:622: RUN guide case=all-bytes-00-ff/crc32/interpreter command=./schway run --engine=interpreter examples/crc32/crc32.schway -- '.schway/crc32/inputs/all-bytes.bin'
+    main_phase37_guide_test.go:632: PASS guide case=all-bytes-00-ff/crc32/interpreter tuple=(0,"688229491\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap-minus-one/crc32/interpreter command=./schway run --engine=interpreter examples/crc32/crc32.schway -- '.schway/crc32/inputs/cap-minus-one.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap-minus-one/crc32/interpreter tuple=(0,"529201972\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap/crc32/interpreter command=./schway run --engine=interpreter examples/crc32/crc32.schway -- '.schway/crc32/inputs/cap.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap/crc32/interpreter tuple=(0,"3735780942\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap-plus-one/crc32/interpreter command=./schway run --engine=interpreter examples/crc32/crc32.schway -- '.schway/crc32/inputs/cap-plus-one.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap-plus-one/crc32/interpreter tuple=(65,"","FileError.FileTooLarge\n")
+    main_phase37_guide_test.go:622: RUN guide case=missing/crc32/interpreter command=./schway run --engine=interpreter examples/crc32/crc32.schway -- '.schway/crc32/inputs/missing.bin'
+    main_phase37_guide_test.go:632: PASS guide case=missing/crc32/interpreter tuple=(65,"","FileError.FileUnavailable\n")
+    main_phase37_guide_test.go:622: RUN guide case=directory/crc32/interpreter command=./schway run --engine=interpreter examples/crc32/crc32.schway -- '.schway/crc32/inputs/directory'
+    main_phase37_guide_test.go:632: PASS guide case=directory/crc32/interpreter tuple=(65,"","FileError.FileUnavailable\n")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-json/crc32/interpreter command=./schway run --engine=interpreter examples/crc32/crc32.schway -- '.schway/crc32/inputs/--json'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-json/crc32/interpreter tuple=(0,"3421780262\n","")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-space/crc32/interpreter command=./schway run --engine=interpreter examples/crc32/crc32.schway -- '.schway/crc32/inputs/space input.bin'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-space/crc32/interpreter tuple=(0,"3421780262\n","")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-shell/crc32/interpreter command=./schway run --engine=interpreter examples/crc32/crc32.schway -- '.schway/crc32/inputs/x ;$(literal).bin'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-shell/crc32/interpreter tuple=(0,"3421780262\n","")
+    main_phase37_guide_test.go:622: RUN guide case=empty/crc32/one_shot command=./schway run --engine=native examples/crc32/crc32.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/empty.bin'
+    main_phase37_guide_test.go:632: PASS guide case=empty/crc32/one_shot tuple=(0,"0\n","")
+    main_phase37_guide_test.go:622: RUN guide case=zero/crc32/one_shot command=./schway run --engine=native examples/crc32/crc32.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/zero.bin'
+    main_phase37_guide_test.go:632: PASS guide case=zero/crc32/one_shot tuple=(0,"3523407757\n","")
+    main_phase37_guide_test.go:622: RUN guide case=check/crc32/one_shot command=./schway run --engine=native examples/crc32/crc32.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/check.bin'
+    main_phase37_guide_test.go:632: PASS guide case=check/crc32/one_shot tuple=(0,"3421780262\n","")
+    main_phase37_guide_test.go:622: RUN guide case=highbit-80ff/crc32/one_shot command=./schway run --engine=native examples/crc32/crc32.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/highbit-80ff.bin'
+    main_phase37_guide_test.go:632: PASS guide case=highbit-80ff/crc32/one_shot tuple=(0,"1465410873\n","")
+    main_phase37_guide_test.go:622: RUN guide case=all-bytes-00-ff/crc32/one_shot command=./schway run --engine=native examples/crc32/crc32.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/all-bytes.bin'
+    main_phase37_guide_test.go:632: PASS guide case=all-bytes-00-ff/crc32/one_shot tuple=(0,"688229491\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap-minus-one/crc32/one_shot command=./schway run --engine=native examples/crc32/crc32.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/cap-minus-one.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap-minus-one/crc32/one_shot tuple=(0,"529201972\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap/crc32/one_shot command=./schway run --engine=native examples/crc32/crc32.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/cap.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap/crc32/one_shot tuple=(0,"3735780942\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap-plus-one/crc32/one_shot command=./schway run --engine=native examples/crc32/crc32.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/cap-plus-one.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap-plus-one/crc32/one_shot tuple=(65,"","FileError.FileTooLarge\n")
+    main_phase37_guide_test.go:622: RUN guide case=missing/crc32/one_shot command=./schway run --engine=native examples/crc32/crc32.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/missing.bin'
+    main_phase37_guide_test.go:632: PASS guide case=missing/crc32/one_shot tuple=(65,"","FileError.FileUnavailable\n")
+    main_phase37_guide_test.go:622: RUN guide case=directory/crc32/one_shot command=./schway run --engine=native examples/crc32/crc32.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/directory'
+    main_phase37_guide_test.go:632: PASS guide case=directory/crc32/one_shot tuple=(65,"","FileError.FileUnavailable\n")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-json/crc32/one_shot command=./schway run --engine=native examples/crc32/crc32.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/--json'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-json/crc32/one_shot tuple=(0,"3421780262\n","")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-space/crc32/one_shot command=./schway run --engine=native examples/crc32/crc32.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/space input.bin'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-space/crc32/one_shot tuple=(0,"3421780262\n","")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-shell/crc32/one_shot command=./schway run --engine=native examples/crc32/crc32.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/x ;$(literal).bin'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-shell/crc32/one_shot tuple=(0,"3421780262\n","")
+    main_phase37_guide_test.go:622: RUN guide case=empty/crc32/retained command=./schway app run .schway/crc32/crc32 -- '.schway/crc32/inputs/empty.bin'
+    main_phase37_guide_test.go:632: PASS guide case=empty/crc32/retained tuple=(0,"0\n","")
+    main_phase37_guide_test.go:622: RUN guide case=zero/crc32/retained command=./schway app run .schway/crc32/crc32 -- '.schway/crc32/inputs/zero.bin'
+    main_phase37_guide_test.go:632: PASS guide case=zero/crc32/retained tuple=(0,"3523407757\n","")
+    main_phase37_guide_test.go:622: RUN guide case=check/crc32/retained command=./schway app run .schway/crc32/crc32 -- '.schway/crc32/inputs/check.bin'
+    main_phase37_guide_test.go:632: PASS guide case=check/crc32/retained tuple=(0,"3421780262\n","")
+    main_phase37_guide_test.go:622: RUN guide case=highbit-80ff/crc32/retained command=./schway app run .schway/crc32/crc32 -- '.schway/crc32/inputs/highbit-80ff.bin'
+    main_phase37_guide_test.go:632: PASS guide case=highbit-80ff/crc32/retained tuple=(0,"1465410873\n","")
+    main_phase37_guide_test.go:622: RUN guide case=all-bytes-00-ff/crc32/retained command=./schway app run .schway/crc32/crc32 -- '.schway/crc32/inputs/all-bytes.bin'
+    main_phase37_guide_test.go:632: PASS guide case=all-bytes-00-ff/crc32/retained tuple=(0,"688229491\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap-minus-one/crc32/retained command=./schway app run .schway/crc32/crc32 -- '.schway/crc32/inputs/cap-minus-one.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap-minus-one/crc32/retained tuple=(0,"529201972\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap/crc32/retained command=./schway app run .schway/crc32/crc32 -- '.schway/crc32/inputs/cap.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap/crc32/retained tuple=(0,"3735780942\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap-plus-one/crc32/retained command=./schway app run .schway/crc32/crc32 -- '.schway/crc32/inputs/cap-plus-one.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap-plus-one/crc32/retained tuple=(65,"","FileError.FileTooLarge\n")
+    main_phase37_guide_test.go:622: RUN guide case=missing/crc32/retained command=./schway app run .schway/crc32/crc32 -- '.schway/crc32/inputs/missing.bin'
+    main_phase37_guide_test.go:632: PASS guide case=missing/crc32/retained tuple=(65,"","FileError.FileUnavailable\n")
+    main_phase37_guide_test.go:622: RUN guide case=directory/crc32/retained command=./schway app run .schway/crc32/crc32 -- '.schway/crc32/inputs/directory'
+    main_phase37_guide_test.go:632: PASS guide case=directory/crc32/retained tuple=(65,"","FileError.FileUnavailable\n")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-json/crc32/retained command=./schway app run .schway/crc32/crc32 -- '.schway/crc32/inputs/--json'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-json/crc32/retained tuple=(0,"3421780262\n","")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-space/crc32/retained command=./schway app run .schway/crc32/crc32 -- '.schway/crc32/inputs/space input.bin'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-space/crc32/retained tuple=(0,"3421780262\n","")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-shell/crc32/retained command=./schway app run .schway/crc32/crc32 -- '.schway/crc32/inputs/x ;$(literal).bin'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-shell/crc32/retained tuple=(0,"3421780262\n","")
+    main_phase37_guide_test.go:622: RUN guide case=empty/crc_low/interpreter command=./schway run --engine=interpreter examples/crc32/crc_low.schway -- '.schway/crc32/inputs/empty.bin'
+    main_phase37_guide_test.go:632: PASS guide case=empty/crc_low/interpreter tuple=(0,"0\n","")
+    main_phase37_guide_test.go:622: RUN guide case=zero/crc_low/interpreter command=./schway run --engine=interpreter examples/crc32/crc_low.schway -- '.schway/crc32/inputs/zero.bin'
+    main_phase37_guide_test.go:632: PASS guide case=zero/crc_low/interpreter tuple=(0,"61325\n","")
+    main_phase37_guide_test.go:622: RUN guide case=check/crc_low/interpreter command=./schway run --engine=interpreter examples/crc32/crc_low.schway -- '.schway/crc32/inputs/check.bin'
+    main_phase37_guide_test.go:632: PASS guide case=check/crc_low/interpreter tuple=(0,"14630\n","")
+    main_phase37_guide_test.go:622: RUN guide case=highbit-80ff/crc_low/interpreter command=./schway run --engine=interpreter examples/crc32/crc_low.schway -- '.schway/crc32/inputs/highbit-80ff.bin'
+    main_phase37_guide_test.go:632: PASS guide case=highbit-80ff/crc_low/interpreter tuple=(0,"25913\n","")
+    main_phase37_guide_test.go:622: RUN guide case=all-bytes-00-ff/crc_low/interpreter command=./schway run --engine=interpreter examples/crc32/crc_low.schway -- '.schway/crc32/inputs/all-bytes.bin'
+    main_phase37_guide_test.go:632: PASS guide case=all-bytes-00-ff/crc_low/interpreter tuple=(0,"35955\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap-minus-one/crc_low/interpreter command=./schway run --engine=interpreter examples/crc32/crc_low.schway -- '.schway/crc32/inputs/cap-minus-one.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap-minus-one/crc_low/interpreter tuple=(0,"64308\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap/crc_low/interpreter command=./schway run --engine=interpreter examples/crc32/crc_low.schway -- '.schway/crc32/inputs/cap.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap/crc_low/interpreter tuple=(0,"32334\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap-plus-one/crc_low/interpreter command=./schway run --engine=interpreter examples/crc32/crc_low.schway -- '.schway/crc32/inputs/cap-plus-one.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap-plus-one/crc_low/interpreter tuple=(65,"","FileError.FileTooLarge\n")
+    main_phase37_guide_test.go:622: RUN guide case=missing/crc_low/interpreter command=./schway run --engine=interpreter examples/crc32/crc_low.schway -- '.schway/crc32/inputs/missing.bin'
+    main_phase37_guide_test.go:632: PASS guide case=missing/crc_low/interpreter tuple=(65,"","FileError.FileUnavailable\n")
+    main_phase37_guide_test.go:622: RUN guide case=directory/crc_low/interpreter command=./schway run --engine=interpreter examples/crc32/crc_low.schway -- '.schway/crc32/inputs/directory'
+    main_phase37_guide_test.go:632: PASS guide case=directory/crc_low/interpreter tuple=(65,"","FileError.FileUnavailable\n")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-json/crc_low/interpreter command=./schway run --engine=interpreter examples/crc32/crc_low.schway -- '.schway/crc32/inputs/--json'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-json/crc_low/interpreter tuple=(0,"14630\n","")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-space/crc_low/interpreter command=./schway run --engine=interpreter examples/crc32/crc_low.schway -- '.schway/crc32/inputs/space input.bin'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-space/crc_low/interpreter tuple=(0,"14630\n","")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-shell/crc_low/interpreter command=./schway run --engine=interpreter examples/crc32/crc_low.schway -- '.schway/crc32/inputs/x ;$(literal).bin'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-shell/crc_low/interpreter tuple=(0,"14630\n","")
+    main_phase37_guide_test.go:622: RUN guide case=empty/crc_low/one_shot command=./schway run --engine=native examples/crc32/crc_low.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/empty.bin'
+    main_phase37_guide_test.go:632: PASS guide case=empty/crc_low/one_shot tuple=(0,"0\n","")
+    main_phase37_guide_test.go:622: RUN guide case=zero/crc_low/one_shot command=./schway run --engine=native examples/crc32/crc_low.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/zero.bin'
+    main_phase37_guide_test.go:632: PASS guide case=zero/crc_low/one_shot tuple=(0,"61325\n","")
+    main_phase37_guide_test.go:622: RUN guide case=check/crc_low/one_shot command=./schway run --engine=native examples/crc32/crc_low.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/check.bin'
+    main_phase37_guide_test.go:632: PASS guide case=check/crc_low/one_shot tuple=(0,"14630\n","")
+    main_phase37_guide_test.go:622: RUN guide case=highbit-80ff/crc_low/one_shot command=./schway run --engine=native examples/crc32/crc_low.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/highbit-80ff.bin'
+    main_phase37_guide_test.go:632: PASS guide case=highbit-80ff/crc_low/one_shot tuple=(0,"25913\n","")
+    main_phase37_guide_test.go:622: RUN guide case=all-bytes-00-ff/crc_low/one_shot command=./schway run --engine=native examples/crc32/crc_low.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/all-bytes.bin'
+    main_phase37_guide_test.go:632: PASS guide case=all-bytes-00-ff/crc_low/one_shot tuple=(0,"35955\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap-minus-one/crc_low/one_shot command=./schway run --engine=native examples/crc32/crc_low.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/cap-minus-one.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap-minus-one/crc_low/one_shot tuple=(0,"64308\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap/crc_low/one_shot command=./schway run --engine=native examples/crc32/crc_low.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/cap.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap/crc_low/one_shot tuple=(0,"32334\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap-plus-one/crc_low/one_shot command=./schway run --engine=native examples/crc32/crc_low.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/cap-plus-one.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap-plus-one/crc_low/one_shot tuple=(65,"","FileError.FileTooLarge\n")
+    main_phase37_guide_test.go:622: RUN guide case=missing/crc_low/one_shot command=./schway run --engine=native examples/crc32/crc_low.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/missing.bin'
+    main_phase37_guide_test.go:632: PASS guide case=missing/crc_low/one_shot tuple=(65,"","FileError.FileUnavailable\n")
+    main_phase37_guide_test.go:622: RUN guide case=directory/crc_low/one_shot command=./schway run --engine=native examples/crc32/crc_low.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/directory'
+    main_phase37_guide_test.go:632: PASS guide case=directory/crc_low/one_shot tuple=(65,"","FileError.FileUnavailable\n")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-json/crc_low/one_shot command=./schway run --engine=native examples/crc32/crc_low.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/--json'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-json/crc_low/one_shot tuple=(0,"14630\n","")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-space/crc_low/one_shot command=./schway run --engine=native examples/crc32/crc_low.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/space input.bin'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-space/crc_low/one_shot tuple=(0,"14630\n","")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-shell/crc_low/one_shot command=./schway run --engine=native examples/crc32/crc_low.schway --manifest examples/crc32/file_bytes.bindings.json -- '.schway/crc32/inputs/x ;$(literal).bin'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-shell/crc_low/one_shot tuple=(0,"14630\n","")
+    main_phase37_guide_test.go:622: RUN guide case=empty/crc_low/retained command=./schway app run .schway/crc32/crc_low -- '.schway/crc32/inputs/empty.bin'
+    main_phase37_guide_test.go:632: PASS guide case=empty/crc_low/retained tuple=(0,"0\n","")
+    main_phase37_guide_test.go:622: RUN guide case=zero/crc_low/retained command=./schway app run .schway/crc32/crc_low -- '.schway/crc32/inputs/zero.bin'
+    main_phase37_guide_test.go:632: PASS guide case=zero/crc_low/retained tuple=(0,"61325\n","")
+    main_phase37_guide_test.go:622: RUN guide case=check/crc_low/retained command=./schway app run .schway/crc32/crc_low -- '.schway/crc32/inputs/check.bin'
+    main_phase37_guide_test.go:632: PASS guide case=check/crc_low/retained tuple=(0,"14630\n","")
+    main_phase37_guide_test.go:622: RUN guide case=highbit-80ff/crc_low/retained command=./schway app run .schway/crc32/crc_low -- '.schway/crc32/inputs/highbit-80ff.bin'
+    main_phase37_guide_test.go:632: PASS guide case=highbit-80ff/crc_low/retained tuple=(0,"25913\n","")
+    main_phase37_guide_test.go:622: RUN guide case=all-bytes-00-ff/crc_low/retained command=./schway app run .schway/crc32/crc_low -- '.schway/crc32/inputs/all-bytes.bin'
+    main_phase37_guide_test.go:632: PASS guide case=all-bytes-00-ff/crc_low/retained tuple=(0,"35955\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap-minus-one/crc_low/retained command=./schway app run .schway/crc32/crc_low -- '.schway/crc32/inputs/cap-minus-one.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap-minus-one/crc_low/retained tuple=(0,"64308\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap/crc_low/retained command=./schway app run .schway/crc32/crc_low -- '.schway/crc32/inputs/cap.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap/crc_low/retained tuple=(0,"32334\n","")
+    main_phase37_guide_test.go:622: RUN guide case=cap-plus-one/crc_low/retained command=./schway app run .schway/crc32/crc_low -- '.schway/crc32/inputs/cap-plus-one.bin'
+    main_phase37_guide_test.go:632: PASS guide case=cap-plus-one/crc_low/retained tuple=(65,"","FileError.FileTooLarge\n")
+    main_phase37_guide_test.go:622: RUN guide case=missing/crc_low/retained command=./schway app run .schway/crc32/crc_low -- '.schway/crc32/inputs/missing.bin'
+    main_phase37_guide_test.go:632: PASS guide case=missing/crc_low/retained tuple=(65,"","FileError.FileUnavailable\n")
+    main_phase37_guide_test.go:622: RUN guide case=directory/crc_low/retained command=./schway app run .schway/crc32/crc_low -- '.schway/crc32/inputs/directory'
+    main_phase37_guide_test.go:632: PASS guide case=directory/crc_low/retained tuple=(65,"","FileError.FileUnavailable\n")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-json/crc_low/retained command=./schway app run .schway/crc32/crc_low -- '.schway/crc32/inputs/--json'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-json/crc_low/retained tuple=(0,"14630\n","")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-space/crc_low/retained command=./schway app run .schway/crc32/crc_low -- '.schway/crc32/inputs/space input.bin'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-space/crc_low/retained tuple=(0,"14630\n","")
+    main_phase37_guide_test.go:622: RUN guide case=opaque-shell/crc_low/retained command=./schway app run .schway/crc32/crc_low -- '.schway/crc32/inputs/x ;$(literal).bin'
+    main_phase37_guide_test.go:632: PASS guide case=opaque-shell/crc_low/retained tuple=(0,"14630\n","")
+    main_phase37_guide_test.go:635: PASS root=TestPhase37GuideCleanCheckout
+--- PASS: TestPhase37GuideCleanCheckout (15.07s)
+PASS
+ok  	github.com/szTheory/schway/cmd/schway	15.080s

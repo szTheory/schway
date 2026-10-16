@@ -1,0 +1,25 @@
+{
+  "checked_at": "2026-10-16T13:15:04+00:00",
+  "status": "passed",
+  "requirements": "18/19",
+  "summaries": 38,
+  "source_hashes": 141,
+  "durable_hashes": 24,
+  "positive_roots": 24,
+  "broken_flows": 3,
+  "pending_receipt_flow": 1,
+  "missing_links": 0,
+  "config_preserved": true,
+  "canonical_verification_status": {
+    "33": "passed",
+    "34": "passed",
+    "35": "passed",
+    "36": "passed",
+    "37": "passed",
+    "38": "phase_dir_not_found"
+  },
+  "document_guard_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestVerificationGroundedness|TestVerificationGroundednessThreeClassesAreEmpty|TestSummaryCoverageGroundedness|TestPhase20ValidationLifecycle)$' -count=1 -timeout=180s",
+  "document_guard_exit": 0,
+  "document_guard_output": "ok  github.com/szTheory/schway/internal/compiler/session 1.322s",
+  "state_strict_result": "Expected S004 only: uncreated Phase 38 directory; not represented as a clean strict state result"
+}

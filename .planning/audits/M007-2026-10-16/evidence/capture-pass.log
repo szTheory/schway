@@ -1,0 +1,11 @@
+=== RUN   TestPhase33CaptureReadBounded
+=== RUN   TestPhase33CaptureReadBounded/exactly-limit
+=== RUN   TestPhase33CaptureReadBounded/limit-plus-one
+=== RUN   TestPhase33CaptureReadBounded/sparse-1gib-allocation-bounded
+    native_phase33_capture_test.go:81: baseline TotalAlloc delta=95488 sparse TotalAlloc delta=370744 difference=275256
+--- PASS: TestPhase33CaptureReadBounded (0.05s)
+    --- PASS: TestPhase33CaptureReadBounded/exactly-limit (0.02s)
+    --- PASS: TestPhase33CaptureReadBounded/limit-plus-one (0.01s)
+    --- PASS: TestPhase33CaptureReadBounded/sparse-1gib-allocation-bounded (0.02s)
+PASS
+ok  	github.com/szTheory/schway/internal/compiler/native	0.060s

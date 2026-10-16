@@ -1,0 +1,107 @@
+{
+  "audit_point": {
+    "repository": "<repository-root>",
+    "branch": "phase26-validation",
+    "head": "502ab55edb501dbe2c6b3c101b45852bb7ec29bb",
+    "scope": "M007 Phases 33-38",
+    "phase38": "expected pending; audit and scoped gap closure precede Phase 38 planning and final hosted receipts"
+  },
+  "counts": {
+    "wiring_assertions": {
+      "total": 26,
+      "wired": 22,
+      "broken_blocker": 3,
+      "pending_expected": 1
+    },
+    "e2e_flows": {
+      "total": 10,
+      "complete": 6,
+      "broken": 3,
+      "pending_expected": 1
+    },
+    "requirements": {
+      "total": 19,
+      "wired_direct": 18,
+      "pending_expected": 1
+    }
+  },
+  "blockers": [
+    {
+      "id": "CR-03",
+      "classification": "BLOCKER",
+      "finding": "executionpeer legacy static child defect closes only child activation; caller remains active",
+      "source": "internal/compiler/executionpeer/executionpeer.go:693-700",
+      "log": "/tmp/schway-m007-audit/peer-debt.log",
+      "direct_m007_requirement_failure": false,
+      "indirect_requirements": [
+        "CALL-02"
+      ]
+    },
+    {
+      "id": "CR-04",
+      "classification": "BLOCKER",
+      "finding": "executionpeer rejects function.failed event for modeled typed failure carried by OpReturn",
+      "source": "internal/compiler/interp/interp.go:2829-2834; internal/compiler/executionpeer/executionpeer.go:738-740",
+      "log": "/tmp/schway-m007-audit/peer-debt.log",
+      "direct_m007_requirement_failure": false,
+      "indirect_requirements": [
+        "CALL-01",
+        "CALL-02"
+      ]
+    },
+    {
+      "id": "CR-06",
+      "classification": "BLOCKER",
+      "finding": "no-call native application OpDefect is reported as native.run_failed instead of structured defect",
+      "source": "internal/compiler/cgen/cgen_program.go:3008-3012; internal/compiler/native/native.go:634-639",
+      "log": "/tmp/schway-m007-audit/cgen-nocall-debt.log",
+      "direct_m007_requirement_failure": false,
+      "indirect_requirements": [
+        "CALL-02"
+      ]
+    }
+  ],
+  "pending": [
+    {
+      "requirement": "EVD-17",
+      "reason": "Phase 38 has not been planned or executed by deliberate audit/gap-closure ordering; hosted Ubuntu/macOS receipts not run"
+    }
+  ],
+  "requirement_status": {
+    "QLT-13": "WIRED",
+    "QLT-14": "WIRED",
+    "QLT-15": "WIRED",
+    "EVD-16": "WIRED",
+    "DX-20": "WIRED",
+    "DX-21": "WIRED",
+    "DX-22": "WIRED",
+    "DX-23": "WIRED",
+    "BIT-01": "WIRED",
+    "BIT-02": "WIRED",
+    "BIT-03": "WIRED",
+    "BIT-04": "WIRED",
+    "CALL-01": "WIRED",
+    "CALL-02": "WIRED_WITH_INDIRECT_CARRIED_DEBT",
+    "APP-13": "WIRED",
+    "MOD-07": "WIRED",
+    "APP-14": "WIRED",
+    "DX-24": "WIRED",
+    "EVD-17": "PENDING_EXPECTED"
+  },
+  "traceability_notes": [
+    "All Phase 36 summary requirements_completed fields are empty; DX-24 is absent from Phase 37 summary completion metadata. This is metadata-only; verification and named behavior evidence exist.",
+    "WR-02 in Phase 36 is an obsolete same-type comment; current corevalidate derives from sourceTypeID. Nonblocking."
+  ],
+  "evidence": {
+    "report": "/tmp/schway-m007-integration.md",
+    "input_hashes": "/tmp/schway-m007-audit/input-hashes.sha256",
+    "hash_list_sha256": "29cd884239b2a90311a49289fab1fdc6ff764d23d34569cd8cb62737fad770e6",
+    "logs_directory": "/tmp/schway-m007-audit",
+    "repository_changes": "none by audit; pre-existing .planning/config.json modification remains"
+  },
+  "limitations": [
+    "No full local project/package suite",
+    "No hosted CI, Linux run, or hosted receipt",
+    "No cold/warm performance distribution or subjective readability claim"
+  ]
+}

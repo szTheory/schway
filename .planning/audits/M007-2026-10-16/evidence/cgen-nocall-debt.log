@@ -1,0 +1,7 @@
+=== RUN   TestM007AuditResidualNoCallNativeDefect
+    zz_m007_audit_test.go:44: application control passed: exit=65 stdout="" stderr="schway app: no-call scalar stopped\n"
+    zz_m007_audit_test.go:54: CR-06 reproduced: no-call native defect did not produce a structured defect document: result={Optimization: Pairs:[] CompileTime:0s RunTime:0s OutputBytes:0 CacheStatus:} err=native.run_failed: exit status 65: schway app: no-call scalar stopped
+--- FAIL: TestM007AuditResidualNoCallNativeDefect (0.13s)
+FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/cgen	0.138s
+FAIL

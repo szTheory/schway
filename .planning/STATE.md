@@ -5,12 +5,12 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: 38
 current_phase_name: Milestone Receipts
 current_plan: Not started
-status: planning
-stopped_at: Phase 37 verified; mandatory M007 audit before Phase 38
-last_updated: "2026-10-16T12:48:06.457Z"
+status: Ready to insert M007 audit gap closure before Phase 38
+stopped_at: M007 audit gaps_found; insert terminal-outcome closure before Phase 38
+last_updated: "2026-10-16T13:12:13.602Z"
 last_activity: 2026-10-16
-last_activity_desc: Phase 37 verified 14/14; next mandatory M007 audit
-state_head: 9258a7360222ff17a3267e1ccb873a0dfae79346
+last_activity_desc: "M007 audit gaps_found: 18/19 requirements; CR-03/04/06 reproduced"
+state_head: 502ab55edb501dbe2c6b3c101b45852bb7ec29bb
 progress:
   total_phases: 6
   completed_phases: 5
@@ -57,7 +57,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Mandatory M007 audit and gap closure before Phase 38
+**Current focus:** Insert M007 terminal-outcome gap closure before Phase 38
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -128,8 +128,8 @@ plans.
 Phase: 38 — Milestone Receipts
 Current Plan: Not started
 Total Plans in Phase: 0
-Status: Ready for mandatory M007 audit before Phase 38 planning
-Last activity: 2026-10-16 — Phase 37 verified 14/14; next mandatory M007 audit
+Status: Ready to insert M007 audit gap closure before Phase 38
+Last activity: 2026-10-16 — M007 audit gaps_found: 18/19 requirements; CR-03/04/06 reproduced
 
 Progress: [████████░░] 83%
 
@@ -943,7 +943,17 @@ Carried into M003 as cheap, unowned cleanup:
 
 ### Blockers/Concerns
 
-**Current — Phase 33 dynamic scalar defect refresh (2026-10-15):** Phase33
+**Current — M007 pre-receipt audit (2026-10-16):** The audit is `gaps_found`:
+18/19 requirements satisfied, all five implemented phase verifications fresh,
+three carried critical terminal flows reproduced. CR-03/04 belong to the
+execution-peer owner; CR-06 belongs to the emitter owner and requires an
+explicit dated compatibility amendment if the repair changes frozen no-call
+C. Propose one closure phase after 37, then rerun the audit before planning
+38. EVD-17 remains expected pending under 38; WR-02 is separate comment debt.
+The three summary-metadata partials were manually resolved without rewriting
+history. See [M007-MILESTONE-AUDIT.md](M007-MILESTONE-AUDIT.md).
+
+**Historical — Phase 33 dynamic scalar defect refresh (2026-10-15):** Phase33
 passes60/60 with232covered inputs; CR-05 is independently closed in its
 dynamic caller scope. Phases33/34 pass;35/36/37stale. Next
 `$gsd-execute-phase 35`, then re-query. CR-03/04 remain deferred BLOCKER peer
@@ -1183,10 +1193,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-16T12:48:06Z
-Stopped at: Phase 37 verified; mandatory M007 audit before Phase 38
-Resume file: None
-Next action: `$gsd-audit-milestone`; explicitly resolve CR-03/04/06 and any resulting gaps before Phase 38 planning/freeze/hosted binding
+Last session: 2026-10-16T13:12:13.489Z
+Stopped at: M007 audit gaps_found; insert terminal-outcome closure before Phase 38
+Resume file: .planning/M007-MILESTONE-AUDIT.md
+Next action: `$gsd-phase --insert 37 "Close gap: legacy terminal outcomes"`; discuss/plan/execute the returned decimal phase, then audit again before Phase 38
 
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
@@ -1365,7 +1375,7 @@ command `$gsd-new-milestone` to shape the practical-computation milestone,
 starting with `sum_to_n` and then FizzBuzz. Do not run `$gsd-next`, replay phase
 plans, or reopen Phase 25 implementation.
 
-## Operator Next Steps
+## Historical Operator Next Steps — pre-audit freshness refresh
 
 - Exact next command: `$gsd-execute-phase 33` for gates/verifier only. Phases 34/36 pass; 33/35/37 are stale after the native caller repair. Re-query after each. Explicitly disposition Phase 33 CR-03/04 through mandatory M007 audit before Phase 38 freeze; Phase 36 WR-02 stays separate comment debt. Preserve completed plans/UAT and user config edits.
 
@@ -1654,3 +1664,39 @@ backend or language admission changed. No full local suite, Linux/hosted
 result, human-readability or latency-distribution claim follows. Preserve
 user config edits and persistent settings; ephemeral auto-chain is false.
 This invocation stops at Phase 37 closeout.
+
+## M007 pre-receipt audit handoff — 2026-10-16
+
+The mandatory audit is complete with verdict `gaps_found`, not milestone
+completion. All 38 plans/summaries are preserved and canonical verification
+for 33–37 is fresh passed. Three-source coverage is 18/19 after manual
+resolution of CALL-01/CALL-02/DX-24 summary metadata; EVD-17 remains pending in
+unplanned Phase 38. No historical summary, verification, living-roadmap claim,
+source/test/fixture or user config was changed.
+
+Independent integration audit traced 26 finite connections: 22 wired, three
+broken, one expected pending. Ten flows: six complete, three broken, one
+pending. Twelve bounded positive commands passed 24 root executions; two
+separate diagnostic overlays reproduce CR-03/04/06. Peer probes are synthetic
+core/events paired with current source/review evidence, not source-admitted
+interpreter runs. CR-06 reaches actual native.run_failed and preserves its app
+control; its diagnostic is not a permanent red/green regression. Raw logs,
+overlay snapshots, source hashes and all 38 summary extractions are retained
+under audits/M007-2026-10-16. No full local suite or hosted result is claimed.
+
+Exact next command: `$gsd-phase --insert 37 "Close gap: legacy terminal outcomes"`.
+The proposed decimal phase groups peer legacy defect/failure attribution and
+no-call native defect transport. It needs real interpreter/peer and native
+regressions, reached negative controls, preserved app outcomes, and a dated
+compatibility decision before changing frozen C. Then rerun the audit before
+Phase 38 planning, freeze and hosted binding. This invocation does not insert
+or execute another phase. Generic state.json still projects next-unimplemented
+38; that projection cannot bypass these current audit blockers. S004 remains
+expected until an actual next phase is created.
+
+Phase 36 WR-02 stays nonblocking comment debt. Three ranked next capabilities
+remain audited same-source two-host CRC/checksum receipts, proposed M008
+wc/longest_line, then bounded fixed-schema key=value parsing. The report names
+programs, blockers, complete slices, guarantee changes, evidence/debt, owners
+and priority-changing observations. z1g/trz/z1s retain dormant dispositions on
+current source/consumer witnesses; no seed or future requirement is promoted.

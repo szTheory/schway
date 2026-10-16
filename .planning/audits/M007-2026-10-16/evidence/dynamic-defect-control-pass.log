@@ -1,0 +1,28 @@
+=== RUN   TestPhase33ScalarExplicitDefectShells
+=== RUN   TestPhase33ScalarExplicitDefectShells/entry
+=== RUN   TestPhase33ScalarExplicitDefectShells/entry/native
+=== RUN   TestPhase33ScalarExplicitDefectShells/entry/native/O0
+=== RUN   TestPhase33ScalarExplicitDefectShells/entry/native/O3
+=== RUN   TestPhase33ScalarExplicitDefectShells/entry/native/O3-LTO
+=== RUN   TestPhase33ScalarExplicitDefectShells/entry/application
+=== RUN   TestPhase33ScalarExplicitDefectShells/helper
+=== RUN   TestPhase33ScalarExplicitDefectShells/helper/native
+=== RUN   TestPhase33ScalarExplicitDefectShells/helper/native/O0
+=== RUN   TestPhase33ScalarExplicitDefectShells/helper/native/O3
+=== RUN   TestPhase33ScalarExplicitDefectShells/helper/native/O3-LTO
+=== RUN   TestPhase33ScalarExplicitDefectShells/helper/application
+--- PASS: TestPhase33ScalarExplicitDefectShells (0.64s)
+    --- PASS: TestPhase33ScalarExplicitDefectShells/entry (0.30s)
+        --- PASS: TestPhase33ScalarExplicitDefectShells/entry/native (0.23s)
+            --- PASS: TestPhase33ScalarExplicitDefectShells/entry/native/O0 (0.05s)
+            --- PASS: TestPhase33ScalarExplicitDefectShells/entry/native/O3 (0.08s)
+            --- PASS: TestPhase33ScalarExplicitDefectShells/entry/native/O3-LTO (0.09s)
+        --- PASS: TestPhase33ScalarExplicitDefectShells/entry/application (0.07s)
+    --- PASS: TestPhase33ScalarExplicitDefectShells/helper (0.33s)
+        --- PASS: TestPhase33ScalarExplicitDefectShells/helper/native (0.25s)
+            --- PASS: TestPhase33ScalarExplicitDefectShells/helper/native/O0 (0.05s)
+            --- PASS: TestPhase33ScalarExplicitDefectShells/helper/native/O3 (0.09s)
+            --- PASS: TestPhase33ScalarExplicitDefectShells/helper/native/O3-LTO (0.11s)
+        --- PASS: TestPhase33ScalarExplicitDefectShells/helper/application (0.08s)
+PASS
+ok  	github.com/szTheory/schway/internal/compiler/cgen	0.642s

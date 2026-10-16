@@ -1,0 +1,446 @@
+[
+  {
+    "id": "QLT-13",
+    "phase": "33",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "33-01-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "33-01-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "QLT-14",
+    "phase": "33",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "33-01-PLAN.md",
+      "33-02-PLAN.md",
+      "33-03-PLAN.md",
+      "33-05-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "33-01-SUMMARY.md",
+      "33-02-SUMMARY.md",
+      "33-03-SUMMARY.md",
+      "33-05-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "QLT-15",
+    "phase": "33",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "33-05-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "33-05-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "EVD-16",
+    "phase": "33",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "33-03-PLAN.md",
+      "33-04-PLAN.md",
+      "33-05-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "33-03-SUMMARY.md",
+      "33-04-SUMMARY.md",
+      "33-05-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "DX-20",
+    "phase": "34",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "34-01-PLAN.md",
+      "34-02-PLAN.md",
+      "34-03-PLAN.md",
+      "34-08-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "34-01-SUMMARY.md",
+      "34-02-SUMMARY.md",
+      "34-03-SUMMARY.md",
+      "34-08-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "DX-21",
+    "phase": "34",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "34-01-PLAN.md",
+      "34-04-PLAN.md",
+      "34-08-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "34-01-SUMMARY.md",
+      "34-04-SUMMARY.md",
+      "34-08-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "DX-22",
+    "phase": "34",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "34-01-PLAN.md",
+      "34-05-PLAN.md",
+      "34-08-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "34-01-SUMMARY.md",
+      "34-05-SUMMARY.md",
+      "34-08-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "DX-23",
+    "phase": "34",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "34-01-PLAN.md",
+      "34-06-PLAN.md",
+      "34-07-PLAN.md",
+      "34-08-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "34-01-SUMMARY.md",
+      "34-06-SUMMARY.md",
+      "34-07-SUMMARY.md",
+      "34-08-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "BIT-01",
+    "phase": "35",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "35-01-PLAN.md",
+      "35-02-PLAN.md",
+      "35-03-PLAN.md",
+      "35-04-PLAN.md",
+      "35-05-PLAN.md",
+      "35-06-PLAN.md",
+      "35-07-PLAN.md",
+      "35-08-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "35-02-SUMMARY.md",
+      "35-03-SUMMARY.md",
+      "35-04-SUMMARY.md",
+      "35-08-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "BIT-02",
+    "phase": "35",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "35-01-PLAN.md",
+      "35-02-PLAN.md",
+      "35-03-PLAN.md",
+      "35-04-PLAN.md",
+      "35-05-PLAN.md",
+      "35-06-PLAN.md",
+      "35-07-PLAN.md",
+      "35-08-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "35-02-SUMMARY.md",
+      "35-03-SUMMARY.md",
+      "35-04-SUMMARY.md",
+      "35-08-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "BIT-03",
+    "phase": "35",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "35-01-PLAN.md",
+      "35-02-PLAN.md",
+      "35-03-PLAN.md",
+      "35-07-PLAN.md",
+      "35-08-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "35-02-SUMMARY.md",
+      "35-03-SUMMARY.md",
+      "35-08-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "BIT-04",
+    "phase": "35",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "35-01-PLAN.md",
+      "35-08-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "35-08-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "CALL-01",
+    "phase": "36",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "36-02-PLAN.md",
+      "36-03-PLAN.md",
+      "36-04-PLAN.md",
+      "36-05-PLAN.md",
+      "36-06-PLAN.md",
+      "36-07-PLAN.md",
+      "36-08-PLAN.md"
+    ],
+    "completed_by_plans": [],
+    "verification": ".planning/phases/36-scalar-helper-calls/36-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "partial",
+    "final_status": "satisfied",
+    "manual_resolution": true,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "CALL-02",
+    "phase": "36",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "36-01-PLAN.md",
+      "36-02-PLAN.md",
+      "36-03-PLAN.md",
+      "36-04-PLAN.md",
+      "36-05-PLAN.md",
+      "36-06-PLAN.md",
+      "36-07-PLAN.md",
+      "36-08-PLAN.md"
+    ],
+    "completed_by_plans": [],
+    "verification": ".planning/phases/36-scalar-helper-calls/36-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "partial",
+    "final_status": "satisfied",
+    "manual_resolution": true,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "APP-13",
+    "phase": "37",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "37-01-PLAN.md",
+      "37-02-PLAN.md",
+      "37-03-PLAN.md",
+      "37-04-PLAN.md",
+      "37-05-PLAN.md",
+      "37-06-PLAN.md",
+      "37-07-PLAN.md",
+      "37-08-PLAN.md",
+      "37-09-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "37-01-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "MOD-07",
+    "phase": "37",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "37-01-PLAN.md",
+      "37-03-PLAN.md",
+      "37-05-PLAN.md",
+      "37-06-PLAN.md",
+      "37-07-PLAN.md",
+      "37-08-PLAN.md",
+      "37-09-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "37-01-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "APP-14",
+    "phase": "37",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "37-01-PLAN.md",
+      "37-02-PLAN.md",
+      "37-03-PLAN.md",
+      "37-04-PLAN.md",
+      "37-05-PLAN.md",
+      "37-06-PLAN.md",
+      "37-07-PLAN.md",
+      "37-08-PLAN.md",
+      "37-09-PLAN.md"
+    ],
+    "completed_by_plans": [
+      "37-01-SUMMARY.md"
+    ],
+    "verification": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "satisfied",
+    "final_status": "satisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "DX-24",
+    "phase": "37",
+    "traceability_status": "Complete",
+    "checked": true,
+    "claimed_by_plans": [
+      "37-07-PLAN.md",
+      "37-08-PLAN.md"
+    ],
+    "completed_by_plans": [],
+    "verification": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-VERIFICATION.md",
+    "verification_status": "passed",
+    "initial_status": "partial",
+    "final_status": "satisfied",
+    "manual_resolution": true,
+    "orphaned_from_owner_verification": false,
+    "expected_pending": false
+  },
+  {
+    "id": "EVD-17",
+    "phase": "38",
+    "traceability_status": "Pending",
+    "checked": false,
+    "claimed_by_plans": [],
+    "completed_by_plans": [],
+    "verification": null,
+    "verification_status": "missing",
+    "initial_status": "unsatisfied",
+    "final_status": "unsatisfied",
+    "manual_resolution": false,
+    "orphaned_from_owner_verification": true,
+    "expected_pending": true
+  }
+]

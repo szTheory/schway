@@ -1,0 +1,120 @@
+=== RUN   TestPhase34ImportedDiagnosticPresentation
+--- PASS: TestPhase34ImportedDiagnosticPresentation (0.00s)
+=== RUN   TestPhase34PresentationUsesCapturedSource
+=== RUN   TestPhase34PresentationUsesCapturedSource/path_mismatch_and_nested_effective_units
+=== RUN   TestPhase34PresentationUsesCapturedSource/origin_peer_and_synthetic_nested_spans
+--- PASS: TestPhase34PresentationUsesCapturedSource (0.00s)
+    --- PASS: TestPhase34PresentationUsesCapturedSource/path_mismatch_and_nested_effective_units (0.00s)
+    --- PASS: TestPhase34PresentationUsesCapturedSource/origin_peer_and_synthetic_nested_spans (0.00s)
+=== RUN   TestPhase35AdmissionRefusalMutationControls
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate/no-op-overlay-first
+    session_phase35_admission_mutation_test.go:311: NO_OP_PASS peer=corevalidate source_sha256=f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81 selector=^(TestPhase35ShiftImmediateAdmission|TestPhase35ShiftTargetFreshness)$ subtests=34
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate/canonical-and-present-immediate
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=corevalidate law=canonical-and-present-immediate sites=5 source_sha256=f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81 expected_assertions=TestPhase35ShiftImmediateAdmission/missing_immediate,TestPhase35ShiftImmediateAdmission/leading_zero
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate/immediate-range-0-through-63
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=corevalidate law=immediate-range-0-through-63 sites=3 source_sha256=f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81 expected_assertions=TestPhase35ShiftImmediateAdmission/count_64
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate/shift-right-place-exclusion
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=corevalidate law=shift-right-place-exclusion sites=2 source_sha256=f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81 expected_assertions=TestPhase35ShiftImmediateAdmission/extra_right_place
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate/source-is-u64
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=corevalidate law=source-is-u64 sites=3 source_sha256=f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81 expected_assertions=TestPhase35ShiftImmediateAdmission/wrong_source_type
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate/operation-result-type-is-u64
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=corevalidate law=operation-result-type-is-u64 sites=4 source_sha256=f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81 expected_assertions=TestPhase35ShiftImmediateAdmission/wrong_result_type
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate/result-place-is-u64
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=corevalidate law=result-place-is-u64 sites=3 source_sha256=f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81 expected_assertions=TestPhase35ShiftImmediateAdmission/wrong_result_place_type
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate/source-must-be-initialized
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=corevalidate law=source-must-be-initialized sites=3 source_sha256=f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81 expected_assertions=TestPhase35ShiftImmediateAdmission/uninitialized_U64_source
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate/target-identity-exclusion
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=corevalidate law=target-identity-exclusion sites=3 source_sha256=f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81 expected_assertions=TestPhase35ShiftImmediateAdmission/parameter_target,TestPhase35ShiftImmediateAdmission/source_aliases_target
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate/target-freshness
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=corevalidate law=target-freshness sites=2 source_sha256=f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81 expected_assertions=TestPhase35ShiftTargetFreshness/shift_left_u64/prior_constant,TestPhase35ShiftTargetFreshness/shift_left_u64/prior_copy,TestPhase35ShiftTargetFreshness/shift_left_u64/prior_mutable_store,TestPhase35ShiftTargetFreshness/shift_left_u64/prior_shift,TestPhase35ShiftTargetFreshness/shift_right_u64/prior_constant,TestPhase35ShiftTargetFreshness/shift_right_u64/prior_copy,TestPhase35ShiftTargetFreshness/shift_right_u64/prior_mutable_store,TestPhase35ShiftTargetFreshness/shift_right_u64/prior_shift
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate/unrelated-fields
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=corevalidate law=unrelated-fields sites=2 source_sha256=f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81 expected_assertions=TestPhase35ShiftImmediateAdmission/foreign_field
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate/store-and-edge-field-exclusion
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=corevalidate law=store-and-edge-field-exclusion sites=2 source_sha256=f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81 expected_assertions=TestPhase35ShiftImmediateAdmission/store_field,TestPhase35ShiftImmediateAdmission/edge_field
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate/ConstU64-kind-exclusivity
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=corevalidate law=ConstU64-kind-exclusivity sites=2 source_sha256=f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81 expected_assertions=TestPhase35ShiftImmediateAdmission/unrelated_const_field
+=== RUN   TestPhase35AdmissionRefusalMutationControls/corevalidate/restored-source-hash-and-pass
+    session_phase35_admission_mutation_test.go:350: RESTORED_PASS peer=corevalidate source_sha256=f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81 selector=^(TestPhase35ShiftImmediateAdmission|TestPhase35ShiftTargetFreshness)$
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate/no-op-overlay-first
+    session_phase35_admission_mutation_test.go:311: NO_OP_PASS peer=originvalidate source_sha256=831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272 selector=^(TestPhase35ShiftImmediateAdmission|TestPhase35ShiftTargetFreshness)$ subtests=34
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate/canonical-and-present-immediate
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=originvalidate law=canonical-and-present-immediate sites=4 source_sha256=831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272 expected_assertions=TestPhase35ShiftImmediateAdmission/missing_immediate,TestPhase35ShiftImmediateAdmission/leading_zero
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate/immediate-range-0-through-63
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=originvalidate law=immediate-range-0-through-63 sites=2 source_sha256=831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272 expected_assertions=TestPhase35ShiftImmediateAdmission/count_64
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate/shift-right-place-exclusion
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=originvalidate law=shift-right-place-exclusion sites=1 source_sha256=831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272 expected_assertions=TestPhase35ShiftImmediateAdmission/extra_right_place
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate/source-is-u64
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=originvalidate law=source-is-u64 sites=2 source_sha256=831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272 expected_assertions=TestPhase35ShiftImmediateAdmission/wrong_source_type
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate/operation-result-type-is-u64
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=originvalidate law=operation-result-type-is-u64 sites=1 source_sha256=831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272 expected_assertions=TestPhase35ShiftImmediateAdmission/wrong_result_type
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate/result-place-is-u64
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=originvalidate law=result-place-is-u64 sites=2 source_sha256=831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272 expected_assertions=TestPhase35ShiftImmediateAdmission/wrong_result_place_type
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate/source-must-be-initialized
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=originvalidate law=source-must-be-initialized sites=1 source_sha256=831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272 expected_assertions=TestPhase35ShiftImmediateAdmission/uninitialized_U64_source
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate/target-identity-exclusion
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=originvalidate law=target-identity-exclusion sites=2 source_sha256=831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272 expected_assertions=TestPhase35ShiftImmediateAdmission/parameter_target,TestPhase35ShiftImmediateAdmission/source_aliases_target
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate/target-freshness
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=originvalidate law=target-freshness sites=1 source_sha256=831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272 expected_assertions=TestPhase35ShiftTargetFreshness/shift_left_u64/prior_constant,TestPhase35ShiftTargetFreshness/shift_left_u64/prior_copy,TestPhase35ShiftTargetFreshness/shift_left_u64/prior_mutable_store,TestPhase35ShiftTargetFreshness/shift_left_u64/prior_shift,TestPhase35ShiftTargetFreshness/shift_right_u64/prior_constant,TestPhase35ShiftTargetFreshness/shift_right_u64/prior_copy,TestPhase35ShiftTargetFreshness/shift_right_u64/prior_mutable_store,TestPhase35ShiftTargetFreshness/shift_right_u64/prior_shift
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate/unrelated-fields
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=originvalidate law=unrelated-fields sites=1 source_sha256=831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272 expected_assertions=TestPhase35ShiftImmediateAdmission/payload_field
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate/store-and-edge-field-exclusion
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=originvalidate law=store-and-edge-field-exclusion sites=1 source_sha256=831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272 expected_assertions=TestPhase35ShiftImmediateAdmission/store_field,TestPhase35ShiftImmediateAdmission/edge_field
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate/ConstU64-kind-exclusivity
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=originvalidate law=ConstU64-kind-exclusivity sites=1 source_sha256=831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272 expected_assertions=TestPhase35ShiftImmediateAdmission/unrelated_const_field
+=== RUN   TestPhase35AdmissionRefusalMutationControls/originvalidate/restored-source-hash-and-pass
+    session_phase35_admission_mutation_test.go:350: RESTORED_PASS peer=originvalidate source_sha256=831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272 selector=^(TestPhase35ShiftImmediateAdmission|TestPhase35ShiftTargetFreshness)$
+=== RUN   TestPhase35AdmissionRefusalMutationControls/check
+=== RUN   TestPhase35AdmissionRefusalMutationControls/check/no-op-overlay-first
+    session_phase35_admission_mutation_test.go:311: NO_OP_PASS peer=check source_sha256=31537311ef6ad8fcf11f8cd7139f21404e41445d6d4c8ba5974a953ddaa1ec83 selector=^TestPhase35ShiftAdmission$ subtests=9
+=== RUN   TestPhase35AdmissionRefusalMutationControls/check/shift-amount-must-be-number-leaf
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=check law=shift-amount-must-be-number-leaf sites=1 source_sha256=31537311ef6ad8fcf11f8cd7139f21404e41445d6d4c8ba5974a953ddaa1ec83 expected_assertions=TestPhase35ShiftAdmission/name
+=== RUN   TestPhase35AdmissionRefusalMutationControls/check/source-range-0-through-63
+    session_phase35_admission_mutation_test.go:333: MUTANT_KILLED peer=check law=source-range-0-through-63 sites=2 source_sha256=31537311ef6ad8fcf11f8cd7139f21404e41445d6d4c8ba5974a953ddaa1ec83 expected_assertions=TestPhase35ShiftAdmission/decimal_64
+=== RUN   TestPhase35AdmissionRefusalMutationControls/check/restored-source-hash-and-pass
+    session_phase35_admission_mutation_test.go:350: RESTORED_PASS peer=check source_sha256=31537311ef6ad8fcf11f8cd7139f21404e41445d6d4c8ba5974a953ddaa1ec83 selector=^TestPhase35ShiftAdmission$
+--- PASS: TestPhase35AdmissionRefusalMutationControls (7.54s)
+    --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate (3.52s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate/no-op-overlay-first (0.25s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate/canonical-and-present-immediate (0.25s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate/immediate-range-0-through-63 (0.24s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate/shift-right-place-exclusion (0.23s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate/source-is-u64 (0.31s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate/operation-result-type-is-u64 (0.30s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate/result-place-is-u64 (0.26s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate/source-must-be-initialized (0.25s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate/target-identity-exclusion (0.26s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate/target-freshness (0.26s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate/unrelated-fields (0.24s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate/store-and-edge-field-exclusion (0.23s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate/ConstU64-kind-exclusivity (0.23s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/corevalidate/restored-source-hash-and-pass (0.20s)
+    --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate (3.09s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate/no-op-overlay-first (0.23s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate/canonical-and-present-immediate (0.22s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate/immediate-range-0-through-63 (0.21s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate/shift-right-place-exclusion (0.23s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate/source-is-u64 (0.22s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate/operation-result-type-is-u64 (0.23s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate/result-place-is-u64 (0.21s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate/source-must-be-initialized (0.22s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate/target-identity-exclusion (0.23s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate/target-freshness (0.23s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate/unrelated-fields (0.22s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate/store-and-edge-field-exclusion (0.22s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate/ConstU64-kind-exclusivity (0.22s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/originvalidate/restored-source-hash-and-pass (0.19s)
+    --- PASS: TestPhase35AdmissionRefusalMutationControls/check (0.93s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/check/no-op-overlay-first (0.25s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/check/shift-amount-must-be-number-leaf (0.24s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/check/source-range-0-through-63 (0.23s)
+        --- PASS: TestPhase35AdmissionRefusalMutationControls/check/restored-source-hash-and-pass (0.20s)
+=== RUN   TestPhase35FocusedValueAnswers
+--- PASS: TestPhase35FocusedValueAnswers (0.10s)
+=== RUN   TestPhase37CRC32SingleCopyAndIdentity
+    session_phase37_reuse_test.go:86: no-edit native artifact bytes and BuildID varied for crc32 while InputID stayed stable: executable=f722cfe192f23ad61dff044b26f45b875bbbc6c21a21f8a5d8dc3e57222da9ed/02442d9aab56a9eea8638d45abe5a576ae134837a8b996f01fbb5f3ececd7d1a build=7140b03046d338cdd341aeeef184ff794251be20f597429669439a3b2f000c67/c4a17c38b4ae608d2dcdea795683605333063a013cea473b55c600a00194c5a7; receipts remain non-cacheable with incomplete closure
+    session_phase37_reuse_test.go:86: no-edit native artifact bytes and BuildID varied for crc_low while InputID stayed stable: executable=671f8b1374a19edbb82a56a814d9a708af3accc12f57b05c460c454aa1a25172/af9125889a7ce7ca37154dc581e12b0c06d3017b772dbb8bddc35d2c7e414146 build=81b115595c4ad500618fa2e016f6734faf824066c185a43774e54fcf6a3c1e1d/83e19f8b6836097ca9367c5abcc79b649d9166de4fcce6de4381958f04408a41; receipts remain non-cacheable with incomplete closure
+--- PASS: TestPhase37CRC32SingleCopyAndIdentity (1.80s)
+PASS
+ok  	github.com/szTheory/schway/internal/compiler/session	9.452s

@@ -1,0 +1,6 @@
+=== RUN   TestM007AuditResidualNoCallNativeDefect
+    zz_m007_audit_test.go:21: checker refused probe: [name.unknown [78:109]: linear result is unknown]
+--- FAIL: TestM007AuditResidualNoCallNativeDefect (0.00s)
+FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/cgen	0.006s
+FAIL

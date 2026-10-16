@@ -1,0 +1,723 @@
+=== RUN   TestPhase37PublicFileMatrix
+=== RUN   TestPhase37PublicFileMatrix/empty
+=== RUN   TestPhase37PublicFileMatrix/empty/crc32
+=== RUN   TestPhase37PublicFileMatrix/empty/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/empty/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/empty/crc_low
+=== RUN   TestPhase37PublicFileMatrix/empty/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/empty/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/empty/checksum
+=== RUN   TestPhase37PublicFileMatrix/empty/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/empty/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/empty/adler_low
+=== RUN   TestPhase37PublicFileMatrix/empty/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/empty/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/zero
+=== RUN   TestPhase37PublicFileMatrix/zero/crc32
+=== RUN   TestPhase37PublicFileMatrix/zero/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/zero/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/zero/crc_low
+=== RUN   TestPhase37PublicFileMatrix/zero/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/zero/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/zero/checksum
+=== RUN   TestPhase37PublicFileMatrix/zero/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/zero/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/zero/adler_low
+=== RUN   TestPhase37PublicFileMatrix/zero/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/zero/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/check
+=== RUN   TestPhase37PublicFileMatrix/check/crc32
+=== RUN   TestPhase37PublicFileMatrix/check/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/check/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/check/crc_low
+=== RUN   TestPhase37PublicFileMatrix/check/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/check/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/check/checksum
+=== RUN   TestPhase37PublicFileMatrix/check/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/check/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/check/adler_low
+=== RUN   TestPhase37PublicFileMatrix/check/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/check/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/highbit-80
+=== RUN   TestPhase37PublicFileMatrix/highbit-80/crc32
+=== RUN   TestPhase37PublicFileMatrix/highbit-80/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/highbit-80/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/highbit-80/crc_low
+=== RUN   TestPhase37PublicFileMatrix/highbit-80/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/highbit-80/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/highbit-80/checksum
+=== RUN   TestPhase37PublicFileMatrix/highbit-80/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/highbit-80/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/highbit-80/adler_low
+=== RUN   TestPhase37PublicFileMatrix/highbit-80/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/highbit-80/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/highbit-80ff
+=== RUN   TestPhase37PublicFileMatrix/highbit-80ff/crc32
+=== RUN   TestPhase37PublicFileMatrix/highbit-80ff/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/highbit-80ff/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/highbit-80ff/crc_low
+=== RUN   TestPhase37PublicFileMatrix/highbit-80ff/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/highbit-80ff/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/highbit-80ff/checksum
+=== RUN   TestPhase37PublicFileMatrix/highbit-80ff/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/highbit-80ff/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/highbit-80ff/adler_low
+=== RUN   TestPhase37PublicFileMatrix/highbit-80ff/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/highbit-80ff/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/all-bytes-00-ff
+=== RUN   TestPhase37PublicFileMatrix/all-bytes-00-ff/crc32
+=== RUN   TestPhase37PublicFileMatrix/all-bytes-00-ff/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/all-bytes-00-ff/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/all-bytes-00-ff/crc_low
+=== RUN   TestPhase37PublicFileMatrix/all-bytes-00-ff/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/all-bytes-00-ff/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/all-bytes-00-ff/checksum
+=== RUN   TestPhase37PublicFileMatrix/all-bytes-00-ff/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/all-bytes-00-ff/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/all-bytes-00-ff/adler_low
+=== RUN   TestPhase37PublicFileMatrix/all-bytes-00-ff/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/all-bytes-00-ff/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/cap-minus-one
+=== RUN   TestPhase37PublicFileMatrix/cap-minus-one/crc32
+=== RUN   TestPhase37PublicFileMatrix/cap-minus-one/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/cap-minus-one/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/cap-minus-one/crc_low
+=== RUN   TestPhase37PublicFileMatrix/cap-minus-one/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/cap-minus-one/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/cap-minus-one/checksum
+=== RUN   TestPhase37PublicFileMatrix/cap-minus-one/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/cap-minus-one/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/cap-minus-one/adler_low
+=== RUN   TestPhase37PublicFileMatrix/cap-minus-one/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/cap-minus-one/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/cap
+=== RUN   TestPhase37PublicFileMatrix/cap/crc32
+=== RUN   TestPhase37PublicFileMatrix/cap/crc32/interpreter
+    main_phase37_matrix_test.go:101: maximum CRC-32 interpreter observation: 1.035706459s for 65536 bytes
+=== RUN   TestPhase37PublicFileMatrix/cap/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/cap/crc_low
+=== RUN   TestPhase37PublicFileMatrix/cap/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/cap/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/cap/checksum
+=== RUN   TestPhase37PublicFileMatrix/cap/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/cap/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/cap/adler_low
+=== RUN   TestPhase37PublicFileMatrix/cap/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/cap/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/cap-plus-one
+=== RUN   TestPhase37PublicFileMatrix/cap-plus-one/crc32
+=== RUN   TestPhase37PublicFileMatrix/cap-plus-one/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/cap-plus-one/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/cap-plus-one/crc_low
+=== RUN   TestPhase37PublicFileMatrix/cap-plus-one/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/cap-plus-one/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/cap-plus-one/checksum
+=== RUN   TestPhase37PublicFileMatrix/cap-plus-one/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/cap-plus-one/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/cap-plus-one/adler_low
+=== RUN   TestPhase37PublicFileMatrix/cap-plus-one/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/cap-plus-one/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/wikipedia
+=== RUN   TestPhase37PublicFileMatrix/wikipedia/crc32
+=== RUN   TestPhase37PublicFileMatrix/wikipedia/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/wikipedia/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/wikipedia/crc_low
+=== RUN   TestPhase37PublicFileMatrix/wikipedia/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/wikipedia/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/wikipedia/checksum
+=== RUN   TestPhase37PublicFileMatrix/wikipedia/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/wikipedia/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/wikipedia/adler_low
+=== RUN   TestPhase37PublicFileMatrix/wikipedia/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/wikipedia/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/missing
+=== RUN   TestPhase37PublicFileMatrix/missing/crc32
+=== RUN   TestPhase37PublicFileMatrix/missing/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/missing/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/missing/crc_low
+=== RUN   TestPhase37PublicFileMatrix/missing/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/missing/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/missing/checksum
+=== RUN   TestPhase37PublicFileMatrix/missing/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/missing/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/missing/adler_low
+=== RUN   TestPhase37PublicFileMatrix/missing/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/missing/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/directory
+=== RUN   TestPhase37PublicFileMatrix/directory/crc32
+=== RUN   TestPhase37PublicFileMatrix/directory/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/directory/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/directory/crc_low
+=== RUN   TestPhase37PublicFileMatrix/directory/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/directory/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/directory/checksum
+=== RUN   TestPhase37PublicFileMatrix/directory/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/directory/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/directory/adler_low
+=== RUN   TestPhase37PublicFileMatrix/directory/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/directory/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/fifo
+=== RUN   TestPhase37PublicFileMatrix/fifo/crc32
+=== RUN   TestPhase37PublicFileMatrix/fifo/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/fifo/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/fifo/crc_low
+=== RUN   TestPhase37PublicFileMatrix/fifo/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/fifo/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/fifo/checksum
+=== RUN   TestPhase37PublicFileMatrix/fifo/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/fifo/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/fifo/adler_low
+=== RUN   TestPhase37PublicFileMatrix/fifo/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/fifo/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/device
+=== RUN   TestPhase37PublicFileMatrix/device/crc32
+=== RUN   TestPhase37PublicFileMatrix/device/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/device/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/device/crc_low
+=== RUN   TestPhase37PublicFileMatrix/device/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/device/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/device/checksum
+=== RUN   TestPhase37PublicFileMatrix/device/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/device/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/device/adler_low
+=== RUN   TestPhase37PublicFileMatrix/device/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/device/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/unreadable
+=== RUN   TestPhase37PublicFileMatrix/unreadable/crc32
+=== RUN   TestPhase37PublicFileMatrix/unreadable/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/unreadable/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/unreadable/crc_low
+=== RUN   TestPhase37PublicFileMatrix/unreadable/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/unreadable/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/unreadable/checksum
+=== RUN   TestPhase37PublicFileMatrix/unreadable/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/unreadable/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/unreadable/adler_low
+=== RUN   TestPhase37PublicFileMatrix/unreadable/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/unreadable/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/input-symlink
+=== RUN   TestPhase37PublicFileMatrix/input-symlink/crc32
+=== RUN   TestPhase37PublicFileMatrix/input-symlink/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/input-symlink/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/input-symlink/crc_low
+=== RUN   TestPhase37PublicFileMatrix/input-symlink/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/input-symlink/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/input-symlink/checksum
+=== RUN   TestPhase37PublicFileMatrix/input-symlink/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/input-symlink/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/input-symlink/adler_low
+=== RUN   TestPhase37PublicFileMatrix/input-symlink/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/input-symlink/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-json
+=== RUN   TestPhase37PublicFileMatrix/opaque-json/crc32
+=== RUN   TestPhase37PublicFileMatrix/opaque-json/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-json/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-json/crc_low
+=== RUN   TestPhase37PublicFileMatrix/opaque-json/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-json/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-json/checksum
+=== RUN   TestPhase37PublicFileMatrix/opaque-json/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-json/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-json/adler_low
+=== RUN   TestPhase37PublicFileMatrix/opaque-json/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-json/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-depth
+=== RUN   TestPhase37PublicFileMatrix/opaque-depth/crc32
+=== RUN   TestPhase37PublicFileMatrix/opaque-depth/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-depth/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-depth/crc_low
+=== RUN   TestPhase37PublicFileMatrix/opaque-depth/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-depth/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-depth/checksum
+=== RUN   TestPhase37PublicFileMatrix/opaque-depth/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-depth/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-depth/adler_low
+=== RUN   TestPhase37PublicFileMatrix/opaque-depth/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-depth/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-separator
+=== RUN   TestPhase37PublicFileMatrix/opaque-separator/crc32
+=== RUN   TestPhase37PublicFileMatrix/opaque-separator/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-separator/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-separator/crc_low
+=== RUN   TestPhase37PublicFileMatrix/opaque-separator/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-separator/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-separator/checksum
+=== RUN   TestPhase37PublicFileMatrix/opaque-separator/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-separator/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-separator/adler_low
+=== RUN   TestPhase37PublicFileMatrix/opaque-separator/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-separator/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-leading-dash
+=== RUN   TestPhase37PublicFileMatrix/opaque-leading-dash/crc32
+=== RUN   TestPhase37PublicFileMatrix/opaque-leading-dash/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-leading-dash/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-leading-dash/crc_low
+=== RUN   TestPhase37PublicFileMatrix/opaque-leading-dash/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-leading-dash/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-leading-dash/checksum
+=== RUN   TestPhase37PublicFileMatrix/opaque-leading-dash/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-leading-dash/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-leading-dash/adler_low
+=== RUN   TestPhase37PublicFileMatrix/opaque-leading-dash/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-leading-dash/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-space
+=== RUN   TestPhase37PublicFileMatrix/opaque-space/crc32
+=== RUN   TestPhase37PublicFileMatrix/opaque-space/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-space/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-space/crc_low
+=== RUN   TestPhase37PublicFileMatrix/opaque-space/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-space/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-space/checksum
+=== RUN   TestPhase37PublicFileMatrix/opaque-space/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-space/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-space/adler_low
+=== RUN   TestPhase37PublicFileMatrix/opaque-space/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-space/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-unicode
+=== RUN   TestPhase37PublicFileMatrix/opaque-unicode/crc32
+=== RUN   TestPhase37PublicFileMatrix/opaque-unicode/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-unicode/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-unicode/crc_low
+=== RUN   TestPhase37PublicFileMatrix/opaque-unicode/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-unicode/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-unicode/checksum
+=== RUN   TestPhase37PublicFileMatrix/opaque-unicode/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-unicode/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-unicode/adler_low
+=== RUN   TestPhase37PublicFileMatrix/opaque-unicode/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-unicode/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-shell
+=== RUN   TestPhase37PublicFileMatrix/opaque-shell/crc32
+=== RUN   TestPhase37PublicFileMatrix/opaque-shell/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-shell/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-shell/crc_low
+=== RUN   TestPhase37PublicFileMatrix/opaque-shell/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-shell/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-shell/checksum
+=== RUN   TestPhase37PublicFileMatrix/opaque-shell/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-shell/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/opaque-shell/adler_low
+=== RUN   TestPhase37PublicFileMatrix/opaque-shell/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/opaque-shell/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/empty-token
+=== RUN   TestPhase37PublicFileMatrix/empty-token/crc32
+=== RUN   TestPhase37PublicFileMatrix/empty-token/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/empty-token/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/empty-token/crc_low
+=== RUN   TestPhase37PublicFileMatrix/empty-token/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/empty-token/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/empty-token/checksum
+=== RUN   TestPhase37PublicFileMatrix/empty-token/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/empty-token/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/empty-token/adler_low
+=== RUN   TestPhase37PublicFileMatrix/empty-token/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/empty-token/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/path-4096
+=== RUN   TestPhase37PublicFileMatrix/path-4096/crc32
+=== RUN   TestPhase37PublicFileMatrix/path-4096/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/path-4096/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/path-4096/crc_low
+=== RUN   TestPhase37PublicFileMatrix/path-4096/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/path-4096/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/path-4096/checksum
+=== RUN   TestPhase37PublicFileMatrix/path-4096/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/path-4096/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/path-4096/adler_low
+=== RUN   TestPhase37PublicFileMatrix/path-4096/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/path-4096/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/path-4097
+=== RUN   TestPhase37PublicFileMatrix/path-4097/crc32
+=== RUN   TestPhase37PublicFileMatrix/path-4097/crc32/interpreter
+=== RUN   TestPhase37PublicFileMatrix/path-4097/crc32/native
+=== RUN   TestPhase37PublicFileMatrix/path-4097/crc_low
+=== RUN   TestPhase37PublicFileMatrix/path-4097/crc_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/path-4097/crc_low/native
+=== RUN   TestPhase37PublicFileMatrix/path-4097/checksum
+=== RUN   TestPhase37PublicFileMatrix/path-4097/checksum/interpreter
+=== RUN   TestPhase37PublicFileMatrix/path-4097/checksum/native
+=== RUN   TestPhase37PublicFileMatrix/path-4097/adler_low
+=== RUN   TestPhase37PublicFileMatrix/path-4097/adler_low/interpreter
+=== RUN   TestPhase37PublicFileMatrix/path-4097/adler_low/native
+=== RUN   TestPhase37PublicFileMatrix/nul-direct-dispatch
+=== RUN   TestPhase37PublicFileMatrix/nul-direct-dispatch/crc32/interpreter/direct-public-dispatch
+=== RUN   TestPhase37PublicFileMatrix/nul-direct-dispatch/crc32/native/direct-public-dispatch
+=== RUN   TestPhase37PublicFileMatrix/nul-direct-dispatch/crc_low/interpreter/direct-public-dispatch
+=== RUN   TestPhase37PublicFileMatrix/nul-direct-dispatch/crc_low/native/direct-public-dispatch
+=== RUN   TestPhase37PublicFileMatrix/nul-direct-dispatch/checksum/interpreter/direct-public-dispatch
+=== RUN   TestPhase37PublicFileMatrix/nul-direct-dispatch/checksum/native/direct-public-dispatch
+=== RUN   TestPhase37PublicFileMatrix/nul-direct-dispatch/adler_low/interpreter/direct-public-dispatch
+=== RUN   TestPhase37PublicFileMatrix/nul-direct-dispatch/adler_low/native/direct-public-dispatch
+=== RUN   TestPhase37PublicFileMatrix/manifest-controls
+=== RUN   TestPhase37PublicFileMatrix/manifest-controls/missing-manifest
+=== RUN   TestPhase37PublicFileMatrix/manifest-controls/missing-manifest/crc32
+=== RUN   TestPhase37PublicFileMatrix/manifest-controls/missing-manifest/crc_low
+=== RUN   TestPhase37PublicFileMatrix/manifest-controls/missing-manifest/checksum
+=== RUN   TestPhase37PublicFileMatrix/manifest-controls/missing-manifest/adler_low
+=== RUN   TestPhase37PublicFileMatrix/manifest-controls/bad-manifest
+=== RUN   TestPhase37PublicFileMatrix/manifest-controls/bad-manifest/crc32
+=== RUN   TestPhase37PublicFileMatrix/manifest-controls/bad-manifest/crc_low
+=== RUN   TestPhase37PublicFileMatrix/manifest-controls/bad-manifest/checksum
+=== RUN   TestPhase37PublicFileMatrix/manifest-controls/bad-manifest/adler_low
+=== RUN   TestPhase37PublicFileMatrix/isolated-bounded-parallel-pair
+--- PASS: TestPhase37PublicFileMatrix (33.72s)
+    --- PASS: TestPhase37PublicFileMatrix/empty (1.14s)
+        --- PASS: TestPhase37PublicFileMatrix/empty/crc32 (0.30s)
+            --- PASS: TestPhase37PublicFileMatrix/empty/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/empty/crc32/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/empty/crc_low (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/empty/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/empty/crc_low/native (0.27s)
+        --- PASS: TestPhase37PublicFileMatrix/empty/checksum (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/empty/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/empty/checksum/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/empty/adler_low (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/empty/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/empty/adler_low/native (0.28s)
+    --- PASS: TestPhase37PublicFileMatrix/zero (1.15s)
+        --- PASS: TestPhase37PublicFileMatrix/zero/crc32 (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/zero/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/zero/crc32/native (0.27s)
+        --- PASS: TestPhase37PublicFileMatrix/zero/crc_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/zero/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/zero/crc_low/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/zero/checksum (0.30s)
+            --- PASS: TestPhase37PublicFileMatrix/zero/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/zero/checksum/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/zero/adler_low (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/zero/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/zero/adler_low/native (0.27s)
+    --- PASS: TestPhase37PublicFileMatrix/check (1.16s)
+        --- PASS: TestPhase37PublicFileMatrix/check/crc32 (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/check/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/check/crc32/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/check/crc_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/check/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/check/crc_low/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/check/checksum (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/check/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/check/checksum/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/check/adler_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/check/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/check/adler_low/native (0.28s)
+    --- PASS: TestPhase37PublicFileMatrix/highbit-80 (1.19s)
+        --- PASS: TestPhase37PublicFileMatrix/highbit-80/crc32 (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80/crc32/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/highbit-80/crc_low (0.30s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80/crc_low/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/highbit-80/checksum (0.32s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80/checksum/native (0.31s)
+        --- PASS: TestPhase37PublicFileMatrix/highbit-80/adler_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80/adler_low/native (0.28s)
+    --- PASS: TestPhase37PublicFileMatrix/highbit-80ff (1.18s)
+        --- PASS: TestPhase37PublicFileMatrix/highbit-80ff/crc32 (0.32s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80ff/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80ff/crc32/native (0.31s)
+        --- PASS: TestPhase37PublicFileMatrix/highbit-80ff/crc_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80ff/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80ff/crc_low/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/highbit-80ff/checksum (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80ff/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80ff/checksum/native (0.27s)
+        --- PASS: TestPhase37PublicFileMatrix/highbit-80ff/adler_low (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80ff/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/highbit-80ff/adler_low/native (0.28s)
+    --- PASS: TestPhase37PublicFileMatrix/all-bytes-00-ff (1.22s)
+        --- PASS: TestPhase37PublicFileMatrix/all-bytes-00-ff/crc32 (0.31s)
+            --- PASS: TestPhase37PublicFileMatrix/all-bytes-00-ff/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/all-bytes-00-ff/crc32/native (0.30s)
+        --- PASS: TestPhase37PublicFileMatrix/all-bytes-00-ff/crc_low (0.31s)
+            --- PASS: TestPhase37PublicFileMatrix/all-bytes-00-ff/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/all-bytes-00-ff/crc_low/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/all-bytes-00-ff/checksum (0.30s)
+            --- PASS: TestPhase37PublicFileMatrix/all-bytes-00-ff/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/all-bytes-00-ff/checksum/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/all-bytes-00-ff/adler_low (0.30s)
+            --- PASS: TestPhase37PublicFileMatrix/all-bytes-00-ff/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/all-bytes-00-ff/adler_low/native (0.29s)
+    --- PASS: TestPhase37PublicFileMatrix/cap-minus-one (3.51s)
+        --- PASS: TestPhase37PublicFileMatrix/cap-minus-one/crc32 (1.35s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-minus-one/crc32/interpreter (1.05s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-minus-one/crc32/native (0.30s)
+        --- PASS: TestPhase37PublicFileMatrix/cap-minus-one/crc_low (1.41s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-minus-one/crc_low/interpreter (1.10s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-minus-one/crc_low/native (0.31s)
+        --- PASS: TestPhase37PublicFileMatrix/cap-minus-one/checksum (0.37s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-minus-one/checksum/interpreter (0.07s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-minus-one/checksum/native (0.30s)
+        --- PASS: TestPhase37PublicFileMatrix/cap-minus-one/adler_low (0.37s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-minus-one/adler_low/interpreter (0.08s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-minus-one/adler_low/native (0.29s)
+    --- PASS: TestPhase37PublicFileMatrix/cap (3.37s)
+        --- PASS: TestPhase37PublicFileMatrix/cap/crc32 (1.36s)
+            --- PASS: TestPhase37PublicFileMatrix/cap/crc32/interpreter (1.04s)
+            --- PASS: TestPhase37PublicFileMatrix/cap/crc32/native (0.32s)
+        --- PASS: TestPhase37PublicFileMatrix/cap/crc_low (1.25s)
+            --- PASS: TestPhase37PublicFileMatrix/cap/crc_low/interpreter (0.95s)
+            --- PASS: TestPhase37PublicFileMatrix/cap/crc_low/native (0.30s)
+        --- PASS: TestPhase37PublicFileMatrix/cap/checksum (0.36s)
+            --- PASS: TestPhase37PublicFileMatrix/cap/checksum/interpreter (0.07s)
+            --- PASS: TestPhase37PublicFileMatrix/cap/checksum/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/cap/adler_low (0.41s)
+            --- PASS: TestPhase37PublicFileMatrix/cap/adler_low/interpreter (0.08s)
+            --- PASS: TestPhase37PublicFileMatrix/cap/adler_low/native (0.33s)
+    --- PASS: TestPhase37PublicFileMatrix/cap-plus-one (1.33s)
+        --- PASS: TestPhase37PublicFileMatrix/cap-plus-one/crc32 (0.36s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-plus-one/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-plus-one/crc32/native (0.35s)
+        --- PASS: TestPhase37PublicFileMatrix/cap-plus-one/crc_low (0.34s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-plus-one/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-plus-one/crc_low/native (0.33s)
+        --- PASS: TestPhase37PublicFileMatrix/cap-plus-one/checksum (0.32s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-plus-one/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-plus-one/checksum/native (0.31s)
+        --- PASS: TestPhase37PublicFileMatrix/cap-plus-one/adler_low (0.31s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-plus-one/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/cap-plus-one/adler_low/native (0.30s)
+    --- PASS: TestPhase37PublicFileMatrix/wikipedia (1.35s)
+        --- PASS: TestPhase37PublicFileMatrix/wikipedia/crc32 (0.32s)
+            --- PASS: TestPhase37PublicFileMatrix/wikipedia/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/wikipedia/crc32/native (0.32s)
+        --- PASS: TestPhase37PublicFileMatrix/wikipedia/crc_low (0.34s)
+            --- PASS: TestPhase37PublicFileMatrix/wikipedia/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/wikipedia/crc_low/native (0.33s)
+        --- PASS: TestPhase37PublicFileMatrix/wikipedia/checksum (0.34s)
+            --- PASS: TestPhase37PublicFileMatrix/wikipedia/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/wikipedia/checksum/native (0.34s)
+        --- PASS: TestPhase37PublicFileMatrix/wikipedia/adler_low (0.34s)
+            --- PASS: TestPhase37PublicFileMatrix/wikipedia/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/wikipedia/adler_low/native (0.33s)
+    --- PASS: TestPhase37PublicFileMatrix/missing (1.31s)
+        --- PASS: TestPhase37PublicFileMatrix/missing/crc32 (0.32s)
+            --- PASS: TestPhase37PublicFileMatrix/missing/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/missing/crc32/native (0.31s)
+        --- PASS: TestPhase37PublicFileMatrix/missing/crc_low (0.37s)
+            --- PASS: TestPhase37PublicFileMatrix/missing/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/missing/crc_low/native (0.36s)
+        --- PASS: TestPhase37PublicFileMatrix/missing/checksum (0.31s)
+            --- PASS: TestPhase37PublicFileMatrix/missing/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/missing/checksum/native (0.30s)
+        --- PASS: TestPhase37PublicFileMatrix/missing/adler_low (0.31s)
+            --- PASS: TestPhase37PublicFileMatrix/missing/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/missing/adler_low/native (0.30s)
+    --- PASS: TestPhase37PublicFileMatrix/directory (1.23s)
+        --- PASS: TestPhase37PublicFileMatrix/directory/crc32 (0.32s)
+            --- PASS: TestPhase37PublicFileMatrix/directory/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/directory/crc32/native (0.31s)
+        --- PASS: TestPhase37PublicFileMatrix/directory/crc_low (0.31s)
+            --- PASS: TestPhase37PublicFileMatrix/directory/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/directory/crc_low/native (0.31s)
+        --- PASS: TestPhase37PublicFileMatrix/directory/checksum (0.30s)
+            --- PASS: TestPhase37PublicFileMatrix/directory/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/directory/checksum/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/directory/adler_low (0.31s)
+            --- PASS: TestPhase37PublicFileMatrix/directory/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/directory/adler_low/native (0.30s)
+    --- PASS: TestPhase37PublicFileMatrix/fifo (1.18s)
+        --- PASS: TestPhase37PublicFileMatrix/fifo/crc32 (0.30s)
+            --- PASS: TestPhase37PublicFileMatrix/fifo/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/fifo/crc32/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/fifo/crc_low (0.31s)
+            --- PASS: TestPhase37PublicFileMatrix/fifo/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/fifo/crc_low/native (0.30s)
+        --- PASS: TestPhase37PublicFileMatrix/fifo/checksum (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/fifo/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/fifo/checksum/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/fifo/adler_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/fifo/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/fifo/adler_low/native (0.28s)
+    --- PASS: TestPhase37PublicFileMatrix/device (1.18s)
+        --- PASS: TestPhase37PublicFileMatrix/device/crc32 (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/device/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/device/crc32/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/device/crc_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/device/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/device/crc_low/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/device/checksum (0.30s)
+            --- PASS: TestPhase37PublicFileMatrix/device/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/device/checksum/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/device/adler_low (0.31s)
+            --- PASS: TestPhase37PublicFileMatrix/device/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/device/adler_low/native (0.30s)
+    --- PASS: TestPhase37PublicFileMatrix/unreadable (1.18s)
+        --- PASS: TestPhase37PublicFileMatrix/unreadable/crc32 (0.32s)
+            --- PASS: TestPhase37PublicFileMatrix/unreadable/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/unreadable/crc32/native (0.31s)
+        --- PASS: TestPhase37PublicFileMatrix/unreadable/crc_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/unreadable/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/unreadable/crc_low/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/unreadable/checksum (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/unreadable/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/unreadable/checksum/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/unreadable/adler_low (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/unreadable/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/unreadable/adler_low/native (0.28s)
+    --- PASS: TestPhase37PublicFileMatrix/input-symlink (1.18s)
+        --- PASS: TestPhase37PublicFileMatrix/input-symlink/crc32 (0.30s)
+            --- PASS: TestPhase37PublicFileMatrix/input-symlink/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/input-symlink/crc32/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/input-symlink/crc_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/input-symlink/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/input-symlink/crc_low/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/input-symlink/checksum (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/input-symlink/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/input-symlink/checksum/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/input-symlink/adler_low (0.30s)
+            --- PASS: TestPhase37PublicFileMatrix/input-symlink/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/input-symlink/adler_low/native (0.29s)
+    --- PASS: TestPhase37PublicFileMatrix/opaque-json (1.16s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-json/crc32 (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-json/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-json/crc32/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-json/crc_low (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-json/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-json/crc_low/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-json/checksum (0.27s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-json/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-json/checksum/native (0.27s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-json/adler_low (0.31s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-json/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-json/adler_low/native (0.30s)
+    --- PASS: TestPhase37PublicFileMatrix/opaque-depth (1.17s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-depth/crc32 (0.30s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-depth/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-depth/crc32/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-depth/crc_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-depth/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-depth/crc_low/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-depth/checksum (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-depth/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-depth/checksum/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-depth/adler_low (0.30s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-depth/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-depth/adler_low/native (0.29s)
+    --- PASS: TestPhase37PublicFileMatrix/opaque-separator (1.15s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-separator/crc32 (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-separator/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-separator/crc32/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-separator/crc_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-separator/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-separator/crc_low/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-separator/checksum (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-separator/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-separator/checksum/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-separator/adler_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-separator/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-separator/adler_low/native (0.28s)
+    --- PASS: TestPhase37PublicFileMatrix/opaque-leading-dash (1.17s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-leading-dash/crc32 (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-leading-dash/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-leading-dash/crc32/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-leading-dash/crc_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-leading-dash/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-leading-dash/crc_low/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-leading-dash/checksum (0.30s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-leading-dash/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-leading-dash/checksum/native (0.30s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-leading-dash/adler_low (0.30s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-leading-dash/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-leading-dash/adler_low/native (0.29s)
+    --- PASS: TestPhase37PublicFileMatrix/opaque-space (1.11s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-space/crc32 (0.27s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-space/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-space/crc32/native (0.26s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-space/crc_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-space/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-space/crc_low/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-space/checksum (0.27s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-space/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-space/checksum/native (0.27s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-space/adler_low (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-space/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-space/adler_low/native (0.27s)
+    --- PASS: TestPhase37PublicFileMatrix/opaque-unicode (1.15s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-unicode/crc32 (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-unicode/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-unicode/crc32/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-unicode/crc_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-unicode/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-unicode/crc_low/native (0.29s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-unicode/checksum (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-unicode/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-unicode/checksum/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-unicode/adler_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-unicode/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-unicode/adler_low/native (0.28s)
+    --- PASS: TestPhase37PublicFileMatrix/opaque-shell (1.17s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-shell/crc32 (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-shell/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-shell/crc32/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-shell/crc_low (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-shell/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-shell/crc_low/native (0.27s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-shell/checksum (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-shell/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-shell/checksum/native (0.27s)
+        --- PASS: TestPhase37PublicFileMatrix/opaque-shell/adler_low (0.32s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-shell/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/opaque-shell/adler_low/native (0.31s)
+    --- PASS: TestPhase37PublicFileMatrix/empty-token (0.03s)
+        --- PASS: TestPhase37PublicFileMatrix/empty-token/crc32 (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/empty-token/crc32/interpreter (0.00s)
+            --- PASS: TestPhase37PublicFileMatrix/empty-token/crc32/native (0.00s)
+        --- PASS: TestPhase37PublicFileMatrix/empty-token/crc_low (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/empty-token/crc_low/interpreter (0.00s)
+            --- PASS: TestPhase37PublicFileMatrix/empty-token/crc_low/native (0.00s)
+        --- PASS: TestPhase37PublicFileMatrix/empty-token/checksum (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/empty-token/checksum/interpreter (0.00s)
+            --- PASS: TestPhase37PublicFileMatrix/empty-token/checksum/native (0.00s)
+        --- PASS: TestPhase37PublicFileMatrix/empty-token/adler_low (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/empty-token/adler_low/interpreter (0.00s)
+            --- PASS: TestPhase37PublicFileMatrix/empty-token/adler_low/native (0.00s)
+    --- PASS: TestPhase37PublicFileMatrix/path-4096 (1.12s)
+        --- PASS: TestPhase37PublicFileMatrix/path-4096/crc32 (0.28s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4096/crc32/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4096/crc32/native (0.28s)
+        --- PASS: TestPhase37PublicFileMatrix/path-4096/crc_low (0.27s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4096/crc_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4096/crc_low/native (0.26s)
+        --- PASS: TestPhase37PublicFileMatrix/path-4096/checksum (0.27s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4096/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4096/checksum/native (0.27s)
+        --- PASS: TestPhase37PublicFileMatrix/path-4096/adler_low (0.29s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4096/adler_low/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4096/adler_low/native (0.28s)
+    --- PASS: TestPhase37PublicFileMatrix/path-4097 (0.03s)
+        --- PASS: TestPhase37PublicFileMatrix/path-4097/crc32 (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4097/crc32/interpreter (0.00s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4097/crc32/native (0.00s)
+        --- PASS: TestPhase37PublicFileMatrix/path-4097/crc_low (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4097/crc_low/interpreter (0.00s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4097/crc_low/native (0.00s)
+        --- PASS: TestPhase37PublicFileMatrix/path-4097/checksum (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4097/checksum/interpreter (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4097/checksum/native (0.00s)
+        --- PASS: TestPhase37PublicFileMatrix/path-4097/adler_low (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4097/adler_low/interpreter (0.00s)
+            --- PASS: TestPhase37PublicFileMatrix/path-4097/adler_low/native (0.00s)
+    --- PASS: TestPhase37PublicFileMatrix/nul-direct-dispatch (0.00s)
+        --- PASS: TestPhase37PublicFileMatrix/nul-direct-dispatch/crc32/interpreter/direct-public-dispatch (0.00s)
+        --- PASS: TestPhase37PublicFileMatrix/nul-direct-dispatch/crc32/native/direct-public-dispatch (0.00s)
+        --- PASS: TestPhase37PublicFileMatrix/nul-direct-dispatch/crc_low/interpreter/direct-public-dispatch (0.00s)
+        --- PASS: TestPhase37PublicFileMatrix/nul-direct-dispatch/crc_low/native/direct-public-dispatch (0.00s)
+        --- PASS: TestPhase37PublicFileMatrix/nul-direct-dispatch/checksum/interpreter/direct-public-dispatch (0.00s)
+        --- PASS: TestPhase37PublicFileMatrix/nul-direct-dispatch/checksum/native/direct-public-dispatch (0.00s)
+        --- PASS: TestPhase37PublicFileMatrix/nul-direct-dispatch/adler_low/interpreter/direct-public-dispatch (0.00s)
+        --- PASS: TestPhase37PublicFileMatrix/nul-direct-dispatch/adler_low/native/direct-public-dispatch (0.00s)
+    --- PASS: TestPhase37PublicFileMatrix/manifest-controls (0.05s)
+        --- PASS: TestPhase37PublicFileMatrix/manifest-controls/missing-manifest (0.03s)
+            --- PASS: TestPhase37PublicFileMatrix/manifest-controls/missing-manifest/crc32 (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/manifest-controls/missing-manifest/crc_low (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/manifest-controls/missing-manifest/checksum (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/manifest-controls/missing-manifest/adler_low (0.01s)
+        --- PASS: TestPhase37PublicFileMatrix/manifest-controls/bad-manifest (0.03s)
+            --- PASS: TestPhase37PublicFileMatrix/manifest-controls/bad-manifest/crc32 (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/manifest-controls/bad-manifest/crc_low (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/manifest-controls/bad-manifest/checksum (0.01s)
+            --- PASS: TestPhase37PublicFileMatrix/manifest-controls/bad-manifest/adler_low (0.01s)
+    --- PASS: TestPhase37PublicFileMatrix/isolated-bounded-parallel-pair (0.30s)
+PASS
+ok  	github.com/szTheory/schway/cmd/schway	33.724s

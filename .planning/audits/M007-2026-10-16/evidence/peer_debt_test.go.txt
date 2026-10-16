@@ -1,0 +1,49 @@
+package executionpeer_test
+
+import (
+	"testing"
+
+	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/execution"
+	"github.com/szTheory/schway/internal/compiler/executionpeer"
+)
+
+func TestM007AuditResidualPeerDebt(t *testing.T) {
+	t.Run("CR03-legacy-child-defect", func(t *testing.T) {
+		const entryID, callID, childID, defectID = "audit_entry", "audit_entry:call", "audit_child", "audit_child:defect"
+		program := core.Program{Functions: []core.Function{
+			{ID: entryID, Name: entryID, Parameter: core.Parameter{ID: entryID + ":arg", Type: "ByteView"}, ReturnType: "Unit", Linear: &core.LinearBody{Operations: []core.LinearOperation{
+				{ID: callID, Kind: core.OpCall, CalleeID: childID},
+				{ID: entryID + ":return", Kind: core.OpReturn},
+			}}},
+			{ID: childID, Name: childID, Parameter: core.Parameter{ID: childID + ":arg", Type: "ByteView"}, ReturnType: "Unit", Linear: &core.LinearBody{Operations: []core.LinearOperation{
+				{ID: defectID, Kind: core.OpDefect, Reason: "legacy child stopped"},
+			}}},
+		}}
+		root, _ := execution.FormatInvocation(entryID, nil)
+		child, _ := execution.FormatInvocation(entryID, []execution.InvocationSegment{{OpCallID: callID}})
+		document := execution.Execution{Schema: execution.Schema2, Outcome: execution.Outcome{Kind: execution.OutcomeDefect}, Events: []execution.Event{
+			{Schema: execution.Schema2, Invocation: root, ID: callID + ":event:called", Kind: "function.called", FunctionID: entryID, CalleeFunctionID: childID},
+			{Schema: execution.Schema2, Invocation: child, ID: defectID + ":event:defected", Kind: "function.defected", FunctionID: childID, Output: "legacy child stopped"},
+		}}
+		if err := executionpeer.Validate(program, document); err != nil {
+			t.Errorf("CR-03 reproduced: valid whole-execution child defect is refused: %v", err)
+		}
+	})
+
+	t.Run("CR04-opreturn-propagated-failure", func(t *testing.T) {
+		const entryID, returnID = "audit_failure_entry", "audit_failure_entry:return"
+		program := core.Program{Functions: []core.Function{{
+			ID: entryID, Name: entryID, Parameter: core.Parameter{ID: entryID + ":arg", Type: "ByteView"}, ReturnType: "Result", Linear: &core.LinearBody{Operations: []core.LinearOperation{
+				{ID: returnID, Kind: core.OpReturn, SourceID: "failure", TypeID: "result.error"},
+			}},
+		}}}
+		root, _ := execution.FormatInvocation(entryID, nil)
+		document := execution.Execution{Schema: execution.Schema2, Outcome: execution.Outcome{Kind: execution.OutcomeTypedFailure, Value: "file.unavailable"}, Events: []execution.Event{
+			{Schema: execution.Schema2, Invocation: root, ID: returnID + ":event:failed", Kind: "function.failed", FunctionID: entryID, SourcePlace: "failure", TypeID: "result.error"},
+		}}
+		if err := executionpeer.Validate(program, document); err != nil {
+			t.Errorf("CR-04 reproduced: valid propagated OpReturn failure is refused: %v", err)
+		}
+	})
+}

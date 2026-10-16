@@ -1,0 +1,20 @@
+=== RUN   TestPhase37CRC32AlgorithmMutants
+=== RUN   TestPhase37CRC32AlgorithmMutants/wrong-reflected-polynomial
+    main_phase37_crc32_controls_test.go:97: reached wrong-reflected-polynomial on interpreter: clean=3421780262 mutated=3485321504
+    main_phase37_crc32_controls_test.go:97: reached wrong-reflected-polynomial on native: clean=3421780262 mutated=3485321504
+=== RUN   TestPhase37CRC32AlgorithmMutants/non-reflected-recurrence
+    main_phase37_crc32_controls_test.go:97: reached non-reflected-recurrence on interpreter: clean=1069182125 mutated=544806248613
+    main_phase37_crc32_controls_test.go:97: reached non-reflected-recurrence on native: clean=1069182125 mutated=544806248613
+=== RUN   TestPhase37CRC32AlgorithmMutants/missing-final-xor
+    main_phase37_crc32_controls_test.go:97: reached missing-final-xor on interpreter: clean=0 mutated=4294967295
+    main_phase37_crc32_controls_test.go:97: reached missing-final-xor on native: clean=0 mutated=4294967295
+=== RUN   TestPhase37CRC32AlgorithmMutants/shortened-bit-round-bound
+    main_phase37_crc32_controls_test.go:97: reached shortened-bit-round-bound on interpreter: clean=3523407757 mutated=2751848219
+    main_phase37_crc32_controls_test.go:97: reached shortened-bit-round-bound on native: clean=3523407757 mutated=2751848219
+--- PASS: TestPhase37CRC32AlgorithmMutants (2.81s)
+    --- PASS: TestPhase37CRC32AlgorithmMutants/wrong-reflected-polynomial (0.60s)
+    --- PASS: TestPhase37CRC32AlgorithmMutants/non-reflected-recurrence (0.63s)
+    --- PASS: TestPhase37CRC32AlgorithmMutants/missing-final-xor (0.61s)
+    --- PASS: TestPhase37CRC32AlgorithmMutants/shortened-bit-round-bound (0.60s)
+PASS
+ok  	github.com/szTheory/schway/cmd/schway	2.818s

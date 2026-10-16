@@ -1,0 +1,417 @@
+{
+  "audited": "2026-10-16T13:09:50Z",
+  "audited_head": "502ab55edb501dbe2c6b3c101b45852bb7ec29bb",
+  "source_inputs": {
+    ".planning/LANGUAGE-MATURITY.md": "15b96913b4f9f9655ad91ded6cc018fd7f7ee642c5c6d8e916e9b74673c6afe7",
+    ".planning/PRODUCT-ROADMAP.md": "3b147f47f57151a85a6080b58b759d0e9e0efe2d3abf218aedcca82f9ddb94b4",
+    ".planning/REQUIREMENTS.md": "775ded6def4941b7b028c9b688ac8ac35305deacb14c249647401d5b99ff0281",
+    ".planning/ROADMAP.md": "6f1f89efbf441acc19672d4f47853dff048938859fc5ad6c1acb01dd7baafd56",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-01-PLAN.md": "ca4e30c4b8f6dd99c11c1103a9fe535399c9b9e12fa1ce181596db196c4de055",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-01-SUMMARY.md": "a0537bbb8780ce5f41309f223f563c4c333d21526c9ab0bf06fe36005ac85881",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-02-PLAN.md": "edb82bffbf5d3abf8ec2b94a3a2dfef663b6c2c8e996dcc8e46519c4db504365",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-02-SUMMARY.md": "afb2193fe1c4166196ea026892d4369f64154423c42bec96d6f8aa203c9ae2ab",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-03-PLAN.md": "117fd29103202fe39fa9633a72b97a2e5e2fee8d879561d2c2140859f6e85962",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-03-SUMMARY.md": "cfc45d079d1f00c8184a4944f677404914f0dc0e96d28ebf32d7d5eb45893652",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-04-PLAN.md": "77392c42071a37807a277b959f1a52f3c14d88a2a7589b3f60f217e691c58715",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-04-SUMMARY.md": "e24772f3b500a36405633c93fc5331a72d4ae1fce19fbb587bdbb3dabca246f7",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-05-PLAN.md": "ddfbf284e3a3e4c6bab87f9fa743a4726b8117d515e524135e7c07c2ad3aabcd",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-05-SUMMARY.md": "64528b53800a25a5532d67bfd237a7b91a57939a892ef42f6a9873e99bc5c13f",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW-DISPOSITION.md": "43b8fea119901d8ed0e0efbf8723ba0ef13821463b8f330d6ed841ecf8071f8c",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-SECURITY.md": "8e5864d3e714f8455cf08424b838a059c11ec96908243fb71e9d234d0bfc5d62",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VALIDATION.md": "a1c28643351257af24d85bbeb71863cb6b62f861648817a85ae799b840799e65",
+    ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VERIFICATION.md": "43a268e45bd603737e4f5cc1471c97f48b45195ba8132d3f79b9cd311d7bf23d",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-01-PLAN.md": "9643cc09f4ba62f08775e7fa70238324c0b8ec4d24761c6e1337c52d26998a6a",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-01-SUMMARY.md": "964ee3443fd4e6c8963754ea8ab9de624745b801dddff76c0ba6130f03670143",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-02-PLAN.md": "dda497ac5779fdb45c4d29d35e9720617feacb6d7f8590e4d7aeb7d7f7514bd5",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-02-SUMMARY.md": "da4ad443c61fea9e1d36c2caad4754851bfa7f9179061111322bf778b508cece",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-03-PLAN.md": "9758edb89e3d0931e6cf95039e5a592365e68bde8c2c8c360581da6e27e877f3",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-03-SUMMARY.md": "f8444934e912166ec05aa1a50d40e4c0a86d79c11b506e59bc7d7afd04e05f02",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-04-PLAN.md": "cc81ace55d00d14f8aa542ea3671834dd990cb0d6f604ad8fd6c0fe699a87598",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-04-SUMMARY.md": "e44db676f702ebee9cd70a09bf23f6c44da344d64936ba8f2b63e567dd9c7a13",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-05-PLAN.md": "62d47a504d58d89c26118c732b7b00c0e48dd71e28fbed5a538a9d653f0c9300",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-05-SUMMARY.md": "55f616c747826b4333c9cc3511fda512245a2ef94cd5f96e46c9f53649bbf353",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-PLAN.md": "56c9cfde6a668477651bfdc2bf9e01069850aba07efa705a9589711a9b50fa5f",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-SUMMARY.md": "b0f7afc75112b5d39c5d3969b933856bcdea8ed296a6acb93567d2e7251a3271",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-PLAN.md": "2a38f4cb60fd9c1133efba22830cd016090fdd0953f49ea71c857528699c7442",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-SUMMARY.md": "faa28795b7975a86f23a0811bc22b2380cb54e4b023f9f3c6e8bdb6cbbd0a4f8",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-PLAN.md": "bed045c50dce1880105ba9ce2c5f0791dbb950f45834ab2265a3a84cffc45e4c",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-SUMMARY.md": "6856a9e07c5f4f43d479b3c20113e67b6f5b445fbbe9f04623278d4fc607c2f4",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-REVIEW-DISPOSITION.md": "cd915efa99700aeb019fa8aed61257c5639068515c45d12ea93113310ea24f81",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-SECURITY.md": "b7ebdbf9742040581f911fdb949c06caaf5846d444b48450f5c86d4009d3b432",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-VALIDATION.md": "edb5ea828e4bb4cd62f3d0151b6d472d20d77e6fd8e6fa9255930f6e4c6ef580",
+    ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-VERIFICATION.md": "bc2373b417332b6ece2db13a931df516cc095d7323d13c2c50e65255d25fc4a6",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-01-PLAN.md": "78a0f703a84aafe7328c21f4a9d4376212f827447704c6e2eb9d43125d1d3993",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-01-SUMMARY.md": "3b8da9be955226f1df020d3f5df2d50d6d4acec37fa889e350f838e7c29aff91",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-02-PLAN.md": "6cc36e9d29123b86b59fe4e2b9bce74ae7b600bb81faa930b00c64422c7ee0e7",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-02-SUMMARY.md": "f9294251b3cb1dda512bde277cc5dfd5543afa33653d709df428565cb880a288",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-03-PLAN.md": "f1bf9e9263b776417bdbc9e3281333e567e8b57e8e7bbdb73906e800f0137d88",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-03-SUMMARY.md": "a3f23ac1ee36f23bc38dc4fb01159f0f2ae4cae3afde626226f75e111a9882f5",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-04-PLAN.md": "bf2e2c8458814cd774a1ccbf76f09c7c7a1491f8c102c05419939e743183f4c1",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-04-SUMMARY.md": "e9700454664f81fe46e5abdd6a5c55c110700641ed3a5cc9755c3e4635987a70",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-05-PLAN.md": "d81d4e4d9065d562425933ee5f16cf0568ce2edf33d50fbd731d4e5232ee1a7b",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-05-SUMMARY.md": "d0032aaa525eae2b8c4e80b112eafddd7292e736efcc3fe809b458fe9fa04326",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-06-PLAN.md": "88f86d32e4a40e1b22bfe4dc3e0ebe1dcfa3b7a821822701073d1928279bb2af",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-06-SUMMARY.md": "315885f39f79a79d9902b5f1e9dcd62078784b7b9c005623868c873faf731318",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-07-PLAN.md": "a7d9e77e54d96871489aae3c1670037a00e8093259b24abaf5e1b7d7a1e090a0",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-07-SUMMARY.md": "1668da5cf567fb1dfcf41d2b4d4c52053db012a4cbf6a393dce9ce40abd946f8",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-PLAN.md": "df6cb11dd7d876eb8d04e58feb94ca8aaa33706197b697641f335df4fb7332ee",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-SUMMARY.md": "ccb75e646d83aad799c841267cef06cb42a5637bed79cd957e0ac94d8536e873",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REVIEW-DISPOSITION.md": "2dac0890e6ae38d47258dba645a1bc7ca25a6b5994db1233c4a66d0c32c32133",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-SECURITY.md": "3bf35a58bbd13cde3a1349a87ff1979176e221f011e4873e661d8e39b77a5cb1",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VALIDATION.md": "12ea44354323f46a0b8df66368f97c93dea08f9261c42235a79113307d51b4d5",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VERIFICATION.md": "ecaeaa79f187f1f90ecbea3c63a1d2d6abf06b42fe13d369ecf77439f9e05787",
+    ".planning/phases/36-scalar-helper-calls/36-01-PLAN.md": "f2e0bef00fabd1a69631374cdddc2b944101090c2a7ecd45580239efbbc19e77",
+    ".planning/phases/36-scalar-helper-calls/36-01-SUMMARY.md": "f1b22d226fc66edb271f045ac274aa66e71d36fb024befa904e4c2a088795505",
+    ".planning/phases/36-scalar-helper-calls/36-02-PLAN.md": "382ec2cb75598e5e6e0f6cebca88c55a3ede0b26800d9662d3a2e8588c0d6b50",
+    ".planning/phases/36-scalar-helper-calls/36-02-SUMMARY.md": "ccab95cf7cad8c9816c83da72ccd59073aaf90ba7edd539053fa65ae5d912472",
+    ".planning/phases/36-scalar-helper-calls/36-03-PLAN.md": "d366a2922ea5eeab5c0865f769405d749521dbaff47fcc9e9d1d4828303f3ebb",
+    ".planning/phases/36-scalar-helper-calls/36-03-SUMMARY.md": "6805141d057979d2fe54204b66993af993b0d978fc4483c967c045c91bcb9cf5",
+    ".planning/phases/36-scalar-helper-calls/36-04-PLAN.md": "bca96ff56c31cfd5f447a72d411ce5e9b809a351a7cccd9127d120fab1740f45",
+    ".planning/phases/36-scalar-helper-calls/36-04-SUMMARY.md": "e4bf7065bfc8603ed70a0736865aef4b48de22a39e88d22bfd981909f1d9c8bb",
+    ".planning/phases/36-scalar-helper-calls/36-05-PLAN.md": "eb1ba41e339d0721e9986cde42526c7c13a456ff4e95abf70462845cb8a12c83",
+    ".planning/phases/36-scalar-helper-calls/36-05-SUMMARY.md": "5d13ed2e64ff7f0373411ffa2b334fcf5ae475128c3f6863517fa6d324b97def",
+    ".planning/phases/36-scalar-helper-calls/36-06-PLAN.md": "fc644338243ccac33f6c19b796d701756e05f7c13401589ad0cbc5ceb1016da6",
+    ".planning/phases/36-scalar-helper-calls/36-06-SUMMARY.md": "5e92e418e6b9852a4ca5466cc0f99633ad91806826be781aff89d83f7e701f38",
+    ".planning/phases/36-scalar-helper-calls/36-07-PLAN.md": "b76f24f31a90bcea2c094b9f39d0ff60894096350c14e5d97942ad8df1008b9a",
+    ".planning/phases/36-scalar-helper-calls/36-07-SUMMARY.md": "fbbcbafaf2ffeb13132be74ae982fb449cecf2a4e03d2fd31f3069ca7f35f9f6",
+    ".planning/phases/36-scalar-helper-calls/36-08-PLAN.md": "1495abb7c64ed3e393b0d51fd4e1083d7d6c4648e443def404e95f9fd5ab1947",
+    ".planning/phases/36-scalar-helper-calls/36-08-SUMMARY.md": "b37ea14f9761a31d215e2d35cd222cb81227cf175f3de698d5fd61dfaefd548b",
+    ".planning/phases/36-scalar-helper-calls/36-REVIEW-DISPOSITION.md": "e617825febae62d3960e0bb5b43f42dd3e254f4e4dd1339d8fd36822a5b64f3c",
+    ".planning/phases/36-scalar-helper-calls/36-SECURITY.md": "0129a89b579979fc85387269be1dc8fcc6a2ff48ae06045bf1fc94ad3933483e",
+    ".planning/phases/36-scalar-helper-calls/36-VALIDATION.md": "b931268e28a4ca3777d83c6b68fa23660998234cf0138fbc1f9dfb3f449a724f",
+    ".planning/phases/36-scalar-helper-calls/36-VERIFICATION.md": "111846425602ab2dcb9b208c54f44a69bf4e4f45e42cfbd303286e5cbf826fa4",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-01-PLAN.md": "ee401dac81b262544bbc3c94954cdb7362be57e1b58e40adb5450f15085f987f",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-01-SUMMARY.md": "527a614a920d55ecf00a8e83159c76d3a82e061fa626077464ce781549503420",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-02-PLAN.md": "b6d305297e9d6534df63a171b01e3e9e7ddb821810721455b9b530444fc0d488",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-02-SUMMARY.md": "61499a3f9cdb2db9a6154c1526c04215cab5c198a708324dd1ada3d780b69a36",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-03-PLAN.md": "33b0465cf9cdd16f55ff2d4d9f15426089a3ad5d9e409a389eba12b51a45577b",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-03-SUMMARY.md": "8fa322027ea8ad30863ad94784b266fb68354ee0554e9ac897c570bab13f1413",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-04-PLAN.md": "8e494f1c6e0dbd36ffa714b555d5f10f95bd6ed09631ac6553eeafe4283ab9ce",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-04-SUMMARY.md": "8118c39de85b2e1685b8d3387b0beed8bbf66836eb11a87f9d3d50a4c84333d8",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-05-PLAN.md": "94c20209d7057242991539acd041755ab79df83cec6c5c8d7401d560404ca22c",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-05-SUMMARY.md": "d3247499e1996c14d8025db135dca967ce3bb914ac56ddca7d0c4744bc77d16d",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-06-PLAN.md": "032c32a537a9f0068591d06932ceb5732df1cb583dc24774701f68d525c8fe75",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-06-SUMMARY.md": "569ac0ca8c5e40b3a3dbc3cceb8420966b4a2a861c08b9e1ff7e58447e79fe08",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-07-PLAN.md": "d3a5defbf447ef36c00af5a591d26a7ac664ceca73e2c5c751ed1400d3431054",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-07-SUMMARY.md": "b339acf077704e81c10e3b968a0ca6742fe4148c19e25b89ed8c6ce4c18f75b5",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-08-PLAN.md": "c5f2a4a2f42fc8a0111315e000d31d8f7cb9b8c2aa898fccd0598d2bcefb548d",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-08-SUMMARY.md": "2cc675f60fe83868199fbd82c7f366f5b8dc444bf23ab92e25889fc07a3a56aa",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-09-PLAN.md": "d626c9e48c4eff69124782d9156e9867b516db76245fb21d0e1f02ea755e8d93",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-09-SUMMARY.md": "04d00969c9e56adc1af9a3fc87a7c67feb5f619c7afd75160f817e57d54d1146",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-REVIEW-DISPOSITION.md": "d0e3a46b6ced61d678cd1a7c45a2f2960e36ff4f0070a74c1b344a344f5adeac",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-SECURITY.md": "d4dad33e5ce8b31a292be6844b0dc05d66bcfc237607d4be03ec76bb3c8fcccc",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-VALIDATION.md": "fcd4ccedb7f5abdd0e486f7e7837a7776daa5d6ce6c9e40c8591be5f962b3bbf",
+    ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-VERIFICATION.md": "ae651e85636449c719513f6ad48e8d7774ff0dc3a099fc13914b2396e09b4a2c",
+    ".planning/seeds/SEED-261008-trz-consumer-triggered-failure-observability.md": "1c58d6e5bb8ff2d1603b78b3d3a5dfd30466d3b7af0969c2a0d313927acad221",
+    ".planning/seeds/SEED-261008-z1g-bounded-symbol-and-caller-query.md": "a29cf39236c50dc4167bdb3517877b2081e3bd0f23ef54f2797f2110a2c9cd8f",
+    ".planning/seeds/SEED-261008-z1s-compare-contract-and-source-forms.md": "c3757ae843577a723212fa649e941545878a2a9b4c778232751f15cbeda19243",
+    ".planning/sources/DASHBIT-AI-ERA.md": "9cff4ab438d862fa599abf2e2b4dbf2ddbe738ee176d7d7cb1b9199ec4ca65ac",
+    "AGENTS.md": "034b8578ef803b8520593bd64cf0ef22cd76a838129e93e0f9d6f1977fd91f2d",
+    "cmd/schway-repair/repair_phase34_test.go": "ab009c5e12fa6283a7dac6188088c5408681df2755125a97a2a979f8280d7934",
+    "cmd/schway/main.go": "bf729e9ccc1169df3d8067e3d9244ba4d7b15db1e9435637ab5b30f33a956086",
+    "cmd/schway/main_phase34_diagnostics_test.go": "8785ef9842a0b8739f86bc84cdc314230bfa05356b7d966828a42650484971d6",
+    "cmd/schway/main_phase34_surface_test.go": "1c0e8ebd73b9ac0727ad80f7e6c0b4e9545d321bac2d45a55ae3116829fdc355",
+    "cmd/schway/main_phase37_crc32_controls_test.go": "9f14a8b3e330fd6a4546b9e750ed9acc2402792f7493bfde2b68dadb67532517",
+    "cmd/schway/main_phase37_guide_test.go": "7b4ce9eae5f1dc3129811b31fbc9ec346e544c0193236cc85986030cde212037",
+    "cmd/schway/main_phase37_matrix_test.go": "648bc81e2fe473a8ee9cf8fee6c31477ffd88fa59289f3c91eda478672195a43",
+    "examples/checksum/adler32.schway": "16490db4e53cb9db287727a8e5918745aa412659e799dd2fd53b38805bb3bef1",
+    "examples/crc32/crc32.schway": "8a8c7570409a6bf96258a35b5964dc899a2347871b564fb59e081beb011388c9",
+    "examples/crc32/crc_low.schway": "797f9cd2e733c3590a593518fe671a1fda553eb6ce22ea50d70f1a26d606dccc",
+    "examples/crc32/lib/crc32.schway": "ce98ba7b055625c0e5a627f7d769cfbba948695755aeadb471578153fdea3707",
+    "internal/compiler/cgen/cgen_phase33_scalar_defect_test.go": "943f5769f78033c1cef07539a6d4c7e9c7ec082e23e2f40b02856b168583033e",
+    "internal/compiler/cgen/cgen_program.go": "d2de11e73c39a13d99ca3087f4366711d0ade28ff550cfa9ea45b31eccc281e0",
+    "internal/compiler/check/scalar.go": "31537311ef6ad8fcf11f8cd7139f21404e41445d6d4c8ba5974a953ddaa1ec83",
+    "internal/compiler/corevalidate/corevalidate.go": "f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81",
+    "internal/compiler/executionpeer/executionpeer.go": "a884b40df2c5ef2dcb51082d2b6b6400b56bb7d07bf9c72e9a2f7e45a5124ba4",
+    "internal/compiler/executionpeer/executionpeer_phase36_test.go": "bb5b00cf7ee1844c82877725f96751a5dd2107e22021f0082bc881c37265d3d2",
+    "internal/compiler/interp/filebytes_reader.go": "f84db45d89f51130810d0652b655f88f127a168c1cce5a7c0aad4473e51cfffd",
+    "internal/compiler/interp/interp.go": "aba3e9245fb5189527faf0b7e95757bfc8c8c5985f063701b0f697dbdfd2afbd",
+    "internal/compiler/native/native_app.go": "0124d35186677f20a88704968de42c32a5d7f0fb6ea850533bd5b891629bac64",
+    "internal/compiler/native/native_phase33_capture_test.go": "25cd43f11a3397240e5b73b8ccd4aae6c94013804a425500a06c788434d6abff",
+    "internal/compiler/originvalidate/originvalidate.go": "831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272",
+    "internal/compiler/protocol/presentation.go": "34260f1e9af50be847bbf80f2f15591ef36649f0f8c72c8ee6eeeaca871a07d3",
+    "internal/compiler/protocol/protocol.go": "1a01641764d28a3a70fedd4ec1a277b4a859a9e6bbed6c2125c04e88a2826d14",
+    "internal/compiler/session/session.go": "9646a37ace6a50afe3d4a5b1c0c4f8d5e3160407d1fc18b0593bf7e4616af831",
+    "internal/compiler/session/session_file_application.go": "0ada850a0409073dc76a4e0723084a7768eda4534941b6d716cfc59236438c5c",
+    "internal/compiler/session/session_phase35_adler_test.go": "4dbf1ccc48481d5fcf3adcef4f2a10c4aafba171ee5ff340db53ac999a273472",
+    "internal/compiler/session/session_phase35_values_test.go": "9a02b4d36a928d0e25242e7aa48ff14684b53f8fd90a61ccdfcfca1882545bcc",
+    "internal/compiler/session/session_phase36_calls_test.go": "c2fd08cbcd7b19c86dce12cf25079abc9952f861fe9098f4ecc656f4f440d1d0",
+    "internal/compiler/session/session_phase36_prechange_test.go": "3b918b9ef09f486a9f67da0cdf70db3872d58ed0383c869814615768e7e08aef",
+    "internal/compiler/session/session_phase36_surface_test.go": "d0e640c8c71e0b67934ff5f26f4ecda949a08bea65ca138059746d1bd720040e",
+    "internal/compiler/session/session_phase37_reuse_test.go": "80b688ab11c2ac6911e745cc7ca82375ea4712d5ab3c503821f56ca5a12922e7",
+    "internal/compiler/surfacemanifest/manifest.go": "047ccc606cae924e7d974d275e28e82c91f35276b258346e94d40bff1aba5b3d",
+    "scripts/check-freeze.sh": "acc4c21e545b5fda1ef892f5e122d7cb3a8c2c71a790aefb6e05b5f39cec34d2",
+    "scripts/check-receipts.sh": "251e3d1484919174b86b1b2e6fce059939b7fad3051ff9cb815ce0def94d216f",
+    "scripts/codedigest.sh": "9914f8bfda3bcfe0bd9d5c61f2ad5016d672e404ace42f4f5efe18ceb2a50a3e"
+  },
+  "durable_files": {
+    ".planning/audits/M007-2026-10-16/INTEGRATION.json": "3a3a56d9aeabb99bbe595e6b59b2a50f7d00b440d92114c213ea5c2aa50340d9",
+    ".planning/audits/M007-2026-10-16/INTEGRATION.md": "264f98a06e6349127a9053b2fcbf9375bd86712c783ceac721dad0afee955a5c",
+    ".planning/audits/M007-2026-10-16/REQUIREMENTS.json": "4cd83c5b9aff5123ecb6e5b8c0c2ca9111dea91059e727bccac3aed71d4ae463",
+    ".planning/audits/M007-2026-10-16/SUMMARY-EXTRACTION.json": "41c36cea51ff5c311c0f67a92705a01b913b2491553d9b3cab8d01452c29684f",
+    ".planning/audits/M007-2026-10-16/evidence/adler-calls-pass.log": "717fcbe67ecb46d1d5d1e08472bd2e01e2919cbfaa11ca375bf889dd9f09aaa3",
+    ".planning/audits/M007-2026-10-16/evidence/capture-pass.log": "4b5c0701d737f219b0b74e4be53a71644ca80a8690f2e24512e8ef0e9c1c1ca3",
+    ".planning/audits/M007-2026-10-16/evidence/cgen-nocall-debt.log": "70203833e53e88c439eaf5d0ad1a5aecdb4623d483ca7634cacbce3aaced1973",
+    ".planning/audits/M007-2026-10-16/evidence/cgen-overlay.json": "490ef8a74af8570d480e7bfad5c578a7b04ea9aff50714dd3d268e73a323209c",
+    ".planning/audits/M007-2026-10-16/evidence/cgen-probe-checker-refusal.log": "fde972e198477fe60cedd14483c5a8ec7f4a85158e5b8cacffbd35ca6108f56c",
+    ".planning/audits/M007-2026-10-16/evidence/cgen_debt_test.go.txt": "1341b50da62bed5f96077674062504bac1534a0a0174ce78c834a7dddedb326d",
+    ".planning/audits/M007-2026-10-16/evidence/crc-mutants-pass.log": "08cc6762b96a425b5f02162fbe20455e5fbd4ff7707a2c17a4806495bf883702",
+    ".planning/audits/M007-2026-10-16/evidence/diagnostics-surface-pass.log": "81cacabcb8c7ffdd92b2137e06a14505f8e247b2d2b45c2909c6d808d2b53f87",
+    ".planning/audits/M007-2026-10-16/evidence/dynamic-defect-control-pass.log": "ac9a689eb05a10cdd32ec24d23fd82305e0c14cd3f2027807dce96ba26a804f3",
+    ".planning/audits/M007-2026-10-16/evidence/dynamic-peer-control-pass.log": "9f3606bf9c75df3ca15c417cef5f042be421a3f43da58ebc5d1c1c456acca8db",
+    ".planning/audits/M007-2026-10-16/evidence/generic-gates-pass.log": "529be32e3e6a669f60d2624f1e2c0c464865935548879ca845b08b73ffe89113",
+    ".planning/audits/M007-2026-10-16/evidence/guide-pass.log": "acec40fe78d6d70e82a720302783b20223eacd8eae3ab1db7d14784466da18ef",
+    ".planning/audits/M007-2026-10-16/evidence/input-hashes.sha256": "29cd884239b2a90311a49289fab1fdc6ff764d23d34569cd8cb62737fad770e6",
+    ".planning/audits/M007-2026-10-16/evidence/operators-surface-baseline-pass.log": "1be2e28462d195affc419b803d345dbe2945c8d8dcd9aae315c9d59fedd2f7fc",
+    ".planning/audits/M007-2026-10-16/evidence/peer-debt.log": "cf84983de542b57e8a609a51c97dee35250896256f790dfef97a96591e24e2f6",
+    ".planning/audits/M007-2026-10-16/evidence/peer-overlay.json": "f119c7a6069c16c387aade7c79d8f7c79ef81854e6a92b456b989437a471e5af",
+    ".planning/audits/M007-2026-10-16/evidence/peer_debt_test.go.txt": "6954635e760e08deb381f08ffdcd6336e5d3021cfb7498dea85f2d270705a72d",
+    ".planning/audits/M007-2026-10-16/evidence/public-file-matrix-pass.log": "98034de3136090b50e3b896b5cf3ac91017c8ab97f2b87eeceb141d807cd4edf",
+    ".planning/audits/M007-2026-10-16/evidence/repair-json-pass.log": "fd6aea29d83f05b79680b4e068aeb7984c433a81d6963cb089c8c057124ef129",
+    ".planning/audits/M007-2026-10-16/evidence/semantics-import-and-diagnostics-pass.log": "d3f5156570f0da53bb90b42e852385561699a9347efd56ef613bf32338e4c653"
+  },
+  "commands": [
+    {
+      "result": "PASS",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^TestPhase33CaptureReadBounded$' -count=1 -v -timeout=120s",
+      "original_log": "/tmp/schway-m007-audit/capture-pass.log",
+      "durable_log": ".planning/audits/M007-2026-10-16/evidence/capture-pass.log",
+      "roots": [
+        "TestPhase33CaptureReadBounded"
+      ],
+      "passed": [
+        "TestPhase33CaptureReadBounded"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    {
+      "result": "PASS",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase35ExistingAdlerAnswers|TestPhase36HelperAnswersAndDefects)$' -count=1 -v -timeout=600s",
+      "original_log": "/tmp/schway-m007-audit/adler-calls-pass.log",
+      "durable_log": ".planning/audits/M007-2026-10-16/evidence/adler-calls-pass.log",
+      "roots": [
+        "TestPhase35ExistingAdlerAnswers",
+        "TestPhase36HelperAnswersAndDefects"
+      ],
+      "passed": [
+        "TestPhase35ExistingAdlerAnswers",
+        "TestPhase36HelperAnswersAndDefects"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    {
+      "result": "PASS",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestFreezeGate|TestReceiptGateProgramInventory|TestReceiptGateArchivedM006|TestNoCheckPhase32Caller)$' -count=1 -v -timeout=180s",
+      "original_log": "/tmp/schway-m007-audit/generic-gates-pass.log",
+      "durable_log": ".planning/audits/M007-2026-10-16/evidence/generic-gates-pass.log",
+      "roots": [
+        "TestFreezeGate",
+        "TestNoCheckPhase32Caller",
+        "TestReceiptGateProgramInventory",
+        "TestReceiptGateArchivedM006"
+      ],
+      "passed": [
+        "TestFreezeGate",
+        "TestNoCheckPhase32Caller",
+        "TestReceiptGateProgramInventory",
+        "TestReceiptGateArchivedM006"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    {
+      "result": "PASS",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase34CheckDiagnosticPresentation|TestPhase34SurfaceRoute)$' -count=1 -v -timeout=180s",
+      "original_log": "/tmp/schway-m007-audit/diagnostics-surface-pass.log",
+      "durable_log": ".planning/audits/M007-2026-10-16/evidence/diagnostics-surface-pass.log",
+      "roots": [
+        "TestPhase34CheckDiagnosticPresentation",
+        "TestPhase34SurfaceRoute"
+      ],
+      "passed": [
+        "TestPhase34CheckDiagnosticPresentation",
+        "TestPhase34SurfaceRoute"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    {
+      "result": "PASS",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase37PublicFileMatrix$' -count=1 -v -timeout=600s",
+      "original_log": "/tmp/schway-m007-audit/public-file-matrix-pass.log",
+      "durable_log": ".planning/audits/M007-2026-10-16/evidence/public-file-matrix-pass.log",
+      "roots": [
+        "TestPhase37PublicFileMatrix"
+      ],
+      "passed": [
+        "TestPhase37PublicFileMatrix"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    {
+      "result": "PASS",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase37GuideCleanCheckout$' -count=1 -v -timeout=600s",
+      "original_log": "/tmp/schway-m007-audit/guide-pass.log",
+      "durable_log": ".planning/audits/M007-2026-10-16/evidence/guide-pass.log",
+      "roots": [
+        "TestPhase37GuideCleanCheckout"
+      ],
+      "passed": [
+        "TestPhase37GuideCleanCheckout"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    {
+      "result": "PASS",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase35BitwiseOptimizationMatrix|TestPhase35SurfaceManifestWitnesses|TestPhase36NoCallGeneratedCByteBaseline|TestPhase36SurfaceManifestCallWitnesses)$' -count=1 -v -timeout=600s",
+      "original_log": "/tmp/schway-m007-audit/operators-surface-baseline-pass.log",
+      "durable_log": ".planning/audits/M007-2026-10-16/evidence/operators-surface-baseline-pass.log",
+      "roots": [
+        "TestPhase36NoCallGeneratedCByteBaseline",
+        "TestPhase35SurfaceManifestWitnesses",
+        "TestPhase35BitwiseOptimizationMatrix",
+        "TestPhase36SurfaceManifestCallWitnesses"
+      ],
+      "passed": [
+        "TestPhase36NoCallGeneratedCByteBaseline",
+        "TestPhase35SurfaceManifestWitnesses",
+        "TestPhase35BitwiseOptimizationMatrix",
+        "TestPhase36SurfaceManifestCallWitnesses"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    {
+      "result": "PASS",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/executionpeer -run '^TestPhase36CallCausalAttributionControls$' -count=1 -v -timeout=120s",
+      "original_log": "/tmp/schway-m007-audit/dynamic-peer-control-pass.log",
+      "durable_log": ".planning/audits/M007-2026-10-16/evidence/dynamic-peer-control-pass.log",
+      "roots": [
+        "TestPhase36CallCausalAttributionControls"
+      ],
+      "passed": [
+        "TestPhase36CallCausalAttributionControls"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    {
+      "result": "PASS",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen -run '^TestPhase33ScalarExplicitDefectShells$' -count=1 -v -timeout=600s",
+      "original_log": "/tmp/schway-m007-audit/dynamic-defect-control-pass.log",
+      "durable_log": ".planning/audits/M007-2026-10-16/evidence/dynamic-defect-control-pass.log",
+      "roots": [
+        "TestPhase33ScalarExplicitDefectShells"
+      ],
+      "passed": [
+        "TestPhase33ScalarExplicitDefectShells"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    {
+      "result": "PASS",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase35FocusedValueAnswers|TestPhase35AdmissionRefusalMutationControls|TestPhase37CRC32SingleCopyAndIdentity|TestPhase34ImportedDiagnosticPresentation|TestPhase34PresentationUsesCapturedSource)$' -count=1 -v -timeout=600s",
+      "original_log": "/tmp/schway-m007-audit/semantics-import-and-diagnostics-pass.log",
+      "durable_log": ".planning/audits/M007-2026-10-16/evidence/semantics-import-and-diagnostics-pass.log",
+      "roots": [
+        "TestPhase34ImportedDiagnosticPresentation",
+        "TestPhase34PresentationUsesCapturedSource",
+        "TestPhase35AdmissionRefusalMutationControls",
+        "TestPhase35FocusedValueAnswers",
+        "TestPhase37CRC32SingleCopyAndIdentity"
+      ],
+      "passed": [
+        "TestPhase34ImportedDiagnosticPresentation",
+        "TestPhase34PresentationUsesCapturedSource",
+        "TestPhase35AdmissionRefusalMutationControls",
+        "TestPhase35FocusedValueAnswers",
+        "TestPhase37CRC32SingleCopyAndIdentity"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    {
+      "result": "PASS",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase37CRC32AlgorithmMutants$' -count=1 -v -timeout=600s",
+      "original_log": "/tmp/schway-m007-audit/crc-mutants-pass.log",
+      "durable_log": ".planning/audits/M007-2026-10-16/evidence/crc-mutants-pass.log",
+      "roots": [
+        "TestPhase37CRC32AlgorithmMutants"
+      ],
+      "passed": [
+        "TestPhase37CRC32AlgorithmMutants"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    {
+      "result": "PASS",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway-repair -run '^TestPhase34RepairJSONCompatibility$' -count=1 -v -timeout=180s",
+      "original_log": "/tmp/schway-m007-audit/repair-json-pass.log",
+      "durable_log": ".planning/audits/M007-2026-10-16/evidence/repair-json-pass.log",
+      "roots": [
+        "TestPhase34RepairJSONCompatibility"
+      ],
+      "passed": [
+        "TestPhase34RepairJSONCompatibility"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    {
+      "result": "EXPECTED FAILURE / reproduced CR-03 and CR-04",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test -overlay=/tmp/schway-m007-audit/peer-overlay.json ./internal/compiler/executionpeer -run '^TestM007AuditResidualPeerDebt$' -count=1 -v -timeout=120s",
+      "original_log": "/tmp/schway-m007-audit/peer-debt.log",
+      "durable_log": ".planning/audits/M007-2026-10-16/evidence/peer-debt.log",
+      "roots": [
+        "TestM007AuditResidualPeerDebt"
+      ],
+      "passed": [],
+      "failed": [
+        "TestM007AuditResidualPeerDebt"
+      ],
+      "skipped": []
+    },
+    {
+      "result": "EXPECTED FAILURE / reproduced CR-06",
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test -overlay=/tmp/schway-m007-audit/cgen-overlay.json ./internal/compiler/cgen -run '^TestM007AuditResidualNoCallNativeDefect$' -count=1 -v -timeout=120s",
+      "original_log": "/tmp/schway-m007-audit/cgen-nocall-debt.log",
+      "durable_log": ".planning/audits/M007-2026-10-16/evidence/cgen-nocall-debt.log",
+      "roots": [
+        "TestM007AuditResidualNoCallNativeDefect"
+      ],
+      "passed": [],
+      "failed": [
+        "TestM007AuditResidualNoCallNativeDefect"
+      ],
+      "skipped": []
+    }
+  ],
+  "counts": {
+    "positive_commands": 12,
+    "positive_root_executions": 24,
+    "diagnostic_commands": 2
+  },
+  "notes": [
+    "The integration report uses original /tmp log paths. Identically named raw logs are retained in the evidence directory; Go overlay input snapshots have a .txt suffix. Overlay map snapshots replace the original repository home path with <repository-root>; reconstruct them in /tmp to rerun. Original executed-input hashes remain in input-hashes.sha256.",
+    "Peer probes submit handcrafted core/events matching the documented interpreter terminal forms; they do not independently demonstrate checker/corevalidator admission or an actual interpreter-generated trace. Existing review/source inspection supplies that connection; closure must add an actual interpreter/peer paired regression.",
+    "The CR-06 diagnostic root unconditionally fails even if the behavior changes. Its current native.run_failed output and passing app-shell control substantiate the diagnosis; this is not a permanent red/green regression.",
+    "The earlier checker-refused C probe is retained as a rejected attempt, excluded from finding evidence and green counts.",
+    "Hex formatting and parser recovery are supported by existing current phase verification, not separately rerun by the new positive selector set.",
+    "No repository source or completed summary/verification/validation was changed."
+  ],
+  "publication_normalization": {
+    "files": [
+      ".planning/audits/M007-2026-10-16/INTEGRATION.json",
+      ".planning/audits/M007-2026-10-16/INTEGRATION.md",
+      ".planning/audits/M007-2026-10-16/evidence/cgen-overlay.json",
+      ".planning/audits/M007-2026-10-16/evidence/peer-overlay.json"
+    ],
+    "changes": "Repository home paths replaced with <repository-root> in reports and overlay map snapshots; Markdown trailing spaces removed; native runner error anchor corrected to native.go:634-639. Raw Go logs and probe source snapshots remain byte-identical."
+  }
+}

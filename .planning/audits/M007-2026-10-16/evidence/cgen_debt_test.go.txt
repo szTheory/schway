@@ -1,0 +1,57 @@
+package cgen_test
+
+import (
+	"bytes"
+	"context"
+	"path/filepath"
+	"testing"
+
+	"github.com/szTheory/schway/internal/compiler/cgen"
+	"github.com/szTheory/schway/internal/compiler/native"
+	"github.com/szTheory/schway/internal/compiler/session"
+)
+
+func TestM007AuditResidualNoCallNativeDefect(t *testing.T) {
+	source := []byte(`module audit.no_call_defect
+export { fn main }
+fn main(input: U64) -> U64 {
+  var result = input
+  if result < 12 {
+    defect "no-call scalar stopped"
+  } else {
+    result = result + 1
+  }
+  result
+}
+`)
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("checker refused probe: %+v", checked.Diagnostics)
+	}
+	generatedApp, err := cgen.EmitApplication(checked.Program)
+	if err != nil {
+		t.Fatalf("application emission: %v", err)
+	}
+	artifact := filepath.Join(t.TempDir(), "audit-no-call")
+	if _, err := native.BuildApplication(context.Background(), source, generatedApp, artifact); err != nil {
+		t.Fatalf("application control build: %v", err)
+	}
+	var stdout, stderr bytes.Buffer
+	appOutcome, err := native.RunApplication(context.Background(), artifact, "7", &stdout, &stderr)
+	if err != nil || appOutcome.ExitCode != 65 || stdout.Len() != 0 || stderr.String() != "schway app: no-call scalar stopped\n" {
+		t.Fatalf("application control=(%+v,%q,%q,%v)", appOutcome, stdout.String(), stderr.String(), err)
+	}
+	t.Logf("application control passed: exit=%d stdout=%q stderr=%q", appOutcome.ExitCode, stdout.String(), stderr.String())
+
+	generated, err := cgen.EmitNative(checked.Program)
+	if err != nil {
+		t.Fatalf("native emission: %v", err)
+	}
+	runner := native.DefaultRunner()
+	runner.Expect = native.ExpectDefect
+	result, err := runner.Run(context.Background(), generated, "-O0", []string{"7"})
+	if err != nil {
+		t.Fatalf("CR-06 reproduced: no-call native defect did not produce a structured defect document: result=%+v err=%v", result, err)
+	}
+	t.Fatalf("CR-06 no longer reproduces: unexpected successful structured defect: %+v", result)
+}

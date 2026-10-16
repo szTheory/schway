@@ -1,0 +1,1474 @@
+[
+  {
+    "path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-01-SUMMARY.md",
+    "one_liner": "M006 receipt markers now state the historical boundary, native capture reads stop at limit plus one byte, and the carried run-input and coverage-kind checks are pinned.",
+    "key_files": {
+      "created": [
+        "internal/compiler/native/native_phase33_capture_test.go"
+      ],
+      "modified": [
+        ".planning/LANGUAGE-MATURITY.md",
+        ".planning/PRODUCT-ROADMAP.md",
+        ".planning/PROJECT.md",
+        ".planning/MILESTONES.md",
+        ".planning/STATE.md",
+        ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-RESEARCH.md",
+        "internal/compiler/native/native_app.go",
+        "cmd/schway/main_phase321_run_input_test.go",
+        "internal/compiler/session/summary_coverage_test.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Allocation controls exercise RunApplicationWithEvidence and compare a sparse input against an in-limit baseline."
+    ],
+    "decisions": [
+      {
+        "summary": "Keep the archived receipt prose byte-for-byte and append dated amendments while changing only the two checked marker lines.",
+        "rationale": null
+      },
+      {
+        "summary": "Read the capture through the opened handle with LimitReader(limit+1), avoiding a path-based Stat race.",
+        "rationale": null
+      },
+      {
+        "summary": "Copy the accepted coverage-kind enum into the Go test without adding a dependency.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "QLT-13",
+      "QLT-14"
+    ]
+  },
+  {
+    "path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-02-SUMMARY.md",
+    "one_liner": "Abort-like interpreter defects now require one exact live owner and a matching operation reason, while native parity and emitted C bytes stay pinned.",
+    "key_files": {
+      "created": [
+        "internal/compiler/native/native_phase33_defect_parity_test.go",
+        "internal/compiler/execution/defect_reasons.go",
+        "internal/compiler/interp/interp_phase33_defect_test.go",
+        ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-02-task3-red-evidence.json"
+      ],
+      "modified": [
+        "internal/compiler/interp/interp.go",
+        "internal/compiler/interp/interp_phase321_defect_test.go",
+        "internal/compiler/executionpeer/executionpeer.go",
+        "internal/compiler/cgen/cgen_program.go",
+        "internal/compiler/session/session.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Parity tests independently pin native exit/stderr and interpreter event/resource evidence on fixture and file routes."
+    ],
+    "decisions": [
+      {
+        "summary": "Keep abort-like acceptance limited to the exact acquired owner, the event function's operation, and that operation kind's exact reason.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep defect reason literals centralized in execution while concatenating them into byte-identical C text.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "QLT-14"
+    ]
+  },
+  {
+    "path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-03-SUMMARY.md",
+    "one_liner": "The M006 evidence gates now use reusable POSIX shell scripts and a manifest, with digest path handling centralized in `codedigest.sh`.",
+    "key_files": {
+      "created": [
+        "scripts/check-freeze.sh",
+        "scripts/check-receipts.sh",
+        "testdata/receipts/M006.manifest",
+        "internal/compiler/session/session_freeze_gate_test.go",
+        "internal/compiler/session/session_receipt_gate_test.go",
+        "internal/compiler/session/session_gate_differential_test.go"
+      ],
+      "modified": [
+        "scripts/codedigest.sh"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Gate refusal output is a single stable stderr line whose prefix comes from manifest data.",
+      "Differential tests run old and generic gates over the same logs and temporary Git history."
+    ],
+    "decisions": [
+      {
+        "summary": "Keep each generic gate's manifest reader local to its script, using POSIX sh and no shared runtime helper.",
+        "rationale": null
+      },
+      {
+        "summary": "Use EXPECTED_CODEDIGEST when supplied and report whether the gate used env or computed input.",
+        "rationale": null
+      },
+      {
+        "summary": "Derive the digest-width check from the selected hasher's empty-input output.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "EVD-16",
+      "QLT-14"
+    ]
+  },
+  {
+    "path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-04-SUMMARY.md",
+    "one_liner": "The Phase 32 producer and tests now share one M006 manifest, while literal goldens preserve every legacy gate result after the old scripts are removed.",
+    "key_files": {
+      "created": [
+        "internal/compiler/session/session_gate_retire_test.go"
+      ],
+      "modified": [
+        "internal/compiler/session/session_freeze_gate_test.go",
+        "internal/compiler/session/session_receipt_gate_test.go",
+        "internal/compiler/session/session_gate_differential_test.go",
+        "scripts/verify-phase32.sh",
+        "cmd/schway/main_phase32_routes_test.go",
+        ".planning/milestones/M006-phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/32.1-VALIDATION.md"
+      ],
+      "deleted": [
+        "internal/compiler/session/session_phase32_freeze_test.go",
+        "internal/compiler/session/session_phase32_gate_test.go",
+        "scripts/check-phase32-freeze.sh",
+        "scripts/check-phase32-receipts.sh"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [],
+    "decisions": [
+      {
+        "summary": "Keep M006 program and case data in the manifest shared by the producer and its consumer tests.",
+        "rationale": null
+      },
+      {
+        "summary": "Normalize generated fixture commit IDs as @SHA@ in pass-line goldens, alongside temporary paths as @TMP@.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "EVD-16"
+    ]
+  },
+  {
+    "path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-05-SUMMARY.md",
+    "one_liner": "Milestone-aware receipt claims, evidence-grounded Phase 28 records, and dated dispositions close the carried-debt work without binding a hosted receipt.",
+    "key_files": {
+      "created": [
+        ".planning/milestones/M006-phases/28-exit-classes-verify-report-and-entry-pruning/28-VALIDATION.md",
+        ".planning/milestones/M006-phases/28-exit-classes-verify-report-and-entry-pruning/28-SECURITY.md",
+        ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CARRIED-DEBT-DISPOSITION.md"
+      ],
+      "modified": [
+        "internal/compiler/session/session_phase32_receipt_test.go",
+        ".planning/milestones/M006-phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/32.1-REVIEW-DISPOSITION.md",
+        ".planning/MILESTONES.md",
+        ".planning/PROJECT.md",
+        ".planning/WINDOWS.md",
+        ".planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/32-08-SUMMARY.md",
+        ".planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/32-09-SUMMARY.md",
+        ".planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/32-10-SUMMARY.md",
+        ".planning/milestones/M006-phases/32-clean-checkout-guide-and-final-receipts/32-11-SUMMARY.md",
+        ".planning/milestones/M006-phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/32.1-06-SUMMARY.md",
+        ".planning/milestones/M006-phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/32.1-09-SUMMARY.md",
+        ".planning/milestones/M006-phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/32.1-10-SUMMARY.md",
+        ".planning/milestones/M006-phases/32.1-address-tech-debt-cli-exit-classes-and-module-aware-routes/32.1-11-SUMMARY.md"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [],
+    "decisions": [
+      {
+        "summary": "Keep the receipt checker M006-compatible by default and pass an explicit milestone spec for M007 controls.",
+        "rationale": null
+      },
+      {
+        "summary": "Treat Phase 28 validation and security as retroactive records; make no claim of a new test suite or hosted run.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep PROJECT.md's Key Decisions row about line 787 unchanged",
+        "rationale": "it is a standing design rule, not a debt claim."
+      }
+    ],
+    "requirements_completed": [
+      "EVD-16",
+      "QLT-14",
+      "QLT-15"
+    ]
+  },
+  {
+    "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-01-SUMMARY.md",
+    "one_liner": "Literal baselines now preserve 162 source-to-C outcomes, twenty reconstructed parser drafts, Bool-name admissions, and legacy identity bytes.",
+    "key_files": {
+      "created": [
+        "internal/compiler/session/session_phase34_prechange_test.go",
+        "testdata/phase34/prechange-corpus.json",
+        "internal/compiler/syntax/parser_phase34_baseline_test.go",
+        "testdata/phase34/drafts.json",
+        "testdata/phase34/draft-baseline.json",
+        "internal/compiler/session/session_phase34_compat_test.go",
+        "testdata/phase34/identity-baseline.json"
+      ],
+      "modified": []
+    },
+    "tech_added": [],
+    "patterns": [
+      "Baseline writers run only for initial capture and are removed before commit; ordinary tests have no regeneration path.",
+      "Failed-diagnostic text remains historical evidence while emitted C and explicit emitter outcomes stay guarded."
+    ],
+    "decisions": [
+      {
+        "summary": "Freeze successful emitter output as complete literal C; compare explicit emission outcome classes and prior successful admissions.",
+        "rationale": null
+      },
+      {
+        "summary": "Label all twenty draft sources reconstructed-2026-10-13; CRC32 and word-counter examples are representative reconstructions, not recovered scratch files.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep the historical unbound true tail as name.unknown evidence while testing legal true/false names live through the existing routes.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "DX-20",
+      "DX-21",
+      "DX-22",
+      "DX-23"
+    ]
+  },
+  {
+    "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-02-SUMMARY.md",
+    "one_liner": "Schway check now maps validated byte spans to scalar source positions and bounded escaped excerpts while preserving diagnostic and result identities.",
+    "key_files": {
+      "created": [
+        "internal/compiler/protocol/presentation.go",
+        "internal/compiler/diagnostic/diagnostic_phase34_test.go",
+        "internal/compiler/protocol/protocol_phase34_test.go",
+        "docs/diagnostics.md"
+      ],
+      "modified": [
+        "internal/compiler/diagnostic/diagnostic.go",
+        "internal/compiler/protocol/protocol.go",
+        "internal/compiler/session/session.go",
+        "internal/compiler/syntax/parser.go",
+        "internal/compiler/syntax/lexer.go",
+        "cmd/schway/main_phase34_diagnostics_test.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Presentation enriches a copied diagnostic result and preserves semantic input and identity.",
+      "Cropping returns explicit visible source bounds so omission markers cannot be confused with literal source text."
+    ],
+    "decisions": [
+      {
+        "summary": "Half-open byte offsets remain authoritative for identity and edits; coordinates derive only from captured, bounds-checked source.",
+        "rationale": null
+      },
+      {
+        "summary": "A zero-width primary needs explicit source-origin provenance; synthetic operational zero spans stay unlocated.",
+        "rationale": null
+      },
+      {
+        "summary": "Text rendering uses bounded printable ASCII while JSON carries coordinates without source bodies.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "DX-20"
+    ]
+  },
+  {
+    "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-03-SUMMARY.md",
+    "one_liner": "Schway check renders imported diagnostics from retained module snapshots with relative labels, unit-aware spans, and stable text and JSON projections.",
+    "key_files": {
+      "created": [
+        "internal/compiler/session/session_presentation.go",
+        "internal/compiler/session/session_phase34_presentation_test.go",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-03-task1-tdd-red-evidence.json",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-03-task1-tdd-green-evidence.json",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-03-task1-tracer-final-evidence.json",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-03-task2-unexpected-green-evidence.json"
+      ],
+      "modified": [
+        "internal/compiler/session/session.go",
+        "internal/compiler/session/session_modules.go",
+        "internal/compiler/protocol/presentation.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [],
+    "decisions": [
+      {
+        "summary": "Keep presentation invocation-local and attach the loader's existing bytes and relative labels without another read or parse.",
+        "rationale": null
+      },
+      {
+        "summary": "Use each primary, cause, or repair EffectiveUnit to choose source bytes; retain dotted JSON units and byte-only diagnostic identity.",
+        "rationale": null
+      },
+      {
+        "summary": "Task 2 needed no additional production change because Task 1's loaded-source sidecar and the Phase 34-02 projector already satisfied its expanded behavior contract.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "DX-20"
+    ]
+  },
+  {
+    "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-04-SUMMARY.md",
+    "one_liner": "Delimiter-owned recovery now reports parser causes at their exact spans, preserves siblings and lossless bytes, and records current outputs for all twenty reconstructed drafts.",
+    "key_files": {
+      "created": [
+        "internal/compiler/syntax/parser_phase34_recovery_test.go",
+        "testdata/phase34/draft-after.json",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-04-task1-tdd-red-evidence.json",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-04-task1-tdd-green-evidence.json",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-04-task1-tracer-final-evidence.json",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-04-task2-tdd-red-evidence.json",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-04-task2-tdd-green-evidence.json"
+      ],
+      "modified": [
+        "internal/compiler/syntax/parser.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Delimiter recovery: consume matching nested pairs, stop at caller-owned closers or valid declaration siblings, and preserve the exact skipped byte extent.",
+      "Test controls: mutate local observations to verify the corpus comparator's named cascade, sibling, and independent-cause failure classes."
+    ],
+    "decisions": [
+      {
+        "summary": "Recovery owns exact parser spans and caller boundaries; unrelated lexer diagnostics and independent missing closers remain visible.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep the immutable before-state unchanged and record only measured current outputs in the separate after-state.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "DX-21"
+    ]
+  },
+  {
+    "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-05-SUMMARY.md",
+    "one_liner": "Seven unsupported source forms now have dedicated exact-span refusals, with bound `true`/`false` identifiers and admitted call boundaries preserved.",
+    "key_files": {
+      "created": [
+        "internal/compiler/surface/refusals.go",
+        "internal/compiler/syntax/parser_phase34_refusal_test.go",
+        "internal/compiler/check/check_phase34_refusal_test.go"
+      ],
+      "modified": [
+        "internal/compiler/syntax/lexer.go",
+        "internal/compiler/syntax/parser.go",
+        "internal/compiler/ast/ast.go",
+        "internal/compiler/check/check.go",
+        "internal/compiler/check/scalar.go",
+        "testdata/phase34/draft-after.json"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Contextual refusal: resolve bindings first, then classify only the exact unsupported result-tail shape.",
+      "Recovery claims suppress only the exact parser-owned token span and retain near-miss diagnostics."
+    ],
+    "decisions": [
+      {
+        "summary": "Keep true and false as identifiers; classify only an unbound final result name in a known result-type context.",
+        "rationale": null
+      },
+      {
+        "summary": "Preserve result-tail source spans in the AST only; core schema and semantic IDs stay unchanged.",
+        "rationale": null
+      },
+      {
+        "summary": "Publish exactly the seven current refusal codes with independently pinned prose hints and no repairs.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "DX-22"
+    ]
+  },
+  {
+    "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-SUMMARY.md",
+    "one_liner": "Schway now serves a deterministic `schway.surface/1` document with checked contexts, scoped limits, seven current refusals, and closed source-free route controls.",
+    "key_files": {
+      "created": [
+        "internal/compiler/surfacemanifest/manifest.go",
+        "internal/compiler/surfacemanifest/manifest_test.go",
+        "cmd/schway/main_phase34_surface_test.go",
+        "docs/agent-surface.md"
+      ],
+      "modified": [
+        "cmd/schway/main.go",
+        "cmd/schway/main_phase32_routes_test.go",
+        "internal/compiler/syntax/parser.go",
+        "internal/compiler/check/scalar.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [],
+    "decisions": [
+      {
+        "summary": "Publish only the two exact surface JSON argument placements; reject other raw flags before global stripping.",
+        "rationale": null
+      },
+      {
+        "summary": "Describe checked contexts separately from grammar reachability, ability derivation, and ordinary versus scalar-expression calls.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep FileBytes size configuration-scoped and identify every numeric bound by category, scope, unit, meaning, and route.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep the module-aware route set unchanged and classify surface as no-entry-source.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "DX-23"
+    ]
+  },
+  {
+    "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-SUMMARY.md",
+    "one_liner": "Schway's surface manifest is now checked against independently authored complete-source witnesses and a bounded compiler-branch census.",
+    "key_files": {
+      "created": [
+        "internal/compiler/session/session_phase34_surface_test.go",
+        "internal/compiler/session/session_phase34_limit_consumers_test.go",
+        "internal/compiler/syntax/parser_phase34_limit_scope_test.go",
+        "testdata/phase34/surface-witnesses.json",
+        "testdata/phase34/surface-census.json"
+      ],
+      "modified": [
+        "internal/compiler/surfacemanifest/manifest.go",
+        "internal/compiler/surfacemanifest/manifest_test.go",
+        "docs/agent-surface.md",
+        ".planning/WINDOWS.md"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Source witnesses: author expected forms, contexts, statuses, codes, hints, arities, constraints and limits as literal independent data.",
+      "Control assertions: require the expected distinct reason/facet and reject unrelated findings, then re-run clean baselines."
+    ],
+    "decisions": [
+      {
+        "summary": "Publish a manifest context only when an independent complete program passes CheckCommandFile; ability derivation alone is not admission.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep the AST census finite to the seven named files and state that it does not prove arbitrary source or files outside the boundary.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep drift controls on copied artifacts so test mutations never alter production registry state or source files.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "DX-23"
+    ]
+  },
+  {
+    "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-SUMMARY.md",
+    "one_liner": "Command diagnostics now reuse the original checked-source snapshot for presentation while repair authority remains byte-based.",
+    "key_files": {
+      "created": [
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-TRANSITION-CHECK.md",
+        "internal/compiler/session/session_phase34_routes_test.go",
+        "cmd/schway/main_phase34_routes_test.go",
+        "cmd/schway-repair/repair_phase34_test.go",
+        "testdata/phase34/compat-deltas.json"
+      ],
+      "modified": [
+        "internal/compiler/session/session.go",
+        "internal/compiler/session/session_app_verify.go",
+        "internal/compiler/session/session_phase6_explain.go",
+        "internal/compiler/session/session_phase6_query.go",
+        "cmd/schway/main.go",
+        "internal/compiler/session/session_phase34_compat_test.go",
+        "testdata/phase16/public-emitter-consumers.json",
+        "internal/compiler/session/session_phase30_inventory_test.go",
+        ".planning/PRODUCT-ROADMAP.md",
+        ".planning/LANGUAGE-MATURITY.md"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [],
+    "decisions": [
+      {
+        "summary": "Keep BuildApplicationFile's public signature; add the command-result path for callers that need the captured diagnostic snapshot.",
+        "rationale": null
+      },
+      {
+        "summary": "Attach source locations only when a diagnostic span is valid against the captured source; summary identity spans remain byte-only.",
+        "rationale": null
+      },
+      {
+        "summary": "Treat byte spans and replacements as the repair authority; prose, hints, and presentation locations do not change selected edits.",
+        "rationale": null
+      },
+      {
+        "summary": "Retain z1g, trz, and z1s as dormant until their named consumer triggers are observed.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "DX-20",
+      "DX-21",
+      "DX-22",
+      "DX-23"
+    ]
+  },
+  {
+    "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-01-SUMMARY.md",
+    "one_liner": "Tracked-source emitter goldens, route-specific numeric policy, and the actual pre-bound nested-index admission are frozen before Phase 35 compiler changes.",
+    "key_files": {
+      "created": [
+        "internal/compiler/session/session_phase35_prechange_test.go",
+        "testdata/phase35/prechange-corpus.json",
+        "internal/compiler/check/check_phase35_baseline_test.go",
+        "internal/compiler/syntax/parser_phase35_baseline_test.go",
+        "testdata/phase35/numeric-policy-baseline.json"
+      ],
+      "modified": []
+    },
+    "tech_added": [],
+    "patterns": [
+      "Baseline fixtures pin their source revision and preserve source bytes, diagnostics, core identities, and available C output."
+    ],
+    "decisions": [
+      {
+        "summary": "Keep legacy and scalar numeric conversion results route-local, including their existing disagreement and refusals.",
+        "rationale": null
+      },
+      {
+        "summary": "Treat nested-index results as immutable historical evidence; measure any future depth refusal separately.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-02-SUMMARY.md",
+    "one_liner": "Grouped scalar operators, a shared 64-entry recursion bound, and legacy uppercase hex now have focused parser, recovery, formatting, and compatibility evidence.",
+    "key_files": {
+      "created": [
+        "internal/compiler/syntax/parser_phase34_recovery_test.go",
+        "internal/compiler/session/session_phase34_compat_test.go",
+        "internal/compiler/syntax/numeric_phase35_test.go",
+        "internal/compiler/check/check_phase35_numeric_test.go",
+        "testdata/phase35/recovery-after.json",
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-02-COMPATIBILITY-NOTE.md"
+      ],
+      "modified": [
+        "internal/compiler/syntax/parser.go",
+        "internal/compiler/syntax/format.go",
+        "internal/compiler/surface/refusals.go",
+        "internal/compiler/syntax/parser_phase35_test.go",
+        "internal/compiler/check/check.go",
+        "internal/compiler/session/session_phase35_prechange_test.go",
+        "testdata/phase35/numeric-delta.json"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "The top-level scalar expression starts at depth zero; groups and recursive byte_at indices share the 64-entry cap.",
+      "Compatibility comparisons validate a literal amendment against the frozen source hash and before projection before applying its explicit after projection."
+    ],
+    "decisions": [
+      {
+        "summary": "Only suppress parser expectations for a malformed numeric TokenUnknown at the lexer's exact full-token span.",
+        "rationale": null
+      },
+      {
+        "summary": "Accept the uppercase 0X prefix on the legacy route while retaining scalar conversion and 010/0B10 policy.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep Phase 34 and Phase 35 historical fixtures immutable; record narrow, literal live after-state amendments.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "BIT-01",
+      "BIT-02",
+      "BIT-03"
+    ]
+  },
+  {
+    "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-03-SUMMARY.md",
+    "one_liner": "Five U64 bitwise and shift operations now lower to stable core, with literal-only shifts, unused-Byte admission, and independent checker controls.",
+    "key_files": {
+      "created": [
+        "internal/compiler/core/core_phase35_test.go",
+        "internal/compiler/check/check_phase35_test.go"
+      ],
+      "modified": [
+        "internal/compiler/core/core.go",
+        "internal/compiler/core/core_test.go",
+        "internal/compiler/check/check.go",
+        "internal/compiler/check/scalar.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "A source refusal must remain singular when expression lowering has already reported the more specific operator cause.",
+      "Fault copied core observations serially, require the named sink verdict to change, then rerun the unmodified observation."
+    ],
+    "decisions": [
+      {
+        "summary": "Keep shifts immediate-only",
+        "rationale": "grouped number leaves become canonical decimal ConstU64 values and never produce RHS places."
+      },
+      {
+        "summary": "Admit Byte only for the new structured U64-returning bridge after a full-body no-use prepass; preserve statement-free legacy Byte routing and existing U64/ByteView type-fact order.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep checker value transfers independent from the producer; transfer tests use checker-owned facts and a static safety sink, without execution-result replay.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "BIT-01",
+      "BIT-02",
+      "BIT-03"
+    ]
+  },
+  {
+    "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-04-SUMMARY.md",
+    "one_liner": "Core and origin validation now independently enforce raw U64 shift and unused-Byte laws and derive all five scalar transfers through their own analysis paths.",
+    "key_files": {
+      "created": [
+        "internal/compiler/corevalidate/corevalidate_phase35_test.go",
+        "internal/compiler/originvalidate/originvalidate_phase35_test.go"
+      ],
+      "modified": [
+        "internal/compiler/corevalidate/corevalidate.go",
+        "internal/compiler/originvalidate/originvalidate.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Exercise pure scalar operations through straight-line and CFG/fixed-point triggers, including publication and per-return recomputation in origin validation.",
+      "Keep existing OpConst and Byte linear contracts intact while independently rejecting malformed new raw-core forms."
+    ],
+    "decisions": [
+      {
+        "summary": "Keep corevalidation and origin validation as separate proof authorities; neither relies on source-token provenance or the other peer's transfer implementation.",
+        "rationale": null
+      },
+      {
+        "summary": "Admit only canonical decimal shift counts from 0 through 63 with empty RightID, and permit Byte solely as an unused formal in the narrow U64 bridge.",
+        "rationale": null
+      },
+      {
+        "summary": "Use reached static safety sinks for validator transfer faults; do not add execution-result replay or runtime events.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "BIT-01",
+      "BIT-02"
+    ]
+  },
+  {
+    "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-05-SUMMARY.md",
+    "one_liner": "The interpreter now executes all five U64 bitwise and shift operations against independent literal vectors, while the ancestry and causal peers independently preserve their event-free, loan-free contracts.",
+    "key_files": {
+      "created": [
+        "examples/bitwise.schway",
+        "testdata/phase35/value-vectors.json",
+        "internal/compiler/pathoracle/pathoracle_phase35_test.go",
+        "internal/compiler/executionpeer/executionpeer_phase35_test.go"
+      ],
+      "modified": [
+        "internal/compiler/interp/interp.go",
+        "internal/compiler/interp/interp_phase35_test.go",
+        "internal/compiler/core/core_test.go",
+        "internal/compiler/pathoracle/pathoracle.go",
+        "internal/compiler/executionpeer/executionpeer.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Every pure U64 operation has separate numeric, ancestry, and causal controls at the peer that owns each fact.",
+      "Literal shifts use checked counts from 0 through 63 and logical unsigned right-shift semantics."
+    ],
+    "decisions": [
+      {
+        "summary": "Keep executionpeer limited to event-free causal admission and fabricated-event refusal; it does not recompute numeric values.",
+        "rationale": null
+      },
+      {
+        "summary": "Preserve the Byte formal as Byte and exercise it only as an unused entry parameter.",
+        "rationale": null
+      },
+      {
+        "summary": "Pin interpreter outputs to independently authored decimal literals, including discriminating expression association answers.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-06-SUMMARY.md",
+    "one_liner": "Checked U64 shifts now emit as defined unsigned C, run to the pinned native answer, and pass a positive two-site generated-C census with unsafe-shift controls.",
+    "key_files": {
+      "created": [
+        "internal/compiler/cgen/cgen_phase35_test.go",
+        "testdata/phase35/shift-sites.json"
+      ],
+      "modified": [
+        "internal/compiler/cgen/cgen_program.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "C shift safety is verified from emitted scalar function regions, separately from support-library shifts.",
+      "Native projection checks event-free operation accounting independently from the native numeric answer."
+    ],
+    "decisions": [
+      {
+        "summary": "Use the installed C17 runner at -O0 for the native tracer and keep the expected answer literal in the test.",
+        "rationale": null
+      },
+      {
+        "summary": "Require exactly two generated scalar shift sites and fail closed on dynamic counts, count 64, signed operands, or a missing site.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep BIT-01 and BIT-02 pending because the shared readiness gate reports both blocked on remaining phase consumers.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-07-SUMMARY.md",
+    "one_liner": "Both public engines report the bitwise witness as 264, and the source-free manifest now publishes the verified operators, limits, and independent source evidence.",
+    "key_files": {
+      "created": [
+        "cmd/schway/main_phase35_test.go",
+        "internal/compiler/session/session_phase35_surface_test.go",
+        "testdata/phase35/surface-witnesses.json",
+        "testdata/phase35/surface-census.json"
+      ],
+      "modified": [
+        "internal/compiler/session/session_phase35_values_test.go",
+        "internal/compiler/session/session_phase34_surface_test.go",
+        "internal/compiler/session/session_phase34_limit_consumers_test.go",
+        "internal/compiler/surfacemanifest/manifest.go",
+        "internal/compiler/surfacemanifest/manifest_test.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Manifest claims are checked against independent complete-source witnesses and a finite named source-branch census.",
+      "Native optimization and sanitizer lanes are reached explicitly and assert every authored vector."
+    ],
+    "decisions": [
+      {
+        "summary": "Keep the public unused-Byte conformance witness separate from the U64 application stdout seam.",
+        "rationale": null
+      },
+      {
+        "summary": "Use literal expected answers for numeric correctness; execution-event controls establish causal admission only.",
+        "rationale": null
+      },
+      {
+        "summary": "Preserve Phase 34 witness and census bytes and compose Phase 35 evidence with an explicit empty supersession list.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep BIT-01, BIT-02, and BIT-03 pending until shared phase summaries and verification close the readiness gate.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-SUMMARY.md",
+    "one_liner": "Adler now computes its upper checksum half with one bounded literal shift while preserving existing answers, and the operator and evidence contracts are pinned to fresh, scoped receipts.",
+    "key_files": {
+      "created": [
+        "internal/compiler/session/session_phase35_adler_test.go",
+        "internal/compiler/session/session_phase35_closeout_test.go",
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-COMPATIBILITY-DELTA.md",
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-EVIDENCE.md"
+      ],
+      "modified": [
+        "examples/checksum/adler32.schway",
+        "docs/agent-surface.md",
+        ".planning/PRODUCT-ROADMAP.md",
+        ".planning/LANGUAGE-MATURITY.md",
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VALIDATION.md"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Numeric evidence uses independent literal answers and reached wrong-result controls.",
+      "Operator guidance distinguishes public outcome values from application stdout and names unsupported routes."
+    ],
+    "decisions": [
+      {
+        "summary": "Bounded b makes b << 16 equivalent to the prior sixteen doublings; keep the final addition and all pinned expected values unchanged.",
+        "rationale": null
+      },
+      {
+        "summary": "Describe fresh local runs, source inspection, historical receipts, and incomplete lanes separately; executionpeer earns causal admission credit only.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep the two descriptor-less plan prohibitions flagged for independent phase verification without inventing descriptors or human approval.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "BIT-01",
+      "BIT-02",
+      "BIT-03",
+      "BIT-04"
+    ]
+  },
+  {
+    "path": ".planning/phases/36-scalar-helper-calls/36-01-SUMMARY.md",
+    "one_liner": "Literal C snapshots now cover all 163 tracked Schway sources across three emitter routes before scalar-call compiler changes.",
+    "key_files": {
+      "created": [
+        "internal/compiler/session/session_phase36_prechange_test.go",
+        "testdata/phase36/prechange-corpus.json",
+        "testdata/phase36/new-fixture-ledger.json",
+        ".planning/phases/36-scalar-helper-calls/36-01-SUMMARY.md"
+      ],
+      "modified": [
+        ".planning/STATE.md",
+        ".planning/ROADMAP.md",
+        ".planning/WINDOWS.md"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Every tracked pre-change source has a row for emit, emit_native, and emit_application, including refusal and non-emission outcomes.",
+      "New fixture exemptions require a sorted, source-hash-bound ledger row and cannot hide old corpus rows."
+    ],
+    "decisions": [],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/36-scalar-helper-calls/36-02-SUMMARY.md",
+    "one_liner": "Bounded one-argument scalar calls now lower U64/Bool helper pairs into ordered fresh `OpCall` results, with import and source-intent refusal controls.",
+    "key_files": {
+      "created": [
+        "internal/compiler/syntax/parser_phase36_test.go",
+        "internal/compiler/check/check_phase36_scalar_calls_test.go"
+      ],
+      "modified": [
+        "internal/compiler/ast/ast.go",
+        "internal/compiler/syntax/parser.go",
+        "internal/compiler/check/check.go",
+        "internal/compiler/check/scalar.go",
+        "internal/compiler/check/check_phase34_refusal_test.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Nested and sibling call arguments are lowered left-to-right into explicit places.",
+      "Source-intent controls use clean, no-op, mutant, and restored Go source overlays."
+    ],
+    "decisions": [
+      {
+        "summary": "Reuse existing Expr fields and core.OpCall; add no AST field or core schema field.",
+        "rationale": null
+      },
+      {
+        "summary": "Treat call results as initialized, value-unknown locals with type from the declared callee result.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/36-scalar-helper-calls/36-03-SUMMARY.md",
+    "one_liner": null,
+    "key_files": {
+      "created": [
+        "internal/compiler/corevalidate/corevalidate_phase36_test.go",
+        "internal/compiler/originvalidate/originvalidate_phase36_test.go",
+        "internal/compiler/pathoracle/pathoracle_phase36_test.go",
+        ".planning/phases/36-scalar-helper-calls/36-03-pathoracle-red.json"
+      ],
+      "modified": [
+        "internal/compiler/corevalidate/corevalidate.go",
+        "internal/compiler/originvalidate/originvalidate.go",
+        "internal/compiler/pathoracle/pathoracle.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Raw OpCall validation: independently check callee, exact scalar signature, initialized source, closed fields, and fresh result target.",
+      "Path authority: retain source-loan use at a call while giving the result no loan ancestry; scalar-safe calls do not widen generic OpCall authority."
+    ],
+    "decisions": [
+      {
+        "summary": "Each peer resolves declared signatures and call authority from its own program facts; no checker verdict or numeric callee summary is trusted.",
+        "rationale": null
+      },
+      {
+        "summary": "Call results start initialized and value-unknown, while freshness applies to static producer targets rather than repeated runtime execution or stores.",
+        "rationale": null
+      },
+      {
+        "summary": "CALL-01 and CALL-02 remain open until the phase-level obligations are complete.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/36-scalar-helper-calls/36-04-SUMMARY.md",
+    "one_liner": null,
+    "key_files": {
+      "created": [
+        "internal/compiler/interp/interp_phase36_test.go",
+        "internal/compiler/executionpeer/executionpeer_phase36_test.go"
+      ],
+      "modified": [
+        "internal/compiler/interp/interp.go",
+        "internal/compiler/executionpeer/executionpeer.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [],
+    "decisions": [
+      {
+        "summary": "Dynamic invocation identity uses a monotonically assigned ordinal per parent frame and static call site; each new parent begins at ordinal zero.",
+        "rationale": null
+      },
+      {
+        "summary": "The execution peer derives call ordinals and terminal ancestry from observed events and checked core facts; it does not evaluate scalar arithmetic.",
+        "rationale": null
+      },
+      {
+        "summary": "Evidence exhaustion reports incomplete capture while returning the actual interpreter execution and application output.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/36-scalar-helper-calls/36-05-SUMMARY.md",
+    "one_liner": "Checked scalar helper calls now run as sequenced C17 calls with stable dynamic ancestry, bounded optional capture, and preserved real application outcomes.",
+    "key_files": {
+      "created": [
+        "internal/compiler/cgen/cgen_phase36_test.go",
+        "internal/compiler/native/native_phase36_test.go",
+        ".planning/phases/36-scalar-helper-calls/36-05-task1-red-evidence.json",
+        ".planning/phases/36-scalar-helper-calls/36-05-task2-red-evidence.json",
+        ".planning/phases/36-scalar-helper-calls/36-05-task3-red-evidence.json",
+        ".planning/phases/36-scalar-helper-calls/deferred-items.md"
+      ],
+      "modified": [
+        "internal/compiler/cgen/cgen.go",
+        "internal/compiler/cgen/cgen_program.go",
+        ".planning/WINDOWS.md"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Native invocation ancestry is retained in a bounded arena rather than a reused stack buffer.",
+      "Call evidence capacity is checked before storage or ordinal narrowing; app execution continues with incomplete capture."
+    ],
+    "decisions": [
+      {
+        "summary": "Admit checked scalar call-only wrappers while keeping legacy, ownership, and foreign-call refusals in place.",
+        "rationale": null
+      },
+      {
+        "summary": "Use retained bounded path storage so nested call identities survive callee return.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep optional capture exhaustion separate from actual output, exit status, and later defect reporting.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/36-scalar-helper-calls/36-06-SUMMARY.md",
+    "one_liner": "Repeated local/imported crc_step helpers and borrowed-ByteView caller, fixture, and FileBytes loops now have literal interpreter/native witnesses and O0/O3/LTO mutation controls.",
+    "key_files": {
+      "created": [
+        "examples/helper_calls/crc_step.schway",
+        "examples/helper_calls/importer.schway",
+        "examples/helper_calls/public.schway",
+        "testdata/phase36/helper-values.json",
+        "internal/compiler/session/session_phase36_byteview_test.go",
+        "internal/compiler/session/session_phase36_calls_test.go",
+        "internal/compiler/session/session_phase36_peer_mutation_test.go",
+        ".planning/phases/36-scalar-helper-calls/36-06-task1-red-evidence.json",
+        ".planning/phases/36-scalar-helper-calls/36-06-task2-red-evidence.json",
+        ".planning/phases/36-scalar-helper-calls/36-06-task3-red-evidence.json"
+      ],
+      "modified": [
+        "testdata/phase36/new-fixture-ledger.json",
+        "cmd/schway/main_phase36_test.go",
+        "internal/compiler/cgen/cgen_program.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Mutant runs require a fresh no-op positive, the named semantic failure, and a restored positive.",
+      "Native mutation children execute one actual O0, O3, or O3-LTO case and verify compiler flags for LTO."
+    ],
+    "decisions": [
+      {
+        "summary": "Independent expected CRC values come from Python integer arithmetic, never from Schway engine output.",
+        "rationale": null
+      },
+      {
+        "summary": "Checker source intent, raw core/origin contracts, causal attribution, and actual numeric engine outcomes remain separate proof owners.",
+        "rationale": null
+      },
+      {
+        "summary": "Native ByteView caller composition changes only checked scalar-call applicability and borrowed-view caller admission; the scalar call signature remains U64/Bool.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/36-scalar-helper-calls/36-07-SUMMARY.md",
+    "one_liner": "The source-free surface now describes bounded scalar helper calls, backed by independent complete programs and exact Phase34/35/36 census and control evidence.",
+    "key_files": {
+      "created": [
+        "testdata/phase36/surface-census.json",
+        "testdata/phase36/surface-witnesses.json",
+        "internal/compiler/session/session_phase36_surface_test.go",
+        ".planning/phases/36-scalar-helper-calls/36-07-task1-red-evidence.json",
+        ".planning/phases/36-scalar-helper-calls/36-07-task2-red-evidence.json"
+      ],
+      "modified": [
+        "internal/compiler/surfacemanifest/manifest.go",
+        "internal/compiler/surfacemanifest/manifest_test.go",
+        "internal/compiler/session/session_phase34_surface_test.go",
+        "internal/compiler/session/session_phase35_surface_test.go",
+        ".planning/phases/36-scalar-helper-calls/deferred-items.md"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Manifest claims are independently pinned by full source programs rather than generated expectations.",
+      "Parser depth, runtime call depth, static preflight sizes, and byte capture budgets remain distinct limit classes."
+    ],
+    "decisions": [
+      {
+        "summary": "Publish direct arity-one scalar calls only for U64/Bool parameter and result pairs, with imported targets explicitly exported and call graphs acyclic.",
+        "rationale": null
+      },
+      {
+        "summary": "Supersede only exact obsolete no-call claims and branch links; preserve owner/path full-session proofs and unrelated refusal boundaries.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/36-scalar-helper-calls/36-08-SUMMARY.md",
+    "one_liner": "The integrated helper slice now has source-bound compatibility evidence and a per-knower acceptance record, with unresolved phase assumptions kept visible.",
+    "key_files": {
+      "created": [
+        ".planning/phases/36-scalar-helper-calls/36-ACCEPTANCE-EVIDENCE.md",
+        ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs",
+        ".planning/phases/36-scalar-helper-calls/prohibition-clean.json",
+        ".planning/phases/36-scalar-helper-calls/prohibition-outcome-violation.json",
+        ".planning/phases/36-scalar-helper-calls/prohibition-causal-violation.json",
+        ".planning/phases/36-scalar-helper-calls/36-PROHIBITION-EVIDENCE.md"
+      ],
+      "modified": [
+        ".planning/phases/36-scalar-helper-calls/36-08-PLAN.md",
+        ".planning/PRODUCT-ROADMAP.md",
+        ".planning/LANGUAGE-MATURITY.md"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Acceptance rows cite actual test owners and separate numeric, causal, route, and capture claims.",
+      "Living roadmap amendments distinguish current source, new focused checks, and historical receipts."
+    ],
+    "decisions": [
+      {
+        "summary": "Bind the final owner capture to compiler source HEAD d117ca4058fbf6a727cb5aa634768cf6194bac34; later commits changed planning documents only.",
+        "rationale": null
+      },
+      {
+        "summary": "Leave CALL-01 and CALL-02 pending for the phase-owned independent gates.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-01-SUMMARY.md",
+    "one_liner": "A shared, table-free CRC-32/ISO-HDLC module now powers full and low16 native file consumers, with exact inventory and fail-first proof wiring.",
+    "key_files": {
+      "created": [
+        "examples/crc32/lib/crc32.schway",
+        "examples/crc32/crc32.schway",
+        "examples/crc32/crc_low.schway",
+        "examples/crc32/adapter.c",
+        "examples/crc32/adapter.h",
+        "examples/crc32/file_bytes.bindings.json",
+        "testdata/phase37/new-fixture-ledger.json",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-BASELINE.md",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-01-red-evidence.json",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-prohibition-check.test.cjs",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-PROHIBITION-EVIDENCE.md",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/prohibition-clean.json",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/prohibition-outcome-violation.json",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/prohibition-causal-violation.json"
+      ],
+      "modified": [
+        "internal/compiler/session/session_phase37_crc32_test.go",
+        "internal/compiler/session/session_phase34_prechange_test.go",
+        "internal/compiler/session/session_phase36_prechange_test.go",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-01-PLAN.md"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "One shared ordinary-source CRC module serves both entries; neither entry carries a byte or bit loop.",
+      "Each historical inventory validates its own ledger schema and finite paths before composing the Phase37 source set."
+    ],
+    "decisions": [
+      {
+        "summary": "Use the reflected ISO-HDLC polynomial 0xEDB88320, all-ones seed/final XOR, and one private crc_byte call per byte.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep the existing file-bytes ABI and copy its local adapter triple byte-for-byte for the second consumer.",
+        "rationale": null
+      },
+      {
+        "summary": "Treat causal acceptance as structural evidence; only the native literal-vector test establishes this CRC numeric result.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": [
+      "APP-13",
+      "MOD-07",
+      "APP-14"
+    ]
+  },
+  {
+    "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-02-SUMMARY.md",
+    "one_liner": "The CRC consumers now run through a fixed interpreter file route without trace retention, while capture exhaustion preserves the real application result.",
+    "key_files": {
+      "created": [
+        "internal/compiler/interp/filebytes_reader.go",
+        "internal/compiler/interp/filebytes_reader_test.go",
+        "internal/compiler/interp/interp_phase37_test.go",
+        "internal/compiler/session/session_file_application.go",
+        "internal/compiler/session/session_phase37_file_application_test.go",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/prohibition-interpreter-violation.json"
+      ],
+      "modified": [
+        "internal/compiler/interp/interp.go",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-02-PLAN.md",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-prohibition-check.test.cjs",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-PROHIBITION-EVIDENCE.md"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Fixed file capability: validate the checked FileBytes contract at the interpreter boundary, then use one nonblocking regular descriptor and one bounded read.",
+      "Capture-free evaluation: bypass event, identity, ordinal, and recorder construction while preserving evaluator behavior."
+    ],
+    "decisions": [
+      {
+        "summary": "Keep the production interpreter API bound to its fixed reader; reader injection remains private to semantic controls.",
+        "rationale": null
+      },
+      {
+        "summary": "Treat evidence capacity as optional capture status while retaining the actual outcome, prior output, and cleanup semantics.",
+        "rationale": null
+      },
+      {
+        "summary": "Leave APP-13 and APP-14 requirement completion to parent phase acceptance.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-03-SUMMARY.md",
+    "one_liner": "Interpreter and native `schway run` source forms preserve opaque file paths, fixed outcome classes, and full-program authority admission.",
+    "key_files": {
+      "created": [
+        "cmd/schway/main_phase37_file_run_test.go",
+        "internal/compiler/session/session_phase37_authority_test.go",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-03-task1-red-evidence.json"
+      ],
+      "modified": [
+        "cmd/schway/main.go",
+        "internal/compiler/session/session_file_application.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [],
+    "decisions": [
+      {
+        "summary": "Keep the no-tail command route unchanged and recognize separator-marked source runs before global option extraction.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep interpreter IO on the fixed checked Go reader; require an explicit manifest only for native build authority.",
+        "rationale": null
+      },
+      {
+        "summary": "Leave APP-14, APP-13, and MOD-07 pending parent phase acceptance.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-04-SUMMARY.md",
+    "one_liner": "The interpreter reader now rejects zero-progress reads and proves the cap-plus-one boundary; the native CRC route records physical close/free evidence and passes its focused sanitizer lane.",
+    "key_files": {
+      "created": [
+        "internal/compiler/native/native_phase37_filebytes_test.go"
+      ],
+      "modified": [
+        "internal/compiler/interp/filebytes_reader.go",
+        "internal/compiler/interp/filebytes_reader_test.go",
+        "internal/compiler/interp/interp_phase37_test.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Private native mutants must compile and reach exact physical assertions before they count as killed.",
+      "Record sanitizer host availability in a named subtest; this harness makes no Darwin leak-check claim."
+    ],
+    "decisions": [
+      {
+        "summary": "Treat a zero-byte, nil-error read as FileUnavailable; it is not EOF evidence.",
+        "rationale": null
+      },
+      {
+        "summary": "Allocate exactly cap+1 bytes before the first descriptor read and independently observe the allocation/read order.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep native physical close/free receipts distinct from interpreter semantic owner-release counts.",
+        "rationale": null
+      },
+      {
+        "summary": "Run focused ASan/UBSan against the generated CRC consumer and use a returning C caller for its typed cap-plus-one adapter error path.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-05-SUMMARY.md",
+    "one_liner": "Independent Python/zlib CRC-32 receipts and expected-first interpreter/native file outcomes across the CRC and checksum consumers.",
+    "key_files": {
+      "created": [
+        "examples/crc32/crc32.expected.json",
+        "internal/compiler/testsupport/crc32_oracle.go",
+        "internal/compiler/testsupport/crc32_oracle_test.go",
+        "cmd/schway/main_phase37_matrix_test.go"
+      ],
+      "modified": []
+    },
+    "tech_added": [],
+    "patterns": [
+      "Finite JSON oracle rows bind recipes, digests, provenance, and consumer output tuples.",
+      "Public file tests use bounded child processes, private inputs and temp directories, and exact output capture."
+    ],
+    "decisions": [
+      {
+        "summary": "Pin Python zlib literals and SHA256 digests; use Go hash/crc32.ChecksumIEEE only as a recurring independent cross-check.",
+        "rationale": null
+      },
+      {
+        "summary": "Check both public engines against their own expected tuple before comparing parity.",
+        "rationale": null
+      },
+      {
+        "summary": "Test embedded NUL through explicitly labeled public dispatch because host process argv cannot transport it.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-06-SUMMARY.md",
+    "one_liner": "Five CRC-32 semantic mutants now reach numeric disagreements through the public engines, while both consumers bind to the shared module digest.",
+    "key_files": {
+      "created": [
+        "cmd/schway/main_phase37_crc32_controls_test.go",
+        "internal/compiler/session/session_phase37_reuse_test.go"
+      ],
+      "modified": [
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-06-PLAN.md"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "A semantic mutant is reached only after public check success and successful numeric output on interpreter and native routes.",
+      "Module identity claims combine scoped syntax census, actual merged imports/calls, immutable entry bytes, receipt module digests, and InputID changes."
+    ],
+    "decisions": [
+      {
+        "summary": "Keep all five semantic mutations in private temporary copies and compare clean and mutated public outputs to independent literal values before checking parity.",
+        "rationale": null
+      },
+      {
+        "summary": "Pin no-edit source/closure stability with InputID and module rows; BuildID remains bound to exact executable bytes and may vary when those bytes differ.",
+        "rationale": null
+      },
+      {
+        "summary": "Leave APP-13, MOD-07, and APP-14 pending parent phase acceptance; these tests record plan evidence only.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-07-SUMMARY.md",
+    "one_liner": "Finite route inventories, exit documentation, and source-free surface facts now describe both public file-run forms with their actual limits and owners.",
+    "key_files": {
+      "created": [
+        "cmd/schway/main_phase37_inventory_test.go",
+        "internal/compiler/session/session_phase37_surface_test.go",
+        "testdata/phase37/surface-witnesses.json"
+      ],
+      "modified": [
+        "cmd/schway/main.go",
+        "cmd/schway/main_phase32_routes_test.go",
+        "cmd/schway/main_phase34_routes_test.go",
+        "README.md",
+        "internal/compiler/session/session_phase28_exitdocs_test.go",
+        "internal/compiler/session/session_phase34_limit_consumers_test.go",
+        "internal/compiler/session/session_phase34_surface_test.go",
+        "internal/compiler/surfacemanifest/manifest.go",
+        "internal/compiler/surfacemanifest/manifest_test.go"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Finite route consumers name the actual interpreter/native handler roots and the source programs that consume FileBytes.",
+      "New surface limits are independently witnessed and checked for wrong scope, missing consumers, and wire-field drift."
+    ],
+    "decisions": [
+      {
+        "summary": "Keep the 4096-byte opaque source-file PATH bound separate from app run's existing argument fact and the interpreter's fixed 65536-byte FileBytes read cap.",
+        "rationale": null
+      },
+      {
+        "summary": "Preserve the native binding-selected FileBytes maximum and the existing schway.surface/1 ten-field wire shape.",
+        "rationale": null
+      },
+      {
+        "summary": "Preserve the Phase 34 witness receipt pinned by Phase 35 and publish these facts through an additive Phase 37 witness document.",
+        "rationale": null
+      },
+      {
+        "summary": "Leave APP-14, APP-13, MOD-07, and DX-24 pending parent acceptance.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-08-SUMMARY.md",
+    "one_liner": "A tracked-only clean checkout now runs the CRC guide and matches 78 exact tuples across both consumers, both engines, one-shot native, and retained native execution.",
+    "key_files": {
+      "created": [
+        "examples/crc32/README.md",
+        "cmd/schway/main_phase37_guide_test.go",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-ACCEPTANCE-EVIDENCE.md",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-TRANSITION-CHECK.md"
+      ],
+      "modified": [
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-VALIDATION.md",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-PROHIBITION-EVIDENCE.md",
+        ".planning/PRODUCT-ROADMAP.md",
+        ".planning/LANGUAGE-MATURITY.md",
+        ".planning/STATE.md",
+        ".planning/ROADMAP.md"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "A guide claim is exercised by running its actual marked commands from a tracked-only temporary copy.",
+      "Evidence distinguishes independent numeric outcomes, causal structure, physical cleanup, source inspection, and historical receipts."
+    ],
+    "decisions": [
+      {
+        "summary": "Keep Phase37 requirements pending until the parent verifier, security, and review gates accept them.",
+        "rationale": null
+      },
+      {
+        "summary": "Treat native executable digest and BuildID variance under the existing incomplete/non-cacheable receipt contract; make no deterministic-binary claim.",
+        "rationale": null
+      },
+      {
+        "summary": "Keep Phase38 hosted binding after milestone audit and gap closure.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  },
+  {
+    "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-09-SUMMARY.md",
+    "one_liner": "CRC-32 now calls its private eight-round byte helper once per byte, and interpreter capture and reader defects have reached bounded semantic controls.",
+    "key_files": {
+      "created": [
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-REMEDIATION-EVIDENCE.md"
+      ],
+      "modified": [
+        "examples/crc32/lib/crc32.schway",
+        "testdata/phase37/new-fixture-ledger.json",
+        "internal/compiler/session/session_phase37_crc32_test.go",
+        "internal/compiler/session/session_phase37_reuse_test.go",
+        "cmd/schway/main_phase37_crc32_controls_test.go",
+        "internal/compiler/interp/interp_phase37_test.go",
+        "internal/compiler/interp/filebytes_reader_test.go",
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-PROHIBITION-EVIDENCE.md"
+      ]
+    },
+    "tech_added": [],
+    "patterns": [
+      "Mutation overlays must prove child root, exact target root, and actual named behavior failure."
+    ],
+    "decisions": [
+      {
+        "summary": "Keep the byte-loop activation count as structural evidence; numeric CRC vectors remain independent.",
+        "rationale": null
+      },
+      {
+        "summary": "Require clean baseline assertions in standalone target roots and named semantic failures in armed overlay children.",
+        "rationale": null
+      }
+    ],
+    "requirements_completed": []
+  }
+]

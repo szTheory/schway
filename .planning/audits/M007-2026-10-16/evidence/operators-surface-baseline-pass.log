@@ -1,0 +1,274 @@
+=== RUN   TestPhase36NoCallGeneratedCByteBaseline
+--- PASS: TestPhase36NoCallGeneratedCByteBaseline (1.24s)
+=== RUN   TestPhase35SurfaceManifestWitnesses
+--- PASS: TestPhase35SurfaceManifestWitnesses (0.06s)
+=== RUN   TestPhase35BitwiseOptimizationMatrix
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-distinct
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-distinct/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-distinct/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-distinct/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-equal
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-equal/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-equal/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-equal/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-zero-and-maximum
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-zero-and-maximum/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-zero-and-maximum/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-zero-and-maximum/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-high-bit-and-maximum
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-high-bit-and-maximum/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-high-bit-and-maximum/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-high-bit-and-maximum/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-hex-case-separators-leading-zeroes
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-hex-case-separators-leading-zeroes/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-hex-case-separators-leading-zeroes/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/xor-hex-case-separators-leading-zeroes/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-distinct
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-distinct/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-distinct/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-distinct/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-equal-maximum
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-equal-maximum/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-equal-maximum/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-equal-maximum/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-zero-and-maximum
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-zero-and-maximum/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-zero-and-maximum/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-zero-and-maximum/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-high-bit-and-maximum
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-high-bit-and-maximum/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-high-bit-and-maximum/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-high-bit-and-maximum/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-hex-leading-zeroes
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-hex-leading-zeroes/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-hex-leading-zeroes/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/and-hex-leading-zeroes/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-distinct
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-distinct/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-distinct/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-distinct/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-equal
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-equal/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-equal/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-equal/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-zero-and-maximum
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-zero-and-maximum/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-zero-and-maximum/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-zero-and-maximum/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-high-bit-and-low-bit
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-high-bit-and-low-bit/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-high-bit-and-low-bit/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-high-bit-and-low-bit/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-hex-case-separators-leading-zeroes
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-hex-case-separators-leading-zeroes/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-hex-case-separators-leading-zeroes/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/or-hex-case-separators-leading-zeroes/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-zero-count-maximum
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-zero-count-maximum/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-zero-count-maximum/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-zero-count-maximum/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-count-31
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-count-31/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-count-31/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-count-31/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-count-32
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-count-32/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-count-32/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-count-32/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-count-63
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-count-63/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-count-63/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-count-63/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-high-bit-truncates
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-high-bit-truncates/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-high-bit-truncates/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-high-bit-truncates/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-maximum-wraps
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-maximum-wraps/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-maximum-wraps/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-maximum-wraps/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-maximum-count-63
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-maximum-count-63/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-maximum-count-63/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-maximum-count-63/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-hex-amount-and-source
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-hex-amount-and-source/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-hex-amount-and-source/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/left-hex-amount-and-source/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-zero-count-maximum
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-zero-count-maximum/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-zero-count-maximum/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-zero-count-maximum/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-count-31-logical
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-count-31-logical/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-count-31-logical/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-count-31-logical/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-count-32-logical
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-count-32-logical/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-count-32-logical/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-count-32-logical/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-count-63-logical
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-count-63-logical/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-count-63-logical/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-count-63-logical/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-1
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-1/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-1/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-1/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-63
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-63/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-63/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-63/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-zero-value
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-zero-value/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-zero-value/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-zero-value/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-hex-leading-zeroes
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-hex-leading-zeroes/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-hex-leading-zeroes/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/right-hex-leading-zeroes/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/locked-association
+=== RUN   TestPhase35BitwiseOptimizationMatrix/locked-association/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/locked-association/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/locked-association/O3-flto
+=== RUN   TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association
+=== RUN   TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O0
+=== RUN   TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O3
+=== RUN   TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O3-flto
+--- PASS: TestPhase35BitwiseOptimizationMatrix (6.33s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-distinct (0.34s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-distinct/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-distinct/O3 (0.12s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-distinct/O3-flto (0.18s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-equal (0.20s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-equal/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-equal/O3 (0.07s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-equal/O3-flto (0.08s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-zero-and-maximum (0.20s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-zero-and-maximum/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-zero-and-maximum/O3 (0.07s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-zero-and-maximum/O3-flto (0.08s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-high-bit-and-maximum (0.20s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-high-bit-and-maximum/O0 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-high-bit-and-maximum/O3 (0.07s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-high-bit-and-maximum/O3-flto (0.08s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-hex-case-separators-leading-zeroes (0.18s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-hex-case-separators-leading-zeroes/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-hex-case-separators-leading-zeroes/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/xor-hex-case-separators-leading-zeroes/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/and-distinct (0.18s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-distinct/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-distinct/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-distinct/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/and-equal-maximum (0.18s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-equal-maximum/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-equal-maximum/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-equal-maximum/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/and-zero-and-maximum (0.17s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-zero-and-maximum/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-zero-and-maximum/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-zero-and-maximum/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/and-high-bit-and-maximum (0.19s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-high-bit-and-maximum/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-high-bit-and-maximum/O3 (0.07s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-high-bit-and-maximum/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/and-hex-leading-zeroes (0.18s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-hex-leading-zeroes/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-hex-leading-zeroes/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/and-hex-leading-zeroes/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/or-distinct (0.18s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-distinct/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-distinct/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-distinct/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/or-equal (0.18s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-equal/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-equal/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-equal/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/or-zero-and-maximum (0.18s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-zero-and-maximum/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-zero-and-maximum/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-zero-and-maximum/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/or-high-bit-and-low-bit (0.19s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-high-bit-and-low-bit/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-high-bit-and-low-bit/O3 (0.07s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-high-bit-and-low-bit/O3-flto (0.08s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/or-hex-case-separators-leading-zeroes (0.21s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-hex-case-separators-leading-zeroes/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-hex-case-separators-leading-zeroes/O3 (0.07s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/or-hex-case-separators-leading-zeroes/O3-flto (0.08s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/left-zero-count-maximum (0.20s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-zero-count-maximum/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-zero-count-maximum/O3 (0.07s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-zero-count-maximum/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/left-count-31 (0.19s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-count-31/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-count-31/O3 (0.07s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-count-31/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/left-count-32 (0.20s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-count-32/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-count-32/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-count-32/O3-flto (0.09s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/left-count-63 (0.19s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-count-63/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-count-63/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-count-63/O3-flto (0.08s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/left-high-bit-truncates (0.18s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-high-bit-truncates/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-high-bit-truncates/O3 (0.07s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-high-bit-truncates/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/left-maximum-wraps (0.19s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-maximum-wraps/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-maximum-wraps/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-maximum-wraps/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/left-maximum-count-63 (0.19s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-maximum-count-63/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-maximum-count-63/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-maximum-count-63/O3-flto (0.08s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/left-hex-amount-and-source (0.19s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-hex-amount-and-source/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-hex-amount-and-source/O3 (0.07s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/left-hex-amount-and-source/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/right-zero-count-maximum (0.18s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-zero-count-maximum/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-zero-count-maximum/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-zero-count-maximum/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/right-count-31-logical (0.19s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-count-31-logical/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-count-31-logical/O3 (0.07s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-count-31-logical/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/right-count-32-logical (0.19s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-count-32-logical/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-count-32-logical/O3 (0.07s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-count-32-logical/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/right-count-63-logical (0.19s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-count-63-logical/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-count-63-logical/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-count-63-logical/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-1 (0.19s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-1/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-1/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-1/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-63 (0.19s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-63/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-63/O3 (0.07s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-63/O3-flto (0.08s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/right-zero-value (0.18s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-zero-value/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-zero-value/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-zero-value/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/right-hex-leading-zeroes (0.18s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-hex-leading-zeroes/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-hex-leading-zeroes/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/right-hex-leading-zeroes/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/locked-association (0.18s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/locked-association/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/locked-association/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/locked-association/O3-flto (0.07s)
+    --- PASS: TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association (0.19s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O0 (0.05s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O3 (0.06s)
+        --- PASS: TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O3-flto (0.07s)
+=== RUN   TestPhase36SurfaceManifestCallWitnesses
+--- PASS: TestPhase36SurfaceManifestCallWitnesses (0.01s)
+PASS
+ok  	github.com/szTheory/schway/internal/compiler/session	7.646s

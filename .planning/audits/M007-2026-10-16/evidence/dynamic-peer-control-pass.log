@@ -1,0 +1,28 @@
+=== RUN   TestPhase36CallCausalAttributionControls
+=== RUN   TestPhase36CallCausalAttributionControls/ordinal-gap
+=== RUN   TestPhase36CallCausalAttributionControls/ordinal-duplicate
+=== RUN   TestPhase36CallCausalAttributionControls/ordinal-reordered
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-parent
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-static-site
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-callee
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-source-place
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-target-place
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-result-type
+=== RUN   TestPhase36CallCausalAttributionControls/missing-call
+=== RUN   TestPhase36CallCausalAttributionControls/missing-return
+=== RUN   TestPhase36CallCausalAttributionControls/repeated-terminal
+--- PASS: TestPhase36CallCausalAttributionControls (0.01s)
+    --- PASS: TestPhase36CallCausalAttributionControls/ordinal-gap (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/ordinal-duplicate (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/ordinal-reordered (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-parent (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-static-site (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-callee (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-source-place (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-target-place (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-result-type (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/missing-call (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/missing-return (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/repeated-terminal (0.00s)
+PASS
+ok  	github.com/szTheory/schway/internal/compiler/executionpeer	0.013s
