@@ -1,0 +1,100 @@
+{
+  "schema": "schway-371-predecessor-run-v1",
+  "phase": "36",
+  "phase_path": ".planning/phases/36-scalar-helper-calls",
+  "phase_goal": "A scalar function can be factored into small helpers: it calls another scalar function with one U64 or Bool argument and uses the result, including calls into imported modules, with the same defect behavior on both engines and every peer re-deriving the call independently.",
+  "requirements": [
+    "CALL-01",
+    "CALL-02"
+  ],
+  "captured_utc": "2026-10-16T20:07:07.683Z",
+  "current_head": "a7b21e292e289fd82a40d6c39af499e78aa54199",
+  "init_execute_phase": {
+    "plan_count": 8,
+    "summary_count": 8,
+    "incomplete_count": 0,
+    "incomplete_plans": [],
+    "section_manifest": {
+      "included": [
+        "regression-gate"
+      ],
+      "excluded": [
+        "partial-wave",
+        "gap-closure-artifacts"
+      ]
+    }
+  },
+  "prior_report": {
+    "pre_refresh_status": "stale",
+    "historical_status": "passed",
+    "verified": "2026-10-16T04:07:18Z",
+    "score": "32/32 must-haves verified",
+    "covered_files": 102,
+    "covered_digest": "v3:sha256:c90fbf587b476354621ea29e16323bb1d73741c6e287b39b0e28c656ddaf3dc0",
+    "original_copy": ".planning/phases/36-scalar-helper-calls/36-371-REFRESH-2026-10-16-VERIFICATION-HISTORY.md",
+    "sha256": "111846425602ab2dcb9b208c54f44a69bf4e4f45e42cfbd303286e5cbf826fa4"
+  },
+  "source_delta": {
+    "base_head": "9258a7360222ff17a3267e1ccb873a0dfae79346",
+    "current_head": "a7b21e292e289fd82a40d6c39af499e78aa54199",
+    "covered_paths": [
+      "internal/compiler/cgen/cgen_program.go",
+      "internal/compiler/corevalidate/corevalidate.go",
+      "internal/compiler/executionpeer/executionpeer.go",
+      "internal/compiler/executionpeer/executionpeer_phase33_terminal_test.go",
+      "internal/compiler/session/session_phase36_prechange_test.go",
+      "internal/compiler/syntax/parser.go"
+    ],
+    "complete_delta_path": "../37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION.json"
+  },
+  "gates": {
+    "nyquist": {
+      "status": "existing VALIDATION.md remains validated; no file rewritten",
+      "fresh_source_slice": {
+        "roots": 19,
+        "subtests": 254,
+        "skipped": 0,
+        "sha256": "6d1f2be2b1cfb067e3bd0ccf8e6356cd28b697e3f788dca3cebbad49948971b1"
+      },
+      "predecessor_registry_refresh": "incomplete after regression abort"
+    },
+    "security": {
+      "status": "verified zero-open register reused",
+      "threats_open": 0,
+      "additional_current_phase_controls": "13/13 closed in 37.1-SECURITY.md"
+    },
+    "ui": {
+      "status": "not-applicable",
+      "frontend": false,
+      "hasUiFiles": false,
+      "hasUiSpec": false,
+      "block": false
+    },
+    "code_review": {
+      "status": "current D18 delta clean",
+      "depth": "standard",
+      "files_reviewed": 15,
+      "critical": 0,
+      "warning": 0,
+      "info": 0,
+      "disposition_fixed": 3
+    },
+    "parent_artifacts": {
+      "status": "no-op",
+      "section_manifest_excludes": "gap-closure-artifacts"
+    },
+    "regression": {
+      "status": "aborted",
+      "receipt": "../37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION.json",
+      "passed_prefix": 31,
+      "failed": 1,
+      "skipped": 0,
+      "missing": 0,
+      "blocked_test": "TestEmittedCExitLiteralsMatchTable"
+    }
+  },
+  "verifier": {
+    "status": "not-dispatched",
+    "owner": "parent"
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "schema": "schway-371-predecessor-run-v1",
+  "phase": "35",
+  "phase_path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals",
+  "phase_goal": "Ordinary Schway scalar code can use U64 `^`, `&`, `|`, literal-amount `<<` and `>>`, and hex literals, with one defined meaning on every engine and optimization level, no C17 shift undefined behavior, and no new defect path.",
+  "requirements": [
+    "BIT-01",
+    "BIT-02",
+    "BIT-03",
+    "BIT-04"
+  ],
+  "captured_utc": "2026-10-16T20:07:07.683Z",
+  "current_head": "a7b21e292e289fd82a40d6c39af499e78aa54199",
+  "init_execute_phase": {
+    "plan_count": 8,
+    "summary_count": 8,
+    "incomplete_count": 0,
+    "incomplete_plans": [],
+    "section_manifest": {
+      "included": [
+        "regression-gate"
+      ],
+      "excluded": [
+        "partial-wave",
+        "gap-closure-artifacts"
+      ]
+    }
+  },
+  "prior_report": {
+    "pre_refresh_status": "stale",
+    "historical_status": "passed",
+    "verified": "2026-10-16T03:41:27Z",
+    "score": "38/38 truths verified",
+    "covered_files": 88,
+    "covered_digest": "v3:sha256:45003bdd8adb489f20e3b92db061704de08396230cc788f48d474570f48b6dfb",
+    "original_copy": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-371-REFRESH-2026-10-16-VERIFICATION-HISTORY.md",
+    "sha256": "ecaeaa79f187f1f90ecbea3c63a1d2d6abf06b42fe13d369ecf77439f9e05787"
+  },
+  "source_delta": {
+    "base_head": "9258a7360222ff17a3267e1ccb873a0dfae79346",
+    "current_head": "a7b21e292e289fd82a40d6c39af499e78aa54199",
+    "covered_paths": [
+      "internal/compiler/cgen/cgen_program.go",
+      "internal/compiler/corevalidate/corevalidate.go",
+      "internal/compiler/executionpeer/executionpeer.go",
+      "internal/compiler/executionpeer/executionpeer_phase33_terminal_test.go",
+      "internal/compiler/syntax/parser.go"
+    ],
+    "complete_delta_path": "../37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION.json"
+  },
+  "gates": {
+    "nyquist": {
+      "status": "existing VALIDATION.md remains validated; no file rewritten",
+      "fresh_source_slice": {
+        "roots": 19,
+        "subtests": 254,
+        "skipped": 0,
+        "sha256": "6d1f2be2b1cfb067e3bd0ccf8e6356cd28b697e3f788dca3cebbad49948971b1"
+      },
+      "predecessor_registry_refresh": "incomplete after regression abort"
+    },
+    "security": {
+      "status": "verified zero-open register reused",
+      "threats_open": 0,
+      "additional_current_phase_controls": "13/13 closed in 37.1-SECURITY.md"
+    },
+    "ui": {
+      "status": "not-applicable",
+      "frontend": false,
+      "hasUiFiles": false,
+      "hasUiSpec": false,
+      "block": false
+    },
+    "code_review": {
+      "status": "current D18 delta clean",
+      "depth": "standard",
+      "files_reviewed": 15,
+      "critical": 0,
+      "warning": 0,
+      "info": 0,
+      "disposition_fixed": 3
+    },
+    "parent_artifacts": {
+      "status": "no-op",
+      "section_manifest_excludes": "gap-closure-artifacts"
+    },
+    "regression": {
+      "status": "aborted",
+      "receipt": "../37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION.json",
+      "passed_prefix": 31,
+      "failed": 1,
+      "skipped": 0,
+      "missing": 0,
+      "blocked_test": "TestEmittedCExitLiteralsMatchTable"
+    }
+  },
+  "verifier": {
+    "status": "not-dispatched",
+    "owner": "parent"
+  }
+}
