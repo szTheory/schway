@@ -6,11 +6,11 @@ current_phase: 38
 current_phase_name: Milestone Receipts
 current_plan: Not started
 status: planning
-stopped_at: Phase 36 refresh complete; earliest freshness gate is execute-phase 33
-last_updated: "2026-10-16T00:12:59.262Z"
+stopped_at: Phase 33 verified; next freshness gate execute-phase 35, then audit
+last_updated: "2026-10-16T00:49:39.214Z"
 last_activity: 2026-10-15
-last_activity_desc: Phase 36 verified 32/32; review-record changes stale 33/35; next execute-phase 33
-state_head: a87882600742387aa1739e8e86aab616360e8f07
+last_activity_desc: Phase 33 verified 60/60; CR02 fixed, CR03/04 audit-owned; next execute-phase 35
+state_head: 3075dbeb6af3f2d9ada7bfd3c5369c25dcc290bf
 progress:
   total_phases: 6
   completed_phases: 5
@@ -57,7 +57,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 36 refreshed; reconcile stale 33/35/37 reports, then audit M007 before Phase 38
+**Current focus:** Phase 33 refreshed; reconcile 35/36/37 freshness, resolve peer audit findings, then Phase 38
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -128,13 +128,13 @@ plans.
 Phase: 38 — Milestone Receipts
 Current Plan: Not started
 Total Plans in Phase: 0 (Phase 38 unplanned)
-Status: Awaiting Phase 33/35/37 freshness and milestone audit before Phase 38
-Last activity: 2026-10-15 — Phase 36 verified 32/32; earliest canonical freshness gate is 33
+Status: Awaiting 35/36/37 freshness and M007 audit before Phase 38
+Last activity: 2026-10-15 — Phase 33 verified 60/60; exact next gate execute-phase 35
 
 Progress: [████████░░] 83%
 
 Implementation: 38/38 authored plans complete; Phase 38 remains unplanned.
-Current verification: phases 34/36 passed; phases 33/35/37 stale.
+Current verification: phases 33/34 passed; phases 35/36/37 stale.
 
 ## M007 Planning
 
@@ -1173,8 +1173,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-16T00:14:27.243399Z
-Stopped at: Phase 36 refresh complete; run execute-phase 33, then re-query freshness before audit/38
+Last session: 2026-10-16T00:51:19.925695Z
+Stopped at: Phase 33 verified; next execute-phase 35, then re-query and audit
 Resume file: None
 Next action: `$gsd-execute-phase 33` (gates/verifier only), then re-query (currently 35, 37); `$gsd-audit-milestone` and gap closure precede Phase 38
 
@@ -1357,7 +1357,7 @@ plans, or reopen Phase 25 implementation.
 
 ## Operator Next Steps
 
-- Phase 36 is refreshed 32/32; 34 remains passed. Exact next route: `$gsd-execute-phase 33` for gates/verifier only, then re-query progress (currently 35, 37). New Phase 36 review/disposition bytes stale those earlier covered reports; implementation is unchanged. Complete freshness reconciliation and M007 audit/gap closure before Phase 38 planning or hosted binding. WR-02 is classified deferred documentation debt; preserve completed UAT.
+- Exact next command: `$gsd-execute-phase 35` for gates/verifier only. Phases 33/34 pass;35/36/37 are stale. Re-query after each. CR-02 is fixed; CR-03/04 remain reviewer-classified BLOCKER findings deferred to execution-peer maintainer through M007 audit before Phase 38 freeze. Resolve audit/gap work before Phase 38 planning/binding; preserve completed plans/UAT and user config edits.
 
 ### Phase 33 completion handoff — 2026-10-13
 
@@ -1465,7 +1465,6 @@ no placeholder 38 directory, hosted dispatch or receipt binding began.
 User config bytes and false ephemeral chain flag are preserved. [35-REFRESH-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH-CLOSEOUT.md)
 records evidence boundaries, dormant seeds and the three next capabilities.
 
-
 ### Phase 36 refreshed completion handoff — 2026-10-15
 
 Eight plans/seven waves remain complete. Independent verification passes 32/32,
@@ -1484,3 +1483,33 @@ state.json retains next-unimplemented 38. Config bytes, persistent settings and
 false ephemeral chain flag are preserved. No Phase 38 planning, push or hosted
 binding began. [36-REFRESH-CLOSEOUT.md](phases/36-scalar-helper-calls/36-REFRESH-CLOSEOUT.md)
 records all evidence limits, seed dispositions and the three next capabilities.
+
+
+## Phase 33 second refresh handoff — 2026-10-15
+
+Source inspection and an actual pre-fix source overlay reproduced CR-02
+terminal false accepts. The causal peer now binds ordinary terminal core
+attribution, root outcome kind, explicit defect reason and activation
+closure; it still does not replay numeric values. Independent verification
+passes 60/60 with 65 covered inputs. Two pre-existing propagation false
+rejections, CR-03/04, remain reviewer-classified BLOCKER findings deferred to
+the execution-peer maintainer through the mandatory M007 audit before freeze.
+The review is not clean; the verifier found no Phase 33 must-have gap.
+
+New local checks passed 184 names /196 root executions /16 packages with
+zero missing/fail/skip; the receipt binds 177 input hashes and16 raw logs.
+The actual pre-fix overlay fails 30 test nodes; clean controls pass. The
+verifier independently checked bindings and critical controls, corrected its
+own stale fingerprint copy, and canonical status then passed. Historical
+receipts remain at their revisions; no hosted/Linux result, new dependency,
+language admission, human-readability result or latency distribution follows.
+
+Fresh progress:33/34 passed,35/36/37 stale. Exact next gate is
+`$gsd-execute-phase 35`, then re-query; M007 audit must explicitly resolve
+CR-03/04 and other gaps before Phase 38. Three recommendations remain audited
+same-source two-host CRC receipts, proposed M008 wc/longest_line, then bounded
+fixed-schema key=value parsing. Their programs, blockers, complete slices,
+checker obligations, evidence/debt, owners and reprioritization conditions,
+plus source/consumer dispositions retaining z1g/trz/z1s dormant, are in
+[33-REFRESH2-CLOSEOUT.md](phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH2-CLOSEOUT.md).
+Only EVD-17 is active milestone scope; no future consumer or seed was promoted.

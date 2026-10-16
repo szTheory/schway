@@ -936,3 +936,33 @@ relevant dormant z1g/trz/z1s source/consumer dispositions, are in
 [36-REFRESH-CLOSEOUT.md](phases/36-scalar-helper-calls/36-REFRESH-CLOSEOUT.md).
 No future consumer or dormant experiment was promoted; only EVD-17 is active
 M007 scope.
+
+
+## Phase 33 terminal-evidence refresh — 2026-10-15
+
+Source inspection and an actual pre-fix source overlay reproduced CR-02
+terminal false accepts. The causal peer now binds ordinary terminal core
+attribution, root outcome kind, explicit defect reason and activation
+closure; it still does not replay numeric values. Independent verification
+passes 60/60 with 65 covered inputs. Two pre-existing propagation false
+rejections, CR-03/04, remain reviewer-classified BLOCKER findings deferred to
+the execution-peer maintainer through the mandatory M007 audit before freeze.
+The review is not clean; the verifier found no Phase 33 must-have gap.
+
+New local checks passed 184 names /196 root executions /16 packages with
+zero missing/fail/skip; the receipt binds 177 input hashes and16 raw logs.
+The actual pre-fix overlay fails 30 test nodes; clean controls pass. The
+verifier independently checked bindings and critical controls, corrected its
+own stale fingerprint copy, and canonical status then passed. Historical
+receipts remain at their revisions; no hosted/Linux result, new dependency,
+language admission, human-readability result or latency distribution follows.
+
+Fresh progress:33/34 passed,35/36/37 stale. Exact next gate is
+`$gsd-execute-phase 35`, then re-query; M007 audit must explicitly resolve
+CR-03/04 and other gaps before Phase 38. Three recommendations remain audited
+same-source two-host CRC receipts, proposed M008 wc/longest_line, then bounded
+fixed-schema key=value parsing. Their programs, blockers, complete slices,
+checker obligations, evidence/debt, owners and reprioritization conditions,
+plus source/consumer dispositions retaining z1g/trz/z1s dormant, are in
+[33-REFRESH2-CLOSEOUT.md](phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH2-CLOSEOUT.md).
+Only EVD-17 is active milestone scope; no future consumer or seed was promoted.
