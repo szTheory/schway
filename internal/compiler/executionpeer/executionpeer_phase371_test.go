@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/szTheory/schway/internal/compiler/core"
+	"github.com/szTheory/schway/internal/compiler/corevalidate"
 	"github.com/szTheory/schway/internal/compiler/execution"
 	"github.com/szTheory/schway/internal/compiler/executionpeer"
 	"github.com/szTheory/schway/internal/compiler/interp"
@@ -151,6 +152,177 @@ func TestPhase371LegacyDefectClosesAllActiveFrames(t *testing.T) {
 			t.Fatalf("peer rejected actual dynamic child defect trace: %v", err)
 		}
 	})
+}
+
+func TestPhase371ForeignFailureOpFailAttribution(t *testing.T) {
+	program, acquire, use := phase371Phase24FailureProgram(t)
+	for _, scenario := range []struct {
+		name     string
+		failure  core.LinearOperation
+		outcomes map[string]interp.ForeignOutcome
+	}{
+		{
+			name:    "AcquireError.AcquireFailed",
+			failure: acquire,
+			outcomes: map[string]interp.ForeignOutcome{
+				acquire.ID: {Kind: "failure", Type: "AcquireError", Value: "AcquireFailed"},
+			},
+		},
+		{
+			name:    "UseError.UnsupportedByte",
+			failure: use,
+			outcomes: map[string]interp.ForeignOutcome{
+				acquire.ID: {Kind: "success", Type: acquire.Foreign.ResultType, Value: "67"},
+				use.ID:     {Kind: "failure", Type: "UseError", Value: "UnsupportedByte"},
+			},
+		},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			model, err := interp.RunWithForeignOutcomes(program, "main", "opaque-path-token", scenario.outcomes)
+			if err != nil {
+				t.Fatalf("checked Phase24 model execution: %v", err)
+			}
+			if model.EvidenceScope != interp.EvidenceScopeModelOnly || model.ActualHostIO || model.PhysicalCleanup {
+				t.Fatalf("failure execution crossed the model-only evidence boundary: %+v", model)
+			}
+			document, err := session.ProjectExecutionSchema2(program, model.Execution)
+			if err != nil {
+				t.Fatalf("project checked Phase24 failure trace: %v", err)
+			}
+			if document.Outcome.Kind != execution.OutcomeTypedFailure {
+				t.Fatalf("model outcome = %+v, want typed_failure", document.Outcome)
+			}
+			failureIndex := -1
+			for index, event := range document.Events {
+				if event.ID == scenario.failure.ID+":event" && event.Kind == "foreign.failed" {
+					failureIndex = index
+					if event.FunctionID != phase371FailureFunction(program, scenario.failure) || event.SourcePlace != scenario.failure.SourceID || event.TargetPlace != scenario.failure.TargetID || event.TypeID != scenario.failure.Foreign.Fails {
+						t.Fatalf("foreign failure attribution = %+v, want indexed operation %+v", event, scenario.failure)
+					}
+					break
+				}
+			}
+			if failureIndex < 0 {
+				t.Fatalf("model trace omitted exact indexed foreign.failed for %q: %+v", scenario.failure.ID, document.Events)
+			}
+			failureEvent := document.Events[failureIndex]
+			var calleeTerminal, rootTerminal bool
+			var parentRouteWork bool
+			for _, event := range document.Events[failureIndex+1:] {
+				if event.Kind == "resource.released" && event.Invocation == rootInvocationForPhase371(t, program) {
+					parentRouteWork = true
+				}
+				if event.Kind != "function.failed" {
+					continue
+				}
+				if event.Invocation == failureEvent.Invocation && event.FunctionID == failureEvent.FunctionID {
+					calleeTerminal = true
+				}
+				if event.Invocation == rootInvocationForPhase371(t, program) {
+					rootTerminal = true
+				}
+			}
+			if !calleeTerminal || !rootTerminal {
+				t.Fatalf("foreign failure did not close one child frame and reach the root error terminal: events=%+v", document.Events[failureIndex:])
+			}
+			if scenario.name == "UseError.UnsupportedByte" && !parentRouteWork {
+				t.Fatalf("parent did not perform its admitted error-route release work after child failure: events=%+v", document.Events[failureIndex:])
+			}
+			if !executionpeerValidatePhase371(program, document) {
+				t.Fatalf("peer rejected checked %s foreign.failed → OpFail trace: %v; events=%+v", scenario.name, executionpeer.Validate(program, document), document.Events)
+			}
+		})
+	}
+
+	cleanOutcomes := map[string]interp.ForeignOutcome{
+		acquire.ID: {Kind: "success", Type: acquire.Foreign.ResultType, Value: "65"},
+		use.ID:     {Kind: "success", Type: "U64", Value: "65"},
+	}
+	clean, err := interp.RunWithForeignOutcomes(program, "main", "opaque-path-token", cleanOutcomes)
+	if err != nil {
+		t.Fatalf("checked Phase24 clean model execution: %v", err)
+	}
+	if clean.Execution.Outcome.Kind != execution.OutcomeReturned {
+		t.Fatalf("clean model outcome = %+v, want returned", clean.Execution.Outcome)
+	}
+	cleanDocument, err := session.ProjectExecutionSchema2(program, clean.Execution)
+	if err != nil {
+		t.Fatalf("project checked Phase24 success trace: %v", err)
+	}
+	if err := executionpeer.Validate(program, cleanDocument); err != nil {
+		t.Fatalf("peer rejected checked Phase24 foreign.called and ordinary-return trace: %v", err)
+	}
+}
+
+func phase371FailureFunction(program core.Program, operation core.LinearOperation) string {
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, candidate := range function.Linear.Operations {
+			if candidate.ID == operation.ID {
+				return function.ID
+			}
+		}
+	}
+	return ""
+}
+
+func phase371Phase24FailureProgram(t *testing.T) (core.Program, core.LinearOperation, core.LinearOperation) {
+	t.Helper()
+	source, err := os.ReadFile(testsupport.ProjectPath("examples", "phase24", "error.schway"))
+	if err != nil {
+		t.Fatalf("read actual Phase24 error source: %v", err)
+	}
+	checked := session.Check(source)
+	if len(checked.Diagnostics) != 0 {
+		t.Fatalf("actual Phase24 source check diagnostics: %+v", checked.Diagnostics)
+	}
+	validated := corevalidate.Validate(checked.Program)
+	if !validated.Valid {
+		t.Fatalf("actual Phase24 source core validation problems: %+v", validated.Problems)
+	}
+	program := validated.Program()
+	var acquire, use core.LinearOperation
+	for _, function := range program.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Foreign == nil {
+				continue
+			}
+			switch {
+			case function.Name == "acquire" && operation.Foreign.Mode == "acquire":
+				acquire = operation
+			case function.Name == "probe" && operation.Foreign.Mode == "borrow":
+				use = operation
+			}
+		}
+	}
+	if acquire.ID == "" || use.ID == "" || acquire.Foreign.Fails != "AcquireError" || use.Foreign.Fails != "UseError" {
+		t.Fatalf("checked Phase24 foreign failure operations = acquire:%+v use:%+v", acquire, use)
+	}
+	return program, acquire, use
+}
+
+func rootInvocationForPhase371(t *testing.T, program core.Program) string {
+	t.Helper()
+	for _, function := range program.Functions {
+		if function.Name == "main" {
+			invocation, err := execution.FormatInvocation(function.ID, nil)
+			if err != nil {
+				t.Fatalf("format Phase24 root invocation: %v", err)
+			}
+			return invocation
+		}
+	}
+	t.Fatal("checked Phase24 source has no main function")
+	return ""
+}
+
+func executionpeerValidatePhase371(program core.Program, document execution.Execution) bool {
+	return executionpeer.Validate(program, document) == nil
 }
 
 func TestPhase371DefectTerminalControls(t *testing.T) {
