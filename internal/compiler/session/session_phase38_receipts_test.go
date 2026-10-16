@@ -113,9 +113,13 @@ func TestPhase38ManifestConsumerBindings(t *testing.T) {
 		t.Fatal(err)
 	}
 	actualOld := make([]string, 0, 39)
+	actualCases := make([]string, 0, 106)
 	for _, line := range strings.Split(string(manifest), "\n") {
-		if strings.HasPrefix(line, "# case ") && !strings.HasPrefix(line, "# case crc32 ") && !strings.HasPrefix(line, "# case crc_low ") && !strings.HasPrefix(line, "# case helper_") {
-			actualOld = append(actualOld, line)
+		if strings.HasPrefix(line, "# case ") {
+			actualCases = append(actualCases, line)
+			if !strings.HasPrefix(line, "# case crc32 ") && !strings.HasPrefix(line, "# case crc_low ") && !strings.HasPrefix(line, "# case helper_") {
+				actualOld = append(actualOld, line)
+			}
 		}
 	}
 	wantOld := make([]string, 0, 39)
@@ -126,6 +130,9 @@ func TestPhase38ManifestConsumerBindings(t *testing.T) {
 	}
 	if !reflect.DeepEqual(actualOld, wantOld) || len(wantOld) != 39 {
 		t.Fatalf("M007 inherited M006 case rows differ: actual=%d want=%d", len(actualOld), len(wantOld))
+	}
+	if len(actualCases) != 106 {
+		t.Fatalf("M007 distinct case inventory = %d, want all 106 declared rows", len(actualCases))
 	}
 	lines := map[string]int{}
 	for _, line := range strings.Split(string(manifest), "\n") {
@@ -181,9 +188,17 @@ func TestPhase38ManifestConsumerBindings(t *testing.T) {
 		"# root bitwise-optimization ./internal/compiler/session ^TestPhase35BitwiseOptimizationMatrix$",
 		"# structured bitwise-optimization-locked ./internal/compiler/session TestPhase35BitwiseOptimizationMatrix/locked-association/O0 TestPhase35BitwiseOptimizationMatrix/locked-association/O3 TestPhase35BitwiseOptimizationMatrix/locked-association/O3-flto value=264",
 		"# structured bitwise-optimization-alternate ./internal/compiler/session TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O0 TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O3 TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O3-flto value=8",
+		"# event codedigest TestPhase32CodeDigest/sh-equals-go",
+		"# event codedigest TestPhase32CodeDigest/subdirectory-equals-root",
+		"# event codedigest TestPhase32CodeDigest/empty-listing-refused",
+		"# event codedigest TestPhase32CodeDigest/armed-code-edit",
+		"# event codedigest TestPhase32CodeDigest/md-edit-ignored",
+		"# event codedigest TestPhase32CodeDigest/planning-edit-ignored",
 	} {
-		if lines[record] != 1 {
+		if strings.HasPrefix(record, "# structured ") && lines[record] != 1 {
 			t.Errorf("manifest structured witness is missing: %s", record)
+		} else if strings.HasPrefix(record, "# event ") && lines[record] != 1 {
+			t.Errorf("manifest control descendant is missing: %s", record)
 		}
 	}
 	if !strings.Contains(string(manifest), "controls=guide,route-audit,codedigest,receipt-rules,crc-public,helper-answers,helper-optimization,public-helper,bitwise-public,bitwise-optimization,") {
@@ -200,6 +215,15 @@ func TestPhase38ManifestConsumerBindings(t *testing.T) {
 }
 
 func TestPhase38ProducerInventoryControls(t *testing.T) {
+	t.Run("actual-go-json-package-lifecycle-through-binding", func(t *testing.T) {
+		raw, names := phase38CaptureGoJSON(t, "./internal/compiler/session", "^TestPhase32CodeDigest$")
+		realFixture := phase38NewBindingFixtureForControl(t, "codedigest", "./internal/compiler/session", "^TestPhase32CodeDigest$", names, raw)
+		got := phase38RunBinding(t, realFixture, realFixture.run, realFixture.linuxLog, realFixture.macosLog)
+		if got.exit != 0 || !strings.Contains(got.stdout, "phase38 binding: status=pass") {
+			t.Fatalf("binding parser rejected real go-test-json package lifecycle: exit=%d stdout=%q stderr=%q", got.exit, got.stdout, got.stderr)
+		}
+	})
+
 	fixture := phase38NewBindingFixture(t)
 	valid := phase38RunBinding(t, fixture, fixture.run, fixture.linuxLog, fixture.macosLog)
 	if valid.exit != 0 || !strings.Contains(valid.stdout, "phase38 binding: status=pass") {
@@ -230,6 +254,23 @@ func TestPhase38ProducerInventoryControls(t *testing.T) {
 	if missingGo.exit == 0 || !strings.Contains(missingGo.stdout+missingGo.stderr, "unavailable_tool_go") {
 		t.Fatalf("producer did not fail closed when Go is unavailable: %#v", missingGo)
 	}
+
+	t.Run("actual-producer-json-capture", func(t *testing.T) {
+		env := phase38EnvWith(os.Environ(), "GOCACHE", "/tmp/ai-lang-verification-gocache")
+		env = phase38EnvWith(env, "PHASE38_TEST_CONTROL_CAPTURE", "codedigest")
+		got := phase33RunAtEnv(t, testsupport.ProjectPath(), "scripts/verify-phase32.sh", env, "--milestone", "M007")
+		if got.exit != 0 || !strings.Contains(got.stdout, "phase38 control name=codedigest package=./internal/compiler/session tests=TestPhase32CodeDigest status=pass") {
+			t.Fatalf("producer's bounded real JSON capture failed: exit=%d stdout=%q stderr=%q", got.exit, got.stdout, got.stderr)
+		}
+		if strings.Contains(got.stdout, "phase38 host result") {
+			t.Fatalf("one-control diagnostic claimed a complete host receipt: %q", got.stdout)
+		}
+		_, names := phase38CaptureProducerOutput(t, got.stdout, "codedigest")
+		_, actualNames := phase38CaptureGoJSON(t, "./internal/compiler/session", "^TestPhase32CodeDigest$")
+		if !reflect.DeepEqual(names, actualNames) {
+			t.Fatalf("producer and actual go test event names differ: producer=%v actual=%v", names, actualNames)
+		}
+	})
 }
 
 func TestPhase38BindingControls(t *testing.T) {
@@ -272,6 +313,50 @@ func TestPhase38BindingControls(t *testing.T) {
 		}
 		phase38Write(t, fixture.root, fixture.runPath, mutated)
 		phase38RequireRefusal(t, phase38RunBindingFromFiles(t, fixture), "run_identity")
+	})
+
+	for _, tc := range []struct {
+		name, old, replacement string
+		nth                    int
+		reason                 string
+	}{
+		{"fractional-artifact-run-id", `"run_id":9001`, `"run_id":9001.0`, 2, "mixed_attempt"},
+		{"boolean-artifact-attempt", `"attempt":1`, `"attempt":true`, 2, "mixed_attempt"},
+		{"fractional-log-artifact-id", `"artifact_id":21`, `"artifact_id":21.0`, 1, "artifact_log_membership"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			raw, err := os.ReadFile(filepath.Join(fixture.root, filepath.FromSlash(fixture.runPath)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			mutated, ok := phase38ReplaceNth(raw, []byte(tc.old), []byte(tc.replacement), tc.nth)
+			if !ok {
+				t.Fatalf("could not mutate JSON field %q occurrence %d", tc.old, tc.nth)
+			}
+			phase38Write(t, fixture.root, fixture.runPath, mutated)
+			phase38RequireRefusal(t, phase38RunBindingFromFiles(t, fixture), tc.reason)
+		})
+	}
+
+	t.Run("dispatch-input-integer-alias", func(t *testing.T) {
+		raw, err := os.ReadFile(filepath.Join(fixture.root, filepath.FromSlash(fixture.freezePath)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		mutated := bytes.Replace(raw, []byte(`"phase26_focused":false`), []byte(`"phase26_focused":0`), 1)
+		if bytes.Equal(mutated, raw) {
+			t.Fatal("could not mutate boolean dispatch input")
+		}
+		phase38Write(t, fixture.root, fixture.freezePath, mutated)
+		phase38RequireRefusal(t, phase38RunBindingFromFiles(t, fixture), "dispatch_inputs")
+	})
+
+	t.Run("log-attempt-mismatch", func(t *testing.T) {
+		mutated := bytes.Replace(fixture.linuxLog, []byte("attempt=1"), []byte("attempt=2"), 1)
+		if bytes.Equal(mutated, fixture.linuxLog) {
+			t.Fatal("could not mutate log attempt")
+		}
+		phase38RequireRefusal(t, phase38RunBinding(t, fixture, fixture.run, mutated, fixture.macosLog), "mixed_attempt")
 	})
 
 	t.Run("log-bytes-altered-after-hash", func(t *testing.T) {
@@ -325,6 +410,42 @@ func TestPhase38FreezeWorktreeControls(t *testing.T) {
 			if tc.stage {
 				phase32Git(t, fixture.root, "add", path)
 			}
+			phase38RequireFreezeRefusal(t, phase38RunFreeze(t, fixture, fixture.freeze), tc.reason)
+		})
+	}
+
+	for _, tc := range []struct {
+		name, reason string
+		mutate       func(t *testing.T, fixture phase38BindingFixture)
+	}{
+		{"missing-review-record", "preparation_missing", func(t *testing.T, fixture phase38BindingFixture) {
+			fixture.freeze.Preparation["review"] = phase38SourceLink{Path: ".planning/phases/38-milestone-receipts/missing-review.md", SHA256: strings.Repeat("a", 64), SourceSHA: fixture.freeze.FreezeSHA, CodeDigest: fixture.digest, Disposition: "clear"}
+		}},
+		{"changed-review-bytes", "preparation_digest_mismatch", func(t *testing.T, fixture phase38BindingFixture) {
+			link := fixture.freeze.Preparation["review"]
+			phase38Write(t, fixture.root, link.Path, []byte("changed review bytes\n"))
+		}},
+		{"stale-security-source", "preparation_stale", func(t *testing.T, fixture phase38BindingFixture) {
+			link := fixture.freeze.Preparation["security"]
+			data := mustRead(t, filepath.Join(fixture.root, filepath.FromSlash(link.Path)))
+			data = bytes.Replace(data, []byte("source_sha="+fixture.freeze.FreezeSHA), []byte("source_sha="+strings.Repeat("1", 40)), 1)
+			phase38Write(t, fixture.root, link.Path, data)
+			link.SHA256 = phase38SHA256(data)
+			fixture.freeze.Preparation["security"] = link
+		}},
+		{"open-review-disposition", "preparation_open", func(t *testing.T, fixture phase38BindingFixture) {
+			link := fixture.freeze.Preparation["review"]
+			data := mustRead(t, filepath.Join(fixture.root, filepath.FromSlash(link.Path)))
+			data = bytes.Replace(data, []byte("disposition=clear"), []byte("disposition=issues_found"), 1)
+			phase38Write(t, fixture.root, link.Path, data)
+			link.SHA256 = phase38SHA256(data)
+			link.Disposition = "issues_found"
+			fixture.freeze.Preparation["review"] = link
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fixture := phase38NewBindingFixture(t)
+			tc.mutate(t, fixture)
 			phase38RequireFreezeRefusal(t, phase38RunFreeze(t, fixture, fixture.freeze), tc.reason)
 		})
 	}
@@ -500,10 +621,11 @@ type phase38ManifestIdentity struct {
 }
 
 type phase38SourceLink struct {
-	Path       string `json:"path"`
-	SHA256     string `json:"sha256"`
-	SourceSHA  string `json:"source_sha"`
-	CodeDigest string `json:"codedigest"`
+	Path        string `json:"path"`
+	SHA256      string `json:"sha256"`
+	SourceSHA   string `json:"source_sha"`
+	CodeDigest  string `json:"codedigest"`
+	Disposition string `json:"-"`
 }
 
 type phase38RunFixture struct {
@@ -561,6 +683,10 @@ type phase38BindingFixture struct {
 }
 
 func phase38NewBindingFixture(t *testing.T) phase38BindingFixture {
+	return phase38NewBindingFixtureForControl(t, "smoke", "./cmd/schway", "^TestSmoke$", []string{"TestSmoke"}, phase38SyntheticEvents("run", "output", "pass"))
+}
+
+func phase38NewBindingFixtureForControl(t *testing.T, control, packageName, pattern string, names []string, rawEvents []byte) phase38BindingFixture {
 	t.Helper()
 	root := t.TempDir()
 	for _, dir := range []string{"cmd", "scripts", "testdata/receipts", ".github/workflows", ".planning/phases/38-milestone-receipts"} {
@@ -571,7 +697,15 @@ func phase38NewBindingFixture(t *testing.T) phase38BindingFixture {
 	phase38Write(t, root, "cmd/probe.go", []byte("package main\nfunc Probe() int { return 3421780262 }\n"))
 	phase38Write(t, root, ".github/workflows/ci.yml", []byte("name: CI\n"))
 	phase38Write(t, root, "testdata/receipts/M006.manifest", []byte("label=phase32\nprograms=crc32\ncontrols=smoke\n# case crc32 check 0 3421780262 -\n"))
-	phase38Write(t, root, "testdata/receipts/M007.manifest", []byte("label=phase38\nprograms=crc32\ncontrols=smoke\n# case crc32 check 0 3421780262 -\n# root smoke ./cmd/schway ^TestSmoke$\n# event smoke TestSmoke\n# reached crc32 check ./cmd/schway TestSmoke\n"))
+	var manifest strings.Builder
+	fmt.Fprintf(&manifest, "label=phase38\nprograms=crc32\ncontrols=%s\n# case crc32 check 0 3421780262 -\n# root %s %s %s\n", control, control, packageName, pattern)
+	for _, name := range names {
+		fmt.Fprintf(&manifest, "# event %s %s\n", control, name)
+	}
+	if control == "smoke" {
+		fmt.Fprintf(&manifest, "# reached crc32 check %s TestSmoke\n", packageName)
+	}
+	phase38Write(t, root, "testdata/receipts/M007.manifest", []byte(manifest.String()))
 	for _, name := range []string{"scripts/codedigest.sh", "scripts/check-freeze.sh", "scripts/check-receipts.sh"} {
 		phase38Write(t, root, name, mustRead(t, testsupport.ProjectPath(filepath.FromSlash(name))))
 	}
@@ -585,20 +719,27 @@ func phase38NewBindingFixture(t *testing.T) phase38BindingFixture {
 	digest := phase32ShDigest(t, root)
 	manifestBytes := mustRead(t, filepath.Join(root, "testdata/receipts/M007.manifest"))
 	manifestHash := sha256.Sum256(manifestBytes)
+	preparation := make(map[string]phase38SourceLink, 4)
+	for kind, disposition := range map[string]string{"review": "clear", "security": "secured", "validation": "focused", "audit": "EVD-17-pending"} {
+		path := map[string]string{
+			"review":     ".planning/phases/38-milestone-receipts/38-PRE-FREEZE-REVIEW.md",
+			"security":   ".planning/phases/38-milestone-receipts/38-PRE-FREEZE-SECURITY.md",
+			"validation": ".planning/phases/38-milestone-receipts/38-VALIDATION.md",
+			"audit":      ".planning/M007-MILESTONE-AUDIT.md",
+		}[kind]
+		data := phase38PreparationRecord(kind, head, digest, disposition)
+		phase38Write(t, root, path, data)
+		preparation[kind] = phase38SourceLink{Path: path, SHA256: phase38SHA256(data), SourceSHA: head, CodeDigest: digest, Disposition: disposition}
+	}
 	freeze := phase38FreezeFixture{
 		Schema: "schway.m007-freeze/1", FreezeSHA: head, CodeDigest: digest,
 		Manifest:   phase38ManifestIdentity{Path: "testdata/receipts/M007.manifest", SHA256: hex.EncodeToString(manifestHash[:])},
 		Repository: "szTheory/schway", Destination: "refs/heads/phase26-validation", WorkflowPath: ".github/workflows/ci.yml",
-		Inputs: map[string]bool{"record_validation_corpus": false, "phase26_focused": false, "spike008_strict": false},
-		Preparation: map[string]phase38SourceLink{
-			"review":     {Path: ".planning/phases/38-milestone-receipts/38-PRE-FREEZE-REVIEW.md", SHA256: strings.Repeat("a", 64), SourceSHA: head, CodeDigest: digest},
-			"security":   {Path: ".planning/phases/38-milestone-receipts/38-PRE-FREEZE-SECURITY.md", SHA256: strings.Repeat("b", 64), SourceSHA: head, CodeDigest: digest},
-			"validation": {Path: ".planning/phases/38-milestone-receipts/38-VALIDATION.md", SHA256: strings.Repeat("c", 64), SourceSHA: head, CodeDigest: digest},
-			"audit":      {Path: ".planning/M007-MILESTONE-AUDIT.md", SHA256: strings.Repeat("d", 64), SourceSHA: head, CodeDigest: digest},
-		},
+		Inputs:      map[string]bool{"record_validation_corpus": false, "phase26_focused": false, "spike008_strict": false},
+		Preparation: preparation,
 	}
-	linux := phase38SyntheticLog("Linux", head, digest)
-	macos := phase38SyntheticLog("macOS", head, digest)
+	linux := phase38SyntheticLog("Linux", head, digest, 9001, 1, control, packageName, names, rawEvents)
+	macos := phase38SyntheticLog("macOS", head, digest, 9001, 1, control, packageName, names, rawEvents)
 	linuxHash, macosHash := sha256.Sum256(linux), sha256.Sum256(macos)
 	run := phase38RunFixture{
 		Schema: "schway.m007-hosted-run/1", Repository: freeze.Repository, WorkflowPath: freeze.WorkflowPath,
@@ -635,33 +776,130 @@ func phase38NewBindingFixture(t *testing.T) phase38BindingFixture {
 	return fixture
 }
 
-func phase38SyntheticLog(host, headSHA, digest string) []byte {
+func phase38SyntheticLog(host, headSHA, digest string, runID, attempt int64, control, packageName string, names []string, rawEvents []byte) []byte {
 	arch, target, goHost := "x86_64", "x86_64-pc-linux-gnu", "linux/amd64"
 	if host == "macOS" {
 		arch, target, goHost = "arm64", "arm64-apple-darwin", "darwin/arm64"
 	}
-	return []byte(fmt.Sprintf("phase38 host identity host=%s arch=%s go=%s clang_target=%s headsha=%s codedigest=%s tree=clean\n", host, arch, goHost, target, headSHA, digest) +
+	roots := make([]string, 0, len(names))
+	for _, name := range names {
+		if !strings.Contains(name, "/") {
+			roots = append(roots, name)
+		}
+	}
+	return []byte(fmt.Sprintf("phase38 host identity host=%s run_id=%d attempt=%d arch=%s go=%s clang_target=%s headsha=%s codedigest=%s tree=clean\n", host, runID, attempt, arch, goHost, target, headSHA, digest) +
 		"phase38 toolchain go=\"go version go1.24.0\" clang=\"clang version\"\n" +
-		"phase38-control-events-hex smoke " + hex.EncodeToString(phase38SyntheticEvents("run", "output", "pass")) + "\n" +
+		"phase38-control-events-hex " + control + " " + hex.EncodeToString(rawEvents) + "\n" +
 		"phase38 case program=crc32 input=check expected_exit=0 actual_exit=0 stdout=exact stderr=exact status=pass\n" +
-		"phase38 control name=smoke package=./cmd/schway tests=TestSmoke status=pass\n" +
+		fmt.Sprintf("phase38 control name=%s package=%s tests=%s status=pass\n", control, packageName, strings.Join(roots, " ")) +
 		fmt.Sprintf("phase38 host result host=%s codedigest=%s tree=clean cases=1 controls=1 programs=crc32 status=pass\n", host, digest))
 }
 
 func phase38SyntheticEvents(actions ...string) []byte {
-	var lines []string
+	lines := []string{`{"Action":"start","Package":"./cmd/schway"}`}
 	for _, action := range actions {
 		if action == "extra" {
-			lines = append(lines, `{"Action":"run","Test":"TestOther"}`, `{"Action":"pass","Test":"TestOther"}`)
+			lines = append(lines, `{"Action":"run","Package":"./cmd/schway","Test":"TestOther"}`, `{"Action":"pass","Package":"./cmd/schway","Test":"TestOther"}`)
 			continue
 		}
 		if action == "output" {
-			lines = append(lines, `{"Action":"output","Test":"TestSmoke","Output":"interpreter-with-clang-unavailable"}`)
+			lines = append(lines, `{"Action":"output","Package":"./cmd/schway","Test":"TestSmoke","Output":"interpreter-with-clang-unavailable"}`)
 			continue
 		}
-		lines = append(lines, `{"Action":"`+action+`","Test":"TestSmoke"}`)
+		lines = append(lines, `{"Action":"`+action+`","Package":"./cmd/schway","Test":"TestSmoke"}`)
 	}
+	lines = append(lines, `{"Action":"pass","Package":"./cmd/schway","Elapsed":0.01}`)
 	return []byte(strings.Join(lines, "\n") + "\n")
+}
+
+func phase38PreparationRecord(kind, sourceSHA, digest, disposition string) []byte {
+	return []byte(fmt.Sprintf("---\nphase: 38-milestone-receipts\nkind: %s\n---\n<!-- phase38-preparation/1 kind=%s source_sha=%s codedigest=%s disposition=%s -->\n", kind, kind, sourceSHA, digest, disposition))
+}
+
+func phase38SHA256(data []byte) string {
+	hash := sha256.Sum256(data)
+	return hex.EncodeToString(hash[:])
+}
+
+func phase38CaptureGoJSON(t *testing.T, packageName, pattern string) ([]byte, []string) {
+	t.Helper()
+	cmd := exec.Command("go", "test", "-json", "-count=1", "-run", pattern, packageName)
+	cmd.Dir = testsupport.ProjectPath()
+	cmd.Env = phase38EnvWith(os.Environ(), "GOCACHE", "/tmp/ai-lang-verification-gocache")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("bounded real go test JSON capture failed: %v; stderr=%q", err, stderr.String())
+	}
+	var names []string
+	for _, line := range bytes.Split(bytes.TrimSuffix(stdout.Bytes(), []byte("\n")), []byte("\n")) {
+		var item struct {
+			Action  string `json:"Action"`
+			Test    string `json:"Test"`
+			Package string `json:"Package"`
+		}
+		if err := json.Unmarshal(line, &item); err != nil {
+			t.Fatalf("captured go test JSON is invalid: %v", err)
+		}
+		if item.Test != "" && item.Action == "run" {
+			names = append(names, item.Test)
+		}
+	}
+	return bytes.Clone(stdout.Bytes()), names
+}
+
+func phase38CaptureProducerOutput(t *testing.T, output, control string) ([]byte, []string) {
+	t.Helper()
+	var raw []byte
+	for _, line := range strings.Split(output, "\n") {
+		if strings.HasPrefix(line, "phase38-control-events-hex "+control+" ") {
+			fields := strings.Fields(line)
+			if len(fields) != 3 {
+				t.Fatalf("malformed producer event record %q", line)
+			}
+			decoded, err := hex.DecodeString(fields[2])
+			if err != nil {
+				t.Fatalf("producer event record is not lowercase hex: %v", err)
+			}
+			raw = decoded
+		}
+	}
+	if len(raw) == 0 {
+		t.Fatalf("producer did not emit raw event bytes: %q", output)
+	}
+	var names []string
+	for _, line := range bytes.Split(bytes.TrimSuffix(raw, []byte("\n")), []byte("\n")) {
+		var item struct {
+			Action string `json:"Action"`
+			Test   string `json:"Test"`
+		}
+		if err := json.Unmarshal(line, &item); err != nil {
+			t.Fatalf("producer captured invalid go test JSON: %v", err)
+		}
+		if item.Test != "" && item.Action == "run" {
+			names = append(names, item.Test)
+		}
+	}
+	return raw, names
+}
+
+func phase38ReplaceNth(input, old, replacement []byte, nth int) ([]byte, bool) {
+	if nth < 1 {
+		return input, false
+	}
+	start := 0
+	for i := 1; i <= nth; i++ {
+		rel := bytes.Index(input[start:], old)
+		if rel < 0 {
+			return input, false
+		}
+		start += rel
+		if i == nth {
+			return bytes.Join([][]byte{input[:start], replacement, input[start+len(old):]}, nil), true
+		}
+		start += len(old)
+	}
+	return input, false
 }
 
 func phase38RunBinding(t *testing.T, fixture phase38BindingFixture, run phase38RunFixture, linux, macos []byte) phase33CommandResult {
