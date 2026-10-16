@@ -1,6 +1,6 @@
 ---
 phase: 33-carried-debt-bounded-capture-read-and-generic-freeze-gate
-verified: 2026-10-15T20:13:37Z
+verified: 2026-10-16T00:48:59Z
 status: passed
 score: 60/60 must-haves verified
 covered_files:
@@ -26,6 +26,9 @@ covered_files:
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-CONTEXT.md"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-FINAL-REFRESH-RUN.json"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-PHASE37-GATES.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH2-FIX.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH2-GATES.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH2-RUN.json"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW-DISPOSITION.md"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW-FIX-RUN.json"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW-FIX.md"
@@ -43,6 +46,9 @@ covered_files:
   - "internal/compiler/cgen/cgen_program.go"
   - "internal/compiler/execution/defect_reasons.go"
   - "internal/compiler/executionpeer/executionpeer.go"
+  - "internal/compiler/executionpeer/executionpeer_phase33_terminal_test.go"
+  - "internal/compiler/executionpeer/executionpeer_phase35_test.go"
+  - "internal/compiler/executionpeer/executionpeer_test.go"
   - "internal/compiler/interp/interp.go"
   - "internal/compiler/interp/interp_phase321_defect_test.go"
   - "internal/compiler/interp/interp_phase33_defect_test.go"
@@ -63,7 +69,7 @@ covered_files:
   - "scripts/verify-phase32.sh"
   - "testdata/phase16/public-emitter-consumers.json"
   - "testdata/receipts/M006.manifest"
-covered_digest: "v3:sha256:946f14683a49b8744a21b07889540965eefd082007e52250e99b277c4b5a5916"
+covered_digest: "v3:sha256:0edb0c76a4962340799aa20023a462a058b809d853833dca27ac301693de7077"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -72,18 +78,18 @@ re_verification:
   gaps_closed: []
   gaps_remaining: []
   regressions: []
-  scope: "Phase 37 successor-staled fingerprint refresh; 49-root receipt and seven metadata roots verified against raw logs and current 25 input hashes; fresh targeted checks pass; prior report passed 60/60"
+  scope: "Fresh Phase 33 goal-backward refresh (prior report had no gaps); current repair-bound 184-name/196-root receipt and 16 raw logs independently checked, plus exact focused tests; prior 60/60 truths reconfirmed"
 ---
 
 # Phase 33: Carried Debt, Bounded Capture Read, and Generic Freeze Gate Verification Report
 
 **Phase Goal:** The carried M006 debt is paid before any feature work: a child-written capture file can no longer force an unbounded host allocation, the open review warnings are closed or recorded with reasons, Phase 28 has its missing validation and security records, and later milestones reuse one freeze/receipt gate instead of copying phase-specific scripts.
 
-**Verified:** 2026-10-15T20:13:37Z
+**Verified:** 2026-10-16T00:45:34Z
 **Status:** passed
-**Re-verification:** Yes — Phase 37 successor-staled fingerprint refresh; prior report passed 60/60 with no gaps.
+**Re-verification:** No — the prior report had no `gaps:` section, so this run re-established must-haves from the roadmap and plans rather than carrying forward gaps.
 
-The dated reports below remain historical evidence. The Phase 37 refresh at the end is authoritative for the current source and receipt binding; earlier Phase 33 and successor receipts are not presented as newly rerun.
+The dated reports below remain historical evidence. The Phase 33 refresh2 at the end is authoritative for the current source, review disposition, and receipt binding; older receipts are not presented as newly rerun.
 
 ## Goal Achievement
 
@@ -269,3 +275,39 @@ The scoped checks do not claim a full workspace suite, broad native matrix, host
 
 _Verified: 2026-10-15T20:13:37Z_
 _Verifier: the agent (gsd-verifier)_
+
+## Current Phase 33 refresh2 — 2026-10-16T00:45:34Z
+
+This is a fresh goal-backward assessment from the canonical Phase 33 roadmap entry and all five plan `must_haves`; the prior verification had no `gaps:` section, so there were no carried gaps to fast-path. The roadmap contributes four truths and the plans add 56. The prior detailed truth, prohibition, artifact, link, and requirement tables remain the contract; this refresh rechecked all 60 against the current tree and focused evidence. The current result remains **60/60 verified**, with zero present-but-behavior-unverified truths and no goal gap.
+
+The current implementation commit is `aad275f42d7358f49fdc8f63ab27adf2b4f63f66`. The only dirty path is the user's `.planning/config.json`; no covered source file is dirty. The new refresh receipt records `source_head` `5f1554eab21187cdb8be5fdc507c84d66e40b23b`, which predates the CR-02 repair, so I did not use that field as final-commit proof. I independently recomputed its 177 declared input hashes against the current worktree and verified every hash matched. I also recomputed all 16 raw package-log hashes and checked their JSON events: 196 root `run` events have corresponding `pass` events, with no `fail` or `skip`. The receipt reports 184 distinct selected names across 196 package-qualified executions in 16 packages, all 18 mapped validation rows pass, and no missing, failed, or skipped roots. Its selector inventory draws historical lists only as selectors; it makes no full-suite or hosted-run claim.
+
+Fresh exact-selector checks on the repaired/current code:
+
+| Behavior | Command | Result | Status |
+|---|---|---|---|
+| Capture read bound, exact limit, limit+1, sparse 1 GiB file | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^TestPhase33CaptureReadBounded$' -count=1 -timeout=30s -v` | PASS; sparse-file `TotalAlloc` delta was 271,912 bytes. | ✓ PASS |
+| Abort-like owner/reason narrowing and widening controls | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase33AbortLikeNarrowed|TestPhase33AbortLikeWideningMutantKilled)$' -count=1 -timeout=30s -v` | PASS; accepted and refused cases and both mutation seams passed. | ✓ PASS |
+| CR-02 terminal attribution and contradictory-evidence controls | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/executionpeer -run '^TestPhase33TerminalAttribution$' -count=1 -timeout=30s -v` | PASS; return/failure/defect source, type, target, outcome, reason/value, post-terminal, and positive fixtures passed. Plausible numeric return/failure value `999` remains intentionally accepted; this peer does not replay result values. | ✓ PASS |
+| Defect parity through both native routes | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^(TestPhase33DefectParityFixtureRoute|TestPhase33DefectParityFileRoute)$' -count=1 -timeout=30s -v` | PASS; all eight route/kind subtests passed. | ✓ PASS |
+| Generic freeze/receipt gate, archived M006 receipt, retired caller | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestFreezeGateDifferential|TestReceiptGateDifferential|TestReceiptGateArchivedM006|TestNoCheckPhase32Caller)$' -count=1 -timeout=30s -v` | PASS. The combined focused command took 11.365s; this is targeted evidence, not a latency claim. | ✓ PASS |
+| Gate and producer shell syntax | `sh -n scripts/check-freeze.sh scripts/check-receipts.sh scripts/codedigest.sh scripts/verify-phase32.sh` | Exit 0. | ✓ PASS |
+
+For CR-02, the receipt binds the current `executionpeer.go` and terminal-test source hashes. The raw pre-fix overlay log hash matches the recorded red run (exit 1, 30 failing test nodes); the clean final log hash matches the recorded green run (exit 0). I independently ran the focused named terminal test on the current repair and confirmed it passes. The change is limited to terminal attribution/source/type/target checks, root outcome-kind agreement, user-defect reason and empty defect value, and post-terminal activation closure. It does not claim numeric result replay.
+
+The execution-peer review is not clean: the cumulative 28-path review records CR-02 fixed and independently closed, while CR-03 and CR-04 remain reviewer-classified BLOCKER findings, explicitly deferred to the execution-peer maintainer for the required M007 audit before Phase 38. I inspected the implicated source paths. CR-03 rejects a valid legacy nested-defect document because the legacy branch pops only the child activation and leaves a caller on the stack; CR-04 rejects a propagated typed failure because the `OpReturn` event classifier accepts only a returned event. Both are false rejections, not paths that admit contradictory terminal evidence. They are recorded with the owner, reason, and audit boundary in `33-REVIEW-DISPOSITION.md`; they are outside the Phase 33 roadmap/plan truths and do not undo CR-02's safety repair. This report therefore does not call the review clean or the findings fixed/accepted risks. The M007 audit prerequisite before Phase 38 remains active.
+
+Current gate and evidence cross-check: five plans, 15 tasks, and four waves are complete with no incomplete, halted, duplicate, or handoff items. The 22 declared plan artifacts pass their artifact checks; all 11 declared key links were manually traced because the path-based helper cannot parse prose-valued `from:` fields. The current 18-row validation inventory passes, the authored L1 register has 17/17 closed items, and the UI safety gate is false for frontend, files, and spec. QLT-13, QLT-14, QLT-15, and EVD-16 remain satisfied, with no additional Phase 33 requirement orphaned in `REQUIREMENTS.md`. Phase 28 validation/security records remain explicitly reconstructed from existing evidence and do not claim fresh Phase 28 test or hosted runs.
+
+The anti-pattern scan found no actionable debt marker, placeholder, stub, or disconnected value in the covered implementation paths. The apparent empty-slice returns in `cgen_program.go` are documented phase contracts for currently unadmitted resource/call-attribute shapes; `return NULL` is inside emitted C text, and `XXXXXX` is the required `mktemp` template. Probe discovery found no Phase 33-declared or conventional `probe-*.sh` file, so no probe execution applied. There is no visual UI, external service, or untested transition in the Phase 33 truths; no human verification item is outstanding.
+
+The receipt and focused checks are local, exact-selector evidence only. No full workspace suite, server/UAT replay, broad native matrix, hosted dispatch, final M007 receipt, or Phase 38 freeze was run or inferred. Historical M006 receipts remain historical. The carried M006 debt and all Phase 33 must-haves are achieved; CR-03/CR-04 remain an explicit later audit obligation.
+
+---
+
+_Verified: 2026-10-16T00:48:59Z_
+_Verifier: the agent (gsd-verifier)_
+
+### Fingerprint repair note — 2026-10-16T00:48:59Z
+
+The earlier frontmatter value (`fce7b62f…`) did not match the canonical fingerprint result. I recomputed with `gsd_run query verification.fingerprint` using the full absolute phase directory and the exact 65 `covered_files` entries, passed as quoted positional paths. The canonical command returned the same 65-path list and `v3:sha256:0edb0c76a4962340799aa20023a462a058b809d853833dca27ac301693de7077`, now copied to frontmatter. The prior mismatch is not explained by a different emitted path list; I found no covered source/evidence changes, so I record it as a fingerprint invocation/copy error rather than claim a cause.
