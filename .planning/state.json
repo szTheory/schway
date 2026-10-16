@@ -31,7 +31,7 @@
     {
       "number": "37.1",
       "name": "Close gap: legacy terminal outcomes (INSERTED)",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "38",
@@ -40,9 +40,9 @@
     }
   ],
   "next": {
-    "command": "$gsd-progress --next",
-    "label": "Advance to the next step (verify)",
-    "reason": "Phase 6 of 7 · 71% · ready to verify"
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step (plan phase 38)",
+    "reason": "Phase 38 of 7 — needs a plan"
   },
-  "updated_at": "2026-10-16T18:03:38.907Z"
+  "updated_at": "2026-10-16T21:52:00.267Z"
 }

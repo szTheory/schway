@@ -2,21 +2,21 @@
 gsd_state_version: "1.0"
 milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
-current_phase: "37.1"
-current_phase_name: "Close gap: legacy terminal outcomes"
-current_plan: 4
-status: verifying
-stopped_at: Completed 37.1-04-PLAN.md
-last_updated: "2026-10-16T18:03:47.637Z"
+current_phase: 38
+current_phase_name: Milestone Receipts
+current_plan: Not started
+status: planning
+stopped_at: Phase 37.1 complete, ready to plan Phase 38
+last_updated: "2026-10-16T21:48:15.819Z"
 last_activity: 2026-10-16
-last_activity_desc: Phase 37.1 execution started
-state_head: cfc8b8910540cf8967e4222585cb475736870e73
+last_activity_desc: Phase 37.1 complete, transitioned to Phase 38
+state_head: 3bc913d70caf03f6c1b7979bcf81184b428e88d6
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 42
   completed_plans: 42
-  percent: 71
+  percent: 86
 ---
 
 <!-- schway-current:start -->
@@ -52,12 +52,12 @@ control list is parsed. Do not run project suites locally.
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-15)
+See: .planning/PROJECT.md (updated 2026-10-16)
 
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 37.1 — Close gap: legacy terminal outcomes
+**Current focus:** Phase 38 — Milestone Receipts (unplanned; EVD-17 Pending)
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -125,13 +125,13 @@ plans.
 
 ## Current Position
 
-Phase: 37.1 (Close gap: legacy terminal outcomes) — EXECUTING
-Current Plan: 4
+Phase: 38 — Milestone Receipts
+Current Plan: Not started
 Total Plans in Phase: 4
-Status: Phase complete — ready for verification
-Last activity: 2026-10-16 — Phase 37.1 execution started
+Status: Ready to plan
+Last activity: 2026-10-16 — Phase 37.1 complete, transitioned to Phase 38
 
-Progress: [███████░░░] 71%
+Progress: [█████████░] 86%
 
 Implementation: 38/38 authored plans complete; Phases 37.1 and 38 remain unplanned.
 Current verification: phases 33/34/35/36/37 passed; Phases 37.1 and 38 unplanned.
@@ -292,7 +292,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 
 **Velocity:**
 
-- Total plans completed: 333
+- Total plans completed: 337
 - Average duration: 11 min
 - Total execution time: 105 min
 
@@ -322,6 +322,7 @@ execution artifacts in `.planning/milestones/M002-phases/`.
 | 35 | 8 | - | - |
 | 36 | 8 | - | - |
 | 37 | 9 | - | - |
+| 37.1 | 4 | - | - |
 
 The archived aggregate preserves the cumulative project total. The detailed
 rows above are the M004 subset; do not recompute the project total from that
@@ -1213,7 +1214,7 @@ still has. Grade requirements against the tree, not the wiring diagram.
 ## Session Continuity
 
 Last session: 2026-10-16T18:03:46.287Z
-Stopped at: Completed 37.1-04-PLAN.md
+Stopped at: Phase 37.1 complete, ready to plan Phase 38
 Resume file: None
 Next action: `$gsd-plan-phase 37.1`; zero plans exist, so the generic missing-verification execute hint is not the next step. Close CR-03/04/06 and rerun the milestone audit before Phase 38.
 
@@ -1719,3 +1720,15 @@ wc/longest_line, then bounded fixed-schema key=value parsing. The report names
 programs, blockers, complete slices, guarantee changes, evidence/debt, owners
 and priority-changing observations. z1g/trz/z1s retain dormant dispositions on
 current source/consumer witnesses; no seed or future requirement is promoted.
+
+## Phase 37.1 completed handoff — 2026-10-16
+
+Phase 37.1 passes 22/22 truths. Canonical completion ran once for four plans with zero warnings and no requirement updates. Phases 33–37 are fresh and passed. The scoped Phase 34 UAT records delegated wording acceptance, not a readability measurement. The fresh M007 audit closes CR-03/04/06 with no new blocking regression. EVD-17 is the sole unsatisfied requirement, still unchecked/Pending under Phase 38. WR-02's comment was corrected during the necessary core edit; older deferred notes remain historical.
+
+Four green canonical proofs bind 37 finite inputs and 12 matching lane receipts; the 19-root/254-subtest union and bounded 250-selector/251-event regression pass with recorded reuse and explicit pressure-capture exclusion. Review, security and validation are closed. The closeout, completion receipt and transition table record evidence limits, next capabilities and dormant seeds.
+
+Next: `$gsd-discuss-phase 38`. Preserve completed plans/UAT, original goldens/receipts and user config. Phase 38 planning, freeze, push and hosted dispatch have not started. A future dispatch checkpoint must name the actual freeze commit. SDK completion released its Phase 37.1 milestone lock normally.
+
+Last session: 2026-10-16
+Stopped at: Phase 37.1 complete; ready to discuss Phase 38
+Resume file: None

@@ -1017,3 +1017,13 @@ projection. [Context D-21](phases/37.1-close-gap-legacy-terminal-outcomes/37.1-C
 records the narrow source/raw-core validity correction, preserving valid UTF-8
 including controls/NUL and lossless source recovery. This is a planned safety
 repair, not implemented capability or a new wire format.
+
+## Phase 37.1 terminal-outcome completion — 2026-10-16
+
+Legacy and dynamic child-defect closure, checked modeled foreign.failed → OpFail attribution, and no-call native structured defects are repaired and independently verified (22/22 truths). Static counted buffers preserve valid UTF-8, control and NUL reason bytes. Malformed defect reasons are refused at source and raw-core admission before JSON cloning. The five exact C amendments preserve original corpora and goldens.
+
+All affected predecessor reports are fresh and passed. The fresh [M007 audit](M007-MILESTONE-AUDIT.md) closes CR-03/04/06 with no new blocking regression. Earlier dated pending/blocker text remains historical. Current proofs contain 19 passing roots and 254 subtests. The bounded predecessor regression accounts for 250 selectors/251 events with explicit receipt reuse and capture-pressure exclusion. Review, security and six documentation guards pass.
+
+The [transition table](phases/37.1-close-gap-legacy-terminal-outcomes/37.1-TRANSITION.md) names programs, blockers, complete slices, guarantee changes, evidence, owners and priority triggers. The order remains final same-source Ubuntu/macOS CRC/checksum receipts; proposed M008 wc/longest_line sharing a module; then bounded fixed-schema key=value checking. Seeds z1g (query/helper navigation), trz (capture/replay failure diagnosis), and z1s (formatter/checked-source review) remain dormant on their named source and consumer witnesses. No experiment, dependency, backend or future requirement was promoted.
+
+EVD-17 remains unchecked/Pending and Phase 38 remains unplanned. Local process, model and causal evidence does not bind hosted receipts or prove physical cleanup, absent payload values or executed CFG branches. The delegated diagnostic wording acceptance is not an independent readability study. Whole-loop latency remains unmeasured; historical receipts retain their revisions. A future push/dispatch checkpoint must name the actual freeze commit.

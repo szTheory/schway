@@ -1070,3 +1070,16 @@ parsing. Programs, blockers, complete slices, checker obligations, evidence/debt
 owners, reprioritization conditions and source/consumer dispositions retaining
 z1g/trz/z1s dormant are recorded in
 [35-REFRESH2-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH2-CLOSEOUT.md).
+
+## Phase 37.1 validated terminal-evidence decisions — 2026-10-16
+
+| Decision | Outcome and rationale |
+| --- | --- |
+| Validate attribution before whole-active defect closure | Legacy and dynamic child defects are independently admitted; ordinary and failed-child completions remain one-frame. |
+| Use the checked foreign.failed → OpFail target | Contract, type-fact, error-route and caller provenance are checked. Synthetic OpReturn reachability and absent payload/CFG-branch claims remain unproven. |
+| Preserve admitted reason bytes through static counted data | Valid UTF-8, controls and NUL survive; malformed reasons are refused before cloning. Native and application process contracts stay distinct. |
+| Preserve compatibility history and requirement ownership | Five exact source/core/old-C-bound amendments; no new dependency or canonical requirement. EVD-17 remains Pending under Phase 38. |
+
+Independent verification passes 22/22. The fresh M007 audit closes CR-03/04/06 with no new blocking regression. Next capabilities and seed dispositions are in the Phase 37.1 transition artifact and living roadmaps. No Active canonical requirement was moved or added by this closure.
+
+*Last updated: 2026-10-16 after Phase 37.1 terminal-outcome closeout*

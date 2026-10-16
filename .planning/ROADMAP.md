@@ -103,7 +103,7 @@ construct, so the manifest cannot drift.
 - [x] **Phase 35: Bitwise Operators, Literal Shifts, and Hex Literals** - U64 `^ & |`, literal-amount `<< >>` and hex literals run with identical answers on both engines at every optimization level, and `adler32` uses `b << 16` with byte-identical pinned answers. (completed 2026-10-14)
 - [x] **Phase 36: Scalar Helper Calls** - A scalar function calls another scalar function (one U64/Bool argument, including imported module functions), with independent peer derivation and callee defects surfacing on both engines. (completed 2026-10-15)
 - [x] **Phase 37: CRC-32 Consumer, Interpreter File Route, and Guide** - `crc32 FILE` prints exact CRC-32/ISO-HDLC from an ordinary-source module, a second consumer imports it, `schway run --engine=interpreter` runs file-bytes programs from the CLI, and an executable guide is test-run. (completed 2026-10-15)
-- [ ] **Phase 37.1: Close gap: legacy terminal outcomes (INSERTED)** - Close CR-03/04/06 with independently admissible terminal evidence and an explicit compatibility decision before changing frozen no-call C.
+- [x] **Phase 37.1: Close gap: legacy terminal outcomes (INSERTED)** - Close CR-03/04/06 with independently admissible terminal evidence and an explicit compatibility decision before changing frozen no-call C. (completed 2026-10-16)
 - [ ] **Phase 38: Milestone Receipts** - Hosted ubuntu and macOS receipts for every M007 and earlier pinned program are bound once to the final M007 codedigest, after the milestone audit.
 
 ## Phase Details
@@ -326,7 +326,7 @@ Plans:
 
 **Transition review — 2026-10-16**: The audit's [three useful next capabilities](M007-MILESTONE-AUDIT.md#three-useful-next-capabilities) remain ranked: audited same-source two-host CRC/checksum receipts, proposed M008 `wc FILE` / `longest_line FILE`, then bounded fixed-schema `key=value` checking. That table names each program, blocker, smallest slice, guarantee changes, evidence/debt, owner and reprioritizing observation. Phase 37.1 now owns terminal closure; Phase 38 retains final receipts. The audit's [dormant seed dispositions](M007-MILESTONE-AUDIT.md#dormant-seed-dispositions) remain applicable to current source/consumers: z1g (query/helper navigation), trz (capture/CRC failure diagnosis), z1s (formatter/checker/source review) all retain dormant status; existing evidence explains these failures and no measured query gap or contested source-form choice triggers an experiment. The local Dashbit appraisal is historical. No implementation or capability claim changed in this insertion.
 
-**Plans:** 4/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 **Wave 1**
@@ -340,6 +340,8 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [x] 37.1-04-PLAN.md — Repair native defect/reason emission and prove exact amendments
+
+**Completion amendment — 2026-10-16:** Phase 37.1 is complete: independent 22/22 verification, five fresh passed predecessor reports, and a fresh M007 audit close CR-03/04/06 with no new blocking regression. WR-02's comment was corrected in the necessary core semantic edit. Original probes and decisions remain historical. EVD-17 remains unchecked/Pending under Phase 38; no hosted receipt or freeze is bound. The Phase 37.1 transition table records current next capabilities and dormant seeds.
 
 ### Phase 38: Milestone Receipts
 
@@ -372,7 +374,7 @@ Plans:
 | 35. Bitwise Operators, Literal Shifts, and Hex Literals | 8/8 | Complete    | 2026-10-14 |
 | 36. Scalar Helper Calls | 8/8 | Complete    | 2026-10-15 |
 | 37. CRC-32 Consumer, Interpreter File Route, and Guide | 9/9 | Complete    | 2026-10-15 |
-| 37.1. Close gap: legacy terminal outcomes (INSERTED) | 4/4 | In Progress | - |
+| 37.1. Close gap: legacy terminal outcomes (INSERTED) | 4/4 | Complete    | 2026-10-16 |
 | 38. Milestone Receipts | 0 planned | Not started | - |
 
 **Coverage:** 19/19 M007 requirements have exactly one phase owner. DX-22 is

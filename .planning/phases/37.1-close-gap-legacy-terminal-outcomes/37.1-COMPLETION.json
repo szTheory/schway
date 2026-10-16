@@ -1,0 +1,18 @@
+{
+  "completed_phase": "37.1",
+  "phase_name": "close-gap-legacy-terminal-outcomes",
+  "plans_executed": "4/4",
+  "next_phase": "38",
+  "next_phase_name": "milestone-receipts",
+  "is_last_phase": false,
+  "date": "2026-10-16",
+  "roadmap_updated": true,
+  "state_updated": true,
+  "requirements_updated": false,
+  "auto_pruned": false,
+  "warnings": [],
+  "has_warnings": false,
+  "verification_stale_check_indeterminate": false,
+  "milestone_conflict": null,
+  "preservation_warnings": []
+}

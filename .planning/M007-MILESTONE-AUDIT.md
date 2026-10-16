@@ -97,3 +97,15 @@ All19requirements were joined across canonical checkboxes/traceability, owning v
 [INTEGRATION.md](audits/M007-2026-10-16-terminal-closure/INTEGRATION.md) and its JSON define the inspected links/flows and terminal dispositions. REQUIREMENTS.json preserves the initial three-source matrix; SUMMARY-EXTRACTION.json preserves all42SDK outputs; EVIDENCE.json separates source inspection, newly executed checks, reused receipts and historical limits. PARENT-AGGREGATION.json records the final manual joins and owner statuses.
 
 Finish Phase37.1's independent verifier/phase-close owner, then discuss/plan Phase38. EVD-17 stays unchecked/Pending until the final same-source Ubuntu/macOS receipts. Any later push/hosted dispatch checkpoint must name the actual freeze commit. No new phase, backend, dependency or dormant experiment was promoted by this audit.
+
+## Three useful next capabilities
+
+The complete program/blocker/slice/guarantee/evidence/owner/reprioritization table is in [37.1-TRANSITION.md](phases/37.1-close-gap-legacy-terminal-outcomes/37.1-TRANSITION.md#ranked-next-capabilities): audited same-source two-host CRC/checksum receipts; proposed wc/longest_line module pair; bounded fixed-schema key=value checker.
+
+## Dormant seed dispositions
+
+[Current source/consumer dispositions](phases/37.1-close-gap-legacy-terminal-outcomes/37.1-TRANSITION.md#triggered-seed-review) retain z1g/trz/z1s dormant; no measured navigationgap, unexplainedfailure or contestedsourceform triggers an experiment.
+
+## Post-audit owner completion — 2026-10-16
+
+The final Phase 37.1 verifier passes 22/22. Canonical completion ran once for 4/4 plans with zero warnings/conflicts and requirements_updated=false. Phases 33–37 remain fresh and passed. The earlier phases_at_audit=5/7 field preserves the pre-owner snapshot; six implemented phases are now complete, with Phase 38 unstarted and EVD-17 Pending. The overall milestone gaps_found verdict and receipt limits remain unchanged.
