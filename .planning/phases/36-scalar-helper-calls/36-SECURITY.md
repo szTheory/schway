@@ -127,3 +127,26 @@ Independent security confirmation at06:32:13Z retained24/24 closed, threats_open
 ## Successor verification refresh — 2026-10-15
 
 The authored plan register still contains 24 unique threats, all closed, at ASVS L1/high. No new dependency, package installation or trust boundary is introduced by this refresh. The zero-open authored-L1 shortcut applies; no L2/L3 audit is claimed. Current source inspection confirmed typed single-evaluation lowering in `check/scalar.go:lowerScalarCall`, independent raw-call admission, per-parent/site ordinal attribution in `executionpeer.Validate`, pre-retention interpreter bounds, bounded `readApplicationCapture`, and preserved actual outcomes on optional capture failure. Fresh mapped roots (84/84) exercise these owners and the numeric/capture/causal mutation controls; both canonical prohibition proof gates are green. Sources and output hashes are bound in 36-REFRESH-RUN.json and 36-REFRESH-PROHIBITIONS.json. No threat was newly accepted or transferred.
+
+
+## Terminal-evidence compatibility refresh — 2026-10-15
+
+All eight authored threat models retain 24 distinct closed threats and zero
+open at configured ASVS L1/high. Source inspection and the fresh 84-root
+mapped run retain independent typed-call admission, bounded recording and
+actual application outcomes on optional recording failure. Both canonical
+prohibition gates prove their actual-source negative controls. The authored
+zero-open L1 shortcut applies; no deeper security certification is claimed.
+Phase33 CR-03/04 remain separate deferred BLOCKER propagation findings owned
+by the execution-peer maintainer through the mandatory M007 audit before
+Phase38 freeze. They are not fixed or accepted risks in this refresh; the
+independent goal verifier must assess any overlap with Phase36 must-haves.
+No dependency, implementation, admission law or trust boundary changed.
+
+
+The subsequent CR-01 cgen repair retains all 24 authored L1 dispositions:
+callee signatures and source-independent peers are unchanged, and the new
+unused-Byte eligibility independently rejects every reference to its formal.
+The final 86-root mapped/repair receipt and both post-repair canonical
+prohibition executions supersede the initial refresh sample. This resolves
+an emission false rejection without accepting a new risk or Byte value call.

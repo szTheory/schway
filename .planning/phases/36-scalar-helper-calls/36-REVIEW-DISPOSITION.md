@@ -7,13 +7,17 @@ findings:
     severity: warning
     disposition: deferred
     title: "Raw call ownership comment states an obsolete same-type invariant"
+  - id: CR-01
+    severity: critical
+    disposition: fixed
+    title: "Checker-admitted unused-Byte scalar caller fails native emission"
   - id: WR-01
     severity: warning
     disposition: fixed
     title: "Truncated repeated-call traces omit the expected callee"
 open: 0
-total: 2
-recorded: 2026-10-15T23:50:06.356Z
+total: 3
+recorded: 2026-10-16T01:47:38.700Z
 ---
 
 # Phase 36: Code Review Disposition
@@ -21,6 +25,7 @@ recorded: 2026-10-15T23:50:06.356Z
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
 | WR-02 | warning | deferred | Core-validator maintainer: correct historical same-type commentary with the next semantic edit; current implementation and tests derive from sourceTypeID correctly. An isolated comment edit would stale Phase 35 without changing checked behavior. |
+| CR-01 | critical | fixed | d69380ed; 36-REFRESH2-FIX.md and independent dated closure in 36-REVIEW.md. Both original-source emission failures reproduced; two focused repaired roots pass. (not in the current review) |
 | WR-01 | warning | fixed | 36-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.

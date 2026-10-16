@@ -167,3 +167,66 @@ One planning-metadata gap was found after the green behavioral task map: four co
 | Gaps found | 1 |
 | Resolved | 1 |
 | Escalated | 0 |
+
+## Validation Audit 2026-10-16
+
+| Metric | Count |
+|---|---|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+
+
+## Terminal-evidence compatibility refresh — 2026-10-15
+
+All 21 task rows retain current behavioral coverage. Newly executed exact
+selectors passed 84 distinct names / 84 roots across 13 packages, zero
+missing/fail/skip, at source 72b9941974ee72635a854296685de435b2bbd1f8.
+[36-REFRESH2-RUN.json](36-REFRESH2-RUN.json) binds 83 current inputs and 13
+raw logs, including O0/O3/O3-LTO, UBSan and actual-source mutation controls.
+The two plan08 capture producers were parsed for their fixed owner lists;
+their read-only artifact checks use fresh observed owners and preserve the
+original acceptance revision. The one allowed historical Phase35 report is
+read at that revision: the current mutable report has a later UTC date.
+This historical-date adjustment changes no runtime contract or expected answer.
+Both canonical mechanical prohibitions independently proved bad RED plus
+clean/default GREEN in [36-REFRESH2-PROHIBITIONS.json](36-REFRESH2-PROHIBITIONS.json).
+No new test, behavioral gap or human waiver was needed. Earlier captures
+retain their original revisions; no hosted or full local suite claim follows.
+
+
+## Review-discovered caller-shape closure — 2026-10-15
+
+Independent review CR-01 identified a native classifier omission beyond the
+first refresh sample. It is repaired at d69380ed: unused-Byte structured
+callers and ByteView Unit translation-unit bodies now emit without an
+unrelated eligible caller. Final original-source overlay reproduces both
+named emission failures; the repaired source passes. See 36-REFRESH2-FIX.md.
+The post-repair run passes all 84 mapped roots plus two new regression roots
+(86 names/roots in 13 packages), zero missing/fail/skip. The fresh receipt
+supersedes the pre-repair sample and binds 85 current inputs and 14 logs.
+No task-row/old expected-data or historical acceptance receipt was rewritten.
+
+## Validation Audit 2026-10-16
+
+| Metric | Count |
+|---|---|
+| Gaps found | 1 |
+| Resolved | 1 |
+| Escalated | 0 |
+
+
+The required final combined gate also caught the new test's missing public
+emitter-consumer row; the exact source call/witness was registered in0e56a3be.
+Inventory and its mutation controls pass, and the fresh complete bounded union
+then passes239names/251roots/16packages, zero missing/fail/skip. This second
+integration gap is resolved; the first failed union is retained in the final
+receipt and is not credited as a pass. No extra manual-only criterion remains.
+
+## Validation Audit 2026-10-16
+
+| Metric | Count |
+|---|---|
+| Gaps found | 2 |
+| Resolved | 2 |
+| Escalated | 0 |

@@ -1,0 +1,111 @@
+{
+  "source_head": "d69380edd8ab276539940fcc0ed0d1a383b07786",
+  "captured_utc": "2026-10-16T01:45:07.557134+00:00",
+  "scope": "Fresh canonical executions of the existing final plan descriptors; actual-source bad RED, clean GREEN and default GREEN. Historical source receipts remain historical.",
+  "requests": [
+    {
+      "request": {
+        "prohibition": {
+          "statement": "MUST NOT turn optional evidence exhaustion into application success or suppress the application's actual defect, output, or exit.",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/36-scalar-helper-calls/prohibition-outcome-violation.json",
+          "check_clean_fixture": ".planning/phases/36-scalar-helper-calls/prohibition-clean.json"
+        },
+        "check": {
+          "kind": "node-test",
+          "target": ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs",
+          "violationFixture": ".planning/phases/36-scalar-helper-calls/prohibition-outcome-violation.json",
+          "cleanFixture": ".planning/phases/36-scalar-helper-calls/prohibition-clean.json"
+        },
+        "mode": "autonomous"
+      },
+      "result": {
+        "status": "green",
+        "flagged": false,
+        "tier": "test",
+        "reason": "test-tier prohibition has wired enforcement evidence",
+        "located": true,
+        "kind": "node-test",
+        "evidence": [
+          {
+            "kind": "node-test",
+            "target": ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs",
+            "failFirst": true,
+            "passed": true,
+            "failFirstProof": "violation-fixture"
+          }
+        ],
+        "mode": "autonomous"
+      },
+      "raw_result": "/tmp/schway36-r2-prohibition-result-final-0.json",
+      "raw_sha256": "8fd2113083ccaa0931cc53f0baa22213245a6fa852025d9f47370798f471b84a"
+    },
+    {
+      "request": {
+        "prohibition": {
+          "statement": "MUST NOT present causal execution-peer acceptance as proof of scalar arithmetic or source argument/result intent.",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/36-scalar-helper-calls/prohibition-causal-violation.json",
+          "check_clean_fixture": ".planning/phases/36-scalar-helper-calls/prohibition-clean.json"
+        },
+        "check": {
+          "kind": "node-test",
+          "target": ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs",
+          "violationFixture": ".planning/phases/36-scalar-helper-calls/prohibition-causal-violation.json",
+          "cleanFixture": ".planning/phases/36-scalar-helper-calls/prohibition-clean.json"
+        },
+        "mode": "autonomous"
+      },
+      "result": {
+        "status": "green",
+        "flagged": false,
+        "tier": "test",
+        "reason": "test-tier prohibition has wired enforcement evidence",
+        "located": true,
+        "kind": "node-test",
+        "evidence": [
+          {
+            "kind": "node-test",
+            "target": ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs",
+            "failFirst": true,
+            "passed": true,
+            "failFirstProof": "violation-fixture"
+          }
+        ],
+        "mode": "autonomous"
+      },
+      "raw_result": "/tmp/schway36-r2-prohibition-result-final-1.json",
+      "raw_sha256": "8fd2113083ccaa0931cc53f0baa22213245a6fa852025d9f47370798f471b84a"
+    }
+  ],
+  "inputs": {
+    ".planning/phases/36-scalar-helper-calls/36-03-pathoracle-red.json": "01e3dfaf88fe23735995b0804d3b49ef6f56961a7bf6464c94b099f47d5cf9b7",
+    ".planning/phases/36-scalar-helper-calls/36-05-task1-red-evidence.json": "40165c146d5ad2c66930eeba719e99453dbe994385a9363a7a3b7afe8d017760",
+    ".planning/phases/36-scalar-helper-calls/36-05-task2-red-evidence.json": "01dc9f396ed70505ce840a22b565fa9d3d029388df3962ea0c16ec232ccfedcf",
+    ".planning/phases/36-scalar-helper-calls/36-05-task3-red-evidence.json": "3d3b5c013bb1c20167ae7ed34fe96556070404a96b4fd8e3adf16fe704dee61d",
+    ".planning/phases/36-scalar-helper-calls/36-06-task1-red-evidence.json": "fddd01962d74c1bdda3958fe3b004e015c6123c4a2ba9080d2269357e9c89270",
+    ".planning/phases/36-scalar-helper-calls/36-06-task2-red-evidence.json": "cf025626aeafbb709251c0dedc47f6ab84f193230dc10a2e976b767ad93c6088",
+    ".planning/phases/36-scalar-helper-calls/36-06-task3-red-evidence.json": "589915d34d29dfefd0b8c143ec1d9869e60794d617c9093c47c200b9b769012f",
+    ".planning/phases/36-scalar-helper-calls/36-08-PLAN.md": "1495abb7c64ed3e393b0d51fd4e1083d7d6c4648e443def404e95f9fd5ab1947",
+    ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs": "86f688d31f140ab99d3a545facc3c7ea26c042cfb1d0ebe06253c251992ce6b2",
+    ".planning/phases/36-scalar-helper-calls/prohibition-causal-violation.json": "ca7150830d5d654a71a3dfcce53790efa33d4fe9486ea4e0fc8490b3a360b2d8",
+    ".planning/phases/36-scalar-helper-calls/prohibition-clean.json": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+    ".planning/phases/36-scalar-helper-calls/prohibition-outcome-violation.json": "7f38214b22d1748b5290a999c6a6e3ec9b4776596f79b006b2fbfd591c111654",
+    "internal/compiler/executionpeer/executionpeer.go": "a884b40df2c5ef2dcb51082d2b6b6400b56bb7d07bf9c72e9a2f7e45a5124ba4",
+    "internal/compiler/executionpeer/executionpeer_phase33_terminal_test.go": "be23ab58a88fc4e613d9c07b839a7666d88c9fc42810fe2358995a9aced40eda",
+    "internal/compiler/executionpeer/executionpeer_phase36_test.go": "bb5b00cf7ee1844c82877725f96751a5dd2107e22021f0082bc881c37265d3d2",
+    "internal/compiler/native/native_app.go": "0124d35186677f20a88704968de42c32a5d7f0fb6ea850533bd5b891629bac64",
+    "internal/compiler/native/native_phase36_test.go": "ba3ac41f638a52c7cc17501cacef27a0f189424389f8f78c69a46d11c497b49d",
+    "testdata/phase36/helper-values.json": "b007718abf8750b149724b7b010e8111e5e3c2038f905c8c92fbbe0662070bde",
+    "testdata/phase36/new-fixture-ledger.json": "99ee245b707175e1b27846ce825ae6371e7eb7da0e810b2d8edf486c3517eaf4",
+    "testdata/phase36/prechange-corpus.json": "b9db7faa10bae93e741f2b24e602a9eda3eb393ed38efb0df6364a9ef9873001",
+    "testdata/phase36/surface-census.json": "83d16a1b9a1bebc0fbeb71946bd881b5204893ac7f63feb51f5e6905dae7730d",
+    "testdata/phase36/surface-witnesses.json": "02174019248afdae4b9436d324089c8f8a46013bac42abd2b3f3ad39e47d19b5"
+  }
+}
