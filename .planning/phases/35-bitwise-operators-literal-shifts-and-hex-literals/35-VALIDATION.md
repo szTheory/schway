@@ -513,3 +513,24 @@ post-wiring execution and input bindings are in 35-REFRESH-FINAL-RUN.json.
 | Gaps found | 4 |
 | Resolved | 4 |
 | Escalated | 0 |
+
+## Validation Audit 2026-10-16
+
+| Metric | Count |
+|---|---|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+
+## Terminal-evidence successor refresh — 2026-10-15
+
+All 22 unchanged final-plan task selectors ran again after the Phase 33
+terminal-attribution repair: 66 distinct names / 72 root executions in
+13 packages, zero missing/fail/skip. The current receipt is
+35-REFRESH2-VALIDATION.json; historical receipts retain their revisions.
+The current pure-operation causal control passes with terminal source/type
+attribution in its positive fixture. Numeric answers remain independently
+checked by literal vectors, including the focused local optimization and
+UBSan lanes; causal acceptance does not replay values. No new validation
+gap, implementation change, dependency, hosted result or UAT replay is
+claimed. Supplemental mutation/regression evidence follows separately.

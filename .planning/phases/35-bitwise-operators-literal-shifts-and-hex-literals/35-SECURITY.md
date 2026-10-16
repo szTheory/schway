@@ -118,3 +118,21 @@ boundary or dependency changed. Both canonical known-bad/clean causation
 controls passed, preserving T-35-23's false-claim mitigation and T-35-SC's
 no-install constraint. All 24 L1 threats remain closed; this is source and
 focused-control evidence, not a new L2/L3 audit.
+
+## Terminal-evidence successor applicability — 2026-10-15
+
+Source inspection and the freshly executed 22-task map retain all eight
+authored models and 24 distinct mitigations, 24 closed / zero open at ASVS
+L1/high. Parser depth, literal-only 0..63 shifts, independent source/core/
+origin transfer laws, unused-Byte restrictions, unsigned C shifts, explicit
+event-free operations, literal numeric answers and manifest controls remain
+present. The authored zero-open L1 shortcut applies; no deeper audit or
+accepted-risk substitution is implied.
+
+Phase 33 CR-02 now binds terminal core attribution and root outcome kind;
+TestPhase35PureOperationCausalControls passes with its corrected positive
+terminal fixture. Phase 33 CR-03/04 are separate pre-existing propagation
+false rejections deferred to the execution-peer maintainer through the
+mandatory M007 audit before freeze. This applicability statement does not
+close those findings or claim numeric replay, L2/L3, hosted evidence or
+human usability. 35-REFRESH2-VALIDATION.json binds this fresh task-map run.
