@@ -1,6 +1,6 @@
 ---
 phase: 35-bitwise-operators-literal-shifts-and-hex-literals
-verified: 2026-10-16T21:13:17Z
+verified: 2026-10-16T21:27:37Z
 status: passed
 score: "38/38 truths verified"
 covered_files:
@@ -129,7 +129,7 @@ human_verification: []
 # Phase 35: Bitwise Operators, Literal Shifts, and Hex Literals Verification Report
 
 **Phase Goal:** Ordinary Schway scalar code can use U64 `^`, `&`, `|`, literal-amount `<<` and `>>`, and hex literals, with one defined meaning on every engine and optimization level, no C17 shift undefined behavior, and no new defect path.
-**Verified:** 2026-10-16T21:13:17Z
+**Verified:** 2026-10-16T21:27:37Z
 **Status:** passed
 **Re-verification:** No — the prior passed report had no gaps; must-haves were re-established from the roadmap and eight plans.
 **Prior report:** Passed 38/38 with no `gaps:` section, but became stale after the Phase 37.1 source-delta refresh.
@@ -258,20 +258,27 @@ The generic key-link query found 1/24 by literal path-reference matching. That r
 
 ### Behavioral Spot-Checks
 
-All Go commands used `GOCACHE=/tmp/ai-lang-verification-gocache-count1-v120`, `-count=1`, and `-timeout=600s`. Each command selected named Phase 35 tests; no full package or workspace suite was run.
+All Go commands used `GOCACHE=/tmp/ai-lang-verification-gocache`, `-count=1`, and `-timeout=600s`. Each command selected named Phase 35 tests; no full package or workspace suite was run.
 
 | Behavior | Command | Result | Status |
 |---|---|---|---|
 | Values agree at O0/O3/O3-LTO | `go test ./internal/compiler/session -run '^TestPhase35BitwiseOptimizationMatrix$' -count=1 -v -timeout=600s` | Exit 0; 33 independently expected vectors pass across all three native lanes. | ✓ PASS |
 | C17-safe shift results | `go test ./internal/compiler/session -run '^TestPhase35ShiftUBSan$' -count=1 -v -timeout=600s` | Exit 0; all 16 shift UBSan cases pass. | ✓ PASS |
-| Checker literal-shift admission and transfer | `go test ./internal/compiler/check -run '^(TestPhase35ShiftAdmission|TestPhase35ScalarTransferMutants)$' -count=1 -v -timeout=600s` | Exit 0; valid counts and invalid/nonliteral controls plus five operator transfers pass. | ✓ PASS |
+| Checker literal-shift admission | `GOCACHE=/tmp/ai-lang-verification-gocache go test -json -v ./internal/compiler/check -run '^TestPhase35ShiftAdmission$' -count=1 -timeout=600s` | Exit 0; exact root RUN=1/PASS=1/SKIP=0. Raw JSONL: `/tmp/schway35-371-root-logs/01-TestPhase35ShiftAdmission.jsonl`, SHA-256 `590a40b2da85874b0daa9696dc238353a7dad42c2b16a9b5a057d7ff32930a55`. | ✓ PASS |
+| Checker scalar transfer mutants | `GOCACHE=/tmp/ai-lang-verification-gocache go test -json -v ./internal/compiler/check -run '^TestPhase35ScalarTransferMutants$' -count=1 -timeout=600s` | Exit 0; exact root RUN=1/PASS=1/SKIP=0. Raw JSONL: `/tmp/schway35-371-root-logs/02-TestPhase35ScalarTransferMutants.jsonl`, SHA-256 `4b60e3ba5e9a66bf9137c06c9de58bafc10eaf9a6dd974d9314ced59d310bb48`. | ✓ PASS |
 | Independent core validation | `go test ./internal/compiler/corevalidate -run '^TestPhase35ScalarTransferMutants$' -count=1 -v -timeout=600s` | Exit 0; core validator rejects five transfer faults and CFG variants. | ✓ PASS |
 | Independent origin validation | `go test ./internal/compiler/originvalidate -run '^TestPhase35ScalarTransferMutants$' -count=1 -v -timeout=600s` | Exit 0; origin validator rejects five transfer faults and CFG variants. | ✓ PASS |
-| Parser, numeric ownership, and spelling | `go test ./internal/compiler/syntax -run '^(TestPhase35ScalarGrammar|TestPhase35NumericOwnership|TestPhase35FormatterRoundTrip|TestPhase35ExpressionDepth)$' -count=1 -v -timeout=600s` | Exit 0; precedence/grouping, hex case/spelling, overflow/malformed refusals, and depth boundaries pass. | ✓ PASS |
+| Scalar grammar and precedence | `GOCACHE=/tmp/ai-lang-verification-gocache go test -json -v ./internal/compiler/syntax -run '^TestPhase35ScalarGrammar$' -count=1 -timeout=600s` | Exit 0; exact root RUN=1/PASS=1/SKIP=0. Raw JSONL: `/tmp/schway35-371-root-logs/03-TestPhase35ScalarGrammar.jsonl`, SHA-256 `2874d17283766a27e74d22e135151c0bcb9cc3098671353abffce1dbe5b104ee`. | ✓ PASS |
+| Numeric ownership and hex diagnostics | `GOCACHE=/tmp/ai-lang-verification-gocache go test -json -v ./internal/compiler/syntax -run '^TestPhase35NumericOwnership$' -count=1 -timeout=600s` | Exit 0; exact root RUN=1/PASS=1/SKIP=0. Raw JSONL: `/tmp/schway35-371-root-logs/04-TestPhase35NumericOwnership.jsonl`, SHA-256 `923870975f43dcf94bf8e370bd50697039b11352deb54c255f8ca87276ac588f`. | ✓ PASS |
+| Formatter spelling round trip | `GOCACHE=/tmp/ai-lang-verification-gocache go test -json -v ./internal/compiler/syntax -run '^TestPhase35FormatterRoundTrip$' -count=1 -timeout=600s` | Exit 0; exact root RUN=1/PASS=1/SKIP=0. Raw JSONL: `/tmp/schway35-371-root-logs/05-TestPhase35FormatterRoundTrip.jsonl`, SHA-256 `424e9b6eb6dd4744b09b61d896ebbf05d6d73b2823446ce116c6a7939523fb5f`. | ✓ PASS |
+| Expression-depth limits | `GOCACHE=/tmp/ai-lang-verification-gocache go test -json -v ./internal/compiler/syntax -run '^TestPhase35ExpressionDepth$' -count=1 -timeout=600s` | Exit 0; exact root RUN=1/PASS=1/SKIP=0. Raw JSONL: `/tmp/schway35-371-root-logs/06-TestPhase35ExpressionDepth.jsonl`, SHA-256 `3f890cadbc1fa21706de1a1e55c6cd70e2a15f5041fc9d6e836d4f3f219a66b2`. | ✓ PASS |
 | Emitted unsigned shift sites and event projection | `go test ./internal/compiler/cgen -run '^TestPhase35UnsignedShiftEmissionAndEventProjection$' -count=1 -v -timeout=600s` | Exit 0; checked C sites and pure event projection pass. | ✓ PASS |
 | Event-free causal controls | `go test ./internal/compiler/executionpeer -run '^TestPhase35PureOperationCausalControls$' -count=1 -v -timeout=600s` | Exit 0; all five operations admit no-event execution and reject fabricated events. This is causal evidence only. | ✓ PASS |
-| Frozen emitter compatibility and Adler answers | `go test ./internal/compiler/session -run '^(TestPhase35PreChangeEmitterCorpus|TestPhase35PreChangeCorpusControls|TestPhase35ExistingAdlerAnswers)$' -count=1 -v -timeout=600s` | Exit 0; old emitter outputs stay frozen and checksum/adler_low answers match on both engines. | ✓ PASS |
-| Engine values and wrong-answer controls | `go test ./internal/compiler/session -run '^(TestPhase35FocusedValueAnswers|TestPhase35EngineWrongAnswerControls)$' -count=1 -v -timeout=600s` | Exit 0; exact values pass and all five wrong-answer controls are rejected. | ✓ PASS |
+| Frozen emitter corpus | `GOCACHE=/tmp/ai-lang-verification-gocache go test -json -v ./internal/compiler/session -run '^TestPhase35PreChangeEmitterCorpus$' -count=1 -timeout=600s` | Exit 0; exact root RUN=1/PASS=1/SKIP=0. Raw JSONL: `/tmp/schway35-371-root-logs/07-TestPhase35PreChangeEmitterCorpus.jsonl`, SHA-256 `bf65c68b192d3198ff93ab416bf4752a827ef6a7b7df7c38f1483e581cea92bf`. | ✓ PASS |
+| Frozen corpus negative controls | `GOCACHE=/tmp/ai-lang-verification-gocache go test -json -v ./internal/compiler/session -run '^TestPhase35PreChangeCorpusControls$' -count=1 -timeout=600s` | Exit 0; exact root RUN=1/PASS=1/SKIP=0. Raw JSONL: `/tmp/schway35-371-root-logs/08-TestPhase35PreChangeCorpusControls.jsonl`, SHA-256 `165dc8df3605fcbe0c58c402c0de4a0832a2a2ccf6372bc72e6121831a5b566e`. | ✓ PASS |
+| Existing Adler answers | `GOCACHE=/tmp/ai-lang-verification-gocache go test -json -v ./internal/compiler/session -run '^TestPhase35ExistingAdlerAnswers$' -count=1 -timeout=600s` | Exit 0; exact root RUN=1/PASS=1/SKIP=0; both-engine checksum/adler_low answers match. Raw JSONL: `/tmp/schway35-371-root-logs/09-TestPhase35ExistingAdlerAnswers.jsonl`, SHA-256 `e567ef6c401abd203be7e3a92e40ae645619710a2b1cce023598a5f1e364a754`. | ✓ PASS |
+| Focused engine values | `GOCACHE=/tmp/ai-lang-verification-gocache go test -json -v ./internal/compiler/session -run '^TestPhase35FocusedValueAnswers$' -count=1 -timeout=600s` | Exit 0; exact root RUN=1/PASS=1/SKIP=0. Raw JSONL: `/tmp/schway35-371-root-logs/10-TestPhase35FocusedValueAnswers.jsonl`, SHA-256 `8425f35bd0b64736b9f3beb10fc68187bf11f6796ecec7b615e0284507101008`. | ✓ PASS |
+| Engine wrong-answer controls | `GOCACHE=/tmp/ai-lang-verification-gocache go test -json -v ./internal/compiler/session -run '^TestPhase35EngineWrongAnswerControls$' -count=1 -timeout=600s` | Exit 0; exact root RUN=1/PASS=1/SKIP=0; all five wrong-answer controls are rejected. Raw JSONL: `/tmp/schway35-371-root-logs/11-TestPhase35EngineWrongAnswerControls.jsonl`, SHA-256 `7e8691ef5c0201f31432bfb7e95e32cdc1bf7663c62b82e869fa23dff04cc9a0`. | ✓ PASS |
 | Public source witness | `go test ./cmd/schway -run '^TestPhase35PublicConformanceWitness$' -count=1 -v -timeout=600s` | Exit 0; public interpreter/native witness returns 264, alternate grouping returns 8. | ✓ PASS |
 | Evidence-prohibition adapter | `node --test testdata/phase35/prohibition-evidence.test.cjs` | Exit 0; the active adapter invokes the named Go evidence-grounding test and rejects false causal/lane claims. | ✓ PASS |
 
@@ -340,5 +347,5 @@ No Phase 35 goal gap was found. The independent source inspection and focused ch
 
 ---
 
-_Verified: 2026-10-16T21:13:17Z_
+_Verified: 2026-10-16T21:27:37Z_
 _Verifier: gsd-verifier agent_

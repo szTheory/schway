@@ -116,7 +116,7 @@ The four roadmap success criteria, all nine plans' must-haves, and the four mapp
 | 9 | Native cleanup is physically observed on CRC consumers with focused sanitizer evidence and host limits stated. | VERIFIED | Previous named CRC physical-cleanup, bound, and sanitizer tests observe the actual adapter resources. Current evidence remains local Darwin-specific and does not claim Darwin leak detection. |
 | 10 | Algorithm mutations and library-only edits are causal on both consumers; module identity invalidation is checked separately. | VERIFIED | Previous named algorithm-mutant, single-copy/identity, and library dual-flip tests passed. Expected values remain independent literals rather than values derived from the implementation. |
 | 11 | CLI grammar, opaque paths, route inventory, exit classes, and surface facts agree with the public contract. | VERIFIED | Current CLI outcome roots and the refreshed emitter/peer roots pass. `cgen` exit literals now include the tested terminal class 74; the initial test-only stale expectation was corrected and the named test rerun green. |
-| 12 | The guide runs real commands from a clean tracked-file copy and checks the documented results and errors. | VERIFIED | `TestPhase37GuideCleanCheckout` previously passed, copying `git ls-files` content and comparing 78 tuples across two consumers and three routes. The guide, source, and test are unchanged. Current documentation guards passed 6/6. |
+| 12 | The guide runs real commands from a clean tracked-file copy and checks the documented results and errors. | VERIFIED | `TestPhase37GuideCleanCheckout` previously passed, copying `git ls-files` content and comparing 78 tuples across two consumers and three routes. The guide, source, and test are unchanged. |
 | 13 | Test-tier prohibitions have canonical bad, clean, and default evidence, with numeric and causal claims kept distinct. | VERIFIED | The Phase 37 canonical producer and current Phase 37.1 supplemental controls retain green bad/clean/default subjects, with no flagged prohibition; the refreshed security gate reports 13/13 supplemental controls closed and zero open threats. |
 | 14 | Current evidence distinguishes fresh executions from historical receipts and preserves transition dispositions. | VERIFIED | Current gate receipts bind source/test inputs and raw logs. The existing transition disposition is retained; this report does not relabel deferred CR-03/04/06 or WR-02 obligations as resolved by Phase 37. |
 
@@ -126,7 +126,7 @@ The four roadmap success criteria, all nine plans' must-haves, and the four mapp
 
 The refreshed comparison began at `9258a736` and ends at `20a5194`. Paths shared with the prior report include the C emitter, execution peer, and Phase 34/36 prechange comparators. The changed emitter and peer paths have current named regression owners; no scalar payload, numeric outcome-value, or CFG-branch wire-authentication theorem is inferred from them.
 
-The final bounded predecessor registry reports 250 package/test selectors, 251 root execution events, 240 distinct names, and 16 package groups. It reused 220 unchanged passing root receipts, reran five prior failures green, and ran 26 previously unrun roots green; the final gate has zero failed, missing, or skipped roots. Four current D18 proofs cover 37 inputs each; their 19-root union passed 254 subtests with no skips. Six documentation/lifecycle guards passed. The pressure selector `TestPhase33CaptureReadBounded` was excluded. This is a bounded registry, not the full historical 98-root acceptance inventory.
+The final bounded predecessor registry reports 250 package/test selectors, 251 root execution events, 240 distinct names, and 16 package groups. It reused 220 unchanged passing root receipts, reran five prior failures green, and ran 26 previously unrun roots green; the final gate has zero failed, missing, or skipped roots. Four current D18 proofs cover 37 inputs each; their 19-root union passed 254 subtests with no skips. The prior combined documentation/lifecycle receipt is preserved but is not used as per-root proof for the Phase 37 report commands; the four relevant roots and groundedness owner check are recorded separately below. The pressure selector `TestPhase33CaptureReadBounded` was excluded. This is a bounded registry, not the full historical 98-root acceptance inventory.
 
 The initial exit-literal run failed only because its test expected `[0 65 69]` while current source correctly emitted `[0 65 69 74]`. The test expectation was updated and the named test passed on rerun. Both raw runs remain in the receipt; the initial red was not hidden or treated as a product defect.
 
@@ -184,13 +184,16 @@ The lexical query verified 4/23 plan links. I manually traced the remainder thro
 
 ## Behavioral Spot-Checks
 
-| Behavior | Command or evidence | Result | Status |
-|---|---|---|---|
-| Current public interpreter/native file run and typed outcomes | `go test ./cmd/schway -run '^(TestPhase37PublicFileRunTracer|TestPhase37FileRunOutcomes)$' -count=1 -json -timeout=10s` | 2 roots pass; `3421780262\n`, empty stderr for both engines; exact typed failure tuples | PASS |
-| Current shared consumer and helper activation | `go test ./internal/compiler/session -run '^(TestPhase37CRC32Consumers|TestPhase37CRC32ByteHelperCalls)$' -count=1 -json -timeout=10s` | 2 roots pass; shared module and one helper activation per byte | PASS |
-| Changed emitter/peer outcomes | 37.1 regression logs 04 and 09 | Exit-literal and scalar-defect roots pass; 12 peer attribution controls pass | PASS |
-| Full pinned public file matrix | Prior Phase 37 acceptance receipt at `9258a736`; current matrix inputs unchanged | Passed previously; not rerun in this refresh (35.6s recorded duration) | PASS (historical receipt) |
-| Clean-checkout guide | Prior `TestPhase37GuideCleanCheckout` receipt; current guide inputs unchanged | Passed previously across 78 exact tuples; not rerun in this refresh (15.0s recorded duration) | PASS (historical receipt) |
+| Behavior | Single-root command | Result | Raw log binding | Status |
+|---|---|---|---|---|
+| Public interpreter/native file run | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase37PublicFileRunTracer$' -count=1 -v -timeout=120s` | Explicit root `RUN` and `PASS`; both engines return `3421780262\n` with empty stderr | `/tmp/ai-lang-p37-TestPhase37PublicFileRunTracer-20261016.log`; SHA-256 `e70fa5522d5dbd402478283a13acf6ee750e2eba1643f00ff81174f0a18b739c` | PASS |
+| Exact typed outcomes and checked-defect exits | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase37FileRunOutcomes$' -count=1 -v -timeout=120s` | Explicit root `RUN` and `PASS`; source refusal, missing source/Clang/manifest, typed file errors, and checked defect all pass | `/tmp/ai-lang-p37-TestPhase37FileRunOutcomes-20261016.log`; SHA-256 `3744377ef20f77065b53086a79cbe24f00483abe831d38334c94fd34391b9ac6` | PASS |
+| Shared second consumer and bindings | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase37CRC32Consumers$' -count=1 -v -timeout=120s` | Explicit root `RUN` and `PASS`; both consumer subtests pass | `/tmp/ai-lang-p37-TestPhase37CRC32Consumers-20261016.log`; SHA-256 `978ff1982d31ebe009f713d36e6a90fb6edd8afaca2e5da514052121de5dcb20` | PASS |
+| Per-byte private helper activation | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase37CRC32ByteHelperCalls$' -count=1 -v -timeout=120s` | Explicit root `RUN` and `PASS`; one helper activation per input byte | `/tmp/ai-lang-p37-TestPhase37CRC32ByteHelperCalls-20261016.log`; SHA-256 `e44fa466028fd73587ea1369bce2b9110695da74589f07da7d3ce461f0986f0b` | PASS |
+| Groundedness owner check after splitting commands | `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestVerificationGroundednessThreeClassesAreEmpty$' -count=1 -v -timeout=120s` | Explicit root `RUN` and `PASS`; R1=0, R2=0, R3=0; R2b=45, every member owned | `/tmp/ai-lang-p37-TestVerificationGroundednessThreeClassesAreEmpty-20261016.log`; SHA-256 `fe17948d28a5a6d1b2d1234b23f2d92f270e64ab79c19c144751d3b0da5cc26a` | PASS |
+| Changed emitter/peer outcomes | 37.1 regression logs 04 and 09 | Exit-literal and scalar-defect roots pass; 12 peer attribution controls pass | Existing current gate receipts | PASS |
+| Full pinned public file matrix | Prior Phase 37 acceptance receipt at `9258a736`; current matrix inputs unchanged | Passed previously; not rerun in this refresh (35.6s recorded duration) | Preserved Phase 37 receipt | PASS (historical receipt) |
+| Clean-checkout guide | Prior `TestPhase37GuideCleanCheckout` receipt; current guide inputs unchanged | Passed previously across 78 exact tuples; not rerun in this refresh (15.0s recorded duration) | Preserved Phase 37 receipt | PASS (historical receipt) |
 
 ## Probe Execution
 
@@ -203,7 +206,7 @@ No Phase 37 plan or summary declares a probe, and no conventional `scripts/*/tes
 | APP-13 | 37-01, 37-05, 37-06, 37-09 | Ordinary-source CRC-32/ISO-HDLC consumer with pinned values and bounded file behavior | SATISFIED | Truths 1, 2, 4, and 10; independent oracle, helper activation, mutation controls, and public matrix evidence. |
 | MOD-07 | 37-01, 37-06 | A second consumer imports the shared module and produces the pinned answer on both engines | SATISFIED | Truths 3 and 10; current shared-consumer test and preserved library-flip controls. |
 | APP-14 | 37-02 through 37-08 | Public interpreter file route and native route produce identical pinned streams/status | SATISFIED | Truths 4–9 and 11–12; current CLI smoke and prior matrix, reader, outcome, cleanup, and guide evidence. |
-| DX-24 | 37-08 | Executable clean-checkout CRC guide | SATISFIED | Truth 12; preserved clean-checkout test receipt and current documentation guards. |
+| DX-24 | 37-08 | Executable clean-checkout CRC guide | SATISFIED | Truth 12; preserved clean-checkout test receipt. |
 
 The canonical phase mapping contains exactly `APP-13`, `MOD-07`, `APP-14`, and `DX-24`; no additional mapped requirement is orphaned.
 
@@ -213,7 +216,7 @@ The canonical decision-coverage query returned 24 honored out of 24 trackable de
 
 ## Test Quality Audit
 
-The expected CRC values are independent literals generated by Python/zlib and cross-checked using Go's IEEE implementation. The public matrix compares each engine to expected tuples before comparing the engines. Mutation controls exercise wrong polynomial/recurrence/final XOR/bound behavior, and the shared-library change is checked against both consumers. The test scan found no disabled requirement-linked tests or circular expected-value path. Current gate logs retain the initial exit-literal assertion failure and its test-only correction; the rerun passed.
+The expected CRC values are independent literals generated by Python/zlib and cross-checked using Go's IEEE implementation. The public matrix compares each engine to expected tuples before comparing the engines. Mutation controls exercise wrong polynomial/recurrence/final XOR/bound behavior, and the shared-library change is checked against both consumers. The test scan found no disabled requirement-linked tests or circular expected-value path. Current gate logs retain the initial exit-literal assertion failure and its test-only correction; the rerun passed. The Phase 37 commands are split into individually executed roots with raw log bindings above. The named groundedness owner check passed with R1/R2/R3 empty and all remaining R2b findings owner-bound; the prior aggregate receipt is not presented as proof that every documentation guard ran green individually in this refresh.
 
 ## Anti-Patterns Found
 

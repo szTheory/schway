@@ -405,4 +405,3 @@ No Phase 33 truth failed, no declared artifact is missing or stubbed, and all ke
 
 _Verified: 2026-10-16T21:11:38Z_
 _Verifier: the agent (gsd-verifier)_
-

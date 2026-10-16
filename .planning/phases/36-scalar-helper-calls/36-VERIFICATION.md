@@ -140,8 +140,8 @@ decision_coverage:
 
 **Phase Goal:** A scalar function calls another scalar function with one U64 or Bool argument and uses its result, including imported modules, with the same defect behavior on both engines and independent call derivation by every peer.
 
-**Verified:** 2026-10-16T21:21:58Z  
-**Status:** passed  
+**Verified:** 2026-10-16T21:21:58Z
+**Status:** passed
 **Verification mode:** Initial-mode refresh. The previous report had no gaps section, so all roadmap and plan truths were re-established rather than presumed.
 
 ## Goal Achievement
@@ -303,5 +303,5 @@ No Phase 36 must-have gaps remain. Local and imported U64/Bool helper calls use 
 
 ---
 
-Verified: 2026-10-16T21:21:58Z  
+Verified: 2026-10-16T21:21:58Z
 Verifier: gsd-verifier
