@@ -4,13 +4,13 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: "37.1"
 current_phase_name: "Close gap: legacy terminal outcomes"
-current_plan: Not started
-status: Ready for planning Phase 37.1
+current_plan: 1
+status: executing
 stopped_at: Phase 37.1 context gathered; dated CR-04 correction and exact-reason compatibility decision recorded; auto-advancing to planning
-last_updated: "2026-10-16T15:20:30.243Z"
+last_updated: "2026-10-16T15:21:16.248Z"
 last_activity: 2026-10-16
-last_activity_desc: Inserted Phase 37.1 for M007 audit blockers CR-03/04/06
-state_head: 3c6183025101e4ad5ea07cfa012aba2d95aa6da2
+last_activity_desc: Phase 37.1 execution started
+state_head: 4c7660b9e58ae6f68dc850a2129f56d3d458be1e
 progress:
   total_phases: 7
   completed_phases: 5
@@ -57,7 +57,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Plan Phase 37.1 terminal-outcome gap closure before Phase 38
+**Current focus:** Phase 37.1 — Close gap: legacy terminal outcomes
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -125,11 +125,11 @@ plans.
 
 ## Current Position
 
-Phase: 37.1 (Close gap: legacy terminal outcomes) — READY TO EXECUTE
-Current Plan: Not started
+Phase: 37.1 (Close gap: legacy terminal outcomes) — EXECUTING
+Current Plan: 1
 Total Plans in Phase: 4
-Status: Ready for planning Phase 37.1
-Last activity: 2026-10-16 — Inserted Phase 37.1 for M007 audit blockers CR-03/04/06
+Status: Executing Phase 37.1
+Last activity: 2026-10-16 — Phase 37.1 execution started
 
 Progress: [███████░░░] 71%
 
