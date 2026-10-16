@@ -6,11 +6,11 @@ current_phase: 38
 current_phase_name: Milestone Receipts
 current_plan: Not started
 status: planning
-stopped_at: Phase 33 verified; next freshness Phase 35, then audit
-last_updated: "2026-10-16T03:14:21.657Z"
+stopped_at: Phase 35 verified; next freshness Phase 36, then audit
+last_updated: "2026-10-16T03:41:51.116Z"
 last_activity: 2026-10-15
-last_activity_desc: Phase 33 verified 60/60; dynamic defect repair; next freshness Phase 35
-state_head: 38c82a88b52f5e975676672dd8e455f9ceb4ea48
+last_activity_desc: Phase 35 verified 38/38; next freshness Phase 36
+state_head: 04f0ff1b6b291a1ff94a777c878930323ef5c4e7
 progress:
   total_phases: 6
   completed_phases: 5
@@ -57,7 +57,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 35 freshness gate, then re-query and M007 audit before Phase 38
+**Current focus:** Phase 36 freshness gate, then re-query and M007 audit before Phase 38
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -129,12 +129,12 @@ Phase: 38 — Milestone Receipts
 Current Plan: Not started
 Total Plans in Phase: 0
 Status: Ready for freshness reconciliation and audit before Phase 38 planning
-Last activity: 2026-10-15 — Phase 33 verified 60/60; next freshness Phase 35
+Last activity: 2026-10-15 — Phase 35 verified 38/38; next freshness Phase 36
 
 Progress: [████████░░] 83%
 
 Implementation: 38/38 authored plans complete; Phase 38 remains unplanned.
-Current verification: phases 33/34 passed; phases 35/36/37 stale.
+Current verification: phases 33/34/35 passed; phases 36/37 stale.
 
 ## M007 Planning
 
@@ -1183,8 +1183,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-16T03:15:49.663005+00:00
-Stopped at: Phase 33 verified; next freshness Phase 35, then re-query and audit
+Last session: 2026-10-16T03:42:47.477455+00:00
+Stopped at: Phase 35 verified; next freshness Phase 36, then audit
 Resume file: None
 Next action: `$gsd-execute-phase 35` (gates/verifier only), then re-query; mandatory M007 audit/gap closure including CR-03/04/06 precedes Phase 38
 
@@ -1558,7 +1558,6 @@ full local suite, dependency, backend, readability or latency claim follows.
 See phases/36-scalar-helper-calls/36-REFRESH2-CLOSEOUT.md. Config bytes and
 completed UAT are preserved. This invocation stops at Phase 36 closeout.
 
-
 ## Phase 33 third refresh handoff — 2026-10-15
 
 Independent60/60 verification binds232inputs and honors22decisions; final
@@ -1575,3 +1574,25 @@ mandatory M007audit/gap closure, then38. Preserve completed plans/UAT and user
 config. Do not auto-start another phase. Source/guarantee changes justify
 refreshes; status-only bookkeeping should not churn shared covered documents.
 See phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH3-CLOSEOUT.md.
+
+
+## Phase 35 third refresh handoff — 2026-10-15
+
+Independent 38/38 verification binds 88 inputs; all four BIT requirements,
+48 artifacts, 24 links and 23 decisions pass. All 72 mapped roots and bounded
+240 names/252 regression roots/16 packages pass, with 41 Phase 35 source mutants
+and focused optimization/UBSan lanes. Report command-table formatting was fixed
+by its owner after the final guard caught it; both grounding guards now pass.
+No implementation or historical receipt changed. phase.complete35 ran once,
+8/8 plans, zero warnings. User config and UAT history are preserved.
+
+Fresh progress: 33/34/35 passed; 36/37 stale; 38 unplanned. Next
+`$gsd-execute-phase 36`, then re-query; mandatory M007 audit/gap closure must
+disposition Phase 33 CR-03/04/06 before Phase 38. CR-05 remains fixed; Phase 36
+WR-02 is deferred comment debt. Canonical state.json retains its Phase 38
+implementation projection. Do not auto-start another phase. The current
+three capability recommendations, complete slices/owners and dormant-seed
+source/consumer dispositions are in
+[35-REFRESH3-GATES.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH3-GATES.md).
+[35-REFRESH3-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH3-CLOSEOUT.md)
+records evidence limits and transition bookkeeping.

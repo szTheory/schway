@@ -1063,3 +1063,35 @@ are in [33-REFRESH3-GATES.md](phases/33-carried-debt-bounded-capture-read-and-ge
 Capability order remains audited two-host CRC receipts, proposed M008
 wc/longest_line, then bounded fixed-schema key=value parsing. No seed or future
 consumer was promoted. Re-query canonical freshness after each report refresh.
+
+
+## Phase 35 native-defect compatibility refresh — 2026-10-15
+
+**Source inspection:** Phase 35 bitwise, literal-shift, hex, unused-Byte and
+Adler contracts remain intact after the adjacent native scalar-defect repair.
+Legacy no-call C output is preserved; that does not prove no-call native defect
+parity. No compiler source, admission law, dependency or backend changed here.
+
+**New local checks:** all 22 task selectors passed 72 roots/13 packages; the
+bounded regression passed 240 names/252 root executions/16 packages, zero
+missing/fail/skip, including 41 Phase 35 source mutants and focused optimized
+value/UBSan lanes. Independent goal verification passes 38/38 with 88 covered
+inputs, 48 artifact declarations, 24 links and 23 decisions. The independent
+29-path review found no new Phase 35 issue. A report-format guard failure was
+corrected and both canonical groundedness guards passed; no guard was weakened.
+Historical receipts remain historical. No whole-project local suite, current
+hosted/Linux receipt, human readability or cold/warm latency claim follows.
+
+**Route and debt:** fresh progress reports 33/34/35 passed, 36/37 stale and 38
+unplanned. Next `$gsd-execute-phase 36`, then re-query and mandatory M007 audit/
+gap closure before Phase 38 freeze. Phase 33 CR-03/04/06 remain deferred BLOCKER
+audit obligations; CR-05 is fixed. Phase 36 WR-02 remains deferred comment debt.
+Only EVD-17 remains active. Preserve completed plans/UAT and user configuration.
+
+The three next capabilities remain audited same-source two-host CRC receipts,
+proposed M008 wc/longest_line, then bounded fixed-schema key=value parsing.
+Programs, blockers, complete slices, guarantee changes, evidence/debt, owners
+and reprioritization observations plus scoped z1g/trz/z1s dormant dispositions
+are in [35-REFRESH3-GATES.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH3-GATES.md).
+No seed or future consumer was promoted. See [35-REFRESH3-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH3-CLOSEOUT.md)
+for acceptance provenance and transition limits.
