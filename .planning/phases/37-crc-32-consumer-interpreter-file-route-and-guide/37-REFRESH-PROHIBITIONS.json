@@ -1,0 +1,178 @@
+{
+  "schema": "schway.phase37.refresh-prohibitions.v1",
+  "captured_utc": "2026-10-16T12:30:00Z",
+  "source_head": "9258a7360222ff17a3267e1ccb873a0dfae79346",
+  "command": "node .planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-prohibition-check.test.cjs --prove",
+  "exit": 0,
+  "summary_log": {
+    "path": "/tmp/schway37-refresh-run/C06.log",
+    "sha256": "67e6a2f2566a08ff9aa6885a6975eecb5673785de9770cc7579963cb6a5207bb"
+  },
+  "canonical_adapter": "check prohibition-enforcement",
+  "projection": "projectProhibitions + descriptorFromProjection",
+  "producer_result": {
+    "status": "green",
+    "flagged": false,
+    "kind": "node-test",
+    "failFirstProof": "violation-fixture"
+  },
+  "descriptor_count": 3,
+  "subjects": [
+    {
+      "id": "native-capture-outcome",
+      "statement": "MUST NOT turn optional capture exhaustion into application success or hide a later checked defect.",
+      "source": "internal/compiler/native/native_app.go",
+      "source_sha256": "0124d35186677f20a88704968de42c32a5d7f0fb6ea850533bd5b891629bac64",
+      "violation_fixture_sha256": "7f38214b22d1748b5290a999c6a6e3ec9b4776596f79b006b2fbfd591c111654",
+      "bad_expected_root": "TestPhase36CaptureOutcomeSeparation",
+      "bad_assertions": [
+        "capture exhaustion changed successful work",
+        "capture exhaustion hid the later defect"
+      ],
+      "modes": {
+        "bad": {
+          "expected_violation_assertion_failures": 1,
+          "other_subject_assertions_pass": 2,
+          "taps": {
+            "tests": 3,
+            "pass": 2,
+            "fail": 1,
+            "skipped": 0
+          },
+          "exit": 1,
+          "interpretation": "expected RED; bad fixture was rejected"
+        },
+        "clean": {
+          "assertions_pass": 3,
+          "taps": {
+            "tests": 3,
+            "pass": 3,
+            "fail": 0,
+            "skipped": 0
+          },
+          "exit": 0
+        },
+        "default": {
+          "assertions_pass": 3,
+          "taps": {
+            "tests": 3,
+            "pass": 3,
+            "fail": 0,
+            "skipped": 0
+          },
+          "exit": 0
+        }
+      }
+    },
+    {
+      "id": "causal-peer-numeric-limit",
+      "statement": "MUST NOT present causal structural acceptance as independent CRC numeric verification.",
+      "source": "internal/compiler/executionpeer/executionpeer.go",
+      "source_sha256": "a884b40df2c5ef2dcb51082d2b6b6400b56bb7d07bf9c72e9a2f7e45a5124ba4",
+      "violation_fixture_sha256": "ca7150830d5d654a71a3dfcce53790efa33d4fe9486ea4e0fc8490b3a360b2d8",
+      "bad_expected_root": "TestPhase36CallCausalAttributionControls",
+      "bad_assertions": [
+        "causal peer should accept the structurally plausible false-success trace; numeric replay is not its claim"
+      ],
+      "modes": {
+        "bad": {
+          "expected_violation_assertion_failures": 1,
+          "other_subject_assertions_pass": 2,
+          "taps": {
+            "tests": 3,
+            "pass": 2,
+            "fail": 1,
+            "skipped": 0
+          },
+          "exit": 1,
+          "interpretation": "expected RED; bad fixture was rejected"
+        },
+        "clean": {
+          "assertions_pass": 3,
+          "taps": {
+            "tests": 3,
+            "pass": 3,
+            "fail": 0,
+            "skipped": 0
+          },
+          "exit": 0
+        },
+        "default": {
+          "assertions_pass": 3,
+          "taps": {
+            "tests": 3,
+            "pass": 3,
+            "fail": 0,
+            "skipped": 0
+          },
+          "exit": 0
+        }
+      }
+    },
+    {
+      "id": "interpreter-filebytes-capture-outcome",
+      "statement": "MUST NOT let capture exhaustion replace the interpreter's actual FileBytes application outcome or prior output.",
+      "source": "internal/compiler/interp/interp.go",
+      "source_sha256": "aba3e9245fb5189527faf0b7e95757bfc8c8c5985f063701b0f697dbdfd2afbd",
+      "violation_fixture_sha256": "de5d195ea4e163baff0dcebedd0654222ad8a24001fad01a3731ae490340119b",
+      "bad_expected_root": "TestPhase37CaptureDisabledOutcomes",
+      "bad_assertions": [
+        "want late defect preserved after evidence exhaustion"
+      ],
+      "modes": {
+        "bad": {
+          "expected_violation_assertion_failures": 1,
+          "other_subject_assertions_pass": 2,
+          "taps": {
+            "tests": 3,
+            "pass": 2,
+            "fail": 1,
+            "skipped": 0
+          },
+          "exit": 1,
+          "interpretation": "expected RED; bad fixture was rejected"
+        },
+        "clean": {
+          "assertions_pass": 3,
+          "taps": {
+            "tests": 3,
+            "pass": 3,
+            "fail": 0,
+            "skipped": 0
+          },
+          "exit": 0
+        },
+        "default": {
+          "assertions_pass": 3,
+          "taps": {
+            "tests": 3,
+            "pass": 3,
+            "fail": 0,
+            "skipped": 0
+          },
+          "exit": 0
+        }
+      }
+    }
+  ],
+  "clean_fixture_sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+  "adapter_sha256": "287d5dd803c040fe8d42ad9161fa2dd635c6d820207c9f961502adfc7e751e88",
+  "producer_stdout_sha256": "6fdefa9dfee70ee1df10d0edb016fc7754732f205590901910cb5a4ca0bbba2a",
+  "proof_artifact": {
+    "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-PROHIBITION-EVIDENCE.md",
+    "sha256": "e68b3c22a884be2d37fb0d194435af7342008f7a4464f8549cab6c20242f732f"
+  },
+  "node_test_C05": {
+    "command": "node --test .planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-prohibition-check.test.cjs",
+    "tests": 3,
+    "pass": 3,
+    "fail": 0,
+    "skipped": 0,
+    "log": {
+      "path": "/tmp/schway37-refresh-run/C05.log",
+      "sha256": "3b716df6ed4ee75b00559f2ff07e9fc95d7f130d3db2af7efb56fb7f8e99cc0a"
+    }
+  },
+  "prohibition_proof_result": "3/3 bad RED subjects detected; all clean/default control subjects green; canonical producer green and unflagged; source-bound temp overlay restoration documented by proof artifact",
+  "skipped_or_missing": []
+}

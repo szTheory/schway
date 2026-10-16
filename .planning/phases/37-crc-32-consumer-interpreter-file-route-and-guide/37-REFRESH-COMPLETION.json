@@ -1,0 +1,21 @@
+{
+  "completed_phase": "37",
+  "phase_name": "crc-32-consumer-interpreter-file-route-and-guide",
+  "plans_executed": "9/9",
+  "next_phase": "38",
+  "next_phase_name": "milestone-receipts",
+  "is_last_phase": false,
+  "date": "2026-10-16",
+  "roadmap_updated": false,
+  "state_updated": true,
+  "requirements_updated": false,
+  "auto_pruned": false,
+  "warnings": [
+    "37-04-SUMMARY.md: references 1 file(s) not on disk: local/adapter.h",
+    "37-05-SUMMARY.md: references 1 file(s) not on disk: hash/crc32.ChecksumIEEE"
+  ],
+  "has_warnings": true,
+  "verification_stale_check_indeterminate": false,
+  "milestone_conflict": null,
+  "preservation_warnings": []
+}

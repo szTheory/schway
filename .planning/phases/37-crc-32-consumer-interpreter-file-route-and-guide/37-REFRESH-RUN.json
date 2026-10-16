@@ -1,0 +1,1611 @@
+{
+  "schema": "schway.phase37.refresh-run.v1",
+  "captured_utc": "2026-10-16T12:30:00Z",
+  "source_head": "9258a7360222ff17a3267e1ccb873a0dfae79346",
+  "host": {
+    "os": "darwin",
+    "arch": "arm64",
+    "go": "go version go1.24.0 darwin/arm64",
+    "node": "v26.10.0"
+  },
+  "scope": "Stale-report gate refresh only. No implementation/worktree/UAT replay. Owner commands remain exact named selectors. No whole-package/project-wide test suite ran.",
+  "workflow": {
+    "activation": "already initiated $gsd-execute-phase 37",
+    "plans": 9,
+    "incomplete_plans": 0,
+    "tasks": 21,
+    "waves": 6,
+    "hook_order": [
+      "validate-phase37",
+      "secure-phase37",
+      "ui-review37",
+      "code-review37-standard",
+      "disposition",
+      "regression"
+    ]
+  },
+  "configuration": {
+    "validation_hook": true,
+    "security_hook": true,
+    "ui_review_hook": true,
+    "code_review_hook": true,
+    "code_review_depth": "standard",
+    "user_settings_preserved": true
+  },
+  "covered_input_fingerprints": {
+    "covered_file_count": 78,
+    "pre_canonical_proof": "v3:sha256:3e444641caf0b9ddd7f5a65dbcc1643ce364b6180a505b1825c12ab2a1d914e5",
+    "post_all_gates": "v3:sha256:4fc4eac54f1e0d7b4e6f1b583763a17ba9f4f7c633b5bf18b841ac4b02750835",
+    "stored_verification_digest": "v3:sha256:8f2ffa83674fe055f0d559781ed6608bf894bc51a8149d96424ed0eb14af0797",
+    "stored_verification_digest_status": "stale before this refresh; verifier-owned report not rewritten",
+    "difference_explanation": "The canonical C06 proof refreshed only the covered 37-PROHIBITION-EVIDENCE.md current-HEAD proof rows; no other covered input changed during these gates.",
+    "proof_receipt_sha256_before": "d69a477cb4a15025dde65630e717f8918d5ccb86d0147a84168f1007730205d8",
+    "proof_receipt_sha256_after": "e68b3c22a884be2d37fb0d194435af7342008f7a4464f8549cab6c20242f732f"
+  },
+  "validation_manifest": {
+    "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-VALIDATION.md",
+    "sha256": "fcd4ccedb7f5abdd0e486f7e7837a7776daa5d6ce6c9e40c8591be5f962b3bbf",
+    "commands_declared": 28,
+    "task_rows": 21,
+    "direct_c_commands_executed": 26,
+    "owner_map_result": "all C01-C28 owner roots either executed directly or covered by current overlapping root unions"
+  },
+  "phase37_owner_counts": {
+    "direct_go_owner_root_executions": 60,
+    "direct_go_owner_root_passed": 60,
+    "direct_owner_failures": 0,
+    "direct_owner_skips": 0,
+    "distinct_root_names_direct": 53,
+    "node_tests_C05": {
+      "tests": 3,
+      "pass": 3,
+      "fail": 0,
+      "skipped": 0
+    },
+    "canonical_prohibition_C06": {
+      "subjects": 3,
+      "modes_per_subject": [
+        "bad",
+        "clean",
+        "default"
+      ],
+      "bad_expected_red_subjects": 3,
+      "clean_expected_green_subjects": 3,
+      "default_expected_green_subjects": 3,
+      "producer": "green, flagged=false, failFirstProof=violation-fixture"
+    },
+    "registry_aux_roots": [
+      {
+        "name": "TestPhase37ValidationCommandRegistry",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0
+      },
+      {
+        "name": "TestPhase37ValidationCommandRegistryControls",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0
+      }
+    ],
+    "registry_negative_controls_reached": 22
+  },
+  "validation_command_results": [
+    {
+      "id": "C01",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase23PublicFileByte|TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus|TestPhase22ConformanceRunStillEmitsExecutionDocument)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase23PublicFileByte|TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus|TestPhase22ConformanceRunStillEmitsExecutionDocument)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase23PublicFileByte",
+        "TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus",
+        "TestPhase22ConformanceRunStillEmitsExecutionDocument"
+      ],
+      "root_execution_count": 3,
+      "root_pass_count": 3,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase23PublicFileByte",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.42
+        },
+        {
+          "name": "TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        },
+        {
+          "name": "TestPhase22ConformanceRunStillEmitsExecutionDocument",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.11
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 0.538,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C01.log",
+          "sha256": "4793dcbcb726a2c766ff1f0386c420bdab6f88191c4bc6c1865faa892e6ce715"
+        }
+      ]
+    },
+    {
+      "id": "C02",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase36NoCallGeneratedCByteBaseline$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase36NoCallGeneratedCByteBaseline$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase36NoCallGeneratedCByteBaseline"
+      ],
+      "root_execution_count": 1,
+      "root_pass_count": 1,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase36NoCallGeneratedCByteBaseline",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 2.38
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 2.389,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C02.log",
+          "sha256": "495417004dfd92707527ca92c582695ca9b2ad2bc65db05d3d67749d1546eaa6"
+        }
+      ]
+    },
+    {
+      "id": "C03",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase37CRC32NativeTracer$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase37CRC32NativeTracer$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37CRC32NativeTracer"
+      ],
+      "root_execution_count": 1,
+      "root_pass_count": 1,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37CRC32NativeTracer",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.27
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 0.281,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C03.log",
+          "sha256": "051a057b7b671d0d5dcf502423e1ffa0977c73d8cbbcaeba4671257853b7f64a"
+        }
+      ]
+    },
+    {
+      "id": "C04",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase37CRC32NativeTracer|TestPhase37CRC32Consumers)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase37CRC32NativeTracer|TestPhase37CRC32Consumers)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37CRC32NativeTracer",
+        "TestPhase37CRC32Consumers"
+      ],
+      "root_execution_count": 2,
+      "root_pass_count": 2,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37CRC32NativeTracer",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.27
+        },
+        {
+          "name": "TestPhase37CRC32Consumers",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.54
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 0.817,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C04.log",
+          "sha256": "36f77eaf5ee40497947103b3502ddf629e54097d5ec84dab8ebe7b9f8aca9b75"
+        }
+      ]
+    },
+    {
+      "id": "C05",
+      "declared_command": "node --test .planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-prohibition-check.test.cjs",
+      "execution": "direct",
+      "executed_command": "node --test .planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-prohibition-check.test.cjs",
+      "expected_named_roots": [],
+      "tap": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      },
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 0.836384,
+      "duration_basis": "Node TAP duration_ms 836.384",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C05.log",
+          "sha256": "3b716df6ed4ee75b00559f2ff07e9fc95d7f130d3db2af7efb56fb7f8e99cc0a"
+        }
+      ]
+    },
+    {
+      "id": "C06",
+      "declared_command": "node .planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-prohibition-check.test.cjs --prove",
+      "execution": "direct",
+      "executed_command": "node .planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-prohibition-check.test.cjs --prove",
+      "expected_named_roots": [],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": null,
+      "duration_basis": "wrapper log retained summary only; duration was not captured",
+      "proof_receipt": {
+        "path": "/Users/jon/projects/schway/.planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-PROHIBITION-EVIDENCE.md",
+        "sha256": "e68b3c22a884be2d37fb0d194435af7342008f7a4464f8549cab6c20242f732f"
+      },
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C06.log",
+          "sha256": "67e6a2f2566a08ff9aa6885a6975eecb5673785de9770cc7579963cb6a5207bb"
+        }
+      ]
+    },
+    {
+      "id": "C07",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp ./internal/compiler/session -run '^(TestPhase37InterpreterFileApplication|TestPhase37CaptureRetentionControls)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp ./internal/compiler/session -run '^(TestPhase37InterpreterFileApplication|TestPhase37CaptureRetentionControls)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37InterpreterFileApplication",
+        "TestPhase37CaptureRetentionControls"
+      ],
+      "root_execution_count": 2,
+      "root_pass_count": 2,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37InterpreterFileApplication",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 1.09
+        },
+        {
+          "name": "TestPhase37CaptureRetentionControls",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 2.42
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 3.524,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C07.log",
+          "sha256": "31877bc432dc4625802d68d9a52e6c2398415b1d63f12c5d0392e28ecd82f1b0"
+        }
+      ]
+    },
+    {
+      "id": "C08",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase37CaptureDisabledOutcomes|TestPhase37FileReaderBasic|TestPhase36InterpreterEvidenceBoundaries|TestPhase321AbortLikeDefectFileRoute)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase37CaptureDisabledOutcomes|TestPhase37FileReaderBasic|TestPhase36InterpreterEvidenceBoundaries|TestPhase321AbortLikeDefectFileRoute)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37CaptureDisabledOutcomes",
+        "TestPhase37FileReaderBasic",
+        "TestPhase36InterpreterEvidenceBoundaries",
+        "TestPhase321AbortLikeDefectFileRoute"
+      ],
+      "root_execution_count": 4,
+      "root_pass_count": 4,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37CaptureDisabledOutcomes",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        },
+        {
+          "name": "TestPhase37FileReaderBasic",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        },
+        {
+          "name": "TestPhase36InterpreterEvidenceBoundaries",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.01
+        },
+        {
+          "name": "TestPhase321AbortLikeDefectFileRoute",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.03
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 0.05,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C08.log",
+          "sha256": "5d1f749a8e9514979709b0cdda3139e1181a3b66337c03dc31e618c5fddbfdb6"
+        }
+      ]
+    },
+    {
+      "id": "C09",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37PublicFileRunTracer|TestPhase37FileRunGrammar|TestPhase37OpaqueFilePaths|TestPhase37FileRunInputBoundary)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37PublicFileRunTracer|TestPhase37FileRunGrammar|TestPhase37OpaqueFilePaths|TestPhase37FileRunInputBoundary)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37PublicFileRunTracer",
+        "TestPhase37FileRunGrammar",
+        "TestPhase37OpaqueFilePaths",
+        "TestPhase37FileRunInputBoundary"
+      ],
+      "root_execution_count": 4,
+      "root_pass_count": 4,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37PublicFileRunTracer",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.3
+        },
+        {
+          "name": "TestPhase37FileRunGrammar",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        },
+        {
+          "name": "TestPhase37OpaqueFilePaths",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.3
+        },
+        {
+          "name": "TestPhase37FileRunInputBoundary",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.29
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 0.898,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C09.log",
+          "sha256": "8c6f534d7c9e63530bc788133f00b9c29dc806b2f262e01199ced9848bd0f28c"
+        }
+      ]
+    },
+    {
+      "id": "C10",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase37FileApplicationAuthority$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase37FileApplicationAuthority$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37FileApplicationAuthority"
+      ],
+      "root_execution_count": 1,
+      "root_pass_count": 1,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37FileApplicationAuthority",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.02
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 0.022,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C10.log",
+          "sha256": "8942ce45eccbe99be4e2db39b78888300c0f3f65ad9be5f747b7a00aff27f66f"
+        }
+      ]
+    },
+    {
+      "id": "C11",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37FileRunOutcomes|TestPhase23PublicFileByte|TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus|TestPhase22ConformanceRunStillEmitsExecutionDocument)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37FileRunOutcomes|TestPhase23PublicFileByte|TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus|TestPhase22ConformanceRunStillEmitsExecutionDocument)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37FileRunOutcomes",
+        "TestPhase23PublicFileByte",
+        "TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus",
+        "TestPhase22ConformanceRunStillEmitsExecutionDocument"
+      ],
+      "root_execution_count": 4,
+      "root_pass_count": 4,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37FileRunOutcomes",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.61
+        },
+        {
+          "name": "TestPhase23PublicFileByte",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.4
+        },
+        {
+          "name": "TestPhase22AppRunKeepsOpaqueTokenStreamsAndChildStatus",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        },
+        {
+          "name": "TestPhase22ConformanceRunStillEmitsExecutionDocument",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.13
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 1.152,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C11.log",
+          "sha256": "408e027e15f1a049e4f520d124443acce1b2890f9d73ed9d1bf2d871a049adf4"
+        }
+      ]
+    },
+    {
+      "id": "C12",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase37FileReaderFaults|TestPhase37FileReaderBoundControls|TestPhase37CaptureRetentionControls|TestPhase37CaptureDisabledOutcomes)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase37FileReaderFaults|TestPhase37FileReaderBoundControls|TestPhase37CaptureRetentionControls|TestPhase37CaptureDisabledOutcomes)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37FileReaderFaults",
+        "TestPhase37FileReaderBoundControls",
+        "TestPhase37CaptureRetentionControls",
+        "TestPhase37CaptureDisabledOutcomes"
+      ],
+      "root_execution_count": 4,
+      "root_pass_count": 4,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37FileReaderFaults",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        },
+        {
+          "name": "TestPhase37FileReaderBoundControls",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        },
+        {
+          "name": "TestPhase37CaptureRetentionControls",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 1.05
+        },
+        {
+          "name": "TestPhase37CaptureDisabledOutcomes",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 1.067,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C12.log",
+          "sha256": "fdfd202f3dce8f3d4083dfa2cf53fc3f5d8906cfb307c12479685a5df0950913"
+        }
+      ]
+    },
+    {
+      "id": "C13",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^(TestPhase37CRC32PhysicalCleanup|TestPhase37CRC32BoundControls|TestPhase37CRC32Sanitizer)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/native -run '^(TestPhase37CRC32PhysicalCleanup|TestPhase37CRC32BoundControls|TestPhase37CRC32Sanitizer)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37CRC32PhysicalCleanup",
+        "TestPhase37CRC32BoundControls",
+        "TestPhase37CRC32Sanitizer"
+      ],
+      "root_execution_count": 3,
+      "root_pass_count": 3,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37CRC32PhysicalCleanup",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.43
+        },
+        {
+          "name": "TestPhase37CRC32BoundControls",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 1.16
+        },
+        {
+          "name": "TestPhase37CRC32Sanitizer",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 1.08
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 2.682,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C13.log",
+          "sha256": "350e871618b8864169e653f76887f2602e75c3a9f8101bb78c6ae1340bcf5b4e"
+        }
+      ]
+    },
+    {
+      "id": "C14",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/testsupport -run '^(TestPhase37CRC32OracleRows|TestPhase37CRC32OracleDriftControls)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/testsupport -run '^(TestPhase37CRC32OracleRows|TestPhase37CRC32OracleDriftControls)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37CRC32OracleRows",
+        "TestPhase37CRC32OracleDriftControls"
+      ],
+      "root_execution_count": 2,
+      "root_pass_count": 2,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37CRC32OracleRows",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        },
+        {
+          "name": "TestPhase37CRC32OracleDriftControls",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 0.009,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C14.log",
+          "sha256": "403264cab624b2faa62b7c604418ba1bedf0351c4dbd3da582dde7575c465881"
+        }
+      ]
+    },
+    {
+      "id": "C15",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37PublicFileMatrix|TestPhase37PublicMatrixDriftControl)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37PublicFileMatrix|TestPhase37PublicMatrixDriftControl)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37PublicFileMatrix",
+        "TestPhase37PublicMatrixDriftControl"
+      ],
+      "root_execution_count": 2,
+      "root_pass_count": 2,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37PublicFileMatrix",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 35.59
+        },
+        {
+          "name": "TestPhase37PublicMatrixDriftControl",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 35.597,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C15.log",
+          "sha256": "a5952a83a3532659ff9469ac5c1ee6c5b4976c81d28d666d40f8adda0c655cfb"
+        }
+      ]
+    },
+    {
+      "id": "C16",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase37CRC32AlgorithmMutants$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase37CRC32AlgorithmMutants$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37CRC32AlgorithmMutants"
+      ],
+      "root_execution_count": 1,
+      "root_pass_count": 1,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37CRC32AlgorithmMutants",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 2.89
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 2.897,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C16.log",
+          "sha256": "75ffdda0ac40d69fd50bbfab76ef32d56acd1a984164046c183e1c93057a4e9c"
+        }
+      ]
+    },
+    {
+      "id": "C17",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase37CRC32LibraryDualFlip$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase37CRC32LibraryDualFlip$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37CRC32LibraryDualFlip"
+      ],
+      "root_execution_count": 1,
+      "root_pass_count": 1,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37CRC32LibraryDualFlip",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 1.46
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 1.464,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C17.log",
+          "sha256": "b96bdfe54f09a8a41e53d32aa28eaa4f2d1ec553c7f3a05381930c838f261966"
+        }
+      ]
+    },
+    {
+      "id": "C18",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase37CRC32SingleCopyAndIdentity$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase37CRC32SingleCopyAndIdentity$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37CRC32SingleCopyAndIdentity"
+      ],
+      "root_execution_count": 1,
+      "root_pass_count": 1,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37CRC32SingleCopyAndIdentity",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 1.67
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 1.679,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C18.log",
+          "sha256": "5b01313cfd1410fd2cabaa5c38be33ffe5e3ec93d950646dbb714f70085bdde0"
+        }
+      ]
+    },
+    {
+      "id": "C19",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase32PublicRouteAudit|TestPhase34SourceRoutePresentation|TestPhase34DiagnosticRouteInventory|TestPhase37FileRunRouteInventoryControls)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase32PublicRouteAudit|TestPhase34SourceRoutePresentation|TestPhase34DiagnosticRouteInventory|TestPhase37FileRunRouteInventoryControls)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase32PublicRouteAudit",
+        "TestPhase34SourceRoutePresentation",
+        "TestPhase34DiagnosticRouteInventory",
+        "TestPhase37FileRunRouteInventoryControls"
+      ],
+      "root_execution_count": 4,
+      "root_pass_count": 4,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase32PublicRouteAudit",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 2.02
+        },
+        {
+          "name": "TestPhase34SourceRoutePresentation",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.01
+        },
+        {
+          "name": "TestPhase34DiagnosticRouteInventory",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.11
+        },
+        {
+          "name": "TestPhase37FileRunRouteInventoryControls",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.1
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 2.25,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C19.log",
+          "sha256": "5bdda48227f67693636dfbf02d53b81bdc29f4fe3abd1f767952d083867c462d"
+        }
+      ]
+    },
+    {
+      "id": "C20",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestExitCodeDocsTable|TestPhase37FileRunExitContract)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestExitCodeDocsTable|TestPhase37FileRunExitContract)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestExitCodeDocsTable",
+        "TestPhase37FileRunExitContract"
+      ],
+      "root_execution_count": 2,
+      "root_pass_count": 2,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestExitCodeDocsTable",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        },
+        {
+          "name": "TestPhase37FileRunExitContract",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 0.008,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C20.log",
+          "sha256": "be699db8f24c498ad24d20f763103e7aa069631d84adb9a35731600160bfc3c3"
+        }
+      ]
+    },
+    {
+      "id": "C21",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase34SurfaceLimitConsumers|TestPhase37FileRouteSurfaceFacts)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase34SurfaceLimitConsumers|TestPhase37FileRouteSurfaceFacts)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase34SurfaceLimitConsumers",
+        "TestPhase37FileRouteSurfaceFacts"
+      ],
+      "root_execution_count": 2,
+      "root_pass_count": 2,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase34SurfaceLimitConsumers",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.01
+        },
+        {
+          "name": "TestPhase37FileRouteSurfaceFacts",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.06
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 0.076,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C21.log",
+          "sha256": "efad204d91ec5d9a49ac47c22662ff38c20ed44b0c1154e8a3ad7486a9ed9c13"
+        }
+      ]
+    },
+    {
+      "id": "C22",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase37GuideCleanCheckout$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^TestPhase37GuideCleanCheckout$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37GuideCleanCheckout"
+      ],
+      "root_execution_count": 1,
+      "root_pass_count": 1,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37GuideCleanCheckout",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 15.01
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 15.011,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C22.log",
+          "sha256": "debbf7a5d5341cd61ac9efa43ae17dd924e697d6bcf0d31d26dba14402dd8ff0"
+        }
+      ]
+    },
+    {
+      "id": "C23",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37GuideMatchesExpectedJSON|TestPhase37GuideParserNegativeControls|TestPhase32GuideCleanCheckout|TestPhase32GuideMatchesExpectedJSON|TestPhase32GuideParserNegativeControls)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37GuideMatchesExpectedJSON|TestPhase37GuideParserNegativeControls|TestPhase32GuideCleanCheckout|TestPhase32GuideMatchesExpectedJSON|TestPhase32GuideParserNegativeControls)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase37GuideMatchesExpectedJSON",
+        "TestPhase37GuideParserNegativeControls",
+        "TestPhase32GuideCleanCheckout",
+        "TestPhase32GuideMatchesExpectedJSON",
+        "TestPhase32GuideParserNegativeControls"
+      ],
+      "root_execution_count": 5,
+      "root_pass_count": 5,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase37GuideMatchesExpectedJSON",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        },
+        {
+          "name": "TestPhase37GuideParserNegativeControls",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.53
+        },
+        {
+          "name": "TestPhase32GuideCleanCheckout",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 2.61
+        },
+        {
+          "name": "TestPhase32GuideMatchesExpectedJSON",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        },
+        {
+          "name": "TestPhase32GuideParserNegativeControls",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.0
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 3.146,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C23.log",
+          "sha256": "f4489748f5c59e3640e96beee48480631735a856259b60352777dcc4ba7467c6"
+        }
+      ]
+    },
+    {
+      "id": "C24",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./cmd/schway -run '^(TestPhase37GuideCleanCheckout|TestPhase37GuideMatchesExpectedJSON|TestPhase37GuideParserNegativeControls)$' -count=1 -v -timeout=600s",
+      "execution": "owner_roots_covered_by_current_superset_or_union; exact command not rerun",
+      "exact_command_executed": false,
+      "expected_named_roots": [
+        "TestPhase37GuideCleanCheckout",
+        "TestPhase37GuideMatchesExpectedJSON",
+        "TestPhase37GuideParserNegativeControls"
+      ],
+      "covered_roots": [
+        {
+          "name": "TestPhase37GuideCleanCheckout",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C22"
+          ]
+        },
+        {
+          "name": "TestPhase37GuideMatchesExpectedJSON",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C23"
+          ]
+        },
+        {
+          "name": "TestPhase37GuideParserNegativeControls",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C23"
+          ]
+        }
+      ],
+      "root_name_count": 3,
+      "root_names_covered": 3,
+      "missing_fail_skip": [],
+      "result": "passed_by_current_root_union",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C22.log",
+          "sha256": "debbf7a5d5341cd61ac9efa43ae17dd924e697d6bcf0d31d26dba14402dd8ff0"
+        },
+        {
+          "path": "/tmp/schway37-refresh-run/C23.log",
+          "sha256": "f4489748f5c59e3640e96beee48480631735a856259b60352777dcc4ba7467c6"
+        }
+      ]
+    },
+    {
+      "id": "C25",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase34PreChangeCProgramGolden|TestPhase34PreChangeCGoldenIsNotInert|TestPhase36NoCallGeneratedCByteBaseline|TestPhase36NoCallGeneratedCByteBaselineControls)$' -count=1 -v -timeout=600s",
+      "execution": "owner_roots_covered_by_current_superset_or_union; exact command not rerun",
+      "exact_command_executed": false,
+      "expected_named_roots": [
+        "TestPhase34PreChangeCProgramGolden",
+        "TestPhase34PreChangeCGoldenIsNotInert",
+        "TestPhase36NoCallGeneratedCByteBaseline",
+        "TestPhase36NoCallGeneratedCByteBaselineControls"
+      ],
+      "covered_roots": [
+        {
+          "name": "TestPhase34PreChangeCProgramGolden",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C26"
+          ]
+        },
+        {
+          "name": "TestPhase34PreChangeCGoldenIsNotInert",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C26"
+          ]
+        },
+        {
+          "name": "TestPhase36NoCallGeneratedCByteBaseline",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C26"
+          ]
+        },
+        {
+          "name": "TestPhase36NoCallGeneratedCByteBaselineControls",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C26"
+          ]
+        }
+      ],
+      "root_name_count": 4,
+      "root_names_covered": 4,
+      "missing_fail_skip": [],
+      "result": "passed_by_current_root_union",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C26.log",
+          "sha256": "4a0c1079cd6cfb24e9ca65b16a9283f24fa785c551ca1f2df5a8449015781d75"
+        }
+      ]
+    },
+    {
+      "id": "C26",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase34PreChangeCProgramGolden|TestPhase34PreChangeCGoldenIsNotInert|TestPhase36NoCallGeneratedCByteBaseline|TestPhase36NoCallGeneratedCByteBaselineControls|TestPhase37Phase34AdditionLedgerControls|TestPhase37Phase36AdditionLedgerControls)$' -count=1 -v -timeout=600s",
+      "execution": "direct",
+      "executed_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase34PreChangeCProgramGolden|TestPhase34PreChangeCGoldenIsNotInert|TestPhase36NoCallGeneratedCByteBaseline|TestPhase36NoCallGeneratedCByteBaselineControls|TestPhase37Phase34AdditionLedgerControls|TestPhase37Phase36AdditionLedgerControls)$' -count=1 -v -timeout=600s",
+      "expected_named_roots": [
+        "TestPhase34PreChangeCProgramGolden",
+        "TestPhase34PreChangeCGoldenIsNotInert",
+        "TestPhase36NoCallGeneratedCByteBaseline",
+        "TestPhase36NoCallGeneratedCByteBaselineControls",
+        "TestPhase37Phase34AdditionLedgerControls",
+        "TestPhase37Phase36AdditionLedgerControls"
+      ],
+      "root_execution_count": 6,
+      "root_pass_count": 6,
+      "root_fail_count": 0,
+      "root_skip_count": 0,
+      "roots": [
+        {
+          "name": "TestPhase34PreChangeCProgramGolden",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.38
+        },
+        {
+          "name": "TestPhase34PreChangeCGoldenIsNotInert",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.41
+        },
+        {
+          "name": "TestPhase36NoCallGeneratedCByteBaseline",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 2.57
+        },
+        {
+          "name": "TestPhase36NoCallGeneratedCByteBaselineControls",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 2.72
+        },
+        {
+          "name": "TestPhase37Phase34AdditionLedgerControls",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.04
+        },
+        {
+          "name": "TestPhase37Phase36AdditionLedgerControls",
+          "run": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0,
+          "test_reported_seconds": 0.03
+        }
+      ],
+      "exit": 0,
+      "result": "passed",
+      "duration_seconds": 6.173,
+      "duration_basis": "sum of exact Go package ok-duration lines; command wrapper wall duration was not captured",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C26.log",
+          "sha256": "4a0c1079cd6cfb24e9ca65b16a9283f24fa785c551ca1f2df5a8449015781d75"
+        }
+      ]
+    },
+    {
+      "id": "C27",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase37CRC32NativeTracer|TestPhase37CRC32Consumers|TestPhase37CRC32SingleCopyAndIdentity|TestPhase37CRC32ByteHelperCalls|TestPhase34PreChangeCProgramGolden|TestPhase34PreChangeCGoldenIsNotInert|TestPhase36NoCallGeneratedCByteBaseline|TestPhase36NoCallGeneratedCByteBaselineControls|TestPhase37Phase34AdditionLedgerControls|TestPhase37Phase36AdditionLedgerControls)$' -count=1 -v -timeout=600s",
+      "execution": "owner_roots_covered_by_current_superset_or_union; exact command not rerun",
+      "exact_command_executed": false,
+      "expected_named_roots": [
+        "TestPhase37CRC32NativeTracer",
+        "TestPhase37CRC32Consumers",
+        "TestPhase37CRC32SingleCopyAndIdentity",
+        "TestPhase37CRC32ByteHelperCalls",
+        "TestPhase34PreChangeCProgramGolden",
+        "TestPhase34PreChangeCGoldenIsNotInert",
+        "TestPhase36NoCallGeneratedCByteBaseline",
+        "TestPhase36NoCallGeneratedCByteBaselineControls",
+        "TestPhase37Phase34AdditionLedgerControls",
+        "TestPhase37Phase36AdditionLedgerControls"
+      ],
+      "covered_roots": [
+        {
+          "name": "TestPhase37CRC32NativeTracer",
+          "run_count_across_referenced_logs": 2,
+          "pass_count_across_referenced_logs": 2,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C03",
+            "C04"
+          ]
+        },
+        {
+          "name": "TestPhase37CRC32Consumers",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C04"
+          ]
+        },
+        {
+          "name": "TestPhase37CRC32SingleCopyAndIdentity",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C18"
+          ]
+        },
+        {
+          "name": "TestPhase37CRC32ByteHelperCalls",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C27-UNIQUE"
+          ]
+        },
+        {
+          "name": "TestPhase34PreChangeCProgramGolden",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C26"
+          ]
+        },
+        {
+          "name": "TestPhase34PreChangeCGoldenIsNotInert",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C26"
+          ]
+        },
+        {
+          "name": "TestPhase36NoCallGeneratedCByteBaseline",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C26"
+          ]
+        },
+        {
+          "name": "TestPhase36NoCallGeneratedCByteBaselineControls",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C26"
+          ]
+        },
+        {
+          "name": "TestPhase37Phase34AdditionLedgerControls",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C26"
+          ]
+        },
+        {
+          "name": "TestPhase37Phase36AdditionLedgerControls",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C26"
+          ]
+        }
+      ],
+      "root_name_count": 10,
+      "root_names_covered": 10,
+      "missing_fail_skip": [],
+      "result": "passed_by_current_root_union",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C03.log",
+          "sha256": "051a057b7b671d0d5dcf502423e1ffa0977c73d8cbbcaeba4671257853b7f64a"
+        },
+        {
+          "path": "/tmp/schway37-refresh-run/C04.log",
+          "sha256": "36f77eaf5ee40497947103b3502ddf629e54097d5ec84dab8ebe7b9f8aca9b75"
+        },
+        {
+          "path": "/tmp/schway37-refresh-run/C18.log",
+          "sha256": "5b01313cfd1410fd2cabaa5c38be33ffe5e3ec93d950646dbb714f70085bdde0"
+        },
+        {
+          "path": "/tmp/schway37-refresh-run/C26.log",
+          "sha256": "4a0c1079cd6cfb24e9ca65b16a9283f24fa785c551ca1f2df5a8449015781d75"
+        },
+        {
+          "path": "/tmp/schway37-refresh-run/C27-UNIQUE.log",
+          "sha256": "c72ac65986c0c02639071463a4234dd455715954d75a26afb8dd16ddb737d34d"
+        }
+      ]
+    },
+    {
+      "id": "C28",
+      "declared_command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/interp -run '^(TestPhase37CaptureRetentionControls|TestPhase37CaptureRetentionMutationTarget|TestPhase37CaptureDisabledOutcomes|TestPhase37FileReaderFaults|TestPhase37FileReaderBoundControls|TestPhase37FileReaderMutationControls|TestPhase37FileReaderMutationTarget)$' -count=1 -v -timeout=600s",
+      "execution": "owner_roots_covered_by_current_superset_or_union; exact command not rerun",
+      "exact_command_executed": false,
+      "expected_named_roots": [
+        "TestPhase37CaptureRetentionControls",
+        "TestPhase37CaptureRetentionMutationTarget",
+        "TestPhase37CaptureDisabledOutcomes",
+        "TestPhase37FileReaderFaults",
+        "TestPhase37FileReaderBoundControls",
+        "TestPhase37FileReaderMutationControls",
+        "TestPhase37FileReaderMutationTarget"
+      ],
+      "covered_roots": [
+        {
+          "name": "TestPhase37CaptureRetentionControls",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C12"
+          ]
+        },
+        {
+          "name": "TestPhase37CaptureRetentionMutationTarget",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C28-UNIQUE"
+          ]
+        },
+        {
+          "name": "TestPhase37CaptureDisabledOutcomes",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C12"
+          ]
+        },
+        {
+          "name": "TestPhase37FileReaderFaults",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C12"
+          ]
+        },
+        {
+          "name": "TestPhase37FileReaderBoundControls",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C12"
+          ]
+        },
+        {
+          "name": "TestPhase37FileReaderMutationControls",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C28-UNIQUE"
+          ]
+        },
+        {
+          "name": "TestPhase37FileReaderMutationTarget",
+          "run_count_across_referenced_logs": 1,
+          "pass_count_across_referenced_logs": 1,
+          "fail_count": 0,
+          "skip_count": 0,
+          "evidence_logs": [
+            "C28-UNIQUE"
+          ]
+        }
+      ],
+      "root_name_count": 7,
+      "root_names_covered": 7,
+      "missing_fail_skip": [],
+      "result": "passed_by_current_root_union",
+      "raw_logs": [
+        {
+          "path": "/tmp/schway37-refresh-run/C12.log",
+          "sha256": "fdfd202f3dce8f3d4083dfa2cf53fc3f5d8906cfb307c12479685a5df0950913"
+        },
+        {
+          "path": "/tmp/schway37-refresh-run/C28-UNIQUE.log",
+          "sha256": "7c6f95d6253d1adeedd507faea3159ada49d27ffb86a4136b716bf25fe91e12d"
+        }
+      ]
+    }
+  ],
+  "auxiliary_current_check": {
+    "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase37ValidationCommandRegistry|TestPhase37ValidationCommandRegistryControls)$' -count=1 -v -timeout=600s",
+    "path": "/tmp/schway37-refresh-validation-registry.log",
+    "sha256": "9b82acb003112760a6afc67fdb26b6a1fa6a91bed78f55c1acb03135273cfe54",
+    "exit": 0,
+    "roots": [
+      {
+        "name": "TestPhase37ValidationCommandRegistry",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0
+      },
+      {
+        "name": "TestPhase37ValidationCommandRegistryControls",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0
+      }
+    ],
+    "negative_controls_expected_refusals": 22,
+    "negative_controls_skips": 0,
+    "seconds": 0.107
+  },
+  "reviewed_source_delta": {
+    "baseline_commit": "b900dfe31abb600a82b31ab6e8cc2a8b9b1e74ca",
+    "reviewed_files": {
+      "cmd/schway/main.go": "bf729e9ccc1169df3d8067e3d9244ba4d7b15db1e9435637ab5b30f33a956086",
+      "examples/crc32/README.md": "ec66ce49a3e88d6fe20c1760c8b750bb15840a4b39c24dae0fa2cb5a31429242",
+      "examples/crc32/lib/crc32.schway": "ce98ba7b055625c0e5a627f7d769cfbba948695755aeadb471578153fdea3707",
+      "internal/compiler/cgen/cgen_program.go": "d2de11e73c39a13d99ca3087f4366711d0ade28ff550cfa9ea45b31eccc281e0",
+      "internal/compiler/executionpeer/executionpeer.go": "a884b40df2c5ef2dcb51082d2b6b6400b56bb7d07bf9c72e9a2f7e45a5124ba4"
+    },
+    "finding_count": 0,
+    "finding_status": "no new actionable findings; historical WR-01 remains fixed by existing 37-REVIEW-FIX/DISPOSITION",
+    "readout": "CLI grammar and CRC consumer/docs changes match current route, byte-helper, matrix and guide checks. The current cgen/executionpeer seams were reviewed against bounded compiler/native/peer regression roots; no change is made to source or tests."
+  },
+  "security_gate": {
+    "status": "preserved byte-identical",
+    "register": "31/31 closed, 0 open; 30 mitigated and one previously accepted T-37-07 limitation",
+    "contract": "authored L1 threat register with zero open threats takes the secure-phase short-circuit; refreshed current prohibition proof, validation roots and bounded regression found no new threat or mitigation gap",
+    "artifact_sha256": "d4dad33e5ce8b31a292be6844b0dc05d66bcfc237607d4be03ec76bb3c8fcccc"
+  },
+  "ui_gate": {
+    "status": "preserved byte-identical",
+    "finding": "no frontend/UI-spec/screen surface; six pillars remain N/A",
+    "artifact_sha256": "2677ecbc7adcbf218983d829f0f37e43e5d18aa989bf9a09d123725759571ae7"
+  },
+  "disposition_gate": {
+    "status": "preserved byte-identical",
+    "historical_finding": "WR-01 fixed; open findings remain 0",
+    "artifact_sha256": "d0e3a46b6ced61d678cd1a7c45a2f2960e36ff4f0070a74c1b344a344f5adeac"
+  },
+  "raw_log_root": "/tmp/schway37-refresh-run",
+  "missing_fail_skip_information": {
+    "missing_expected_roots": 0,
+    "failed_roots": 0,
+    "skipped_roots": 0,
+    "missing_logs": 0,
+    "duration_capture_gaps": [
+      "C06 canonical proof wrapper duration; artifact records exact subject outcomes but original wrapper log retained summary only",
+      "initial C01-C22 wrapper wall durations; raw Go/package and TAP durations remain recorded"
+    ]
+  },
+  "artifact_writes": [
+    "37-PROHIBITION-EVIDENCE.md (canonical C06 current-head proof receipt only)",
+    "37-REFRESH-RUN.json"
+  ]
+}

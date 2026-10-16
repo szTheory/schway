@@ -6,11 +6,11 @@ current_phase: 38
 current_phase_name: Milestone Receipts
 current_plan: Not started
 status: planning
-stopped_at: Phase 36 verified; next freshness Phase 37, then audit
-last_updated: "2026-10-16T04:10:02.409Z"
+stopped_at: Phase 37 verified; mandatory M007 audit before Phase 38
+last_updated: "2026-10-16T12:48:06.457Z"
 last_activity: 2026-10-16
-last_activity_desc: Phase 36 verified 32/32; next freshness Phase 37
-state_head: 52cdc9954297e0d002d4fa8ca20fe444ddb32f85
+last_activity_desc: Phase 37 verified 14/14; next mandatory M007 audit
+state_head: 9258a7360222ff17a3267e1ccb873a0dfae79346
 progress:
   total_phases: 6
   completed_phases: 5
@@ -57,7 +57,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 37 freshness gate, then re-query and M007 audit before Phase 38
+**Current focus:** Mandatory M007 audit and gap closure before Phase 38
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -128,13 +128,13 @@ plans.
 Phase: 38 — Milestone Receipts
 Current Plan: Not started
 Total Plans in Phase: 0
-Status: Ready for Phase 37 freshness and audit before Phase 38 planning
-Last activity: 2026-10-16 — Phase 36 verified 32/32; next freshness Phase 37
+Status: Ready for mandatory M007 audit before Phase 38 planning
+Last activity: 2026-10-16 — Phase 37 verified 14/14; next mandatory M007 audit
 
 Progress: [████████░░] 83%
 
 Implementation: 38/38 authored plans complete; Phase 38 remains unplanned.
-Current verification: phases 33/34/35/36 passed; Phase 37 stale.
+Current verification: phases 33/34/35/36/37 passed; Phase 38 unplanned.
 
 ## M007 Planning
 
@@ -1183,10 +1183,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-16T04:10:32.928Z
-Stopped at: Phase 36 verified; next freshness Phase 37, then audit
+Last session: 2026-10-16T12:48:06Z
+Stopped at: Phase 37 verified; mandatory M007 audit before Phase 38
 Resume file: None
-Next action: `$gsd-execute-phase 37` (gates/verifier only), then re-query; mandatory M007 audit/gap closure including CR-03/04/06 precedes Phase 38
+Next action: `$gsd-audit-milestone`; explicitly resolve CR-03/04/06 and any resulting gaps before Phase 38 planning/freeze/hosted binding
 
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
@@ -1620,3 +1620,37 @@ preserved. Three ranked capabilities and scoped dormant-seed dispositions are
 recorded in [36-REFRESH3-TRANSITION.md](phases/36-scalar-helper-calls/36-REFRESH3-TRANSITION.md);
 [36-REFRESH3-CLOSEOUT.md](phases/36-scalar-helper-calls/36-REFRESH3-CLOSEOUT.md)
 records the acceptance and completion evidence. This invocation stops here.
+
+## Phase 37 freshness closeout handoff — 2026-10-16
+
+All nine plans, 21 tasks and six waves remain complete; no implementation or
+completed UAT replay. Independent verification passes 14/14 distinct truths,
+27/27 artifacts, 23/23 manually traced links and 24/24 decisions. Its 96-input
+fingerprint is v3:sha256:a54740a6c2f3d7f6f36f6fc2370f7cebe1ce9cff65f576283d4a5c78b5900ba8.
+Fresh acceptance covers C01–C28 with 60 direct Go owner root executions,
+3/3 Node TAP tests and all three bad RED/clean/default GREEN prohibitions.
+The registry guard passes two roots and reaches 22 refusal controls. Bounded
+regression passes 252 executions / 251 package-name selectors / 240 distinct
+names / 16 groups, zero missing/fail/skip and 182 inputs with zero drift.
+The verifier independently checks log/input hashes, scalar defect and causal
+attribution roots, plus both report-groundedness guards. Security retains
+31 closed dispositions, UI is N/A, and current review adds no finding.
+
+Canonical phase.complete ran once. The two repeated summary scanner warnings
+are include-label local/adapter.h and standard-library symbol
+hash/crc32.ChecksumIEEE; their actual artifacts and owner tests passed.
+Fresh init.progress reports 33/34/35/36/37 passed and 38 unplanned. Next
+command: `$gsd-audit-milestone`, then scoped gap closure before Phase 38.
+CR-03/04/06 remain deferred BLOCKER obligations; WR-02 remains separate
+comment debt. Generic state.json projects next-unimplemented Phase 38,
+which does not bypass the audit prerequisite. Strict state validation has
+only expected S004 for the absent unplanned Phase 38 directory.
+
+37-REFRESH-CLOSEOUT.md and 37-REFRESH-COMPLETION.json record acceptance and
+completion. 37-REFRESH-TRANSITION.md records the unchanged ranked next three
+capabilities and dormant seed dispositions. Shared living documents need no
+status-only rewrite. No source/tests/fixtures, hosted receipts, dependency,
+backend or language admission changed. No full local suite, Linux/hosted
+result, human-readability or latency-distribution claim follows. Preserve
+user config edits and persistent settings; ephemeral auto-chain is false.
+This invocation stops at Phase 37 closeout.
