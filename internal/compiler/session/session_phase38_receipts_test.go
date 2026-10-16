@@ -233,6 +233,10 @@ func TestPhase38ProducerInventoryControls(t *testing.T) {
 		if got.exit != 0 || !strings.Contains(got.stdout, "phase38 binding: status=pass") {
 			t.Fatalf("binding parser rejected real go-test-json package lifecycle: exit=%d stdout=%q stderr=%q", got.exit, got.stdout, got.stderr)
 		}
+
+		wrongPackage := phase38MutateGoJSONPackage(t, raw, names)
+		wrongFixture := phase38NewBindingFixtureForControl(t, "codedigest", "./internal/compiler/session", "^TestPhase32CodeDigest$", names, wrongPackage)
+		phase38RequireRefusal(t, phase38RunBinding(t, wrongFixture, wrongFixture.run, wrongFixture.linuxLog, wrongFixture.macosLog), "control_event_inventory")
 	})
 
 	fixture := phase38NewBindingFixture(t)
@@ -301,9 +305,21 @@ func TestPhase38ProducerInventoryControls(t *testing.T) {
 			t.Fatalf("one-control diagnostic claimed a complete host receipt: %q", got.stdout)
 		}
 		_, names := phase38CaptureProducerOutput(t, got.stdout, "codedigest")
-		_, actualNames := phase38CaptureGoJSON(t, "./internal/compiler/session", "^TestPhase32CodeDigest$")
+		realJSON, actualNames := phase38CaptureGoJSON(t, "./internal/compiler/session", "^TestPhase32CodeDigest$")
 		if !reflect.DeepEqual(names, actualNames) {
 			t.Fatalf("producer and actual go test event names differ: producer=%v actual=%v", names, actualNames)
+		}
+
+		wrongPackage := phase38MutateGoJSONPackage(t, realJSON, actualNames)
+		wrongEnv := phase38ProducerJSONMutationEnv(t, wrongPackage)
+		wrongEnv = phase38EnvWith(wrongEnv, "PHASE38_TEST_CONTROL_CAPTURE", "codedigest")
+		wrongEnv = phase38EnvWith(wrongEnv, "PHASE38_RUN_ID", "9001")
+		wrongEnv = phase38EnvWith(wrongEnv, "PHASE38_RUN_ATTEMPT", "1")
+		wrong := phase33RunAtEnv(t, testsupport.ProjectPath(), "scripts/verify-phase32.sh", wrongEnv, "--milestone", "M007")
+		if wrong.exit == 0 || !strings.Contains(wrong.stdout+wrong.stderr, "malformed JSON event: codedigest") ||
+			!strings.Contains(wrong.stdout+wrong.stderr, "control_inventory_failed") ||
+			strings.Contains(wrong.stdout, "phase38 control name=codedigest") {
+			t.Fatalf("producer parser accepted real Go JSON with a wrong Package field: exit=%d stdout=%q stderr=%q", wrong.exit, wrong.stdout, wrong.stderr)
 		}
 	})
 }
@@ -940,6 +956,107 @@ func phase38CaptureGoJSON(t *testing.T, packageName, pattern string) ([]byte, []
 		}
 	}
 	return bytes.Clone(stdout.Bytes()), names
+}
+
+func phase38MutateGoJSONPackage(t *testing.T, raw []byte, names []string) []byte {
+	t.Helper()
+	if len(raw) == 0 || !bytes.HasSuffix(raw, []byte("\n")) {
+		t.Fatal("real Go JSON capture is empty or incomplete")
+	}
+	if len(names) == 0 {
+		t.Fatal("real Go JSON capture has no test run names")
+	}
+	originalSignatures := phase38GoJSONRunPassSignatures(t, raw)
+	if len(originalSignatures) == 0 {
+		t.Fatal("real Go JSON capture has no run/pass test events")
+	}
+	var mutated bytes.Buffer
+	packageFields := 0
+	for _, line := range bytes.Split(bytes.TrimSuffix(raw, []byte("\n")), []byte("\n")) {
+		var item map[string]json.RawMessage
+		if err := json.Unmarshal(line, &item); err != nil {
+			t.Fatalf("real Go JSON event is invalid before package mutation: %v", err)
+		}
+		if _, ok := item["Package"]; !ok {
+			t.Fatal("real Go JSON event omits Package")
+		}
+		item["Package"] = json.RawMessage(`"wrong/package"`)
+		encoded, err := json.Marshal(item)
+		if err != nil {
+			t.Fatalf("could not encode wrong-package Go JSON event: %v", err)
+		}
+		mutated.Write(encoded)
+		mutated.WriteByte('\n')
+		packageFields++
+	}
+	if packageFields == 0 {
+		t.Fatal("real Go JSON capture had no package fields to mutate")
+	}
+	result := mutated.Bytes()
+	if !reflect.DeepEqual(originalSignatures, phase38GoJSONRunPassSignatures(t, result)) {
+		t.Fatal("Package mutation changed Go JSON run/pass event identities")
+	}
+	for _, name := range names {
+		if !phase38HasJSONSignature(originalSignatures, "run", name) || !phase38HasJSONSignature(originalSignatures, "pass", name) {
+			t.Fatalf("real Go JSON capture lacks a run/pass pair for %q", name)
+		}
+	}
+	return bytes.Clone(result)
+}
+
+func phase38GoJSONRunPassSignatures(t *testing.T, raw []byte) []string {
+	t.Helper()
+	var signatures []string
+	for _, line := range bytes.Split(bytes.TrimSuffix(raw, []byte("\n")), []byte("\n")) {
+		var item struct {
+			Action string `json:"Action"`
+			Test   string `json:"Test"`
+		}
+		if err := json.Unmarshal(line, &item); err != nil {
+			t.Fatalf("Go JSON event is invalid while checking run/pass names: %v", err)
+		}
+		if item.Action == "run" || item.Action == "pass" {
+			signatures = append(signatures, item.Action+"\x00"+item.Test)
+		}
+	}
+	return signatures
+}
+
+func phase38HasJSONSignature(signatures []string, action, name string) bool {
+	for _, signature := range signatures {
+		if signature == action+"\x00"+name {
+			return true
+		}
+	}
+	return false
+}
+
+func phase38ProducerJSONMutationEnv(t *testing.T, raw []byte) []string {
+	t.Helper()
+	goBinary, err := exec.LookPath("go")
+	if err != nil {
+		t.Fatalf("could not locate Go for producer JSON mutation control: %v", err)
+	}
+	fakeBin := t.TempDir()
+	jsonPath := filepath.Join(fakeBin, "real-go-test.json")
+	if err := os.WriteFile(jsonPath, raw, 0o600); err != nil {
+		t.Fatalf("could not save mutated real Go JSON capture: %v", err)
+	}
+	fakeGo := filepath.Join(fakeBin, "go")
+	script := "#!/bin/sh\n" +
+		"if [ \"$1\" = test ] && [ \"$2\" = -json ]; then\n" +
+		"  cat \"$PHASE38_TEST_JSON\"\n" +
+		"  exit $?\n" +
+		"fi\n" +
+		"exec \"$PHASE38_REAL_GO\" \"$@\"\n"
+	if err := os.WriteFile(fakeGo, []byte(script), 0o755); err != nil {
+		t.Fatalf("could not create bounded Go JSON mutation wrapper: %v", err)
+	}
+	env := phase38EnvWith(os.Environ(), "PATH", fakeBin+":"+os.Getenv("PATH"))
+	env = phase38EnvWith(env, "PHASE38_REAL_GO", goBinary)
+	env = phase38EnvWith(env, "PHASE38_TEST_JSON", jsonPath)
+	env = phase38EnvWith(env, "GOCACHE", "/tmp/ai-lang-verification-gocache")
+	return env
 }
 
 func phase38CaptureProducerOutput(t *testing.T, output, control string) ([]byte, []string) {
