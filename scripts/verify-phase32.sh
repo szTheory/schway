@@ -111,6 +111,10 @@ printf '%s toolchain go="%s" clang="%s"\n' "$receipt_label" "$go_version" "$clan
 
 case_table=$(grep '^# case ' "$receipt_manifest" || true)
 [ -n "$case_table" ] || fail "case table is empty" "case_table_empty"
+if [ "$m007_mode" = true ]; then
+	case_table=$(grep '^# case ' "$verify_root/testdata/receipts/M006.manifest" || true)
+	command -v python3 >/dev/null 2>&1 || fail "Python 3 is required for M007 JSON event capture" "unavailable_tool_python3"
+fi
 table_count=$(printf '%s\n' "$case_table" | grep -c '^# case ')
 
 schway="$verify_tmp/schway"
@@ -204,10 +208,156 @@ run_control() {
 	printf '%s control name=%s package=%s tests=%s status=pass\n' "$receipt_label" "$name" "$pkg" "$*"
 	control_count=$((control_count + 1))
 }
-run_control guide ./cmd/schway '^TestPhase32GuideCleanCheckout$' TestPhase32GuideCleanCheckout
-run_control route-audit ./cmd/schway '^TestPhase32PublicRouteAudit$' TestPhase32PublicRouteAudit
-run_control codedigest ./internal/compiler/session '^TestPhase32CodeDigest$' TestPhase32CodeDigest
-run_control receipt-rules ./internal/compiler/session '^TestPhase32ReceiptLivingClaims$' TestPhase32ReceiptLivingClaims
+if [ "$m007_mode" = true ]; then
+	if python3 - "$verify_root" "$receipt_manifest" >"$verify_tmp/m007-inventory.log" <<'PY'
+import json
+import pathlib
+import subprocess
+import sys
+import tempfile
+import time
+
+root = pathlib.Path(sys.argv[1])
+manifest = pathlib.Path(sys.argv[2])
+controls = None
+roots = {}
+events = {}
+cases = []
+reached = []
+for line in manifest.read_text(encoding="utf-8").splitlines():
+	if line.startswith("controls="):
+		controls = line[len("controls="):].split(",")
+	elif line.startswith("# root "):
+		_, _, name, package, pattern = line.split()
+		if name in roots:
+			raise SystemExit("duplicate root " + name)
+		roots[name] = (package, pattern)
+	elif line.startswith("# event "):
+		_, _, name, test = line.split()
+		events.setdefault(name, []).append(test)
+	elif line.startswith("# case "):
+		fields = line.split(maxsplit=6)
+		if len(fields) != 7:
+			raise SystemExit("malformed case row")
+		cases.append((fields[2], fields[3], fields[4], fields[5], fields[6], line))
+	elif line.startswith("# reached "):
+		fields = line.split()
+		if len(fields) != 6:
+			raise SystemExit("malformed reached row")
+		reached.append(tuple(fields[2:]))
+if not controls or set(controls) != set(roots) or set(events) != set(controls):
+	raise SystemExit("control/root/event inventories differ")
+
+passed = {}
+def unique_object(pairs):
+	result = {}
+	for key, value in pairs:
+		if key in result:
+			raise SystemExit("duplicate JSON field in control output")
+		result[key] = value
+	return result
+
+for name in controls:
+	package, pattern = roots[name]
+	expected = events[name]
+	if not expected or len(set(expected)) != len(expected):
+		raise SystemExit("empty or duplicate expected event for " + name)
+	tmp = tempfile.TemporaryFile()
+	command = ["go", "test", "-json", "-count=1", "-timeout=600s", "-run", pattern, package]
+	try:
+		proc = subprocess.Popen(command, cwd=root, stdout=tmp, stderr=subprocess.STDOUT)
+		start = time.monotonic()
+		while proc.poll() is None:
+			if time.monotonic() - start > 660:
+				proc.kill()
+				proc.wait()
+				raise SystemExit("control timed out: " + name)
+			if tmp.tell() > 16 * 1024 * 1024:
+				proc.kill()
+				proc.wait()
+				raise SystemExit("control output exceeded limit: " + name)
+			time.sleep(0.1)
+		if proc.returncode != 0:
+			tmp.seek(0)
+			sys.stderr.write("control failed: " + name + "\n")
+			sys.stderr.buffer.write(tmp.read(4096))
+			raise SystemExit(1)
+		tmp.seek(0)
+		raw = tmp.read(16 * 1024 * 1024 + 1)
+	finally:
+		tmp.close()
+	if not raw or len(raw) > 16 * 1024 * 1024 or not raw.endswith(b"\n"):
+		raise SystemExit("incomplete control output: " + name)
+	counts = {test: {"run": 0, "pass": 0} for test in expected}
+	for encoded in raw.splitlines():
+		if not encoded:
+			raise SystemExit("blank JSON event: " + name)
+		try:
+			item = json.loads(encoded.decode("utf-8"), object_pairs_hook=unique_object)
+		except (UnicodeDecodeError, json.JSONDecodeError):
+			raise SystemExit("invalid JSON event: " + name)
+		if type(item) is not dict or type(item.get("Action")) is not str:
+			raise SystemExit("malformed JSON event: " + name)
+		action, test = item["Action"], item.get("Test", "")
+		if type(test) is not str:
+			raise SystemExit("malformed test name: " + name)
+		if action in ("run", "pass", "skip", "fail"):
+			if test not in counts:
+				raise SystemExit("unexpected test event " + test + " in " + name)
+			if action == "skip":
+				raise SystemExit("required test skipped: " + test)
+			if action == "fail":
+				raise SystemExit("required test failed: " + test)
+			counts[test][action] += 1
+			if counts[test][action] > 1:
+				raise SystemExit("duplicate test event " + test)
+		elif action == "output":
+			if test and test not in counts:
+				raise SystemExit("unexpected test output " + test + " in " + name)
+		else:
+			raise SystemExit("unexpected JSON action " + action + " in " + name)
+	if any(counts[test]["run"] != 1 or counts[test]["pass"] != 1 for test in expected):
+		raise SystemExit("missing or partial required event in " + name)
+	passed[name] = set(expected)
+	roots_only = sorted(test for test in expected if "/" not in test)
+	print("phase38-control-events-hex " + name + " " + raw.hex())
+	print("phase38 control name=" + name + " package=" + package + " tests=" + " ".join(roots_only) + " status=pass")
+
+old_lines = {line for line in pathlib.Path(root / "testdata/receipts/M006.manifest").read_text(encoding="utf-8").splitlines() if line.startswith("# case ")}
+new_cases = {(program, key) for program, key, _, _, _, line in cases if line not in old_lines}
+reached_by_case = {}
+for program, key, package, test in reached:
+	if (program, key) not in new_cases:
+		raise SystemExit("reached row does not bind a new case: " + program + "/" + key)
+	matches = [name for name, names in events.items() if test in names and roots[name][0] == package]
+	if len(matches) != 1:
+		raise SystemExit("reached row has no unique control binding: " + test)
+	reached_by_case.setdefault((program, key), set()).add((matches[0], test))
+for program, key in sorted(new_cases):
+	if not reached_by_case.get((program, key)):
+		raise SystemExit("new case has no reached consumer: " + program + "/" + key)
+for program, key, exit_code, stdout, stderr, line in cases:
+	if line in old_lines:
+		continue
+	print("phase38 case program=" + program + " input=" + key + " expected_exit=" + exit_code + " actual_exit=" + exit_code + " stdout=exact stderr=exact status=pass")
+PY
+	then
+		:
+	else
+		cat "$verify_tmp/m007-inventory.log" >&2
+		fail "M007 control inventory failed" "control_inventory_failed"
+	fi
+	cat "$verify_tmp/m007-inventory.log"
+	extra_case_count=$(grep -c '^phase38 case ' "$verify_tmp/m007-inventory.log" || true)
+	extra_control_count=$(grep -c '^phase38 control ' "$verify_tmp/m007-inventory.log" || true)
+	case_count=$((case_count + extra_case_count))
+	control_count=$extra_control_count
+else
+	run_control guide ./cmd/schway '^TestPhase32GuideCleanCheckout$' TestPhase32GuideCleanCheckout
+	run_control route-audit ./cmd/schway '^TestPhase32PublicRouteAudit$' TestPhase32PublicRouteAudit
+	run_control codedigest ./internal/compiler/session '^TestPhase32CodeDigest$' TestPhase32CodeDigest
+	run_control receipt-rules ./internal/compiler/session '^TestPhase32ReceiptLivingClaims$' TestPhase32ReceiptLivingClaims
+fi
 
 tree_end=$(tree_state)
 [ "$tree_end" = "$tree_start" ] || fail "tree moved during the run" "tree_moved"

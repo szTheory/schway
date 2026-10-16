@@ -1,6 +1,6 @@
 label=phase38
-programs=checksum,adler_low,adler32_cli,adler32_fixture,byte_index_oob,sum_to_n,fizzbuzz,crc32
-controls=guide,route-audit,codedigest,receipt-rules
+programs=checksum,adler_low,adler32_cli,adler32_fixture,byte_index_oob,sum_to_n,fizzbuzz,crc32,crc_low,helper_crc_step,helper_importer,helper_inline
+controls=guide,route-audit,codedigest,receipt-rules,crc-public,helper-answers,helper-optimization,public-helper,bitwise-public,bitwise-optimization,bitwise-shift,bitwise-syntax,bitwise-session,crc-physical,phase371-executionpeer,phase371-cgen,phase371-session
 # case checksum empty 0 1 -
 # case checksum zero 0 65537 -
 # case checksum wikipedia 0 300286872 -
@@ -40,4 +40,690 @@ controls=guide,route-audit,codedigest,receipt-rules
 # case fizzbuzz 15 0 @examples/phase27/fizzbuzz-15.out -
 # case fizzbuzz 1000 0 @examples/phase27/fizzbuzz-1000.out -
 # case fizzbuzz 1001 65 - schway app: input exceeds 1000
+# case crc32 empty 0 0 -
+# case crc_low empty 0 0 -
+# case crc32 zero 0 3523407757 -
+# case crc_low zero 0 61325 -
 # case crc32 check 0 3421780262 -
+# case crc_low check 0 14630 -
+# case crc32 highbit-80 0 1069182125 -
+# case crc_low highbit-80 0 27821 -
+# case crc32 highbit-80ff 0 1465410873 -
+# case crc_low highbit-80ff 0 25913 -
+# case crc32 all-bytes-00-ff 0 688229491 -
+# case crc_low all-bytes-00-ff 0 35955 -
+# case crc32 cap-minus-one 0 529201972 -
+# case crc_low cap-minus-one 0 64308 -
+# case crc32 cap 0 3735780942 -
+# case crc_low cap 0 32334 -
+# case crc32 cap-plus-one 65 - FileError.FileTooLarge
+# case crc_low cap-plus-one 65 - FileError.FileTooLarge
+# case crc32 wikipedia 0 2913648686 -
+# case crc_low wikipedia 0 49198 -
+# case crc32 missing 65 - FileError.FileUnavailable
+# case crc_low missing 65 - FileError.FileUnavailable
+# case crc32 directory 65 - FileError.FileUnavailable
+# case crc_low directory 65 - FileError.FileUnavailable
+# case crc32 fifo 65 - FileError.FileUnavailable
+# case crc_low fifo 65 - FileError.FileUnavailable
+# case crc32 device 65 - FileError.FileUnavailable
+# case crc_low device 65 - FileError.FileUnavailable
+# case crc32 unreadable 65 - FileError.FileUnavailable
+# case crc_low unreadable 65 - FileError.FileUnavailable
+# case crc32 input-symlink 0 3421780262 -
+# case crc_low input-symlink 0 14630 -
+# case crc32 opaque-json 0 3421780262 -
+# case crc_low opaque-json 0 14630 -
+# case crc32 opaque-depth 0 3421780262 -
+# case crc_low opaque-depth 0 14630 -
+# case crc32 opaque-separator 0 3421780262 -
+# case crc_low opaque-separator 0 14630 -
+# case crc32 opaque-leading-dash 0 3421780262 -
+# case crc_low opaque-leading-dash 0 14630 -
+# case crc32 opaque-space 0 3421780262 -
+# case crc_low opaque-space 0 14630 -
+# case crc32 opaque-unicode 0 3421780262 -
+# case crc_low opaque-unicode 0 14630 -
+# case crc32 opaque-shell 0 3421780262 -
+# case crc_low opaque-shell 0 14630 -
+# case crc32 empty-token 65 - -
+# case crc_low empty-token 65 - -
+# case crc32 path-4096 65 - FileError.FileUnavailable
+# case crc_low path-4096 65 - FileError.FileUnavailable
+# case crc32 path-4097 65 - schway run: input exceeds 4096 bytes
+# case crc_low path-4097 65 - schway run: input exceeds 4096 bytes
+# case helper_crc_step single-step-odd-one 0 3988292384 -
+# case helper_crc_step single-step-even-two 0 1 -
+# case helper_crc_step single-step-high-even 0 152709948 -
+# case helper_crc_step single-step-high-odd 0 3835865116 -
+# case helper_crc_step single-step-u32-maximum 0 2454158559 -
+# case helper_crc_step local-four-step-loop 0 4046247459 -
+# case helper_importer imported-four-step-loop 0 4046247459 -
+# case helper_inline scalar-pairs-true-branch 0 12 -
+# case helper_inline scalar-pairs-false-branch 0 36 -
+# case helper_inline u64-helper-overflow 65 - schway: U64 addition overflow
+# case helper_inline bool-helper-overflow 65 - schway: U64 addition overflow
+# case helper_inline u64-helper-zero-remainder 65 - schway: U64 remainder by zero
+# case helper_inline bool-helper-zero-remainder 65 - schway: U64 remainder by zero
+# case helper_inline nested-helper-overflow 65 - schway: U64 addition overflow
+# case helper_inline late-loop-helper-overflow 65 - schway: U64 addition overflow
+# reached crc32 empty ./cmd/schway TestPhase37PublicFileMatrix/empty/crc32/native
+# reached crc32 empty ./cmd/schway TestPhase37PublicFileMatrix/empty/crc32/interpreter
+# reached crc_low empty ./cmd/schway TestPhase37PublicFileMatrix/empty/crc_low/native
+# reached crc_low empty ./cmd/schway TestPhase37PublicFileMatrix/empty/crc_low/interpreter
+# reached crc32 zero ./cmd/schway TestPhase37PublicFileMatrix/zero/crc32/native
+# reached crc32 zero ./cmd/schway TestPhase37PublicFileMatrix/zero/crc32/interpreter
+# reached crc_low zero ./cmd/schway TestPhase37PublicFileMatrix/zero/crc_low/native
+# reached crc_low zero ./cmd/schway TestPhase37PublicFileMatrix/zero/crc_low/interpreter
+# reached crc32 check ./cmd/schway TestPhase37PublicFileMatrix/check/crc32/native
+# reached crc32 check ./cmd/schway TestPhase37PublicFileMatrix/check/crc32/interpreter
+# reached crc_low check ./cmd/schway TestPhase37PublicFileMatrix/check/crc_low/native
+# reached crc_low check ./cmd/schway TestPhase37PublicFileMatrix/check/crc_low/interpreter
+# reached crc32 highbit-80 ./cmd/schway TestPhase37PublicFileMatrix/highbit-80/crc32/native
+# reached crc32 highbit-80 ./cmd/schway TestPhase37PublicFileMatrix/highbit-80/crc32/interpreter
+# reached crc_low highbit-80 ./cmd/schway TestPhase37PublicFileMatrix/highbit-80/crc_low/native
+# reached crc_low highbit-80 ./cmd/schway TestPhase37PublicFileMatrix/highbit-80/crc_low/interpreter
+# reached crc32 highbit-80ff ./cmd/schway TestPhase37PublicFileMatrix/highbit-80ff/crc32/native
+# reached crc32 highbit-80ff ./cmd/schway TestPhase37PublicFileMatrix/highbit-80ff/crc32/interpreter
+# reached crc_low highbit-80ff ./cmd/schway TestPhase37PublicFileMatrix/highbit-80ff/crc_low/native
+# reached crc_low highbit-80ff ./cmd/schway TestPhase37PublicFileMatrix/highbit-80ff/crc_low/interpreter
+# reached crc32 all-bytes-00-ff ./cmd/schway TestPhase37PublicFileMatrix/all-bytes-00-ff/crc32/native
+# reached crc32 all-bytes-00-ff ./cmd/schway TestPhase37PublicFileMatrix/all-bytes-00-ff/crc32/interpreter
+# reached crc_low all-bytes-00-ff ./cmd/schway TestPhase37PublicFileMatrix/all-bytes-00-ff/crc_low/native
+# reached crc_low all-bytes-00-ff ./cmd/schway TestPhase37PublicFileMatrix/all-bytes-00-ff/crc_low/interpreter
+# reached crc32 cap-minus-one ./cmd/schway TestPhase37PublicFileMatrix/cap-minus-one/crc32/native
+# reached crc32 cap-minus-one ./cmd/schway TestPhase37PublicFileMatrix/cap-minus-one/crc32/interpreter
+# reached crc_low cap-minus-one ./cmd/schway TestPhase37PublicFileMatrix/cap-minus-one/crc_low/native
+# reached crc_low cap-minus-one ./cmd/schway TestPhase37PublicFileMatrix/cap-minus-one/crc_low/interpreter
+# reached crc32 cap ./cmd/schway TestPhase37PublicFileMatrix/cap/crc32/native
+# reached crc32 cap ./cmd/schway TestPhase37PublicFileMatrix/cap/crc32/interpreter
+# reached crc_low cap ./cmd/schway TestPhase37PublicFileMatrix/cap/crc_low/native
+# reached crc_low cap ./cmd/schway TestPhase37PublicFileMatrix/cap/crc_low/interpreter
+# reached crc32 cap-plus-one ./cmd/schway TestPhase37PublicFileMatrix/cap-plus-one/crc32/native
+# reached crc32 cap-plus-one ./cmd/schway TestPhase37PublicFileMatrix/cap-plus-one/crc32/interpreter
+# reached crc_low cap-plus-one ./cmd/schway TestPhase37PublicFileMatrix/cap-plus-one/crc_low/native
+# reached crc_low cap-plus-one ./cmd/schway TestPhase37PublicFileMatrix/cap-plus-one/crc_low/interpreter
+# reached crc32 wikipedia ./cmd/schway TestPhase37PublicFileMatrix/wikipedia/crc32/native
+# reached crc32 wikipedia ./cmd/schway TestPhase37PublicFileMatrix/wikipedia/crc32/interpreter
+# reached crc_low wikipedia ./cmd/schway TestPhase37PublicFileMatrix/wikipedia/crc_low/native
+# reached crc_low wikipedia ./cmd/schway TestPhase37PublicFileMatrix/wikipedia/crc_low/interpreter
+# reached crc32 missing ./cmd/schway TestPhase37PublicFileMatrix/missing/crc32/native
+# reached crc32 missing ./cmd/schway TestPhase37PublicFileMatrix/missing/crc32/interpreter
+# reached crc_low missing ./cmd/schway TestPhase37PublicFileMatrix/missing/crc_low/native
+# reached crc_low missing ./cmd/schway TestPhase37PublicFileMatrix/missing/crc_low/interpreter
+# reached crc32 directory ./cmd/schway TestPhase37PublicFileMatrix/directory/crc32/native
+# reached crc32 directory ./cmd/schway TestPhase37PublicFileMatrix/directory/crc32/interpreter
+# reached crc_low directory ./cmd/schway TestPhase37PublicFileMatrix/directory/crc_low/native
+# reached crc_low directory ./cmd/schway TestPhase37PublicFileMatrix/directory/crc_low/interpreter
+# reached crc32 fifo ./cmd/schway TestPhase37PublicFileMatrix/fifo/crc32/native
+# reached crc32 fifo ./cmd/schway TestPhase37PublicFileMatrix/fifo/crc32/interpreter
+# reached crc_low fifo ./cmd/schway TestPhase37PublicFileMatrix/fifo/crc_low/native
+# reached crc_low fifo ./cmd/schway TestPhase37PublicFileMatrix/fifo/crc_low/interpreter
+# reached crc32 device ./cmd/schway TestPhase37PublicFileMatrix/device/crc32/native
+# reached crc32 device ./cmd/schway TestPhase37PublicFileMatrix/device/crc32/interpreter
+# reached crc_low device ./cmd/schway TestPhase37PublicFileMatrix/device/crc_low/native
+# reached crc_low device ./cmd/schway TestPhase37PublicFileMatrix/device/crc_low/interpreter
+# reached crc32 unreadable ./cmd/schway TestPhase37PublicFileMatrix/unreadable/crc32/native
+# reached crc32 unreadable ./cmd/schway TestPhase37PublicFileMatrix/unreadable/crc32/interpreter
+# reached crc_low unreadable ./cmd/schway TestPhase37PublicFileMatrix/unreadable/crc_low/native
+# reached crc_low unreadable ./cmd/schway TestPhase37PublicFileMatrix/unreadable/crc_low/interpreter
+# reached crc32 input-symlink ./cmd/schway TestPhase37PublicFileMatrix/input-symlink/crc32/native
+# reached crc32 input-symlink ./cmd/schway TestPhase37PublicFileMatrix/input-symlink/crc32/interpreter
+# reached crc_low input-symlink ./cmd/schway TestPhase37PublicFileMatrix/input-symlink/crc_low/native
+# reached crc_low input-symlink ./cmd/schway TestPhase37PublicFileMatrix/input-symlink/crc_low/interpreter
+# reached crc32 opaque-json ./cmd/schway TestPhase37PublicFileMatrix/opaque-json/crc32/native
+# reached crc32 opaque-json ./cmd/schway TestPhase37PublicFileMatrix/opaque-json/crc32/interpreter
+# reached crc_low opaque-json ./cmd/schway TestPhase37PublicFileMatrix/opaque-json/crc_low/native
+# reached crc_low opaque-json ./cmd/schway TestPhase37PublicFileMatrix/opaque-json/crc_low/interpreter
+# reached crc32 opaque-depth ./cmd/schway TestPhase37PublicFileMatrix/opaque-depth/crc32/native
+# reached crc32 opaque-depth ./cmd/schway TestPhase37PublicFileMatrix/opaque-depth/crc32/interpreter
+# reached crc_low opaque-depth ./cmd/schway TestPhase37PublicFileMatrix/opaque-depth/crc_low/native
+# reached crc_low opaque-depth ./cmd/schway TestPhase37PublicFileMatrix/opaque-depth/crc_low/interpreter
+# reached crc32 opaque-separator ./cmd/schway TestPhase37PublicFileMatrix/opaque-separator/crc32/native
+# reached crc32 opaque-separator ./cmd/schway TestPhase37PublicFileMatrix/opaque-separator/crc32/interpreter
+# reached crc_low opaque-separator ./cmd/schway TestPhase37PublicFileMatrix/opaque-separator/crc_low/native
+# reached crc_low opaque-separator ./cmd/schway TestPhase37PublicFileMatrix/opaque-separator/crc_low/interpreter
+# reached crc32 opaque-leading-dash ./cmd/schway TestPhase37PublicFileMatrix/opaque-leading-dash/crc32/native
+# reached crc32 opaque-leading-dash ./cmd/schway TestPhase37PublicFileMatrix/opaque-leading-dash/crc32/interpreter
+# reached crc_low opaque-leading-dash ./cmd/schway TestPhase37PublicFileMatrix/opaque-leading-dash/crc_low/native
+# reached crc_low opaque-leading-dash ./cmd/schway TestPhase37PublicFileMatrix/opaque-leading-dash/crc_low/interpreter
+# reached crc32 opaque-space ./cmd/schway TestPhase37PublicFileMatrix/opaque-space/crc32/native
+# reached crc32 opaque-space ./cmd/schway TestPhase37PublicFileMatrix/opaque-space/crc32/interpreter
+# reached crc_low opaque-space ./cmd/schway TestPhase37PublicFileMatrix/opaque-space/crc_low/native
+# reached crc_low opaque-space ./cmd/schway TestPhase37PublicFileMatrix/opaque-space/crc_low/interpreter
+# reached crc32 opaque-unicode ./cmd/schway TestPhase37PublicFileMatrix/opaque-unicode/crc32/native
+# reached crc32 opaque-unicode ./cmd/schway TestPhase37PublicFileMatrix/opaque-unicode/crc32/interpreter
+# reached crc_low opaque-unicode ./cmd/schway TestPhase37PublicFileMatrix/opaque-unicode/crc_low/native
+# reached crc_low opaque-unicode ./cmd/schway TestPhase37PublicFileMatrix/opaque-unicode/crc_low/interpreter
+# reached crc32 opaque-shell ./cmd/schway TestPhase37PublicFileMatrix/opaque-shell/crc32/native
+# reached crc32 opaque-shell ./cmd/schway TestPhase37PublicFileMatrix/opaque-shell/crc32/interpreter
+# reached crc_low opaque-shell ./cmd/schway TestPhase37PublicFileMatrix/opaque-shell/crc_low/native
+# reached crc_low opaque-shell ./cmd/schway TestPhase37PublicFileMatrix/opaque-shell/crc_low/interpreter
+# reached crc32 empty-token ./cmd/schway TestPhase37PublicFileMatrix/empty-token/crc32/native
+# reached crc32 empty-token ./cmd/schway TestPhase37PublicFileMatrix/empty-token/crc32/interpreter
+# reached crc_low empty-token ./cmd/schway TestPhase37PublicFileMatrix/empty-token/crc_low/native
+# reached crc_low empty-token ./cmd/schway TestPhase37PublicFileMatrix/empty-token/crc_low/interpreter
+# reached crc32 path-4096 ./cmd/schway TestPhase37PublicFileMatrix/path-4096/crc32/native
+# reached crc32 path-4096 ./cmd/schway TestPhase37PublicFileMatrix/path-4096/crc32/interpreter
+# reached crc_low path-4096 ./cmd/schway TestPhase37PublicFileMatrix/path-4096/crc_low/native
+# reached crc_low path-4096 ./cmd/schway TestPhase37PublicFileMatrix/path-4096/crc_low/interpreter
+# reached crc32 path-4097 ./cmd/schway TestPhase37PublicFileMatrix/path-4097/crc32/native
+# reached crc32 path-4097 ./cmd/schway TestPhase37PublicFileMatrix/path-4097/crc32/interpreter
+# reached crc_low path-4097 ./cmd/schway TestPhase37PublicFileMatrix/path-4097/crc_low/native
+# reached crc_low path-4097 ./cmd/schway TestPhase37PublicFileMatrix/path-4097/crc_low/interpreter
+# structured crc-nul ./cmd/schway TestPhase37PublicFileMatrix/nul-direct-dispatch/crc32/interpreter/direct-public-dispatch TestPhase37PublicFileMatrix/nul-direct-dispatch/crc32/native/direct-public-dispatch TestPhase37PublicFileMatrix/nul-direct-dispatch/crc_low/interpreter/direct-public-dispatch TestPhase37PublicFileMatrix/nul-direct-dispatch/crc_low/native/direct-public-dispatch TestPhase37PublicFileMatrix/nul-direct-dispatch/checksum/interpreter/direct-public-dispatch TestPhase37PublicFileMatrix/nul-direct-dispatch/checksum/native/direct-public-dispatch TestPhase37PublicFileMatrix/nul-direct-dispatch/adler_low/interpreter/direct-public-dispatch TestPhase37PublicFileMatrix/nul-direct-dispatch/adler_low/native/direct-public-dispatch claim=InputContainsNUL
+# reached helper_crc_step single-step-odd-one ./internal/compiler/session TestPhase36HelperAnswersAndDefects/single-step-odd-one
+# reached helper_crc_step single-step-even-two ./internal/compiler/session TestPhase36HelperAnswersAndDefects/single-step-even-two
+# reached helper_crc_step single-step-high-even ./internal/compiler/session TestPhase36HelperAnswersAndDefects/single-step-high-even
+# reached helper_crc_step single-step-high-odd ./internal/compiler/session TestPhase36HelperAnswersAndDefects/single-step-high-odd
+# reached helper_crc_step single-step-u32-maximum ./internal/compiler/session TestPhase36HelperAnswersAndDefects/single-step-u32-maximum
+# reached helper_crc_step local-four-step-loop ./internal/compiler/session TestPhase36HelperAnswersAndDefects/local-four-step-loop
+# reached helper_importer imported-four-step-loop ./internal/compiler/session TestPhase36HelperAnswersAndDefects/imported-four-step-loop
+# reached helper_inline scalar-pairs-true-branch ./internal/compiler/session TestPhase36HelperAnswersAndDefects/scalar-pairs-true-branch
+# reached helper_inline scalar-pairs-false-branch ./internal/compiler/session TestPhase36HelperAnswersAndDefects/scalar-pairs-false-branch
+# reached helper_inline u64-helper-overflow ./internal/compiler/session TestPhase36HelperAnswersAndDefects/u64-helper-overflow
+# reached helper_inline bool-helper-overflow ./internal/compiler/session TestPhase36HelperAnswersAndDefects/bool-helper-overflow
+# reached helper_inline u64-helper-zero-remainder ./internal/compiler/session TestPhase36HelperAnswersAndDefects/u64-helper-zero-remainder
+# reached helper_inline bool-helper-zero-remainder ./internal/compiler/session TestPhase36HelperAnswersAndDefects/bool-helper-zero-remainder
+# reached helper_inline nested-helper-overflow ./internal/compiler/session TestPhase36HelperAnswersAndDefects/nested-helper-overflow
+# reached helper_inline late-loop-helper-overflow ./internal/compiler/session TestPhase36HelperAnswersAndDefects/late-loop-helper-overflow
+# root guide ./cmd/schway ^TestPhase32GuideCleanCheckout$
+# root route-audit ./cmd/schway ^TestPhase32PublicRouteAudit$
+# root codedigest ./internal/compiler/session ^TestPhase32CodeDigest$
+# root receipt-rules ./internal/compiler/session ^TestPhase32ReceiptLivingClaims$
+# root crc-public ./cmd/schway ^(TestPhase37PublicFileMatrix|TestPhase37PublicMatrixDriftControl)$
+# root helper-answers ./internal/compiler/session ^TestPhase36HelperAnswersAndDefects$
+# root helper-optimization ./internal/compiler/session ^TestPhase36HelperOptimizationMatrix$
+# root public-helper ./cmd/schway ^TestPhase36PublicHelperConformance$
+# root bitwise-public ./cmd/schway ^TestPhase35PublicConformanceWitness$
+# root bitwise-optimization ./internal/compiler/session ^TestPhase35BitwiseOptimizationMatrix$
+# root bitwise-shift ./internal/compiler/check ^TestPhase35ShiftAdmission$
+# root bitwise-syntax ./internal/compiler/syntax ^TestPhase35GroupedNegativeShiftAmountRefusal$
+# root bitwise-session ./internal/compiler/session ^TestPhase35EngineWrongAnswerControls$
+# root crc-physical ./internal/compiler/native ^TestPhase37CRC32PhysicalCleanup$
+# root phase371-executionpeer ./internal/compiler/executionpeer ^(TestPhase371LegacyDefectClosesAllActiveFrames|TestPhase371DefectTerminalControls|TestPhase371ForeignFailureOpFailAttribution|TestPhase371ForeignFailureAttributionControls)$
+# root phase371-cgen ./internal/compiler/cgen ^(TestPhase371CountedDefectReasonBytes|TestPhase371NoCallScalarDefectNativeConformance|TestPhase33ScalarExplicitDefectShells)$
+# root phase371-session ./internal/compiler/session ^(TestPhase371DefectReasonUTF8Admission|TestPhase371PreEmitterRouteCensus|TestPhase371CompatibilityAmendmentControls)$
+# event guide TestPhase32GuideCleanCheckout
+# event route-audit TestPhase32PublicRouteAudit
+# event codedigest TestPhase32CodeDigest
+# event receipt-rules TestPhase32ReceiptLivingClaims
+# event crc-public TestPhase37PublicFileMatrix
+# event crc-public TestPhase37PublicMatrixDriftControl
+# event helper-answers TestPhase36HelperAnswersAndDefects
+# event helper-optimization TestPhase36HelperOptimizationMatrix
+# event public-helper TestPhase36PublicHelperConformance
+# event bitwise-public TestPhase35PublicConformanceWitness
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-distinct
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-distinct/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-distinct/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-distinct/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-equal
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-equal/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-equal/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-equal/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-zero-and-maximum
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-zero-and-maximum/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-zero-and-maximum/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-zero-and-maximum/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-high-bit-and-maximum
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-high-bit-and-maximum/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-high-bit-and-maximum/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-high-bit-and-maximum/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-hex-case-separators-leading-zeroes
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-hex-case-separators-leading-zeroes/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-hex-case-separators-leading-zeroes/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/xor-hex-case-separators-leading-zeroes/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-distinct
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-distinct/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-distinct/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-distinct/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-equal-maximum
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-equal-maximum/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-equal-maximum/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-equal-maximum/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-zero-and-maximum
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-zero-and-maximum/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-zero-and-maximum/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-zero-and-maximum/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-high-bit-and-maximum
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-high-bit-and-maximum/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-high-bit-and-maximum/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-high-bit-and-maximum/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-hex-leading-zeroes
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-hex-leading-zeroes/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-hex-leading-zeroes/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/and-hex-leading-zeroes/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-distinct
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-distinct/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-distinct/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-distinct/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-equal
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-equal/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-equal/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-equal/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-zero-and-maximum
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-zero-and-maximum/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-zero-and-maximum/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-zero-and-maximum/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-high-bit-and-low-bit
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-high-bit-and-low-bit/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-high-bit-and-low-bit/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-high-bit-and-low-bit/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-hex-case-separators-leading-zeroes
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-hex-case-separators-leading-zeroes/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-hex-case-separators-leading-zeroes/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/or-hex-case-separators-leading-zeroes/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-zero-count-maximum
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-zero-count-maximum/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-zero-count-maximum/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-zero-count-maximum/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-count-31
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-count-31/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-count-31/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-count-31/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-count-32
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-count-32/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-count-32/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-count-32/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-count-63
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-count-63/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-count-63/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-count-63/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-high-bit-truncates
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-high-bit-truncates/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-high-bit-truncates/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-high-bit-truncates/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-maximum-wraps
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-maximum-wraps/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-maximum-wraps/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-maximum-wraps/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-maximum-count-63
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-maximum-count-63/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-maximum-count-63/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-maximum-count-63/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-hex-amount-and-source
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-hex-amount-and-source/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-hex-amount-and-source/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/left-hex-amount-and-source/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-zero-count-maximum
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-zero-count-maximum/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-zero-count-maximum/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-zero-count-maximum/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-count-31-logical
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-count-31-logical/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-count-31-logical/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-count-31-logical/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-count-32-logical
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-count-32-logical/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-count-32-logical/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-count-32-logical/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-count-63-logical
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-count-63-logical/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-count-63-logical/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-count-63-logical/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-1
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-1/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-1/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-1/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-63
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-63/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-63/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-high-bit-count-63/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-zero-value
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-zero-value/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-zero-value/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-zero-value/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-hex-leading-zeroes
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-hex-leading-zeroes/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-hex-leading-zeroes/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/right-hex-leading-zeroes/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/locked-association
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/locked-association/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/locked-association/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/locked-association/O3-flto
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O0
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O3
+# event bitwise-optimization TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O3-flto
+# event bitwise-shift TestPhase35ShiftAdmission
+# event bitwise-syntax TestPhase35GroupedNegativeShiftAmountRefusal
+# event bitwise-session TestPhase35EngineWrongAnswerControls
+# event crc-physical TestPhase37CRC32PhysicalCleanup
+# event phase371-executionpeer TestPhase371LegacyDefectClosesAllActiveFrames
+# event phase371-executionpeer TestPhase371DefectTerminalControls
+# event phase371-executionpeer TestPhase371ForeignFailureOpFailAttribution
+# event phase371-executionpeer TestPhase371ForeignFailureAttributionControls
+# event phase371-cgen TestPhase371CountedDefectReasonBytes
+# event phase371-cgen TestPhase371NoCallScalarDefectNativeConformance
+# event phase371-cgen TestPhase33ScalarExplicitDefectShells
+# event phase371-session TestPhase371DefectReasonUTF8Admission
+# event phase371-session TestPhase371PreEmitterRouteCensus
+# event phase371-session TestPhase371CompatibilityAmendmentControls
+# event crc-public TestPhase37PublicFileMatrix/empty
+# event crc-public TestPhase37PublicFileMatrix/empty/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/empty/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/empty/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/empty/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/empty/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/empty/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/empty/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/empty/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/zero
+# event crc-public TestPhase37PublicFileMatrix/zero/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/zero/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/zero/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/zero/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/zero/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/zero/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/zero/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/zero/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/check
+# event crc-public TestPhase37PublicFileMatrix/check/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/check/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/check/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/check/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/check/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/check/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/check/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/check/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/highbit-80
+# event crc-public TestPhase37PublicFileMatrix/highbit-80/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/highbit-80/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/highbit-80/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/highbit-80/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/highbit-80/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/highbit-80/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/highbit-80/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/highbit-80/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/highbit-80ff
+# event crc-public TestPhase37PublicFileMatrix/highbit-80ff/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/highbit-80ff/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/highbit-80ff/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/highbit-80ff/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/highbit-80ff/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/highbit-80ff/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/highbit-80ff/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/highbit-80ff/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/all-bytes-00-ff
+# event crc-public TestPhase37PublicFileMatrix/all-bytes-00-ff/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/all-bytes-00-ff/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/all-bytes-00-ff/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/all-bytes-00-ff/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/all-bytes-00-ff/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/all-bytes-00-ff/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/all-bytes-00-ff/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/all-bytes-00-ff/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/cap-minus-one
+# event crc-public TestPhase37PublicFileMatrix/cap-minus-one/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/cap-minus-one/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/cap-minus-one/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/cap-minus-one/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/cap-minus-one/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/cap-minus-one/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/cap-minus-one/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/cap-minus-one/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/cap
+# event crc-public TestPhase37PublicFileMatrix/cap/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/cap/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/cap/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/cap/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/cap/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/cap/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/cap/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/cap/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/cap-plus-one
+# event crc-public TestPhase37PublicFileMatrix/cap-plus-one/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/cap-plus-one/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/cap-plus-one/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/cap-plus-one/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/cap-plus-one/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/cap-plus-one/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/cap-plus-one/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/cap-plus-one/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/wikipedia
+# event crc-public TestPhase37PublicFileMatrix/wikipedia/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/wikipedia/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/wikipedia/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/wikipedia/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/wikipedia/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/wikipedia/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/wikipedia/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/wikipedia/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/missing
+# event crc-public TestPhase37PublicFileMatrix/missing/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/missing/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/missing/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/missing/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/missing/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/missing/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/missing/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/missing/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/directory
+# event crc-public TestPhase37PublicFileMatrix/directory/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/directory/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/directory/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/directory/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/directory/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/directory/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/directory/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/directory/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/fifo
+# event crc-public TestPhase37PublicFileMatrix/fifo/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/fifo/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/fifo/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/fifo/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/fifo/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/fifo/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/fifo/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/fifo/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/device
+# event crc-public TestPhase37PublicFileMatrix/device/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/device/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/device/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/device/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/device/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/device/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/device/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/device/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/unreadable
+# event crc-public TestPhase37PublicFileMatrix/unreadable/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/unreadable/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/unreadable/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/unreadable/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/unreadable/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/unreadable/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/unreadable/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/unreadable/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/input-symlink
+# event crc-public TestPhase37PublicFileMatrix/input-symlink/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/input-symlink/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/input-symlink/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/input-symlink/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/input-symlink/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/input-symlink/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/input-symlink/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/input-symlink/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-json
+# event crc-public TestPhase37PublicFileMatrix/opaque-json/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-json/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-json/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-json/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-json/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-json/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-json/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-json/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-depth
+# event crc-public TestPhase37PublicFileMatrix/opaque-depth/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-depth/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-depth/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-depth/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-depth/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-depth/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-depth/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-depth/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-separator
+# event crc-public TestPhase37PublicFileMatrix/opaque-separator/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-separator/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-separator/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-separator/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-separator/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-separator/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-separator/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-separator/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-leading-dash
+# event crc-public TestPhase37PublicFileMatrix/opaque-leading-dash/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-leading-dash/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-leading-dash/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-leading-dash/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-leading-dash/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-leading-dash/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-leading-dash/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-leading-dash/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-space
+# event crc-public TestPhase37PublicFileMatrix/opaque-space/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-space/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-space/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-space/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-space/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-space/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-space/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-space/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-unicode
+# event crc-public TestPhase37PublicFileMatrix/opaque-unicode/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-unicode/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-unicode/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-unicode/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-unicode/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-unicode/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-unicode/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-unicode/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-shell
+# event crc-public TestPhase37PublicFileMatrix/opaque-shell/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-shell/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-shell/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-shell/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-shell/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-shell/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/opaque-shell/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/opaque-shell/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/empty-token
+# event crc-public TestPhase37PublicFileMatrix/empty-token/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/empty-token/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/empty-token/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/empty-token/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/empty-token/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/empty-token/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/empty-token/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/empty-token/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/path-4096
+# event crc-public TestPhase37PublicFileMatrix/path-4096/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/path-4096/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/path-4096/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/path-4096/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/path-4096/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/path-4096/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/path-4096/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/path-4096/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/path-4097
+# event crc-public TestPhase37PublicFileMatrix/path-4097/crc32/interpreter
+# event crc-public TestPhase37PublicFileMatrix/path-4097/crc32/native
+# event crc-public TestPhase37PublicFileMatrix/path-4097/crc_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/path-4097/crc_low/native
+# event crc-public TestPhase37PublicFileMatrix/path-4097/checksum/interpreter
+# event crc-public TestPhase37PublicFileMatrix/path-4097/checksum/native
+# event crc-public TestPhase37PublicFileMatrix/path-4097/adler_low/interpreter
+# event crc-public TestPhase37PublicFileMatrix/path-4097/adler_low/native
+# event crc-public TestPhase37PublicFileMatrix/nul-direct-dispatch
+# event crc-public TestPhase37PublicFileMatrix/nul-direct-dispatch/crc32/interpreter/direct-public-dispatch
+# event crc-public TestPhase37PublicFileMatrix/nul-direct-dispatch/crc32/native/direct-public-dispatch
+# event crc-public TestPhase37PublicFileMatrix/nul-direct-dispatch/crc_low/interpreter/direct-public-dispatch
+# event crc-public TestPhase37PublicFileMatrix/nul-direct-dispatch/crc_low/native/direct-public-dispatch
+# event crc-public TestPhase37PublicFileMatrix/nul-direct-dispatch/checksum/interpreter/direct-public-dispatch
+# event crc-public TestPhase37PublicFileMatrix/nul-direct-dispatch/checksum/native/direct-public-dispatch
+# event crc-public TestPhase37PublicFileMatrix/nul-direct-dispatch/adler_low/interpreter/direct-public-dispatch
+# event crc-public TestPhase37PublicFileMatrix/nul-direct-dispatch/adler_low/native/direct-public-dispatch
+# event crc-public TestPhase37PublicFileMatrix/manifest-controls
+# event crc-public TestPhase37PublicFileMatrix/manifest-controls/missing-manifest
+# event crc-public TestPhase37PublicFileMatrix/manifest-controls/missing-manifest/crc32
+# event crc-public TestPhase37PublicFileMatrix/manifest-controls/missing-manifest/crc_low
+# event crc-public TestPhase37PublicFileMatrix/manifest-controls/missing-manifest/checksum
+# event crc-public TestPhase37PublicFileMatrix/manifest-controls/missing-manifest/adler_low
+# event crc-public TestPhase37PublicFileMatrix/manifest-controls/bad-manifest
+# event crc-public TestPhase37PublicFileMatrix/manifest-controls/bad-manifest/crc32
+# event crc-public TestPhase37PublicFileMatrix/manifest-controls/bad-manifest/crc_low
+# event crc-public TestPhase37PublicFileMatrix/manifest-controls/bad-manifest/checksum
+# event crc-public TestPhase37PublicFileMatrix/manifest-controls/bad-manifest/adler_low
+# event crc-public TestPhase37PublicFileMatrix/isolated-bounded-parallel-pair
+# event helper-answers TestPhase36HelperAnswersAndDefects/single-step-odd-one
+# event helper-answers TestPhase36HelperAnswersAndDefects/single-step-even-two
+# event helper-answers TestPhase36HelperAnswersAndDefects/single-step-high-even
+# event helper-answers TestPhase36HelperAnswersAndDefects/single-step-high-odd
+# event helper-answers TestPhase36HelperAnswersAndDefects/single-step-u32-maximum
+# event helper-answers TestPhase36HelperAnswersAndDefects/local-four-step-loop
+# event helper-answers TestPhase36HelperAnswersAndDefects/imported-four-step-loop
+# event helper-answers TestPhase36HelperAnswersAndDefects/scalar-pairs-true-branch
+# event helper-answers TestPhase36HelperAnswersAndDefects/scalar-pairs-false-branch
+# event helper-answers TestPhase36HelperAnswersAndDefects/u64-helper-overflow
+# event helper-answers TestPhase36HelperAnswersAndDefects/bool-helper-overflow
+# event helper-answers TestPhase36HelperAnswersAndDefects/u64-helper-zero-remainder
+# event helper-answers TestPhase36HelperAnswersAndDefects/bool-helper-zero-remainder
+# event helper-answers TestPhase36HelperAnswersAndDefects/nested-helper-overflow
+# event helper-answers TestPhase36HelperAnswersAndDefects/late-loop-helper-overflow
+# event helper-optimization TestPhase36HelperOptimizationMatrix/local
+# event helper-optimization TestPhase36HelperOptimizationMatrix/local/O0
+# event helper-optimization TestPhase36HelperOptimizationMatrix/local/O3
+# event helper-optimization TestPhase36HelperOptimizationMatrix/local/O3-LTO
+# event helper-optimization TestPhase36HelperOptimizationMatrix/imported
+# event helper-optimization TestPhase36HelperOptimizationMatrix/imported/O0
+# event helper-optimization TestPhase36HelperOptimizationMatrix/imported/O3
+# event helper-optimization TestPhase36HelperOptimizationMatrix/imported/O3-LTO
+# event helper-optimization TestPhase36HelperOptimizationMatrix/u64-helper-overflow
+# event helper-optimization TestPhase36HelperOptimizationMatrix/u64-helper-overflow/O0
+# event helper-optimization TestPhase36HelperOptimizationMatrix/u64-helper-overflow/O3
+# event helper-optimization TestPhase36HelperOptimizationMatrix/u64-helper-overflow/O3-LTO
+# event helper-optimization TestPhase36HelperOptimizationMatrix/bool-helper-zero-remainder
+# event helper-optimization TestPhase36HelperOptimizationMatrix/bool-helper-zero-remainder/O0
+# event helper-optimization TestPhase36HelperOptimizationMatrix/bool-helper-zero-remainder/O3
+# event helper-optimization TestPhase36HelperOptimizationMatrix/bool-helper-zero-remainder/O3-LTO
+# event public-helper TestPhase36PublicHelperConformance/interpreter
+# event public-helper TestPhase36PublicHelperConformance/native
+# event public-helper TestPhase36PublicHelperConformance/local-u64-entry
+# event public-helper TestPhase36PublicHelperConformance/imported-u64-entry
+# structured public-helper ./cmd/schway TestPhase36PublicHelperConformance/interpreter TestPhase36PublicHelperConformance/native value=1994146192 calls=2 returns=3 resources=0
+# event bitwise-public TestPhase35PublicConformanceWitness/interpreter/locked-264
+# event bitwise-public TestPhase35PublicConformanceWitness/native/locked-264
+# event bitwise-public TestPhase35PublicConformanceWitness/interpreter/alternate-8
+# event bitwise-public TestPhase35PublicConformanceWitness/native/alternate-8
+# structured bitwise-locked ./cmd/schway TestPhase35PublicConformanceWitness/interpreter/locked-264 TestPhase35PublicConformanceWitness/native/locked-264 value=264
+# structured bitwise-alternate ./cmd/schway TestPhase35PublicConformanceWitness/interpreter/alternate-8 TestPhase35PublicConformanceWitness/native/alternate-8 value=8
+# structured bitwise-optimization-locked ./internal/compiler/session TestPhase35BitwiseOptimizationMatrix/locked-association/O0 TestPhase35BitwiseOptimizationMatrix/locked-association/O3 TestPhase35BitwiseOptimizationMatrix/locked-association/O3-flto value=264
+# structured bitwise-optimization-alternate ./internal/compiler/session TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O0 TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O3 TestPhase35BitwiseOptimizationMatrix/alternate-final-mask-association/O3-flto value=8
+# event bitwise-shift TestPhase35ShiftAdmission/name
+# event bitwise-shift TestPhase35ShiftAdmission/computed_group
+# event bitwise-shift TestPhase35ShiftAdmission/decimal_64
+# event bitwise-shift TestPhase35ShiftAdmission/hex_64
+# event bitwise-shift TestPhase35ShiftAdmission/maximum_U64
+# event bitwise-shift TestPhase35ShiftAdmission/overflow
+# event bitwise-shift TestPhase35ShiftAdmission/accepted/decimal_zero
+# event bitwise-shift TestPhase35ShiftAdmission/accepted/decimal_63
+# event bitwise-shift TestPhase35ShiftAdmission/accepted/hex_63
+# event bitwise-syntax TestPhase35GroupedNegativeShiftAmountRefusal/grouped
+# event bitwise-syntax TestPhase35GroupedNegativeShiftAmountRefusal/nested_groups
+# event bitwise-syntax TestPhase35GroupedNegativeShiftAmountRefusal/comments_between_tokens
+# event bitwise-session TestPhase35EngineWrongAnswerControls/xor
+# event bitwise-session TestPhase35EngineWrongAnswerControls/and
+# event bitwise-session TestPhase35EngineWrongAnswerControls/or
+# event bitwise-session TestPhase35EngineWrongAnswerControls/shift_left
+# event bitwise-session TestPhase35EngineWrongAnswerControls/shift_right
+# event crc-physical TestPhase37CRC32PhysicalCleanup/success-and-consumer-release
+# event crc-physical TestPhase37CRC32PhysicalCleanup/stat-error-closes-once
+# event crc-physical TestPhase37CRC32PhysicalCleanup/read-error-frees-and-closes
+# event crc-physical TestPhase37CRC32PhysicalCleanup/success-close-error-frees-buffer
+# event crc-physical TestPhase37CRC32PhysicalCleanup/oversize-precedes-close-error
+# event crc-physical TestPhase37CRC32PhysicalCleanup/eintr-retries-then-consumer-releases
+# structured helper-optimization ./internal/compiler/session TestPhase36HelperOptimizationMatrix/local/O0 TestPhase36HelperOptimizationMatrix/local/O3 TestPhase36HelperOptimizationMatrix/local/O3-LTO TestPhase36HelperOptimizationMatrix/imported/O0 TestPhase36HelperOptimizationMatrix/imported/O3 TestPhase36HelperOptimizationMatrix/imported/O3-LTO
+# structured bitwise-shift ./internal/compiler/check TestPhase35ShiftAdmission/name TestPhase35ShiftAdmission/computed_group TestPhase35ShiftAdmission/decimal_64 TestPhase35ShiftAdmission/hex_64 TestPhase35ShiftAdmission/maximum_U64 TestPhase35ShiftAdmission/overflow TestPhase35ShiftAdmission/accepted/decimal_zero TestPhase35ShiftAdmission/accepted/decimal_63 TestPhase35ShiftAdmission/accepted/hex_63
+# structured bitwise-refusal ./internal/compiler/syntax TestPhase35GroupedNegativeShiftAmountRefusal/grouped TestPhase35GroupedNegativeShiftAmountRefusal/nested_groups TestPhase35GroupedNegativeShiftAmountRefusal/comments_between_tokens
+# structured bitwise-engine-control ./internal/compiler/session TestPhase35EngineWrongAnswerControls/xor TestPhase35EngineWrongAnswerControls/and TestPhase35EngineWrongAnswerControls/or TestPhase35EngineWrongAnswerControls/shift_left TestPhase35EngineWrongAnswerControls/shift_right

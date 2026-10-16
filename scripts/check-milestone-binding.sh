@@ -104,6 +104,152 @@ def freeze_data(path):
         refuse("manifest_digest_mismatch")
     return f
 
+def manifest_inventory(path):
+    data = read_bytes(safe_path(path))
+    try:
+        lines = data.decode("utf-8").splitlines()
+    except UnicodeDecodeError:
+        refuse("manifest_encoding")
+    controls = None
+    cases, roots, events, reached, structured = [], {}, {}, [], []
+    for line in lines:
+        if line.startswith("controls="):
+            if controls is not None: refuse("control_inventory")
+            controls = line[len("controls="):].split(",")
+        elif line.startswith("# case "):
+            fields = line.split(maxsplit=6)
+            if len(fields) != 7: refuse("case_inventory")
+            cases.append((fields[2], fields[3], line))
+        elif line.startswith("# root "):
+            fields = line.split()
+            if len(fields) != 5 or fields[2] in roots: refuse("control_inventory")
+            try: pattern = re.compile(fields[4])
+            except re.error: refuse("control_inventory")
+            roots[fields[2]] = (fields[3], pattern)
+        elif line.startswith("# event "):
+            fields = line.split()
+            if len(fields) != 4: refuse("control_event_inventory")
+            events.setdefault(fields[2], []).append(fields[3])
+        elif line.startswith("# reached "):
+            fields = line.split()
+            if len(fields) != 6: refuse("reached_inventory")
+            reached.append(tuple(fields[2:]))
+        elif line.startswith("# structured "):
+            fields = line.split()
+            if len(fields) < 5: refuse("structured_inventory")
+            structured.append(fields[2:])
+    if (not controls or any(not x or re.search(r"\s", x) for x in controls) or
+        len(set(controls)) != len(controls) or set(controls) != set(roots) or
+        set(events) != set(controls)):
+        refuse("control_inventory")
+    case_keys = {(program, key) for program, key, _ in cases}
+    if len(case_keys) != len(cases): refuse("case_inventory")
+    old_data = read_bytes(root / "testdata/receipts/M006.manifest")
+    old_rows = [line for line in old_data.decode("utf-8").splitlines() if line.startswith("# case ")]
+    current_rows = [line for _, _, line in cases]
+    if [line for line in current_rows if line in set(old_rows)] != old_rows:
+        refuse("inherited_manifest_changed")
+    old_keys = set()
+    for line in old_rows:
+        fields = line.split(maxsplit=6)
+        if len(fields) != 7: refuse("case_inventory")
+        old_keys.add((fields[2], fields[3]))
+    event_sets = {}
+    for name in controls:
+        package, pattern = roots[name]
+        names = events[name]
+        if not package.startswith("./") or not names or len(set(names)) != len(names):
+            refuse("control_event_inventory")
+        for test_name in names:
+            top = test_name.split("/", 1)[0]
+            if not pattern.fullmatch(top) or re.search(r"[\x00-\x20]", test_name):
+                refuse("control_event_inventory")
+        event_sets[name] = set(names)
+    reached_keys = set()
+    reached_cases = {}
+    for program, key, package, test_name in reached:
+        if (program, key) not in case_keys: refuse("reached_inventory")
+        matches = [name for name, tests in event_sets.items() if test_name in tests]
+        if len(matches) != 1 or roots[matches[0]][0] != package:
+            refuse("reached_inventory")
+        item = (program, key, package, test_name)
+        if item in reached_keys: refuse("reached_inventory")
+        reached_keys.add(item)
+        reached_cases.setdefault((program, key), set()).add(test_name)
+    for program, key in case_keys - old_keys:
+        names = reached_cases.get((program, key), set())
+        if program in ("crc32", "crc_low"):
+            if len(names) != 2 or not any("/interpreter" in name for name in names) or not any("/native" in name for name in names):
+                refuse("reached_inventory")
+        elif len(names) != 1:
+            refuse("reached_inventory")
+    for fields in structured:
+        name, package, *tokens = fields
+        refs = [token for token in tokens if "=" not in token]
+        matches = [control for control, tests in event_sets.items()
+                   if roots[control][0] == package and refs and all(ref in tests for ref in refs)]
+        if len(matches) != 1: refuse("structured_inventory")
+    return controls, roots, event_sets, cases, reached
+
+def validate_control_events(manifest_path, log_data):
+    controls, roots, event_sets, cases, reached = manifest_inventory(manifest_path)
+    event_records = {}
+    report_records = {}
+    try:
+        log_lines = log_data.decode("utf-8", "strict").splitlines()
+    except UnicodeDecodeError:
+        refuse("control_event_inventory")
+    for line in log_lines:
+        match = re.fullmatch(r"phase38-control-events-hex ([^ ]+) ([0-9a-f]+)", line)
+        if match:
+            name, encoded = match.groups()
+            if name in event_records or len(encoded) > 32 * 1024 * 1024:
+                refuse("control_event_inventory")
+            try: event_records[name] = bytes.fromhex(encoded)
+            except ValueError: refuse("control_event_inventory")
+            continue
+        match = re.fullmatch(r"phase38 control name=([^ ]+) package=([^ ]+) tests=(.+) status=pass", line)
+        if match:
+            name, package, test_list = match.groups()
+            if name in report_records: refuse("control_event_inventory")
+            report_records[name] = (package, test_list.split())
+    if set(event_records) != set(controls) or set(report_records) != set(controls):
+        refuse("control_event_inventory")
+    for name in controls:
+        package, _ = roots[name]
+        expected = event_sets[name]
+        expected_roots = sorted(test for test in expected if "/" not in test)
+        if report_records[name] != (package, expected_roots):
+            refuse("control_event_inventory")
+        raw = event_records[name]
+        if not raw or not raw.endswith(b"\n") or len(raw) > 16 * 1024 * 1024:
+            refuse("control_event_incomplete")
+        counts = {test: {"run": 0, "pass": 0} for test in expected}
+        for raw_line in raw.splitlines():
+            if not raw_line: refuse("control_event_inventory")
+            try:
+                item = json.loads(raw_line.decode("utf-8"), object_pairs_hook=unique_object,
+                                  parse_constant=lambda _: refuse("control_event_inventory"))
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                refuse("control_event_inventory")
+            if type(item) is not dict or not isinstance(item.get("Action"), str):
+                refuse("control_event_inventory")
+            action, test_name = item["Action"], item.get("Test", "")
+            if not isinstance(test_name, str): refuse("control_event_inventory")
+            if action in ("run", "pass", "skip", "fail"):
+                if test_name not in expected: refuse("control_event_inventory")
+                if action == "skip": refuse("control_test_skipped")
+                if action == "fail": refuse("control_test_failed")
+                counts[test_name][action] += 1
+                if counts[test_name][action] > 1: refuse("control_event_inventory")
+            elif action == "output":
+                if test_name and test_name not in expected: refuse("control_event_inventory")
+            else:
+                refuse("control_event_inventory")
+        if any(counts[test]["run"] != 1 or counts[test]["pass"] != 1 for test in expected):
+            refuse("control_event_incomplete")
+    return len(controls), len(cases)
+
 def validate_run(f, run_path, log_args):
     r = load_json(run_path)
     keys(r, {"schema", "repository", "workflow_path", "event", "run_id", "attempt", "url",
@@ -154,6 +300,7 @@ def validate_run(f, run_path, log_args):
     by_host = {}
     arg_paths = [safe_path(x) for x in log_args]
     if len(set(arg_paths)) != 2: refuse("required_logs")
+    manifest_path = f["manifest"]["path"]
     for item in r["logs"]:
         keys(item, {"artifact_id", "host", "path", "bytes", "sha256"}, "log_schema")
         if item["host"] not in host_os or item["host"] in by_host: refuse("required_logs")
@@ -171,6 +318,7 @@ def validate_run(f, run_path, log_args):
         if host != item["host"] or head != f["freeze_sha"]: refuse("wrong_revision")
         if digest != f["codedigest"]: refuse("wrong_codedigest")
         if tree != "clean": refuse("dirty_host")
+        validate_control_events(manifest_path, data)
         by_host[item["host"]] = path
     if set(by_host) != set(host_os): refuse("required_logs")
     # The generic gate remains the authority for manifest cases, controls and host-row consistency.
@@ -200,7 +348,7 @@ try:
         if committed_digest != freeze["codedigest"]: refuse("freeze_digest_mismatch")
         if subprocess.run(["git", "merge-base", "--is-ancestor", freeze["freeze_sha"], candidate], cwd=root).returncode:
             refuse("freeze_not_ancestor")
-        changed = subprocess.run(["sh", "scripts/check-freeze.sh", freeze["manifest"]["path"], freeze["freeze_sha"], candidate, freeze["freeze_sha"]], cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        changed = subprocess.run(["sh", "scripts/check-freeze.sh", freeze["manifest"]["path"], freeze["freeze_sha"], candidate], cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if changed.returncode:
             sys.stdout.write(changed.stdout)
             refuse("freeze_history_changed")
