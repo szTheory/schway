@@ -230,3 +230,19 @@ receipt and is not credited as a pass. No extra manual-only criterion remains.
 | Gaps found | 2 |
 | Resolved | 2 |
 | Escalated | 0 |
+
+
+Independent verification then found one metadata-only roadmap gate despite
+32/32behavioral truths passing. Two future-phase plan-count fields now state
+Not planned /0planned explicitly while Phase38remains Not started. The initial
+verdict and correction are recorded in36-REFRESH2-METADATA-FIX.md; independent
+re-verification owns closure. This third audit item adds no behavioral test
+or language admission and does not rewrite completed plans/UAT.
+
+## Validation Audit 2026-10-16
+
+| Metric | Count |
+|---|---|
+| Gaps found | 3 |
+| Resolved | 3 |
+| Escalated | 0 |

@@ -876,3 +876,43 @@ parsing. Programs, blockers, complete slices, checker obligations, evidence/debt
 owners, reprioritization conditions and source/consumer dispositions retaining
 z1g/trz/z1s dormant are recorded in
 [35-REFRESH2-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH2-CLOSEOUT.md).
+
+
+## Phase 36 caller-shape repair and freshness transition — 2026-10-15
+
+**Source inspection:** scalar helper calls and CRC/module/file consumers remain
+implemented. Independent review found and closed a native classifier omission:
+existing structured unused-Byte-to-U64 and ByteView-to-Unit callers now emit
+without an unrelated eligible caller. The Byte formal remains provably unused;
+helper callee signatures, independent peer laws, ownership/loan refusals and
+wire fields are unchanged. No dependency or backend was added.
+
+**New local evidence:** the post-repair21-task mapping plus two regressions
+passes86 roots/13 packages. Final combined regression passes239 distinct names /
+251root executions/16 packages, zero missing/fail/skip; both canonical
+prohibitions prove actual-source bad RED and clean/default GREEN. Independent
+review confirms the repair and its exact registered emitter consumer. The
+independent goal verifier supports32/32 truths,24 artifacts,19 links and26 decisions.
+Its canonical report owns final acceptance/freshness; an initial metadata gate
+required explicit unplanned Phase 38 plan-count wording. No Phase 38 planning
+or hosted authority follows from that wording correction.
+
+**Historical receipts:** earlier captures retain their original source
+revisions, including the initial failed inventory attempt. Final logs are
+freshly executed; no full local suite, current hosted/Linux receipt, human
+readability measurement or whole-loop cold/warm latency distribution is claimed.
+The ByteView Unit regression proves translation-unit emission/linking and an
+unrelated U64 entry result, not execution of that Unit body or a new value-call
+signature.
+
+Only EVD-17 remains active M007 scope. Source changes legitimately stale earlier
+reports: the next freshness gate after this closure is `$gsd-execute-phase 33`,
+then re-query (currently35 and37;34passes). Preserve completed plans/UAT. M007
+audit/gap closure must explicitly disposition Phase 33 CR-03/04 before Phase 38
+freeze; those remain deferred BLOCKER propagation findings, not fixed or
+accepted risks. Phase 36 WR-02 remains separate deferred comment debt. Current
+review has one warning and is not clean. Ranked next capabilities remain audited
+same-source two-host CRC receipts, proposed M008 wc/longest_line, then bounded
+fixed-schema key=value parsing. The complete program/blocker/slice/guarantee/
+evidence/owner/reprioritization and dormant-seed dispositions are recorded in
+[36-REFRESH2-GATES.md](phases/36-scalar-helper-calls/36-REFRESH2-GATES.md).
