@@ -2,6 +2,11 @@
   "schema": "phase16.public-emitter-consumers/2",
   "entries": [
     {
+      "call": "internal/compiler/cgen/cgen_phase33_scalar_defect_test.go:EmitNative:66",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase33ScalarExplicitDefectShells"
+    },
+    {
       "call": "internal/compiler/cgen/cgen_phase36_caller_shapes_test.go:EmitNative:41",
       "classification": "admitted-dynamic-schema2",
       "witness": "probe:TestPhase36UnusedByteStructuredHelper"

@@ -3005,7 +3005,12 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 				}
 				terminated = true
 			case core.OpDefect:
-				emitProgramApplicationScalarFailure(out, "  ", "schway app: "+op.Reason, dynamicInvocationSupport)
+				if shell == programApplicationShell {
+					emitProgramApplicationScalarFailure(out, "  ", "schway app: "+op.Reason, dynamicInvocationSupport)
+				} else {
+					emitProgramDefectTerminal(out, function, op)
+					out.WriteString("  exit(0);\n")
+				}
 				terminated = true
 			default:
 				return fmt.Errorf("operation %q has unsupported scalar kind %q", op.ID, op.Kind)
