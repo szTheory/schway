@@ -1,0 +1,62 @@
+{
+  "audit": "M007 cross-phase integration — terminal closure",
+  "head": "e732b8e7d09e6ff796d04c959033bca8a0f34af2",
+  "scope": ["33", "34", "35", "36", "37", "37.1"],
+  "phase38": "not_started",
+  "status": "no_new_cross_phase_blocker",
+  "counts": {
+    "component_connections_inspected_wired": 10,
+    "component_connections_inspected_broken": 0,
+    "cross_phase_connections_wired": 6,
+    "cross_phase_connections_broken": 0,
+    "scoped_completed_flows_wired": 6,
+    "scoped_completed_flows_broken": 0,
+    "requirement_rows_wired": 15,
+    "requirement_rows_partial_metadata": 3,
+    "requirement_rows_pending": 1,
+    "http_routes": 0,
+    "authenticated_web_areas": 0
+  },
+  "connections": [
+    {"from": "Phase 33 bounded capture", "to": "native evidence capture", "status": "WIRED", "kind": "self-contained"},
+    {"from": "Phase 33 generic freeze/receipt gate", "to": "later GSD evidence workflow", "status": "WIRED", "terminal_hosted_binding": "PENDING_PHASE_38"},
+    {"from": "Phase 34 parser/checker diagnostics", "to": "CLI text and JSON presentation", "status": "WIRED"},
+    {"from": "Phase 34 surface manifest", "to": "Phase 35/36 admissions", "status": "WIRED"},
+    {"from": "Phase 34 dynamic-shift refusal", "to": "Phase 35 BIT-02", "status": "WIRED"},
+    {"from": "Phase 35 bitwise/hex operations", "to": "Phase 36/37 consumers", "status": "WIRED"},
+    {"from": "Phase 36 scalar calls", "to": "Phase 37 shared CRC module consumers", "status": "WIRED"},
+    {"from": "Phase 37 CLI file route", "to": "checked session/FileBytes adapter", "status": "WIRED"},
+    {"from": "Phase 37 CRC output", "to": "interpreter/native user result", "status": "WIRED"},
+    {"from": "Phase 37.1 trace producers", "to": "independent execution peer", "status": "WIRED"}
+  ],
+  "flows": [
+    {"name": "authoring diagnostics", "status": "WIRED", "note": "Phase 34 report remains human_needed until normal owner refresh; wording check delegated by user, not an independent readability measurement."},
+    {"name": "bitwise checksum", "status": "WIRED", "note": "Independent expected answers cover values; execution peer is causal-only."},
+    {"name": "scalar helper execution", "status": "WIRED"},
+    {"name": "CRC file application", "status": "WIRED", "note": "Host-local current evidence; no two-host claim."},
+    {"name": "checked typed failure", "status": "WIRED", "note": "Only actual checked Phase 24 source route; synthetic OpReturn probe excluded."},
+    {"name": "no-call scalar defect reporting", "status": "WIRED", "note": "Bounded checked no-call source; Unit native conformance remains refused."},
+    {"name": "final hosted evidence binding", "status": "PENDING", "owner": "Phase 38 / EVD-17"}
+  ],
+  "terminal_dispositions": {
+    "CR-03": {"status": "CLOSED", "connection": "WIRED", "claim": "legacy and dynamic child defect closes all active invocations", "limit": "Causal closure only; no destructor, physical cleanup, or synthetic unwind claim."},
+    "CR-04": {"status": "CLOSED", "connection": "WIRED", "claim": "checked foreign.failed at indexed OpForeignCall routes through caller error edge to root OpFail", "limit": "No arbitrary raw-core OpReturn claim, scalar payload/value authentication, numerical replay, or executed CFG branch proof."},
+    "CR-06": {"status": "CLOSED", "connection": "WIRED", "claim": "bounded checker-admitted no-call OpDefect produces peer-accepted native conformance terminal", "limit": "Unit native conformance remains refused; no arbitrary OpReturn failure admission claim."}
+  },
+  "finding_classification": {"blockers": 0, "warnings": 1, "warning": "CALL-01, CALL-02, and DX-24 are omitted from summary requirement frontmatter despite verifier/validation coverage; manual join is documented."},
+  "phase_verification_snapshot": {
+    "33": {"status": "passed", "score": "60/60", "nyquist": "validated_compliant"},
+    "34": {"status": "human_needed", "score": "38/38 technical", "nyquist": "validated_compliant", "manual_context": "user delegated acceptance of current diagnostic wording; no independent readability measurement"},
+    "35": {"status": "passed", "score": "38/38", "nyquist": "validated_compliant"},
+    "36": {"status": "passed", "score": "32/32", "nyquist": "validated_compliant"},
+    "37": {"status": "passed", "score": "14/14", "nyquist": "validated_compliant"},
+    "37.1": {"status": "gaps_found", "score": "19/22", "note": "Recorded failures are report freshness and this fresh M007 audit; predecessor refreshes now recorded, final independent Phase 37.1 verification remains parent-owned."},
+    "38": {"status": "not_started", "nyquist": "missing_expected"}
+  },
+  "api_coverage": "not_applicable_no_http_routes",
+  "auth_protection": "not_applicable_no_authenticated_web_areas",
+  "detailed_report": "INTEGRATION.md",
+  "requirements_matrix": "REQUIREMENTS.json",
+  "evidence_record": "EVIDENCE.json",
+  "summary_extraction": "SUMMARY-EXTRACTION.json"
+}

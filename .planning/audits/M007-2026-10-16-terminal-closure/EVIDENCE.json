@@ -1,0 +1,72 @@
+{
+  "audit_head": "e732b8e7d09e6ff796d04c959033bca8a0f34af2",
+  "audited_at": "2026-10-16",
+  "workspace": "/Users/jon/projects/schway",
+  "host_and_tools": {"host": "Darwin arm64", "os": "macOS 26.6.2", "go": "go1.24.0 darwin/arm64", "clang": "Apple clang 21.0.1", "node": "v26.10.0"},
+  "current_report_snapshot": {
+    "33": {"verification": "passed", "score": "60/60", "validation": "validated; nyquist_compliant=true; wave_0_complete=true"},
+    "34": {"verification": "human_needed", "technical_score": "38/38", "validation": "validated; nyquist_compliant=true; wave_0_complete=true"},
+    "35": {"verification": "passed", "score": "38/38", "validation": "validated; nyquist_compliant=true; wave_0_complete=true"},
+    "36": {"verification": "passed", "score": "32/32", "validation": "validated; nyquist_compliant=true; wave_0_complete=true"},
+    "37": {"verification": "passed", "score": "14/14", "validation": "validated; nyquist_compliant=true; wave_0_complete=true"},
+    "37.1": {"verification": "gaps_found", "score": "19/22", "validation": "validated; nyquist_compliant=true; wave_0_complete=true"},
+    "38": {"verification": "not_started", "validation": "missing_expected"}
+  },
+  "phase34_human_context": {
+    "status_as_of_current_report": "human_needed",
+    "technical_truths": "38/38 verified",
+    "user_response": "what do u rec? do that",
+    "delegated_choice": "retain the current diagnostic wording, which states the exact operator/span, names the cause, and gives an explicit if/else alternative",
+    "measurement_limit": "This is user-delegated acceptance of one wording check; it is not an independent human-readability measurement. Normal owner report refresh remains pending at this audit snapshot."
+  },
+  "phase371_refresh_receipt": {
+    "source": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-COMPLETION-2026-10-16.json",
+    "receipt_head": "20a519468839a0698e2c4e93fc51300509c6abbf",
+    "receipt_status": "passed_bounded_preverifier_gates",
+    "later_current_head": "e732b8e7d09e6ff796d04c959033bca8a0f34af2",
+    "later_parent_context": "Phases 33–37 predecessor reports have since been refreshed in order; the current audit follows those gates.",
+    "regression": {"groups": 16, "selectors": 250, "root_events": 251, "distinct_test_names": 240, "reused_green_root_receipts": 220, "formerly_failed_rerun_green": 5, "previously_unrun_roots_passed": 26, "failed": 0, "skipped": 0, "missing": 0, "excluded": "TestPhase33CaptureReadBounded"},
+    "proofs": {"current_subjects": 4, "inputs_per_subject": 37, "raw_machine_local_records": 53, "union_roots": 19, "union_subtests": 254, "union_skipped": 0, "source_evolution": "T-37.1-CR03-acceptance-input-bindings-7"},
+    "union_log": {"path": "/tmp/schway371-prohibition-proof-9GhW0w/final-19-root-union.go.log", "sha256": "ad7c3dcd130b45674a3ac68173d364282a7e3e1e384a0c7a64545a3fa8b8c034", "bytes": 42992, "check": "Direct current file size and SHA-256 matched the recorded values."},
+    "source_binding_integrity": {"proof_binding_sets_checked": 5, "paths_checked": 185, "mismatches": 0, "note": "Four current proof maps and the current union each bind 37 paths; local files matched recorded hashes."},
+    "raw_records_integrity": {"records_checked": 53, "mismatches": 0, "note": "Machine-local raw evidence files existed and matched recorded byte/hash metadata."},
+    "compatibility": {"census_rows": 325, "phase34_rows": "162 sources × 4 routes", "phase36_rows": "163 sources × 3 routes", "exact_amendments": 5, "source_and_old_c_unchanged": true, "goldens_unchanged": true},
+    "limitations": ["No pressure/large-input/stress selector", "No full-project or whole-package rerun", "No hosted/Linux/two-host receipt", "No latency claim", "No hermetic clean-checkout claim", "Historical root set was not wholly re-executed"]
+  },
+  "terminal_phase_review": {
+    "review": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-REVIEW.md",
+    "review_status": "clean; 8 current-delta files; zero findings",
+    "review_scope": "Current regression delta after prior clean 15-file review; not a full re-review of unchanged implementation files.",
+    "fix_report": "3 findings fixed, 0 skipped; prior fixes are preserved in commits/history.",
+    "disposition": "CR-01/02/03 fixed; open=0; total=3",
+    "security": "Phase 37.1 scoped checks 13/13, zero open; no accepted risks.",
+    "validation": "19 roots, 254 subtests, zero skips in bounded union."
+  },
+  "independent_phase371_path_audit": {
+    "result": "CR-03, CR-04, CR-06 WIRED; no new blocker",
+    "source_witnesses": [
+      "internal/compiler/executionpeer/executionpeer_phase371_test.go:53-87,106-155,640-812",
+      "internal/compiler/executionpeer/executionpeer.go:350-419,524-573,795-801,902-916,985-1047",
+      "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go:22-60,62-105,122-143,146-283",
+      "internal/compiler/cgen/cgen.go:119-127",
+      "internal/compiler/cgen/cgen_program.go:994-1014,3038-3047",
+      "examples/phase24/error.schway",
+      "examples/sum_to_n.schway"
+    ],
+    "claim_limits": ["Synthetic OpReturn failed probe is not checked-source evidence.", "Literal model outcomes are model-only.", "Peer does not authenticate scalar payload or missing Outcome.Value and does not prove actual CFG branch or numeric replay.", "Causal frame closure does not establish destructor/physical cleanup.", "No arbitrary raw-core OpReturn failure admission/recovery claim."]
+  },
+  "source_flow_witnesses": [
+    {"path":"cmd/schway/main.go","lines":"37-56,183-370","flow":"CLI route selection, check/run grammar, result/error handling, interpreter/native app route"},
+    {"path":"internal/compiler/session/session_file_application.go","lines":"15-47","flow":"checked source/module closure, admission, owner-path checks, fixed interpreter application route"},
+    {"path":"internal/compiler/session/session.go","lines":"1438-1487,1531+","flow":"checked application build, admission, owner path/manifest ABI, emitter and native module build"},
+    {"path":"examples/crc32/lib/crc32.schway","flow":"shared bitwise, bit-at-a-time CRC helper"},
+    {"path":"examples/crc32/crc32.schway","flow":"FileBytes owner/borrow, shared crc32 call, decimal output"},
+    {"path":"examples/crc32/crc_low.schway","flow":"second importing consumer of shared crc32"},
+    {"path":"internal/compiler/session/session_phase37_crc32_test.go","lines":"18-200+","flow":"module closure, shared helper activation, native output, adapter equality and second consumer"},
+    {"path":"cmd/schway/main_phase37_file_run_test.go","lines":"34-210","flow":"interpreter/native CLI parity, opaque paths, source/native/manifest refusal and typed file errors"}
+  ],
+  "summary_join": {"summary_count": 42, "counts_by_phase": {"33":5,"34":8,"35":8,"36":8,"37":9,"37.1":4,"38":0}, "known_gaps": ["All Phase 36 summary requirement lists empty; CALL-01/02 joined from verifier and validation.", "DX-24 is absent from all Phase 37 summary requirement lists; verifier/validation include it.", "Phase 37.1 summary fields empty as it owns no canonical requirements.", "No Phase 38 summary because not started; EVD-17 pending."], "source": "SUMMARY-EXTRACTION.json"},
+  "nyquist": {"33":"COMPLIANT","34":"COMPLIANT","35":"COMPLIANT","36":"COMPLIANT","37":"COMPLIANT","37.1":"COMPLIANT","38":"MISSING_EXPECTED_NOT_STARTED","hook":"validate-phase Nyquist hook active"},
+  "audit_actions": {"source_inspection": true, "sdk_summary_extraction": true, "current_receipt_and_hash_inspection": true, "tests_run_by_this_audit": false, "commits_created": false, "hosted_actions": false},
+  "workspace_note": "At inspection the worktree also showed .planning/config.json modified and .planning/milestone.lock untracked; these user/workflow-owned files were not edited by this audit."
+}

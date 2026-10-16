@@ -1,0 +1,349 @@
+{
+  "audited": "2026-10-16T21:40:06.234614+00:00",
+  "audited_head": "320f9b556b68f42d0395f8da23135cfcd63232b5",
+  "predecessor_statuses": {
+    "33": {
+      "status": "passed",
+      "next_action": "Verification passed \u2014 continue.",
+      "next_command": "",
+      "route": ""
+    },
+    "34": {
+      "status": "passed",
+      "next_action": "Verification passed \u2014 continue.",
+      "next_command": "",
+      "route": ""
+    },
+    "35": {
+      "status": "passed",
+      "next_action": "Verification passed \u2014 continue.",
+      "next_command": "",
+      "route": ""
+    },
+    "36": {
+      "status": "passed",
+      "next_action": "Verification passed \u2014 continue.",
+      "next_command": "",
+      "route": ""
+    },
+    "37": {
+      "status": "passed",
+      "next_action": "Verification passed \u2014 continue.",
+      "next_command": "",
+      "route": ""
+    }
+  },
+  "requirements": [
+    {
+      "id": "QLT-13",
+      "phase": "33",
+      "requirement": "Native evidence capture reads limit+1 bytes before full allocation and refuses oversize input; unbounded-read mutant is caught.",
+      "requirements_checkbox": "complete",
+      "verification": "passed 60/60",
+      "summary_refs": [
+        "33-01",
+        "33-02"
+      ],
+      "integration_path": "bounded capture reader \u2192 capacity outcome; phase-local controls",
+      "status": "WIRED",
+      "note": "Self-contained carried-debt obligation; no later feature consumer.",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join"
+    },
+    {
+      "id": "QLT-14",
+      "phase": "33",
+      "requirement": "Close 32.1 warnings and disposition/fix prior review issues, including narrow abort-like defect acceptance and live-owner checks.",
+      "requirements_checkbox": "complete",
+      "verification": "passed 60/60",
+      "summary_refs": [
+        "33-01",
+        "33-02",
+        "33-03",
+        "33-05"
+      ],
+      "integration_path": "phase-local review debt; WR-02 comment semantics clarified in Phase 37.1 at the necessary core edit",
+      "status": "WIRED",
+      "note": "No missing runtime connection; historical decision retained.",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join"
+    },
+    {
+      "id": "QLT-15",
+      "phase": "33",
+      "requirement": "Triage Phase 29 warnings and add Phase 28 validation/security artifacts.",
+      "requirements_checkbox": "complete",
+      "verification": "passed 60/60",
+      "summary_refs": [
+        "33-05"
+      ],
+      "integration_path": "phase-local review and artifact closure",
+      "status": "WIRED",
+      "note": "Self-contained carried-debt obligation; no later feature consumer.",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join"
+    },
+    {
+      "id": "EVD-16",
+      "phase": "33",
+      "requirement": "One milestone-agnostic freeze and receipt gate consumes the milestone program list and codedigest without per-phase copies.",
+      "requirements_checkbox": "complete",
+      "verification": "passed 60/60",
+      "summary_refs": [
+        "33-03",
+        "33-04",
+        "33-05"
+      ],
+      "integration_path": "generic freeze/receipt workflow \u2192 later source-bound evidence workflows",
+      "status": "WIRED",
+      "note": "The final M007 hosted receipt binding is separately owned by EVD-17/Phase 38.",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join"
+    },
+    {
+      "id": "DX-20",
+      "phase": "34",
+      "requirement": "Text diagnostics include location, snippet, caret; JSON adds 1-based line/column beside byte offsets.",
+      "requirements_checkbox": "complete",
+      "verification": "human_needed; 38/38 technical truths verified",
+      "summary_refs": [
+        "34-01",
+        "34-02",
+        "34-03",
+        "34-08"
+      ],
+      "integration_path": "parser/checker diagnostics \u2192 CLI text and JSON presentation",
+      "status": "WIRED",
+      "note": "One existing wording question is delegated by the user; no independent readability measurement is claimed.",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join",
+      "latest_owner_status": "passed",
+      "manual_disposition": "34-UAT.md complete, user-delegated keep-wording acceptance; not an independent readability measurement"
+    },
+    {
+      "id": "DX-21",
+      "phase": "34",
+      "requirement": "One syntax error yields one recovery-point diagnostic; pinned draft corpus controls cascade reduction.",
+      "requirements_checkbox": "complete",
+      "verification": "human_needed; 38/38 technical truths verified",
+      "summary_refs": [
+        "34-01",
+        "34-04",
+        "34-08"
+      ],
+      "integration_path": "parser recovery \u2192 checker diagnostic projection",
+      "status": "WIRED",
+      "note": "Human-needed status is a separate verification lifecycle state, not a technical break.",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join",
+      "latest_owner_status": "passed",
+      "manual_disposition": "34-UAT.md complete, user-delegated keep-wording acceptance; not an independent readability measurement"
+    },
+    {
+      "id": "DX-22",
+      "phase": "34",
+      "requirement": "Unsupported constructs receive dedicated surface codes and hints, including dynamic shift amounts delivered by Phase 35 BIT-02.",
+      "requirements_checkbox": "complete",
+      "verification": "human_needed; 38/38 technical truths verified",
+      "summary_refs": [
+        "34-01",
+        "34-05",
+        "34-08"
+      ],
+      "integration_path": "Phase 34 surface refusal and manifest \u2192 Phase 35 literal-only shift checker/core/origin refusal",
+      "status": "WIRED",
+      "note": "Roadmap explicitly assigns deferred dynamic-shift closure to BIT-02.",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join",
+      "latest_owner_status": "passed",
+      "manual_disposition": "34-UAT.md complete, user-delegated keep-wording acceptance; not an independent readability measurement"
+    },
+    {
+      "id": "DX-23",
+      "phase": "34",
+      "requirement": "Versioned deterministic surface manifest matches actual admissions and unsupported codes.",
+      "requirements_checkbox": "complete",
+      "verification": "human_needed; 38/38 technical truths verified",
+      "summary_refs": [
+        "34-01",
+        "34-06",
+        "34-07",
+        "34-08"
+      ],
+      "integration_path": "surface --json manifest \u2194 Phase 35/36 admitted operators and call rules; tests reject manifest drift",
+      "status": "WIRED",
+      "note": "Current owner report remains human_needed until normal refresh.",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join",
+      "latest_owner_status": "passed",
+      "manual_disposition": "34-UAT.md complete, user-delegated keep-wording acceptance; not an independent readability measurement"
+    },
+    {
+      "id": "BIT-01",
+      "phase": "35",
+      "requirement": "U64 XOR, AND, OR agree across interpreter/native and independent value-transfer peers; causal peer guards admission/events.",
+      "requirements_checkbox": "complete",
+      "verification": "passed 38/38",
+      "summary_refs": [
+        "35-02",
+        "35-03",
+        "35-08"
+      ],
+      "integration_path": "parser/check/core/origin \u2192 interpreter and C/native; actual Phase 37 CRC consumer uses &, ^",
+      "status": "WIRED",
+      "note": "Peer roles follow the dated clarification: value peers prove values; execution peer proves causal structure.",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join"
+    },
+    {
+      "id": "BIT-02",
+      "phase": "35",
+      "requirement": "Literal U64 shifts 0\u201363 admitted; dynamic and \u226564 amounts refused; generated C guarded; left shift drops high bits.",
+      "requirements_checkbox": "complete",
+      "verification": "passed 38/38",
+      "summary_refs": [
+        "35-02",
+        "35-03",
+        "35-04",
+        "35-08"
+      ],
+      "integration_path": "Phase 34 unsupported diagnostic/manifest \u2192 Phase 35 literal-only admission \u2192 Phase 37 CRC uses >>",
+      "status": "WIRED",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join"
+    },
+    {
+      "id": "BIT-03",
+      "phase": "35",
+      "requirement": "Hex U64 literals accepted with preserved spelling; malformed/overflowing literals refused.",
+      "requirements_checkbox": "complete",
+      "verification": "passed 38/38",
+      "summary_refs": [
+        "35-08"
+      ],
+      "integration_path": "lexer/parser/formatter \u2192 checked U64 literals used in checksum examples",
+      "status": "WIRED",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join"
+    },
+    {
+      "id": "BIT-04",
+      "phase": "35",
+      "requirement": "Adler32 uses b << 16 and pinned outputs remain byte-identical on both engines.",
+      "requirements_checkbox": "complete",
+      "verification": "passed 38/38",
+      "summary_refs": [
+        "35-08"
+      ],
+      "integration_path": "checksum example \u2192 interpreter/native output, connected to Phase 35 operator admission",
+      "status": "WIRED",
+      "note": "Consumer is within the feature phase; no extra downstream consumer is required.",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join"
+    },
+    {
+      "id": "CALL-01",
+      "phase": "36",
+      "requirement": "Scalar functions call local/imported U64 or Bool helpers; recursion refused and callee defects surface on both engines.",
+      "requirements_checkbox": "complete",
+      "verification": "passed 32/32",
+      "summary_refs": [],
+      "integration_path": "OpCall lowering/validators/interpreter/native \u2192 imported Phase 37 lib.crc32 and crc_low consumers",
+      "status": "PARTIAL",
+      "note": "Technically verified by Phase 36 verifier/validation and Phase 37 real consumers; all 8 Phase 36 summary requirements_completed fields are empty, requiring a manual join.",
+      "final_status": "satisfied",
+      "resolution_basis": "manual join: source-backed owner verification and validation plus independent real consumer; historical summary preserved"
+    },
+    {
+      "id": "CALL-02",
+      "phase": "36",
+      "requirement": "Independent call derivations catch dropped argument/result/defect mutations; no-call generated C remains byte-identical.",
+      "requirements_checkbox": "complete",
+      "verification": "passed 32/32",
+      "summary_refs": [],
+      "integration_path": "check/core/origin/execution peer call evidence \u2192 imported Phase 37 CRC helper call",
+      "status": "PARTIAL",
+      "note": "Technically verified by verifier/validation; absent from every Phase 36 summary requirements_completed field. Execution peer is causal, not scalar-value replay.",
+      "final_status": "satisfied",
+      "resolution_basis": "manual join: source-backed owner verification and validation plus independent real consumer; historical summary preserved"
+    },
+    {
+      "id": "APP-13",
+      "phase": "37",
+      "requirement": "Ordinary-source CRC-32 module reads up to 65,536 bytes and prints ISO-HDLC decimal with pinned/oracle-controlled cases.",
+      "requirements_checkbox": "complete",
+      "verification": "passed 14/14",
+      "summary_refs": [
+        "37-01"
+      ],
+      "integration_path": "checked file application \u2192 bounded FileBytes/ByteView \u2192 shared bit-at-a-time crc32 \u2192 decimal result",
+      "status": "WIRED",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join"
+    },
+    {
+      "id": "MOD-07",
+      "phase": "37",
+      "requirement": "Second consumer imports crc32 without copying it and has pinned results on both engines.",
+      "requirements_checkbox": "complete",
+      "verification": "passed 14/14",
+      "summary_refs": [
+        "37-01"
+      ],
+      "integration_path": "crc_low imports lib.crc32 \u2192 shared function \u2192 low16 result on both engines",
+      "status": "WIRED",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join"
+    },
+    {
+      "id": "APP-14",
+      "phase": "37",
+      "requirement": "Interpreter CLI runs FileBytes programs and matches native stdout/stderr/exit for pinned cases.",
+      "requirements_checkbox": "complete",
+      "verification": "passed 14/14",
+      "summary_refs": [
+        "37-01"
+      ],
+      "integration_path": "schway run interpreter/native selectors \u2192 shared checked application and file route \u2192 result tuple",
+      "status": "WIRED",
+      "final_status": "satisfied",
+      "resolution_basis": "canonical checkbox, source-backed owner verification and summary completion join"
+    },
+    {
+      "id": "DX-24",
+      "phase": "37",
+      "requirement": "CRC README is an executable clean-checkout guide exercised by a test.",
+      "requirements_checkbox": "complete",
+      "verification": "passed 14/14",
+      "summary_refs": [],
+      "integration_path": "guide commands \u2192 clean-checkout test harness \u2192 CLI outputs",
+      "status": "PARTIAL",
+      "note": "Verifier and validation cover DX-24, but none of nine Phase 37 summary requirement fields lists it; manual join recorded.",
+      "final_status": "satisfied",
+      "resolution_basis": "manual join: source-backed owner verification and validation plus independent real consumer; historical summary preserved"
+    },
+    {
+      "id": "EVD-17",
+      "phase": "38",
+      "requirement": "Hosted ubuntu and macOS receipts for M007 and prior pinned programs bind once to final M007 codedigest after audit.",
+      "requirements_checkbox": "pending",
+      "verification": "not started; no Phase 38 verifier/validation expected yet",
+      "summary_refs": [],
+      "integration_path": "generic receipt gate \u2192 final hosted two-host receipt set",
+      "status": "PENDING",
+      "note": "Expected owner gate for not-started Phase 38; not an accidental orphan or duplicated ownership.",
+      "final_status": "unsatisfied",
+      "resolution_basis": "expected unexecuted Phase38 owner"
+    }
+  ],
+  "manual_joins_resolved": [
+    "CALL-01",
+    "CALL-02",
+    "DX-24"
+  ],
+  "terminal_gaps_unresolved": [],
+  "phase371_final_owner_verification": "next after this audit",
+  "integration_snapshot": "INTEGRATION.json (dated before Phase34 UAT owner refresh)",
+  "human_clarity_resolution": "34-UAT.md and refreshed34-VERIFICATION.md; explicit user delegation",
+  "canonical_requirements_modified": false
+}

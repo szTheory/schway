@@ -1,0 +1,192 @@
+{
+  "kind": "sdk-canonical-summary-requirements-extraction",
+  "captured_at_head": "e732b8e7d09e6ff796d04c959033bca8a0f34af2",
+  "sdk": "@opengsd/gsd-core 1.16.0",
+  "command": "node /Users/jon/.codex/gsd-core/bin/gsd-tools.cjs query summary-extract <summary> --fields requirements_completed --pick requirements_completed --raw",
+  "summary_count": 42,
+  "by_phase": {
+    "33": 5,
+    "34": 8,
+    "35": 8,
+    "36": 8,
+    "37": 9,
+    "37.1": 4,
+    "38": 0
+  },
+  "summaries": [
+    {
+      "path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-01-SUMMARY.md",
+      "requirements_completed": "QLT-13,QLT-14"
+    },
+    {
+      "path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-02-SUMMARY.md",
+      "requirements_completed": "QLT-14"
+    },
+    {
+      "path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-03-SUMMARY.md",
+      "requirements_completed": "EVD-16,QLT-14"
+    },
+    {
+      "path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-04-SUMMARY.md",
+      "requirements_completed": "EVD-16"
+    },
+    {
+      "path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-05-SUMMARY.md",
+      "requirements_completed": "EVD-16,QLT-14,QLT-15"
+    },
+    {
+      "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-01-SUMMARY.md",
+      "requirements_completed": "DX-20,DX-21,DX-22,DX-23"
+    },
+    {
+      "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-02-SUMMARY.md",
+      "requirements_completed": "DX-20"
+    },
+    {
+      "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-03-SUMMARY.md",
+      "requirements_completed": "DX-20"
+    },
+    {
+      "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-04-SUMMARY.md",
+      "requirements_completed": "DX-21"
+    },
+    {
+      "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-05-SUMMARY.md",
+      "requirements_completed": "DX-22"
+    },
+    {
+      "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-SUMMARY.md",
+      "requirements_completed": "DX-23"
+    },
+    {
+      "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-SUMMARY.md",
+      "requirements_completed": "DX-23"
+    },
+    {
+      "path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-SUMMARY.md",
+      "requirements_completed": "DX-20,DX-21,DX-22,DX-23"
+    },
+    {
+      "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-01-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-02-SUMMARY.md",
+      "requirements_completed": "BIT-01,BIT-02,BIT-03"
+    },
+    {
+      "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-03-SUMMARY.md",
+      "requirements_completed": "BIT-01,BIT-02,BIT-03"
+    },
+    {
+      "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-04-SUMMARY.md",
+      "requirements_completed": "BIT-01,BIT-02"
+    },
+    {
+      "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-05-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-06-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-07-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-SUMMARY.md",
+      "requirements_completed": "BIT-01,BIT-02,BIT-03,BIT-04"
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-01-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-02-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-03-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-04-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-05-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-06-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-07-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/36-scalar-helper-calls/36-08-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-01-SUMMARY.md",
+      "requirements_completed": "APP-13,MOD-07,APP-14"
+    },
+    {
+      "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-02-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-03-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-04-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-05-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-06-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-07-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-08-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-09-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-SUMMARY.md",
+      "requirements_completed": ""
+    },
+    {
+      "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-SUMMARY.md",
+      "requirements_completed": ""
+    }
+  ],
+  "observed_metadata_limits": {
+    "phase36": "All eight summary requirements_completed fields are empty; CALL-01 and CALL-02 are manually joined from the phase verifier and validation evidence.",
+    "phase37": "DX-24 is not listed in any of nine summary requirement fields; verifier and validation cover it. Phase 37-01 lists APP-13, MOD-07, APP-14.",
+    "phase371": "All four summary requirement fields are empty, consistent with Phase 37.1 owning no canonical requirements (D-22).",
+    "phase38": "No Phase 38 summary exists because its directory/phase has not started; EVD-17 remains Phase 38-owned."
+  }
+}
