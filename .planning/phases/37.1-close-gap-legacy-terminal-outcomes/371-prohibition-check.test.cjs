@@ -13,16 +13,19 @@ const PHASE_REL = ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/";
 const PLAN_REL = `${PHASE_REL}37.1-01-PLAN.md`;
 const FAILURE_PLAN_REL = `${PHASE_REL}37.1-02-PLAN.md`;
 const REASON_PLAN_REL = `${PHASE_REL}37.1-03-PLAN.md`;
+const BASELINE_PLAN_REL = `${PHASE_REL}37.1-04-PLAN.md`;
 const PROJECTION_REL = `${PHASE_REL}371-PROHIBITION-PROJECTION.json`;
 const ADAPTER_REL = `${PHASE_REL}371-prohibition-check.test.cjs`;
 const CLEAN_REL = `${PHASE_REL}prohibition-clean.json`;
 const DEFECT_REL = `${PHASE_REL}prohibition-defect-violation.json`;
 const FAILURE_REL = `${PHASE_REL}prohibition-failure-violation.json`;
 const REASON_REL = `${PHASE_REL}prohibition-reason-violation.json`;
+const BASELINE_REL = `${PHASE_REL}prohibition-baseline-violation.json`;
 const SOURCE_REL = "internal/compiler/executionpeer/executionpeer.go";
 const CGEN_REL = "internal/compiler/cgen/cgen_program.go";
 const REASON_TEST_REL = "internal/compiler/session/session_phase371_defect_reason_test.go";
 const CGEN_TEST_REL = "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go";
+const COMPATIBILITY_TEST_REL = "internal/compiler/session/session_phase371_compatibility_test.go";
 const TEST_REL = "internal/compiler/executionpeer/executionpeer_phase371_test.go";
 const MODEL_REL = "internal/compiler/session/session_phase24_model_test.go";
 const FAILURE_BASE_HEAD = "8fbd1e51bb6fd97b1a46d5d1015ce5e39d69bfe0";
@@ -149,6 +152,32 @@ const FAILURE_ROOTS = [
 const FAILURE_EXACT_RUN = "^(TestPhase371ForeignFailureOpFailAttribution|TestPhase371ForeignFailureAttributionControls|TestPhase371LegacyDefectClosesAllActiveFrames|TestPhase33TerminalAttribution|TestPhase36CallCausalAttributionControls)$";
 const REASON_EXACT_RUN = "^TestPhase371CountedDefectReasonBytes$";
 const REASON_ROOT = "TestPhase371CountedDefectReasonBytes";
+const BASELINE_ROOT = "TestPhase371CompatibilityAmendmentControls";
+const EXECUTIONPEER_ROOTS = [
+  "TestPhase371LegacyDefectClosesAllActiveFrames",
+  "TestPhase371DefectTerminalControls",
+  "TestPhase33TerminalAttribution",
+  "TestPhase36CallCausalAttributionControls",
+  "TestPhase371ForeignFailureOpFailAttribution",
+  "TestPhase371ForeignFailureAttributionControls",
+];
+const SESSION_ROOTS = [
+  "TestPhase24ModelReplayIsDeterministicAndModelOnly",
+  "TestPhase371DefectReasonUTF8Admission",
+  "TestPhase371PreEmitterRouteCensus",
+  BASELINE_ROOT,
+  "TestPhase34PreChangeCProgramGolden",
+  "TestPhase34PreChangeCGoldenIsNotInert",
+  "TestPhase36NoCallGeneratedCByteBaseline",
+  "TestPhase36NoCallGeneratedCByteBaselineControls",
+  "TestPhase37Phase34AdditionLedgerControls",
+  "TestPhase37Phase36AdditionLedgerControls",
+];
+const CGEN_ROOTS = [
+  "TestPhase371NoCallScalarDefectNativeConformance",
+  REASON_ROOT,
+  "TestPhase33ScalarExplicitDefectShells",
+];
 const MUTATED_FAILURE_NAMES = [
   "TestPhase371LegacyDefectClosesAllActiveFrames",
   "TestPhase371LegacyDefectClosesAllActiveFrames/legacy-static",
@@ -168,6 +197,7 @@ const FIXTURES = {
   defect: { relative: DEFECT_REL, data: { version: 1, subject: "defect" } },
   failure: { relative: FAILURE_REL, data: { version: 1, subject: "failure" } },
   reason: { relative: REASON_REL, data: { version: 1, subject: "reason" } },
+  baseline: { relative: BASELINE_REL, data: { version: 1, subject: "baseline" } },
 };
 
 function digest(bytes) {
@@ -185,7 +215,7 @@ function escapeRegex(text) {
 function selectSubject() {
   const raw = process.env.GSD_PROHIB_SUBJECT;
   const mode = process.env.GSD_PROHIB_MODE || "defect";
-  if (!new Set(["defect", "failure", "reason"]).has(mode)) return { error: `unsupported closed sample mode: ${mode}` };
+  if (!new Set(["defect", "failure", "reason", "baseline", "native", "all"]).has(mode)) return { error: `unsupported closed sample mode: ${mode}` };
   if (raw === undefined) return { subject: "none", source: "default", mode };
   for (const [subject, fixture] of Object.entries(FIXTURES)) {
     const absolute = path.resolve(ROOT, fixture.relative);
@@ -298,6 +328,27 @@ function originalReasonModeOverlay(tempDir) {
     overlayPath,
     sources,
     overlaySha256: digest(fs.readFileSync(overlayPath)),
+  };
+}
+
+function originalBaselineModeOverlay(sourcePath, tempDir) {
+  const originalBytes = fs.readFileSync(sourcePath);
+  const originalText = originalBytes.toString("utf8");
+  const anchor = "\tif !bytes.Equal(base, got) {";
+  if (exactCount(originalText, anchor) !== 1) {
+    throw new Error("actual old-C comparator byte check is not a unique overlay anchor");
+  }
+  const replacementText = originalText.replace(anchor, "\tif false && !bytes.Equal(base, got) {");
+  const replacementPath = path.join(tempDir, "baseline-comparator-no-op.go");
+  const overlayPath = path.join(tempDir, "overlay.json");
+  fs.writeFileSync(replacementPath, replacementText, { flag: "wx" });
+  fs.writeFileSync(overlayPath, JSON.stringify({ Replace: { [sourcePath]: replacementPath } }), { flag: "wx" });
+  return {
+    overlayPath,
+    originalBytes,
+    replacementSha256: digest(Buffer.from(replacementText)),
+    overlaySha256: digest(fs.readFileSync(overlayPath)),
+    anchorSha256: digest(Buffer.from(anchor)),
   };
 }
 
@@ -513,10 +564,161 @@ function runReasonExactRoots(subject) {
   }
 }
 
+function runBaselineExactRoot(subject) {
+  const original = subject === "baseline";
+  const sourcePath = path.resolve(ROOT, COMPATIBILITY_TEST_REL);
+  const originalBytes = fs.readFileSync(sourcePath);
+  let tempDir = null;
+  let overlay = null;
+  try {
+    if (original) {
+      tempDir = fs.mkdtempSync(path.join(TMP_ROOT, "schway371-baseline-overlay-"));
+      overlay = originalBaselineModeOverlay(sourcePath, tempDir);
+    }
+    const args = ["test"];
+    if (overlay) args.push("-overlay", overlay.overlayPath);
+    args.push("./internal/compiler/session", "-run", `^${BASELINE_ROOT}$`, "-count=1", "-v", "-timeout=120s");
+    const result = spawnSync("go", args, {
+      cwd: ROOT,
+      env: { ...process.env, GOCACHE, GOFLAGS: "" },
+      encoding: "utf8",
+      timeout: GO_TIMEOUT_MS,
+      maxBuffer: MAX_OUTPUT,
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: false,
+      windowsHide: true,
+    });
+    const output = `${typeof result.stdout === "string" ? result.stdout : ""}${typeof result.stderr === "string" ? result.stderr : ""}`;
+    if (result.error || result.signal || Buffer.byteLength(output) > MAX_OUTPUT || /^--- SKIP:/m.test(output)) {
+      return { kind: "invalid", reason: "baseline exact-root Go spawn, timeout, output bound or skip failure", output };
+    }
+    const rootRun = [...output.matchAll(new RegExp(`^=== RUN   ${escapeRegex(BASELINE_ROOT)}$`, "gm"))].length;
+    const rootPass = [...output.matchAll(new RegExp(`^--- PASS: ${escapeRegex(BASELINE_ROOT)} \\([0-9]+(?:\\.[0-9]+)?s\\)$`, "gm"))].length;
+    const rootFail = [...output.matchAll(new RegExp(`^--- FAIL: ${escapeRegex(BASELINE_ROOT)} \\([0-9]+(?:\\.[0-9]+)?s\\)$`, "gm"))].length;
+    const lines = output.split(/\r?\n/);
+    const subRunPrefix = `=== RUN   ${BASELINE_ROOT}/`;
+    const subPassPrefix = `--- PASS: ${BASELINE_ROOT}/`;
+    const subFailPrefix = `--- FAIL: ${BASELINE_ROOT}/`;
+    const stripDuration = (value) => value.replace(/ \([0-9]+(?:\.[0-9]+)?s\)$/, "");
+    const subRuns = lines.filter((line) => line.startsWith(subRunPrefix)).map((line) => line.slice(subRunPrefix.length));
+    const subPasses = lines.map((line) => line.trimStart()).filter((line) => line.startsWith(subPassPrefix)).map((line) => stripDuration(line.slice(subPassPrefix.length)));
+    const subFails = lines.map((line) => line.trimStart()).filter((line) => line.startsWith(subFailPrefix)).map((line) => stripDuration(line.slice(subFailPrefix.length)));
+    if (rootRun !== 1 || subRuns.length !== new Set(subRuns).size || subRuns.length !== subPasses.length + subFails.length) {
+      return { kind: "invalid", reason: `baseline root/subtest counts: root=${rootRun} subrun=${subRuns.length}/${new Set(subRuns).size} subpass=${subPasses.length} subfail=${subFails.length}; tail=${output.slice(-1000)}`, output };
+    }
+    if (original) {
+      if (result.status !== 1 || rootPass !== 0 || rootFail !== 1 || subFails.length !== 0
+          || !output.includes("unrelated extra C-byte mutation was accepted by the actual comparator")) {
+        return { kind: "invalid", reason: "no-op comparator overlay missed the exact unrelated-C-byte semantic RED", output };
+      }
+      if (/\\[build failed\\]|undefined reference|no tests to run|timed out/m.test(output)) {
+        return { kind: "invalid", reason: "baseline RED was replaced by a build/tool/timeout failure", output };
+      }
+    } else if (result.status !== 0 || rootPass !== 1 || rootFail !== 0 || subFails.length !== 0 || /^--- FAIL:|^FAIL(?:\\s|$)/m.test(output)) {
+      return { kind: "invalid", reason: "clean baseline root or a required subtest failed", output };
+    }
+    const afterBytes = fs.readFileSync(sourcePath);
+    if (!afterBytes.equals(originalBytes)) return { kind: "invalid", reason: "tracked amendment comparator source changed during overlay run", output };
+    const counts = { run: 1, pass: rootPass, fail: rootFail, skip: 0, subtestCount: subRuns.length, subtestPass: subPasses.length, subtestFail: subFails.length };
+    return {
+      kind: original ? "violation" : "green",
+      output,
+      roots: { [BASELINE_ROOT]: counts },
+      failureNames: original ? [BASELINE_ROOT] : [],
+      ...(overlay ? { overlay: {
+        originalSourceSha256: digest(originalBytes),
+        replacementSourceSha256: overlay.replacementSha256,
+        overlayJsonSha256: overlay.overlaySha256,
+        anchorSha256: overlay.anchorSha256,
+        sourceUnchanged: true,
+      } } : {}),
+    };
+  } catch (error) {
+    return { kind: "invalid", reason: `baseline exact-root setup failed: ${error.message}` };
+  } finally {
+    if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+function runRootInventory(kind) {
+  const selectedPackages = kind === "native"
+    ? [{ name: "./internal/compiler/cgen", roots: CGEN_ROOTS, timeout: GO_TIMEOUT_MS }]
+    : [
+      { name: PACKAGE, roots: EXECUTIONPEER_ROOTS, timeout: GO_TIMEOUT_MS },
+      { name: "./internal/compiler/session", roots: SESSION_ROOTS, timeout: 600_000 },
+      { name: "./internal/compiler/cgen", roots: CGEN_ROOTS, timeout: GO_TIMEOUT_MS },
+    ];
+  const expectedRootCount = kind === "native" ? 3 : 19;
+  const allRootNames = selectedPackages.flatMap((item) => item.roots);
+  if (allRootNames.length !== expectedRootCount || new Set(allRootNames).size !== expectedRootCount) {
+    return { kind: "invalid", reason: `${kind} declared root union is not a unique ${expectedRootCount}-root inventory` };
+  }
+  const outputParts = [];
+  const observed = {};
+  for (const selected of selectedPackages) {
+    const runPattern = `^(${selected.roots.map(escapeRegex).join("|")})$`;
+    const result = spawnSync("go", ["test", selected.name, "-run", runPattern, "-count=1", "-v", `-timeout=${Math.floor(selected.timeout / 1000)}s`], {
+      cwd: ROOT,
+      env: { ...process.env, GOCACHE, GOFLAGS: "" },
+      encoding: "utf8",
+      timeout: selected.timeout,
+      maxBuffer: MAX_OUTPUT,
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: false,
+      windowsHide: true,
+    });
+    const output = `${typeof result.stdout === "string" ? result.stdout : ""}${typeof result.stderr === "string" ? result.stderr : ""}`;
+    outputParts.push(`=== PACKAGE ${selected.name} ===\n${output}`);
+    if (result.error || result.signal || result.status !== 0 || Buffer.byteLength(output) > MAX_OUTPUT
+        || /^--- SKIP:/m.test(output) || /no tests to run|timed out/i.test(output)) {
+      return { kind: "invalid", reason: `${selected.name} bounded root command failed, skipped or exceeded its limits`, output: outputParts.join("\n") };
+    }
+    const lines = output.split(/\r?\n/);
+    const topRuns = [...output.matchAll(/^=== RUN   ([^/\s]+)$/gm)].map((match) => match[1]);
+    const expectedTop = new Set(selected.roots);
+    if (topRuns.length !== expectedRootCountForPackage(selected) || new Set(topRuns).size !== topRuns.length
+        || topRuns.some((name) => !expectedTop.has(name))) {
+      return { kind: "invalid", reason: `${selected.name} executed a missing, duplicate or unregistered root`, output: outputParts.join("\n") };
+    }
+    for (const root of selected.roots) {
+      const rootRun = [...output.matchAll(new RegExp(`^=== RUN   ${escapeRegex(root)}$`, "gm"))].length;
+      const rootPass = [...output.matchAll(new RegExp(`^--- PASS: ${escapeRegex(root)} \\([0-9]+(?:\\.[0-9]+)?s\\)$`, "gm"))].length;
+      const rootFail = [...output.matchAll(new RegExp(`^--- FAIL: ${escapeRegex(root)} \\([0-9]+(?:\\.[0-9]+)?s\\)$`, "gm"))].length;
+      const subRunPrefix = `=== RUN   ${root}/`;
+      const subPassPrefix = `--- PASS: ${root}/`;
+      const subFailPrefix = `--- FAIL: ${root}/`;
+      const subSkipPrefix = `--- SKIP: ${root}/`;
+      const stripDuration = (value) => value.replace(/ \([0-9]+(?:\.[0-9]+)?s\)$/, "");
+      const subRuns = lines.filter((line) => line.startsWith(subRunPrefix)).map((line) => line.slice(subRunPrefix.length));
+      const subPasses = lines.map((line) => line.trimStart()).filter((line) => line.startsWith(subPassPrefix)).map((line) => stripDuration(line.slice(subPassPrefix.length)));
+      const subFails = lines.map((line) => line.trimStart()).filter((line) => line.startsWith(subFailPrefix)).map((line) => stripDuration(line.slice(subFailPrefix.length)));
+      const subSkips = lines.map((line) => line.trimStart()).filter((line) => line.startsWith(subSkipPrefix));
+      if (rootRun !== 1 || rootPass !== 1 || rootFail !== 0
+          || new Set(subRuns).size !== subRuns.length || subRuns.length !== subPasses.length + subFails.length
+          || subFails.length !== 0 || subSkips.length !== 0) {
+        return { kind: "invalid", reason: `${root} exact root/subtest run/pass counts did not match`, output: outputParts.join("\n") };
+      }
+      observed[root] = {
+        package: selected.name, run: rootRun, pass: rootPass, fail: rootFail, skip: 0,
+        subtestCount: subRuns.length, subtestPass: subPasses.length, subtestFail: subFails.length, subtestSkip: 0,
+      };
+    }
+    if (/^--- FAIL:|^FAIL(?:\s|$)/m.test(output)) {
+      return { kind: "invalid", reason: `${selected.name} emitted an unexpected failure despite a zero exit`, output: outputParts.join("\n") };
+    }
+  }
+  return { kind: "green", output: outputParts.join("\n"), roots: observed, failureNames: [] };
+}
+
+function expectedRootCountForPackage(selected) {
+  return selected.roots.length;
+}
+
 function runExactRoots(subject, requestedMode = "defect") {
   const mode = subject === "none" ? requestedMode : subject;
-  if (!new Set(["defect", "failure", "reason"]).has(mode)) throw new Error(`unsupported exact-root suite: ${mode}`);
+  if (!new Set(["defect", "failure", "reason", "baseline"]).has(mode)) throw new Error(`unsupported exact-root suite: ${mode}`);
   if (mode === "reason") return runReasonExactRoots(subject);
+  if (mode === "baseline") return runBaselineExactRoot(subject);
   const original = subject !== "none";
   const sourcePath = path.resolve(ROOT, mode === "reason" ? CGEN_REL : SOURCE_REL);
   const originalBytes = fs.readFileSync(sourcePath);
@@ -618,10 +820,12 @@ function projectCurrentPlan(mode = "defect") {
   const { projectProhibitions, descriptorFromProjection } = loadGsdProjectionApi();
   const isFailure = mode === "failure";
   const isReason = mode === "reason";
-  const planRelative = isFailure ? FAILURE_PLAN_REL : isReason ? REASON_PLAN_REL : PLAN_REL;
+  const isBaseline = mode === "baseline";
+  const planRelative = isFailure ? FAILURE_PLAN_REL : isReason ? REASON_PLAN_REL : isBaseline ? BASELINE_PLAN_REL : PLAN_REL;
   const expectedStatement = isFailure ? FAILURE_STATEMENT : isReason
     ? "MUST NOT normalize malformed defect-reason bytes, reject valid UTF-8 control/NUL reasons, decode textual escapes or truncate admitted reason output."
-    : STATEMENT;
+    : isBaseline ? "MUST NOT regenerate frozen C expectations, exempt a whole path/route family or accept unrelated bytes through an amendment."
+      : STATEMENT;
   const { item, planBytes, planPath } = parsePlanProhibition(planRelative, expectedStatement);
   const projection = projectProhibitions([item]);
   assert.equal(projection.length, 1, "projectProhibitions must preserve one unresolved item");
@@ -632,7 +836,7 @@ function projectCurrentPlan(mode = "defect") {
   assert.deepEqual(check, {
     kind: "node-test",
     target: ADAPTER_REL,
-    violationFixture: isFailure ? FAILURE_REL : isReason ? REASON_REL : DEFECT_REL,
+    violationFixture: isFailure ? FAILURE_REL : isReason ? REASON_REL : isBaseline ? BASELINE_REL : DEFECT_REL,
     cleanFixture: CLEAN_REL,
   }, "descriptorFromProjection must reconstruct this plan's wired flat fields");
   return { item, projected, check, planBytes, planPath, planRelative };
@@ -679,7 +883,29 @@ function tempEvidenceDir() {
 }
 
 function runSampleMode(subject) {
-  if (subject !== "defect" && subject !== "failure" && subject !== "reason") throw new Error("only the closed defect/failure/reason samples are supported");
+  if (subject === "native" || subject === "all") {
+    const result = runRootInventory(subject);
+    if (result.kind !== "green") throw new Error(`${subject} root inventory failed: ${result.reason || result.kind}`);
+    const initial = ensureInitialProjection();
+    const current = projectCurrentPlan("baseline");
+    const directory = tempEvidenceDir();
+    const log = saveRaw(directory, `${subject}-go.log`, result.output);
+    const manifest = {
+      mode: `sample-${subject}`,
+      source_head: initial.source_head,
+      initial_projection_sha256: digest(Buffer.from(JSON.stringify(initial.projection))),
+      current_plan: current.planRelative,
+      current_plan_sha256: digest(current.planBytes),
+      root_count: Object.keys(result.roots).length,
+      roots: result.roots,
+      source_bindings: sourceBindings(current),
+      raw_log: log,
+    };
+    saveRaw(directory, "sample-manifest.json", `${JSON.stringify(manifest, null, 2)}\n`);
+    process.stdout.write(`${subject} bounded root inventory passed (${Object.keys(result.roots).length} distinct roots); evidence ${directory}\n`);
+    return;
+  }
+  if (subject !== "defect" && subject !== "failure" && subject !== "reason" && subject !== "baseline") throw new Error("unsupported closed sample mode");
   const initial = ensureInitialProjection();
   const current = projectCurrentPlan(subject);
   const result = runExactRoots(subject, subject);
@@ -817,9 +1043,10 @@ function runCanonicalProducer(request, evidenceDir) {
 
 function sourceBindings(current) {
   const selected = new Set([
-    PLAN_REL, FAILURE_PLAN_REL, ADAPTER_REL, SOURCE_REL, TEST_REL, MODEL_REL,
-    REASON_PLAN_REL, CGEN_REL, CGEN_TEST_REL, REASON_TEST_REL,
-    "examples/phase24/error.schway", CLEAN_REL, DEFECT_REL, FAILURE_REL, REASON_REL,
+    PLAN_REL, FAILURE_PLAN_REL, REASON_PLAN_REL, BASELINE_PLAN_REL, ADAPTER_REL,
+    SOURCE_REL, TEST_REL, MODEL_REL, REASON_TEST_REL, CGEN_REL, CGEN_TEST_REL, COMPATIBILITY_TEST_REL,
+    "examples/phase24/error.schway", CLEAN_REL, DEFECT_REL, FAILURE_REL, REASON_REL, BASELINE_REL,
+    "testdata/phase371/pre-emitter-census.json", "testdata/phase371/compatibility-amendments.json",
   ]);
   return Object.fromEntries([...selected].map((relative) => {
     const bytes = fs.readFileSync(path.join(ROOT, relative));
@@ -828,7 +1055,7 @@ function sourceBindings(current) {
 }
 
 function runProofMode(subject) {
-  if (subject !== "defect" && subject !== "failure" && subject !== "reason") throw new Error("only closed defect/failure/reason proofs are supported");
+  if (subject !== "defect" && subject !== "failure" && subject !== "reason" && subject !== "baseline") throw new Error("only closed defect/failure/reason/baseline proofs are supported");
   const initial = ensureInitialProjection();
   const current = projectCurrentPlan(subject);
   assert.equal(initial.projection[0].status, "unresolved", "initial history must remain unresolved before producer request");
@@ -889,24 +1116,63 @@ function runProofMode(subject) {
     proofs: { ...priorProofs, [subject]: proof },
     ...(subject === "defect" ? { proof }
       : subject === "failure" ? { failure_plan_projection: proof.current_plan_projection, failure_proof: proof }
-        : { reason_plan_projection: proof.current_plan_projection, reason_proof: proof }),
+        : subject === "reason" ? { reason_plan_projection: proof.current_plan_projection, reason_proof: proof }
+          : { baseline_plan_projection: proof.current_plan_projection, baseline_proof: proof }),
   };
   fs.writeFileSync(path.join(ROOT, PROJECTION_REL), `${JSON.stringify(projectionRecord, null, 2)}\n`);
   process.stdout.write(`canonical ${subject} proof passed; plan prohibition remains unresolved pending normal lifecycle; evidence ${evidenceDir}\n`);
+}
+
+function runAllProofMode() {
+  for (const subject of ["defect", "failure", "reason", "baseline"]) runProofMode(subject);
+  const inventory = runRootInventory("all");
+  if (inventory.kind !== "green" || Object.keys(inventory.roots).length !== 19) {
+    throw new Error(`final 19-root union failed: ${inventory.reason || inventory.kind}`);
+  }
+  const projectionPath = path.join(ROOT, PROJECTION_REL);
+  const stored = JSON.parse(fs.readFileSync(projectionPath, "utf8"));
+  for (const subject of ["defect", "failure", "reason", "baseline"]) {
+    const proof = stored.proofs && stored.proofs[subject];
+    assert.ok(proof, `${subject} source-bound proof must remain in the projection history`);
+    assert.equal(proof.canonical_producer.status, "green", `${subject} canonical producer proof must be green`);
+    assert.equal(proof.canonical_producer.flagged, false, `${subject} canonical producer proof must be unflagged`);
+    assert.equal(proof.lifecycle_status, "unresolved", `${subject} lifecycle remains under normal phase ownership`);
+  }
+  const evidenceDir = tempEvidenceDir();
+  const log = saveRaw(evidenceDir, "final-19-root-union.go.log", inventory.output);
+  const union = {
+    state: "machine-evidence-complete-pending-lifecycle-resolution",
+    captured_utc: new Date().toISOString(),
+    root_count: Object.keys(inventory.roots).length,
+    distinct_package_count: 3,
+    roots: inventory.roots,
+    raw_log: log,
+    source_bindings: sourceBindings(projectCurrentPlan("baseline")),
+    initial_projection_status: stored.projection[0].status,
+    current_plan_status: "unresolved",
+  };
+  assert.equal(union.initial_projection_status, "unresolved", "initial unresolved history must be retained");
+  stored.final_root_union = union;
+  fs.writeFileSync(projectionPath, `${JSON.stringify(stored, null, 2)}\n`);
+  process.stdout.write(`all prohibition proofs and the final 19-root union passed; lifecycle remains unresolved; evidence ${evidenceDir}\n`);
 }
 
 function directMode() {
   const sampleIndex = process.argv.indexOf("--sample");
   if (sampleIndex >= 0) {
     const subject = process.argv[sampleIndex + 1];
-    if (subject !== "defect" && subject !== "failure" && subject !== "reason") throw new Error(`unsupported sample: ${subject}`);
+    if (subject !== "defect" && subject !== "failure" && subject !== "reason" && subject !== "baseline" && subject !== "native" && subject !== "all") throw new Error(`unsupported sample: ${subject}`);
     runSampleMode(subject);
     return true;
   }
   const proveIndex = process.argv.indexOf("--prove");
   if (proveIndex >= 0) {
     const subject = process.argv[proveIndex + 1];
-    if (subject !== "defect" && subject !== "failure" && subject !== "reason") throw new Error(`unsupported proof: ${subject}`);
+    if (subject === "all") {
+      runAllProofMode();
+      return true;
+    }
+    if (subject !== "defect" && subject !== "failure" && subject !== "reason" && subject !== "baseline") throw new Error(`unsupported proof: ${subject}`);
     runProofMode(subject);
     return true;
   }

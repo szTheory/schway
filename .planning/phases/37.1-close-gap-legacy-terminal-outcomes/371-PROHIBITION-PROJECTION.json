@@ -26,28 +26,65 @@
     }
   ],
   "proof": {
+    "subject": "defect",
     "state": "machine-evidence-complete-pending-lifecycle-resolution",
-    "captured_utc": "2026-10-16T15:52:29.455Z",
+    "captured_utc": "2026-10-16T17:54:56.153Z",
     "candidate_status": "resolved",
     "candidate_verification": "test",
     "lifecycle_status": "unresolved",
-    "evidence_directory": "/tmp/schway371-prohibition-proof-CtNURM",
+    "evidence_directory": "/tmp/schway371-prohibition-proof-iFtiSW",
     "source_bindings": {
       ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
         "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
         "bytes": 15390
       },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+        "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
+        "bytes": 14765
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+        "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+        "bytes": 14741
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+        "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+        "bytes": 29843
+      },
       ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
-        "sha256": "f9fa2281ff0b6dfc503240384550b3ce830f76c1f15eec75b466a280e0708834",
-        "bytes": 28256
+        "sha256": "3e446dd90b9ee96de2138f0e0dcd8f804b372ec8a38aabcd260818618c808fa6",
+        "bytes": 62896
       },
       "internal/compiler/executionpeer/executionpeer.go": {
-        "sha256": "bbe668ed043305443853f5e84eef155e09e9a81341f924440fef97feed96c1d9",
-        "bytes": 30268
+        "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+        "bytes": 45046
       },
       "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
-        "sha256": "ff7812aba5398a08e9394cc96a65b7d0e588d85ee344c71c98203ca002e6f018",
-        "bytes": 18108
+        "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+        "bytes": 39087
+      },
+      "internal/compiler/session/session_phase24_model_test.go": {
+        "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+        "bytes": 7377
+      },
+      "internal/compiler/session/session_phase371_defect_reason_test.go": {
+        "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+        "bytes": 11149
+      },
+      "internal/compiler/cgen/cgen_program.go": {
+        "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+        "bytes": 184034
+      },
+      "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+        "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+        "bytes": 14162
+      },
+      "internal/compiler/session/session_phase371_compatibility_test.go": {
+        "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+        "bytes": 47203
+      },
+      "examples/phase24/error.schway": {
+        "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+        "bytes": 1228
       },
       ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
         "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
@@ -56,7 +93,52 @@
       ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
         "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
         "bytes": 42
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+        "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+        "bytes": 43
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+        "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+        "bytes": 42
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+        "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+        "bytes": 44
+      },
+      "testdata/phase371/pre-emitter-census.json": {
+        "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+        "bytes": 27223968
+      },
+      "testdata/phase371/compatibility-amendments.json": {
+        "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+        "bytes": 13859
       }
+    },
+    "current_plan_projection": {
+      "source_plan": {
+        "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md",
+        "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a"
+      },
+      "source_prohibition": {
+        "statement": "MUST NOT accept caller activity after an accepted whole-execution defect or synthesize caller unwind records.",
+        "status": "unresolved",
+        "verification": null,
+        "check_kind": "node-test",
+        "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+        "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json",
+        "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+      },
+      "projection": [
+        {
+          "statement": "MUST NOT accept caller activity after an accepted whole-execution defect or synthesize caller unwind records.",
+          "status": "unresolved",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        }
+      ]
     },
     "go_controls": {
       "bad": {
@@ -453,14 +535,14 @@
           "TestPhase371DefectTerminalControls/legacy-static"
         ],
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-CtNURM/bad-go.log",
-          "sha256": "318d922b70d801c10b6cbf072d1f770f6e8d0f0b7328712472deff13f07c6ffa",
+          "path": "/tmp/schway371-prohibition-proof-iFtiSW/bad-go.log",
+          "sha256": "c16c1e19ecefff08141b3c7228ccd6ec2d58aed9454cad5d248597c87ba16e0b",
           "bytes": 9628
         },
         "overlay": {
-          "originalSourceSha256": "bbe668ed043305443853f5e84eef155e09e9a81341f924440fef97feed96c1d9",
-          "replacementSourceSha256": "a884b40df2c5ef2dcb51082d2b6b6400b56bb7d07bf9c72e9a2f7e45a5124ba4",
-          "overlayJsonSha256": "8dcfb4df3b1f9412533a34d71704c0b4353c1ebcbbed710242ed217d70ea195d",
+          "originalSourceSha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+          "replacementSourceSha256": "b10207b67a80b5bde699d4ec61564fc4647cfc184f9c40fee0462071085ddd11",
+          "overlayJsonSha256": "da113bc338d421041d2f5e5b8f9390d0b85bb43562b5477420af6eb88c109670",
           "sourceUnchanged": true
         }
       },
@@ -907,8 +989,8 @@
         },
         "failureNames": [],
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-CtNURM/clean-go.log",
-          "sha256": "f50dff257a7d6f018a2d56b6c0472697e88c8b8c71f5ffba87809fb62f0fecb0",
+          "path": "/tmp/schway371-prohibition-proof-iFtiSW/clean-go.log",
+          "sha256": "77a7524a4fd842a2df75fc927b9ad57c0d681ab3f476d998934e83aa93b1219c",
           "bytes": 10476
         }
       },
@@ -1355,8 +1437,8 @@
         },
         "failureNames": [],
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-CtNURM/default-go.log",
-          "sha256": "13a22690a723f0a6ee20979dd69be213b019b363a9d399f18a3459ebefbb560f",
+          "path": "/tmp/schway371-prohibition-proof-iFtiSW/default-go.log",
+          "sha256": "19f067a282854e2c1b0830addf695a602899270a78b4e337cba3c20e2cbae1fa",
           "bytes": 10476
         }
       }
@@ -1372,11 +1454,11 @@
           "todo": 0
         },
         "status": 1,
-        "sha256": "4e96668b5f6ed5b6d02784baca6aaac32a851f8a26168d12ab6d30cb16813d9b",
+        "sha256": "f59a8c6fdca173fd5039aa1e05badac780fcdf44ae2d0caaf9e4edeebe6732c9",
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-CtNURM/bad-node.tap",
-          "sha256": "4e96668b5f6ed5b6d02784baca6aaac32a851f8a26168d12ab6d30cb16813d9b",
-          "bytes": 1202
+          "path": "/tmp/schway371-prohibition-proof-iFtiSW/bad-node.tap",
+          "sha256": "f59a8c6fdca173fd5039aa1e05badac780fcdf44ae2d0caaf9e4edeebe6732c9",
+          "bytes": 1201
         }
       },
       "clean": {
@@ -1389,11 +1471,11 @@
           "todo": 0
         },
         "status": 0,
-        "sha256": "d340e0c31290301daa2e78b6deca99bca18d264615fc9baa4f0dab01e3b3a99d",
+        "sha256": "c01c6db67a01e29995ea6385001edc46d8527a55040e2c567ea5b88839a5e186",
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-CtNURM/clean-node.tap",
-          "sha256": "d340e0c31290301daa2e78b6deca99bca18d264615fc9baa4f0dab01e3b3a99d",
-          "bytes": 296
+          "path": "/tmp/schway371-prohibition-proof-iFtiSW/clean-node.tap",
+          "sha256": "c01c6db67a01e29995ea6385001edc46d8527a55040e2c567ea5b88839a5e186",
+          "bytes": 295
         }
       },
       "default": {
@@ -1406,10 +1488,10 @@
           "todo": 0
         },
         "status": 0,
-        "sha256": "dc2c0c09e69293d72ecefab82da41595d19e2dd98e24978d20adb7424a3ebd5f",
+        "sha256": "394eeb52aa14ca1f5fb34e0d0b10827e832649662155400cd4173684ee076a18",
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-CtNURM/default-node.tap",
-          "sha256": "dc2c0c09e69293d72ecefab82da41595d19e2dd98e24978d20adb7424a3ebd5f",
+          "path": "/tmp/schway371-prohibition-proof-iFtiSW/default-node.tap",
+          "sha256": "394eeb52aa14ca1f5fb34e0d0b10827e832649662155400cd4173684ee076a18",
           "bytes": 296
         }
       }
@@ -1430,51 +1512,88 @@
         }
       ],
       "request": {
-        "path": "/tmp/schway371-prohibition-proof-CtNURM/canonical-request.json",
+        "path": "/tmp/schway371-prohibition-proof-iFtiSW/canonical-request.json",
         "sha256": "d120174f144c3831d897082c61e9234730109acdba0762eca6ed6fdde4b61452",
         "bytes": 973
       },
       "stdout": {
-        "path": "/tmp/schway371-prohibition-proof-CtNURM/canonical-producer.stdout.json",
+        "path": "/tmp/schway371-prohibition-proof-iFtiSW/canonical-producer.stdout.json",
         "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
         "bytes": 447
       },
       "stderr": {
-        "path": "/tmp/schway371-prohibition-proof-CtNURM/canonical-producer.stderr.log",
+        "path": "/tmp/schway371-prohibition-proof-iFtiSW/canonical-producer.stderr.log",
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "bytes": 0
       }
     },
     "manifest": {
-      "path": "/tmp/schway371-prohibition-proof-CtNURM/evidence-manifest.json",
-      "sha256": "69aea127aa3a60a91b4d328542344cbcf65aa2c14b36d15739ea51b5eaeaf306",
-      "bytes": 40006
+      "path": "/tmp/schway371-prohibition-proof-iFtiSW/evidence-manifest.json",
+      "sha256": "7979e3899c0aaa3b5f5e02da6ce8f9ba0d8ed26c04259be0cf53d6b1ea35e446",
+      "bytes": 45694
     }
   },
   "proofs": {
     "defect": {
+      "subject": "defect",
       "state": "machine-evidence-complete-pending-lifecycle-resolution",
-      "captured_utc": "2026-10-16T15:52:29.455Z",
+      "captured_utc": "2026-10-16T17:54:56.153Z",
       "candidate_status": "resolved",
       "candidate_verification": "test",
       "lifecycle_status": "unresolved",
-      "evidence_directory": "/tmp/schway371-prohibition-proof-CtNURM",
+      "evidence_directory": "/tmp/schway371-prohibition-proof-iFtiSW",
       "source_bindings": {
         ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
           "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
           "bytes": 15390
         },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+          "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
+          "bytes": 14765
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+          "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+          "bytes": 14741
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+          "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+          "bytes": 29843
+        },
         ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
-          "sha256": "f9fa2281ff0b6dfc503240384550b3ce830f76c1f15eec75b466a280e0708834",
-          "bytes": 28256
+          "sha256": "3e446dd90b9ee96de2138f0e0dcd8f804b372ec8a38aabcd260818618c808fa6",
+          "bytes": 62896
         },
         "internal/compiler/executionpeer/executionpeer.go": {
-          "sha256": "bbe668ed043305443853f5e84eef155e09e9a81341f924440fef97feed96c1d9",
-          "bytes": 30268
+          "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+          "bytes": 45046
         },
         "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
-          "sha256": "ff7812aba5398a08e9394cc96a65b7d0e588d85ee344c71c98203ca002e6f018",
-          "bytes": 18108
+          "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+          "bytes": 39087
+        },
+        "internal/compiler/session/session_phase24_model_test.go": {
+          "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+          "bytes": 7377
+        },
+        "internal/compiler/session/session_phase371_defect_reason_test.go": {
+          "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+          "bytes": 11149
+        },
+        "internal/compiler/cgen/cgen_program.go": {
+          "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+          "bytes": 184034
+        },
+        "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+          "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+          "bytes": 14162
+        },
+        "internal/compiler/session/session_phase371_compatibility_test.go": {
+          "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+          "bytes": 47203
+        },
+        "examples/phase24/error.schway": {
+          "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+          "bytes": 1228
         },
         ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
           "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
@@ -1483,7 +1602,52 @@
         ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
           "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
           "bytes": 42
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+          "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+          "bytes": 43
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+          "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+          "bytes": 42
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+          "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+          "bytes": 44
+        },
+        "testdata/phase371/pre-emitter-census.json": {
+          "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+          "bytes": 27223968
+        },
+        "testdata/phase371/compatibility-amendments.json": {
+          "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+          "bytes": 13859
         }
+      },
+      "current_plan_projection": {
+        "source_plan": {
+          "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md",
+          "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a"
+        },
+        "source_prohibition": {
+          "statement": "MUST NOT accept caller activity after an accepted whole-execution defect or synthesize caller unwind records.",
+          "status": "unresolved",
+          "verification": null,
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "projection": [
+          {
+            "statement": "MUST NOT accept caller activity after an accepted whole-execution defect or synthesize caller unwind records.",
+            "status": "unresolved",
+            "check_kind": "node-test",
+            "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+            "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json",
+            "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+          }
+        ]
       },
       "go_controls": {
         "bad": {
@@ -1880,14 +2044,14 @@
             "TestPhase371DefectTerminalControls/legacy-static"
           ],
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-CtNURM/bad-go.log",
-            "sha256": "318d922b70d801c10b6cbf072d1f770f6e8d0f0b7328712472deff13f07c6ffa",
+            "path": "/tmp/schway371-prohibition-proof-iFtiSW/bad-go.log",
+            "sha256": "c16c1e19ecefff08141b3c7228ccd6ec2d58aed9454cad5d248597c87ba16e0b",
             "bytes": 9628
           },
           "overlay": {
-            "originalSourceSha256": "bbe668ed043305443853f5e84eef155e09e9a81341f924440fef97feed96c1d9",
-            "replacementSourceSha256": "a884b40df2c5ef2dcb51082d2b6b6400b56bb7d07bf9c72e9a2f7e45a5124ba4",
-            "overlayJsonSha256": "8dcfb4df3b1f9412533a34d71704c0b4353c1ebcbbed710242ed217d70ea195d",
+            "originalSourceSha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+            "replacementSourceSha256": "b10207b67a80b5bde699d4ec61564fc4647cfc184f9c40fee0462071085ddd11",
+            "overlayJsonSha256": "da113bc338d421041d2f5e5b8f9390d0b85bb43562b5477420af6eb88c109670",
             "sourceUnchanged": true
           }
         },
@@ -2334,8 +2498,8 @@
           },
           "failureNames": [],
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-CtNURM/clean-go.log",
-            "sha256": "f50dff257a7d6f018a2d56b6c0472697e88c8b8c71f5ffba87809fb62f0fecb0",
+            "path": "/tmp/schway371-prohibition-proof-iFtiSW/clean-go.log",
+            "sha256": "77a7524a4fd842a2df75fc927b9ad57c0d681ab3f476d998934e83aa93b1219c",
             "bytes": 10476
           }
         },
@@ -2782,8 +2946,8 @@
           },
           "failureNames": [],
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-CtNURM/default-go.log",
-            "sha256": "13a22690a723f0a6ee20979dd69be213b019b363a9d399f18a3459ebefbb560f",
+            "path": "/tmp/schway371-prohibition-proof-iFtiSW/default-go.log",
+            "sha256": "19f067a282854e2c1b0830addf695a602899270a78b4e337cba3c20e2cbae1fa",
             "bytes": 10476
           }
         }
@@ -2799,11 +2963,11 @@
             "todo": 0
           },
           "status": 1,
-          "sha256": "4e96668b5f6ed5b6d02784baca6aaac32a851f8a26168d12ab6d30cb16813d9b",
+          "sha256": "f59a8c6fdca173fd5039aa1e05badac780fcdf44ae2d0caaf9e4edeebe6732c9",
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-CtNURM/bad-node.tap",
-            "sha256": "4e96668b5f6ed5b6d02784baca6aaac32a851f8a26168d12ab6d30cb16813d9b",
-            "bytes": 1202
+            "path": "/tmp/schway371-prohibition-proof-iFtiSW/bad-node.tap",
+            "sha256": "f59a8c6fdca173fd5039aa1e05badac780fcdf44ae2d0caaf9e4edeebe6732c9",
+            "bytes": 1201
           }
         },
         "clean": {
@@ -2816,11 +2980,11 @@
             "todo": 0
           },
           "status": 0,
-          "sha256": "d340e0c31290301daa2e78b6deca99bca18d264615fc9baa4f0dab01e3b3a99d",
+          "sha256": "c01c6db67a01e29995ea6385001edc46d8527a55040e2c567ea5b88839a5e186",
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-CtNURM/clean-node.tap",
-            "sha256": "d340e0c31290301daa2e78b6deca99bca18d264615fc9baa4f0dab01e3b3a99d",
-            "bytes": 296
+            "path": "/tmp/schway371-prohibition-proof-iFtiSW/clean-node.tap",
+            "sha256": "c01c6db67a01e29995ea6385001edc46d8527a55040e2c567ea5b88839a5e186",
+            "bytes": 295
           }
         },
         "default": {
@@ -2833,10 +2997,10 @@
             "todo": 0
           },
           "status": 0,
-          "sha256": "dc2c0c09e69293d72ecefab82da41595d19e2dd98e24978d20adb7424a3ebd5f",
+          "sha256": "394eeb52aa14ca1f5fb34e0d0b10827e832649662155400cd4173684ee076a18",
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-CtNURM/default-node.tap",
-            "sha256": "dc2c0c09e69293d72ecefab82da41595d19e2dd98e24978d20adb7424a3ebd5f",
+            "path": "/tmp/schway371-prohibition-proof-iFtiSW/default-node.tap",
+            "sha256": "394eeb52aa14ca1f5fb34e0d0b10827e832649662155400cd4173684ee076a18",
             "bytes": 296
           }
         }
@@ -2857,35 +3021,35 @@
           }
         ],
         "request": {
-          "path": "/tmp/schway371-prohibition-proof-CtNURM/canonical-request.json",
+          "path": "/tmp/schway371-prohibition-proof-iFtiSW/canonical-request.json",
           "sha256": "d120174f144c3831d897082c61e9234730109acdba0762eca6ed6fdde4b61452",
           "bytes": 973
         },
         "stdout": {
-          "path": "/tmp/schway371-prohibition-proof-CtNURM/canonical-producer.stdout.json",
+          "path": "/tmp/schway371-prohibition-proof-iFtiSW/canonical-producer.stdout.json",
           "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
           "bytes": 447
         },
         "stderr": {
-          "path": "/tmp/schway371-prohibition-proof-CtNURM/canonical-producer.stderr.log",
+          "path": "/tmp/schway371-prohibition-proof-iFtiSW/canonical-producer.stderr.log",
           "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bytes": 0
         }
       },
       "manifest": {
-        "path": "/tmp/schway371-prohibition-proof-CtNURM/evidence-manifest.json",
-        "sha256": "69aea127aa3a60a91b4d328542344cbcf65aa2c14b36d15739ea51b5eaeaf306",
-        "bytes": 40006
+        "path": "/tmp/schway371-prohibition-proof-iFtiSW/evidence-manifest.json",
+        "sha256": "7979e3899c0aaa3b5f5e02da6ce8f9ba0d8ed26c04259be0cf53d6b1ea35e446",
+        "bytes": 45694
       }
     },
     "failure": {
       "subject": "failure",
       "state": "machine-evidence-complete-pending-lifecycle-resolution",
-      "captured_utc": "2026-10-16T16:17:13.657Z",
+      "captured_utc": "2026-10-16T17:54:58.728Z",
       "candidate_status": "resolved",
       "candidate_verification": "test",
       "lifecycle_status": "unresolved",
-      "evidence_directory": "/tmp/schway371-prohibition-proof-1aA6HU",
+      "evidence_directory": "/tmp/schway371-prohibition-proof-9f2alp",
       "source_bindings": {
         ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
           "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
@@ -2895,9 +3059,17 @@
           "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
           "bytes": 14765
         },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+          "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+          "bytes": 14741
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+          "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+          "bytes": 29843
+        },
         ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
-          "sha256": "823771a7508c5caddd4f7c1e5f3c504728aa021f0e1546e04f119b90884afa51",
-          "bytes": 36684
+          "sha256": "3e446dd90b9ee96de2138f0e0dcd8f804b372ec8a38aabcd260818618c808fa6",
+          "bytes": 62896
         },
         "internal/compiler/executionpeer/executionpeer.go": {
           "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
@@ -2910,6 +3082,22 @@
         "internal/compiler/session/session_phase24_model_test.go": {
           "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
           "bytes": 7377
+        },
+        "internal/compiler/session/session_phase371_defect_reason_test.go": {
+          "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+          "bytes": 11149
+        },
+        "internal/compiler/cgen/cgen_program.go": {
+          "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+          "bytes": 184034
+        },
+        "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+          "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+          "bytes": 14162
+        },
+        "internal/compiler/session/session_phase371_compatibility_test.go": {
+          "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+          "bytes": 47203
         },
         "examples/phase24/error.schway": {
           "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
@@ -2926,6 +3114,22 @@
         ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
           "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
           "bytes": 43
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+          "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+          "bytes": 42
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+          "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+          "bytes": 44
+        },
+        "testdata/phase371/pre-emitter-census.json": {
+          "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+          "bytes": 27223968
+        },
+        "testdata/phase371/compatibility-amendments.json": {
+          "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+          "bytes": 13859
         }
       },
       "current_plan_projection": {
@@ -3302,14 +3506,14 @@
             "TestPhase371ForeignFailureAttributionControls"
           ],
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-1aA6HU/bad-go.log",
-            "sha256": "db721a8ac7544a2b5dfbe53ca3ee6c2db8ae5d99b6a163fb82f36e09bd3cf22c",
+            "path": "/tmp/schway371-prohibition-proof-9f2alp/bad-go.log",
+            "sha256": "53b77b71387e8f242a478aa4636e2280536783a5a7cc2e1899f0ed0a0ad734a5",
             "bytes": 16026
           },
           "overlay": {
             "originalSourceSha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
             "replacementSourceSha256": "bbe668ed043305443853f5e84eef155e09e9a81341f924440fef97feed96c1d9",
-            "overlayJsonSha256": "db2d540447ef55d470545b35873bd8c0a717df54914a2d0d139ad7d34502d80d",
+            "overlayJsonSha256": "73b9e1fc95321282767f9a38a0b580c1403772f5c13664e9c90df58593760a79",
             "sourceUnchanged": true,
             "baselineHead": "8fbd1e51bb6fd97b1a46d5d1015ce5e39d69bfe0"
           }
@@ -3802,8 +4006,8 @@
           },
           "failureNames": [],
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-1aA6HU/clean-go.log",
-            "sha256": "ca0addf5fde68d3535be38d9f068f9848b16630424aac18ae0859fc3b17a8dbd",
+            "path": "/tmp/schway371-prohibition-proof-9f2alp/clean-go.log",
+            "sha256": "a230e7661a717f827c391ef799c3a7f042a951a3974b3afa3033049bcdf3af10",
             "bytes": 11922
           }
         },
@@ -4295,8 +4499,8 @@
           },
           "failureNames": [],
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-1aA6HU/default-go.log",
-            "sha256": "ca0addf5fde68d3535be38d9f068f9848b16630424aac18ae0859fc3b17a8dbd",
+            "path": "/tmp/schway371-prohibition-proof-9f2alp/default-go.log",
+            "sha256": "909286be7a882ed9b669b83cbaac2db61392e212373ab6120c6ac8798727636b",
             "bytes": 11922
           }
         }
@@ -4312,11 +4516,11 @@
             "todo": 0
           },
           "status": 1,
-          "sha256": "a668c9814e463ec6936e6c9997bf3b0aaa1b34139edb967062db701e5d26acd6",
+          "sha256": "35972a65c7062db0f2197dbace8efab59a8231f0e33aadd8cdb9f8e513c4dc41",
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-1aA6HU/bad-node.tap",
-            "sha256": "a668c9814e463ec6936e6c9997bf3b0aaa1b34139edb967062db701e5d26acd6",
-            "bytes": 1200
+            "path": "/tmp/schway371-prohibition-proof-9f2alp/bad-node.tap",
+            "sha256": "35972a65c7062db0f2197dbace8efab59a8231f0e33aadd8cdb9f8e513c4dc41",
+            "bytes": 1199
           }
         },
         "clean": {
@@ -4329,11 +4533,11 @@
             "todo": 0
           },
           "status": 0,
-          "sha256": "f7787777d61731b1b82e1cea9376e4417092c531fc912bae74c690fdfa850af9",
+          "sha256": "86b1580c0db9937b3c4e68d868988b3beccb6c6a41f19e46fbab8b2daf2e80d9",
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-1aA6HU/clean-node.tap",
-            "sha256": "f7787777d61731b1b82e1cea9376e4417092c531fc912bae74c690fdfa850af9",
-            "bytes": 293
+            "path": "/tmp/schway371-prohibition-proof-9f2alp/clean-node.tap",
+            "sha256": "86b1580c0db9937b3c4e68d868988b3beccb6c6a41f19e46fbab8b2daf2e80d9",
+            "bytes": 295
           }
         },
         "default": {
@@ -4346,10 +4550,10 @@
             "todo": 0
           },
           "status": 0,
-          "sha256": "91668681503c2391b90155eef79c8566fd24439d8b157a145e57309051696af9",
+          "sha256": "3d0756a86453e7210cff3907ecaa92c80284655ee0229038c91aec4c6f457913",
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-1aA6HU/default-node.tap",
-            "sha256": "91668681503c2391b90155eef79c8566fd24439d8b157a145e57309051696af9",
+            "path": "/tmp/schway371-prohibition-proof-9f2alp/default-node.tap",
+            "sha256": "3d0756a86453e7210cff3907ecaa92c80284655ee0229038c91aec4c6f457913",
             "bytes": 296
           }
         }
@@ -4370,35 +4574,35 @@
           }
         ],
         "request": {
-          "path": "/tmp/schway371-prohibition-proof-1aA6HU/canonical-request.json",
+          "path": "/tmp/schway371-prohibition-proof-9f2alp/canonical-request.json",
           "sha256": "151c7acbdc8084a522f7b7edc22f97042d8b1b8962ea1def7546397196962661",
           "bytes": 994
         },
         "stdout": {
-          "path": "/tmp/schway371-prohibition-proof-1aA6HU/canonical-producer.stdout.json",
+          "path": "/tmp/schway371-prohibition-proof-9f2alp/canonical-producer.stdout.json",
           "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
           "bytes": 447
         },
         "stderr": {
-          "path": "/tmp/schway371-prohibition-proof-1aA6HU/canonical-producer.stderr.log",
+          "path": "/tmp/schway371-prohibition-proof-9f2alp/canonical-producer.stderr.log",
           "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bytes": 0
         }
       },
       "manifest": {
-        "path": "/tmp/schway371-prohibition-proof-1aA6HU/evidence-manifest.json",
-        "sha256": "dafcad2046d665ed18666a77496de480d5ee4e97a81ceb73628df60c26191fdd",
-        "bytes": 45086
+        "path": "/tmp/schway371-prohibition-proof-9f2alp/evidence-manifest.json",
+        "sha256": "90d776ec72ed5fb339fca799a85ba2e277d38291014577f7bb6cd6989fdafcd5",
+        "bytes": 47022
       }
     },
     "reason": {
       "subject": "reason",
       "state": "machine-evidence-complete-pending-lifecycle-resolution",
-      "captured_utc": "2026-10-16T17:42:35.132Z",
+      "captured_utc": "2026-10-16T17:55:40.591Z",
       "candidate_status": "resolved",
       "candidate_verification": "test",
       "lifecycle_status": "unresolved",
-      "evidence_directory": "/tmp/schway371-prohibition-proof-1VpSwy",
+      "evidence_directory": "/tmp/schway371-prohibition-proof-Mj1vFa",
       "source_bindings": {
         ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
           "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
@@ -4408,9 +4612,17 @@
           "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
           "bytes": 14765
         },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+          "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+          "bytes": 14741
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+          "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+          "bytes": 29843
+        },
         ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
-          "sha256": "89e59e3f08ee458653390a6edd8623aadcfeae66041a05ae23cfa8a03a0e8170",
-          "bytes": 47309
+          "sha256": "3e446dd90b9ee96de2138f0e0dcd8f804b372ec8a38aabcd260818618c808fa6",
+          "bytes": 62896
         },
         "internal/compiler/executionpeer/executionpeer.go": {
           "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
@@ -4424,9 +4636,9 @@
           "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
           "bytes": 7377
         },
-        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
-          "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
-          "bytes": 14741
+        "internal/compiler/session/session_phase371_defect_reason_test.go": {
+          "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+          "bytes": 11149
         },
         "internal/compiler/cgen/cgen_program.go": {
           "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
@@ -4436,9 +4648,9 @@
           "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
           "bytes": 14162
         },
-        "internal/compiler/session/session_phase371_defect_reason_test.go": {
-          "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
-          "bytes": 11149
+        "internal/compiler/session/session_phase371_compatibility_test.go": {
+          "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+          "bytes": 47203
         },
         "examples/phase24/error.schway": {
           "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
@@ -4459,6 +4671,18 @@
         ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
           "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
           "bytes": 42
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+          "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+          "bytes": 44
+        },
+        "testdata/phase371/pre-emitter-census.json": {
+          "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+          "bytes": 27223968
+        },
+        "testdata/phase371/compatibility-amendments.json": {
+          "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+          "bytes": 13859
         }
       },
       "current_plan_projection": {
@@ -4507,14 +4731,14 @@
             "TestPhase371DefectReasonUTF8Admission"
           ],
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-1VpSwy/bad-go.log",
-            "sha256": "7b4e9a2902a4b8827e4b920348f3bc9f29ed6f9d4ec40c6b28290c77e51b0fd1",
+            "path": "/tmp/schway371-prohibition-proof-Mj1vFa/bad-go.log",
+            "sha256": "90096731d443308e5c487d0c10cd7b70a8f5adc7fc2d5997896778f790fcbe1e",
             "bytes": 39515
           },
           "overlay": {
             "originalSourceSha256": "987bd3d52b7016901d47563011e5f41d133cc901fd7d729f694291e9bea4430c",
             "replacementSourceSha256": "c32fcfead740cf80e0f13d015c0d35fe9e184b96f6263a2bad344890fd387470",
-            "overlayJsonSha256": "f4b10b826ac4c627b71164d7d24c6b1687c0cf6b5dde019ce78c3523d6a2c9e9",
+            "overlayJsonSha256": "7c528b3da50da2443c755bbacc00f530fade5c112c6c801f4e7f4b0e676cf4b7",
             "sourceUnchanged": true,
             "baselineHead": "internal/compiler/cgen/cgen_program.go@8f5b5795c8c31488257567511e807a276b78a10c,internal/compiler/syntax/parser.go@9d09df995f1ab68c7044cda0915608d5d0a3209f,internal/compiler/corevalidate/corevalidate.go@9d09df995f1ab68c7044cda0915608d5d0a3209f",
             "sources": [
@@ -4556,8 +4780,8 @@
           },
           "failureNames": [],
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-1VpSwy/clean-go.log",
-            "sha256": "6cfd90fc6943b2a0d4176225acc5080f8ec7c16458fdc97e9032c957c2c7d3e2",
+            "path": "/tmp/schway371-prohibition-proof-Mj1vFa/clean-go.log",
+            "sha256": "d1387e1b62ce7af8c7211e84b65c9d2434284214c892d5e6b77b919b6dc08926",
             "bytes": 15718
           }
         },
@@ -4578,8 +4802,8 @@
           },
           "failureNames": [],
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-1VpSwy/default-go.log",
-            "sha256": "c20156fb215671d8997e052bbd73545cf10142b125c154142495824b26128ca1",
+            "path": "/tmp/schway371-prohibition-proof-Mj1vFa/default-go.log",
+            "sha256": "bec61d5831f52462e1973b412259734ce9bef517328828910f5cddf8b435fe00",
             "bytes": 15718
           }
         }
@@ -4595,11 +4819,11 @@
             "todo": 0
           },
           "status": 1,
-          "sha256": "a6e0fd86561cdca094b6f6530100afc62da71f2690c64c36afc2f31bce8f126c",
+          "sha256": "c8306f361ca381603ac8927cde2731b4a0294f32fe021c93125d0691071927b4",
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-1VpSwy/bad-node.tap",
-            "sha256": "a6e0fd86561cdca094b6f6530100afc62da71f2690c64c36afc2f31bce8f126c",
-            "bytes": 1200
+            "path": "/tmp/schway371-prohibition-proof-Mj1vFa/bad-node.tap",
+            "sha256": "c8306f361ca381603ac8927cde2731b4a0294f32fe021c93125d0691071927b4",
+            "bytes": 1202
           }
         },
         "clean": {
@@ -4612,10 +4836,10 @@
             "todo": 0
           },
           "status": 0,
-          "sha256": "8857d60c571a1b7c5f41dcdaf06f94832cb11d4b3e4f514c396ef3ed928da81d",
+          "sha256": "a197e57fe4bb653d8e14eac22fc8ce2ebd2b9a297057c8f8044166f40a036a71",
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-1VpSwy/clean-node.tap",
-            "sha256": "8857d60c571a1b7c5f41dcdaf06f94832cb11d4b3e4f514c396ef3ed928da81d",
+            "path": "/tmp/schway371-prohibition-proof-Mj1vFa/clean-node.tap",
+            "sha256": "a197e57fe4bb653d8e14eac22fc8ce2ebd2b9a297057c8f8044166f40a036a71",
             "bytes": 297
           }
         },
@@ -4629,10 +4853,10 @@
             "todo": 0
           },
           "status": 0,
-          "sha256": "f3376aeb92b1f5fecd5c54c849e32cac8459e4ef1a986ca1ab19a43b7949c17c",
+          "sha256": "da0244a4226d530dd8aaf4415f2f7073cf599dc2c60ecc4222b68bd4660a7af0",
           "log": {
-            "path": "/tmp/schway371-prohibition-proof-1VpSwy/default-node.tap",
-            "sha256": "f3376aeb92b1f5fecd5c54c849e32cac8459e4ef1a986ca1ab19a43b7949c17c",
+            "path": "/tmp/schway371-prohibition-proof-Mj1vFa/default-node.tap",
+            "sha256": "da0244a4226d530dd8aaf4415f2f7073cf599dc2c60ecc4222b68bd4660a7af0",
             "bytes": 297
           }
         }
@@ -4653,25 +4877,298 @@
           }
         ],
         "request": {
-          "path": "/tmp/schway371-prohibition-proof-1VpSwy/canonical-request.json",
+          "path": "/tmp/schway371-prohibition-proof-Mj1vFa/canonical-request.json",
           "sha256": "109cb6e427e276337a23e288a5a3d1b9c2788b0db3d23504cd33dea7e11e0316",
           "bytes": 1012
         },
         "stdout": {
-          "path": "/tmp/schway371-prohibition-proof-1VpSwy/canonical-producer.stdout.json",
+          "path": "/tmp/schway371-prohibition-proof-Mj1vFa/canonical-producer.stdout.json",
           "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
           "bytes": 447
         },
         "stderr": {
-          "path": "/tmp/schway371-prohibition-proof-1VpSwy/canonical-producer.stderr.log",
+          "path": "/tmp/schway371-prohibition-proof-Mj1vFa/canonical-producer.stderr.log",
           "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "bytes": 0
         }
       },
       "manifest": {
-        "path": "/tmp/schway371-prohibition-proof-1VpSwy/evidence-manifest.json",
-        "sha256": "5729fbbfb7fd57b2925b937b0bb6165f07131c4aa426dc30f8c60b1a0b8e65b8",
-        "bytes": 13056
+        "path": "/tmp/schway371-prohibition-proof-Mj1vFa/evidence-manifest.json",
+        "sha256": "73afc30d72f3be55461592922742707936a7fad240a612c01dc572113dfe5317",
+        "bytes": 14022
+      }
+    },
+    "baseline": {
+      "subject": "baseline",
+      "state": "machine-evidence-complete-pending-lifecycle-resolution",
+      "captured_utc": "2026-10-16T17:55:56.536Z",
+      "candidate_status": "resolved",
+      "candidate_verification": "test",
+      "lifecycle_status": "unresolved",
+      "evidence_directory": "/tmp/schway371-prohibition-proof-vjfw9a",
+      "source_bindings": {
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
+          "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
+          "bytes": 15390
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+          "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
+          "bytes": 14765
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+          "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+          "bytes": 14741
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+          "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+          "bytes": 29843
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
+          "sha256": "3e446dd90b9ee96de2138f0e0dcd8f804b372ec8a38aabcd260818618c808fa6",
+          "bytes": 62896
+        },
+        "internal/compiler/executionpeer/executionpeer.go": {
+          "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+          "bytes": 45046
+        },
+        "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
+          "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+          "bytes": 39087
+        },
+        "internal/compiler/session/session_phase24_model_test.go": {
+          "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+          "bytes": 7377
+        },
+        "internal/compiler/session/session_phase371_defect_reason_test.go": {
+          "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+          "bytes": 11149
+        },
+        "internal/compiler/cgen/cgen_program.go": {
+          "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+          "bytes": 184034
+        },
+        "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+          "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+          "bytes": 14162
+        },
+        "internal/compiler/session/session_phase371_compatibility_test.go": {
+          "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+          "bytes": 47203
+        },
+        "examples/phase24/error.schway": {
+          "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+          "bytes": 1228
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
+          "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+          "bytes": 40
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
+          "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
+          "bytes": 42
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+          "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+          "bytes": 43
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+          "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+          "bytes": 42
+        },
+        ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+          "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+          "bytes": 44
+        },
+        "testdata/phase371/pre-emitter-census.json": {
+          "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+          "bytes": 27223968
+        },
+        "testdata/phase371/compatibility-amendments.json": {
+          "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+          "bytes": 13859
+        }
+      },
+      "current_plan_projection": {
+        "source_plan": {
+          "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md",
+          "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea"
+        },
+        "source_prohibition": {
+          "statement": "MUST NOT regenerate frozen C expectations, exempt a whole path/route family or accept unrelated bytes through an amendment.",
+          "status": "unresolved",
+          "verification": null,
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        },
+        "projection": [
+          {
+            "statement": "MUST NOT regenerate frozen C expectations, exempt a whole path/route family or accept unrelated bytes through an amendment.",
+            "status": "unresolved",
+            "check_kind": "node-test",
+            "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+            "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json",
+            "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+          }
+        ]
+      },
+      "go_controls": {
+        "bad": {
+          "roots": {
+            "TestPhase371CompatibilityAmendmentControls": {
+              "run": 1,
+              "pass": 0,
+              "fail": 1,
+              "skip": 0,
+              "subtestCount": 15,
+              "subtestPass": 15,
+              "subtestFail": 0
+            }
+          },
+          "failureNames": [
+            "TestPhase371CompatibilityAmendmentControls"
+          ],
+          "log": {
+            "path": "/tmp/schway371-prohibition-proof-vjfw9a/bad-go.log",
+            "sha256": "1a02ed203fa861b50723e6b02dae10b374ac8dc5c0eb19ed753b89e5ac3a42a5",
+            "bytes": 2533
+          },
+          "overlay": {
+            "originalSourceSha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+            "replacementSourceSha256": "4f1b8107829157bf25a8bc1690fff9321875e3fc678a7342540fe53144c7e7f9",
+            "overlayJsonSha256": "bd6bd30d89efcbf8548fb10cf005271c82f42f994d247a08c6fa5ccefabb9b11",
+            "anchorSha256": "d3d1284cb24b1824aecc67c22da1b0e13724be2755db594d847abd6cf18ea204",
+            "sourceUnchanged": true
+          }
+        },
+        "clean": {
+          "roots": {
+            "TestPhase371CompatibilityAmendmentControls": {
+              "run": 1,
+              "pass": 1,
+              "fail": 0,
+              "skip": 0,
+              "subtestCount": 15,
+              "subtestPass": 15,
+              "subtestFail": 0
+            }
+          },
+          "failureNames": [],
+          "log": {
+            "path": "/tmp/schway371-prohibition-proof-vjfw9a/clean-go.log",
+            "sha256": "a820d15b4506a6910b60ccc5cd684e226ca0e4cef0889241de72a885bfe6196b",
+            "bytes": 2352
+          }
+        },
+        "default": {
+          "roots": {
+            "TestPhase371CompatibilityAmendmentControls": {
+              "run": 1,
+              "pass": 1,
+              "fail": 0,
+              "skip": 0,
+              "subtestCount": 15,
+              "subtestPass": 15,
+              "subtestFail": 0
+            }
+          },
+          "failureNames": [],
+          "log": {
+            "path": "/tmp/schway371-prohibition-proof-vjfw9a/default-go.log",
+            "sha256": "a7a865a2ebd99df525e35b73bda5b0cefa87ca6cfce53a63dca18c6729c291e7",
+            "bytes": 2352
+          }
+        }
+      },
+      "tap_controls": {
+        "bad": {
+          "counts": {
+            "tests": 1,
+            "pass": 0,
+            "fail": 1,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0
+          },
+          "status": 1,
+          "sha256": "2e8f8024aca09b76280c33b13d5fa2d34ed65ca54fe5bd732ec311719f3d29b6",
+          "log": {
+            "path": "/tmp/schway371-prohibition-proof-vjfw9a/bad-node.tap",
+            "sha256": "2e8f8024aca09b76280c33b13d5fa2d34ed65ca54fe5bd732ec311719f3d29b6",
+            "bytes": 1202
+          }
+        },
+        "clean": {
+          "counts": {
+            "tests": 1,
+            "pass": 1,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0
+          },
+          "status": 0,
+          "sha256": "704662e82a3cfad78109aa2172cd192eec23639ac60ddbf9afeeb80788b218b4",
+          "log": {
+            "path": "/tmp/schway371-prohibition-proof-vjfw9a/clean-node.tap",
+            "sha256": "704662e82a3cfad78109aa2172cd192eec23639ac60ddbf9afeeb80788b218b4",
+            "bytes": 297
+          }
+        },
+        "default": {
+          "counts": {
+            "tests": 1,
+            "pass": 1,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0
+          },
+          "status": 0,
+          "sha256": "544f6389e89930b0bf5ff2ca8bc7b359d8bb0a9e1345fa3f54a316d9da344532",
+          "log": {
+            "path": "/tmp/schway371-prohibition-proof-vjfw9a/default-node.tap",
+            "sha256": "544f6389e89930b0bf5ff2ca8bc7b359d8bb0a9e1345fa3f54a316d9da344532",
+            "bytes": 297
+          }
+        }
+      },
+      "canonical_producer": {
+        "status": "green",
+        "flagged": false,
+        "tier": "test",
+        "located": true,
+        "kind": "node-test",
+        "evidence": [
+          {
+            "kind": "node-test",
+            "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+            "failFirst": true,
+            "passed": true,
+            "failFirstProof": "violation-fixture"
+          }
+        ],
+        "request": {
+          "path": "/tmp/schway371-prohibition-proof-vjfw9a/canonical-request.json",
+          "sha256": "3f97395cbfd4d4fb5d65ad5188dda52206973f764c291d116106ba49ac7326b9",
+          "bytes": 991
+        },
+        "stdout": {
+          "path": "/tmp/schway371-prohibition-proof-vjfw9a/canonical-producer.stdout.json",
+          "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
+          "bytes": 447
+        },
+        "stderr": {
+          "path": "/tmp/schway371-prohibition-proof-vjfw9a/canonical-producer.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      },
+      "manifest": {
+        "path": "/tmp/schway371-prohibition-proof-vjfw9a/evidence-manifest.json",
+        "sha256": "8b2c65dd57623cc365b045e61c138d11c2997f23ab7f97fb927439c76f997d2c",
+        "bytes": 12353
       }
     }
   },
@@ -4703,11 +5200,11 @@
   "failure_proof": {
     "subject": "failure",
     "state": "machine-evidence-complete-pending-lifecycle-resolution",
-    "captured_utc": "2026-10-16T16:17:13.657Z",
+    "captured_utc": "2026-10-16T17:54:58.728Z",
     "candidate_status": "resolved",
     "candidate_verification": "test",
     "lifecycle_status": "unresolved",
-    "evidence_directory": "/tmp/schway371-prohibition-proof-1aA6HU",
+    "evidence_directory": "/tmp/schway371-prohibition-proof-9f2alp",
     "source_bindings": {
       ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
         "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
@@ -4717,9 +5214,17 @@
         "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
         "bytes": 14765
       },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+        "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+        "bytes": 14741
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+        "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+        "bytes": 29843
+      },
       ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
-        "sha256": "823771a7508c5caddd4f7c1e5f3c504728aa021f0e1546e04f119b90884afa51",
-        "bytes": 36684
+        "sha256": "3e446dd90b9ee96de2138f0e0dcd8f804b372ec8a38aabcd260818618c808fa6",
+        "bytes": 62896
       },
       "internal/compiler/executionpeer/executionpeer.go": {
         "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
@@ -4732,6 +5237,22 @@
       "internal/compiler/session/session_phase24_model_test.go": {
         "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
         "bytes": 7377
+      },
+      "internal/compiler/session/session_phase371_defect_reason_test.go": {
+        "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+        "bytes": 11149
+      },
+      "internal/compiler/cgen/cgen_program.go": {
+        "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+        "bytes": 184034
+      },
+      "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+        "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+        "bytes": 14162
+      },
+      "internal/compiler/session/session_phase371_compatibility_test.go": {
+        "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+        "bytes": 47203
       },
       "examples/phase24/error.schway": {
         "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
@@ -4748,6 +5269,22 @@
       ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
         "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
         "bytes": 43
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+        "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+        "bytes": 42
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+        "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+        "bytes": 44
+      },
+      "testdata/phase371/pre-emitter-census.json": {
+        "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+        "bytes": 27223968
+      },
+      "testdata/phase371/compatibility-amendments.json": {
+        "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+        "bytes": 13859
       }
     },
     "current_plan_projection": {
@@ -5124,14 +5661,14 @@
           "TestPhase371ForeignFailureAttributionControls"
         ],
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-1aA6HU/bad-go.log",
-          "sha256": "db721a8ac7544a2b5dfbe53ca3ee6c2db8ae5d99b6a163fb82f36e09bd3cf22c",
+          "path": "/tmp/schway371-prohibition-proof-9f2alp/bad-go.log",
+          "sha256": "53b77b71387e8f242a478aa4636e2280536783a5a7cc2e1899f0ed0a0ad734a5",
           "bytes": 16026
         },
         "overlay": {
           "originalSourceSha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
           "replacementSourceSha256": "bbe668ed043305443853f5e84eef155e09e9a81341f924440fef97feed96c1d9",
-          "overlayJsonSha256": "db2d540447ef55d470545b35873bd8c0a717df54914a2d0d139ad7d34502d80d",
+          "overlayJsonSha256": "73b9e1fc95321282767f9a38a0b580c1403772f5c13664e9c90df58593760a79",
           "sourceUnchanged": true,
           "baselineHead": "8fbd1e51bb6fd97b1a46d5d1015ce5e39d69bfe0"
         }
@@ -5624,8 +6161,8 @@
         },
         "failureNames": [],
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-1aA6HU/clean-go.log",
-          "sha256": "ca0addf5fde68d3535be38d9f068f9848b16630424aac18ae0859fc3b17a8dbd",
+          "path": "/tmp/schway371-prohibition-proof-9f2alp/clean-go.log",
+          "sha256": "a230e7661a717f827c391ef799c3a7f042a951a3974b3afa3033049bcdf3af10",
           "bytes": 11922
         }
       },
@@ -6117,8 +6654,8 @@
         },
         "failureNames": [],
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-1aA6HU/default-go.log",
-          "sha256": "ca0addf5fde68d3535be38d9f068f9848b16630424aac18ae0859fc3b17a8dbd",
+          "path": "/tmp/schway371-prohibition-proof-9f2alp/default-go.log",
+          "sha256": "909286be7a882ed9b669b83cbaac2db61392e212373ab6120c6ac8798727636b",
           "bytes": 11922
         }
       }
@@ -6134,11 +6671,11 @@
           "todo": 0
         },
         "status": 1,
-        "sha256": "a668c9814e463ec6936e6c9997bf3b0aaa1b34139edb967062db701e5d26acd6",
+        "sha256": "35972a65c7062db0f2197dbace8efab59a8231f0e33aadd8cdb9f8e513c4dc41",
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-1aA6HU/bad-node.tap",
-          "sha256": "a668c9814e463ec6936e6c9997bf3b0aaa1b34139edb967062db701e5d26acd6",
-          "bytes": 1200
+          "path": "/tmp/schway371-prohibition-proof-9f2alp/bad-node.tap",
+          "sha256": "35972a65c7062db0f2197dbace8efab59a8231f0e33aadd8cdb9f8e513c4dc41",
+          "bytes": 1199
         }
       },
       "clean": {
@@ -6151,11 +6688,11 @@
           "todo": 0
         },
         "status": 0,
-        "sha256": "f7787777d61731b1b82e1cea9376e4417092c531fc912bae74c690fdfa850af9",
+        "sha256": "86b1580c0db9937b3c4e68d868988b3beccb6c6a41f19e46fbab8b2daf2e80d9",
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-1aA6HU/clean-node.tap",
-          "sha256": "f7787777d61731b1b82e1cea9376e4417092c531fc912bae74c690fdfa850af9",
-          "bytes": 293
+          "path": "/tmp/schway371-prohibition-proof-9f2alp/clean-node.tap",
+          "sha256": "86b1580c0db9937b3c4e68d868988b3beccb6c6a41f19e46fbab8b2daf2e80d9",
+          "bytes": 295
         }
       },
       "default": {
@@ -6168,10 +6705,10 @@
           "todo": 0
         },
         "status": 0,
-        "sha256": "91668681503c2391b90155eef79c8566fd24439d8b157a145e57309051696af9",
+        "sha256": "3d0756a86453e7210cff3907ecaa92c80284655ee0229038c91aec4c6f457913",
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-1aA6HU/default-node.tap",
-          "sha256": "91668681503c2391b90155eef79c8566fd24439d8b157a145e57309051696af9",
+          "path": "/tmp/schway371-prohibition-proof-9f2alp/default-node.tap",
+          "sha256": "3d0756a86453e7210cff3907ecaa92c80284655ee0229038c91aec4c6f457913",
           "bytes": 296
         }
       }
@@ -6192,25 +6729,25 @@
         }
       ],
       "request": {
-        "path": "/tmp/schway371-prohibition-proof-1aA6HU/canonical-request.json",
+        "path": "/tmp/schway371-prohibition-proof-9f2alp/canonical-request.json",
         "sha256": "151c7acbdc8084a522f7b7edc22f97042d8b1b8962ea1def7546397196962661",
         "bytes": 994
       },
       "stdout": {
-        "path": "/tmp/schway371-prohibition-proof-1aA6HU/canonical-producer.stdout.json",
+        "path": "/tmp/schway371-prohibition-proof-9f2alp/canonical-producer.stdout.json",
         "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
         "bytes": 447
       },
       "stderr": {
-        "path": "/tmp/schway371-prohibition-proof-1aA6HU/canonical-producer.stderr.log",
+        "path": "/tmp/schway371-prohibition-proof-9f2alp/canonical-producer.stderr.log",
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "bytes": 0
       }
     },
     "manifest": {
-      "path": "/tmp/schway371-prohibition-proof-1aA6HU/evidence-manifest.json",
-      "sha256": "dafcad2046d665ed18666a77496de480d5ee4e97a81ceb73628df60c26191fdd",
-      "bytes": 45086
+      "path": "/tmp/schway371-prohibition-proof-9f2alp/evidence-manifest.json",
+      "sha256": "90d776ec72ed5fb339fca799a85ba2e277d38291014577f7bb6cd6989fdafcd5",
+      "bytes": 47022
     }
   },
   "reason_plan_projection": {
@@ -6241,11 +6778,11 @@
   "reason_proof": {
     "subject": "reason",
     "state": "machine-evidence-complete-pending-lifecycle-resolution",
-    "captured_utc": "2026-10-16T17:42:35.132Z",
+    "captured_utc": "2026-10-16T17:55:40.591Z",
     "candidate_status": "resolved",
     "candidate_verification": "test",
     "lifecycle_status": "unresolved",
-    "evidence_directory": "/tmp/schway371-prohibition-proof-1VpSwy",
+    "evidence_directory": "/tmp/schway371-prohibition-proof-Mj1vFa",
     "source_bindings": {
       ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
         "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
@@ -6255,9 +6792,17 @@
         "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
         "bytes": 14765
       },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+        "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+        "bytes": 14741
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+        "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+        "bytes": 29843
+      },
       ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
-        "sha256": "89e59e3f08ee458653390a6edd8623aadcfeae66041a05ae23cfa8a03a0e8170",
-        "bytes": 47309
+        "sha256": "3e446dd90b9ee96de2138f0e0dcd8f804b372ec8a38aabcd260818618c808fa6",
+        "bytes": 62896
       },
       "internal/compiler/executionpeer/executionpeer.go": {
         "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
@@ -6271,9 +6816,9 @@
         "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
         "bytes": 7377
       },
-      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
-        "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
-        "bytes": 14741
+      "internal/compiler/session/session_phase371_defect_reason_test.go": {
+        "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+        "bytes": 11149
       },
       "internal/compiler/cgen/cgen_program.go": {
         "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
@@ -6283,9 +6828,9 @@
         "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
         "bytes": 14162
       },
-      "internal/compiler/session/session_phase371_defect_reason_test.go": {
-        "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
-        "bytes": 11149
+      "internal/compiler/session/session_phase371_compatibility_test.go": {
+        "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+        "bytes": 47203
       },
       "examples/phase24/error.schway": {
         "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
@@ -6306,6 +6851,18 @@
       ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
         "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
         "bytes": 42
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+        "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+        "bytes": 44
+      },
+      "testdata/phase371/pre-emitter-census.json": {
+        "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+        "bytes": 27223968
+      },
+      "testdata/phase371/compatibility-amendments.json": {
+        "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+        "bytes": 13859
       }
     },
     "current_plan_projection": {
@@ -6354,14 +6911,14 @@
           "TestPhase371DefectReasonUTF8Admission"
         ],
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-1VpSwy/bad-go.log",
-          "sha256": "7b4e9a2902a4b8827e4b920348f3bc9f29ed6f9d4ec40c6b28290c77e51b0fd1",
+          "path": "/tmp/schway371-prohibition-proof-Mj1vFa/bad-go.log",
+          "sha256": "90096731d443308e5c487d0c10cd7b70a8f5adc7fc2d5997896778f790fcbe1e",
           "bytes": 39515
         },
         "overlay": {
           "originalSourceSha256": "987bd3d52b7016901d47563011e5f41d133cc901fd7d729f694291e9bea4430c",
           "replacementSourceSha256": "c32fcfead740cf80e0f13d015c0d35fe9e184b96f6263a2bad344890fd387470",
-          "overlayJsonSha256": "f4b10b826ac4c627b71164d7d24c6b1687c0cf6b5dde019ce78c3523d6a2c9e9",
+          "overlayJsonSha256": "7c528b3da50da2443c755bbacc00f530fade5c112c6c801f4e7f4b0e676cf4b7",
           "sourceUnchanged": true,
           "baselineHead": "internal/compiler/cgen/cgen_program.go@8f5b5795c8c31488257567511e807a276b78a10c,internal/compiler/syntax/parser.go@9d09df995f1ab68c7044cda0915608d5d0a3209f,internal/compiler/corevalidate/corevalidate.go@9d09df995f1ab68c7044cda0915608d5d0a3209f",
           "sources": [
@@ -6403,8 +6960,8 @@
         },
         "failureNames": [],
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-1VpSwy/clean-go.log",
-          "sha256": "6cfd90fc6943b2a0d4176225acc5080f8ec7c16458fdc97e9032c957c2c7d3e2",
+          "path": "/tmp/schway371-prohibition-proof-Mj1vFa/clean-go.log",
+          "sha256": "d1387e1b62ce7af8c7211e84b65c9d2434284214c892d5e6b77b919b6dc08926",
           "bytes": 15718
         }
       },
@@ -6425,8 +6982,8 @@
         },
         "failureNames": [],
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-1VpSwy/default-go.log",
-          "sha256": "c20156fb215671d8997e052bbd73545cf10142b125c154142495824b26128ca1",
+          "path": "/tmp/schway371-prohibition-proof-Mj1vFa/default-go.log",
+          "sha256": "bec61d5831f52462e1973b412259734ce9bef517328828910f5cddf8b435fe00",
           "bytes": 15718
         }
       }
@@ -6442,11 +6999,11 @@
           "todo": 0
         },
         "status": 1,
-        "sha256": "a6e0fd86561cdca094b6f6530100afc62da71f2690c64c36afc2f31bce8f126c",
+        "sha256": "c8306f361ca381603ac8927cde2731b4a0294f32fe021c93125d0691071927b4",
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-1VpSwy/bad-node.tap",
-          "sha256": "a6e0fd86561cdca094b6f6530100afc62da71f2690c64c36afc2f31bce8f126c",
-          "bytes": 1200
+          "path": "/tmp/schway371-prohibition-proof-Mj1vFa/bad-node.tap",
+          "sha256": "c8306f361ca381603ac8927cde2731b4a0294f32fe021c93125d0691071927b4",
+          "bytes": 1202
         }
       },
       "clean": {
@@ -6459,10 +7016,10 @@
           "todo": 0
         },
         "status": 0,
-        "sha256": "8857d60c571a1b7c5f41dcdaf06f94832cb11d4b3e4f514c396ef3ed928da81d",
+        "sha256": "a197e57fe4bb653d8e14eac22fc8ce2ebd2b9a297057c8f8044166f40a036a71",
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-1VpSwy/clean-node.tap",
-          "sha256": "8857d60c571a1b7c5f41dcdaf06f94832cb11d4b3e4f514c396ef3ed928da81d",
+          "path": "/tmp/schway371-prohibition-proof-Mj1vFa/clean-node.tap",
+          "sha256": "a197e57fe4bb653d8e14eac22fc8ce2ebd2b9a297057c8f8044166f40a036a71",
           "bytes": 297
         }
       },
@@ -6476,10 +7033,10 @@
           "todo": 0
         },
         "status": 0,
-        "sha256": "f3376aeb92b1f5fecd5c54c849e32cac8459e4ef1a986ca1ab19a43b7949c17c",
+        "sha256": "da0244a4226d530dd8aaf4415f2f7073cf599dc2c60ecc4222b68bd4660a7af0",
         "log": {
-          "path": "/tmp/schway371-prohibition-proof-1VpSwy/default-node.tap",
-          "sha256": "f3376aeb92b1f5fecd5c54c849e32cac8459e4ef1a986ca1ab19a43b7949c17c",
+          "path": "/tmp/schway371-prohibition-proof-Mj1vFa/default-node.tap",
+          "sha256": "da0244a4226d530dd8aaf4415f2f7073cf599dc2c60ecc4222b68bd4660a7af0",
           "bytes": 297
         }
       }
@@ -6500,25 +7057,629 @@
         }
       ],
       "request": {
-        "path": "/tmp/schway371-prohibition-proof-1VpSwy/canonical-request.json",
+        "path": "/tmp/schway371-prohibition-proof-Mj1vFa/canonical-request.json",
         "sha256": "109cb6e427e276337a23e288a5a3d1b9c2788b0db3d23504cd33dea7e11e0316",
         "bytes": 1012
       },
       "stdout": {
-        "path": "/tmp/schway371-prohibition-proof-1VpSwy/canonical-producer.stdout.json",
+        "path": "/tmp/schway371-prohibition-proof-Mj1vFa/canonical-producer.stdout.json",
         "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
         "bytes": 447
       },
       "stderr": {
-        "path": "/tmp/schway371-prohibition-proof-1VpSwy/canonical-producer.stderr.log",
+        "path": "/tmp/schway371-prohibition-proof-Mj1vFa/canonical-producer.stderr.log",
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "bytes": 0
       }
     },
     "manifest": {
-      "path": "/tmp/schway371-prohibition-proof-1VpSwy/evidence-manifest.json",
-      "sha256": "5729fbbfb7fd57b2925b937b0bb6165f07131c4aa426dc30f8c60b1a0b8e65b8",
-      "bytes": 13056
+      "path": "/tmp/schway371-prohibition-proof-Mj1vFa/evidence-manifest.json",
+      "sha256": "73afc30d72f3be55461592922742707936a7fad240a612c01dc572113dfe5317",
+      "bytes": 14022
     }
+  },
+  "baseline_plan_projection": {
+    "source_plan": {
+      "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md",
+      "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea"
+    },
+    "source_prohibition": {
+      "statement": "MUST NOT regenerate frozen C expectations, exempt a whole path/route family or accept unrelated bytes through an amendment.",
+      "status": "unresolved",
+      "verification": null,
+      "check_kind": "node-test",
+      "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+      "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json",
+      "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+    },
+    "projection": [
+      {
+        "statement": "MUST NOT regenerate frozen C expectations, exempt a whole path/route family or accept unrelated bytes through an amendment.",
+        "status": "unresolved",
+        "check_kind": "node-test",
+        "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+        "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json",
+        "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+      }
+    ]
+  },
+  "baseline_proof": {
+    "subject": "baseline",
+    "state": "machine-evidence-complete-pending-lifecycle-resolution",
+    "captured_utc": "2026-10-16T17:55:56.536Z",
+    "candidate_status": "resolved",
+    "candidate_verification": "test",
+    "lifecycle_status": "unresolved",
+    "evidence_directory": "/tmp/schway371-prohibition-proof-vjfw9a",
+    "source_bindings": {
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
+        "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
+        "bytes": 15390
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+        "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
+        "bytes": 14765
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+        "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+        "bytes": 14741
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+        "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+        "bytes": 29843
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
+        "sha256": "3e446dd90b9ee96de2138f0e0dcd8f804b372ec8a38aabcd260818618c808fa6",
+        "bytes": 62896
+      },
+      "internal/compiler/executionpeer/executionpeer.go": {
+        "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+        "bytes": 45046
+      },
+      "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
+        "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+        "bytes": 39087
+      },
+      "internal/compiler/session/session_phase24_model_test.go": {
+        "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+        "bytes": 7377
+      },
+      "internal/compiler/session/session_phase371_defect_reason_test.go": {
+        "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+        "bytes": 11149
+      },
+      "internal/compiler/cgen/cgen_program.go": {
+        "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+        "bytes": 184034
+      },
+      "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+        "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+        "bytes": 14162
+      },
+      "internal/compiler/session/session_phase371_compatibility_test.go": {
+        "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+        "bytes": 47203
+      },
+      "examples/phase24/error.schway": {
+        "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+        "bytes": 1228
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
+        "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+        "bytes": 40
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
+        "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
+        "bytes": 42
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+        "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+        "bytes": 43
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+        "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+        "bytes": 42
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+        "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+        "bytes": 44
+      },
+      "testdata/phase371/pre-emitter-census.json": {
+        "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+        "bytes": 27223968
+      },
+      "testdata/phase371/compatibility-amendments.json": {
+        "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+        "bytes": 13859
+      }
+    },
+    "current_plan_projection": {
+      "source_plan": {
+        "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md",
+        "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea"
+      },
+      "source_prohibition": {
+        "statement": "MUST NOT regenerate frozen C expectations, exempt a whole path/route family or accept unrelated bytes through an amendment.",
+        "status": "unresolved",
+        "verification": null,
+        "check_kind": "node-test",
+        "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+        "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json",
+        "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+      },
+      "projection": [
+        {
+          "statement": "MUST NOT regenerate frozen C expectations, exempt a whole path/route family or accept unrelated bytes through an amendment.",
+          "status": "unresolved",
+          "check_kind": "node-test",
+          "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json",
+          "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+        }
+      ]
+    },
+    "go_controls": {
+      "bad": {
+        "roots": {
+          "TestPhase371CompatibilityAmendmentControls": {
+            "run": 1,
+            "pass": 0,
+            "fail": 1,
+            "skip": 0,
+            "subtestCount": 15,
+            "subtestPass": 15,
+            "subtestFail": 0
+          }
+        },
+        "failureNames": [
+          "TestPhase371CompatibilityAmendmentControls"
+        ],
+        "log": {
+          "path": "/tmp/schway371-prohibition-proof-vjfw9a/bad-go.log",
+          "sha256": "1a02ed203fa861b50723e6b02dae10b374ac8dc5c0eb19ed753b89e5ac3a42a5",
+          "bytes": 2533
+        },
+        "overlay": {
+          "originalSourceSha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+          "replacementSourceSha256": "4f1b8107829157bf25a8bc1690fff9321875e3fc678a7342540fe53144c7e7f9",
+          "overlayJsonSha256": "bd6bd30d89efcbf8548fb10cf005271c82f42f994d247a08c6fa5ccefabb9b11",
+          "anchorSha256": "d3d1284cb24b1824aecc67c22da1b0e13724be2755db594d847abd6cf18ea204",
+          "sourceUnchanged": true
+        }
+      },
+      "clean": {
+        "roots": {
+          "TestPhase371CompatibilityAmendmentControls": {
+            "run": 1,
+            "pass": 1,
+            "fail": 0,
+            "skip": 0,
+            "subtestCount": 15,
+            "subtestPass": 15,
+            "subtestFail": 0
+          }
+        },
+        "failureNames": [],
+        "log": {
+          "path": "/tmp/schway371-prohibition-proof-vjfw9a/clean-go.log",
+          "sha256": "a820d15b4506a6910b60ccc5cd684e226ca0e4cef0889241de72a885bfe6196b",
+          "bytes": 2352
+        }
+      },
+      "default": {
+        "roots": {
+          "TestPhase371CompatibilityAmendmentControls": {
+            "run": 1,
+            "pass": 1,
+            "fail": 0,
+            "skip": 0,
+            "subtestCount": 15,
+            "subtestPass": 15,
+            "subtestFail": 0
+          }
+        },
+        "failureNames": [],
+        "log": {
+          "path": "/tmp/schway371-prohibition-proof-vjfw9a/default-go.log",
+          "sha256": "a7a865a2ebd99df525e35b73bda5b0cefa87ca6cfce53a63dca18c6729c291e7",
+          "bytes": 2352
+        }
+      }
+    },
+    "tap_controls": {
+      "bad": {
+        "counts": {
+          "tests": 1,
+          "pass": 0,
+          "fail": 1,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        "status": 1,
+        "sha256": "2e8f8024aca09b76280c33b13d5fa2d34ed65ca54fe5bd732ec311719f3d29b6",
+        "log": {
+          "path": "/tmp/schway371-prohibition-proof-vjfw9a/bad-node.tap",
+          "sha256": "2e8f8024aca09b76280c33b13d5fa2d34ed65ca54fe5bd732ec311719f3d29b6",
+          "bytes": 1202
+        }
+      },
+      "clean": {
+        "counts": {
+          "tests": 1,
+          "pass": 1,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        "status": 0,
+        "sha256": "704662e82a3cfad78109aa2172cd192eec23639ac60ddbf9afeeb80788b218b4",
+        "log": {
+          "path": "/tmp/schway371-prohibition-proof-vjfw9a/clean-node.tap",
+          "sha256": "704662e82a3cfad78109aa2172cd192eec23639ac60ddbf9afeeb80788b218b4",
+          "bytes": 297
+        }
+      },
+      "default": {
+        "counts": {
+          "tests": 1,
+          "pass": 1,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        "status": 0,
+        "sha256": "544f6389e89930b0bf5ff2ca8bc7b359d8bb0a9e1345fa3f54a316d9da344532",
+        "log": {
+          "path": "/tmp/schway371-prohibition-proof-vjfw9a/default-node.tap",
+          "sha256": "544f6389e89930b0bf5ff2ca8bc7b359d8bb0a9e1345fa3f54a316d9da344532",
+          "bytes": 297
+        }
+      }
+    },
+    "canonical_producer": {
+      "status": "green",
+      "flagged": false,
+      "tier": "test",
+      "located": true,
+      "kind": "node-test",
+      "evidence": [
+        {
+          "kind": "node-test",
+          "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+          "failFirst": true,
+          "passed": true,
+          "failFirstProof": "violation-fixture"
+        }
+      ],
+      "request": {
+        "path": "/tmp/schway371-prohibition-proof-vjfw9a/canonical-request.json",
+        "sha256": "3f97395cbfd4d4fb5d65ad5188dda52206973f764c291d116106ba49ac7326b9",
+        "bytes": 991
+      },
+      "stdout": {
+        "path": "/tmp/schway371-prohibition-proof-vjfw9a/canonical-producer.stdout.json",
+        "sha256": "937351cb32806d71c71e11c70579ff29234179c19cda619afaf5badd322aaa5f",
+        "bytes": 447
+      },
+      "stderr": {
+        "path": "/tmp/schway371-prohibition-proof-vjfw9a/canonical-producer.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    },
+    "manifest": {
+      "path": "/tmp/schway371-prohibition-proof-vjfw9a/evidence-manifest.json",
+      "sha256": "8b2c65dd57623cc365b045e61c138d11c2997f23ab7f97fb927439c76f997d2c",
+      "bytes": 12353
+    }
+  },
+  "final_root_union": {
+    "state": "machine-evidence-complete-pending-lifecycle-resolution",
+    "captured_utc": "2026-10-16T17:56:09.405Z",
+    "root_count": 19,
+    "distinct_package_count": 3,
+    "roots": {
+      "TestPhase371LegacyDefectClosesAllActiveFrames": {
+        "package": "./internal/compiler/executionpeer",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 3,
+        "subtestPass": 3,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371DefectTerminalControls": {
+        "package": "./internal/compiler/executionpeer",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 20,
+        "subtestPass": 20,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase33TerminalAttribution": {
+        "package": "./internal/compiler/executionpeer",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 32,
+        "subtestPass": 32,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase36CallCausalAttributionControls": {
+        "package": "./internal/compiler/executionpeer",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 12,
+        "subtestPass": 12,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371ForeignFailureOpFailAttribution": {
+        "package": "./internal/compiler/executionpeer",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 2,
+        "subtestPass": 2,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371ForeignFailureAttributionControls": {
+        "package": "./internal/compiler/executionpeer",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 24,
+        "subtestPass": 24,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase24ModelReplayIsDeterministicAndModelOnly": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 4,
+        "subtestPass": 4,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371DefectReasonUTF8Admission": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 14,
+        "subtestPass": 14,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371PreEmitterRouteCensus": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 0,
+        "subtestPass": 0,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371CompatibilityAmendmentControls": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 15,
+        "subtestPass": 15,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase34PreChangeCProgramGolden": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 0,
+        "subtestPass": 0,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase34PreChangeCGoldenIsNotInert": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 13,
+        "subtestPass": 13,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase36NoCallGeneratedCByteBaseline": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 0,
+        "subtestPass": 0,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase36NoCallGeneratedCByteBaselineControls": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 0,
+        "subtestPass": 0,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase37Phase34AdditionLedgerControls": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 12,
+        "subtestPass": 12,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase37Phase36AdditionLedgerControls": {
+        "package": "./internal/compiler/session",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 12,
+        "subtestPass": 12,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371NoCallScalarDefectNativeConformance": {
+        "package": "./internal/compiler/cgen",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 3,
+        "subtestPass": 3,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase371CountedDefectReasonBytes": {
+        "package": "./internal/compiler/cgen",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 75,
+        "subtestPass": 75,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      },
+      "TestPhase33ScalarExplicitDefectShells": {
+        "package": "./internal/compiler/cgen",
+        "run": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "subtestCount": 12,
+        "subtestPass": 12,
+        "subtestFail": 0,
+        "subtestSkip": 0
+      }
+    },
+    "raw_log": {
+      "path": "/tmp/schway371-prohibition-proof-TN3LOW/final-19-root-union.go.log",
+      "sha256": "c24e4fc34fffc911d7f699202c8c1c1df5e274beb2aa97d82b2e11e6fc546e64",
+      "bytes": 42822
+    },
+    "source_bindings": {
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-01-PLAN.md": {
+        "sha256": "14578da0811b83e0eb5b9511824eed17f79fc6996772beba81e323af2719513a",
+        "bytes": 15390
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-02-PLAN.md": {
+        "sha256": "b64f510366305e1b97c296f171ae8b699c2d579124945d06e99331d9b26574fd",
+        "bytes": 14765
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-03-PLAN.md": {
+        "sha256": "a37cf2ef2198b67ab0c51a9cd28930a4df9e22855879536c62fc7621b739e1df",
+        "bytes": 14741
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-04-PLAN.md": {
+        "sha256": "2f5f9c500aff40d5a00a23f8c37bf583ce29a5fa23b7466fedba9d8ccc307dea",
+        "bytes": 29843
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs": {
+        "sha256": "3e446dd90b9ee96de2138f0e0dcd8f804b372ec8a38aabcd260818618c808fa6",
+        "bytes": 62896
+      },
+      "internal/compiler/executionpeer/executionpeer.go": {
+        "sha256": "64fb054ad8054e300d5df91faf973290c74ba7b05b5b0460b632d38d5ed18e6a",
+        "bytes": 45046
+      },
+      "internal/compiler/executionpeer/executionpeer_phase371_test.go": {
+        "sha256": "136afb01098b30d5dd3d2c71c3074c939e6e17483e8157a30e77fa4a051d3d71",
+        "bytes": 39087
+      },
+      "internal/compiler/session/session_phase24_model_test.go": {
+        "sha256": "1f680a905b1377c3d4f5a4b7254fd42ff95a6533428eca32425e6233f54c9e80",
+        "bytes": 7377
+      },
+      "internal/compiler/session/session_phase371_defect_reason_test.go": {
+        "sha256": "d241eb16d4cd655861b7b41a87cf0269efb48311363f4245a0132c2a27ce21ac",
+        "bytes": 11149
+      },
+      "internal/compiler/cgen/cgen_program.go": {
+        "sha256": "312dc57dc95ae61101dc211d0e10f8c46b0dfbee2e934f1be95d6c826d7ac5c2",
+        "bytes": 184034
+      },
+      "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go": {
+        "sha256": "cdbf82cc785ffa3f24a212f30f77227ff6ec0b09cc3549463b383ad5101ab302",
+        "bytes": 14162
+      },
+      "internal/compiler/session/session_phase371_compatibility_test.go": {
+        "sha256": "83d8b4cd4b92a1b256babda066b4d40492e0726486efbb0cfca88d3832602f31",
+        "bytes": 47203
+      },
+      "examples/phase24/error.schway": {
+        "sha256": "4a52cf3d6f950372765cbfc465ed2d99212d1884558b601f37ecbb6fee120b62",
+        "bytes": 1228
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json": {
+        "sha256": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+        "bytes": 40
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json": {
+        "sha256": "cd29ad16fd8de29035afc52d647526dac8db50316106648d8b697abd6037dc30",
+        "bytes": 42
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-failure-violation.json": {
+        "sha256": "86d278f9d0c8f146e6ace8452865206b7f1b43beb5e36c9a7409ed0015c30b00",
+        "bytes": 43
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-reason-violation.json": {
+        "sha256": "df2dc168a2767d277d027e79693fa667cfa93ff7dc6a0089bed348eaa402bcf8",
+        "bytes": 42
+      },
+      ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-baseline-violation.json": {
+        "sha256": "8c6837dd4bd95592bf9988fbecdfb36a8a8aa30d86e8fc79da89adaa7400706f",
+        "bytes": 44
+      },
+      "testdata/phase371/pre-emitter-census.json": {
+        "sha256": "518f32d2fcab58fce5719baf5d7248e3f032d48afc212bb535a463aa1a9c5f27",
+        "bytes": 27223968
+      },
+      "testdata/phase371/compatibility-amendments.json": {
+        "sha256": "2dd098ee0038f120d0670c3dd059b589834d610ebbc8f02b42f645e032235c78",
+        "bytes": 13859
+      }
+    },
+    "initial_projection_status": "unresolved",
+    "current_plan_status": "unresolved"
   }
 }

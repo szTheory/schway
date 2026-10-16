@@ -840,7 +840,7 @@ func TestPhase371PreEmitterRouteCensus(t *testing.T) {
 		t.Fatalf("read amendment ledger: %v", err)
 	}
 	if problems := phase371AmendmentProblems(census, ledger); len(problems) != 0 {
-		t.Fatalf("empty amendment ledger is invalid: %s", strings.Join(problems, "; "))
+		t.Fatalf("final amendment ledger is invalid: %s", strings.Join(problems, "; "))
 	}
 	phase371VerifyCurrentCensus(t, census)
 }
@@ -915,81 +915,208 @@ func TestPhase371CompatibilityAmendmentControls(t *testing.T) {
 	if err := phase371ReadJSON(phase371AmendmentFile(), &ledger); err != nil {
 		t.Fatalf("read amendment ledger: %v", err)
 	}
-	if len(ledger.Entries) != 0 {
-		t.Fatalf("new amendment ledger must begin empty, found %d rows", len(ledger.Entries))
+	if len(census.Entries) != 325 || len(ledger.Entries) != 5 {
+		t.Fatalf("final fixture inventory changed: source rows=%d amendments=%d, want 325 and 5", len(census.Entries), len(ledger.Entries))
 	}
-	if problems := phase371AmendmentProblems(census, ledger); len(problems) != 0 {
-		t.Fatalf("empty amendment ledger must pass: %v", problems)
+	assertClean := func(label string, candidate phase371AmendmentLedger) {
+		t.Helper()
+		if problems := phase371ActualAmendmentProblems(census, candidate); len(problems) != 0 {
+			t.Fatalf("%s exact amendment ledger rejected: %v", label, problems)
+		}
+	}
+	assertClean("checked-in", ledger)
+	deepCopy := phase371CloneAmendmentLedger(t, ledger)
+	assertClean("deep-copy", deepCopy)
+
+	for _, row := range ledger.Entries {
+		entry, route := phase371FindCensusRoute(census, row.Corpus, row.Path, row.Route)
+		if entry == nil || route == nil {
+			t.Fatalf("actual amendment has no immutable census row: %+v", row)
+		}
+		old, err := base64.StdEncoding.DecodeString(route.CBase64)
+		if err != nil {
+			t.Fatalf("decode actual old-bound C bytes: %v", err)
+		}
+		projected, err := phase371ApplyEdits(old, row.Edits)
+		if err != nil || phase371Digest(projected) != row.ExpectedCSHA {
+			t.Fatalf("actual measured amendment %s/%s/%s did not reproduce its exact post-delta digest: %v", row.Corpus, row.Path, row.Route, err)
+		}
 	}
 
-	old := []byte("prefix<old>middle<old>suffix")
-	edit := phase371ByteEdit{
-		Offset:       6,
-		BeforeB64:    base64.StdEncoding.EncodeToString([]byte("<old>")),
-		AfterB64:     base64.StdEncoding.EncodeToString([]byte("<new>")),
-		AnchorB64:    base64.StdEncoding.EncodeToString([]byte("prefix<old>middle")),
-		AnchorOffset: 6, AnchorCount: 1,
-	}
-	newBytes, err := phase371ApplyEdits(old, []phase371ByteEdit{edit})
-	if err != nil || string(newBytes) != "prefix<new>middle<old>suffix" {
-		t.Fatalf("exact byte edit projection failed: %q %v", newBytes, err)
-	}
-	synthetic := phase371Census{Schema: phase371CensusSchema, Entries: []phase371CensusEntry{{
-		Corpus: "phase36", Path: "examples/control.schway",
-		SourceSHA: phase371Digest([]byte("source")), CoreSHA: phase371Digest([]byte("core")),
-		Routes: []phase371CensusRoute{{Name: "emit", Outcome: "emitted", CBase64: base64.StdEncoding.EncodeToString(old), CBytes: len(old), CSHA: phase371Digest(old)}},
-	}}}
-	base := synthetic.Entries[0].Routes[0]
-	valid := phase371AmendmentLedger{Schema: phase371AmendmentSchema, Entries: []phase371Amendment{{
-		Corpus: "phase36", Path: "examples/control.schway", Route: "emit",
-		SourceSHA: synthetic.Entries[0].SourceSHA, CoreSHA: synthetic.Entries[0].CoreSHA, OldCSHA: base.CSHA,
-		Edits: []phase371ByteEdit{edit}, ExpectedCSHA: phase371Digest(newBytes),
-	}}}
-	if problems := phase371AmendmentProblems(synthetic, valid); len(problems) != 0 {
-		t.Fatalf("clean exact amendment was rejected: %v", problems)
-	}
 	controls := []struct {
 		name   string
-		mutate func(*phase371AmendmentLedger)
+		mutate func(*phase371Census, *phase371AmendmentLedger)
 		want   string
 	}{
-		{"duplicate", func(l *phase371AmendmentLedger) { l.Entries = append(l.Entries, l.Entries[0]) }, "duplicate amendment row"},
-		{"extra-path", func(l *phase371AmendmentLedger) { l.Entries[0].Path = "examples/other.schway" }, "extra, wrong-path, or wrong-route"},
-		{"wrong-route", func(l *phase371AmendmentLedger) { l.Entries[0].Route = "emit_native" }, "extra, wrong-path, or wrong-route"},
-		{"stale-source", func(l *phase371AmendmentLedger) { l.Entries[0].SourceSHA = strings.Repeat("0", 64) }, "stale or wrong old source/core/C binding"},
-		{"stale-core", func(l *phase371AmendmentLedger) { l.Entries[0].CoreSHA = strings.Repeat("0", 64) }, "stale or wrong old source/core/C binding"},
-		{"stale-old-c", func(l *phase371AmendmentLedger) { l.Entries[0].OldCSHA = strings.Repeat("0", 64) }, "stale or wrong old source/core/C binding"},
-		{"wrong-prior-projection", func(l *phase371AmendmentLedger) { l.Entries[0].PriorProjection = "phase35-other" }, "stale or wrong old source/core/C binding"},
-		{"wrong-delta", func(l *phase371AmendmentLedger) {
-			l.Entries[0].Edits[0].AfterB64 = base64.StdEncoding.EncodeToString([]byte("<bad>"))
-		}, "exact reviewed delta"},
-		{"wrong-offset", func(l *phase371AmendmentLedger) { l.Entries[0].Edits[0].Offset++ }, "unique declared anchor"},
-		{"ambiguous-anchor", func(l *phase371AmendmentLedger) {
-			l.Entries[0].Edits[0].AnchorB64 = base64.StdEncoding.EncodeToString([]byte("<old>"))
-			l.Entries[0].Edits[0].AnchorOffset = 0
-		}, "exactly once"},
-		{"wrong-anchor-count", func(l *phase371AmendmentLedger) { l.Entries[0].Edits[0].AnchorCount = 2 }, "declare one exact match"},
-		{"unrelated-post-bytes", func(l *phase371AmendmentLedger) { l.Entries[0].ExpectedCSHA = phase371Digest([]byte("unrelated")) }, "exact reviewed delta"},
+		{"missing", func(_ *phase371Census, l *phase371AmendmentLedger) { l.Entries = l.Entries[1:] }, "missing required amendment"},
+		{"duplicate", func(_ *phase371Census, l *phase371AmendmentLedger) { l.Entries = append(l.Entries, l.Entries[0]) }, "duplicate amendment row"},
+		{"extra", func(_ *phase371Census, l *phase371AmendmentLedger) {
+			l.Entries = append(l.Entries, phase371Amendment{Corpus: "phase34", Path: "examples/zz-extra.schway", Route: "emit"})
+		}, "extra amendment row"},
+		{"wrong-path", func(_ *phase371Census, l *phase371AmendmentLedger) { l.Entries[0].Path = "examples/other.schway" }, "extra, wrong-path, or wrong-route"},
+		{"wrong-route", func(_ *phase371Census, l *phase371AmendmentLedger) { l.Entries[0].Route = "not_a_route" }, "extra, wrong-path, or wrong-route"},
+		{"stale-source", func(_ *phase371Census, l *phase371AmendmentLedger) { l.Entries[0].SourceSHA = strings.Repeat("0", 64) }, "stale or wrong old source/core/C binding"},
+		{"stale-core", func(_ *phase371Census, l *phase371AmendmentLedger) { l.Entries[0].CoreSHA = strings.Repeat("0", 64) }, "stale or wrong old source/core/C binding"},
+		{"stale-old-c", func(_ *phase371Census, l *phase371AmendmentLedger) { l.Entries[0].OldCSHA = strings.Repeat("0", 64) }, "stale or wrong old source/core/C binding"},
+		{"wrong-expected-digest", func(_ *phase371Census, l *phase371AmendmentLedger) {
+			l.Entries[0].ExpectedCSHA = strings.Repeat("0", 64)
+		}, "expected post-delta digest mismatch"},
+		{"wrong-anchor", func(_ *phase371Census, l *phase371AmendmentLedger) {
+			anchor, _ := base64.StdEncoding.DecodeString(l.Entries[0].Edits[0].AnchorB64)
+			anchor[0] ^= 1
+			l.Entries[0].Edits[0].AnchorB64 = base64.StdEncoding.EncodeToString(anchor)
+		}, "anchor must occur exactly once"},
+		{"wrong-offset", func(_ *phase371Census, l *phase371AmendmentLedger) { l.Entries[0].Edits[0].Offset++ }, "unique declared anchor"},
+		{"wrong-anchor-count", func(_ *phase371Census, l *phase371AmendmentLedger) { l.Entries[0].Edits[0].AnchorCount = 2 }, "declare one exact match"},
+		{"wrong-delta", func(_ *phase371Census, l *phase371AmendmentLedger) {
+			l.Entries[0].Edits[0].AfterB64 = base64.StdEncoding.EncodeToString([]byte("unreviewed replacement"))
+		}, "expected post-delta digest mismatch"},
+		{"unrelated-post-bytes", func(_ *phase371Census, l *phase371AmendmentLedger) {
+			l.Entries[0].ExpectedCSHA = phase371Digest([]byte("unrelated bytes"))
+		}, "expected post-delta digest mismatch"},
+		{"repeated-anchor", phase371DuplicateBoundAnchor, "anchor must occur exactly once"},
 	}
 	for _, control := range controls {
 		t.Run(control.name, func(t *testing.T) {
-			changed := phase371AmendmentLedger{Schema: valid.Schema, Entries: append([]phase371Amendment(nil), valid.Entries...)}
-			changed.Entries[0].Edits = append([]phase371ByteEdit(nil), valid.Entries[0].Edits...)
-			control.mutate(&changed)
-			problems := phase371AmendmentProblems(synthetic, changed)
-			if !phase371HasProblem(problems, control.want) {
-				t.Fatalf("invalid amendment control did not reach %q: %v", control.want, problems)
+			changedCensus := phase371CloneCensus(t, census)
+			changedLedger := phase371CloneAmendmentLedger(t, ledger)
+			control.mutate(&changedCensus, &changedLedger)
+			if problems := phase371ActualAmendmentProblems(changedCensus, changedLedger); !phase371HasProblem(problems, control.want) {
+				t.Fatalf("invalid actual-ledger control did not reach %q: %v", control.want, problems)
 			}
-			if restored := phase371AmendmentProblems(synthetic, valid); len(restored) != 0 {
-				t.Fatalf("restored exact amendment failed: %v", restored)
-			}
+			assertClean("restored checked-in", ledger)
 		})
 	}
-	without := phase371AmendmentLedger{Schema: phase371AmendmentSchema}
-	projected, found := phase371SyntheticProjection(synthetic, without, "phase36", "examples/control.schway", "emit")
-	if !found || bytes.Equal(projected, newBytes) {
-		t.Fatalf("missing-amendment control did not retain the old byte expectation: %q", projected)
+
+	phase34Raw, err := os.ReadFile(testsupport.ProjectPath("testdata", "phase34", "prechange-corpus.json"))
+	if err != nil {
+		t.Fatal(err)
 	}
+	var frozen34 phase371FrozenPhase34
+	if err := json.Unmarshal(phase34Raw, &frozen34); err != nil {
+		t.Fatal(err)
+	}
+	var current phase371ObservedPhase34Row
+	for _, entry := range phase371ObservePhase34(t, frozen34) {
+		if entry.Path == "examples/sum_to_n.schway" {
+			current = entry
+			break
+		}
+	}
+	if current.Path == "" {
+		t.Fatal("actual Phase34 route observation for the amended source is missing")
+	}
+	var emitted *phase371CensusRoute
+	for index := range current.Routes {
+		if current.Routes[index].Name == "emit" {
+			emitted = &current.Routes[index]
+			break
+		}
+	}
+	if emitted == nil || emitted.CBase64 == "" {
+		t.Fatal("actual amended route C source is missing")
+	}
+	currentC, err := base64.StdEncoding.DecodeString(emitted.CBase64)
+	if err != nil {
+		t.Fatalf("decode actual amended C bytes: %v", err)
+	}
+	mutatedC := append([]byte(nil), currentC...)
+	mutatedC[0] ^= 1
+	mutated := phase371ObservedRoute{Outcome: emitted.Outcome, Schema: emitted.Schema, Code: emitted.Code,
+		Error: emitted.Error, Reason: emitted.Reason, CSource: string(mutatedC)}
+	var comparatorProblems []string
+	if !phase371ObserveComparison(&comparatorProblems, "phase34", current.Path, "emit", current.SourceSHA, current.CoreSHA, mutated) {
+		t.Fatal("actual Phase34 comparator hook did not load for the unrelated-byte control")
+	}
+	if !phase371HasProblem(comparatorProblems, "C byte mismatch at byte 0") {
+		t.Fatalf("unrelated extra C-byte mutation was accepted by the actual comparator: %v", comparatorProblems)
+	}
+}
+
+func phase371ExpectedAmendmentKeys() []string {
+	path := "examples/sum_to_n.schway"
+	return []string{
+		phase371RouteKey("phase34", path, "control_native_c"),
+		phase371RouteKey("phase34", path, "emit"),
+		phase371RouteKey("phase34", path, "emit_native"),
+		phase371RouteKey("phase36", path, "emit"),
+		phase371RouteKey("phase36", path, "emit_native"),
+	}
+}
+
+func phase371ActualAmendmentProblems(census phase371Census, ledger phase371AmendmentLedger) []string {
+	problems := phase371AmendmentProblems(census, ledger)
+	want := map[string]bool{}
+	for _, key := range phase371ExpectedAmendmentKeys() {
+		want[key] = true
+	}
+	seen := map[string]int{}
+	for _, row := range ledger.Entries {
+		key := phase371RouteKey(row.Corpus, row.Path, row.Route)
+		seen[key]++
+		if !want[key] {
+			problems = append(problems, "extra amendment row: "+strings.ReplaceAll(key, "\x00", "/"))
+		}
+	}
+	for key := range want {
+		if seen[key] == 0 {
+			problems = append(problems, "missing required amendment: "+strings.ReplaceAll(key, "\x00", "/"))
+		}
+	}
+	return problems
+}
+
+func phase371CloneAmendmentLedger(t *testing.T, ledger phase371AmendmentLedger) phase371AmendmentLedger {
+	t.Helper()
+	encoded, err := json.Marshal(ledger)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var clone phase371AmendmentLedger
+	if err := json.Unmarshal(encoded, &clone); err != nil {
+		t.Fatal(err)
+	}
+	return clone
+}
+
+func phase371CloneCensus(t *testing.T, census phase371Census) phase371Census {
+	t.Helper()
+	encoded, err := json.Marshal(census)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var clone phase371Census
+	if err := json.Unmarshal(encoded, &clone); err != nil {
+		t.Fatal(err)
+	}
+	return clone
+}
+
+func phase371FindCensusRoute(census phase371Census, corpus, path, route string) (*phase371CensusEntry, *phase371CensusRoute) {
+	for entryIndex := range census.Entries {
+		entry := &census.Entries[entryIndex]
+		if entry.Corpus != corpus || entry.Path != path {
+			continue
+		}
+		for routeIndex := range entry.Routes {
+			if entry.Routes[routeIndex].Name == route {
+				return entry, &entry.Routes[routeIndex]
+			}
+		}
+	}
+	return nil, nil
+}
+
+func phase371DuplicateBoundAnchor(census *phase371Census, ledger *phase371AmendmentLedger) {
+	row := &ledger.Entries[0]
+	_, route := phase371FindCensusRoute(*census, row.Corpus, row.Path, row.Route)
+	old, _ := base64.StdEncoding.DecodeString(route.CBase64)
+	anchor, _ := base64.StdEncoding.DecodeString(row.Edits[0].AnchorB64)
+	old = append(old, anchor...)
+	route.CBase64 = base64.StdEncoding.EncodeToString(old)
+	route.CBytes = len(old)
+	route.CSHA = phase371Digest(old)
+	row.OldCSHA = route.CSHA
 }
 
 func phase371SyntheticProjection(census phase371Census, ledger phase371AmendmentLedger, corpus, path, route string) ([]byte, bool) {
