@@ -72,16 +72,6 @@
       "witness": "probe:TestPhase36EngineMutationLaneChild"
     },
     {
-      "call": "internal/compiler/session/session_phase36_prechange_test.go:Emit:340",
-      "classification": "admitted-dynamic-schema2",
-      "witness": "probe:TestPhase36NoCallGeneratedCByteBaseline"
-    },
-    {
-      "call": "internal/compiler/session/session_phase36_prechange_test.go:EmitNative:341",
-      "classification": "admitted-dynamic-schema2",
-      "witness": "probe:TestPhase36NoCallGeneratedCByteBaseline"
-    },
-    {
       "call": "internal/compiler/cgen/cgen_phase35_test.go:EmitNative:114",
       "classification": "admitted-dynamic-schema2",
       "witness": "probe:TestPhase35NativeShiftTracer"
@@ -520,7 +510,7 @@
       "classification": "admitted-dynamic-schema2"
     },
     {
-      "call": "internal/compiler/session/witness_registry_test.go:EmitNative:365",
+      "call": "internal/compiler/session/witness_registry_test.go:EmitNative:369",
       "classification": "frozen-evidence-validator",
       "witness": "probe:TestPhase16M004ProvenanceRegistryRejectsFaults",
       "evidence_fixtures": [
@@ -529,8 +519,68 @@
       ]
     },
     {
-      "call": "internal/compiler/session/witness_registry_test.go:EmitNative:511",
+      "call": "internal/compiler/session/witness_registry_test.go:EmitNative:515",
       "classification": "admitted-dynamic-schema2"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go:EmitNative:78",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase371NoCallScalarDefectNativeConformance"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go:EmitNative:141",
+      "classification": "typed-refusal",
+      "witness": "probe:TestPhase371NoCallScalarDefectNativeConformance"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go:EmitNative:153",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase371CountedDefectReasonBytes"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go:EmitNative:238",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase371CountedDefectReasonBytes"
+    },
+    {
+      "call": "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go:EmitNative:295",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase371CountedDefectReasonBytes"
+    },
+    {
+      "call": "internal/compiler/session/session_phase34_prechange_test.go:Emit:379",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase34PreChangeCProgramGolden"
+    },
+    {
+      "call": "internal/compiler/session/session_phase34_prechange_test.go:EmitNative:381",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase34PreChangeCProgramGolden"
+    },
+    {
+      "call": "internal/compiler/session/session_phase36_prechange_test.go:Emit:342",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36NoCallGeneratedCByteBaseline"
+    },
+    {
+      "call": "internal/compiler/session/session_phase36_prechange_test.go:EmitNative:343",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase36NoCallGeneratedCByteBaseline"
+    },
+    {
+      "call": "internal/compiler/session/session_phase371_compatibility_test.go:Emit:775",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase371PreEmitterRouteCensus"
+    },
+    {
+      "call": "internal/compiler/session/session_phase371_compatibility_test.go:EmitNative:777",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase371PreEmitterRouteCensus"
+    },
+    {
+      "call": "internal/compiler/session/session_phase371_defect_reason_test.go:EmitNative:287",
+      "classification": "admitted-dynamic-schema2",
+      "witness": "probe:TestPhase371DefectReasonUTF8Admission"
     }
   ]
 }

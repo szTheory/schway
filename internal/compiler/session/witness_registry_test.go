@@ -91,6 +91,10 @@ func TestPhase16EmitterInventoryRefusalWitnessesResolve(t *testing.T) {
 				cgenSource, readErr := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "cgen", "cgen_test.go"))
 				validWitness = readErr == nil && strings.Contains(string(cgenSource), "func TestPhase5ByPointerLoweringGolden")
 			}
+			if row.Witness == "probe:TestPhase371NoCallScalarDefectNativeConformance" {
+				cgenSource, readErr := os.ReadFile(testsupport.ProjectPath("internal", "compiler", "cgen", "cgen_phase371_legacy_defect_test.go"))
+				validWitness = readErr == nil && strings.Contains(string(cgenSource), "func TestPhase371NoCallScalarDefectNativeConformance")
+			}
 			if !validWitness || strings.Contains(strings.Join(row.EvidenceFixtures, " "), "phase11") {
 				t.Fatalf("%s: ambiguous-entry refusal was treated as frozen evidence: witness=%q fixtures=%v", row.Call, row.Witness, row.EvidenceFixtures)
 			}
