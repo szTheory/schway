@@ -1,0 +1,63 @@
+{
+  "completion": {
+    "completed_phase": "33",
+    "phase_name": "carried-debt-bounded-capture-read-and-generic-freeze-gate",
+    "plans_executed": "5/5",
+    "next_phase": "38",
+    "next_phase_name": "milestone-receipts",
+    "is_last_phase": false,
+    "date": "2026-10-15",
+    "roadmap_updated": false,
+    "state_updated": true,
+    "requirements_updated": false,
+    "auto_pruned": false,
+    "warnings": [
+      "33-03-SUMMARY.md: references 2 file(s) not on disk: sh -n scripts/check-freeze.sh scripts/check-receipts.sh scripts/codedigest.sh, git show 9f8f878f:scripts/verify-phase32.sh",
+      "33-04-SUMMARY.md: references 1 file(s) not on disk: sh -n scripts/verify-phase32.sh"
+    ],
+    "has_warnings": true,
+    "verification_stale_check_indeterminate": false,
+    "milestone_conflict": null,
+    "preservation_warnings": []
+  },
+  "phase_statuses": [
+    {
+      "number": "33",
+      "status": "complete",
+      "verification_status": "passed",
+      "implementation_complete": true
+    },
+    {
+      "number": "34",
+      "status": "complete",
+      "verification_status": "passed",
+      "implementation_complete": true
+    },
+    {
+      "number": "35",
+      "status": "executed",
+      "verification_status": "stale",
+      "implementation_complete": true
+    },
+    {
+      "number": "36",
+      "status": "executed",
+      "verification_status": "stale",
+      "implementation_complete": true
+    },
+    {
+      "number": "37",
+      "status": "executed",
+      "verification_status": "stale",
+      "implementation_complete": true
+    },
+    {
+      "number": "38",
+      "status": "not_started",
+      "verification_status": "phase_dir_not_found",
+      "implementation_complete": false
+    }
+  ],
+  "next_command": "$gsd-execute-phase 35",
+  "note": "phase.complete33 called once only, after independent fresh passed verification. Canonical38 is next-unimplemented, not permission to bypass stale35/36/37, mandatory M007 audit and explicit CR03/04/06 disposition before freeze. Historical command-string scanner warnings preserved and concrete files/object checked."
+}

@@ -6,11 +6,11 @@ current_phase: 38
 current_phase_name: Milestone Receipts
 current_plan: Not started
 status: planning
-stopped_at: Phase 36 verified; next freshness gate Phase 33, then audit
-last_updated: "2026-10-16T02:14:52.816Z"
+stopped_at: Phase 33 verified; next freshness Phase 35, then audit
+last_updated: "2026-10-16T03:14:21.657Z"
 last_activity: 2026-10-15
-last_activity_desc: Phase 36 verified 32/32; caller repair; next freshness Phase 33
-state_head: 7aed28dd27b494e1899bf2e45f0d977b795e7c1c
+last_activity_desc: Phase 33 verified 60/60; dynamic defect repair; next freshness Phase 35
+state_head: 38c82a88b52f5e975676672dd8e455f9ceb4ea48
 progress:
   total_phases: 6
   completed_phases: 5
@@ -57,7 +57,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 33 freshness gate, then re-query and M007 audit before Phase 38
+**Current focus:** Phase 35 freshness gate, then re-query and M007 audit before Phase 38
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -129,12 +129,12 @@ Phase: 38 — Milestone Receipts
 Current Plan: Not started
 Total Plans in Phase: 0
 Status: Ready for freshness reconciliation and audit before Phase 38 planning
-Last activity: 2026-10-15 — Phase 36 verified 32/32; next freshness Phase 33
+Last activity: 2026-10-15 — Phase 33 verified 60/60; next freshness Phase 35
 
 Progress: [████████░░] 83%
 
 Implementation: 38/38 authored plans complete; Phase 38 remains unplanned.
-Current verification: phases 34/36 passed; phases 33/35/37 stale.
+Current verification: phases 33/34 passed; phases 35/36/37 stale.
 
 ## M007 Planning
 
@@ -943,14 +943,15 @@ Carried into M003 as cheap, unowned cleanup:
 
 ### Blockers/Concerns
 
-**Current — Phase 36 caller-shape refresh (2026-10-15):** Phase 36 passes
-32/32 with 94 covered inputs; CR-01 is fixed and independently closed. Phases
-34/36 are fresh; 33/35/37 are stale. Run `$gsd-execute-phase 33`, then re-query.
-Phase 33 CR-03/04 remain deferred BLOCKER propagation false rejections owned
-by the execution-peer maintainer through mandatory M007 audit before freeze;
-Phase 36 WR-02 remains separate comment debt. Preserve implementation/UAT.
-Phase 38 plan fields explicitly state unplanned; expected missing-directory
-S004 remains advisory. Earlier snapshots below retain historical owners.
+**Current — Phase 33 dynamic scalar defect refresh (2026-10-15):** Phase33
+passes60/60 with232covered inputs; CR-05 is independently closed in its
+dynamic caller scope. Phases33/34 pass;35/36/37stale. Next
+`$gsd-execute-phase 35`, then re-query. CR-03/04 remain deferred BLOCKER peer
+propagation debt; CR-06 is deferred BLOCKER legacy no-call native defect
+transport. Peer/emitter maintainers and M007 audit must explicitly resolve
+allthree before38freeze, with scoped gap work/compatibility amendment when
+needed. No accepted risk or fix is implied. Phase36WR-02 stays comment debt.
+Preserve completed plans/UAT, unplanned38 and expected advisoryS004.
 
 **Historical — Phase 34 refresh closeout (2026-10-15):** Phases 33/34 pass
 60/60 and 38/38 with zero open review findings. Phase 34 retains all four
@@ -1182,10 +1183,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-16T02:16:26.710371+00:00
-Stopped at: Phase 36 verified; next freshness Phase 33, then re-query and audit
+Last session: 2026-10-16T03:15:49.663005+00:00
+Stopped at: Phase 33 verified; next freshness Phase 35, then re-query and audit
 Resume file: None
-Next action: `$gsd-execute-phase 33` (gates/verifier only), then re-query (currently 35/37); mandatory M007 audit/gap closure precedes Phase 38
+Next action: `$gsd-execute-phase 35` (gates/verifier only), then re-query; mandatory M007 audit/gap closure including CR-03/04/06 precedes Phase 38
 
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
@@ -1539,7 +1540,6 @@ The user config is preserved. Current three capability recommendations and
 scoped dormant-seed dispositions are in
 phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH2-CLOSEOUT.md.
 
-
 ## Phase 36 second refresh handoff — 2026-10-15
 
 Phase 36 passes 32/32 with 94 covered inputs, 24 artifacts, 19 links and all
@@ -1557,3 +1557,21 @@ findings; WR-02 remains deferred comment debt. No risk acceptance, hosted result
 full local suite, dependency, backend, readability or latency claim follows.
 See phases/36-scalar-helper-calls/36-REFRESH2-CLOSEOUT.md. Config bytes and
 completed UAT are preserved. This invocation stops at Phase 36 closeout.
+
+
+## Phase 33 third refresh handoff — 2026-10-15
+
+Independent60/60 verification binds232inputs and honors22decisions; final
+240names/252roots/16packages pass. CR-05 dynamic scalar defect emission is
+repaired, with application outcomes and legacy no-call C bytes preserved.
+The initial broad regression failure and final narrowing remain auditable.
+CR-03/04/06 are deferred BLOCKER audit obligations; the latter legacy native
+defect failure is reproduced on original/current source, not credited green.
+OnlyEVD-17 is active. phase.complete33 ran once; summary-scanner warnings
+were checked against real scripts/object, and S004 remains expected for38.
+
+Fresh routing:33/34passed;35/36/37stale. Next `$gsd-execute-phase 35`, re-query,
+mandatory M007audit/gap closure, then38. Preserve completed plans/UAT and user
+config. Do not auto-start another phase. Source/guarantee changes justify
+refreshes; status-only bookkeeping should not churn shared covered documents.
+See phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH3-CLOSEOUT.md.
