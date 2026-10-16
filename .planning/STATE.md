@@ -6,11 +6,11 @@ current_phase: 38
 current_phase_name: Milestone Receipts
 current_plan: Not started
 status: planning
-stopped_at: Phase 35 verified; next freshness Phase 36, then audit
-last_updated: "2026-10-16T03:41:51.116Z"
-last_activity: 2026-10-15
-last_activity_desc: Phase 35 verified 38/38; next freshness Phase 36
-state_head: 04f0ff1b6b291a1ff94a777c878930323ef5c4e7
+stopped_at: Phase 36 verified; next freshness Phase 37, then audit
+last_updated: "2026-10-16T04:10:02.409Z"
+last_activity: 2026-10-16
+last_activity_desc: Phase 36 verified 32/32; next freshness Phase 37
+state_head: 52cdc9954297e0d002d4fa8ca20fe444ddb32f85
 progress:
   total_phases: 6
   completed_phases: 5
@@ -57,7 +57,7 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 **Core value:** Give AI agents and human reviewers the shortest reliable path
 from intent to sound, reproducible evidence without wasting iteration time or
 hiding runtime costs.
-**Current focus:** Phase 36 freshness gate, then re-query and M007 audit before Phase 38
+**Current focus:** Phase 37 freshness gate, then re-query and M007 audit before Phase 38
 
 Phase 33 binds no hosted receipt. M006 receipts are historical; current hosted evidence resumes in Phase 38.
 
@@ -128,13 +128,13 @@ plans.
 Phase: 38 — Milestone Receipts
 Current Plan: Not started
 Total Plans in Phase: 0
-Status: Ready for freshness reconciliation and audit before Phase 38 planning
-Last activity: 2026-10-15 — Phase 35 verified 38/38; next freshness Phase 36
+Status: Ready for Phase 37 freshness and audit before Phase 38 planning
+Last activity: 2026-10-16 — Phase 36 verified 32/32; next freshness Phase 37
 
 Progress: [████████░░] 83%
 
 Implementation: 38/38 authored plans complete; Phase 38 remains unplanned.
-Current verification: phases 33/34/35 passed; phases 36/37 stale.
+Current verification: phases 33/34/35/36 passed; Phase 37 stale.
 
 ## M007 Planning
 
@@ -1183,10 +1183,10 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-16T03:42:47.477455+00:00
-Stopped at: Phase 35 verified; next freshness Phase 36, then audit
+Last session: 2026-10-16T04:10:32.928Z
+Stopped at: Phase 36 verified; next freshness Phase 37, then audit
 Resume file: None
-Next action: `$gsd-execute-phase 35` (gates/verifier only), then re-query; mandatory M007 audit/gap closure including CR-03/04/06 precedes Phase 38
+Next action: `$gsd-execute-phase 37` (gates/verifier only), then re-query; mandatory M007 audit/gap closure including CR-03/04/06 precedes Phase 38
 
 Routing resolution — 2026-10-10 (historical; superseded by the M006 line above): the Phase 27 routing notes below describe M005 and are complete.
 Routing resolution — 2026-10-03 (current): Phase 27 has eight of ten plans
@@ -1575,7 +1575,6 @@ config. Do not auto-start another phase. Source/guarantee changes justify
 refreshes; status-only bookkeeping should not churn shared covered documents.
 See phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH3-CLOSEOUT.md.
 
-
 ## Phase 35 third refresh handoff — 2026-10-15
 
 Independent 38/38 verification binds 88 inputs; all four BIT requirements,
@@ -1596,3 +1595,28 @@ source/consumer dispositions are in
 [35-REFRESH3-GATES.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH3-GATES.md).
 [35-REFRESH3-CLOSEOUT.md](phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-REFRESH3-CLOSEOUT.md)
 records evidence limits and transition bookkeeping.
+
+## Phase 36 third refresh handoff — 2026-10-16
+
+Independent verification passes 32/32 with 102 covered inputs, 24 artifact
+declarations, 19 links and all 26 decisions honored. All 86 acceptance roots
+and 252 bounded regression executions across 16 packages pass, with zero
+missing/fail/skip and freshly checked input/log hashes. Both prohibitions have
+bad RED and clean/default GREEN controls; the independent verifier also reran
+the dynamic native-defect root. Report coverage omissions and whitespace were
+corrected by the report owner; both report-groundedness guards pass.
+
+No implementation, frozen fixture, historical receipt or completed UAT changed.
+Review has no new finding; WR-02 remains deferred comment debt. Phase 33
+CR-03/04/06 remain deferred BLOCKER obligations for mandatory M007 audit/gap
+closure before Phase 38; no fix or accepted risk is implied. No full local
+suite, current hosted/Linux result, readability or latency claim follows.
+
+Canonical completion ran once: 8/8 plans, no warnings. Fresh progress reports
+33/34/35/36 passed, 37 stale, 38 unplanned. Exact next command is
+`$gsd-execute-phase 37`, then re-query and audit. The state.json Phase 38
+implementation projection cannot bypass that gate. User configuration is
+preserved. Three ranked capabilities and scoped dormant-seed dispositions are
+recorded in [36-REFRESH3-TRANSITION.md](phases/36-scalar-helper-calls/36-REFRESH3-TRANSITION.md);
+[36-REFRESH3-CLOSEOUT.md](phases/36-scalar-helper-calls/36-REFRESH3-CLOSEOUT.md)
+records the acceptance and completion evidence. This invocation stops here.

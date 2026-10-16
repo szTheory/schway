@@ -1,8 +1,8 @@
 ---
 phase: 36-scalar-helper-calls
-reviewed: 2026-10-16T01:51:52Z
+reviewed: 2026-10-16T03:58:54Z
 depth: standard
-files_reviewed: 56
+files_reviewed: 57
 files_reviewed_list:
   - cmd/schway/main_phase32_routes_test.go
   - cmd/schway/main_phase36_test.go
@@ -14,6 +14,7 @@ files_reviewed_list:
   - internal/compiler/cgen/cgen_phase273_test.go
   - internal/compiler/cgen/cgen_phase35_test.go
   - internal/compiler/cgen/cgen_phase36_test.go
+  - internal/compiler/cgen/cgen_phase33_scalar_defect_test.go
   - internal/compiler/cgen/cgen_phase36_caller_shapes_test.go
   - internal/compiler/cgen/cgen_program.go
   - internal/compiler/cgen/cgen_program_test.go
@@ -70,9 +71,9 @@ status: issues_found
 
 # Phase 36: Code Review Report
 
-**Reviewed:** 2026-10-16T01:51:52Z
+**Reviewed:** 2026-10-16T03:58:54Z
 **Depth:** standard
-**Files Reviewed:** 56 cumulative unique paths
+**Files Reviewed:** 57 cumulative unique paths
 **Status:** issues_found
 
 ## Summary
@@ -117,8 +118,17 @@ Phase 33 execution-peer findings CR-03 (legacy nested defects rejected) and CR-0
 
 **Evidence and limits:** The parent-supplied `/tmp/schway36-r2-inventory-green.log` records passing `TestPhase16PublicEmitterConsumerInventory` and `TestPhase16EmitterInventoryMutationControls`, including missing, stale, duplicate, invalid-classification, and missing-refusal-witness controls. I inspected the current row, callsite, and inventory-matching code; I did not rerun these tests or the behavioral roots in this supplement. The initial union failure is resolved bookkeeping, not a new code finding. WR-02 remains the only current finding; CR-01 remains closed with its prior reproduction limits and history intact.
 
+
+## Current-source refresh — 2026-10-16T03:58:54Z
+
+**Scope:** `internal/compiler/cgen/cgen_program.go` at the scalar `OpDefect` emission branch and the new `internal/compiler/cgen/cgen_phase33_scalar_defect_test.go`; current Phase36 call/emission contract anchors were checked for interaction. The prior cumulative 56-path review is retained as historical scope; adding the new test makes 57 cumulative unique paths.
+
+The native dynamic helper path now emits the structured defect terminal and exits through the native defect-document route; application-shell behavior and the legacy non-dynamic path remain separate. The new test exercises both entry and helper defects, checks interpreter outcome plus independent execution-peer terminal attribution, and checks native O0/O3/O3-LTO and application exit/stderr behavior. The fresh Phase36 owner roots and bounded regression union include this test and passed as recorded in `36-REFRESH3-RUN.json` and `36-REFRESH3-REGRESSION.json`. I found no new Phase36 code finding in this scope. This CR-05 repair evidence is limited to native dynamic scalar callers; it does not close Phase33 CR-03 nested-defect, CR-04 typed-propagation, or CR-06 legacy no-call obligations, which remain mandatory M007 audit items.
+
+WR-02 remains the sole current Phase36 finding and remains deferred in `36-REVIEW-DISPOSITION.md`: the core-validator ownership comment still states an obsolete same-type invariant. CR-01 remains historically fixed. No source fix or disposition change is recorded by this refresh.
+
 ---
 
-_Reviewed: 2026-10-16T01:51:52Z_
+_Reviewed: 2026-10-16T03:58:54Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_

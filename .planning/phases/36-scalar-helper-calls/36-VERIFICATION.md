@@ -1,6 +1,6 @@
 ---
 phase: 36-scalar-helper-calls
-verified: 2026-10-16T02:14:06Z
+verified: 2026-10-16T04:07:18Z
 status: passed
 score: "32/32 must-haves verified"
 covered_files:
@@ -8,7 +8,7 @@ covered_files:
   - ".planning/PRODUCT-ROADMAP.md"
   - ".planning/REQUIREMENTS.md"
   - ".planning/ROADMAP.md"
-  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH2-FIX.md"
+  - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REFRESH3-FIX.md"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW-DISPOSITION.md"
   - ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-REVIEW.md"
   - ".planning/phases/36-scalar-helper-calls/36-01-PLAN.md"
@@ -30,40 +30,44 @@ covered_files:
   - ".planning/phases/36-scalar-helper-calls/36-ACCEPTANCE-EVIDENCE.md"
   - ".planning/phases/36-scalar-helper-calls/36-CONTEXT.md"
   - ".planning/phases/36-scalar-helper-calls/36-PROHIBITION-EVIDENCE.md"
-  - ".planning/phases/36-scalar-helper-calls/36-REFRESH2-FIX.md"
-  - ".planning/phases/36-scalar-helper-calls/36-REFRESH2-GATES.md"
-  - ".planning/phases/36-scalar-helper-calls/36-REFRESH2-METADATA-FIX.md"
-  - ".planning/phases/36-scalar-helper-calls/36-REFRESH2-PROHIBITIONS.json"
-  - ".planning/phases/36-scalar-helper-calls/36-REFRESH2-REGRESSION.json"
-  - ".planning/phases/36-scalar-helper-calls/36-REFRESH2-RUN.json"
+  - ".planning/phases/36-scalar-helper-calls/36-REFRESH3-GATES.md"
+  - ".planning/phases/36-scalar-helper-calls/36-REFRESH3-PROHIBITIONS.json"
+  - ".planning/phases/36-scalar-helper-calls/36-REFRESH3-REGRESSION.json"
+  - ".planning/phases/36-scalar-helper-calls/36-REFRESH3-RUN.json"
+  - ".planning/phases/36-scalar-helper-calls/36-REFRESH3-TRANSITION.md"
   - ".planning/phases/36-scalar-helper-calls/36-REVIEW-DISPOSITION.md"
-  - ".planning/phases/36-scalar-helper-calls/36-REVIEW-SUPPLEMENT.md"
   - ".planning/phases/36-scalar-helper-calls/36-REVIEW.md"
   - ".planning/phases/36-scalar-helper-calls/36-SECURITY.md"
-  - ".planning/phases/36-scalar-helper-calls/36-TRANSITION-CHECK.md"
   - ".planning/phases/36-scalar-helper-calls/36-UI-REVIEW.md"
   - ".planning/phases/36-scalar-helper-calls/36-VALIDATION.md"
   - ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs"
   - ".planning/phases/36-scalar-helper-calls/prohibition-causal-violation.json"
   - ".planning/phases/36-scalar-helper-calls/prohibition-clean.json"
   - ".planning/phases/36-scalar-helper-calls/prohibition-outcome-violation.json"
+  - "cmd/schway/main.go"
   - "cmd/schway/main_phase36_test.go"
   - "examples/helper_calls/crc_step.schway"
   - "examples/helper_calls/importer.schway"
   - "examples/helper_calls/public.schway"
   - "internal/compiler/ast/ast.go"
   - "internal/compiler/cgen/cgen.go"
-  - "internal/compiler/cgen/cgen_phase36_caller_shapes_test.go"
+  - "internal/compiler/cgen/cgen_phase273_test.go"
+  - "internal/compiler/cgen/cgen_phase33_scalar_defect_test.go"
+  - "internal/compiler/cgen/cgen_phase35_test.go"
   - "internal/compiler/cgen/cgen_phase36_test.go"
+  - "internal/compiler/cgen/cgen_phase36_caller_shapes_test.go"
   - "internal/compiler/cgen/cgen_program.go"
+  - "internal/compiler/cgen/cgen_program_test.go"
   - "internal/compiler/check/check.go"
   - "internal/compiler/check/check_phase34_refusal_test.go"
   - "internal/compiler/check/check_phase36_scalar_calls_test.go"
   - "internal/compiler/check/scalar.go"
   - "internal/compiler/core/core.go"
+  - "internal/compiler/core/core_test.go"
   - "internal/compiler/corevalidate/corevalidate.go"
   - "internal/compiler/corevalidate/corevalidate_phase36_legacy_internal_test.go"
   - "internal/compiler/corevalidate/corevalidate_phase36_test.go"
+  - "internal/compiler/execution/defect_reasons.go"
   - "internal/compiler/executionpeer/executionpeer.go"
   - "internal/compiler/executionpeer/executionpeer_phase33_terminal_test.go"
   - "internal/compiler/executionpeer/executionpeer_phase36_test.go"
@@ -77,7 +81,10 @@ covered_files:
   - "internal/compiler/pathoracle/pathoracle.go"
   - "internal/compiler/pathoracle/pathoracle_phase36_borrow_test.go"
   - "internal/compiler/pathoracle/pathoracle_phase36_test.go"
+  - "internal/compiler/session/session.go"
+  - "internal/compiler/session/session_modules.go"
   - "internal/compiler/session/session_phase16_emitter_inventory_test.go"
+  - "internal/compiler/session/session_phase34_limit_consumers_test.go"
   - "internal/compiler/session/session_phase34_surface_test.go"
   - "internal/compiler/session/session_phase35_surface_test.go"
   - "internal/compiler/session/session_phase36_byteview_test.go"
@@ -87,6 +94,7 @@ covered_files:
   - "internal/compiler/session/session_phase36_prechange_test.go"
   - "internal/compiler/session/session_phase36_surface_test.go"
   - "internal/compiler/session/verification_groundedness_test.go"
+  - "internal/compiler/surface/refusals.go"
   - "internal/compiler/surfacemanifest/manifest.go"
   - "internal/compiler/surfacemanifest/manifest_test.go"
   - "internal/compiler/syntax/format.go"
@@ -98,201 +106,154 @@ covered_files:
   - "testdata/phase36/prechange-corpus.json"
   - "testdata/phase36/surface-census.json"
   - "testdata/phase36/surface-witnesses.json"
-covered_digest: "v3:sha256:5b64fbab5ee94a1a53fc96d493b27932d7934b0c5498b2eb93cfc380b84fb7de"
+covered_digest: "v3:sha256:c90fbf587b476354621ea29e16323bb1d73741c6e287b39b0e28c656ddaf3dc0"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
   honored: 26
   total: 26
   not_honored: []
-re_verification:
-  previous_status: gaps_found
-  previous_score: "32/32 must-haves verified"
-  gaps_closed:
-    - "The unreferenced Phase 38 plan-count placeholders in the Phase 36-modified roadmap were replaced with explicit Not planned / 0 planned wording while preserving the Phase 38 Not started state and audit-before-planning order."
-  gaps_remaining: []
-  regressions: []
 ---
 
 # Phase 36: Scalar Helper Calls Verification Report
 
-**Phase Goal:** A scalar function can be factored into small helpers: it calls another scalar function with one U64 or Bool argument and uses the result, including calls into imported modules, with the same defect behavior on both engines and every peer re-deriving the call independently.
+**Phase Goal:** A scalar function calls another scalar function with one U64 or Bool argument and uses its result, including imported modules, with the same defect behavior on both engines and independent call derivation by every peer.
 
-**Verified:** 2026-10-16T02:14:06Z
+**Verified:** 2026-10-16T04:09:33Z
 **Status:** passed
-**Verification mode:** Re-verification after closing the inherited roadmap metadata gap preserved at commit `7d007160`.
+**Verification mode:** Full independent verification. The prior report had no `gaps:` section, so its previously passed truths were rechecked rather than presumed.
 
 ## Goal Achievement
 
-The four roadmap success criteria, all 26 distinct plan-frontmatter truths, and both Plan 08 test-tier prohibitions produce 32 must-haves. All 32 remain verified. The prior blocker was limited to two future-phase plan-count markers in the phase-modified roadmap; re-verification confirms that metadata gap is closed and found no regression.
+The goal is present in the parser, checker, typed core, independent validators, interpreter, native C emission, and execution peer. I inspected those paths and the current tests; current owner receipts and raw logs bind to HEAD `52cdc9954297e0d002d4fa8ca20fe444ddb32f85`. All 32 must-haves (four roadmap truths, 26 distinct plan truths, and two test-tier prohibitions) are verified.
 
 | # | Truth | Status | Evidence |
 |---:|---|---|---|
-| 1 | One-argument U64 and Bool scalar calls use their result locally and through imports; recursion and mutual recursion remain refused. | ✓ VERIFIED | `TestPhase36HelperAnswersAndDefects`, `TestPhase36HelperOptimizationMatrix`, and `TestPhase36CallImportAndRefusalBoundaries`; current parser, checker, and call-graph refusal paths inspected. |
-| 2 | Callee defects preserve the callee reason and exit 65 on both engines, while the legacy ByteView bounds case remains distinct from U64/Bool helper defects. | ✓ VERIFIED | `TestPhase36HelperOptimizationMatrix`, the legacy ByteView callee test, and separate caller-before-entry controls; requirements clarification D-18 keeps bounds outside the new U64/Bool value-call contract. |
-| 3 | Check, corevalidate, originvalidate, and executionpeer independently derive calls; argument, result, and defect mutations are caught. | ✓ VERIFIED | `TestPhase36CallSourceIntentControls`, `TestPhase36RawCallShapeAndFreshness`, `TestPhase36OriginCallFreshnessAndTransfer`, and `TestPhase36CallCausalAttributionControls`. |
-| 4 | No-call programs retain literal generated-C bytes and the source-free manifest records arity one with no recursion. | ✓ VERIFIED | `TestPhase36NoCallGeneratedCByteBaseline`, `TestPhase36SurfaceManifestCallWitnesses`, and baseline ancestry controls. |
-| 5 | Literal C baseline and controls predate compiler edits. | ✓ VERIFIED | Git ancestry places baseline `9b8285de` before parser implementation `fe174ce3`; `TestPhase36NoCallGeneratedCByteBaselineControls` passes. |
-| 6 | Tracked pre-change programs have applicable emitter routes accounted for, including refusals. | ✓ VERIFIED | Frozen source inventory and route outcomes are checked by `TestPhase36NoCallGeneratedCByteBaseline`. |
-| 7 | Earlier golden bytes stay immutable and new fixtures have exact ledger rows. | ✓ VERIFIED | `TestPhase36NoCallGeneratedCByteBaselineControls`; the new-fixture ledger has omission and false-exemption controls. |
-| 8 | Direct one-argument calls parse, recover, and format within the existing 64-level bound. | ✓ VERIFIED | `parser.go` and parser phase tests contain the bounded grammar and recovery behavior; current regression logs include their exact roots. |
-| 9 | All four U64/Bool signature pairs lower to typed fresh call results, including initialized Bool identifier tails. | ✓ VERIFIED | `TestPhase36ScalarCallLoweringAndTypePairs` and helper answer tests. |
-| 10 | Arguments execute once in left-to-right order; unused-Byte and whole-program recursion refusals remain. | ✓ VERIFIED | `TestPhase36CallSourceIntentControls`, caller argument-boundary controls, and `TestPhase36CallImportAndRefusalBoundaries`; ordered lowering is explicit in `check/scalar.go`. |
-| 11 | Raw core calls independently validate callee, signature, initialized argument, result type, and fresh target. | ✓ VERIFIED | `TestPhase36RawCallShapeAndFreshness` plus refusal-removal controls; corevalidate derives its own contract. |
+| 1 | One-argument U64 and Bool scalar calls use their result locally and through imports; recursion and mutual recursion remain refused. | ✓ VERIFIED | `TestPhase36HelperAnswersAndDefects`, `TestPhase36HelperOptimizationMatrix`, `TestPhase36CallImportAndRefusalBoundaries`; parser, checker, and refusal paths inspected. |
+| 2 | Callee defects preserve reason and exit 65 on both engines; legacy ByteView bounds remain a distinct obligation. | ✓ VERIFIED | Fresh owner/regression roots cover helper defects, legacy ByteView callee bounds, and caller-before-entry controls; D-18 keeps these boundaries separate. |
+| 3 | Check, corevalidate, originvalidate, and executionpeer independently derive calls; argument/result/defect mutations are caught. | ✓ VERIFIED | `TestPhase36CallSourceIntentControls`, `TestPhase36RawCallShapeAndFreshness`, `TestPhase36OriginCallFreshnessAndTransfer`, `TestPhase36CallCausalAttributionControls`. |
+| 4 | No-call C output retains literal bytes and the source-free manifest records bounded arity-one calls without recursion. | ✓ VERIFIED | `TestPhase36NoCallGeneratedCByteBaseline`, `TestPhase36SurfaceManifestCallWitnesses`, baseline ancestry and surface controls. |
+| 5 | Literal baseline and controls predate compiler edits. | ✓ VERIFIED | Git ancestry check and `TestPhase36NoCallGeneratedCByteBaselineControls`. |
+| 6 | Frozen pre-change programs have applicable emitter routes accounted for, including refusals. | ✓ VERIFIED | `TestPhase36NoCallGeneratedCByteBaseline` checks source inventory and route outcomes. |
+| 7 | Existing golden bytes remain immutable and new fixtures have exact ledger rows. | ✓ VERIFIED | Baseline omission/false-exemption controls and current fixture ledger checks. |
+| 8 | Direct one-argument calls parse, recover, and format within the existing depth bound. | ✓ VERIFIED | Parser implementation and `TestPhase36ScalarCallFormatting`; parser roots are in fresh regression receipt. |
+| 9 | All four U64/Bool signature pairs lower to typed fresh results, including initialized Bool identifier tails. | ✓ VERIFIED | `TestPhase36ScalarCallLoweringAndTypePairs` and helper answer tests. |
+| 10 | Arguments execute once in left-to-right order; unused-Byte and recursion refusals remain. | ✓ VERIFIED | Checker lowering inspection, source-intent, caller-boundary, and refusal tests. |
+| 11 | Raw core calls independently validate callee, signature, initialized argument, result type, and fresh target. | ✓ VERIFIED | `TestPhase36RawCallShapeAndFreshness` and refusal-removal controls. |
 | 12 | Origin analysis transfers calls as initialized, value-unknown scalars through branches and loops. | ✓ VERIFIED | `TestPhase36OriginCallFreshnessAndTransfer` and refusal-removal controls. |
-| 13 | Scalar calls add no loan ancestry or resource/back-edge authority. | ✓ VERIFIED | `TestPhase36ScalarCallAuthorityBoundaries` and `TestPhase36ScalarCallLocalBorrowControls`; pathoracle treats calls as value boundaries. |
-| 14 | Repeated calls receive contiguous per-parent/per-site ordinals, and child counters reset under a fresh parent. | ✓ VERIFIED | Interpreter repeated-call tracer, dynamic ordinal controls, and native dynamic invocation path tests. |
-| 15 | Interpreter results/defects and execution-peer causal attribution remain separate claims. | ✓ VERIFIED | Interpreter answer/defect tests and `TestPhase36CallCausalAttributionControls`; peer acceptance does not assert arithmetic. |
-| 16 | Evidence retention, path/counter bounds, and exhaustion remain distinct from numeric work. | ✓ VERIFIED | Interpreter evidence-boundary, event-capacity, and native capture-outcome tests. |
-| 17 | Native calls use sequenced typed arguments/results and stable dynamic paths. | ✓ VERIFIED | Native invocation tests, emitter inventory controls, and optimization-lane mutation coverage. |
-| 18 | Repeated-call captures and exact event/path/ordinal boundaries have named controls. | ✓ VERIFIED | Native dynamic invocation, capacity, ordinal, and path-boundary controls. |
-| 19 | Optional capture exhaustion preserves application stdout, stderr, exit, and later defects. | ✓ VERIFIED | `TestPhase36NativeCallCaptureOutcomeSeparation` checks successful work and late defects under disabled and exhausted capture. |
-| 20 | Old generated-C output and affected emitter inventories are independently checked. | ✓ VERIFIED | No-call byte baseline and emitter call inventory controls; current inventory contains the newly registered Phase 36 emitter-test consumer. |
-| 21 | Local and imported repeated crc_step helpers produce pinned answers on both engines. | ✓ VERIFIED | Helper answer and optimization matrix tests, `crc_step.schway`, `importer.schway`, and independently computed `helper-values.json`. |
-| 22 | Four signature pairs, nested/computed arguments, arithmetic use, mutable assignments, and Bool conditions have discriminating witnesses. | ✓ VERIFIED | Helper answer and type-pair tests; expected values are independently recorded, not produced by Schway. |
-| 23 | Dynamic defects retain exact reasons and exit 65 across native optimization lanes; bounds obligations stay distinct. | ✓ VERIFIED | Optimization matrix, legacy ByteView callee bounds, and caller-before-entry controls. |
-| 24 | Public conformance retains its input contract and native capture stays separate from process outcome. | ✓ VERIFIED | `TestPhase36PublicHelperConformance` and native capture outcome tests. |
-| 25 | Source-free manifest states bounded arity-one contexts and all four U64/Bool pairs. | ✓ VERIFIED | `TestPhase36SurfaceManifestCallWitnesses` and independently authored `surface-witnesses.json`. |
-| 26 | Complete-program witnesses and finite source/census checks cover manifest claims. | ✓ VERIFIED | Manifest witness and census tests, with current census inputs bound by the regression receipt. |
-| 27 | Missing/false admission, refusal, hint, restriction, and census controls are bidirectional while prior witness bytes stay frozen. | ✓ VERIFIED | Manifest call controls and surface limit consumer tests. |
-| 28 | Integrated no-call programs retain literal generated-C bytes through frozen routes. | ✓ VERIFIED | `TestPhase36NoCallGeneratedCByteBaseline` passed in this verification. |
-| 29 | Acceptance evidence separates source, raw-contract, numeric, causal, and both bounds proofs. | ✓ VERIFIED | `36-ACCEPTANCE-EVIDENCE.md` and the separately owned source, peer, engine, and bounds tests. |
-| 30 | Current inspection, fresh evidence, and historical/hosted receipts are labeled separately; later-phase ownership is preserved. | ✓ VERIFIED | Acceptance evidence, context, and transition records. This report makes no hosted-evidence claim. |
-| 31 | Optional evidence exhaustion cannot turn success into application success or hide later output, defects, or exit status. | ✓ VERIFIED | Current canonical prohibition request returns green/unflagged with `failFirst=true`, `passed=true`, and `failFirstProof=violation-fixture`; violation, clean, and default controls are bound. |
-| 32 | Causal-peer acceptance does not prove scalar arithmetic or source argument/result intent. | ✓ VERIFIED | Current canonical causal-prohibition request has the same green fail-first disposition; numeric mutation and source-intent claims have separate test owners. |
+| 13 | Scalar calls add no loan ancestry or resource/back-edge authority. | ✓ VERIFIED | `TestPhase36ScalarCallAuthorityBoundaries`; pathoracle treats a call as a value boundary. |
+| 14 | Repeated calls receive contiguous per-parent/site ordinals; child counters reset under a fresh parent. | ✓ VERIFIED | Interpreter tracer and ordinal/dynamic native path controls. |
+| 15 | Interpreter results/defects and execution-peer causal attribution remain separate claims. | ✓ VERIFIED | Interpreter answer/defect tests plus causal attribution tests; peer does not assert arithmetic. |
+| 16 | Evidence retention, path/counter bounds, and exhaustion remain distinct from numeric execution. | ✓ VERIFIED | Interpreter evidence boundaries, event-capacity, and native capture outcome tests. |
+| 17 | Native calls use sequenced typed arguments/results and stable dynamic paths. | ✓ VERIFIED | Native invocation tests and C emitter inspection. |
+| 18 | Repeated-call captures and exact event/path/ordinal boundaries have named controls. | ✓ VERIFIED | Native dynamic invocation, capacity, ordinal, and path boundary tests. |
+| 19 | Optional capture exhaustion preserves application output, exit, and later defects. | ✓ VERIFIED | `TestPhase36NativeCallCaptureOutcomeSeparation`. |
+| 20 | Old C output and affected emitter inventory are independently checked. | ✓ VERIFIED | No-call byte baseline and emitter inventory controls; current `EmitNative` consumer registration is included. |
+| 21 | Local/imported repeated `crc_step` helpers produce pinned answers on both engines. | ✓ VERIFIED | Helper answer/optimization tests and independent `helper-values.json` values. |
+| 22 | Four type pairs, nested/computed arguments, arithmetic use, mutation, and Bool conditions have discriminating witnesses. | ✓ VERIFIED | Helper answer and type-pair roots; fixture values were independently computed, not compiler-produced. |
+| 23 | Dynamic defects preserve exact reasons and exit 65 across native optimization lanes; bounds remain distinct. | ✓ VERIFIED | Fresh optimization matrix, legacy bounds, and caller-before-entry controls. |
+| 24 | Public conformance retains its input contract and capture stays separate from process outcome. | ✓ VERIFIED | Public helper conformance and native capture outcome roots. |
+| 25 | Source-free manifest states bounded arity-one contexts and all four type pairs. | ✓ VERIFIED | Surface manifest tests and independently authored witnesses. |
+| 26 | Complete-program witnesses and finite source/census checks cover manifest claims. | ✓ VERIFIED | Surface witness/census tests and current census receipt inputs. |
+| 27 | Admission, refusal, hint, restriction, and census controls are bidirectional; prior witness bytes stay frozen. | ✓ VERIFIED | Manifest call controls and surface limit-consumer tests. |
+| 28 | Integrated no-call programs retain literal C bytes through frozen routes. | ✓ VERIFIED | Fresh `TestPhase36NoCallGeneratedCByteBaseline` root. |
+| 29 | Acceptance evidence separates source, raw contract, numeric, causal, and bounds proofs. | ✓ VERIFIED | Acceptance evidence and distinct owner tests/receipts. |
+| 30 | Current inspection, fresh evidence, and historical/hosted receipts are distinguished; phase ownership is preserved. | ✓ VERIFIED | Transition and acceptance artifacts; this report makes no hosted evidence claim. |
+| 31 | Optional evidence capture exhaustion preserves application stdout, stderr, exit status, and later defects. | ✓ VERIFIED | Fresh native capture outcome roots check preserved process results and late defects; this claim is separate from peer or numeric proof. |
+| 32 | Causal-peer acceptance does not prove scalar arithmetic or source argument/result intent. | ✓ VERIFIED | Canonical causal prohibition is green with fail-first proof; separate numeric and source-intent tests own those claims. |
 
-**Score:** 32/32 must-haves verified; behavior-unverified: 0.
+**Score:** 32/32 truths verified; behavior-unverified: 0.
 
-### Re-verification of Prior Gap
+## Fresh Evidence and Scope
 
-The prior report, preserved at `7d007160`, had one blocker: `.planning/ROADMAP.md` used `TBD` for Phase 38's plan count and `0/TBD` in its progress row. Commit `5eb7ef71` changes these to `Plans: Not planned (expected 3: ...; planning follows the M007 audit)` and `0 planned | Not started`. This preserves the expected three slices and audit-before-planning order without implying a Phase 38 directory, plan, receipt, or dispatch approval; no Phase 38 directory exists.
+The current acceptance receipt covers 86/86 roots in 13 packages (14 commands, 34 plan-selector groups); the bounded regression receipt covers 252 actual root executions across 16 packages, 240 distinct test names and 251 unique package/name selectors. Both have zero missing, failing, or skipped roots. I independently matched receipt heads to the current HEAD, checked every listed post-input hash against current files, and matched raw log hashes and root results. The duplicate internal/external checker root explains 252 executions versus 251 selectors. No project/package-wide suite was run.
 
-`36-REFRESH2-METADATA-FIX.md` records the repair. Current source and fixtures are unchanged from the final 251-root regression receipt; I independently rechecked its 179 input hashes and 16 log hashes, the 85 owner-receipt inputs and 14 logs, and the 22 prohibition inputs plus two raw results. All hashes match. The five focused living-document/groundedness roots pass, and the prior 32 truths have no source regression. The living roadmap documents are included in the refreshed fingerprint and should remain byte-stable after this report.
+The test-tier prohibitions' four direct controls have the expected red/red/green/green exit results and matching logs. Canonical producers for both prohibitions independently return `status: green`, `flagged: false`, `kind: node-test`, and wired `failFirst` evidence. All 26 context decisions are honored (`decision_coverage` above).
 
-The five re-verification roots were `TestPhase32ReceiptLivingClaims`, `TestPhase34TransitionDocuments`, `TestPhase35OperatorDocumentation`, `TestVerificationGroundednessFrontierIsPinned`, and `TestVerificationGroundednessThreeClassesAreEmpty`. The last two also pass against this rendered report.
+Since the prior report, the relevant source delta is the dynamic scalar `OpDefect` terminal path in `cgen_program.go` and `TestPhase33ScalarExplicitDefectShells`. In the dynamic invocation shell used to capture native conformance events, `OpDefect` writes the structured terminal defect event/reason and then exits 0 so the wrapper can parse it. In the application shell, `OpDefect` follows the application-failure path, writes `schway app: <reason>` to stderr, and exits 65. I ran that exact named test with `GOCACHE=/tmp/ai-lang-verification-gocache`, `-count=1`, and a bounded timeout; it passed. The test checks interpreter event/reason and executionpeer validation, native `ExpectDefect` runs at O0/O3/O3-LTO for helper and entry defects, and the application shell's stderr/exit-65 result. This closes the Phase 36 dynamic native defect claim.
+
+Phase 33 CR-03/04/06 remain deferred BLOCKER M007 audit obligations; they are neither fixed nor accepted here. CR-05 is the repaired dynamic scalar caller path. Legacy no-call C-byte parity is not evidence of legacy no-call native defect parity. These carried obligations are outside the Phase 36 helper-call contract. The current review has no new finding; WR-02 remains a separate deferred warning about an obsolete same-type validator comment.
 
 ## Required Artifacts
 
-The canonical artifact query passed all 24 declared artifacts across eight plans: each exists and has no stub issue. Wiring was traced separately.
+The canonical artifact query passed all 24 declarations across eight plans. The 19 semantic key links could not be resolved by the generic path-based query because their `from` fields are descriptive labels, not relative paths; I manually traced every link through implementations and named tests.
 
-| Plan | Artifacts | Status | Wiring |
-|---|---|---|---|
-| 36-01 | Pre-change corpus, literal-byte comparator, and new-fixture ledger | ✓ VERIFIED (3/3) | Comparator consumes frozen bytes and route inventory. |
-| 36-02 | Parser and scalar-call checker tests | ✓ VERIFIED (2/2) | Parser call AST reaches checker lowering and typed core. |
-| 36-03 | Core, origin, and path validator tests | ✓ VERIFIED (3/3) | Independent analyses consume core facts without trusting the checker verdict. |
-| 36-04 | Interpreter and execution-peer tests | ✓ VERIFIED (2/2) | Runtime frames/events and independent peer ancestry are exercised. |
-| 36-05 | C generator and native tests | ✓ VERIFIED (2/2) | C emission and native capture boundaries are connected. |
-| 36-06 | Local/imported helper programs, expected values, and runner tests | ✓ VERIFIED (5/5) | Programs reach interpreter, native, and public-conformance routes. |
-| 36-07 | Surface census, witnesses, and consumer tests | ✓ VERIFIED (3/3) | Independent witnesses and census are consumed by manifest controls. |
-| 36-08 | Acceptance/prohibition evidence and living planning records | ✓ VERIFIED (4/4) | Evidence sources exist; both prohibition producers were independently checked in this verification. |
+| Plan | Artifacts | Status | Link trace |
+|---|---:|---|---|
+| 36-01 | 3/3 | ✓ VERIFIED | Frozen C bytes and route inventory are read by comparator. |
+| 36-02 | 2/2 | ✓ VERIFIED | Parser call AST reaches checker lowering and typed core. |
+| 36-03 | 3/3 | ✓ VERIFIED | Core, origin, and path validators derive their own call constraints. |
+| 36-04 | 2/2 | ✓ VERIFIED | Interpreter frames/events feed independent peer topology checks. |
+| 36-05 | 2/2 | ✓ VERIFIED | Native emission and capture boundary tests exercise generated code. |
+| 36-06 | 5/5 | ✓ VERIFIED | Local/imported sources reach interpreter/native and public runner. |
+| 36-07 | 3/3 | ✓ VERIFIED | Independent witnesses and census are consumed by manifest controls. |
+| 36-08 | 4/4 | ✓ VERIFIED | Acceptance evidence binds selectors; prohibition receipts are independently checked. |
 
-The cgen repair is narrowly scoped: `isDynamicScalarFunctionBody` admits the existing unused-Byte-to-U64 caller and ByteView-to-U64/Unit caller forms; the Byte formal must be unused across the six reference fields, and accepted helper callee signatures remain U64/Bool. `TestPhase36UnusedByteStructuredHelper` returns 11 in interpreter/native O0/O3/O3-LTO and validates its causal peer. `TestPhase36ByteViewUnitHelperEmission` compiles and links an uncalled Unit-returning body, then runs only an unrelated U64 entry that prints 7. It does not prove execution of that Unit body or a ByteView value-call entry. The repair test failed both exact emission assertions over the pre-fix source overlay and passes on the repaired source.
+| Plan | Links | Status | Trace |
+|---|---:|---|---|
+| 36-01 | 1/1 | ✓ WIRED | Baseline comparator reads literal bytes and checks emitter/application/module routes. |
+| 36-02 | 2/2 | ✓ WIRED | Parser creates call AST; checker resolves signatures and lowers ordered typed calls. |
+| 36-03 | 3/3 | ✓ WIRED | Independent validators consume core facts, not checker verdicts. |
+| 36-04 | 3/3 | ✓ WIRED | Runtime ordinals, peer ancestry, and capture completeness are separately exercised. |
+| 36-05 | 3/3 | ✓ WIRED | Native event/path bounds and application-outcome separation are tested. |
+| 36-06 | 3/3 | ✓ WIRED | Local/imported calls reach both engines; defects and causal proof are distinct. |
+| 36-07 | 2/2 | ✓ WIRED | Source-free manifest is checked against independent witnesses and census. |
+| 36-08 | 2/2 | ✓ WIRED | Exact owner selectors and distinct proof claims are referenced by evidence. |
 
-The Phase 16 emitter-consumer inventory initially found 116 source callsites against 115 registered consumers. Commit `0e56a3be` adds the new `EmitNative` consumer row; the inventory and its omission/stale/duplicate/invalid/missing controls pass on the final registry. The initial red is retained in the gate record and is not counted as a pass.
+## Data Flow
 
-The refreshed fingerprint now directly includes the helper example sources, formatter implementation, source-free manifest implementation and tests, native application-capture implementation, Phase 36 legacy-call tests, and the Phase 33 terminal-attribution tests. These were material to the program-output, formatting, surface-authority, capture, compatibility, and separate-debt claims; they are not represented only by receipt JSON.
-
-## Key Link Verification
-
-The generic `verify.key-links` query could not resolve plan `from` labels because they are semantic labels rather than relative file paths. I manually traced every declared link through implementation and named tests; all 19 of 19 are wired.
-
-| Plan | Links | Trace |
-|---|---:|---|
-| 36-01 | 1/1 | Baseline comparator reads frozen bytes and checks current emitter/application/module routes. |
-| 36-02 | 2/2 | Parser emits call AST; checker resolves the callee and signature, then lowers ordered typed calls with fresh result targets. |
-| 36-03 | 3/3 | Corevalidator, originvalidator, and pathoracle independently derive call contracts from core facts. |
-| 36-04 | 3/3 | Interpreter creates per-parent ordinals; executionpeer derives topology; capture completeness remains separate from program outcome. |
-| 36-05 | 3/3 | Native emitter reserves bounded event/path capacity; capture failure stays separate from application exit; old routes compare literal bytes. |
-| 36-06 | 3/3 | Local and imported sources reach both runners; defects and causal capture are separate; public route retains its input contract. |
-| 36-07 | 2/2 | Source-free manifest is checked against independent witnesses and finite route/census consumers. |
-| 36-08 | 2/2 | Acceptance evidence points to exact owner selectors and separates proof types. |
-
-## Data-Flow Trace
-
-There is no rendered UI or database-backed value in this phase. Program data reaches user-visible output: parser call expressions are resolved by checker lowering into typed core calls, then the interpreter executes the callee or cgen emits a typed C invocation. The result flows into assignment/expression use, while the public runner captures stdout, stderr, and exit. `helper-values.json` records independent Python arithmetic rather than engine-generated expected values.
+No rendered UI or database value applies. Program values flow from local/imported source through parsing, typed checker lowering, and either interpreter frames or emitted C calls to captured output. `helper-values.json` pins independently computed expected values. The peer only derives call identity/path/ordinal; it does not establish arithmetic correctness.
 
 | Artifact | Data | Source and flow | Status |
 |---|---|---|---|
-| Helper example modules | U64/Bool inputs and helper results | Source → parser → checker → core call → interpreter/native → captured output | ✓ FLOWING |
-| `interp.go` | Callee return or defect | Runtime call frames execute the callee and return its result/reason to the caller | ✓ FLOWING |
-| `cgen_program.go` | Typed native call result | Emits the invocation and captures the generated program's result | ✓ FLOWING |
-| `native_app.go` | Process stdout, stderr, and exit plus separate optional evidence status | Runs the emitted application and retains its actual process outcome when evidence capture is disabled or exhausted | ✓ FLOWING |
-| `executionpeer.go` | Call identity and causal path | Derives path and ordinal from runtime events, without proving scalar arithmetic | ✓ FLOWING |
-| `surfacemanifest/manifest.go` | Bounded source-free language contract | `Current()` publishes call arity, types, contexts, and restrictions consumed by surface tests and CLI route | ✓ FLOWING |
+| Helper examples | U64/Bool inputs and returned helper values | Source → parser/checker → core → interpreter/native → captured output | ✓ FLOWING |
+| Interpreter | Return value or callee defect | Dynamic frame executes callee and propagates result/reason | ✓ FLOWING |
+| C generator/native app | Typed call result and process output/status | Generated invocation → actual process stdout/stderr/exit | ✓ FLOWING |
+| Execution peer | Call identity and causal path | Runtime event sequence → independently derived path/ordinal | ✓ FLOWING |
+| Surface manifest | Bounded source-free call contract | Manifest data → surface tests and CLI route | ✓ FLOWING |
 
 ## Behavioral Spot-Checks
 
-These were exact named tests, run with `GOCACHE=/tmp/ai-lang-verification-gocache`; no full project or package suite was run.
-
-| Behavior | Named roots | Result |
-|---|---|---|
-| Structured caller emission regression, including the uncalled ByteView Unit body shape | `TestPhase36UnusedByteStructuredHelper`, `TestPhase36ByteViewUnitHelperEmission` | PASS |
-| Helper answers/defects, exact reasons and exits, imports, and refusal boundaries | `TestPhase36HelperAnswersAndDefects`, `TestPhase36HelperOptimizationMatrix`, `TestPhase36CallImportAndRefusalBoundaries` | PASS |
-| Argument/result intent and independent raw/origin/causal derivation | `TestPhase36CallSourceIntentControls`, `TestPhase36RawCallShapeAndFreshness`, `TestPhase36OriginCallFreshnessAndTransfer`, `TestPhase36CallCausalAttributionControls` | PASS |
-| Legacy ByteView bounds and caller-before-entry distinction | `TestPhase36LegacyByteViewCalleeBounds`, `TestPhase36ByteViewCallerArgumentBoundary`, `TestPhase36NativeByteViewCallerArgumentBoundary` | PASS; one native-lane group took about 12 seconds |
-| Frozen no-call bytes and Phase 16 inventory mutation controls | `TestPhase36NoCallGeneratedCByteBaseline`, `TestPhase16PublicEmitterConsumerInventory`, `TestPhase16EmitterInventoryMutationControls` | PASS |
-| Type-pair lowering | `TestPhase36ScalarCallLoweringAndTypePairs` | PASS |
-
-The exact direct selectors were:
+Fresh receipts provide named behavioral roots for answer values, imported modules, defects, recursion/refusal boundaries, all four signature pairs, peer mutations, path/ordinal/capacity limits, capture separation, ByteView bounds, and literal no-call C parity. The direct post-receipt spot-check was:
 
 ```sh
-source /tmp/schway34-root-pin.sh
-source /tmp/schway34-gsd-run.sh @opengsd/gsd-core1.16.0
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 30 -- go test ./internal/compiler/cgen -run '^(TestPhase36UnusedByteStructuredHelper|TestPhase36ByteViewUnitHelperEmission)$' -count=1 -v -timeout=20s
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 30 -- go test ./internal/compiler/session -run '^TestPhase36HelperAnswersAndDefects$' -count=1 -v -timeout=20s
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 30 -- go test ./internal/compiler/session -run '^TestPhase36HelperOptimizationMatrix$' -count=1 -v -timeout=20s
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 30 -- go test ./internal/compiler/check -run '^(TestPhase36CallSourceIntentControls|TestPhase36CallImportAndRefusalBoundaries|TestPhase36ScalarCallLoweringAndTypePairs)$' -count=1 -v -timeout=20s
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 30 -- go test ./internal/compiler/corevalidate -run '^TestPhase36RawCallShapeAndFreshness$' -count=1 -v -timeout=20s
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 30 -- go test ./internal/compiler/originvalidate -run '^TestPhase36OriginCallFreshnessAndTransfer$' -count=1 -v -timeout=20s
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 30 -- go test ./internal/compiler/executionpeer -run '^TestPhase36CallCausalAttributionControls$' -count=1 -v -timeout=20s
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 30 -- go test ./internal/compiler/session -run '^(TestPhase36LegacyByteViewCalleeBounds|TestPhase36ByteViewCallerArgumentBoundary|TestPhase36NativeByteViewCallerArgumentBoundary)$' -count=1 -v -timeout=600s
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 30 -- go test ./internal/compiler/session -run '^TestPhase36NoCallGeneratedCByteBaseline$' -count=1 -v -timeout=20s
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 30 -- go test ./internal/compiler/session -run '^(TestPhase16PublicEmitterConsumerInventory|TestPhase16EmitterInventoryMutationControls)$' -count=1 -v -timeout=20s
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 60 -- go test ./internal/compiler/session -run '^(TestPhase32ReceiptLivingClaims|TestPhase34TransitionDocuments|TestPhase35OperatorDocumentation|TestVerificationGroundednessFrontierIsPinned|TestVerificationGroundednessThreeClassesAreEmpty)$' -count=1 -v -timeout=50s
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 45 -- go test ./internal/compiler/syntax -run '^TestPhase36ScalarCallFormatting$' -count=1 -v -timeout=35s
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 45 -- go test ./internal/compiler/surfacemanifest -run '^TestPhase36SurfaceDocument$' -count=1 -v -timeout=35s
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 60 -- go test ./internal/compiler/session -run '^(TestPhase36NativeCallCaptureOutcomeSeparation|TestPhase36LegacyFallibleCallRoutes|TestPhase36LegacyFileOwnerPeerRoutes)$' -count=1 -v -timeout=50s
-GOCACHE=/tmp/ai-lang-verification-gocache gsd_run run-with-timeout 45 -- go test ./internal/compiler/executionpeer -run '^TestPhase33TerminalAttribution$' -count=1 -v -timeout=35s
+GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/cgen -run '^TestPhase33ScalarExplicitDefectShells$' -count=1 -timeout=600s
 ```
 
-The metadata closure check was also read directly: `.planning/ROADMAP.md` now contains `Plans: Not planned (expected 3...)` for Phase 38 and `0 planned | Not started`, with no `TBD`, `FIXME`, or `XXX` markers; `.planning/phases/38-milestone-receipts` is absent.
-
-## Freshness and Regression Evidence
-
-I checked the receipt input hashes and raw logs against the current files. The owner-validation receipt contains 86 executed roots across 13 packages, 85 current input hashes, and 14 logs; there are no missing, failing, or skipped roots. The final union regression receipt contains 251 root executions and 239 distinct test names across 16 packages, 179 input hashes, and 16 logs; all final logs are newly run with no missing, failing, or skipped roots. The final union is the exact current Phase 36 root set plus the repair roots, Phase 35 refresh roots (including earlier phases 33/34), and historical Phase 36 names. No receipt is treated as proof for a source whose hash differs.
-
-The two Phase 08 prohibition requests were rechecked independently through the canonical enforcement owner. Each returns `green`, `flagged=false`, tier `test`, kind `node-test`, `failFirst=true`, `passed=true`, and `failFirstProof=violation-fixture`. Raw result hashes and all 22 bound source/fixture inputs match the final prohibition receipt. These are local checks, not hosted evidence.
+Result: PASS (1.011s). This was a named selector only; no suite was run.
 
 ## Requirements Coverage
 
-| Requirement | Source plans | Status | Evidence |
+| Requirement | Source | Status | Evidence |
 |---|---|---|---|
-| CALL-01 | 36-01 through 36-08 | ✓ SATISFIED | Local/imported U64/Bool results, recursion refusal, and exact engine defects verified in truths 1–2, 8–10, and 21–24. D-18 scopes ByteView bounds to the legacy callee and caller-before-entry controls. |
-| CALL-02 | 36-01 through 36-08 | ✓ SATISFIED | Independent call derivation, argument/result/defect mutation controls, and no-call byte baseline verified in truths 3–4 and 11–20, 25–28. |
+| CALL-01 | Plans 36-02 through 36-06 | ✓ SATISFIED | One-argument U64/Bool calls, local/imported use, same-engine result and defect behavior, recursion refusal. |
+| CALL-02 | Plans 36-03 through 36-08 | ✓ SATISFIED | Independent call derivation by core/origin/execution peers, mutation controls, and bounded surface contract. |
 
-Both requirements are mapped to Phase 36 in `REQUIREMENTS.md`; no phase-mapped requirement is orphaned. The canonical decision coverage query reports 26/26 honored, with no unhonored CONTEXT decisions.
+The D-18 clarification scopes ByteView bounds separately: helper U64/Bool defects cover overflow/remainder; legacy ByteView callee bounds and caller-before-entry argument bounds retain their own tests. No phase-assigned requirement is orphaned.
 
-## Anti-Patterns and Review Findings
+## Probe Execution
 
-| File | Line | Finding | Severity | Impact |
-|---|---:|---|---|---|
-| `internal/compiler/corevalidate/corevalidate.go` | 4248 | WR-02 stale explanatory comment | ⚠️ WARNING | Comment describes the obsolete same-type-only invariant; implementation derives the argument type from `sourceTypeID`. Disposition defers the comment to the core-validator maintainer's next semantic edit; review is not clean. |
+N/A. No phase plan declares a probe and no conventional `scripts/*/tests/probe-*.sh` probe exists for this compiler phase.
 
-No unresolved `TBD`, `FIXME`, or `XXX` marker remains in the modified roadmap. No runtime stub, empty handler, or empty value flowing to observable output was found. The grep matches for empty slices are intentional empty-result/diagnostic helpers and do not stand in for missing call behavior.
+## Anti-Patterns Found
 
-The Phase 33 review separately retains CR-03 and CR-04 as blockers for the execution-peer maintainer's mandatory M007 audit before the Phase 38 freeze. I inspected the overlap: those findings concern legacy nested defect-unwind and typed-failure-through-return behavior, while Phase 36's new scalar-call obligations and D-18 bounds controls are distinct. They are not closed or accepted risk by this report, and this is not a global-clean verdict.
+| File | Pattern | Severity | Impact |
+|---|---|---|---|
+| — | No blocking debt markers, stubs, empty implementations, or console-only implementations found in phase-touched code. | — | A lexical `placeholder` match is a comment about a dead/unused field; it is not a stub. |
 
-The scoped Phase 36 security review records 24/24 authored L1/high threats closed; that is not a broader security certification. The UI gate is not applicable because the phase contains no frontend files or UI spec.
+## Security and UI Gates
+
+The current security artifact reports 24/24 authored Level 1 checks closed with zero open threats; no new trust boundary was introduced. UI review is N/A for this compiler-only phase. Current standard review reports no new issue.
 
 ## Human Verification Required
 
-None. Named deterministic tests exercise the phase's observable call, output, defect, refusal, and independent-peer behavior. There is no visual, hosted, or external-service behavior in this phase goal.
+None. Specified runtime behaviors are covered by named tests and fresh bounded receipts. No visual, service, latency, hosted, Linux, or human-readability claim is made.
 
 ## Gaps Summary
 
-The code achieves the scalar-helper-call goal: local and imported U64/Bool helper calls return used values, interpreter/native defect behavior matches, peers independently derive call facts, and no-call generated C remains byte-identical. The prior Phase 38 metadata blocker is closed, all 32 must-haves pass, and there is no behavior-unverified truth or remaining Phase 36 gap. WR-02 remains a documentation warning; the separate Phase 33 CR-03/CR-04 M007 audit debt remains outside this phase's verified scope.
+No Phase 36 must-have gaps remain. The scalar helper path has independent source/core/origin/peer derivation, local and imported U64/Bool calls, and matching interpreter/native defect behavior with current evidence. Phase 33 M007 obligations remain explicitly deferred outside this phase's contract.
 
 ---
 
-_Verified: 2026-10-16T02:14:06Z_
-_Verifier: the agent (gsd-verifier)_
+_Verified: 2026-10-16T04:09:33Z_
+_Verifier: gsd-verifier_

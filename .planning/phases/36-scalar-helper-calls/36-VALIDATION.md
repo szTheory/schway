@@ -5,8 +5,8 @@ status: validated
 nyquist_compliant: true
 wave_0_complete: true
 created: 2026-10-14
-validated: 2026-10-15
-source_revision: d117ca4058fbf6a727cb5aa634768cf6194bac34
+validated: 2026-10-16
+source_revision: 52cdc9954297e0d002d4fa8ca20fe444ddb32f85
 ---
 
 # Phase 36 — Validation Audit
@@ -246,3 +246,18 @@ or language admission and does not rewrite completed plans/UAT.
 | Gaps found | 3 |
 | Resolved | 3 |
 | Escalated | 0 |
+
+
+## Current-source freshness gate — 2026-10-16
+
+Fresh evidence binds source HEAD `52cdc9954297e0d002d4fa8ca20fe444ddb32f85`. The prior dated acceptance, caller-shape repair, metadata, and historic host receipts above remain historical and were not rewritten. The task map still contains eight plans, 21 task rows, and seven waves; completed UAT is preserved.
+
+The Phase36 mapped owner selectors plus the two caller-shape regression roots ran through 14 exact package commands across 13 packages: **86/86 roots passed**, zero missing, failed, or skipped, in 74.718 seconds. Every command uses `GOCACHE=/tmp/ai-lang-verification-gocache`, an anchored `-run` selector, `-count=1`, `-timeout=600s`, and `-json`; exact argv, root names, stdout/stderr paths and hashes, 180 input hashes, and post-run bindings are in [36-REFRESH3-RUN.json](36-REFRESH3-RUN.json). The bounded regression cgen group also freshly executed the current `TestPhase33ScalarExplicitDefectShells` repair control.
+
+The bounded regression union freshly ran the exact selector names from the Phase35 REFRESH3 receipt. Its 251 unique package/name selectors produced **252/252 root executions** across 16 packages, all passing in 137.091 seconds; zero missing, failures, or skips. The duplicate root is `TestPhase35NumericRoutePolicy` in the check package's internal and external test packages. The union includes the current CR-05 native dynamic explicit-defect repair. It does not disposition or close Phase33 CR-03/04/06; those remain mandatory M007 audit obligations. Exact commands, per-package logs, hashes, input bindings, and this multiplicity are in [36-REFRESH3-REGRESSION.json](36-REFRESH3-REGRESSION.json).
+
+Both mechanical prohibition checks freshly produced the expected bad RED (exit 1 on each violation subject), clean GREEN (2/2), and absent-subject default GREEN (2/2). The actual RED mismatch was `violation` versus expected `green`. Both canonical `check prohibition-enforcement` producers returned `status: green`, `flagged: false`, and `failFirstProof: violation-fixture`. Full result and input/log hashes are in [36-REFRESH3-PROHIBITIONS.json](36-REFRESH3-PROHIBITIONS.json).
+
+The current security register remains the authored 24 unique Level 1 plan threats, all closed with zero open and `block_on: high`. I checked the changed native defect-emission seam for a new trust boundary; none was introduced. The canonical `verification.append-audit` call returned `appended: false`, so no duplicate history was written. The canonical UI safety gate remains non-blocking N/A (`frontend: false`, `hasUiFiles: false`, `hasUiSpec: false`, `block: false`); the phase has no frontend or UI-SPEC. No visual score or screenshot was added. Code review rechecked the current defect-emission change and its dynamic helper/entry behavioral test; WR-02 remains the one deferred Phase36 warning. The Phase33 CR-03/04/06 ownership is recorded separately and was not reclassified as new Phase36 debt. These outcomes and exact gate commands are in [36-REFRESH3-GATES.md](36-REFRESH3-GATES.md).
+
+These are local Darwin/arm64 source-bound checks only. No full local project/package suite, hosted dispatch, push, new phase, or Linux claim is made.

@@ -1,0 +1,224 @@
+{
+  "source_head": "52cdc9954297e0d002d4fa8ca20fe444ddb32f85",
+  "captured_utc": "2026-10-16T03:50:37.746261+00:00",
+  "scope": "Fresh direct TAP bad RED plus clean/default GREEN for both exact Phase36 prohibition subjects, followed by canonical gsd-tools prohibition-enforcement producers. Existing adapters/descriptors were read-only; no policy files were changed.",
+  "direct_test": ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs",
+  "input_hashes": {
+    ".planning/phases/36-scalar-helper-calls/36-08-PLAN.md": "1495abb7c64ed3e393b0d51fd4e1083d7d6c4648e443def404e95f9fd5ab1947",
+    ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs": "86f688d31f140ab99d3a545facc3c7ea26c042cfb1d0ebe06253c251992ce6b2",
+    ".planning/phases/36-scalar-helper-calls/prohibition-outcome-violation.json": "7f38214b22d1748b5290a999c6a6e3ec9b4776596f79b006b2fbfd591c111654",
+    ".planning/phases/36-scalar-helper-calls/prohibition-causal-violation.json": "ca7150830d5d654a71a3dfcce53790efa33d4fe9486ea4e0fc8490b3a360b2d8",
+    ".planning/phases/36-scalar-helper-calls/prohibition-clean.json": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+    "internal/compiler/native/native_app.go": "0124d35186677f20a88704968de42c32a5d7f0fb6ea850533bd5b891629bac64",
+    "internal/compiler/native/native_phase36_test.go": "ba3ac41f638a52c7cc17501cacef27a0f189424389f8f78c69a46d11c497b49d",
+    "internal/compiler/executionpeer/executionpeer.go": "a884b40df2c5ef2dcb51082d2b6b6400b56bb7d07bf9c72e9a2f7e45a5124ba4",
+    "internal/compiler/executionpeer/executionpeer_phase36_test.go": "bb5b00cf7ee1844c82877725f96751a5dd2107e22021f0082bc881c37265d3d2"
+  },
+  "post_input_hashes": {
+    ".planning/phases/36-scalar-helper-calls/36-08-PLAN.md": "1495abb7c64ed3e393b0d51fd4e1083d7d6c4648e443def404e95f9fd5ab1947",
+    ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs": "86f688d31f140ab99d3a545facc3c7ea26c042cfb1d0ebe06253c251992ce6b2",
+    ".planning/phases/36-scalar-helper-calls/prohibition-outcome-violation.json": "7f38214b22d1748b5290a999c6a6e3ec9b4776596f79b006b2fbfd591c111654",
+    ".planning/phases/36-scalar-helper-calls/prohibition-causal-violation.json": "ca7150830d5d654a71a3dfcce53790efa33d4fe9486ea4e0fc8490b3a360b2d8",
+    ".planning/phases/36-scalar-helper-calls/prohibition-clean.json": "6f1aa9862183245c6523b25829cee150ef4926953da22c5fbfec5ff83ee0e27a",
+    "internal/compiler/native/native_app.go": "0124d35186677f20a88704968de42c32a5d7f0fb6ea850533bd5b891629bac64",
+    "internal/compiler/native/native_phase36_test.go": "ba3ac41f638a52c7cc17501cacef27a0f189424389f8f78c69a46d11c497b49d",
+    "internal/compiler/executionpeer/executionpeer.go": "a884b40df2c5ef2dcb51082d2b6b6400b56bb7d07bf9c72e9a2f7e45a5124ba4",
+    "internal/compiler/executionpeer/executionpeer_phase36_test.go": "bb5b00cf7ee1844c82877725f96751a5dd2107e22021f0082bc881c37265d3d2"
+  },
+  "input_drift": [],
+  "direct_results": [
+    {
+      "name": "outcome-red",
+      "subject": ".planning/phases/36-scalar-helper-calls/prohibition-outcome-violation.json",
+      "expected_exit": 1,
+      "exit": 1,
+      "seconds": 1.266,
+      "command": [
+        "node",
+        "--test",
+        ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs"
+      ],
+      "stdout_log": "/tmp/schway36-refresh3-prohibitions/outcome-red.tap",
+      "stdout_sha256": "8986ef4b52650f6f528b630a93c932bf69e92b78458d499b2b9dc9d633a1755d",
+      "stderr_log": "/tmp/schway36-refresh3-prohibitions/outcome-red.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ok": true,
+      "summary": null,
+      "fail_summary": null,
+      "environment": {
+        "GSD_PROHIB_SUBJECT": ".planning/phases/36-scalar-helper-calls/prohibition-outcome-violation.json"
+      }
+    },
+    {
+      "name": "causal-red",
+      "subject": ".planning/phases/36-scalar-helper-calls/prohibition-causal-violation.json",
+      "expected_exit": 1,
+      "exit": 1,
+      "seconds": 0.889,
+      "command": [
+        "node",
+        "--test",
+        ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs"
+      ],
+      "stdout_log": "/tmp/schway36-refresh3-prohibitions/causal-red.tap",
+      "stdout_sha256": "fc1325ef1e4bf84791debc5a51e97be544159bfe2ce29ae737353a560b29dc34",
+      "stderr_log": "/tmp/schway36-refresh3-prohibitions/causal-red.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ok": true,
+      "summary": null,
+      "fail_summary": null,
+      "environment": {
+        "GSD_PROHIB_SUBJECT": ".planning/phases/36-scalar-helper-calls/prohibition-causal-violation.json"
+      }
+    },
+    {
+      "name": "clean-green",
+      "subject": ".planning/phases/36-scalar-helper-calls/prohibition-clean.json",
+      "expected_exit": 0,
+      "exit": 0,
+      "seconds": 0.559,
+      "command": [
+        "node",
+        "--test",
+        ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs"
+      ],
+      "stdout_log": "/tmp/schway36-refresh3-prohibitions/clean-green.tap",
+      "stdout_sha256": "311adb20201786d13e0632027f09b68a16fb306e986c780f85906cb41cd2c55f",
+      "stderr_log": "/tmp/schway36-refresh3-prohibitions/clean-green.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ok": true,
+      "summary": null,
+      "fail_summary": null,
+      "environment": {
+        "GSD_PROHIB_SUBJECT": ".planning/phases/36-scalar-helper-calls/prohibition-clean.json"
+      }
+    },
+    {
+      "name": "default-green",
+      "subject": "<absent>",
+      "expected_exit": 0,
+      "exit": 0,
+      "seconds": 0.569,
+      "command": [
+        "node",
+        "--test",
+        ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs"
+      ],
+      "stdout_log": "/tmp/schway36-refresh3-prohibitions/default-green.tap",
+      "stdout_sha256": "fef2f1806ae7f9eb0e3a1c836d50bcf20157f860ed5d221ce2abc66ca73cb8f0",
+      "stderr_log": "/tmp/schway36-refresh3-prohibitions/default-green.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ok": true,
+      "summary": null,
+      "fail_summary": null,
+      "environment": {}
+    }
+  ],
+  "canonical_producers": [
+    {
+      "label": "outcome",
+      "request": "/tmp/schway36-refresh3-prohibitions/outcome-request.json",
+      "request_sha256": "39879c84fd7051067c331a03e2ef8461c9e4a632654a37aeeb53ec2aee71ae5c",
+      "command": [
+        "node",
+        "/Users/jon/.codex/gsd-core/bin/gsd-tools.cjs",
+        "check",
+        "prohibition-enforcement",
+        "/tmp/schway36-refresh3-prohibitions/outcome-request.json",
+        "--raw"
+      ],
+      "exit": 0,
+      "seconds": 2.064,
+      "stdout": "/tmp/schway36-refresh3-prohibitions/outcome-producer.stdout.json",
+      "stdout_sha256": "8fd2113083ccaa0931cc53f0baa22213245a6fa852025d9f47370798f471b84a",
+      "stderr": "/tmp/schway36-refresh3-prohibitions/outcome-producer.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "structured": {
+        "status": "green",
+        "flagged": false,
+        "tier": "test",
+        "reason": "test-tier prohibition has wired enforcement evidence",
+        "located": true,
+        "kind": "node-test",
+        "evidence": [
+          {
+            "kind": "node-test",
+            "target": ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs",
+            "failFirst": true,
+            "passed": true,
+            "failFirstProof": "violation-fixture"
+          }
+        ],
+        "mode": "autonomous"
+      }
+    },
+    {
+      "label": "causal",
+      "request": "/tmp/schway36-refresh3-prohibitions/causal-request.json",
+      "request_sha256": "98cab18635d1af889a1ed255da84d6d416a2763eeb18a70d05796ac468711d7c",
+      "command": [
+        "node",
+        "/Users/jon/.codex/gsd-core/bin/gsd-tools.cjs",
+        "check",
+        "prohibition-enforcement",
+        "/tmp/schway36-refresh3-prohibitions/causal-request.json",
+        "--raw"
+      ],
+      "exit": 0,
+      "seconds": 1.865,
+      "stdout": "/tmp/schway36-refresh3-prohibitions/causal-producer.stdout.json",
+      "stdout_sha256": "8fd2113083ccaa0931cc53f0baa22213245a6fa852025d9f47370798f471b84a",
+      "stderr": "/tmp/schway36-refresh3-prohibitions/causal-producer.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "structured": {
+        "status": "green",
+        "flagged": false,
+        "tier": "test",
+        "reason": "test-tier prohibition has wired enforcement evidence",
+        "located": true,
+        "kind": "node-test",
+        "evidence": [
+          {
+            "kind": "node-test",
+            "target": ".planning/phases/36-scalar-helper-calls/36-prohibition-check.test.cjs",
+            "failFirst": true,
+            "passed": true,
+            "failFirstProof": "violation-fixture"
+          }
+        ],
+        "mode": "autonomous"
+      }
+    }
+  ],
+  "producer_inputs": {
+    "outcome": {
+      "request": "/tmp/schway36-refresh3-prohibitions/outcome-request.json",
+      "request_sha256": "39879c84fd7051067c331a03e2ef8461c9e4a632654a37aeeb53ec2aee71ae5c",
+      "stdout": "/tmp/schway36-refresh3-prohibitions/outcome-producer.stdout.json",
+      "stdout_sha256": "8fd2113083ccaa0931cc53f0baa22213245a6fa852025d9f47370798f471b84a",
+      "stderr": "/tmp/schway36-refresh3-prohibitions/outcome-producer.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "causal": {
+      "request": "/tmp/schway36-refresh3-prohibitions/causal-request.json",
+      "request_sha256": "98cab18635d1af889a1ed255da84d6d416a2763eeb18a70d05796ac468711d7c",
+      "stdout": "/tmp/schway36-refresh3-prohibitions/causal-producer.stdout.json",
+      "stdout_sha256": "8fd2113083ccaa0931cc53f0baa22213245a6fa852025d9f47370798f471b84a",
+      "stderr": "/tmp/schway36-refresh3-prohibitions/causal-producer.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "all_expected": true,
+  "source_hash_stable": true,
+  "interpretation": {
+    "outcome-red": "Expected exit 1; native capture exhaustion keeps actual outcome violation rather than expected green.",
+    "causal-red": "Expected exit 1; causal peer refuses to claim numeric replay for a false-success trace.",
+    "clean-green": "Expected exit 0; both adapter tests pass.",
+    "default-green": "Expected exit 0; both adapter tests pass when no subject override is present.",
+    "canonical": "Both requests exit 0, status green, flagged false, failFirst proof violation-fixture."
+  },
+  "canonical_requests_stable": true,
+  "canonical_outputs_verified": true,
+  "direct_logs_verified": true,
+  "direct_environment_contract": "The adapter receives GSD_PROHIB_SUBJECT per the environment map on each direct result; absent means the variable is unset. Its Go child inherits the same selector and sets GOCACHE=/tmp/ai-lang-verification-gocache, GOFLAGS=."
+}
