@@ -1,0 +1,5 @@
+=== RUN   TestSchway371ReasonUTF8AdmissionProbe
+    zz_schway371_utf8_probe_test.go:41: inside quoted reason admitted invalid bytes=ff 41; JSON="\ufffdA" decoded=ef bf bd 41; outside diagnostics=[syntax.invalid_utf8 [0:1]: source is not valid UTF-8 syntax.expected_module [0:1]: expected `module` syntax.expected_module_name [1:7]: expected `identifier` syntax.expected_export [8:13]: expected `export` syntax.expected_lbrace [13:14]: expected `{` syntax.expected_export_kind [14:18]: expected `type` or `fn` in export block syntax.expected_export_kind [19:25]: expected `type` or `fn` in export block syntax.expected_export_kind [26:27]: expected `type` or `fn` in export block]
+--- PASS: TestSchway371ReasonUTF8AdmissionProbe (0.00s)
+PASS
+ok  	github.com/szTheory/schway/internal/compiler/cgen	0.008s

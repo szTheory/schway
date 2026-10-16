@@ -1118,3 +1118,12 @@ then bounded fixed-schema key=value checking. No future capability or experiment
 is promoted. Fresh gates and audit follow implementation; EVD-17 remains pending
 and Phase 38-owned. Historical receipts, summaries and completed UAT retain their
 scope. No current hosted/Linux, readability or cold/warm latency result follows.
+
+### Phase 37.1 reason-text admission decision — 2026-10-16
+
+A further bounded probe confirmed malformed UTF-8 reason bytes pass current
+quoted-source admission but cannot retain identity in the existing JSON string
+projection. [Context D-21](phases/37.1-close-gap-legacy-terminal-outcomes/37.1-CONTEXT.md)
+records the narrow source/raw-core validity correction, preserving valid UTF-8
+including controls/NUL and lossless source recovery. This is a planned safety
+repair, not implemented capability or a new wire format.

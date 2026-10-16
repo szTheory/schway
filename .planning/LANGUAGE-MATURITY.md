@@ -1008,3 +1008,12 @@ paragraph stated 162 / 5,352 / 55. The current paragraph is corrected. The
 non-test census remains 19 predicates across six files in one package. These
 are tree facts, not language-completeness or public-admission measures. No
 source, test or fixture was changed to obtain the corrected counts.
+
+### Phase 37.1 reason-text admission decision — 2026-10-16
+
+A further bounded probe confirmed malformed UTF-8 reason bytes pass current
+quoted-source admission but cannot retain identity in the existing JSON string
+projection. [Context D-21](phases/37.1-close-gap-legacy-terminal-outcomes/37.1-CONTEXT.md)
+records the narrow source/raw-core validity correction, preserving valid UTF-8
+including controls/NUL and lossless source recovery. This is a planned safety
+repair, not implemented capability or a new wire format.

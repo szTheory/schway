@@ -1,0 +1,42 @@
+package cgen_test
+
+import (
+ "encoding/json"
+ "strings"
+ "testing"
+ "unicode/utf8"
+
+ "github.com/szTheory/schway/internal/compiler/cgen"
+ "github.com/szTheory/schway/internal/compiler/core"
+ "github.com/szTheory/schway/internal/compiler/session"
+)
+
+func TestSchway371ReasonUTF8AdmissionProbe(t *testing.T) {
+ const template = `module probe.utf8
+export { fn main }
+fn main(input: U64) -> U64 {
+ var result = input
+ if result < 12 { defect "REASON" } else { result = result + 1 }
+ result
+}
+`
+ reason := string([]byte{0xff, 'A'})
+ source := []byte(strings.Replace(template, "REASON", reason, 1))
+ checked := session.Check(source)
+ if len(checked.Diagnostics) != 0 { t.Fatalf("candidate not admitted: %+v", checked.Diagnostics) }
+ found := false
+ for _, fn := range checked.Program.Functions {
+  if fn.Linear == nil { continue }
+  for _, op := range fn.Linear.Operations {
+   if op.Kind == core.OpDefect { if op.Reason != reason { t.Fatalf("reason=%q want=%q",op.Reason,reason) }; found=true }
+  }
+ }
+ if !found || utf8.Valid(source) || utf8.ValidString(reason) { t.Fatal("invalid-byte witness missing") }
+ if _, err := cgen.EmitNative(checked.Program); err != nil { t.Fatalf("native emission: %v",err) }
+ encoded, err := json.Marshal(reason); if err != nil { t.Fatal(err) }
+ var decoded string; if err:=json.Unmarshal(encoded,&decoded); err!=nil { t.Fatal(err) }
+ if decoded==reason { t.Fatal("expected existing JSON normalization mismatch") }
+ outside:=session.Check(append([]byte{0xff},[]byte(template)...))
+ if len(outside.Diagnostics)==0 { t.Fatal("invalid UTF8 outside quote unexpectedly admitted") }
+ t.Logf("inside quoted reason admitted invalid bytes=% x; JSON=%s decoded=% x; outside diagnostics=%+v",[]byte(reason),encoded,[]byte(decoded),outside.Diagnostics)
+}

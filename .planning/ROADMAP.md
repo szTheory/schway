@@ -303,7 +303,9 @@ Plans:
 
 **Goal:** A legacy child defect, a propagated modeled typed failure, and an admitted no-call explicit defect each produce the correct terminal outcome and independently admissible evidence, closing audit blockers CR-03, CR-04 and CR-06 before the M007 freeze.
 
-**Requirements**: Audit integration gaps CR-03/04/06; carried CALL-01/CALL-02 boundaries and EVD-17 freeze prerequisites. Canonical requirement ownership stays in Phases 36 and 38; this closure adds no requirement or language surface.
+**Requirements**: None
+
+**Audit closure**: CR-03, CR-04, CR-06; carried CALL-01/CALL-02 boundaries and EVD-17 freeze prerequisites. Canonical requirement ownership stays in Phases 36 and 38; this closure adds no requirement or language surface. The machine requirements field is deliberately empty so phase completion cannot mark Phase 38 receipts complete.
 
 **Depends on:** Phase 37
 
@@ -317,6 +319,8 @@ Plans:
 **Runnable gain**: The three named legacy programs yield correct terminal outcomes and independently accepted evidence on their applicable routes, removing the carried semantic blockers to final receipts.
 
 **Discussion amendment — 2026-10-16:** [37.1-CONTEXT.md](phases/37.1-close-gap-legacy-terminal-outcomes/37.1-CONTEXT.md) D-04..07 preserve the original `OpReturn` criterion and correct CR-04 to the witnessed checked-source `foreign.failed → OpFail` path. Fresh model-only Phase 24 probes reached that path; a modified `OpReturn` candidate failed core validation. The historical audit's synthetic return probe is not admitted-source evidence, and no universal raw-core impossibility is claimed. D-10 records three newly reached native application reason-byte mismatches; D-12..13 authorize exact additive path/route C amendments before emitter edits while preserving original goldens and unaffected bytes. Current causal evidence does not prove numerical values, absent failure payloads or actual CFG branch choices. Original audit, summaries and completed UAT remain historical.
+
+**Admission correction — 2026-10-16:** Context D-21 records a further reached reason-field boundary: malformed UTF-8 inside quotes is admitted, then changed by existing JSON serialization. Enforce the existing UTF-8 validity rule for defect reasons at source and independent raw-core admission; retain valid UTF-8/control/NUL reasons and lossless source recovery. This scoped correction replaces invalid-byte normalization with an existing-vocabulary refusal, adds no wire format or language construct, and qualifies “exact reason bytes” to admitted valid UTF-8 text.
 
 **Scope and evidence**: [M007 audit](M007-MILESTONE-AUDIT.md) and its durable integration probes own the diagnosis. The peer probes were synthetic core/events, so source-admitted interpreter/peer regressions are required here. The native probe reached the real failure but is not a permanent red/green regression. Passing frozen C bytes alone does not prove native defect parity. Phase 36 WR-02 remains separate nonblocking comment debt with its existing next-semantic-edit owner. This is one bounded safety closure; no hosted binding occurs here.
 

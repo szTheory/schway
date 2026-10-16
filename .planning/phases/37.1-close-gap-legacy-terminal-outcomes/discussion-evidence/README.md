@@ -28,3 +28,15 @@ GOCACHE=/tmp/ai-lang-verification-gocache go test -overlay=/tmp/schway-371-reaso
 ```
 
 The raw-core candidate's test name predates its result. Its asserted passing result is refusal (`core.owner_transfer_cleanup`), not valid modeled-return admission. The reason probe similarly asserts that the pre-repair mismatch is reached. Execution must write permanent regressions with the correct positive expected behavior and show actual-source RED/clean GREEN evidence; these diagnostics must not be counted as those regressions.
+
+## UTF-8 decision probe — 2026-10-16
+
+`utf8-probe.go.txt` runs full source admission/native emission for a no-call
+reason containing FF 41, observes existing JSON projection to EF BF BD 41, and
+compares invalid UTF-8 outside a quote (existing syntax.invalid_utf8). The
+original command/output and selected source hashes are in utf8-probe.command,
+utf8-probe.log and utf8-bindings.json. It is a reached counterexample, not a
+production fix or a general JSON encoding experiment. To reproduce, add an
+overlay mapping internal/compiler/cgen/zz_schway371_utf8_probe_test.go to this
+text file and run the exact named root in the command file. D-21 in CONTEXT.md
+owns the resulting narrow source/raw-core admission decision.

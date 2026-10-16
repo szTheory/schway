@@ -1,0 +1,15 @@
+{
+  "schema": "schway.phase371.utf8-decision/1",
+  "date": "2026-10-16",
+  "scope": "selected current source/probe bindings; no production repair",
+  "files": {
+    ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/discussion-evidence/utf8-probe.go.txt": "1f85fe84fe776666e2f1af4e4023e98d1092eaf6472299aac6ef427625a66562",
+    ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/discussion-evidence/utf8-probe.log": "3a529febffe18abc14edc75d836562a64e2f0657441524ffdea354251665fd67",
+    ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/discussion-evidence/utf8-probe.command": "efa7b5b11e0f01c376cafb9fa111a72076c3d7b534bf973dd41ce09f90d8ec95",
+    "internal/compiler/syntax/lexer.go": "88a32042b98a8fb436ea8e815d8ee9b1dfdcae462c5bb2be51072a04ab9ecb6f",
+    "internal/compiler/syntax/parser.go": "c8ecf18cd7ffeadb4328998e77ed6ebd28aad132f59558ff7239639094adcac3",
+    "internal/compiler/check/check.go": "bb9bb3ba9a3d2c8d685245c496ece95d514f09bc63fff8bad793252441bc8982",
+    "internal/compiler/corevalidate/corevalidate.go": "f92966059bcc7f29b09693171997854aefc035feda97c0ba3952a6dba6182c81",
+    "internal/compiler/originvalidate/originvalidate.go": "831b7016557fc6880a72b16d236789c88222b144a5084532bf86763a41dcf272"
+  }
+}
