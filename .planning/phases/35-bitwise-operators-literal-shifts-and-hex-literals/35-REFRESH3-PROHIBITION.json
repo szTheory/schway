@@ -1,0 +1,99 @@
+{
+  "source_head": "9bc84d95da311beb24cf3e5621f1483346eaf01b",
+  "captured_utc": "2026-10-16T03:27:57.856Z",
+  "scope": "Fresh canonical known-bad RED, clean subject GREEN and default GREEN for both unchanged Phase35 prohibitions. Historical request data selects existing descriptors only.",
+  "input_hashes": {
+    "internal/compiler/session/session_phase35_closeout_test.go": "c1d9d920132033ad043c35a53525f0bed3d1d49d3f16ca363c04b3376acbd7b4",
+    "testdata/phase35/prohibition-evidence.test.cjs": "8e89b884606878151dc257a03e902fd1bea6d334e43a365ebdc8f3b44156a8a3",
+    "testdata/phase35/prohibition-causal-bad.txt": "30bee7077155d5376cbc9307d20da96c2d3283d2ad341c8a233f0e5c0622b3c9",
+    "testdata/phase35/prohibition-lanes-bad.txt": "ebb4a1636e544e8bee4d108b8032c5421bfe5dcf614c3cb223b770277d5c2b73",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-PLAN.md": "df6cb11dd7d876eb8d04e58feb94ca8aaa33706197b697641f335df4fb7332ee",
+    ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-EVIDENCE.md": "8c563640c2cc9370e3bcb58222264f0826b9538d5d0f07f655866d4f62daf031"
+  },
+  "enforcements": [
+    {
+      "request": {
+        "prohibition": {
+          "requirement_id": "BIT-01",
+          "category": "transparency",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": "testdata/phase35/prohibition-evidence.test.cjs",
+          "check_clean_fixture": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-EVIDENCE.md",
+          "check_violation_fixture": "testdata/phase35/prohibition-causal-bad.txt",
+          "resolution": "2026-10-15: wire the existing Go evidence checker through the standard-library TAP adapter with causal false-claim and clean subjects.",
+          "statement": "Do not present engine agreement or causal event admission as independent proof of pure numeric results.",
+          "reason": "Spec-less auto recall: descriptor-less flagged-unverified; independent numeric and causal checks are separately planned, and verifier must inspect actual evidence."
+        },
+        "check": {
+          "kind": "node-test",
+          "target": "testdata/phase35/prohibition-evidence.test.cjs",
+          "violationFixture": "testdata/phase35/prohibition-causal-bad.txt",
+          "cleanFixture": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-EVIDENCE.md"
+        },
+        "mode": "autonomous"
+      },
+      "result": {
+        "status": "green",
+        "flagged": false,
+        "tier": "test",
+        "reason": "test-tier prohibition has wired enforcement evidence",
+        "located": true,
+        "kind": "node-test",
+        "evidence": [
+          {
+            "kind": "node-test",
+            "target": "testdata/phase35/prohibition-evidence.test.cjs",
+            "failFirst": true,
+            "passed": true,
+            "failFirstProof": "violation-fixture"
+          }
+        ],
+        "mode": "autonomous"
+      }
+    },
+    {
+      "request": {
+        "prohibition": {
+          "requirement_id": "BIT-02",
+          "category": "transparency",
+          "status": "resolved",
+          "verification": "test",
+          "check_kind": "node-test",
+          "check_target": "testdata/phase35/prohibition-evidence.test.cjs",
+          "check_clean_fixture": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-EVIDENCE.md",
+          "check_violation_fixture": "testdata/phase35/prohibition-lanes-bad.txt",
+          "resolution": "2026-10-15: wire the existing Go evidence checker through the standard-library TAP adapter with lane false-claim and clean subjects.",
+          "statement": "Do not describe historical hosted receipts or skipped optimization/sanitizer lanes as fresh Phase 35 evidence.",
+          "reason": "Spec-less auto recall: descriptor-less flagged-unverified; dated receipts and incomplete lanes must be checked by verifier; no human pass is inferred."
+        },
+        "check": {
+          "kind": "node-test",
+          "target": "testdata/phase35/prohibition-evidence.test.cjs",
+          "violationFixture": "testdata/phase35/prohibition-lanes-bad.txt",
+          "cleanFixture": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-EVIDENCE.md"
+        },
+        "mode": "autonomous"
+      },
+      "result": {
+        "status": "green",
+        "flagged": false,
+        "tier": "test",
+        "reason": "test-tier prohibition has wired enforcement evidence",
+        "located": true,
+        "kind": "node-test",
+        "evidence": [
+          {
+            "kind": "node-test",
+            "target": "testdata/phase35/prohibition-evidence.test.cjs",
+            "failFirst": true,
+            "passed": true,
+            "failFirstProof": "violation-fixture"
+          }
+        ],
+        "mode": "autonomous"
+      }
+    }
+  ]
+}
