@@ -1,0 +1,116 @@
+=== RUN   TestPhase33TerminalAttribution
+=== RUN   TestPhase33TerminalAttribution/return
+=== RUN   TestPhase33TerminalAttribution/return/wrong_source
+=== RUN   TestPhase33TerminalAttribution/return/wrong_type
+=== RUN   TestPhase33TerminalAttribution/return/target_on_terminal
+=== RUN   TestPhase33TerminalAttribution/return/missing_outcome
+=== RUN   TestPhase33TerminalAttribution/return/unknown_outcome
+=== RUN   TestPhase33TerminalAttribution/return/event_after_root_terminal
+=== RUN   TestPhase33TerminalAttribution/return/outcome_typed_failure
+=== RUN   TestPhase33TerminalAttribution/return/outcome_defect
+=== RUN   TestPhase33TerminalAttribution/return/outcome_cancelled
+=== RUN   TestPhase33TerminalAttribution/fail
+=== RUN   TestPhase33TerminalAttribution/fail/wrong_source
+=== RUN   TestPhase33TerminalAttribution/fail/wrong_type
+=== RUN   TestPhase33TerminalAttribution/fail/target_on_terminal
+=== RUN   TestPhase33TerminalAttribution/fail/missing_outcome
+=== RUN   TestPhase33TerminalAttribution/fail/unknown_outcome
+=== RUN   TestPhase33TerminalAttribution/fail/event_after_root_terminal
+=== RUN   TestPhase33TerminalAttribution/fail/outcome_returned
+=== RUN   TestPhase33TerminalAttribution/fail/outcome_defect
+=== RUN   TestPhase33TerminalAttribution/fail/outcome_cancelled
+=== RUN   TestPhase33TerminalAttribution/defect
+=== RUN   TestPhase33TerminalAttribution/defect/wrong_source
+=== RUN   TestPhase33TerminalAttribution/defect/wrong_type
+=== RUN   TestPhase33TerminalAttribution/defect/target_on_terminal
+=== RUN   TestPhase33TerminalAttribution/defect/missing_outcome
+=== RUN   TestPhase33TerminalAttribution/defect/unknown_outcome
+=== RUN   TestPhase33TerminalAttribution/defect/event_after_root_terminal
+=== RUN   TestPhase33TerminalAttribution/defect/outcome_returned
+=== RUN   TestPhase33TerminalAttribution/defect/outcome_typed_failure
+=== RUN   TestPhase33TerminalAttribution/defect/outcome_cancelled
+=== RUN   TestPhase33TerminalAttribution/defect/wrong_reason
+=== RUN   TestPhase33TerminalAttribution/defect/defect_value
+--- PASS: TestPhase33TerminalAttribution (0.00s)
+    --- PASS: TestPhase33TerminalAttribution/return (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/wrong_source (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/wrong_type (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/target_on_terminal (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/missing_outcome (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/unknown_outcome (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/event_after_root_terminal (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/outcome_typed_failure (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/outcome_defect (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/outcome_cancelled (0.00s)
+    --- PASS: TestPhase33TerminalAttribution/fail (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/wrong_source (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/wrong_type (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/target_on_terminal (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/missing_outcome (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/unknown_outcome (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/event_after_root_terminal (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/outcome_returned (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/outcome_defect (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/outcome_cancelled (0.00s)
+    --- PASS: TestPhase33TerminalAttribution/defect (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/wrong_source (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/wrong_type (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/target_on_terminal (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/missing_outcome (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/unknown_outcome (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/event_after_root_terminal (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/outcome_returned (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/outcome_typed_failure (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/outcome_cancelled (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/wrong_reason (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/defect_value (0.00s)
+=== RUN   TestPhase36CallCausalAttributionControls
+=== RUN   TestPhase36CallCausalAttributionControls/ordinal-gap
+=== RUN   TestPhase36CallCausalAttributionControls/ordinal-duplicate
+=== RUN   TestPhase36CallCausalAttributionControls/ordinal-reordered
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-parent
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-static-site
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-callee
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-source-place
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-target-place
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-result-type
+=== RUN   TestPhase36CallCausalAttributionControls/missing-call
+=== RUN   TestPhase36CallCausalAttributionControls/missing-return
+=== RUN   TestPhase36CallCausalAttributionControls/repeated-terminal
+--- PASS: TestPhase36CallCausalAttributionControls (0.01s)
+    --- PASS: TestPhase36CallCausalAttributionControls/ordinal-gap (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/ordinal-duplicate (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/ordinal-reordered (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-parent (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-static-site (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-callee (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-source-place (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-target-place (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-result-type (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/missing-call (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/missing-return (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/repeated-terminal (0.00s)
+=== RUN   TestPhase371LegacyDefectClosesAllActiveFrames
+    executionpeer_phase371_test.go:55: phase371 source witness sha256=bca1c14d84cff8319feeb9e5264298b4382a40605d9e23ec6227e75dbd2d25ef
+=== RUN   TestPhase371LegacyDefectClosesAllActiveFrames/legacy-static
+=== RUN   TestPhase371LegacyDefectClosesAllActiveFrames/ordinary-nested-return
+=== RUN   TestPhase371LegacyDefectClosesAllActiveFrames/dynamic-scalar
+--- PASS: TestPhase371LegacyDefectClosesAllActiveFrames (0.00s)
+    --- PASS: TestPhase371LegacyDefectClosesAllActiveFrames/legacy-static (0.00s)
+    --- PASS: TestPhase371LegacyDefectClosesAllActiveFrames/ordinary-nested-return (0.00s)
+    --- PASS: TestPhase371LegacyDefectClosesAllActiveFrames/dynamic-scalar (0.00s)
+=== RUN   TestPhase371ForeignFailureOpFailAttribution
+=== RUN   TestPhase371ForeignFailureOpFailAttribution/AcquireError.AcquireFailed
+    executionpeer_phase371_test.go:233: peer rejected checked AcquireError.AcquireFailed foreign.failed → OpFail trace: executionpeer.unknown_kind: event index 1 invocation "inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:0#0" expected function "s1:phase24.error:fn:acquire": unclassified event kind or ID; events=[{Schema:lang.execution/2 ID:s1:phase24.error:fn:main:op:0:event:called Kind:function.called FunctionID:s1:phase24.error:fn:main Input: Output: SourcePlace:s1:phase24.error:fn:main:place:0 TargetPlace:s1:phase24.error:fn:main:place:1 TypeID:s1:phase24.error:fn:main:type:1 Invocation:inv:entry:s1:phase24.error:fn:main CalleeFunctionID:s1:phase24.error:fn:acquire Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:acquire:op:0:event Kind:foreign.failed FunctionID:s1:phase24.error:fn:acquire Input: Output: SourcePlace:s1:phase24.error:fn:acquire:place:0 TargetPlace:s1:phase24.error:fn:acquire:place:1 TypeID:AcquireError Invocation:inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:0#0 CalleeFunctionID: Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:acquire:op:2:event:failed Kind:function.failed FunctionID:s1:phase24.error:fn:acquire Input: Output: SourcePlace:s1:phase24.error:fn:acquire:place:2 TargetPlace: TypeID:AcquireError Invocation:inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:0#0 CalleeFunctionID: Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:main:op:8:event:failed Kind:function.failed FunctionID:s1:phase24.error:fn:main Input: Output: SourcePlace:s1:phase24.error:fn:main:place:4 TargetPlace: TypeID:AcquireError Invocation:inv:entry:s1:phase24.error:fn:main CalleeFunctionID: Occurrence:0}]
+=== RUN   TestPhase371ForeignFailureOpFailAttribution/UseError.UnsupportedByte
+    executionpeer_phase371_test.go:233: peer rejected checked UseError.UnsupportedByte foreign.failed → OpFail trace: executionpeer.unknown_kind: event index 10 invocation "inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:2#0" expected function "s1:phase24.error:fn:probe": unclassified event kind or ID; events=[{Schema:lang.execution/2 ID:s1:phase24.error:fn:main:op:0:event:called Kind:function.called FunctionID:s1:phase24.error:fn:main Input: Output: SourcePlace:s1:phase24.error:fn:main:place:0 TargetPlace:s1:phase24.error:fn:main:place:1 TypeID:s1:phase24.error:fn:main:type:1 Invocation:inv:entry:s1:phase24.error:fn:main CalleeFunctionID:s1:phase24.error:fn:acquire Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:acquire:op:0:event Kind:foreign.called FunctionID:s1:phase24.error:fn:acquire Input: Output: SourcePlace:s1:phase24.error:fn:acquire:place:0 TargetPlace:s1:phase24.error:fn:acquire:place:1 TypeID:s1:phase24.error:fn:acquire:type:1 Invocation:inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:0#0 CalleeFunctionID: Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:acquire:op:1:event:returned Kind:function.returned FunctionID:s1:phase24.error:fn:acquire Input: Output: SourcePlace:s1:phase24.error:fn:acquire:place:1 TargetPlace: TypeID:s1:phase24.error:fn:acquire:type:1 Invocation:inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:0#0 CalleeFunctionID: Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:main:op:1:event:called Kind:function.called FunctionID:s1:phase24.error:fn:main Input: Output: SourcePlace:s1:phase24.error:fn:main:place:0 TargetPlace:s1:phase24.error:fn:main:place:2 TypeID:s1:phase24.error:fn:main:type:1 Invocation:inv:entry:s1:phase24.error:fn:main CalleeFunctionID:s1:phase24.error:fn:acquire Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:acquire:op:0:event Kind:foreign.called FunctionID:s1:phase24.error:fn:acquire Input: Output: SourcePlace:s1:phase24.error:fn:acquire:place:0 TargetPlace:s1:phase24.error:fn:acquire:place:1 TypeID:s1:phase24.error:fn:acquire:type:1 Invocation:inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:1#0 CalleeFunctionID: Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:acquire:op:1:event:returned Kind:function.returned FunctionID:s1:phase24.error:fn:acquire Input: Output: SourcePlace:s1:phase24.error:fn:acquire:place:1 TargetPlace: TypeID:s1:phase24.error:fn:acquire:type:1 Invocation:inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:1#0 CalleeFunctionID: Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:main:op:2:event:called Kind:function.called FunctionID:s1:phase24.error:fn:main Input: Output: SourcePlace:s1:phase24.error:fn:main:place:0 TargetPlace:s1:phase24.error:fn:main:place:3 TypeID:s1:phase24.error:fn:main:type:2 Invocation:inv:entry:s1:phase24.error:fn:main CalleeFunctionID:s1:phase24.error:fn:probe Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:probe:op:0:event:called Kind:function.called FunctionID:s1:phase24.error:fn:probe Input: Output: SourcePlace:s1:phase24.error:fn:probe:place:0 TargetPlace:s1:phase24.error:fn:probe:place:1 TypeID:s1:phase24.error:fn:probe:type:1 Invocation:inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:2#0 CalleeFunctionID:s1:phase24.error:fn:acquire Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:acquire:op:0:event Kind:foreign.called FunctionID:s1:phase24.error:fn:acquire Input: Output: SourcePlace:s1:phase24.error:fn:acquire:place:0 TargetPlace:s1:phase24.error:fn:acquire:place:1 TypeID:s1:phase24.error:fn:acquire:type:1 Invocation:inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:2#0/s1:phase24.error:fn:probe:op:0#0 CalleeFunctionID: Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:acquire:op:1:event:returned Kind:function.returned FunctionID:s1:phase24.error:fn:acquire Input: Output: SourcePlace:s1:phase24.error:fn:acquire:place:1 TargetPlace: TypeID:s1:phase24.error:fn:acquire:type:1 Invocation:inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:2#0/s1:phase24.error:fn:probe:op:0#0 CalleeFunctionID: Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:probe:op:1:event Kind:foreign.failed FunctionID:s1:phase24.error:fn:probe Input: Output: SourcePlace:s1:phase24.error:fn:probe:place:1 TargetPlace:s1:phase24.error:fn:probe:place:2 TypeID:UseError Invocation:inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:2#0 CalleeFunctionID: Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:probe:op:4:event Kind:resource.released FunctionID:s1:phase24.error:fn:probe Input: Output: SourcePlace:s1:phase24.error:fn:probe:place:1 TargetPlace: TypeID:s1:phase24.error:fn:probe:type:1 Invocation:inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:2#0 CalleeFunctionID: Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:probe:op:6:event:failed Kind:function.failed FunctionID:s1:phase24.error:fn:probe Input: Output: SourcePlace:s1:phase24.error:fn:probe:place:4 TargetPlace: TypeID:UseError Invocation:inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:2#0 CalleeFunctionID: Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:main:op:4:event Kind:resource.released FunctionID:s1:phase24.error:fn:main Input: Output: SourcePlace:s1:phase24.error:fn:main:place:2 TargetPlace: TypeID:s1:phase24.error:fn:main:type:1 Invocation:inv:entry:s1:phase24.error:fn:main CalleeFunctionID: Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:main:op:5:event Kind:resource.released FunctionID:s1:phase24.error:fn:main Input: Output: SourcePlace:s1:phase24.error:fn:main:place:1 TargetPlace: TypeID:s1:phase24.error:fn:main:type:1 Invocation:inv:entry:s1:phase24.error:fn:main CalleeFunctionID: Occurrence:0} {Schema:lang.execution/2 ID:s1:phase24.error:fn:main:op:10:event:failed Kind:function.failed FunctionID:s1:phase24.error:fn:main Input: Output: SourcePlace:s1:phase24.error:fn:main:place:6 TargetPlace: TypeID:UseError Invocation:inv:entry:s1:phase24.error:fn:main CalleeFunctionID: Occurrence:0}]
+--- FAIL: TestPhase371ForeignFailureOpFailAttribution (0.00s)
+    --- FAIL: TestPhase371ForeignFailureOpFailAttribution/AcquireError.AcquireFailed (0.00s)
+    --- FAIL: TestPhase371ForeignFailureOpFailAttribution/UseError.UnsupportedByte (0.00s)
+=== RUN   TestPhase371ForeignFailureAttributionControls
+    executionpeer_phase371_test.go:364: fresh UseError child-to-root failure rejected: executionpeer.unknown_kind: event index 10 invocation "inv:entry:s1:phase24.error:fn:main/s1:phase24.error:fn:main:op:2#0" expected function "s1:phase24.error:fn:probe": unclassified event kind or ID
+--- FAIL: TestPhase371ForeignFailureAttributionControls (0.00s)
+FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/executionpeer	0.022s
+FAIL
+

@@ -1,0 +1,50 @@
+=== EXACT ROOT TestPhase371CountedDefectReasonBytes ===
+=== RUN   TestPhase371CountedDefectReasonBytes
+=== RUN   TestPhase371CountedDefectReasonBytes/static_readonly_counted_storage
+    cgen_phase371_legacy_defect_test.go:168: generated native and application counted reason buffers must be static readonly without automatic compound literals
+--- FAIL: TestPhase371CountedDefectReasonBytes (0.00s)
+    --- FAIL: TestPhase371CountedDefectReasonBytes/static_readonly_counted_storage (0.00s)
+FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/cgen	0.009s
+FAIL
+
+=== EXACT ROOT TestPhase371DefectReasonUTF8Admission ===
+=== RUN   TestPhase371DefectReasonUTF8Admission
+=== RUN   TestPhase371DefectReasonUTF8Admission/source/raw_FF_followed_by_ASCII
+    session_phase371_defect_reason_test.go:151: missing stable syntax.invalid_utf8 byte span [205:206]; diagnostics=[]
+=== RUN   TestPhase371DefectReasonUTF8Admission/source/invalid_continuation
+    session_phase371_defect_reason_test.go:151: missing stable syntax.invalid_utf8 byte span [205:206]; diagnostics=[]
+=== RUN   TestPhase371DefectReasonUTF8Admission/source/truncated_sequence
+    session_phase371_defect_reason_test.go:151: missing stable syntax.invalid_utf8 byte span [205:206]; diagnostics=[]
+    session_phase371_defect_reason_test.go:151: missing stable syntax.invalid_utf8 byte span [206:207]; diagnostics=[]
+=== RUN   TestPhase371DefectReasonUTF8Admission/outside-quote_baseline
+=== RUN   TestPhase371DefectReasonUTF8Admission/valid/replacement_character_and_non-ASCII
+=== RUN   TestPhase371DefectReasonUTF8Admission/valid/control_byte
+=== RUN   TestPhase371DefectReasonUTF8Admission/valid/tab_control
+=== RUN   TestPhase371DefectReasonUTF8Admission/valid/NUL_followed_by_A
+=== RUN   TestPhase371DefectReasonUTF8Admission/valid/NUL_followed_by_Z
+=== RUN   TestPhase371DefectReasonUTF8Admission/valid/literal_backslash-u_spelling
+=== RUN   TestPhase371DefectReasonUTF8Admission/valid/literal_backslash-x_spelling
+=== RUN   TestPhase371DefectReasonUTF8Admission/raw-core_boundary
+    session_phase371_defect_reason_test.go:245: raw-core malformed reason was not independently refused as core.final_claim_mismatch: valid=true problems=[]
+=== RUN   TestPhase371DefectReasonUTF8Admission/raw-core_boundary/straight-line
+    session_phase371_defect_reason_test.go:269: straight-line raw-core malformed reason was not independently refused as core.final_claim_mismatch: valid=true problems=[]
+=== RUN   TestPhase371DefectReasonUTF8Admission/interpreter_peer_and_native_O0
+--- FAIL: TestPhase371DefectReasonUTF8Admission (0.42s)
+    --- FAIL: TestPhase371DefectReasonUTF8Admission/source/raw_FF_followed_by_ASCII (0.00s)
+    --- FAIL: TestPhase371DefectReasonUTF8Admission/source/invalid_continuation (0.00s)
+    --- FAIL: TestPhase371DefectReasonUTF8Admission/source/truncated_sequence (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/outside-quote_baseline (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/valid/replacement_character_and_non-ASCII (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/valid/control_byte (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/valid/tab_control (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/valid/NUL_followed_by_A (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/valid/NUL_followed_by_Z (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/valid/literal_backslash-u_spelling (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/valid/literal_backslash-x_spelling (0.00s)
+    --- FAIL: TestPhase371DefectReasonUTF8Admission/raw-core_boundary (0.00s)
+    --- FAIL: TestPhase371DefectReasonUTF8Admission/raw-core_boundary/straight-line (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/interpreter_peer_and_native_O0 (0.42s)
+FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/session	0.428s
+FAIL

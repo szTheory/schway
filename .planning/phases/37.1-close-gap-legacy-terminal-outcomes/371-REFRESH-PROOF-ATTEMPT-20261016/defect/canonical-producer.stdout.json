@@ -1,0 +1,18 @@
+{
+  "status": "green",
+  "flagged": false,
+  "tier": "test",
+  "reason": "test-tier prohibition has wired enforcement evidence",
+  "located": true,
+  "kind": "node-test",
+  "evidence": [
+    {
+      "kind": "node-test",
+      "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+      "failFirst": true,
+      "passed": true,
+      "failFirstProof": "violation-fixture"
+    }
+  ],
+  "mode": "auto"
+}

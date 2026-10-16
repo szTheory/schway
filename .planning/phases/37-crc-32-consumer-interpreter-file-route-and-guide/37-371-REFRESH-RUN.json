@@ -9,8 +9,8 @@
     "APP-14",
     "DX-24"
   ],
-  "captured_utc": "2026-10-16T20:20:49.171Z",
-  "current_head": "02680cc801f738661ebf33021d8e72f2c970efa6",
+  "captured_utc": "2026-10-16T20:51:15Z",
+  "current_head": "20a519468839a0698e2c4e93fc51300509c6abbf",
   "init_execute_phase": {
     "plan_count": 9,
     "summary_count": 9,
@@ -38,7 +38,7 @@
   },
   "source_delta": {
     "base_head": "9258a7360222ff17a3267e1ccb873a0dfae79346",
-    "current_head": "02680cc801f738661ebf33021d8e72f2c970efa6",
+    "current_head": "20a519468839a0698e2c4e93fc51300509c6abbf",
     "covered_paths": [
       "internal/compiler/cgen/cgen_program.go",
       "internal/compiler/executionpeer/executionpeer.go",
@@ -46,75 +46,164 @@
       "internal/compiler/session/session_phase36_prechange_test.go"
     ],
     "complete_delta_path": "../37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION.json",
-    "test_only_followup": "internal/compiler/cgen/cgen_exit_literals_test.go"
+    "test_only_followup": "internal/compiler/cgen/cgen_exit_literals_test.go",
+    "inventory_coordinate_followup": "Only existing Phase 37.1 Emit/EmitNative registry coordinates changed from 775/777 to AST-confirmed 782/784."
   },
   "gates": {
     "nyquist": {
-      "status": "existing VALIDATION.md remains validated; no file rewritten",
+      "status": "bounded current coverage recorded; canonical predecessor VALIDATION.md preserved",
       "fresh_source_slice": {
         "roots": 19,
         "subtests": 254,
         "skipped": 0,
         "sha256": "6d1f2be2b1cfb067e3bd0ccf8e6356cd28b697e3f788dca3cebbad49948971b1"
       },
-      "predecessor_registry_refresh": "incomplete: resumed fixed registry halted at group 14 after five failures; groups 15–16 remain unrun"
+      "predecessor_registry_refresh": "passed: 250 selectors / 251 root events, 16 groups; pressure selector excluded; see central completion receipt",
+      "current_d18_acceptance": {
+        "roots": 19,
+        "subtests": 254,
+        "skipped": 0,
+        "source_bindings_per_proof": 37,
+        "four_proofs_green_unflagged": true
+      },
+      "post_artifact_doc_guards": {
+        "roots": 6,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "log": "../37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-DOC-GUARDS-20261016.jsonl",
+        "sha256": "d87ac63580a96972826b4639fc3053c49adef9e7a0da27ec7b507d5544e876c0"
+      }
     },
     "security": {
-      "status": "verified zero-open register reused",
+      "status": "verified zero-open authored register reused",
       "threats_open": 0,
-      "additional_current_phase_controls": "13/13 closed in 37.1-SECURITY.md"
+      "additional_current_phase_controls": "13/13 closed in 37.1-SECURITY.md; supplemental only"
     },
     "ui": {
       "status": "not-applicable",
       "frontend": false,
       "hasUiFiles": false,
       "hasUiSpec": false,
-      "block": false
+      "block": false,
+      "fresh_query": "check ui.safety-gate 37 --raw"
     },
     "code_review": {
-      "status": "current D18 delta clean",
-      "depth": "standard",
-      "files_reviewed": 15,
-      "critical": 0,
-      "warning": 0,
-      "info": 0,
-      "disposition_fixed": 3
+      "status": "pending parent independent review",
+      "historical_review": {
+        "status": "clean at recorded review point",
+        "depth": "standard",
+        "files_reviewed": 15,
+        "critical": 0,
+        "warning": 0,
+        "info": 0
+      },
+      "scope_note": "Later proof-adapter/source-evolution and exact inventory-coordinate edits are not claimed reviewed."
     },
     "parent_artifacts": {
       "status": "no-op",
-      "section_manifest_excludes": "gap-closure-artifacts"
+      "section_manifest_excludes": [
+        "gap-closure-artifacts",
+        "partial-wave"
+      ]
     },
     "regression": {
-      "status": "halted_on_resumed_failure",
-      "receipt": "../37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION.json",
-      "historical_initial_attempt": {
-        "status": "aborted",
-        "receipt": "../37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION.json",
-        "passed_prefix": 31,
-        "failed": 1,
-        "skipped": 0,
-        "missing": 0,
-        "blocked_test": "TestEmittedCExitLiteralsMatchTable"
-      },
-      "current_attempt": {
-        "reused_groups_1_2_passed": 12,
-        "cgen_group_3_rerun": "20/20 passed",
-        "groups_4_13": "95/95 passed",
-        "group_14": "98 run, 93 passed, 5 failed, 0 skipped",
-        "group_15_16_unrun_selectors": 26,
-        "skipped": 0,
-        "failing_roots": [
-          "TestPhase16PublicEmitterConsumerInventory",
-          "TestPhase273ConformanceCorpusByteIdentity",
-          "TestPhase28PrunedEmitMatchesGolden",
-          "TestPhase35PreChangeEmitterCorpus",
-          "TestPhase35PreChangeCorpusControls"
-        ]
-      }
+      "status": "passed bounded registry; no skips",
+      "receipt": "../37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-COMPLETION-2026-10-16.json",
+      "unique_package_test_selectors": 250,
+      "root_execution_events": 251,
+      "distinct_test_names": 240,
+      "groups": 16,
+      "reused_green_roots": 220,
+      "failed_roots_rerun_green": 5,
+      "previously_unrun_roots_green": 26,
+      "skipped": 0,
+      "missing": 0,
+      "pressure_selector_excluded": "TestPhase33CaptureReadBounded"
+    },
+    "disposition": {
+      "status": "dated additive amendment; independent verifier and audit pending",
+      "artifact": "../37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-DISPOSITION-AMENDMENT-2026-10-16.md"
     }
   },
   "verifier": {
     "status": "not-dispatched",
     "owner": "parent"
-  }
+  },
+  "historical_gate_attempts": [
+    {
+      "captured_utc": "2026-10-16T20:20:49.171Z",
+      "gates": {
+        "nyquist": {
+          "status": "bounded current coverage recorded; canonical predecessor VALIDATION.md preserved",
+          "fresh_source_slice": {
+            "roots": 19,
+            "subtests": 254,
+            "skipped": 0,
+            "sha256": "6d1f2be2b1cfb067e3bd0ccf8e6356cd28b697e3f788dca3cebbad49948971b1"
+          },
+          "predecessor_registry_refresh": "passed: 250 selectors / 251 root events, 16 groups; pressure selector excluded; see central completion receipt",
+          "current_d18_acceptance": {
+            "roots": 19,
+            "subtests": 254,
+            "skipped": 0,
+            "source_bindings_per_proof": 37,
+            "four_proofs_green_unflagged": true
+          }
+        },
+        "security": {
+          "status": "verified zero-open authored register reused",
+          "threats_open": 0,
+          "additional_current_phase_controls": "13/13 closed in 37.1-SECURITY.md; supplemental only"
+        },
+        "ui": {
+          "status": "not-applicable",
+          "frontend": false,
+          "hasUiFiles": false,
+          "hasUiSpec": false,
+          "block": false,
+          "fresh_query": "check ui.safety-gate 37 --raw"
+        },
+        "code_review": {
+          "status": "pending parent independent review",
+          "historical_review": {
+            "status": "clean at recorded review point",
+            "depth": "standard",
+            "files_reviewed": 15,
+            "critical": 0,
+            "warning": 0,
+            "info": 0
+          },
+          "scope_note": "Later proof-adapter/source-evolution and exact inventory-coordinate edits are not claimed reviewed."
+        },
+        "parent_artifacts": {
+          "status": "no-op",
+          "section_manifest_excludes": [
+            "gap-closure-artifacts",
+            "partial-wave"
+          ]
+        },
+        "regression": {
+          "status": "passed bounded registry; no skips",
+          "receipt": "../37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-COMPLETION-2026-10-16.json",
+          "unique_package_test_selectors": 250,
+          "root_execution_events": 251,
+          "distinct_test_names": 240,
+          "groups": 16,
+          "reused_green_roots": 220,
+          "failed_roots_rerun_green": 5,
+          "previously_unrun_roots_green": 26,
+          "skipped": 0,
+          "missing": 0,
+          "pressure_selector_excluded": "TestPhase33CaptureReadBounded"
+        },
+        "disposition": {
+          "status": "dated additive amendment; independent verifier and audit pending",
+          "artifact": "../37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-DISPOSITION-AMENDMENT-2026-10-16.md"
+        }
+      }
+    }
+  ],
+  "completion_receipt": "../37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-COMPLETION-2026-10-16.json",
+  "completion_captured_utc": "2026-10-16T20:51:15Z"
 }

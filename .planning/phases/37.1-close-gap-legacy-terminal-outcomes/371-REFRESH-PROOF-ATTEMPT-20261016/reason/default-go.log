@@ -1,0 +1,193 @@
+=== EXACT ROOT TestPhase371CountedDefectReasonBytes ===
+=== RUN   TestPhase371CountedDefectReasonBytes
+=== RUN   TestPhase371CountedDefectReasonBytes/static_readonly_counted_storage
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/ascii
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/ascii/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/ascii/O3
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/ascii/O3-LTO
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/control_then_hex_digit
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/control_then_hex_digit/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/control_then_hex_digit/O3
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/control_then_hex_digit/O3-LTO
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/nul_then_a
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/nul_then_a/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/nul_then_a/O3
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/nul_then_a/O3-LTO
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/nul_then_z
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/nul_then_z/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/nul_then_z/O3
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/nul_then_z/O3-LTO
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/other_controls
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/other_controls/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/non_ascii
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/non_ascii/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/replacement_character
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/replacement_character/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/literal_backslash_escapes
+=== RUN   TestPhase371CountedDefectReasonBytes/no_call/literal_backslash_escapes/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/ascii
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/ascii/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/ascii/O3
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/ascii/O3-LTO
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/control_then_hex_digit
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/control_then_hex_digit/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/control_then_hex_digit/O3
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/control_then_hex_digit/O3-LTO
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_a
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_a/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_a/O3
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_a/O3-LTO
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_z
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_z/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_z/O3
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_z/O3-LTO
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/other_controls
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/other_controls/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/non_ascii
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/non_ascii/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/replacement_character
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/replacement_character/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/literal_backslash_escapes
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_entry/literal_backslash_escapes/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/ascii
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/ascii/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/ascii/O3
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/ascii/O3-LTO
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/control_then_hex_digit
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/control_then_hex_digit/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/control_then_hex_digit/O3
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/control_then_hex_digit/O3-LTO
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_a
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_a/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_a/O3
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_a/O3-LTO
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_z
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_z/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_z/O3
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_z/O3-LTO
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/other_controls
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/other_controls/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/non_ascii
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/non_ascii/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/replacement_character
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/replacement_character/O0
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/literal_backslash_escapes
+=== RUN   TestPhase371CountedDefectReasonBytes/dynamic_helper/literal_backslash_escapes/O0
+=== NAME  TestPhase371CountedDefectReasonBytes
+    cgen_phase371_legacy_defect_test.go:317: focused sanitizer host availability: available (smoke=address/heap-use-after-free); counted reason path clean (exit=0)
+--- PASS: TestPhase371CountedDefectReasonBytes (6.61s)
+    --- PASS: TestPhase371CountedDefectReasonBytes/static_readonly_counted_storage (0.00s)
+    --- PASS: TestPhase371CountedDefectReasonBytes/no_call (2.12s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/no_call/ascii (0.41s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/ascii/O0 (0.08s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/ascii/O3 (0.11s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/ascii/O3-LTO (0.11s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/no_call/control_then_hex_digit (0.37s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/control_then_hex_digit/O0 (0.06s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/control_then_hex_digit/O3 (0.11s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/control_then_hex_digit/O3-LTO (0.11s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/no_call/nul_then_a (0.37s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/nul_then_a/O0 (0.07s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/nul_then_a/O3 (0.09s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/nul_then_a/O3-LTO (0.12s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/no_call/nul_then_z (0.36s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/nul_then_z/O0 (0.05s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/nul_then_z/O3 (0.10s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/nul_then_z/O3-LTO (0.09s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/no_call/other_controls (0.15s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/other_controls/O0 (0.06s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/no_call/non_ascii (0.15s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/non_ascii/O0 (0.06s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/no_call/replacement_character (0.17s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/replacement_character/O0 (0.06s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/no_call/literal_backslash_escapes (0.14s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/no_call/literal_backslash_escapes/O0 (0.06s)
+    --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry (2.25s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/ascii (0.41s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/ascii/O0 (0.08s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/ascii/O3 (0.10s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/ascii/O3-LTO (0.13s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/control_then_hex_digit (0.41s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/control_then_hex_digit/O0 (0.06s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/control_then_hex_digit/O3 (0.11s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/control_then_hex_digit/O3-LTO (0.13s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_a (0.37s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_a/O0 (0.06s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_a/O3 (0.09s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_a/O3-LTO (0.11s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_z (0.38s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_z/O0 (0.08s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_z/O3 (0.10s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/nul_then_z/O3-LTO (0.11s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/other_controls (0.18s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/other_controls/O0 (0.07s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/non_ascii (0.15s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/non_ascii/O0 (0.06s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/replacement_character (0.17s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/replacement_character/O0 (0.08s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/literal_backslash_escapes (0.18s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_entry/literal_backslash_escapes/O0 (0.07s)
+    --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper (1.94s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/ascii (0.37s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/ascii/O0 (0.06s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/ascii/O3 (0.09s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/ascii/O3-LTO (0.11s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/control_then_hex_digit (0.36s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/control_then_hex_digit/O0 (0.07s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/control_then_hex_digit/O3 (0.10s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/control_then_hex_digit/O3-LTO (0.10s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_a (0.31s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_a/O0 (0.05s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_a/O3 (0.08s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_a/O3-LTO (0.10s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_z (0.37s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_z/O0 (0.06s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_z/O3 (0.14s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/nul_then_z/O3-LTO (0.10s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/other_controls (0.13s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/other_controls/O0 (0.05s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/non_ascii (0.13s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/non_ascii/O0 (0.05s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/replacement_character (0.13s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/replacement_character/O0 (0.05s)
+        --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/literal_backslash_escapes (0.13s)
+            --- PASS: TestPhase371CountedDefectReasonBytes/dynamic_helper/literal_backslash_escapes/O0 (0.05s)
+PASS
+ok  	github.com/szTheory/schway/internal/compiler/cgen	6.612s
+
+=== EXACT ROOT TestPhase371DefectReasonUTF8Admission ===
+=== RUN   TestPhase371DefectReasonUTF8Admission
+=== RUN   TestPhase371DefectReasonUTF8Admission/source/raw_FF_followed_by_ASCII
+=== RUN   TestPhase371DefectReasonUTF8Admission/source/invalid_continuation
+=== RUN   TestPhase371DefectReasonUTF8Admission/source/truncated_sequence
+=== RUN   TestPhase371DefectReasonUTF8Admission/outside-quote_baseline
+=== RUN   TestPhase371DefectReasonUTF8Admission/valid/replacement_character_and_non-ASCII
+=== RUN   TestPhase371DefectReasonUTF8Admission/valid/control_byte
+=== RUN   TestPhase371DefectReasonUTF8Admission/valid/tab_control
+=== RUN   TestPhase371DefectReasonUTF8Admission/valid/NUL_followed_by_A
+=== RUN   TestPhase371DefectReasonUTF8Admission/valid/NUL_followed_by_Z
+=== RUN   TestPhase371DefectReasonUTF8Admission/valid/literal_backslash-u_spelling
+=== RUN   TestPhase371DefectReasonUTF8Admission/valid/literal_backslash-x_spelling
+=== RUN   TestPhase371DefectReasonUTF8Admission/raw-core_boundary
+=== RUN   TestPhase371DefectReasonUTF8Admission/raw-core_boundary/straight-line
+=== RUN   TestPhase371DefectReasonUTF8Admission/interpreter_peer_and_native_O0
+--- PASS: TestPhase371DefectReasonUTF8Admission (0.06s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/source/raw_FF_followed_by_ASCII (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/source/invalid_continuation (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/source/truncated_sequence (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/outside-quote_baseline (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/valid/replacement_character_and_non-ASCII (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/valid/control_byte (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/valid/tab_control (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/valid/NUL_followed_by_A (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/valid/NUL_followed_by_Z (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/valid/literal_backslash-u_spelling (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/valid/literal_backslash-x_spelling (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/raw-core_boundary (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/raw-core_boundary/straight-line (0.00s)
+    --- PASS: TestPhase371DefectReasonUTF8Admission/interpreter_peer_and_native_O0 (0.05s)
+PASS
+ok  	github.com/szTheory/schway/internal/compiler/session	0.065s

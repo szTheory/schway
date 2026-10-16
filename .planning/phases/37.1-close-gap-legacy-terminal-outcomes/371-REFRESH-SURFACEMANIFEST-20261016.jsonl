@@ -1,0 +1,20 @@
+{"Time":"2026-10-16T16:44:44.606448-04:00","Action":"start","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest"}
+{"Time":"2026-10-16T16:44:44.611774-04:00","Action":"run","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase34SurfaceDocument"}
+{"Time":"2026-10-16T16:44:44.611856-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase34SurfaceDocument","Output":"=== RUN   TestPhase34SurfaceDocument\n"}
+{"Time":"2026-10-16T16:44:44.612572-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase34SurfaceDocument","Output":"--- PASS: TestPhase34SurfaceDocument (0.00s)\n"}
+{"Time":"2026-10-16T16:44:44.612603-04:00","Action":"pass","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase34SurfaceDocument","Elapsed":0}
+{"Time":"2026-10-16T16:44:44.612638-04:00","Action":"run","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase35SurfaceDocument"}
+{"Time":"2026-10-16T16:44:44.612711-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase35SurfaceDocument","Output":"=== RUN   TestPhase35SurfaceDocument\n"}
+{"Time":"2026-10-16T16:44:44.612863-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase35SurfaceDocument","Output":"--- PASS: TestPhase35SurfaceDocument (0.00s)\n"}
+{"Time":"2026-10-16T16:44:44.612872-04:00","Action":"pass","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase35SurfaceDocument","Elapsed":0}
+{"Time":"2026-10-16T16:44:44.612878-04:00","Action":"run","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase36SurfaceDocument"}
+{"Time":"2026-10-16T16:44:44.612882-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase36SurfaceDocument","Output":"=== RUN   TestPhase36SurfaceDocument\n"}
+{"Time":"2026-10-16T16:44:44.613114-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase36SurfaceDocument","Output":"--- PASS: TestPhase36SurfaceDocument (0.00s)\n"}
+{"Time":"2026-10-16T16:44:44.613127-04:00","Action":"pass","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase36SurfaceDocument","Elapsed":0}
+{"Time":"2026-10-16T16:44:44.613132-04:00","Action":"run","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase34SurfaceLimits"}
+{"Time":"2026-10-16T16:44:44.613135-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase34SurfaceLimits","Output":"=== RUN   TestPhase34SurfaceLimits\n"}
+{"Time":"2026-10-16T16:44:44.613196-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase34SurfaceLimits","Output":"--- PASS: TestPhase34SurfaceLimits (0.00s)\n"}
+{"Time":"2026-10-16T16:44:44.613222-04:00","Action":"pass","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Test":"TestPhase34SurfaceLimits","Elapsed":0}
+{"Time":"2026-10-16T16:44:44.613226-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Output":"PASS\n"}
+{"Time":"2026-10-16T16:44:44.613651-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Output":"ok  \tgithub.com/szTheory/schway/internal/compiler/surfacemanifest\t0.007s\n"}
+{"Time":"2026-10-16T16:44:44.613671-04:00","Action":"pass","Package":"github.com/szTheory/schway/internal/compiler/surfacemanifest","Elapsed":0.007}

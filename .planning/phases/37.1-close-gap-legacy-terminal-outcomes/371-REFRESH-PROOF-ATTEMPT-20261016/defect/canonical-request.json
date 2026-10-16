@@ -1,0 +1,18 @@
+{
+  "prohibition": {
+    "statement": "MUST NOT accept caller activity after an accepted whole-execution defect or synthesize caller unwind records.",
+    "status": "resolved",
+    "verification": "test",
+    "check_kind": "node-test",
+    "check_target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+    "check_violation_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json",
+    "check_clean_fixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+  },
+  "check": {
+    "kind": "node-test",
+    "target": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+    "violationFixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-defect-violation.json",
+    "cleanFixture": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json"
+  },
+  "mode": "auto"
+}

@@ -1,0 +1,146 @@
+=== RUN   TestPhase33TerminalAttribution
+=== RUN   TestPhase33TerminalAttribution/return
+=== RUN   TestPhase33TerminalAttribution/return/wrong_source
+=== RUN   TestPhase33TerminalAttribution/return/wrong_type
+=== RUN   TestPhase33TerminalAttribution/return/target_on_terminal
+=== RUN   TestPhase33TerminalAttribution/return/missing_outcome
+=== RUN   TestPhase33TerminalAttribution/return/unknown_outcome
+=== RUN   TestPhase33TerminalAttribution/return/event_after_root_terminal
+=== RUN   TestPhase33TerminalAttribution/return/outcome_typed_failure
+=== RUN   TestPhase33TerminalAttribution/return/outcome_defect
+=== RUN   TestPhase33TerminalAttribution/return/outcome_cancelled
+=== RUN   TestPhase33TerminalAttribution/fail
+=== RUN   TestPhase33TerminalAttribution/fail/wrong_source
+=== RUN   TestPhase33TerminalAttribution/fail/wrong_type
+=== RUN   TestPhase33TerminalAttribution/fail/target_on_terminal
+=== RUN   TestPhase33TerminalAttribution/fail/missing_outcome
+=== RUN   TestPhase33TerminalAttribution/fail/unknown_outcome
+=== RUN   TestPhase33TerminalAttribution/fail/event_after_root_terminal
+=== RUN   TestPhase33TerminalAttribution/fail/outcome_returned
+=== RUN   TestPhase33TerminalAttribution/fail/outcome_defect
+=== RUN   TestPhase33TerminalAttribution/fail/outcome_cancelled
+=== RUN   TestPhase33TerminalAttribution/defect
+=== RUN   TestPhase33TerminalAttribution/defect/wrong_source
+=== RUN   TestPhase33TerminalAttribution/defect/wrong_type
+=== RUN   TestPhase33TerminalAttribution/defect/target_on_terminal
+=== RUN   TestPhase33TerminalAttribution/defect/missing_outcome
+=== RUN   TestPhase33TerminalAttribution/defect/unknown_outcome
+=== RUN   TestPhase33TerminalAttribution/defect/event_after_root_terminal
+=== RUN   TestPhase33TerminalAttribution/defect/outcome_returned
+=== RUN   TestPhase33TerminalAttribution/defect/outcome_typed_failure
+=== RUN   TestPhase33TerminalAttribution/defect/outcome_cancelled
+=== RUN   TestPhase33TerminalAttribution/defect/wrong_reason
+=== RUN   TestPhase33TerminalAttribution/defect/defect_value
+--- PASS: TestPhase33TerminalAttribution (0.00s)
+    --- PASS: TestPhase33TerminalAttribution/return (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/wrong_source (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/wrong_type (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/target_on_terminal (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/missing_outcome (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/unknown_outcome (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/event_after_root_terminal (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/outcome_typed_failure (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/outcome_defect (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/return/outcome_cancelled (0.00s)
+    --- PASS: TestPhase33TerminalAttribution/fail (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/wrong_source (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/wrong_type (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/target_on_terminal (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/missing_outcome (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/unknown_outcome (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/event_after_root_terminal (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/outcome_returned (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/outcome_defect (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/fail/outcome_cancelled (0.00s)
+    --- PASS: TestPhase33TerminalAttribution/defect (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/wrong_source (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/wrong_type (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/target_on_terminal (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/missing_outcome (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/unknown_outcome (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/event_after_root_terminal (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/outcome_returned (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/outcome_typed_failure (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/outcome_cancelled (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/wrong_reason (0.00s)
+        --- PASS: TestPhase33TerminalAttribution/defect/defect_value (0.00s)
+=== RUN   TestPhase36CallCausalAttributionControls
+=== RUN   TestPhase36CallCausalAttributionControls/ordinal-gap
+=== RUN   TestPhase36CallCausalAttributionControls/ordinal-duplicate
+=== RUN   TestPhase36CallCausalAttributionControls/ordinal-reordered
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-parent
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-static-site
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-callee
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-source-place
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-target-place
+=== RUN   TestPhase36CallCausalAttributionControls/wrong-result-type
+=== RUN   TestPhase36CallCausalAttributionControls/missing-call
+=== RUN   TestPhase36CallCausalAttributionControls/missing-return
+=== RUN   TestPhase36CallCausalAttributionControls/repeated-terminal
+--- PASS: TestPhase36CallCausalAttributionControls (0.01s)
+    --- PASS: TestPhase36CallCausalAttributionControls/ordinal-gap (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/ordinal-duplicate (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/ordinal-reordered (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-parent (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-static-site (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-callee (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-source-place (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-target-place (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/wrong-result-type (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/missing-call (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/missing-return (0.00s)
+    --- PASS: TestPhase36CallCausalAttributionControls/repeated-terminal (0.00s)
+=== RUN   TestPhase371LegacyDefectClosesAllActiveFrames
+    executionpeer_phase371_test.go:55: phase371 source witness sha256=bca1c14d84cff8319feeb9e5264298b4382a40605d9e23ec6227e75dbd2d25ef
+=== RUN   TestPhase371LegacyDefectClosesAllActiveFrames/legacy-static
+=== RUN   TestPhase371LegacyDefectClosesAllActiveFrames/ordinary-nested-return
+=== RUN   TestPhase371LegacyDefectClosesAllActiveFrames/dynamic-scalar
+--- PASS: TestPhase371LegacyDefectClosesAllActiveFrames (0.00s)
+    --- PASS: TestPhase371LegacyDefectClosesAllActiveFrames/legacy-static (0.00s)
+    --- PASS: TestPhase371LegacyDefectClosesAllActiveFrames/ordinary-nested-return (0.00s)
+    --- PASS: TestPhase371LegacyDefectClosesAllActiveFrames/dynamic-scalar (0.00s)
+=== RUN   TestPhase371DefectTerminalControls
+=== RUN   TestPhase371DefectTerminalControls/legacy-static
+=== RUN   TestPhase371DefectTerminalControls/legacy-static/source
+=== RUN   TestPhase371DefectTerminalControls/legacy-static/type
+=== RUN   TestPhase371DefectTerminalControls/legacy-static/function
+=== RUN   TestPhase371DefectTerminalControls/legacy-static/invocation
+=== RUN   TestPhase371DefectTerminalControls/legacy-static/reason
+=== RUN   TestPhase371DefectTerminalControls/legacy-static/outcome-kind
+=== RUN   TestPhase371DefectTerminalControls/legacy-static/outcome-value
+=== RUN   TestPhase371DefectTerminalControls/legacy-static/missing-terminal
+=== RUN   TestPhase371DefectTerminalControls/legacy-static/duplicate-terminal
+=== RUN   TestPhase371DefectTerminalControls/dynamic-scalar
+=== RUN   TestPhase371DefectTerminalControls/dynamic-scalar/source
+=== RUN   TestPhase371DefectTerminalControls/dynamic-scalar/type
+=== RUN   TestPhase371DefectTerminalControls/dynamic-scalar/function
+=== RUN   TestPhase371DefectTerminalControls/dynamic-scalar/invocation
+=== RUN   TestPhase371DefectTerminalControls/dynamic-scalar/reason
+=== RUN   TestPhase371DefectTerminalControls/dynamic-scalar/outcome-kind
+=== RUN   TestPhase371DefectTerminalControls/dynamic-scalar/outcome-value
+=== RUN   TestPhase371DefectTerminalControls/dynamic-scalar/missing-terminal
+=== RUN   TestPhase371DefectTerminalControls/dynamic-scalar/duplicate-terminal
+--- PASS: TestPhase371DefectTerminalControls (0.00s)
+    --- PASS: TestPhase371DefectTerminalControls/legacy-static (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/legacy-static/source (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/legacy-static/type (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/legacy-static/function (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/legacy-static/invocation (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/legacy-static/reason (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/legacy-static/outcome-kind (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/legacy-static/outcome-value (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/legacy-static/missing-terminal (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/legacy-static/duplicate-terminal (0.00s)
+    --- PASS: TestPhase371DefectTerminalControls/dynamic-scalar (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/dynamic-scalar/source (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/dynamic-scalar/type (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/dynamic-scalar/function (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/dynamic-scalar/invocation (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/dynamic-scalar/reason (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/dynamic-scalar/outcome-kind (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/dynamic-scalar/outcome-value (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/dynamic-scalar/missing-terminal (0.00s)
+        --- PASS: TestPhase371DefectTerminalControls/dynamic-scalar/duplicate-terminal (0.00s)
+PASS
+ok  	github.com/szTheory/schway/internal/compiler/executionpeer	0.020s
+

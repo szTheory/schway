@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "control": "clean",
+  "subject": "none",
+  "source": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/prohibition-clean.json",
+  "mode": "failure",
+  "exact_root_inventory": [
+    "TestPhase33TerminalAttribution",
+    "TestPhase36CallCausalAttributionControls",
+    "TestPhase371ForeignFailureAttributionControls",
+    "TestPhase371ForeignFailureOpFailAttribution",
+    "TestPhase371LegacyDefectClosesAllActiveFrames"
+  ],
+  "semantic_result": "green",
+  "acceptance_input_binding_controls": {
+    "baseline": "accepted",
+    "controls": [
+      {
+        "name": "omit-phase33-terminal-owner",
+        "result": "rejected",
+        "reason": "source binding paths must equal the complete finite acceptance-input set: internal/compiler/executionpeer/executionpeer_phase33_terminal_test.go"
+      },
+      {
+        "name": "mutate-direct-compatibility-document-binding",
+        "result": "rejected",
+        "reason": "mutated direct input control: source binding changed for .planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-COMPATIBILITY-DELTA.md"
+      }
+    ]
+  }
+}

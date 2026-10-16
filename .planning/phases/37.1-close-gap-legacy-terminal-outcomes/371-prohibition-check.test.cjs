@@ -56,12 +56,15 @@ const DIRECT_ACCEPTANCE_INPUTS = [
   "testdata/phase36/prechange-corpus.json",
   "testdata/phase36/new-fixture-ledger.json",
   "testdata/phase37/new-fixture-ledger.json",
+  // The Phase 37.1 census root now also binds the measured older-comparator
+  // bridge, so its already-required test source is a direct acceptance input.
+  COMPATIBILITY_TEST_REL,
   ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-COMPATIBILITY-DELTA.md",
 ].sort();
 const REQUIRED_SOURCE_BINDING_PATHS = [
   PLAN_REL, FAILURE_PLAN_REL, REASON_PLAN_REL, BASELINE_PLAN_REL, ADAPTER_REL,
   SOURCE_REL, TEST_REL, MODEL_REL, REASON_TEST_REL, CGEN_REL, PARSER_REL, COREVALIDATE_REL,
-  CGEN_TEST_REL, COMPATIBILITY_TEST_REL,
+  CGEN_TEST_REL,
   "examples/phase24/error.schway", CLEAN_REL, DEFECT_REL, FAILURE_REL, REASON_REL, BASELINE_REL,
   "testdata/phase371/pre-emitter-census.json", "testdata/phase371/compatibility-amendments.json",
   ...DIRECT_ACCEPTANCE_INPUTS,
@@ -195,6 +198,7 @@ const REASON_ROOT = "TestPhase371CountedDefectReasonBytes";
 const REASON_ADMISSION_ROOT = "TestPhase371DefectReasonUTF8Admission";
 const REASON_STORAGE_SUBTEST = `${REASON_ROOT}/static_readonly_counted_storage`;
 const BASELINE_ROOT = "TestPhase371CompatibilityAmendmentControls";
+const BASELINE_COMPARATOR_RED = "unrelated extra C-byte mutation was accepted by the older-comparator projection";
 const EXECUTIONPEER_ROOTS = [
   "TestPhase371LegacyDefectClosesAllActiveFrames",
   "TestPhase371DefectTerminalControls",
@@ -721,7 +725,7 @@ function runBaselineExactRoot(subject) {
     }
     if (original) {
       if (result.status !== 1 || rootPass !== 0 || rootFail !== 1 || subFails.length !== 0
-          || !output.includes("unrelated extra C-byte mutation was accepted by the actual comparator")) {
+          || !output.includes(BASELINE_COMPARATOR_RED)) {
         return { kind: "invalid", reason: "no-op comparator overlay missed the exact unrelated-C-byte semantic RED", output };
       }
       if (/\\[build failed\\]|undefined reference|no tests to run|timed out/m.test(output)) {
@@ -1241,8 +1245,8 @@ function sourceBindings(current) {
 }
 
 function assertAcceptanceOwnerInventory() {
-  assert.equal(DIRECT_ACCEPTANCE_INPUTS.length, 15, "the phase direct acceptance input list must remain finite and exact");
-  assert.equal(new Set(DIRECT_ACCEPTANCE_INPUTS).size, 15, "direct acceptance inputs must not be duplicated");
+  assert.equal(DIRECT_ACCEPTANCE_INPUTS.length, 16, "the phase direct acceptance input list must remain finite and exact");
+  assert.equal(new Set(DIRECT_ACCEPTANCE_INPUTS).size, 16, "direct acceptance inputs must not be duplicated");
   assert.equal(ALL_ACCEPTANCE_ROOTS.length, 19, "the declared acceptance inventory must contain 19 roots");
   assert.equal(new Set(ALL_ACCEPTANCE_ROOTS).size, 19, "the declared acceptance roots must be unique");
   assert.deepEqual(Object.keys(ROOT_OWNER_BY_NAME).sort(), ALL_ACCEPTANCE_ROOTS,

@@ -310,7 +310,7 @@
       "sha256": "703a4b513cb920016b9691abd9a369a340a9df9ee358ec65692ae8657edfa216",
       "classification": "test-only contract correction; opaque generated-child write-failure status 74 is not a host exitcode",
       "change": "Named childWriteFailure=74 in TestEmittedCExitLiteralsMatchTable; exact emitted-exit set and positive count require it; generated-return inventory reuses it; old 65/69 checks remain.",
-      "focused_check": "GOCACHE=/tmp/ai-lang-verification-gocache-count1-v120 go test ./internal/compiler/cgen -count=1 -json -timeout=600s -run '^TestEmittedCExitLiteralsMatchTable$' — PASS",
+      "focused_check": "GOCACHE=/tmp/ai-lang-verification-gocache-count1-v120 go test ./internal/compiler/cgen -count=1 -json -timeout=600s -run '^TestEmittedCExitLiteralsMatchTable$' \u2014 PASS",
       "focused_check_repeated_in": "REGRESSION-04.jsonl"
     },
     "current_bindings": {
@@ -577,5 +577,190 @@
       "skipped": 0,
       "excluded_pressure_selector": "TestPhase33CaptureReadBounded"
     }
+  },
+  "completed_resumption": {
+    "captured_utc": "2026-10-16T20:52:22Z",
+    "current_source_head": "20a519468839a0698e2c4e93fc51300509c6abbf",
+    "status": "passed_bounded_preverifier_gates; prior failure history retained above",
+    "verifier_dispatch": false,
+    "progress_query": {
+      "command": "node /Users/jon/.codex/gsd-core/bin/gsd-tools.cjs query init.progress",
+      "fresh": true,
+      "phases_33_to_37": "executed, implementation complete, verification stale, phase complete false",
+      "phase_37_1": "executed, verification gaps_found, phase complete false",
+      "phase_38": "not started"
+    },
+    "registry": {
+      "path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-REFRESH-REGRESSION.json",
+      "sha256": "76361d99ba4cd7820cda5f4bb9c5ce8e440abb539b38d39928bff14114fc3957",
+      "groups": 16,
+      "package_selectors_after_pressure_exclusion": 250,
+      "root_events_after_pressure_exclusion": 251,
+      "distinct_names": 240,
+      "excluded": "TestPhase33CaptureReadBounded"
+    },
+    "reuse_and_new_execution": {
+      "reused_green_root_events": 220,
+      "rerun_formerly_failed_selectors": [
+        "TestPhase16PublicEmitterConsumerInventory",
+        "TestPhase273ConformanceCorpusByteIdentity",
+        "TestPhase28PrunedEmitMatchesGolden",
+        "TestPhase35PreChangeEmitterCorpus",
+        "TestPhase35PreChangeCorpusControls"
+      ],
+      "failed_selectors_rerun_green": 5,
+      "previously_unrun_groups_15_16_roots": 26,
+      "all_registry_roots_passed": 251,
+      "missing": 0,
+      "skipped": 0,
+      "no_full_98_root_session_rerun": true
+    },
+    "executions": [
+      {
+        "kind": "current compatibility and first inventory diagnosis",
+        "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase371PreEmitterRouteCensus|TestPhase371CompatibilityAmendmentControls|TestPhase16PublicEmitterConsumerInventory|TestPhase273ConformanceCorpusByteIdentity|TestPhase28PrunedEmitMatchesGolden|TestPhase35PreChangeEmitterCorpus|TestPhase35PreChangeCorpusControls|TestPhase16EmitterInventoryRefusalWitnessesResolve)$' -count=1 -json -timeout=600s",
+        "log": "371-REFRESH-COMPAT-20261016.jsonl",
+        "sha256": "d0d910817d8faad635898330c55b1e87feeb0be8a9e2b4d400a526f618f247f7",
+        "bytes": 23214,
+        "roots": 8,
+        "passed": 7,
+        "failed": 1,
+        "skipped": 0
+      },
+      {
+        "kind": "exact inventory and refusal witness after coordinate-only repair",
+        "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase16PublicEmitterConsumerInventory|TestPhase16EmitterInventoryRefusalWitnessesResolve)$' -count=1 -json -timeout=600s",
+        "log": "371-REFRESH-INVENTORY-20261016.jsonl",
+        "sha256": "7d9ef16f5c9b2e8f11929498edf2b869078d3421d6c64637ebe12dd73b38c784",
+        "bytes": 2390,
+        "roots": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "kind": "six inherited comparator baseline roots",
+        "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase34PreChangeCProgramGolden|TestPhase34PreChangeCGoldenIsNotInert|TestPhase36NoCallGeneratedCByteBaseline|TestPhase36NoCallGeneratedCByteBaselineControls|TestPhase37Phase34AdditionLedgerControls|TestPhase37Phase36AdditionLedgerControls)$' -count=1 -json -timeout=600s",
+        "log": "371-REFRESH-INHERITED-BASELINE-20261016.jsonl",
+        "sha256": "e9a2de736e964f0ccdf9cab460526ea9292de25f30bd2e5dfbcac563acf490ad",
+        "bytes": 41212,
+        "roots": 6,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "kind": "group 15 surface manifest",
+        "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/surfacemanifest -run '^(TestPhase34SurfaceDocument|TestPhase35SurfaceDocument|TestPhase36SurfaceDocument|TestPhase34SurfaceLimits)$' -count=1 -json -timeout=600s",
+        "log": "371-REFRESH-SURFACEMANIFEST-20261016.jsonl",
+        "sha256": "5f73b731e0b3d7995215ac6827c7380d4e9a5da89040d4823a1419e7e032595a",
+        "bytes": 3843,
+        "roots": 4,
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "kind": "group 16 syntax",
+        "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/syntax -run '^(TestPhase34LinearBindingLimitScope|TestPhase35NumericOwnership|TestPhase19NumericLiteralRoundTrip|TestPhase34DraftBaseline|TestPhase34RecoveryCorpus|TestPhase34RecoveryControls|TestPhase34UnsupportedSurfaceRefusals|TestPhase35NestedIndexBaseline|TestPhase35ScalarGrammar|TestPhase35ExpressionDepth|TestPhase35GroupedNegativeShiftAmountRefusal|TestPhase35RecoveryDeltaControls|TestPhase35FormatterRoundTrip|TestPhase35FormatterPreservesSeparatedShiftTokens|TestPhase36ScalarCallGrammar|TestPhase36ScalarCallDepthAndRecovery|TestPhase36ScalarCallFormatting|TestSkippedRegionCauseSeparatesSpiralTrio|TestValidProgramUnaffectedBySkippedRegionFix|TestPhase19NumericToken|TestPhase19NumericMalformed|TestFormatLetBinaryExpressions)$' -count=1 -json -timeout=600s",
+        "log": "371-REFRESH-SYNTAX-20261016.jsonl",
+        "sha256": "ff45e01c6fb34463137cde721db26c3f6e19b95ac5ecb03aaee872b5b91a9b77",
+        "bytes": 101264,
+        "roots": 22,
+        "passed": 22,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "kind": "post-artifact documentation/lifecycle/groundedness guards",
+        "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase20ValidationLifecycle|TestPhase37ValidationCommandRegistry|TestPhase37ValidationCommandRegistryControls|TestSummaryCoverageGroundedness|TestVerificationGroundedness|TestVerificationGroundednessThreeClassesAreEmpty)$' -count=1 -json -timeout=600s",
+        "log": "371-REFRESH-DOC-GUARDS-20261016.jsonl",
+        "sha256": "d87ac63580a96972826b4639fc3053c49adef9e7a0da27ec7b507d5544e876c0",
+        "bytes": 170135,
+        "roots": 6,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0
+      }
+    ],
+    "inventory_fix": {
+      "artifact": "371-REFRESH-INVENTORY-COORDINATE-FIX-2026-10-16.md",
+      "only_paths_changed": [
+        "testdata/phase16/public-emitter-consumers.json"
+      ],
+      "rows": {
+        "Emit": {
+          "from": 775,
+          "to": 782,
+          "classification": "admitted-dynamic-schema2",
+          "witness": "probe:TestPhase371PreEmitterRouteCensus"
+        },
+        "EmitNative": {
+          "from": 777,
+          "to": 784,
+          "classification": "admitted-dynamic-schema2",
+          "witness": "probe:TestPhase371PreEmitterRouteCensus"
+        }
+      },
+      "current_registry_sha256": "cc7f0977f4ef11d10d9113af97688fffa435bc1d2e60360d911e995e10332209"
+    },
+    "d18_current_acceptance": {
+      "source_evolution": "T-37.1-CR03-acceptance-input-bindings-7",
+      "status": "verified",
+      "four_proofs_green_and_unflagged": true,
+      "inputs_each": 37,
+      "raw_evidence_records": 53,
+      "union_roots": 19,
+      "union_subtests": 254,
+      "union_skipped": 0,
+      "union_log": {
+        "path": "/tmp/schway371-prohibition-proof-9GhW0w/final-19-root-union.go.log",
+        "sha256": "ad7c3dcd130b45674a3ac68173d364282a7e3e1e384a0c7a64545a3fa8b8c034",
+        "bytes": 42992
+      }
+    },
+    "current_bindings": [
+      {
+        "path": "internal/compiler/session/session_phase371_compatibility_test.go",
+        "sha256": "1fcfb16979194559307a3e9c494052889a5066d42fdf011d154c3479f112e5e4"
+      },
+      {
+        "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+        "sha256": "48daf7ee4997e782622a66a3550ca8b61259f7610753faa929183bdd0ca1353c"
+      },
+      {
+        "path": "testdata/phase16/public-emitter-consumers.json",
+        "sha256": "cc7f0977f4ef11d10d9113af97688fffa435bc1d2e60360d911e995e10332209"
+      },
+      {
+        "path": ".planning/config.json",
+        "sha256": "148ccc4c56db8516788c264216ae277d9860d43e00b92de299d8ccff2fd59521",
+        "preserved": true
+      },
+      {
+        "path": ".planning/milestone.lock",
+        "sha256": "29836b244619659e98bce8dc11271d819929de35d7229c8793796c4b587a9a35",
+        "preserved": true
+      }
+    ],
+    "prior_failed_attempts_preserved": true,
+    "old_report_copies_unchanged": true,
+    "phase_gates": {
+      "validation": "current bounded receipts complete; canonical predecessor VALIDATION files preserved",
+      "security": "prior 33-37 authored registers verified with zero open; 37.1 additional scoped 13/13 controls closed",
+      "ui": "freshly N/A for 33-37",
+      "review": "current post-review edits await parent independent review",
+      "disposition": "dated additive CR-03/04/06 and WR-02 amendment exists",
+      "parent_artifact_close": "non-decimal no-op"
+    },
+    "remaining_parent_work": [
+      "independent review of current full source/evidence delta",
+      "independent verification and VERIFICATION refresh for phases 33-37",
+      "fresh milestone audit and final dispositions"
+    ],
+    "limits": [
+      "does not claim every historical acceptance root was re-executed",
+      "no pressure, large-input, stress, full-project, whole-package, hosted, or two-host checks"
+    ]
   }
 }

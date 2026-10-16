@@ -1,0 +1,12 @@
+{"Time":"2026-10-16T16:44:22.364753-04:00","Action":"start","Package":"github.com/szTheory/schway/internal/compiler/session"}
+{"Time":"2026-10-16T16:44:22.371314-04:00","Action":"run","Package":"github.com/szTheory/schway/internal/compiler/session","Test":"TestPhase16PublicEmitterConsumerInventory"}
+{"Time":"2026-10-16T16:44:22.371364-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/session","Test":"TestPhase16PublicEmitterConsumerInventory","Output":"=== RUN   TestPhase16PublicEmitterConsumerInventory\n"}
+{"Time":"2026-10-16T16:44:22.524106-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/session","Test":"TestPhase16PublicEmitterConsumerInventory","Output":"--- PASS: TestPhase16PublicEmitterConsumerInventory (0.15s)\n"}
+{"Time":"2026-10-16T16:44:22.524158-04:00","Action":"pass","Package":"github.com/szTheory/schway/internal/compiler/session","Test":"TestPhase16PublicEmitterConsumerInventory","Elapsed":0.15}
+{"Time":"2026-10-16T16:44:22.524172-04:00","Action":"run","Package":"github.com/szTheory/schway/internal/compiler/session","Test":"TestPhase16EmitterInventoryRefusalWitnessesResolve"}
+{"Time":"2026-10-16T16:44:22.524176-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/session","Test":"TestPhase16EmitterInventoryRefusalWitnessesResolve","Output":"=== RUN   TestPhase16EmitterInventoryRefusalWitnessesResolve\n"}
+{"Time":"2026-10-16T16:44:22.524573-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/session","Test":"TestPhase16EmitterInventoryRefusalWitnessesResolve","Output":"--- PASS: TestPhase16EmitterInventoryRefusalWitnessesResolve (0.00s)\n"}
+{"Time":"2026-10-16T16:44:22.524619-04:00","Action":"pass","Package":"github.com/szTheory/schway/internal/compiler/session","Test":"TestPhase16EmitterInventoryRefusalWitnessesResolve","Elapsed":0}
+{"Time":"2026-10-16T16:44:22.524639-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/session","Output":"PASS\n"}
+{"Time":"2026-10-16T16:44:22.525441-04:00","Action":"output","Package":"github.com/szTheory/schway/internal/compiler/session","Output":"ok  \tgithub.com/szTheory/schway/internal/compiler/session\t0.160s\n"}
+{"Time":"2026-10-16T16:44:22.525461-04:00","Action":"pass","Package":"github.com/szTheory/schway/internal/compiler/session","Elapsed":0.161}

@@ -1,0 +1,229 @@
+{
+  "captured_utc": "2026-10-16T20:51:15Z",
+  "current_head": "20a519468839a0698e2c4e93fc51300509c6abbf",
+  "status": "passed_bounded_preverifier_gates",
+  "gate_order": [
+    "validation",
+    "security",
+    "ui",
+    "review_and_disposition",
+    "parent_artifact_noop",
+    "regression"
+  ],
+  "verifier_dispatch": "not_dispatched_parent_owned",
+  "phase_plans": {
+    "33": "5/5",
+    "34": "8/8",
+    "35": "8/8",
+    "36": "8/8",
+    "37": "9/9"
+  },
+  "regression": {
+    "registry": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-REFRESH-REGRESSION.json",
+    "package_groups": 16,
+    "package_test_selectors": 250,
+    "root_execution_events": 251,
+    "distinct_test_names": 240,
+    "reused_green_root_receipts": 220,
+    "failed_roots_rerun_green": 5,
+    "previously_unrun_roots_green": 26,
+    "failed_roots": [
+      "TestPhase16PublicEmitterConsumerInventory",
+      "TestPhase273ConformanceCorpusByteIdentity",
+      "TestPhase28PrunedEmitMatchesGolden",
+      "TestPhase35PreChangeEmitterCorpus",
+      "TestPhase35PreChangeCorpusControls"
+    ],
+    "skipped": 0,
+    "missing": 0,
+    "excluded_pressure_selector": "TestPhase33CaptureReadBounded",
+    "history": [
+      "initial exit-74 failure and test-only correction preserved in this receipt",
+      "five prior session-root failures preserved in resumption.terminal_failure"
+    ],
+    "inventory_coordinate_red": {
+      "log": "371-REFRESH-COMPAT-20261016.jsonl",
+      "sha256": "d0d910817d8faad635898330c55b1e87feeb0be8a9e2b4d400a526f618f247f7",
+      "detail": "AST found Emit:782 and EmitNative:784 while registry rows were 775 and 777."
+    },
+    "inventory_green": {
+      "log": "371-REFRESH-INVENTORY-20261016.jsonl",
+      "sha256": "7d9ef16f5c9b2e8f11929498edf2b869078d3421d6c64637ebe12dd73b38c784",
+      "roots": 2,
+      "passed": 2,
+      "skipped": 0
+    },
+    "extra_runs": [
+      {
+        "log": "371-REFRESH-COMPAT-20261016.jsonl",
+        "roots": 8,
+        "passed": 7,
+        "failed": 1,
+        "skipped": 0,
+        "sha256": "d0d910817d8faad635898330c55b1e87feeb0be8a9e2b4d400a526f618f247f7"
+      },
+      {
+        "log": "371-REFRESH-INHERITED-BASELINE-20261016.jsonl",
+        "roots": 6,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "sha256": "e9a2de736e964f0ccdf9cab460526ea9292de25f30bd2e5dfbcac563acf490ad"
+      },
+      {
+        "log": "371-REFRESH-SURFACEMANIFEST-20261016.jsonl",
+        "roots": 4,
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0,
+        "sha256": "5f73b731e0b3d7995215ac6827c7380d4e9a5da89040d4823a1419e7e032595a"
+      },
+      {
+        "log": "371-REFRESH-SYNTAX-20261016.jsonl",
+        "roots": 22,
+        "passed": 22,
+        "failed": 0,
+        "skipped": 0,
+        "sha256": "ff45e01c6fb34463137cde721db26c3f6e19b95ac5ecb03aaee872b5b91a9b77"
+      }
+    ],
+    "d18_proofs": {
+      "source_evolution": "T-37.1-CR03-acceptance-input-bindings-7",
+      "status": "verified",
+      "inputs_per_proof": 37,
+      "proofs_green_unflagged": 4,
+      "raw_evidence_records": 53,
+      "root_union": 19,
+      "subtests": 254,
+      "skipped": 0,
+      "root_union_log_sha256": "ad7c3dcd130b45674a3ac68173d364282a7e3e1e384a0c7a64545a3fa8b8c034"
+    },
+    "current_bindings": [
+      {
+        "path": "internal/compiler/session/session_phase371_compatibility_test.go",
+        "sha256": "1fcfb16979194559307a3e9c494052889a5066d42fdf011d154c3479f112e5e4",
+        "bytes": 51120
+      },
+      {
+        "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-prohibition-check.test.cjs",
+        "sha256": "48daf7ee4997e782622a66a3550ca8b61259f7610753faa929183bdd0ca1353c",
+        "bytes": 111976
+      },
+      {
+        "path": "testdata/phase16/public-emitter-consumers.json",
+        "sha256": "cc7f0977f4ef11d10d9113af97688fffa435bc1d2e60360d911e995e10332209",
+        "bytes": 22484
+      }
+    ],
+    "logs": [
+      {
+        "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-371-REFRESH-REGRESSION-15.jsonl",
+        "sha256": "3a0329496a644dce9acd534d6177437f64f51825d4cb11bed323ba51045eb1c9",
+        "bytes": 1532324
+      },
+      {
+        "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-COMPAT-20261016.jsonl",
+        "sha256": "d0d910817d8faad635898330c55b1e87feeb0be8a9e2b4d400a526f618f247f7",
+        "bytes": 23214
+      },
+      {
+        "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-INVENTORY-20261016.jsonl",
+        "sha256": "7d9ef16f5c9b2e8f11929498edf2b869078d3421d6c64637ebe12dd73b38c784",
+        "bytes": 2390
+      },
+      {
+        "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-INHERITED-BASELINE-20261016.jsonl",
+        "sha256": "e9a2de736e964f0ccdf9cab460526ea9292de25f30bd2e5dfbcac563acf490ad",
+        "bytes": 41212
+      },
+      {
+        "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-SURFACEMANIFEST-20261016.jsonl",
+        "sha256": "5f73b731e0b3d7995215ac6827c7380d4e9a5da89040d4823a1419e7e032595a",
+        "bytes": 3843
+      },
+      {
+        "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-REFRESH-SYNTAX-20261016.jsonl",
+        "sha256": "ff45e01c6fb34463137cde721db26c3f6e19b95ac5ecb03aaee872b5b91a9b77",
+        "bytes": 101264
+      }
+    ]
+  },
+  "security": {
+    "older_registers": "verified, threats_open=0 for phases 33-37",
+    "additional_37_1_controls": "13/13 closed; supplemental only"
+  },
+  "ui": {
+    "fresh_queries": "check ui.safety-gate 33,34,35,36,37 --raw",
+    "outcome": "not-applicable",
+    "frontend": false,
+    "hasUiFiles": false,
+    "hasUiSpec": false,
+    "block": false
+  },
+  "review": {
+    "status": "pending_parent_independent_review",
+    "historical_review": "standard depth, 15 files, clean at its recorded review point; its three adapter findings were fixed",
+    "current_scope": "subsequent proof-adapter/source-evolution and exact registry-coordinate edits are not claimed reviewed"
+  },
+  "disposition": {
+    "artifact": "371-REFRESH-DISPOSITION-AMENDMENT-2026-10-16.md",
+    "CR-03": "implementation fixed; independent verification and audit pending",
+    "CR-04": "implementation fixed; independent verification and audit pending",
+    "CR-06": "implementation fixed; independent verification and audit pending",
+    "WR-02": "corevalidate explanatory comment corrected during semantic edit; historical disposition preserved"
+  },
+  "parent_artifacts": "no-op; fresh init manifests include regression-gate and exclude gap-closure-artifacts/partial-wave",
+  "canonical_reports": "still stale pending parent verifiers; original verification copies and hashes unchanged",
+  "limits": [
+    "bounded-capture pressure selector omitted",
+    "220 passing root receipts reused; only five failures and 26 unrun roots rerun",
+    "bounded registry is not the complete historical acceptance inventory",
+    "19-root D18 union does not cover every predecessor criterion",
+    "no whole-project/package/native-pressure/stress/hosted run"
+  ],
+  "doc_guards": {
+    "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase20ValidationLifecycle|TestPhase37ValidationCommandRegistry|TestPhase37ValidationCommandRegistryControls|TestSummaryCoverageGroundedness|TestVerificationGroundedness|TestVerificationGroundednessThreeClassesAreEmpty)$' -count=1 -json -timeout=600s",
+    "roots": [
+      "TestPhase20ValidationLifecycle",
+      "TestPhase37ValidationCommandRegistry",
+      "TestPhase37ValidationCommandRegistryControls",
+      "TestSummaryCoverageGroundedness",
+      "TestVerificationGroundedness",
+      "TestVerificationGroundednessThreeClassesAreEmpty"
+    ],
+    "run": 6,
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "log": "371-REFRESH-DOC-GUARDS-20261016.jsonl",
+    "sha256": "d87ac63580a96972826b4639fc3053c49adef9e7a0da27ec7b507d5544e876c0",
+    "bytes": 170135,
+    "stderr": "371-REFRESH-DOC-GUARDS-20261016.stderr.log",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "fresh_init_progress_query": {
+    "command": "node /Users/jon/.codex/gsd-core/bin/gsd-tools.cjs query init.progress",
+    "phase_33_to_37": {
+      "completion": "executed",
+      "verification": "stale",
+      "phase_complete": false,
+      "next_action": "parent-owned execute-phase verifier refresh"
+    },
+    "phase_37_1": {
+      "completion": "executed",
+      "verification": "gaps_found",
+      "phase_complete": false
+    },
+    "phase_38": "not_started"
+  },
+  "proof_artifacts": [
+    {
+      "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-PROHIBITION-PROJECTION.json",
+      "sha256": "a681f918250ce10a76f89076367fa2ea5e9d10f93b4b755cb2df256fd271f9c4"
+    },
+    {
+      "path": ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/371-PROHIBITION-RESOLUTION.json",
+      "sha256": "699d2ce4256e09481a9a9aec1ac7dea55493d0a1f6b6da34823267527a195eb7"
+    }
+  ]
+}

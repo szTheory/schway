@@ -1,0 +1,37 @@
+=== RUN   TestPhase371CompatibilityAmendmentControls
+=== RUN   TestPhase371CompatibilityAmendmentControls/missing
+=== RUN   TestPhase371CompatibilityAmendmentControls/duplicate
+=== RUN   TestPhase371CompatibilityAmendmentControls/extra
+=== RUN   TestPhase371CompatibilityAmendmentControls/wrong-path
+=== RUN   TestPhase371CompatibilityAmendmentControls/wrong-route
+=== RUN   TestPhase371CompatibilityAmendmentControls/stale-source
+=== RUN   TestPhase371CompatibilityAmendmentControls/stale-core
+=== RUN   TestPhase371CompatibilityAmendmentControls/stale-old-c
+=== RUN   TestPhase371CompatibilityAmendmentControls/wrong-expected-digest
+=== RUN   TestPhase371CompatibilityAmendmentControls/wrong-anchor
+=== RUN   TestPhase371CompatibilityAmendmentControls/wrong-offset
+=== RUN   TestPhase371CompatibilityAmendmentControls/wrong-anchor-count
+=== RUN   TestPhase371CompatibilityAmendmentControls/wrong-delta
+=== RUN   TestPhase371CompatibilityAmendmentControls/unrelated-post-bytes
+=== RUN   TestPhase371CompatibilityAmendmentControls/repeated-anchor
+=== NAME  TestPhase371CompatibilityAmendmentControls
+    session_phase371_compatibility_test.go:1106: unrelated extra C-byte mutation was accepted by the older-comparator projection: []
+--- FAIL: TestPhase371CompatibilityAmendmentControls (2.01s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/missing (0.11s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/duplicate (0.11s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/extra (0.09s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/wrong-path (0.09s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/wrong-route (0.08s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/stale-source (0.08s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/stale-core (0.08s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/stale-old-c (0.08s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/wrong-expected-digest (0.08s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/wrong-anchor (0.09s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/wrong-offset (0.09s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/wrong-anchor-count (0.09s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/wrong-delta (0.08s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/unrelated-post-bytes (0.08s)
+    --- PASS: TestPhase371CompatibilityAmendmentControls/repeated-anchor (0.08s)
+FAIL
+FAIL	github.com/szTheory/schway/internal/compiler/session	2.025s
+FAIL

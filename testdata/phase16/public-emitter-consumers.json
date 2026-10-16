@@ -568,12 +568,12 @@
       "witness": "probe:TestPhase36NoCallGeneratedCByteBaseline"
     },
     {
-      "call": "internal/compiler/session/session_phase371_compatibility_test.go:Emit:775",
+      "call": "internal/compiler/session/session_phase371_compatibility_test.go:Emit:782",
       "classification": "admitted-dynamic-schema2",
       "witness": "probe:TestPhase371PreEmitterRouteCensus"
     },
     {
-      "call": "internal/compiler/session/session_phase371_compatibility_test.go:EmitNative:777",
+      "call": "internal/compiler/session/session_phase371_compatibility_test.go:EmitNative:784",
       "classification": "admitted-dynamic-schema2",
       "witness": "probe:TestPhase371PreEmitterRouteCensus"
     },
