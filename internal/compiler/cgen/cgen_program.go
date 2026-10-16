@@ -2409,7 +2409,7 @@ func emitProgramDefectTerminal(out *strings.Builder, function core.Function, ope
 	out.WriteString("      if (!schway_write_literal(\",\\\"kind\\\":\\\"function.defected\\\",\\\"function_id\\\":\")) abort();\n")
 	fmt.Fprintf(out, "      if (!schway_write_json_string(%s)) abort();\n", strconv.Quote(function.ID))
 	out.WriteString("      if (!schway_write_literal(\",\\\"output\\\":\")) abort();\n")
-	fmt.Fprintf(out, "      if (!schway_write_json_string(%s)) abort();\n", strconv.Quote(operation.Reason))
+	emitProgramDefectReasonJSON(out, operation.Reason)
 	out.WriteString("      if (!schway_write_literal(\",\\\"source_place\\\":\")) abort();\n")
 	fmt.Fprintf(out, "      if (!schway_write_json_string(%s)) abort();\n", strconv.Quote(operation.SourceID))
 	out.WriteString("      if (!schway_write_literal(\",\\\"type_id\\\":\")) abort();\n")
@@ -2423,6 +2423,39 @@ func emitProgramDefectTerminal(out *strings.Builder, function core.Function, ope
 	// next operation aborts the process. Flush the complete terminal record now
 	// so defect evidence cannot be lost in libc's buffer.
 	out.WriteString("      if (fflush(stdout) != 0) abort();\n")
+}
+
+// emitProgramDefectReasonJSON keeps the common printable-ASCII path identical
+// to the existing C string writer. Other valid UTF-8 reasons are JSON-escaped
+// at generation time and emitted as counted bytes, avoiding C hex-escape
+// greediness and NUL-terminated runtime string handling.
+func emitProgramDefectReasonJSON(out *strings.Builder, reason string) {
+	if phase371PrintableASCII(reason) {
+		fmt.Fprintf(out, "      if (!schway_write_json_string(%s)) abort();\n", strconv.Quote(reason))
+		return
+	}
+	encoded, _ := json.Marshal(reason) // Core admission guarantees valid UTF-8.
+	out.WriteString("      if (!schway_write_bytes((const char *)(const unsigned char[]){")
+	emitProgramByteConstants(out, encoded)
+	fmt.Fprintf(out, "}, %du)) abort();\n", len(encoded))
+}
+
+func phase371PrintableASCII(text string) bool {
+	for _, value := range []byte(text) {
+		if value < 0x20 || value > 0x7e {
+			return false
+		}
+	}
+	return true
+}
+
+func emitProgramByteConstants(out *strings.Builder, data []byte) {
+	for index, value := range data {
+		if index > 0 {
+			out.WriteString(", ")
+		}
+		fmt.Fprintf(out, "0x%02xu", value)
+	}
 }
 
 // emitProgramFunction writes ONE function's own C definition: its own
@@ -3027,6 +3060,14 @@ func emitProgramScalarFunction(out *strings.Builder, function core.Function, par
 func emitProgramApplicationScalarFailure(out *strings.Builder, indent, message string, dynamicInvocationSupport bool) {
 	if dynamicInvocationSupport {
 		fmt.Fprintf(out, "%sif (!schway_capture_active) schway_write_capacity_capture();\n", indent)
+	}
+	if !phase371PrintableASCII(message) {
+		messageBytes := []byte(message + "\n")
+		fmt.Fprintf(out, "%sif (fwrite((const unsigned char[]){", indent)
+		emitProgramByteConstants(out, messageBytes)
+		fmt.Fprintf(out, "}, 1u, %du, stderr) != %du) exit(74);\n", len(messageBytes), len(messageBytes))
+		fmt.Fprintf(out, "%sexit(65);\n", indent)
+		return
 	}
 	fmt.Fprintf(out, "%sfputs(%s, stderr);\n%sexit(65);\n", indent, strconv.Quote(message+"\n"), indent)
 }

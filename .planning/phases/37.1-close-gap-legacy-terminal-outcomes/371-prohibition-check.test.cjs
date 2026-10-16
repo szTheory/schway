@@ -12,15 +12,22 @@ const ROOT = path.resolve(__dirname, "../../..");
 const PHASE_REL = ".planning/phases/37.1-close-gap-legacy-terminal-outcomes/";
 const PLAN_REL = `${PHASE_REL}37.1-01-PLAN.md`;
 const FAILURE_PLAN_REL = `${PHASE_REL}37.1-02-PLAN.md`;
+const REASON_PLAN_REL = `${PHASE_REL}37.1-03-PLAN.md`;
 const PROJECTION_REL = `${PHASE_REL}371-PROHIBITION-PROJECTION.json`;
 const ADAPTER_REL = `${PHASE_REL}371-prohibition-check.test.cjs`;
 const CLEAN_REL = `${PHASE_REL}prohibition-clean.json`;
 const DEFECT_REL = `${PHASE_REL}prohibition-defect-violation.json`;
 const FAILURE_REL = `${PHASE_REL}prohibition-failure-violation.json`;
+const REASON_REL = `${PHASE_REL}prohibition-reason-violation.json`;
 const SOURCE_REL = "internal/compiler/executionpeer/executionpeer.go";
+const CGEN_REL = "internal/compiler/cgen/cgen_program.go";
+const REASON_TEST_REL = "internal/compiler/session/session_phase371_defect_reason_test.go";
+const CGEN_TEST_REL = "internal/compiler/cgen/cgen_phase371_legacy_defect_test.go";
 const TEST_REL = "internal/compiler/executionpeer/executionpeer_phase371_test.go";
 const MODEL_REL = "internal/compiler/session/session_phase24_model_test.go";
 const FAILURE_BASE_HEAD = "8fbd1e51bb6fd97b1a46d5d1015ce5e39d69bfe0";
+const REASON_BASE_HEAD = "8f5b5795c8c31488257567511e807a276b78a10c";
+const REASON_ADMISSION_BASE_HEAD = "9d09df995f1ab68c7044cda0915608d5d0a3209f";
 const PACKAGE = "./internal/compiler/executionpeer";
 const TMP_ROOT = "/tmp";
 const GOCACHE = "/tmp/ai-lang-verification-gocache";
@@ -140,6 +147,8 @@ const FAILURE_ROOTS = [
   },
 ];
 const FAILURE_EXACT_RUN = "^(TestPhase371ForeignFailureOpFailAttribution|TestPhase371ForeignFailureAttributionControls|TestPhase371LegacyDefectClosesAllActiveFrames|TestPhase33TerminalAttribution|TestPhase36CallCausalAttributionControls)$";
+const REASON_EXACT_RUN = "^TestPhase371CountedDefectReasonBytes$";
+const REASON_ROOT = "TestPhase371CountedDefectReasonBytes";
 const MUTATED_FAILURE_NAMES = [
   "TestPhase371LegacyDefectClosesAllActiveFrames",
   "TestPhase371LegacyDefectClosesAllActiveFrames/legacy-static",
@@ -158,6 +167,7 @@ const FIXTURES = {
   none: { relative: CLEAN_REL, data: { version: 1, subject: "none" } },
   defect: { relative: DEFECT_REL, data: { version: 1, subject: "defect" } },
   failure: { relative: FAILURE_REL, data: { version: 1, subject: "failure" } },
+  reason: { relative: REASON_REL, data: { version: 1, subject: "reason" } },
 };
 
 function digest(bytes) {
@@ -175,7 +185,7 @@ function escapeRegex(text) {
 function selectSubject() {
   const raw = process.env.GSD_PROHIB_SUBJECT;
   const mode = process.env.GSD_PROHIB_MODE || "defect";
-  if (!new Set(["defect", "failure"]).has(mode)) return { error: `unsupported closed sample mode: ${mode}` };
+  if (!new Set(["defect", "failure", "reason"]).has(mode)) return { error: `unsupported closed sample mode: ${mode}` };
   if (raw === undefined) return { subject: "none", source: "default", mode };
   for (const [subject, fixture] of Object.entries(FIXTURES)) {
     const absolute = path.resolve(ROOT, fixture.relative);
@@ -245,6 +255,52 @@ function originalFailureModeOverlay(sourcePath, tempDir) {
   };
 }
 
+function originalReasonModeOverlay(tempDir) {
+  const targets = [
+    { relative: CGEN_REL, head: REASON_BASE_HEAD, name: "pre-reason-cgen-program.go" },
+    { relative: "internal/compiler/syntax/parser.go", head: REASON_ADMISSION_BASE_HEAD, name: "pre-reason-parser.go" },
+    { relative: "internal/compiler/corevalidate/corevalidate.go", head: REASON_ADMISSION_BASE_HEAD, name: "pre-reason-corevalidate.go" },
+  ];
+  const replacements = {};
+  const sources = [];
+  for (const target of targets) {
+    const sourcePath = path.resolve(ROOT, target.relative);
+    const currentBytes = fs.readFileSync(sourcePath);
+    const baseline = spawnSync("git", ["show", `${target.head}:${target.relative}`], {
+      cwd: ROOT,
+      encoding: "buffer",
+      timeout: 10_000,
+      shell: false,
+    });
+    if (baseline.error || baseline.status !== 0 || !Buffer.isBuffer(baseline.stdout) || baseline.stdout.length === 0) {
+      throw new Error(`read original ${target.relative} from ${target.head}: ${baseline.error || baseline.stderr || baseline.status}`);
+    }
+    if (target.relative === CGEN_REL) {
+      const priorCgen = baseline.stdout.toString("utf8");
+      if (!priorCgen.includes("if shell == programApplicationShell {")
+          || !priorCgen.includes("schway_write_json_string(%s)") || !priorCgen.includes("fputs(%s, stderr)")) {
+        throw new Error("reason emitter baseline does not preserve corrected Task01 shell routing and original reason helpers");
+      }
+    }
+    const replacementPath = path.join(tempDir, target.name);
+    fs.writeFileSync(replacementPath, baseline.stdout, { flag: "wx" });
+    replacements[sourcePath] = replacementPath;
+    sources.push({
+      path: target.relative,
+      originalSourceSha256: digest(currentBytes),
+      replacementSourceSha256: digest(baseline.stdout),
+      baselineHead: target.head,
+    });
+  }
+  const overlayPath = path.join(tempDir, "reason-overlay.json");
+  fs.writeFileSync(overlayPath, JSON.stringify({ Replace: replacements }), { flag: "wx" });
+  return {
+    overlayPath,
+    sources,
+    overlaySha256: digest(fs.readFileSync(overlayPath)),
+  };
+}
+
 function expectedSubtests(root, mode, original) {
   if (original && mode === "failure" && root.name === "TestPhase371ForeignFailureAttributionControls") return [];
   if (original && mode === "defect" && root.name === "TestPhase371DefectTerminalControls") {
@@ -261,6 +317,7 @@ function parseFailureName(line) {
 function validateGoResult(result, subject, requestedMode) {
   const original = subject !== "none";
   const mode = original ? subject : requestedMode;
+  if (mode === "reason") return validateReasonGoResult(result, subject);
   const rootsForMode = mode === "failure" ? FAILURE_ROOTS : ROOTS;
   const stdout = typeof result.stdout === "string" ? result.stdout : "";
   const stderr = typeof result.stderr === "string" ? result.stderr : "";
@@ -343,11 +400,125 @@ function validateGoResult(result, subject, requestedMode) {
   return { kind: "green", output, roots, failureNames };
 }
 
+function validateReasonGoResult(result, subject) {
+  const output = `${typeof result.stdout === "string" ? result.stdout : ""}\n${typeof result.stderr === "string" ? result.stderr : ""}`;
+  if (result.error) return { kind: "invalid", reason: `go spawn failed: ${result.error.code || result.error.message}`, output };
+  if (result.signal) return { kind: "invalid", reason: `go was interrupted by ${result.signal}`, output };
+  if (Buffer.byteLength(output) > MAX_OUTPUT) return { kind: "invalid", reason: "Go output exceeded 8 MiB", output };
+  const runCount = exactCount(output, `=== RUN   ${REASON_ROOT}`);
+  const passCount = exactCount(output, `--- PASS: ${REASON_ROOT} (`);
+  const failCount = exactCount(output, `--- FAIL: ${REASON_ROOT} (`);
+  if (runCount !== 1 || /^--- SKIP:/m.test(output)) return { kind: "invalid", reason: "reason root missing, duplicated or skipped", output };
+  if (subject === "reason") {
+    if (result.status !== 1 || passCount !== 0 || failCount !== 1
+        || !output.includes("native O0 lost reason bytes")
+        || !output.includes("application outcome=")) {
+      return { kind: "invalid", reason: "original reason emitter missed exact native/application byte assertions", output };
+    }
+    if (/syntax\.|undefined reference|no tests to run|timed out|^FAIL\s/m.test(output)) {
+      return { kind: "invalid", reason: "reason RED was replaced by a syntax/tool/timeout or missing-root failure", output };
+    }
+    return { kind: "violation", output, roots: { [REASON_ROOT]: { run: 1, pass: 0, fail: 1, skip: 0 } }, failureNames: [REASON_ROOT] };
+  }
+  if (result.status !== 0 || passCount !== 1 || failCount !== 0 || /^--- FAIL:|^FAIL(?:\s|$)/m.test(output)) {
+    return { kind: "invalid", reason: "clean reason test root did not pass exactly once", output };
+  }
+  return { kind: "green", output, roots: { [REASON_ROOT]: { run: 1, pass: 1, fail: 0, skip: 0 } }, failureNames: [] };
+}
+
+function runReasonExactRoots(subject) {
+  const original = subject === "reason";
+  const roots = [
+    { name: REASON_ROOT, package: "./internal/compiler/cgen", run: REASON_EXACT_RUN,
+      requiredOnRed: ["native O0 lost reason bytes", "application outcome="] },
+    { name: "TestPhase371DefectReasonUTF8Admission", package: "./internal/compiler/session",
+      run: "^TestPhase371DefectReasonUTF8Admission$",
+      requiredOnRed: ["missing stable syntax.invalid_utf8 byte span", "raw-core malformed reason was not independently refused as core.final_claim_mismatch"] },
+  ];
+  let tempDir = null;
+  let overlay = null;
+  const outputParts = [];
+  const observed = {};
+  try {
+    if (original) {
+      tempDir = fs.mkdtempSync(path.join(TMP_ROOT, "schway371-reason-overlay-"));
+      overlay = originalReasonModeOverlay(tempDir);
+    }
+    const env = { ...process.env, GOCACHE, GOFLAGS: "" };
+    delete env.GSD_PROHIB_SUBJECT;
+    for (const root of roots) {
+      const args = ["test"];
+      if (overlay) args.push("-overlay", overlay.overlayPath);
+      args.push(root.package, "-run", root.run, "-count=1", "-v", "-timeout=120s");
+      const result = spawnSync("go", args, {
+        cwd: ROOT,
+        env,
+        encoding: "utf8",
+        timeout: GO_TIMEOUT_MS,
+        maxBuffer: MAX_OUTPUT,
+        stdio: ["ignore", "pipe", "pipe"],
+        shell: false,
+        windowsHide: true,
+      });
+      const output = `${typeof result.stdout === "string" ? result.stdout : ""}${typeof result.stderr === "string" ? result.stderr : ""}`;
+      outputParts.push(`=== EXACT ROOT ${root.name} ===\n${output}`);
+      if (result.error || result.signal || Buffer.byteLength(output) > MAX_OUTPUT || /^--- SKIP:/m.test(output)) {
+        return { kind: "invalid", reason: `${root.name}: Go spawn, timeout, output bound or skip failure`, output: outputParts.join("\n") };
+      }
+      const runCount = [...output.matchAll(new RegExp(`^=== RUN   ${escapeRegex(root.name)}$`, "gm"))].length;
+      const passCount = [...output.matchAll(new RegExp(`^--- PASS: ${escapeRegex(root.name)} \\([0-9]+(?:\\.[0-9]+)?s\\)$`, "gm"))].length;
+      const failCount = [...output.matchAll(new RegExp(`^--- FAIL: ${escapeRegex(root.name)} \\([0-9]+(?:\\.[0-9]+)?s\\)$`, "gm"))].length;
+      if (runCount !== 1) return { kind: "invalid", reason: `${root.name}: exact RUN count was ${runCount}`, output: outputParts.join("\n") };
+      if (original) {
+        if (result.status !== 1 || passCount !== 0 || failCount !== 1 || root.requiredOnRed.some((needle) => !output.includes(needle))) {
+          return { kind: "invalid", reason: `${root.name}: original source missed its named semantic RED`, output: outputParts.join("\n") };
+        }
+        if (/\[build failed\]|undefined reference|no tests to run|timed out|syntax\.unterminated/m.test(output)) {
+          return { kind: "invalid", reason: `${root.name}: semantic RED was replaced by a build/tool/syntax failure`, output: outputParts.join("\n") };
+        }
+        observed[root.name] = { run: 1, pass: 0, fail: 1, skip: 0 };
+      } else {
+        if (result.status !== 0 || passCount !== 1 || failCount !== 0 || /^--- FAIL:|^FAIL(?:\s|$)/m.test(output)) {
+          return { kind: "invalid", reason: `${root.name}: clean exact root did not pass once`, output: outputParts.join("\n") };
+        }
+        observed[root.name] = { run: 1, pass: 1, fail: 0, skip: 0 };
+      }
+    }
+    if (overlay) {
+      for (const source of overlay.sources) {
+        const current = fs.readFileSync(path.join(ROOT, source.path));
+        if (digest(current) !== source.originalSourceSha256) {
+          return { kind: "invalid", reason: `tracked ${source.path} changed during exact-source overlay run`, output: outputParts.join("\n") };
+        }
+      }
+    }
+    return {
+      kind: original ? "violation" : "green",
+      output: outputParts.join("\n"),
+      roots: observed,
+      failureNames: original ? Object.keys(observed) : [],
+      ...(overlay ? { overlay: {
+        originalSourceSha256: digest(Buffer.from(JSON.stringify(overlay.sources.map(({ path: name, originalSourceSha256 }) => ({ path: name, sha256: originalSourceSha256 }))))),
+        replacementSourceSha256: digest(Buffer.from(JSON.stringify(overlay.sources.map(({ path: name, replacementSourceSha256 }) => ({ path: name, sha256: replacementSourceSha256 }))))),
+        overlayJsonSha256: overlay.overlaySha256,
+        sourceUnchanged: true,
+        baselineHead: overlay.sources.map((source) => `${source.path}@${source.baselineHead}`).join(","),
+        sources: overlay.sources,
+      } } : {}),
+    };
+  } catch (error) {
+    return { kind: "invalid", reason: `reason exact-root setup failed: ${error.message}`, output: outputParts.join("\n") };
+  } finally {
+    if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
 function runExactRoots(subject, requestedMode = "defect") {
   const mode = subject === "none" ? requestedMode : subject;
-  if (!new Set(["defect", "failure"]).has(mode)) throw new Error(`unsupported exact-root suite: ${mode}`);
+  if (!new Set(["defect", "failure", "reason"]).has(mode)) throw new Error(`unsupported exact-root suite: ${mode}`);
+  if (mode === "reason") return runReasonExactRoots(subject);
   const original = subject !== "none";
-  const sourcePath = path.resolve(ROOT, SOURCE_REL);
+  const sourcePath = path.resolve(ROOT, mode === "reason" ? CGEN_REL : SOURCE_REL);
   const originalBytes = fs.readFileSync(sourcePath);
   let tempDir = null;
   let overlay = null;
@@ -357,10 +528,14 @@ function runExactRoots(subject, requestedMode = "defect") {
     const args = ["test"];
     if (original) {
       tempDir = fs.mkdtempSync(path.join(TMP_ROOT, `schway371-${mode}-overlay-`));
-      overlay = mode === "defect" ? originalModeOverlay(sourcePath, tempDir) : originalFailureModeOverlay(sourcePath, tempDir);
+      overlay = mode === "defect" ? originalModeOverlay(sourcePath, tempDir)
+        : mode === "failure" ? originalFailureModeOverlay(sourcePath, tempDir)
+          : originalReasonModeOverlay(sourcePath, tempDir);
       args.push("-overlay", overlay.overlayPath);
     }
-    args.push(PACKAGE, "-run", mode === "failure" ? FAILURE_EXACT_RUN : EXACT_RUN, "-count=1", "-v", "-timeout=120s");
+    const packageName = mode === "reason" ? "./internal/compiler/cgen" : PACKAGE;
+    const exactRun = mode === "failure" ? FAILURE_EXACT_RUN : mode === "reason" ? REASON_EXACT_RUN : EXACT_RUN;
+    args.push(packageName, "-run", exactRun, "-count=1", "-v", "-timeout=120s");
     const env = { ...process.env, GOCACHE, GOFLAGS: "" };
     delete env.GSD_PROHIB_SUBJECT;
     const result = spawnSync("go", args, {
@@ -375,7 +550,7 @@ function runExactRoots(subject, requestedMode = "defect") {
     });
     captured = validateGoResult(result, subject, mode);
     const afterBytes = fs.readFileSync(sourcePath);
-    if (!afterBytes.equals(originalBytes)) captured = { kind: "invalid", reason: "tracked executionpeer.go changed during overlay run", output: captured.output };
+    if (!afterBytes.equals(originalBytes)) captured = { kind: "invalid", reason: `tracked ${mode === "reason" ? CGEN_REL : SOURCE_REL} changed during overlay run`, output: captured.output };
     if (original && overlay) {
       captured.overlay = {
         originalSourceSha256: digest(originalBytes),
@@ -442,8 +617,11 @@ function parsePlanProhibition(planRelative = PLAN_REL, expectedStatement = STATE
 function projectCurrentPlan(mode = "defect") {
   const { projectProhibitions, descriptorFromProjection } = loadGsdProjectionApi();
   const isFailure = mode === "failure";
-  const planRelative = isFailure ? FAILURE_PLAN_REL : PLAN_REL;
-  const expectedStatement = isFailure ? FAILURE_STATEMENT : STATEMENT;
+  const isReason = mode === "reason";
+  const planRelative = isFailure ? FAILURE_PLAN_REL : isReason ? REASON_PLAN_REL : PLAN_REL;
+  const expectedStatement = isFailure ? FAILURE_STATEMENT : isReason
+    ? "MUST NOT normalize malformed defect-reason bytes, reject valid UTF-8 control/NUL reasons, decode textual escapes or truncate admitted reason output."
+    : STATEMENT;
   const { item, planBytes, planPath } = parsePlanProhibition(planRelative, expectedStatement);
   const projection = projectProhibitions([item]);
   assert.equal(projection.length, 1, "projectProhibitions must preserve one unresolved item");
@@ -454,7 +632,7 @@ function projectCurrentPlan(mode = "defect") {
   assert.deepEqual(check, {
     kind: "node-test",
     target: ADAPTER_REL,
-    violationFixture: isFailure ? FAILURE_REL : DEFECT_REL,
+    violationFixture: isFailure ? FAILURE_REL : isReason ? REASON_REL : DEFECT_REL,
     cleanFixture: CLEAN_REL,
   }, "descriptorFromProjection must reconstruct this plan's wired flat fields");
   return { item, projected, check, planBytes, planPath, planRelative };
@@ -501,7 +679,7 @@ function tempEvidenceDir() {
 }
 
 function runSampleMode(subject) {
-  if (subject !== "defect" && subject !== "failure") throw new Error("only the closed 'defect' and 'failure' samples are supported");
+  if (subject !== "defect" && subject !== "failure" && subject !== "reason") throw new Error("only the closed defect/failure/reason samples are supported");
   const initial = ensureInitialProjection();
   const current = projectCurrentPlan(subject);
   const result = runExactRoots(subject, subject);
@@ -640,7 +818,8 @@ function runCanonicalProducer(request, evidenceDir) {
 function sourceBindings(current) {
   const selected = new Set([
     PLAN_REL, FAILURE_PLAN_REL, ADAPTER_REL, SOURCE_REL, TEST_REL, MODEL_REL,
-    "examples/phase24/error.schway", CLEAN_REL, DEFECT_REL, FAILURE_REL,
+    REASON_PLAN_REL, CGEN_REL, CGEN_TEST_REL, REASON_TEST_REL,
+    "examples/phase24/error.schway", CLEAN_REL, DEFECT_REL, FAILURE_REL, REASON_REL,
   ]);
   return Object.fromEntries([...selected].map((relative) => {
     const bytes = fs.readFileSync(path.join(ROOT, relative));
@@ -649,7 +828,7 @@ function sourceBindings(current) {
 }
 
 function runProofMode(subject) {
-  if (subject !== "defect" && subject !== "failure") throw new Error("only closed 'defect' and 'failure' proofs are supported");
+  if (subject !== "defect" && subject !== "failure" && subject !== "reason") throw new Error("only closed defect/failure/reason proofs are supported");
   const initial = ensureInitialProjection();
   const current = projectCurrentPlan(subject);
   assert.equal(initial.projection[0].status, "unresolved", "initial history must remain unresolved before producer request");
@@ -708,7 +887,9 @@ function runProofMode(subject) {
   const projectionRecord = {
     ...initial,
     proofs: { ...priorProofs, [subject]: proof },
-    ...(subject === "defect" ? { proof } : { failure_plan_projection: proof.current_plan_projection, failure_proof: proof }),
+    ...(subject === "defect" ? { proof }
+      : subject === "failure" ? { failure_plan_projection: proof.current_plan_projection, failure_proof: proof }
+        : { reason_plan_projection: proof.current_plan_projection, reason_proof: proof }),
   };
   fs.writeFileSync(path.join(ROOT, PROJECTION_REL), `${JSON.stringify(projectionRecord, null, 2)}\n`);
   process.stdout.write(`canonical ${subject} proof passed; plan prohibition remains unresolved pending normal lifecycle; evidence ${evidenceDir}\n`);
@@ -718,14 +899,14 @@ function directMode() {
   const sampleIndex = process.argv.indexOf("--sample");
   if (sampleIndex >= 0) {
     const subject = process.argv[sampleIndex + 1];
-    if (subject !== "defect" && subject !== "failure") throw new Error(`unsupported sample: ${subject}`);
+    if (subject !== "defect" && subject !== "failure" && subject !== "reason") throw new Error(`unsupported sample: ${subject}`);
     runSampleMode(subject);
     return true;
   }
   const proveIndex = process.argv.indexOf("--prove");
   if (proveIndex >= 0) {
     const subject = process.argv[proveIndex + 1];
-    if (subject !== "defect" && subject !== "failure") throw new Error(`unsupported proof: ${subject}`);
+    if (subject !== "defect" && subject !== "failure" && subject !== "reason") throw new Error(`unsupported proof: ${subject}`);
     runProofMode(subject);
     return true;
   }
