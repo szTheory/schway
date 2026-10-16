@@ -4,18 +4,18 @@ milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: "37.1"
 current_phase_name: "Close gap: legacy terminal outcomes"
-current_plan: 2
+current_plan: 3
 status: executing
-stopped_at: Completed 37.1-01-PLAN.md
-last_updated: "2026-10-16T15:55:10.392Z"
+stopped_at: Completed 37.1-02-PLAN.md
+last_updated: "2026-10-16T16:20:50.739Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 37.1 execution started
-state_head: 9bb7ecac0a580aaa7e3212e67fec19b18c17dad3
+state_head: fe610f622d10ff7b63465676205f3e1883ea7e64
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 42
-  completed_plans: 39
+  completed_plans: 40
   percent: 71
 ---
 
@@ -126,7 +126,7 @@ plans.
 ## Current Position
 
 Phase: 37.1 (Close gap: legacy terminal outcomes) — EXECUTING
-Current Plan: 2
+Current Plan: 3
 Total Plans in Phase: 4
 Status: Ready to execute
 Last activity: 2026-10-16 — Phase 37.1 execution started
@@ -632,6 +632,7 @@ subset alone.
 | Phase 37 P08 | 24min | 3 tasks | 8 files |
 | Phase 37 P09 | 21min | 2 tasks | 9 files |
 | Phase 37.1 P01 | 33 | 3 tasks | 6 files |
+| Phase 37.1 P02 | 18m 32s | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -918,6 +919,10 @@ decision history; they no longer describe current status.
 - [Phase 37]: Mutation overlays must reach the named semantic assertion, while standalone target roots retain clean baseline checks.
 - [Phase 37.1]: Legacy and dynamic call identities share one invocation lifecycle, so accepted defects close the active stack mode-independently.
 - [Phase 37.1]: The supported producer supplied machine evidence only; prohibition resolution remains for the normal execution lifecycle.
+- [Phase 37.1]: Admit only indexed foreign.failed events whose checked contract and TypeFact/error-route facts converge on the exact OpFail.
+- [Phase 37.1]: A child typed failure closes one activation; parent error handling continues on its own checked route and its terminal sets the root outcome.
+- [Phase 37.1]: Causal acceptance establishes represented operation and error-link membership, not payload-value authenticity or executed CFG-path evidence.
+- [Phase 37.1]: Keep Plan01 and Plan02 prohibition projections unresolved pending canonical lifecycle promotion.
 
 ### Pending Todos
 
@@ -1198,8 +1203,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-16T15:55:10.298Z
-Stopped at: Completed 37.1-01-PLAN.md
+Last session: 2026-10-16T16:20:50.640Z
+Stopped at: Completed 37.1-02-PLAN.md
 Resume file: None
 Next action: `$gsd-plan-phase 37.1`; zero plans exist, so the generic missing-verification execute hint is not the next step. Close CR-03/04/06 and rerun the milestone audit before Phase 38.
 

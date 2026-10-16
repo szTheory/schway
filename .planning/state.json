@@ -31,7 +31,7 @@
     {
       "number": "37.1",
       "name": "Close gap: legacy terminal outcomes (INSERTED)",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "number": "38",
@@ -44,5 +44,5 @@
     "label": "Advance to the next step",
     "reason": "Phase 37.1 of 7 · 71% · executing"
   },
-  "updated_at": "2026-10-16T15:54:53.522Z"
+  "updated_at": "2026-10-16T16:20:34.616Z"
 }
