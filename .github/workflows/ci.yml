@@ -147,6 +147,9 @@ jobs:
           retention-days: 14
       - name: scripts/verify-phase32.sh M007
         shell: bash
+        env:
+          PHASE38_RUN_ID: ${{ github.run_id }}
+          PHASE38_RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/phase38"

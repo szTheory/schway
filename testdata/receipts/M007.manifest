@@ -247,6 +247,12 @@ controls=guide,route-audit,codedigest,receipt-rules,crc-public,helper-answers,he
 # event guide TestPhase32GuideCleanCheckout
 # event route-audit TestPhase32PublicRouteAudit
 # event codedigest TestPhase32CodeDigest
+# event codedigest TestPhase32CodeDigest/sh-equals-go
+# event codedigest TestPhase32CodeDigest/subdirectory-equals-root
+# event codedigest TestPhase32CodeDigest/empty-listing-refused
+# event codedigest TestPhase32CodeDigest/armed-code-edit
+# event codedigest TestPhase32CodeDigest/md-edit-ignored
+# event codedigest TestPhase32CodeDigest/planning-edit-ignored
 # event receipt-rules TestPhase32ReceiptLivingClaims
 # event crc-public TestPhase37PublicFileMatrix
 # event crc-public TestPhase37PublicMatrixDriftControl

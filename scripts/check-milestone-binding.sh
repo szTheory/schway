@@ -9,6 +9,7 @@ import json
 import os
 import pathlib
 import re
+import stat
 import subprocess
 import sys
 
@@ -38,6 +39,24 @@ def safe_path(value):
     if resolved == root or root not in resolved.parents:
         refuse("unsafe_path")
     return resolved
+
+def safe_regular_file(value, limit, missing_reason, type_reason):
+    resolved = safe_path(value)
+    cursor = root
+    for part in pathlib.PurePosixPath(value).parts:
+        cursor = cursor / part
+        if cursor.is_symlink():
+            refuse("unsafe_path")
+    try:
+        info = cursor.stat()
+    except OSError:
+        refuse(missing_reason)
+    if not stat.S_ISREG(info.st_mode):
+        refuse(type_reason)
+    if info.st_size > limit:
+        refuse("preparation_too_large")
+    data = read_bytes(resolved, limit)
+    return resolved, data
 
 def read_bytes(path, limit=16 * 1024 * 1024):
     if path.stat().st_size > limit:
@@ -89,16 +108,49 @@ def freeze_data(path):
     if f["manifest"]["path"] != "testdata/receipts/M007.manifest" or not hex_string(f["manifest"]["sha256"], 64):
         refuse("manifest_identity")
     inputs = {"record_validation_corpus": False, "phase26_focused": False, "spike008_strict": False}
-    if f["inputs"] != inputs or type(f["inputs"]) is not dict:
+    if (type(f["inputs"]) is not dict or set(f["inputs"]) != set(inputs) or
+        any(type(value) is not bool for value in f["inputs"].values()) or f["inputs"] != inputs):
         refuse("dispatch_inputs")
     prep_keys = {"review", "security", "validation", "audit"}
     if type(f["preparation"]) is not dict or set(f["preparation"]) != prep_keys:
         refuse("preparation_links")
-    for record in f["preparation"].values():
-        keys(record, {"path", "sha256", "source_sha", "codedigest"}, "preparation_link")
-        if not isinstance(record["path"], str) or not hex_string(record["sha256"], 64): refuse("preparation_link")
+    prep_paths = {
+        "review": ".planning/phases/38-milestone-receipts/38-PRE-FREEZE-REVIEW.md",
+        "security": ".planning/phases/38-milestone-receipts/38-PRE-FREEZE-SECURITY.md",
+        "validation": ".planning/phases/38-milestone-receipts/38-VALIDATION.md",
+        "audit": ".planning/M007-MILESTONE-AUDIT.md",
+    }
+    dispositions = {"review": "clear", "security": "secured", "validation": "focused", "audit": "EVD-17-pending"}
+    marker_pattern = re.compile(rb"(?m)^<!-- phase38-preparation/1 kind=([a-z]+) source_sha=([0-9a-f]{40}) codedigest=([0-9a-f]{64}) disposition=([A-Za-z0-9-]+) -->$")
+    for kind, record in f["preparation"].items():
+        keys(record, {"path", "sha256", "source_sha", "codedigest", "disposition"}, "preparation_link")
+        if (record["path"] != prep_paths[kind] or not hex_string(record["sha256"], 64) or
+            not hex_string(record["source_sha"], 40) or not hex_string(record["codedigest"], 64) or
+            not isinstance(record["disposition"], str)):
+            refuse("preparation_link")
         if record["source_sha"] != f["freeze_sha"] or record["codedigest"] != f["codedigest"]:
             refuse("preparation_stale")
+        if record["disposition"] != dispositions[kind]:
+            refuse("preparation_open")
+        path, data = safe_regular_file(record["path"], 1024 * 1024,
+                                       "preparation_missing", "preparation_not_regular")
+        if hashlib.sha256(data).hexdigest() != record["sha256"]:
+            refuse("preparation_digest_mismatch")
+        frontmatter = re.match(rb"\A---\r?\n.*?\r?\n---(?:\r?\n|$)", data, re.S)
+        if frontmatter is None:
+            refuse("preparation_record")
+        body = data[frontmatter.end():]
+        markers = marker_pattern.findall(body)
+        marker_count = data.count(b"<!-- phase38-preparation/")
+        if len(markers) != 1 or marker_count != 1:
+            refuse("preparation_record")
+        marker_kind, marker_sha, marker_digest, marker_disposition = markers[0]
+        if marker_kind.decode("ascii") != kind:
+            refuse("preparation_record")
+        if marker_sha.decode("ascii") != f["freeze_sha"] or marker_digest.decode("ascii") != f["codedigest"]:
+            refuse("preparation_stale")
+        if marker_disposition.decode("ascii") != dispositions[kind]:
+            refuse("preparation_open")
     manifest = safe_path(f["manifest"]["path"])
     if hashlib.sha256(read_bytes(manifest)).hexdigest() != f["manifest"]["sha256"]:
         refuse("manifest_digest_mismatch")
@@ -191,6 +243,24 @@ def manifest_inventory(path):
         if len(matches) != 1: refuse("structured_inventory")
     return controls, roots, event_sets, cases, reached
 
+package_import_cache = {}
+def package_import_path(selector):
+    if selector in package_import_cache:
+        return package_import_cache[selector]
+    if not selector.startswith("./") or re.search(r"[\x00-\x20]", selector):
+        refuse("control_package")
+    try:
+        resolved = subprocess.run(["go", "list", "-f", "{{.ImportPath}}", selector],
+                                  cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                  text=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired):
+        refuse("control_package")
+    lines = resolved.stdout.splitlines()
+    if resolved.returncode != 0 or len(lines) != 1 or not lines[0] or re.search(r"[\x00-\x20]", lines[0]):
+        refuse("control_package")
+    package_import_cache[selector] = lines[0]
+    return lines[0]
+
 def validate_control_events(manifest_path, log_data):
     controls, roots, event_sets, cases, reached = manifest_inventory(manifest_path)
     event_records = {}
@@ -217,6 +287,7 @@ def validate_control_events(manifest_path, log_data):
         refuse("control_event_inventory")
     for name in controls:
         package, _ = roots[name]
+        expected_package = package_import_path(package)
         expected = event_sets[name]
         expected_roots = sorted(test for test in expected if "/" not in test)
         if report_records[name] != (package, expected_roots):
@@ -225,6 +296,8 @@ def validate_control_events(manifest_path, log_data):
         if not raw or not raw.endswith(b"\n") or len(raw) > 16 * 1024 * 1024:
             refuse("control_event_incomplete")
         counts = {test: {"run": 0, "pass": 0} for test in expected}
+        package_lifecycle = {"start": 0, "pass": 0}
+        package_pass_seen = False
         for raw_line in raw.splitlines():
             if not raw_line: refuse("control_event_inventory")
             try:
@@ -232,21 +305,40 @@ def validate_control_events(manifest_path, log_data):
                                   parse_constant=lambda _: refuse("control_event_inventory"))
             except (UnicodeDecodeError, json.JSONDecodeError):
                 refuse("control_event_inventory")
-            if type(item) is not dict or not isinstance(item.get("Action"), str):
+            if (type(item) is not dict or type(item.get("Action")) is not str or
+                type(item.get("Package")) is not str or item["Package"] != expected_package):
                 refuse("control_event_inventory")
             action, test_name = item["Action"], item.get("Test", "")
-            if not isinstance(test_name, str): refuse("control_event_inventory")
-            if action in ("run", "pass", "skip", "fail"):
+            if type(test_name) is not str: refuse("control_event_inventory")
+            if action != "start" and not package_lifecycle["start"]:
+                refuse("control_event_inventory")
+            if action == "start":
+                if test_name or package_lifecycle["start"] or package_pass_seen:
+                    refuse("control_event_inventory")
+                package_lifecycle["start"] += 1
+            elif action in ("run", "pass", "skip", "fail"):
+                if not test_name:
+                    if action == "fail": refuse("control_test_failed")
+                    if action == "skip": refuse("control_test_skipped")
+                    if action != "pass" or not package_lifecycle["start"] or package_pass_seen:
+                        refuse("control_event_inventory")
+                    package_lifecycle["pass"] += 1
+                    package_pass_seen = True
+                    continue
+                if not package_lifecycle["start"] or package_pass_seen:
+                    refuse("control_event_inventory")
                 if test_name not in expected: refuse("control_event_inventory")
                 if action == "skip": refuse("control_test_skipped")
                 if action == "fail": refuse("control_test_failed")
                 counts[test_name][action] += 1
                 if counts[test_name][action] > 1: refuse("control_event_inventory")
             elif action == "output":
+                if package_pass_seen: refuse("control_event_inventory")
                 if test_name and test_name not in expected: refuse("control_event_inventory")
             else:
                 refuse("control_event_inventory")
-        if any(counts[test]["run"] != 1 or counts[test]["pass"] != 1 for test in expected):
+        if (package_lifecycle["start"] != 1 or package_lifecycle["pass"] != 1 or
+            any(counts[test]["run"] != 1 or counts[test]["pass"] != 1 for test in expected)):
             refuse("control_event_incomplete")
     return len(controls), len(cases)
 
@@ -288,6 +380,7 @@ def validate_run(f, run_path, log_args):
     for a in r["artifacts"]:
         keys(a, {"name", "id", "archive_digest", "expires_at", "run_id", "attempt"}, "artifact_schema")
         if not positive_int(a["id"]) or a["id"] in {x["id"] for x in artifacts.values()}: refuse("required_artifacts")
+        if not positive_int(a["run_id"]) or not positive_int(a["attempt"]): refuse("mixed_attempt")
         if a["run_id"] != r["run_id"] or a["attempt"] != r["attempt"]: refuse("mixed_attempt")
         if not isinstance(a["archive_digest"], str) or re.fullmatch(r"sha256:[0-9a-f]{64}", a["archive_digest"]) is None: refuse("artifact_digest")
         try: expiry = datetime.datetime.fromisoformat(a["expires_at"].replace("Z", "+00:00"))
@@ -303,7 +396,8 @@ def validate_run(f, run_path, log_args):
     manifest_path = f["manifest"]["path"]
     for item in r["logs"]:
         keys(item, {"artifact_id", "host", "path", "bytes", "sha256"}, "log_schema")
-        if item["host"] not in host_os or item["host"] in by_host: refuse("required_logs")
+        if type(item["host"]) is not str or item["host"] not in host_os or item["host"] in by_host: refuse("required_logs")
+        if not positive_int(item["artifact_id"]): refuse("artifact_log_membership")
         if item["artifact_id"] != artifacts[item["host"]]["id"]: refuse("artifact_log_membership")
         if not positive_int(item["bytes"]) or not hex_string(item["sha256"], 64): refuse("log_identity")
         path = safe_path(item["path"])
@@ -312,9 +406,11 @@ def validate_run(f, run_path, log_args):
         if len(data) != item["bytes"] or hashlib.sha256(data).hexdigest() != item["sha256"]:
             refuse("log_bytes_mismatch")
         if b"phase38 probe result status=pass" in data: refuse("probe_not_full_receipt")
-        identity = re.search(rb"(?m)^phase38 host identity host=([^ ]+) .* headsha=([^ ]+) codedigest=([^ ]+) tree=([^ ]+)$", data)
+        identity = re.search(rb"(?m)^phase38 host identity host=([^ ]+) run_id=([0-9]+) attempt=([0-9]+) .* headsha=([^ ]+) codedigest=([^ ]+) tree=([^ ]+)$", data)
         if not identity: refuse("host_identity")
-        host, head, digest, tree = [x.decode("ascii", "strict") for x in identity.groups()]
+        host, log_run_id, log_attempt, head, digest, tree = [x.decode("ascii", "strict") for x in identity.groups()]
+        if log_run_id != str(r["run_id"]): refuse("run_identity")
+        if log_attempt != str(r["attempt"]): refuse("mixed_attempt")
         if host != item["host"] or head != f["freeze_sha"]: refuse("wrong_revision")
         if digest != f["codedigest"]: refuse("wrong_codedigest")
         if tree != "clean": refuse("dirty_host")

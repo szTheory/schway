@@ -114,9 +114,20 @@ func TestPhase38ManifestConsumerBindings(t *testing.T) {
 	}
 	actualOld := make([]string, 0, 39)
 	actualCases := make([]string, 0, 106)
+	caseKeys := map[string]bool{}
 	for _, line := range strings.Split(string(manifest), "\n") {
 		if strings.HasPrefix(line, "# case ") {
 			actualCases = append(actualCases, line)
+			fields := strings.Fields(line)
+			if len(fields) < 4 {
+				t.Errorf("malformed manifest case row: %s", line)
+			} else {
+				key := fields[2] + "/" + fields[3]
+				if caseKeys[key] {
+					t.Errorf("duplicate manifest case identity: %s", key)
+				}
+				caseKeys[key] = true
+			}
 			if !strings.HasPrefix(line, "# case crc32 ") && !strings.HasPrefix(line, "# case crc_low ") && !strings.HasPrefix(line, "# case helper_") {
 				actualOld = append(actualOld, line)
 			}
@@ -131,8 +142,8 @@ func TestPhase38ManifestConsumerBindings(t *testing.T) {
 	if !reflect.DeepEqual(actualOld, wantOld) || len(wantOld) != 39 {
 		t.Fatalf("M007 inherited M006 case rows differ: actual=%d want=%d", len(actualOld), len(wantOld))
 	}
-	if len(actualCases) != 106 {
-		t.Fatalf("M007 distinct case inventory = %d, want all 106 declared rows", len(actualCases))
+	if len(actualCases) != 106 || len(caseKeys) != 106 {
+		t.Fatalf("M007 distinct case inventory = %d rows / %d keys, want 106 / 106", len(actualCases), len(caseKeys))
 	}
 	lines := map[string]int{}
 	for _, line := range strings.Split(string(manifest), "\n") {
@@ -254,13 +265,37 @@ func TestPhase38ProducerInventoryControls(t *testing.T) {
 	if missingGo.exit == 0 || !strings.Contains(missingGo.stdout+missingGo.stderr, "unavailable_tool_go") {
 		t.Fatalf("producer did not fail closed when Go is unavailable: %#v", missingGo)
 	}
+	countEnv := phase38EnvWith(os.Environ(), "PHASE38_TEST_CASE_COUNT_CONTROL", "positive")
+	positiveCount := phase33RunAtEnv(t, testsupport.ProjectPath(), "scripts/verify-phase32.sh", countEnv, "--milestone", "M007")
+	if positiveCount.exit != 0 || !strings.Contains(positiveCount.stdout, "phase38 case-count-control actual=106 expected=106 status=pass") {
+		t.Fatalf("producer did not accept its complete distinct M007 case count: %#v", positiveCount)
+	}
+	countEnv = phase38EnvWith(os.Environ(), "PHASE38_TEST_CASE_COUNT_CONTROL", "negative")
+	negativeCount := phase33RunAtEnv(t, testsupport.ProjectPath(), "scripts/verify-phase32.sh", countEnv, "--milestone", "M007")
+	if negativeCount.exit == 0 || !strings.Contains(negativeCount.stdout+negativeCount.stderr, "incomplete_cases") {
+		t.Fatalf("producer accepted a short M007 case count: %#v", negativeCount)
+	}
+	for _, tc := range []struct{ key, value string }{{"PHASE38_RUN_ID", "0"}, {"PHASE38_RUN_ATTEMPT", "1.0"}} {
+		invalidEnv := phase38EnvWith(os.Environ(), "PHASE38_RUN_ID", "9001")
+		invalidEnv = phase38EnvWith(invalidEnv, "PHASE38_RUN_ATTEMPT", "1")
+		invalidEnv = phase38EnvWith(invalidEnv, tc.key, tc.value)
+		invalid := phase33RunAtEnv(t, testsupport.ProjectPath(), "scripts/verify-phase32.sh", invalidEnv, "--milestone", "M007")
+		if invalid.exit == 0 || !strings.Contains(invalid.stdout+invalid.stderr, "invalid_host_run_identity") {
+			t.Fatalf("producer accepted invalid host identity %s=%q: %#v", tc.key, tc.value, invalid)
+		}
+	}
 
 	t.Run("actual-producer-json-capture", func(t *testing.T) {
 		env := phase38EnvWith(os.Environ(), "GOCACHE", "/tmp/ai-lang-verification-gocache")
 		env = phase38EnvWith(env, "PHASE38_TEST_CONTROL_CAPTURE", "codedigest")
+		env = phase38EnvWith(env, "PHASE38_RUN_ID", "9001")
+		env = phase38EnvWith(env, "PHASE38_RUN_ATTEMPT", "1")
 		got := phase33RunAtEnv(t, testsupport.ProjectPath(), "scripts/verify-phase32.sh", env, "--milestone", "M007")
 		if got.exit != 0 || !strings.Contains(got.stdout, "phase38 control name=codedigest package=./internal/compiler/session tests=TestPhase32CodeDigest status=pass") {
 			t.Fatalf("producer's bounded real JSON capture failed: exit=%d stdout=%q stderr=%q", got.exit, got.stdout, got.stderr)
+		}
+		if !strings.Contains(got.stdout, "host=macOS run_id=9001 attempt=1 ") {
+			t.Fatalf("producer omitted the selected host run identity: %q", got.stdout)
 		}
 		if strings.Contains(got.stdout, "phase38 host result") {
 			t.Fatalf("one-control diagnostic claimed a complete host receipt: %q", got.stdout)
@@ -299,6 +334,7 @@ func TestPhase38BindingControls(t *testing.T) {
 	}
 
 	t.Run("fractional-run-id", func(t *testing.T) {
+		fixture := phase38NewBindingFixture(t)
 		phase38RunBinding(t, fixture, fixture.run, fixture.linuxLog, fixture.macosLog)
 		raw, err := os.ReadFile(filepath.Join(fixture.root, filepath.FromSlash(fixture.runPath)))
 		if err != nil {
@@ -325,6 +361,7 @@ func TestPhase38BindingControls(t *testing.T) {
 		{"fractional-log-artifact-id", `"artifact_id":21`, `"artifact_id":21.0`, 1, "artifact_log_membership"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			fixture := phase38NewBindingFixture(t)
 			raw, err := os.ReadFile(filepath.Join(fixture.root, filepath.FromSlash(fixture.runPath)))
 			if err != nil {
 				t.Fatal(err)
@@ -339,6 +376,7 @@ func TestPhase38BindingControls(t *testing.T) {
 	}
 
 	t.Run("dispatch-input-integer-alias", func(t *testing.T) {
+		fixture := phase38NewBindingFixture(t)
 		raw, err := os.ReadFile(filepath.Join(fixture.root, filepath.FromSlash(fixture.freezePath)))
 		if err != nil {
 			t.Fatal(err)
@@ -352,6 +390,7 @@ func TestPhase38BindingControls(t *testing.T) {
 	})
 
 	t.Run("log-attempt-mismatch", func(t *testing.T) {
+		fixture := phase38NewBindingFixture(t)
 		mutated := bytes.Replace(fixture.linuxLog, []byte("attempt=1"), []byte("attempt=2"), 1)
 		if bytes.Equal(mutated, fixture.linuxLog) {
 			t.Fatal("could not mutate log attempt")
@@ -359,7 +398,17 @@ func TestPhase38BindingControls(t *testing.T) {
 		phase38RequireRefusal(t, phase38RunBinding(t, fixture, fixture.run, mutated, fixture.macosLog), "mixed_attempt")
 	})
 
+	t.Run("log-run-id-mismatch", func(t *testing.T) {
+		fixture := phase38NewBindingFixture(t)
+		mutated := bytes.Replace(fixture.linuxLog, []byte("run_id=9001"), []byte("run_id=9002"), 1)
+		if bytes.Equal(mutated, fixture.linuxLog) {
+			t.Fatal("could not mutate log run ID")
+		}
+		phase38RequireRefusal(t, phase38RunBinding(t, fixture, fixture.run, mutated, fixture.macosLog), "run_identity")
+	})
+
 	t.Run("log-bytes-altered-after-hash", func(t *testing.T) {
+		fixture := phase38NewBindingFixture(t)
 		phase38RunBinding(t, fixture, fixture.run, fixture.linuxLog, fixture.macosLog)
 		path := filepath.Join(fixture.root, filepath.FromSlash(fixture.linuxPath))
 		data, err := os.ReadFile(path)
@@ -419,7 +468,10 @@ func TestPhase38FreezeWorktreeControls(t *testing.T) {
 		mutate       func(t *testing.T, fixture phase38BindingFixture)
 	}{
 		{"missing-review-record", "preparation_missing", func(t *testing.T, fixture phase38BindingFixture) {
-			fixture.freeze.Preparation["review"] = phase38SourceLink{Path: ".planning/phases/38-milestone-receipts/missing-review.md", SHA256: strings.Repeat("a", 64), SourceSHA: fixture.freeze.FreezeSHA, CodeDigest: fixture.digest, Disposition: "clear"}
+			path := filepath.Join(fixture.root, filepath.FromSlash(fixture.freeze.Preparation["review"].Path))
+			if err := os.Remove(path); err != nil {
+				t.Fatal(err)
+			}
 		}},
 		{"changed-review-bytes", "preparation_digest_mismatch", func(t *testing.T, fixture phase38BindingFixture) {
 			link := fixture.freeze.Preparation["review"]
@@ -440,6 +492,45 @@ func TestPhase38FreezeWorktreeControls(t *testing.T) {
 			phase38Write(t, fixture.root, link.Path, data)
 			link.SHA256 = phase38SHA256(data)
 			link.Disposition = "issues_found"
+			fixture.freeze.Preparation["review"] = link
+		}},
+		{"missing-review-marker", "preparation_record", func(t *testing.T, fixture phase38BindingFixture) {
+			link := fixture.freeze.Preparation["review"]
+			path := filepath.Join(fixture.root, filepath.FromSlash(link.Path))
+			data := mustRead(t, path)
+			marker := bytes.Index(data, []byte("<!-- phase38-preparation/"))
+			if marker < 0 {
+				t.Fatal("fixture marker missing")
+			}
+			data = data[:marker]
+			phase38Write(t, fixture.root, link.Path, data)
+			link.SHA256 = phase38SHA256(data)
+			fixture.freeze.Preparation["review"] = link
+		}},
+		{"duplicate-review-marker", "preparation_record", func(t *testing.T, fixture phase38BindingFixture) {
+			link := fixture.freeze.Preparation["review"]
+			path := filepath.Join(fixture.root, filepath.FromSlash(link.Path))
+			data := mustRead(t, path)
+			marker := bytes.Index(data, []byte("<!-- phase38-preparation/"))
+			if marker < 0 {
+				t.Fatal("fixture marker missing")
+			}
+			data = append(data, bytes.Clone(data[marker:])...)
+			phase38Write(t, fixture.root, link.Path, data)
+			link.SHA256 = phase38SHA256(data)
+			fixture.freeze.Preparation["review"] = link
+		}},
+		{"marker-before-frontmatter", "preparation_record", func(t *testing.T, fixture phase38BindingFixture) {
+			link := fixture.freeze.Preparation["review"]
+			path := filepath.Join(fixture.root, filepath.FromSlash(link.Path))
+			data := mustRead(t, path)
+			marker := bytes.Index(data, []byte("<!-- phase38-preparation/"))
+			if marker < 0 {
+				t.Fatal("fixture marker missing")
+			}
+			data = append(bytes.Clone(data[marker:]), data[:marker]...)
+			phase38Write(t, fixture.root, link.Path, data)
+			link.SHA256 = phase38SHA256(data)
 			fixture.freeze.Preparation["review"] = link
 		}},
 	} {
@@ -485,7 +576,7 @@ func TestPhase38WorkflowFailureControls(t *testing.T) {
 	if next := strings.Index(section[len(name):], "      - name:"); next >= 0 {
 		section = section[:len(name)+next]
 	}
-	for _, required := range []string{"shell: bash", "set -o pipefail", "sh scripts/verify-phase32.sh --milestone M007 2>&1 | tee"} {
+	for _, required := range []string{"shell: bash", "PHASE38_RUN_ID: ${{ github.run_id }}", "PHASE38_RUN_ATTEMPT: ${{ github.run_attempt }}", "set -o pipefail", "sh scripts/verify-phase32.sh --milestone M007 2>&1 | tee"} {
 		if !strings.Contains(section, required) {
 			t.Fatalf("M007 producer step is missing %q", required)
 		}
@@ -625,7 +716,7 @@ type phase38SourceLink struct {
 	SHA256      string `json:"sha256"`
 	SourceSHA   string `json:"source_sha"`
 	CodeDigest  string `json:"codedigest"`
-	Disposition string `json:"-"`
+	Disposition string `json:"disposition"`
 }
 
 type phase38RunFixture struct {
@@ -689,12 +780,15 @@ func phase38NewBindingFixture(t *testing.T) phase38BindingFixture {
 func phase38NewBindingFixtureForControl(t *testing.T, control, packageName, pattern string, names []string, rawEvents []byte) phase38BindingFixture {
 	t.Helper()
 	root := t.TempDir()
-	for _, dir := range []string{"cmd", "scripts", "testdata/receipts", ".github/workflows", ".planning/phases/38-milestone-receipts"} {
+	for _, dir := range []string{"cmd", "cmd/schway", "internal/compiler/session", "scripts", "testdata/receipts", ".github/workflows", ".planning/phases/38-milestone-receipts"} {
 		if err := os.MkdirAll(filepath.Join(root, filepath.FromSlash(dir)), 0o755); err != nil {
 			t.Fatal(err)
 		}
 	}
 	phase38Write(t, root, "cmd/probe.go", []byte("package main\nfunc Probe() int { return 3421780262 }\n"))
+	phase38Write(t, root, "cmd/schway/probe.go", []byte("package main\nfunc Probe() int { return 3421780262 }\n"))
+	phase38Write(t, root, "internal/compiler/session/probe.go", []byte("package session\nfunc Probe() int { return 3421780262 }\n"))
+	phase38Write(t, root, "go.mod", []byte("module github.com/szTheory/schway\n\ngo 1.24\n"))
 	phase38Write(t, root, ".github/workflows/ci.yml", []byte("name: CI\n"))
 	phase38Write(t, root, "testdata/receipts/M006.manifest", []byte("label=phase32\nprograms=crc32\ncontrols=smoke\n# case crc32 check 0 3421780262 -\n"))
 	var manifest strings.Builder
@@ -713,7 +807,7 @@ func phase38NewBindingFixtureForControl(t *testing.T, control, packageName, patt
 		phase38Write(t, root, "scripts/check-milestone-binding.sh", source)
 	}
 	phase32Git(t, root, "init", "-q")
-	phase32Git(t, root, "add", "cmd", ".github", "scripts", "testdata")
+	phase32Git(t, root, "add", "cmd", "internal", "go.mod", ".github", "scripts", "testdata")
 	phase32Git(t, root, "commit", "-qm", "synthetic M007 preparation")
 	head := phase32GateHead(t, root)
 	digest := phase32ShDigest(t, root)
@@ -796,19 +890,19 @@ func phase38SyntheticLog(host, headSHA, digest string, runID, attempt int64, con
 }
 
 func phase38SyntheticEvents(actions ...string) []byte {
-	lines := []string{`{"Action":"start","Package":"./cmd/schway"}`}
+	lines := []string{`{"Action":"start","Package":"github.com/szTheory/schway/cmd/schway"}`}
 	for _, action := range actions {
 		if action == "extra" {
-			lines = append(lines, `{"Action":"run","Package":"./cmd/schway","Test":"TestOther"}`, `{"Action":"pass","Package":"./cmd/schway","Test":"TestOther"}`)
+			lines = append(lines, `{"Action":"run","Package":"github.com/szTheory/schway/cmd/schway","Test":"TestOther"}`, `{"Action":"pass","Package":"github.com/szTheory/schway/cmd/schway","Test":"TestOther"}`)
 			continue
 		}
 		if action == "output" {
-			lines = append(lines, `{"Action":"output","Package":"./cmd/schway","Test":"TestSmoke","Output":"interpreter-with-clang-unavailable"}`)
+			lines = append(lines, `{"Action":"output","Package":"github.com/szTheory/schway/cmd/schway","Test":"TestSmoke","Output":"interpreter-with-clang-unavailable"}`)
 			continue
 		}
-		lines = append(lines, `{"Action":"`+action+`","Package":"./cmd/schway","Test":"TestSmoke"}`)
+		lines = append(lines, `{"Action":"`+action+`","Package":"github.com/szTheory/schway/cmd/schway","Test":"TestSmoke"}`)
 	}
-	lines = append(lines, `{"Action":"pass","Package":"./cmd/schway","Elapsed":0.01}`)
+	lines = append(lines, `{"Action":"pass","Package":"github.com/szTheory/schway/cmd/schway","Elapsed":0.01}`)
 	return []byte(strings.Join(lines, "\n") + "\n")
 }
 
