@@ -154,3 +154,16 @@ Both existing test-tier prohibition descriptors returned canonical green, with m
 | Gaps found | 0 |
 | Resolved | 0 |
 | Escalated | 0 |
+
+
+## Goal-verifier metadata follow-up — 2026-10-15
+
+One planning-metadata gap was found after the green behavioral task map: four completed-phase plan counters in ROADMAP.md were still placeholders. All four now match actual plan/summary counts and the progress table (8/8, 8/8, 8/8, 9/9); explicit assertions preserved Phase38's unplanned state. See 36-REFRESH-METADATA-FIX.md and `/tmp/schway36-roadmap-counts.json`. No behavioral coverage gap or new test is implied; the independent verifier will re-assess the correction.
+
+## Validation Audit 2026-10-16
+
+| Metric | Count |
+|---|---|
+| Gaps found | 1 |
+| Resolved | 1 |
+| Escalated | 0 |

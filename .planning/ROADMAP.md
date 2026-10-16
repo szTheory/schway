@@ -159,7 +159,7 @@ Plans:
 
 **Research flag**: Standard. No semantics change: generated C for every existing program stays byte-identical, pinned by the corpus golden. Bitwise operators and hex literals receive no `surface.unsupported_*` hint here (Phase 35 admits them); the dynamic-shift-amount code lands with BIT-02 in Phase 35 (see the ordering decision above). Diagnostic JSON gains fields only; existing consumers and repair patches must keep parsing it.
 
-**Plans**: TBD (target ≈8)
+**Plans**: 8 (8/8 complete)
 **Wave 1**
 - [x] 34-01-PLAN.md
 
@@ -204,7 +204,7 @@ Plans:
 
 **Research flag**: Standard. Literal-only shift amounts keep the ops event-free (precedent: the static-zero refusal in `scalar.go`) and avoid C17 §6.5.7 UB. Non-defecting ops join the event-free lists only. Hex is lexer-only.
 
-**Plans**: TBD (target ≈8)
+**Plans**: 8 (8/8 complete)
 - [x] 35-01-PLAN.md
 - [x] 35-02-PLAN.md
 - [x] 35-03-PLAN.md
@@ -233,7 +233,7 @@ Plans:
 
 **Research flag**: Moderate. Arity stays exactly 1 (`core.Function.Parameter`), so the core IR JSON schema does not change. Cost lies in the callee defect path through cgen evidence reservation, interpreter defect events and the execution peer.
 
-**Plans**: TBD (target ≈8)
+**Plans**: 8 (8/8 complete)
 **Wave 1**
 - [x] 36-01-PLAN.md
 
@@ -275,7 +275,7 @@ Plans:
 
 **Research flag**: Moderate. Reuses the M006 file cap, ByteView, module and file adapter unchanged. The interpreter file-bytes CLI route is new public surface: record its exit classes in the Phase 28 exit table. The unreadable-file control uses a named skip when running as root. This is the last code-moving phase before the milestone audit.
 
-**Plans**: TBD (target ≈8)
+**Plans**: 9 (9/9 complete)
 - [x] 37-09-PLAN.md
 
 **Wave 1**
