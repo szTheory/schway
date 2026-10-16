@@ -5,17 +5,17 @@ milestone_name: Bitwise Checksum and Composable Scalar Helpers
 current_phase: "37.1"
 current_phase_name: "Close gap: legacy terminal outcomes"
 current_plan: 4
-status: executing
-stopped_at: Completed 37.1-03-PLAN.md
-last_updated: "2026-10-16T17:07:54.699Z"
+status: verifying
+stopped_at: Completed 37.1-04-PLAN.md
+last_updated: "2026-10-16T18:03:47.637Z"
 last_activity: 2026-10-16
 last_activity_desc: Phase 37.1 execution started
-state_head: 5ac8757ca2077382421c3f38d17488ba7aae9edb
+state_head: cfc8b8910540cf8967e4222585cb475736870e73
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 42
-  completed_plans: 41
+  completed_plans: 42
   percent: 71
 ---
 
@@ -128,7 +128,7 @@ plans.
 Phase: 37.1 (Close gap: legacy terminal outcomes) — EXECUTING
 Current Plan: 4
 Total Plans in Phase: 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-16 — Phase 37.1 execution started
 
 Progress: [███████░░░] 71%
@@ -634,6 +634,7 @@ subset alone.
 | Phase 37.1 P01 | 33 | 3 tasks | 6 files |
 | Phase 37.1 P02 | 18m 32s | 2 tasks | 7 files |
 | Phase 37.1 P03 | 42m | 2 tasks | 9 files |
+| Phase 37.1-close-gap-legacy-terminal-outcomes P04 | 47m | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -928,6 +929,9 @@ decision history; they no longer describe current status.
 - [Phase 37.1]: Check raw OpDefect reasons before core JSON cloning, which replaces malformed UTF-8 with U+FFFD.
 - [Phase 37.1]: Freeze every measured legacy route before Plan04 changes cgen; later output changes require explicit byte deltas bound to source, core, old C, and prior projection.
 - [Phase 37.1]: Keep the Phase35 Adler projection explicit and verify its frozen and projected C hashes independently.
+- [Phase 37.1-close-gap-legacy-terminal-outcomes]: Native scalar defects use structured conformance; only the application shell selects application failure handling.
+- [Phase 37.1-close-gap-legacy-terminal-outcomes]: Counted reason-byte emission preserves admitted valid UTF-8 while ordinary ASCII retains its existing path.
+- [Phase 37.1-close-gap-legacy-terminal-outcomes]: Compatibility amendments are limited to five exact source/core/old-C-bound path and route rows.
 
 ### Pending Todos
 
@@ -1208,8 +1212,8 @@ still has. Grade requirements against the tree, not the wiring diagram.
 
 ## Session Continuity
 
-Last session: 2026-10-16T17:07:53.285Z
-Stopped at: Completed 37.1-03-PLAN.md
+Last session: 2026-10-16T18:03:46.287Z
+Stopped at: Completed 37.1-04-PLAN.md
 Resume file: None
 Next action: `$gsd-plan-phase 37.1`; zero plans exist, so the generic missing-verification execute hint is not the next step. Close CR-03/04/06 and rerun the milestone audit before Phase 38.
 
