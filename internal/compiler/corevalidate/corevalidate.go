@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"unicode/utf8"
 
 	"github.com/szTheory/schway/internal/compiler/core"
 )
@@ -223,6 +224,19 @@ var disableReturnValueLawForTest bool
 // typed-core statement, not that a coordinated producer translated source
 // truthfully.
 func Validate(input core.Program) Result {
+	// cloneProgram uses JSON serialization, which replaces malformed UTF-8
+	// string bytes with U+FFFD. Check raw OpDefect reasons before that clone so
+	// this independent core boundary rejects rather than normalizes them.
+	for _, function := range input.Functions {
+		if function.Linear == nil {
+			continue
+		}
+		for _, operation := range function.Linear.Operations {
+			if operation.Kind == core.OpDefect && !utf8.ValidString(operation.Reason) {
+				return Result{Valid: false, Problems: []Problem{{Code: "core.final_claim_mismatch", Detail: operation.ID}}}
+			}
+		}
+	}
 	owned := cloneProgram(input)
 	v := validator{program: owned}
 	v.run()
@@ -3151,11 +3165,10 @@ func (v *validator) replayStraightLine(function *core.Function, types map[string
 			returned = true
 		case core.OpDefect:
 			// A terminator alongside OpReturn/OpFail (D-04-15): never the
-			// last operation of anything but its own straight-line body (this
-			// case exists only so control:kind.exhaustive_dispatch's table
-			// finds it handled here too -- a straight-line, block-less body
-			// can never actually carry a defect this phase).
-			if !v.check(index == len(operations)-1 && !returned && operation.TargetID == "" && operation.Reason != "", "core.final_claim_mismatch", operation.ID) {
+			// last operation of anything but its own straight-line body. This
+			// raw-core boundary also requires valid UTF-8 even though checked
+			// source emits defects only from branch-shaped terminal bodies.
+			if !v.check(index == len(operations)-1 && !returned && operation.TargetID == "" && operation.Reason != "" && utf8.ValidString(operation.Reason), "core.final_claim_mismatch", operation.ID) {
 				return false
 			}
 			returned = true
@@ -3576,13 +3589,13 @@ func (v *validator) replayBlocks(function *core.Function, types map[string]core.
 			// A per-block terminator alongside OpReturn/OpFail (D-04-15): the
 			// only route into a "defect" terminal outcome, admissible only in
 			// a match arm's terminal position this phase (checkBranch never
-			// produces it elsewhere). It carries a required non-empty Reason
-			// and never a TargetID.
+			// produces it elsewhere). It carries a required non-empty, valid
+			// UTF-8 Reason and never a TargetID.
 			blockID, known := blockOfOperation[operation.ID]
 			if !v.check(known && lastOperationOfBlock[blockID] == operation.ID, "core.final_claim_mismatch", operation.ID) {
 				return false
 			}
-			if !v.check(!returnedBlocks[blockID] && operation.TargetID == "" && operation.Reason != "", "core.final_claim_mismatch", operation.ID) {
+			if !v.check(!returnedBlocks[blockID] && operation.TargetID == "" && operation.Reason != "" && utf8.ValidString(operation.Reason), "core.final_claim_mismatch", operation.ID) {
 				return false
 			}
 			returnedBlocks[blockID] = true
@@ -4240,34 +4253,12 @@ var disableCallArgumentConsumePeerForTest bool
 var forceCallArgumentConsumePeerForTest bool
 
 // consumeCallArgument is 07-11's independent peer half of the call-site
-// ownership consume rule (PVG-01/CR-01): a call transfers its argument, and
-// corevalidate decides whether that transfer costs the caller its binding
-// using ONLY its own derivation -- v.derive over the emitted core
-// artifact's own types[operation.TypeID].Shape (its own in-package
-// deriveAbility/sealedLeaves) -- never check's recorded Abilities list and
-// never check's ability package. operation.TypeID is already asserted equal
-// to the argument place's own TypeID by the generic
-// `source.TypeID == operation.TypeID` check every operation passes before
-// its kind-specific switch runs (this function's own caller), so deriving
-// from operation.TypeID IS deriving from the argument's own type.
-//
-// WR-01 (07-REVIEW): that equivalence is NOT an IR invariant local to
-// OpCall the way it is for OpCopy/OpMove/OpBorrow* (where TargetID's type
-// and SourceID's type are definitionally the same value) -- for OpCall,
-// operation.TypeID is the call's declared RETURN type (derived on the
-// producer side from the callee's declared return type), and it only
-// equals the argument's own SourceID type because of two OTHER,
-// separately-checked facts: the generic source.TypeID == operation.TypeID
-// law above (which is not OpCall-specific and could in principle be
-// loosened or bypassed for one kind without this function noticing), and
-// D-07-09's constraint that a function's declared return type equals its
-// own declared parameter type. sourceTypeID is threaded through
-// explicitly by this function's two callers (each already holding
-// places[operation.SourceID].TypeID as `source.TypeID`) so this function
-// can assert the equivalence itself, right where the derivation happens,
-// instead of trusting a caller-side law it cannot see -- if either
-// constraint above is ever weakened, this assertion fails closed here
-// rather than silently deriving copyability from the wrong type.
+// ownership consume rule (PVG-01/CR-01). It derives argument ownership from
+// sourceTypeID, the core TypeFact for operation.SourceID, using its own
+// v.derive implementation rather than check's recorded Abilities. Separate
+// call-contract checks compare the argument type with the callee parameter
+// and operation.TypeID with the callee result, so cross-typed U64/Bool calls
+// do not derive copy/move behavior from the result type.
 //
 // A non-copyable argument is consumed by mirroring the OpMove arm verbatim
 // (initialized[operation.SourceID] = false); the SECOND use of that same

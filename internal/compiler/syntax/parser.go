@@ -2,6 +2,7 @@ package syntax
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	"github.com/szTheory/schway/internal/compiler/ast"
 	"github.com/szTheory/schway/internal/compiler/diagnostic"
@@ -777,6 +778,7 @@ func (p *parser) scalarStatements(inBlock bool) []ast.Statement {
 		case TokenDefect:
 			p.advance()
 			reason := p.expect(TokenString, "syntax.expected_defect_reason")
+			p.diagnoseDefectReasonUTF8(reason)
 			value := reason.Text
 			if len(value) >= 2 {
 				value = value[1 : len(value)-1]
@@ -1377,6 +1379,7 @@ func (p *parser) linearBody(allowTerminalMatch bool) ast.LinearBody {
 		reason := reasonToken.Text
 		if len(reason) >= 2 && reasonToken.Kind == TokenString {
 			reason = reason[1 : len(reason)-1]
+			p.diagnoseDefectReasonUTF8(reasonToken)
 		}
 		if reason == "" {
 			p.problem("syntax.defect_reason_empty", reasonToken, "defect requires a non-empty reason string")
@@ -1660,6 +1663,21 @@ func (p *parser) problem(code string, token Token, message string, causes ...dia
 	}
 	p.claimRecoveryToken(token)
 	p.diagnostics = append(p.diagnostics, diagnostic.Error(code, token.Span, message, causes...).AtSource())
+}
+
+func (p *parser) diagnoseDefectReasonUTF8(reasonToken Token) {
+	if reasonToken.Kind != TokenString || len(reasonToken.Text) < 2 {
+		return
+	}
+	reason := reasonToken.Text[1 : len(reasonToken.Text)-1]
+	for offset := 0; offset < len(reason); {
+		runeValue, size := utf8.DecodeRuneInString(reason[offset:])
+		if runeValue == utf8.RuneError && size == 1 {
+			start := reasonToken.Span.Start + 1 + offset
+			p.problem("syntax.invalid_utf8", Token{Span: diagnostic.Span{Start: start, End: start + 1}}, "source is not valid UTF-8")
+		}
+		offset += size
+	}
 }
 
 func (p *parser) ownsMalformedNumericExpectation(code string, token Token) bool {
