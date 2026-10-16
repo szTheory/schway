@@ -34,6 +34,39 @@ const STORAGE_EVOLUTION_PATHS = [ADAPTER_REL, CGEN_REL, CGEN_TEST_REL].sort();
 const PROOF_BINDING_EVOLUTION_PATHS = [ADAPTER_REL, PARSER_REL, COREVALIDATE_REL].sort();
 const TEST_REL = "internal/compiler/executionpeer/executionpeer_phase371_test.go";
 const MODEL_REL = "internal/compiler/session/session_phase24_model_test.go";
+const EXECUTIONPEER_PHASE33_REL = "internal/compiler/executionpeer/executionpeer_phase33_terminal_test.go";
+const EXECUTIONPEER_PHASE36_REL = "internal/compiler/executionpeer/executionpeer_phase36_test.go";
+const EXECUTIONPEER_SHARED_TEST_REL = "internal/compiler/executionpeer/executionpeer_test.go";
+const SESSION_PHASE34_REL = "internal/compiler/session/session_phase34_prechange_test.go";
+const SESSION_PHASE36_REL = "internal/compiler/session/session_phase36_prechange_test.go";
+const CGEN_PHASE33_REL = "internal/compiler/cgen/cgen_phase33_scalar_defect_test.go";
+const TESTSUPPORT_REL = "internal/compiler/testsupport/testsupport.go";
+const DIRECT_ACCEPTANCE_INPUTS = [
+  EXECUTIONPEER_PHASE33_REL,
+  EXECUTIONPEER_PHASE36_REL,
+  SESSION_PHASE34_REL,
+  SESSION_PHASE36_REL,
+  CGEN_PHASE33_REL,
+  EXECUTIONPEER_SHARED_TEST_REL,
+  TESTSUPPORT_REL,
+  "examples/checksum/checksum.schway",
+  "examples/checksum/adler32.schway",
+  "examples/sum_to_n.schway",
+  "testdata/phase34/prechange-corpus.json",
+  "testdata/phase36/prechange-corpus.json",
+  "testdata/phase36/new-fixture-ledger.json",
+  "testdata/phase37/new-fixture-ledger.json",
+  ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-COMPATIBILITY-DELTA.md",
+].sort();
+const REQUIRED_SOURCE_BINDING_PATHS = [
+  PLAN_REL, FAILURE_PLAN_REL, REASON_PLAN_REL, BASELINE_PLAN_REL, ADAPTER_REL,
+  SOURCE_REL, TEST_REL, MODEL_REL, REASON_TEST_REL, CGEN_REL, PARSER_REL, COREVALIDATE_REL,
+  CGEN_TEST_REL, COMPATIBILITY_TEST_REL,
+  "examples/phase24/error.schway", CLEAN_REL, DEFECT_REL, FAILURE_REL, REASON_REL, BASELINE_REL,
+  "testdata/phase371/pre-emitter-census.json", "testdata/phase371/compatibility-amendments.json",
+  ...DIRECT_ACCEPTANCE_INPUTS,
+].sort();
+const ACCEPTANCE_INPUT_EVOLUTION_PATHS = [ADAPTER_REL, ...DIRECT_ACCEPTANCE_INPUTS].sort();
 const FAILURE_BASE_HEAD = "8fbd1e51bb6fd97b1a46d5d1015ce5e39d69bfe0";
 const REASON_BASE_HEAD = "8f5b5795c8c31488257567511e807a276b78a10c";
 const REASON_ADMISSION_BASE_HEAD = "9d09df995f1ab68c7044cda0915608d5d0a3209f";
@@ -187,6 +220,28 @@ const CGEN_ROOTS = [
   REASON_ROOT,
   "TestPhase33ScalarExplicitDefectShells",
 ];
+const ROOT_OWNER_BY_NAME = {
+  TestPhase371LegacyDefectClosesAllActiveFrames: TEST_REL,
+  TestPhase371DefectTerminalControls: TEST_REL,
+  TestPhase33TerminalAttribution: EXECUTIONPEER_PHASE33_REL,
+  TestPhase36CallCausalAttributionControls: EXECUTIONPEER_PHASE36_REL,
+  TestPhase371ForeignFailureOpFailAttribution: TEST_REL,
+  TestPhase371ForeignFailureAttributionControls: TEST_REL,
+  TestPhase24ModelReplayIsDeterministicAndModelOnly: MODEL_REL,
+  TestPhase371DefectReasonUTF8Admission: REASON_TEST_REL,
+  TestPhase371PreEmitterRouteCensus: COMPATIBILITY_TEST_REL,
+  TestPhase371CompatibilityAmendmentControls: COMPATIBILITY_TEST_REL,
+  TestPhase34PreChangeCProgramGolden: SESSION_PHASE34_REL,
+  TestPhase34PreChangeCGoldenIsNotInert: SESSION_PHASE34_REL,
+  TestPhase36NoCallGeneratedCByteBaseline: SESSION_PHASE36_REL,
+  TestPhase36NoCallGeneratedCByteBaselineControls: SESSION_PHASE36_REL,
+  TestPhase37Phase34AdditionLedgerControls: SESSION_PHASE34_REL,
+  TestPhase37Phase36AdditionLedgerControls: SESSION_PHASE36_REL,
+  TestPhase371NoCallScalarDefectNativeConformance: CGEN_TEST_REL,
+  TestPhase371CountedDefectReasonBytes: CGEN_TEST_REL,
+  TestPhase33ScalarExplicitDefectShells: CGEN_PHASE33_REL,
+};
+const ALL_ACCEPTANCE_ROOTS = [...EXECUTIONPEER_ROOTS, ...SESSION_ROOTS, ...CGEN_ROOTS].sort();
 const MUTATED_FAILURE_NAMES = [
   "TestPhase371LegacyDefectClosesAllActiveFrames",
   "TestPhase371LegacyDefectClosesAllActiveFrames/legacy-static",
@@ -409,6 +464,7 @@ function recordCanonicalProducerSuiteSelection(selection, result) {
     mode: selection.mode,
     exact_root_inventory: observedRoots,
     semantic_result: result.kind,
+    acceptance_input_binding_controls: runAcceptanceInputBindingNegativeControls(),
     ...(selection.mode === "reason" ? { reason_overlay_binding_controls: runReasonOverlayBindingNegativeControls() } : {}),
   };
   const recordPath = path.join(evidenceDir, `canonical-suite-${lane}.json`);
@@ -1107,6 +1163,12 @@ function readCanonicalProducerSuiteSelections(evidenceDir, subject) {
     assert.equal(receipt.mode, subject, `${lane}: canonical producer must retain the requested proof mode`);
     assert.deepEqual(receipt.exact_root_inventory, expectedRoots, `${lane}: canonical producer exact root inventory`);
     assert.equal(receipt.semantic_result, expectedResult, `${lane}: canonical producer semantic result`);
+    assert.equal(receipt.acceptance_input_binding_controls?.baseline, "accepted",
+      `${lane}: complete finite acceptance input bindings must be accepted`);
+    assert.deepEqual(receipt.acceptance_input_binding_controls?.controls?.map(({ name, result }) => ({ name, result })), [
+      { name: "omit-phase33-terminal-owner", result: "rejected" },
+      { name: "mutate-direct-compatibility-document-binding", result: "rejected" },
+    ], `${lane}: missing root owner and mutated direct input bindings must be refused`);
     if (subject === "reason") {
       assert.equal(receipt.reason_overlay_binding_controls?.baseline, "accepted", `${lane}: matching reason overlay bindings must pass`);
       assert.deepEqual(receipt.reason_overlay_binding_controls?.controls?.map(({ name, result }) => ({ name, result })), [
@@ -1168,17 +1230,78 @@ function runCanonicalProducer(request, evidenceDir, subject) {
 }
 
 function sourceBindings(current) {
-  const selected = new Set([
-    PLAN_REL, FAILURE_PLAN_REL, REASON_PLAN_REL, BASELINE_PLAN_REL, ADAPTER_REL,
-    SOURCE_REL, TEST_REL, MODEL_REL, REASON_TEST_REL, CGEN_REL, PARSER_REL, COREVALIDATE_REL,
-    CGEN_TEST_REL, COMPATIBILITY_TEST_REL,
-    "examples/phase24/error.schway", CLEAN_REL, DEFECT_REL, FAILURE_REL, REASON_REL, BASELINE_REL,
-    "testdata/phase371/pre-emitter-census.json", "testdata/phase371/compatibility-amendments.json",
-  ]);
+  assertAcceptanceOwnerInventory();
+  const selected = new Set(REQUIRED_SOURCE_BINDING_PATHS);
+  assert.deepEqual([...selected].sort(), REQUIRED_SOURCE_BINDING_PATHS,
+    "the finite source binding inventory must contain no duplicate paths");
   return Object.fromEntries([...selected].map((relative) => {
     const bytes = fs.readFileSync(path.join(ROOT, relative));
     return [relative, { sha256: digest(bytes), bytes: bytes.length }];
   }));
+}
+
+function assertAcceptanceOwnerInventory() {
+  assert.equal(DIRECT_ACCEPTANCE_INPUTS.length, 15, "the phase direct acceptance input list must remain finite and exact");
+  assert.equal(new Set(DIRECT_ACCEPTANCE_INPUTS).size, 15, "direct acceptance inputs must not be duplicated");
+  assert.equal(ALL_ACCEPTANCE_ROOTS.length, 19, "the declared acceptance inventory must contain 19 roots");
+  assert.equal(new Set(ALL_ACCEPTANCE_ROOTS).size, 19, "the declared acceptance roots must be unique");
+  assert.deepEqual(Object.keys(ROOT_OWNER_BY_NAME).sort(), ALL_ACCEPTANCE_ROOTS,
+    "every one of the 19 acceptance roots must have exactly one declared owner source");
+  const required = new Set(REQUIRED_SOURCE_BINDING_PATHS);
+  for (const [root, owner] of Object.entries(ROOT_OWNER_BY_NAME)) {
+    assert.ok(required.has(owner), `${root}: owner source must be included in the finite source binding set: ${owner}`);
+  }
+  for (const relative of DIRECT_ACCEPTANCE_INPUTS) {
+    assert.ok(required.has(relative), `direct acceptance input must be required: ${relative}`);
+  }
+}
+
+function assertSourceBindingPathSet(bindings, label) {
+  assertAcceptanceOwnerInventory();
+  assert.ok(bindings && typeof bindings === "object", `${label}: source bindings are required`);
+  assert.deepEqual(Object.keys(bindings).sort(), REQUIRED_SOURCE_BINDING_PATHS,
+    `${label}: source binding paths must equal the complete finite acceptance-input set`);
+  for (const relative of REQUIRED_SOURCE_BINDING_PATHS) {
+    const binding = bindings[relative];
+    assert.ok(binding && /^[a-f0-9]{64}$/.test(binding.sha256) && Number.isInteger(binding.bytes) && binding.bytes >= 0,
+      `${label}: source binding must contain a SHA-256 and byte count for ${relative}`);
+  }
+}
+
+function assertCurrentSourceBindings(bindings, label) {
+  assertSourceBindingPathSet(bindings, label);
+  for (const relative of REQUIRED_SOURCE_BINDING_PATHS) {
+    const bytes = fs.readFileSync(path.join(ROOT, relative));
+    assert.equal(bindings[relative].sha256, digest(bytes), `${label}: source binding changed for ${relative}`);
+    assert.equal(bindings[relative].bytes, bytes.length, `${label}: source binding byte count changed for ${relative}`);
+  }
+}
+
+function runAcceptanceInputBindingNegativeControls() {
+  const baseline = sourceBindings(projectCurrentPlan("baseline"));
+  assert.doesNotThrow(() => assertCurrentSourceBindings(baseline, "acceptance input control baseline"),
+    "the complete exact source binding inventory must pass");
+
+  const missingOwner = JSON.parse(JSON.stringify(baseline));
+  delete missingOwner[EXECUTIONPEER_PHASE33_REL];
+  assert.throws(() => assertCurrentSourceBindings(missingOwner, "missing owner control"),
+    /source binding paths must equal the complete finite acceptance-input set/,
+    "omitting the Phase33 terminal root owner must be refused");
+
+  const mutatedDirectInput = JSON.parse(JSON.stringify(baseline));
+  const directDocument = ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-COMPATIBILITY-DELTA.md";
+  mutatedDirectInput[directDocument].sha256 = "f".repeat(64);
+  assert.throws(() => assertCurrentSourceBindings(mutatedDirectInput, "mutated direct input control"),
+    new RegExp(`mutated direct input control: source binding changed for ${escapeRegex(directDocument)}`),
+    "changing the bound direct compatibility input hash must be refused");
+
+  return {
+    baseline: "accepted",
+    controls: [
+      { name: "omit-phase33-terminal-owner", result: "rejected", reason: `source binding paths must equal the complete finite acceptance-input set: ${EXECUTIONPEER_PHASE33_REL}` },
+      { name: "mutate-direct-compatibility-document-binding", result: "rejected", reason: `mutated direct input control: source binding changed for ${directDocument}` },
+    ],
+  };
 }
 
 function assertReasonOverlaySourceBindings(proof) {
@@ -1277,6 +1400,14 @@ function archivedFileRecords(value, records = []) {
   return records;
 }
 
+function assertArchivedEvidenceFileRecords(value, label) {
+  for (const record of archivedFileRecords(value)) {
+    const bytes = fs.readFileSync(record.path);
+    assert.equal(bytes.length, record.bytes, `${label}: archived evidence byte count changed: ${record.path}`);
+    assert.equal(digest(bytes), record.sha256, `${label}: archived evidence hash changed: ${record.path}`);
+  }
+}
+
 function assertArchivedSourceBindings(proof, sourceRevision) {
   assert.ok(proof.source_bindings && typeof proof.source_bindings === "object", `${proof.subject}: source bindings are required`);
   for (const [relative, expected] of Object.entries(proof.source_bindings)) {
@@ -1301,6 +1432,7 @@ function assertArchivedProof(subject, proof, sourceRevision) {
   assert.equal(proof.current_plan_projection.source_plan.sha256, proof.source_bindings[proof.current_plan_projection.source_plan.path].sha256);
   assertArchivedSourceBindings(proof, sourceRevision);
   if (proof.proof_format_version === CURRENT_PROOF_FORMAT_VERSION) {
+    assertSourceBindingPathSet(proof.source_bindings, `${subject}: current proof format`);
     for (const relative of [PARSER_REL, COREVALIDATE_REL]) {
       assert.ok(proof.source_bindings[relative], `${subject}: current proof format must bind ${relative}`);
     }
@@ -1423,9 +1555,11 @@ function beginSourceEvolution(initial, current) {
   const changedPaths = Object.keys(changed).sort();
   const proofBindingCorrection = changedPaths.some((relative) => relative === PARSER_REL || relative === COREVALIDATE_REL)
     && changedPaths.every((relative) => PROOF_BINDING_EVOLUTION_PATHS.includes(relative));
+  const acceptanceInputEvolution = changedPaths.some((relative) => DIRECT_ACCEPTANCE_INPUTS.includes(relative))
+    && changedPaths.every((relative) => ACCEPTANCE_INPUT_EVOLUTION_PATHS.includes(relative));
   const storageEvolution = changedPaths.every((relative) => STORAGE_EVOLUTION_PATHS.includes(relative));
-  assert.ok(proofBindingCorrection || storageEvolution,
-    "source evolution is limited to the existing storage repair or this phase-local proof-binding correction");
+  assert.ok(proofBindingCorrection || acceptanceInputEvolution || storageEvolution,
+    "source evolution is limited to the existing storage repair or the exact phase-local proof/acceptance-input path sets");
 
   const priorProofs = initial.proofs;
   assert.deepEqual(Object.keys(priorProofs || {}).sort(), proofSubjects().sort(), "all four current resolved proofs must be snapshotted before replacement");
@@ -1434,7 +1568,20 @@ function beginSourceEvolution(initial, current) {
     assert.equal(proof.lifecycle_status, "resolved", `${subject}: previous proof must record the resolved lifecycle`);
     assert.deepEqual(proof.source_bindings, resolvedSubjects[subject].current_source_bindings,
       `${subject}: prior proof bindings must match the previous resolved record`);
+    assertArchivedEvidenceFileRecords(proof, `${subject}: previous resolved proof`);
   }
+  assert.ok(initial.final_root_union && initial.final_root_union.raw_log, "previous resolved root union must be preserved before proof replacement");
+  assert.equal(initial.final_root_union.root_count, 19, "the previous root-union receipt must retain its exact root count");
+  assert.deepEqual(Object.keys(initial.final_root_union.roots || {}).sort(), ALL_ACCEPTANCE_ROOTS,
+    "the previous root-union receipt must retain all 19 exact root owners");
+  assert.deepEqual(initial.final_root_union.source_bindings, fromBindings,
+    "the previous root-union bindings must match the previously resolved baseline bindings");
+  for (const root of Object.values(initial.final_root_union.roots)) {
+    assert.ok(root.run === 1 && root.pass === 1 && root.fail === 0 && root.skip === 0
+      && root.subtestFail === 0 && root.subtestSkip === 0,
+    "the previous root-union receipt must remain a successful zero-skip historical result");
+  }
+  assertArchivedEvidenceFileRecords(initial.final_root_union, "previous resolved 19-root union");
   const priorReceiptsIncomplete = proofSubjects().some((subject) => {
     const proof = priorProofs[subject];
     const selection = proof.canonical_producer?.suite_selection;
@@ -1442,6 +1589,9 @@ function beginSourceEvolution(initial, current) {
       || !selection || selection.mode !== subject
       || !selection.controls || Object.keys(selection.controls).sort().join(",") !== "bad,clean,default";
   });
+  const priorAcceptanceInputsIncomplete = proofSubjects().some((subject) =>
+    JSON.stringify(Object.keys(priorProofs[subject].source_bindings || {}).sort()) !== JSON.stringify(REQUIRED_SOURCE_BINDING_PATHS))
+    || JSON.stringify(Object.keys(initial.final_root_union.source_bindings || {}).sort()) !== JSON.stringify(REQUIRED_SOURCE_BINDING_PATHS);
   {
     const historicalSourceRevision = record.pre_resolution_snapshot?.source_binding_revision;
     if (priorProofs.reason.proof_format_version === CURRENT_PROOF_FORMAT_VERSION) {
@@ -1451,20 +1601,28 @@ function beginSourceEvolution(initial, current) {
       assertLegacyReasonOverlaySourceHashes(priorProofs.reason, historicalSourceRevision);
     }
   }
-  assert.ok(initial.final_root_union && initial.final_root_union.raw_log, "previous resolved root union must be preserved before proof replacement");
-
   const event = {
-    id: proofBindingCorrection
-      ? `T-37.1-${priorReceiptsIncomplete ? "CR01-CR02-proof-binding-correction" : "CR02-proof-binding-reverification"}-${existing.length + 1}`
-      : `T-37.1-08-counted-storage-repair-${existing.length + 1}`,
+    id: acceptanceInputEvolution
+      ? `T-37.1-CR03-acceptance-input-bindings-${existing.length + 1}`
+      : proofBindingCorrection
+        ? `T-37.1-${priorReceiptsIncomplete ? "CR01-CR02-proof-binding-correction" : "CR02-proof-binding-reverification"}-${existing.length + 1}`
+        : `T-37.1-08-counted-storage-repair-${existing.length + 1}`,
     captured_utc: new Date().toISOString(),
     status: "pending-fresh-proofs",
-    reason: proofBindingCorrection
-      ? priorReceiptsIncomplete
-        ? "Dated CR-01/CR-02 correction: prior green receipts remain preserved as historical but incomplete because the canonical clean/default mode was not recorded and reason parser/corevalidate bindings were omitted; this event supersedes them only after fresh current-format proofs."
-        : "Dated CR-02 follow-up: prior current-format proofs already carry complete canonical modes and reason source bindings; their immutable payloads are preserved while this adapter guard edit receives fresh source-bound proofs."
-      : "Bounded source evolution for block-scoped static readonly counted defect-reason bytes; prior resolved proof facts are preserved below.",
-    ...(proofBindingCorrection ? {
+    reason: acceptanceInputEvolution
+      ? "Dated CR-03 correction: prior green proof and 19-root union payloads are preserved as historical but incomplete because directly executed acceptance owners and inputs were absent from their source bindings; fresh format-2 proofs and a newly bound union are required."
+      : proofBindingCorrection
+        ? priorReceiptsIncomplete
+          ? "Dated CR-01/CR-02 correction: prior green receipts remain preserved as historical but incomplete because the canonical clean/default mode was not recorded and reason parser/corevalidate bindings were omitted; this event supersedes them only after fresh current-format proofs."
+          : "Dated CR-02 follow-up: prior current-format proofs already carry complete canonical modes and reason source bindings; their immutable payloads are preserved while this adapter guard edit receives fresh source-bound proofs."
+        : "Bounded source evolution for block-scoped static readonly counted defect-reason bytes; prior resolved proof facts are preserved below.",
+    ...(acceptanceInputEvolution ? {
+      amendment_date: "2026-10-16",
+      review_findings: ["CR-03"],
+      prior_receipt_qualification: priorAcceptanceInputsIncomplete
+        ? "Historical only; prior proof and 19-root union objects and hashes are preserved unchanged, but their source maps omitted the finite direct acceptance owner and input set."
+        : "Prior proof and union source maps already included the complete finite direct acceptance set; the changed paths receive a fresh source-bound proof set.",
+    } : proofBindingCorrection ? {
       amendment_date: "2026-10-16",
       review_findings: priorReceiptsIncomplete ? ["CR-01", "CR-02"] : ["CR-02"],
       prior_receipt_qualification: priorReceiptsIncomplete
@@ -1662,6 +1820,7 @@ function runProofMode(subject) {
   const canonicalItem = createResolvedCandidate(current);
   const producer = runCanonicalProducer({ prohibition: canonicalItem.prohibition, check: current.check, mode: "auto" }, evidenceDir, subject);
   const bindings = sourceBindings(current);
+  assertCurrentSourceBindings(bindings, `${subject} proof`);
   const proof = {
     proof_format_version: CURRENT_PROOF_FORMAT_VERSION,
     subject,
@@ -1758,6 +1917,8 @@ function runAllProofMode() {
     assert.ok(proof, `${subject} source-bound proof must remain in the projection history`);
     assert.equal(proof.proof_format_version, CURRENT_PROOF_FORMAT_VERSION,
       `${subject} must use the current complete source-binding proof format`);
+    assertSourceBindingPathSet(proof.source_bindings, `${subject}: current proof`);
+    assertCurrentSourceBindings(proof.source_bindings, `${subject} current proof`);
     for (const relative of [PARSER_REL, COREVALIDATE_REL]) {
       assert.ok(proof.source_bindings[relative], `${subject} current source bindings must include ${relative}`);
     }
@@ -1770,6 +1931,8 @@ function runAllProofMode() {
   }
   const evidenceDir = tempEvidenceDir();
   const log = saveRaw(evidenceDir, "final-19-root-union.go.log", inventory.output);
+  const finalUnionSourceBindings = sourceBindings(projectCurrentPlan("baseline"));
+  assertCurrentSourceBindings(finalUnionSourceBindings, "final 19-root union");
   const union = {
     state: lifecycle.status === "resolved" ? "machine-evidence-and-lifecycle-resolved" : "machine-evidence-complete-pending-lifecycle-resolution",
     captured_utc: new Date().toISOString(),
@@ -1777,7 +1940,7 @@ function runAllProofMode() {
     distinct_package_count: 3,
     roots: inventory.roots,
     raw_log: log,
-    source_bindings: sourceBindings(projectCurrentPlan("baseline")),
+    source_bindings: finalUnionSourceBindings,
     initial_projection_status: stored.projection[0].status,
     current_plan_status: lifecycle.status,
     current_verification: lifecycle.verification,
