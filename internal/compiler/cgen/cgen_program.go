@@ -2671,13 +2671,17 @@ func isDynamicScalarFunctionBody(function core.Function, byID map[string]core.Fu
 	if function.Match != nil || linear == nil || len(linear.Blocks) == 0 || function.ForeignContract != nil || len(linear.LoanEndpoints) != 0 {
 		return false
 	}
-	byteViewCaller := function.Parameter.Type == "ByteView" && function.ReturnType == "U64"
-	if (function.Parameter.Type != "U64" && function.Parameter.Type != "Bool" && !byteViewCaller) ||
-		(function.ReturnType != "U64" && function.ReturnType != "Bool" && !(function.Parameter.Type == "U64" && function.ReturnType == "Unit")) {
+	byteViewCaller := function.Parameter.Type == "ByteView" && (function.ReturnType == "U64" || function.ReturnType == "Unit")
+	unusedByteCaller := function.Parameter.Type == "Byte" && function.ReturnType == "U64"
+	if (function.Parameter.Type != "U64" && function.Parameter.Type != "Bool" && !byteViewCaller && !unusedByteCaller) ||
+		(function.ReturnType != "U64" && function.ReturnType != "Bool" && !((function.Parameter.Type == "U64" || byteViewCaller) && function.ReturnType == "Unit")) {
 		return false
 	}
 	for _, place := range linear.Places {
 		if byteViewCaller && place.ID == function.Parameter.ID && placesTypeName(linear, place.TypeID) == "ByteView" {
+			continue
+		}
+		if unusedByteCaller && place.ID == function.Parameter.ID && placesTypeName(linear, place.TypeID) == "Byte" {
 			continue
 		}
 		if name := placesTypeName(linear, place.TypeID); name != "U64" && name != "Bool" {
@@ -2685,6 +2689,15 @@ func isDynamicScalarFunctionBody(function core.Function, byID map[string]core.Fu
 		}
 	}
 	for _, operation := range linear.Operations {
+		if unusedByteCaller {
+			// This existing entry bridge may feed a helper only from scalar
+			// expressions; it must never read or overwrite its Byte formal.
+			for _, reference := range []string{operation.SourceID, operation.RightID, operation.TargetID, operation.StoreTargetID, operation.ErrTargetID, operation.PayloadTargetID} {
+				if reference == function.Parameter.ID {
+					return false
+				}
+			}
+		}
 		switch operation.Kind {
 		case core.OpConst, core.OpCopy, core.OpAddChecked, core.OpLessU64, core.OpEqualU64,
 			core.OpBitXorU64, core.OpBitAndU64, core.OpBitOrU64, core.OpShiftLeftU64, core.OpShiftRightU64,
