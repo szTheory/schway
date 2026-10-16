@@ -214,7 +214,7 @@ func validPartial(t *testing.T) execution.Execution {
 	root := inv(t, "entry")
 	child := inv(t, "entry", "entry:a")
 	leaf := inv(t, "entry", "entry:a", "a:leaf")
-	return execution.Execution{Schema: execution.Schema2, Events: []execution.Event{called(root, "entry:a", "entry", "a"), called(child, "a:leaf", "a", "leaf"), ret(leaf, "leaf:return", "leaf"), ret(child, "a:return", "a"), ret(root, "entry:return", "entry")}}
+	return execution.Execution{Schema: execution.Schema2, Outcome: execution.Outcome{Kind: execution.OutcomeReturned}, Events: []execution.Event{called(root, "entry:a", "entry", "a"), called(child, "a:leaf", "a", "leaf"), ret(leaf, "leaf:return", "leaf"), ret(child, "a:return", "a"), ret(root, "entry:return", "entry")}}
 }
 
 func TestIndependentEntryResolution(t *testing.T) {

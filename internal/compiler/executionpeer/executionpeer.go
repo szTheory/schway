@@ -516,7 +516,7 @@ func (i *index) validate(document execution.Execution) error {
 		if event.FunctionID != occ.functionID {
 			return refusal("function", n, event.Invocation, "", occ.functionID, "event function disagrees with invocation")
 		}
-		if i.dynamicCallIdentity && closedActivations[event.Invocation] {
+		if closedActivations[event.Invocation] {
 			pair := event.Invocation + "\x00" + event.ID
 			if event.Occurrence < nextOccurrence[pair] {
 				return refusal("duplicate_pair", n, event.Invocation, "", occ.functionID, "event pair was already observed in a closed activation")
@@ -663,12 +663,33 @@ func (i *index) validate(document execution.Execution) error {
 			return refusal("callee", n, event.Invocation, "", "", "callee function is reserved for function.called")
 		}
 		if terminal(event.Kind) {
+			// These are core attribution facts, not a replay of the returned value.
+			switch op.value.Kind {
+			case core.OpReturn, core.OpFail, core.OpDefect:
+				if event.SourcePlace != op.value.SourceID || event.TypeID != op.value.TypeID || event.TargetPlace != "" {
+					return refusal("terminal_attribution", n, event.Invocation, "", event.FunctionID, "terminal places or type disagree with core")
+				}
+				if op.value.Kind == core.OpDefect && event.Output != op.value.Reason {
+					return refusal("terminal_attribution", n, event.Invocation, "", event.FunctionID, "user-defect reason disagrees with core")
+				}
+			}
+			// A child return does not determine its caller's eventual outcome.
+			// A defect, however, terminates the whole observed execution.
+			if event.Invocation == root || event.Kind == "function.defected" {
+				want := execution.OutcomeReturned
+				if event.Kind == "function.failed" {
+					want = execution.OutcomeTypedFailure
+				} else if event.Kind == "function.defected" {
+					want = execution.OutcomeDefect
+				}
+				if document.Outcome.Kind != want || (want == execution.OutcomeDefect && document.Outcome.Value != "") {
+					return refusal("terminal_outcome", n, event.Invocation, "", event.FunctionID, "final terminal and execution outcome disagree")
+				}
+			}
 			if pending != "" {
 				return refusal("preorder", n, event.Invocation, "", event.FunctionID, "function returned before observed child activation")
 			}
-			if i.dynamicCallIdentity {
-				closedActivations[event.Invocation] = true
-			}
+			closedActivations[event.Invocation] = true
 			if i.dynamicCallIdentity && event.Kind == "function.defected" && document.Outcome.Kind == execution.OutcomeDefect {
 				for _, activation := range stack {
 					closedActivations[activation] = true

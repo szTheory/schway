@@ -195,3 +195,25 @@ metadata has 71 reached controls and all 60 current summaries pass. All eight
 metadata/review gap categories are resolved with no escalation or human-only
 item. 33-FINAL-REFRESH-RUN.json distinguishes these final parent checks from
 earlier historical snapshots and the pending independent goal verdict.
+
+## Validation Audit 2026-10-16
+
+| Metric | Count |
+|---|---|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+
+
+## Phase 36 review-record refresh and CR-02 repair — 2026-10-15
+
+The manual invocation found five completed plans and a stale report caused
+by the changed Phase 36 review disposition. All 18 existing mapped rows passed
+49 exact roots / six packages before review. Independent review then exposed
+CR-02: ordinary terminal attribution and outcome-kind contradictions in the
+causal peer. The bounded repair adds TestPhase33TerminalAttribution; its
+actual pre-fix source overlay fails 30 test nodes, while repaired controls
+pass and retain the deliberate false-numeric-value acceptance boundary.
+The final focused union and source/log hashes are recorded separately in
+33-REFRESH2-RUN.json. Original plans, summaries, receipts and UAT remain
+historical at their stated revisions.

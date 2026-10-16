@@ -3,6 +3,18 @@ phase: 33
 review: 33-REVIEW.md
 titles: json
 findings:
+  - id: CR-02
+    severity: critical
+    disposition: fixed
+    title: "Execution peer accepts terminal evidence that contradicts the reported outcome [CLOSED]"
+  - id: CR-03
+    severity: critical
+    disposition: deferred
+    title: "Legacy child defects leave the caller activation open"
+  - id: CR-04
+    severity: critical
+    disposition: deferred
+    title: "Propagated typed failure from OpReturn is unclassifiable"
   - id: WR-01
     severity: warning
     disposition: fixed
@@ -24,18 +36,21 @@ findings:
     disposition: fixed
     title: "Empty manifest controls bypass receipt control validation"
 open: 0
-total: 5
-recorded: 2026-10-15T20:01:32.870Z
+total: 8
+recorded: 2026-10-16T00:37:20.623Z
 ---
 
 # Phase 33: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | fixed | 33-REVIEW-FIX.md |
-| WR-02 | warning | fixed | 33-REVIEW-FIX.md |
-| WR-03 | warning | fixed | 33-REVIEW-FIX.md |
-| WR-04 | warning | fixed | 33-REVIEW-FIX.md |
+| CR-02 | critical | fixed | 33-REFRESH2-FIX.md; independent four-file closure review |
+| CR-03 | critical | deferred | Execution-peer maintainer via M007 audit before Phase38 freeze; pre-existing nested legacy-defect false rejection outside the Phase33 capture/predicate/gate witnesses |
+| CR-04 | critical | deferred | Execution-peer maintainer via M007 audit before Phase38 freeze; pre-existing modeled-failure propagation requires its own contract/edge evidence rather than broadening terminal classification without proof |
+| WR-01 | warning | fixed | 33-REVIEW-FIX.md (not in the current review) |
+| WR-02 | warning | fixed | 33-REVIEW-FIX.md (not in the current review) |
+| WR-03 | warning | fixed | 33-REVIEW-FIX.md (not in the current review) |
+| WR-04 | warning | fixed | 33-REVIEW-FIX.md (not in the current review) |
 | CR-01 | critical | fixed | 33-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.

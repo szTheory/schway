@@ -1,14 +1,17 @@
 ---
 phase: 33-carried-debt-bounded-capture-read-and-generic-freeze-gate
-reviewed: 2026-10-15T19:42:42Z
+reviewed: 2026-10-16T00:35:09Z
 depth: standard
-files_reviewed: 25
+files_reviewed: 28
 files_reviewed_list:
   - cmd/schway/main_phase321_run_input_test.go
   - cmd/schway/main_phase32_routes_test.go
   - internal/compiler/cgen/cgen_program.go
   - internal/compiler/execution/defect_reasons.go
   - internal/compiler/executionpeer/executionpeer.go
+  - internal/compiler/executionpeer/executionpeer_phase33_terminal_test.go
+  - internal/compiler/executionpeer/executionpeer_phase35_test.go
+  - internal/compiler/executionpeer/executionpeer_test.go
   - internal/compiler/interp/interp.go
   - internal/compiler/interp/interp_phase321_defect_test.go
   - internal/compiler/interp/interp_phase33_defect_test.go
@@ -30,70 +33,67 @@ files_reviewed_list:
   - testdata/phase16/public-emitter-consumers.json
   - testdata/receipts/M006.manifest
 findings:
-  critical: 0
-  warning: 4
+  critical: 2
+  warning: 0
   info: 0
-  total: 4
+  total: 2
 status: issues_found
 ---
 
 # Phase 33: Code Review Report
 
-**Reviewed:** 2026-10-15T19:42:42Z
+**Reviewed:** 2026-10-16T00:35:09Z
 **Depth:** standard
-**Files Reviewed:** 25
+**Files Reviewed:** 28 cumulative unique paths
 **Status:** issues_found
 
 ## Summary
 
-The review covers source snapshot `537e90ac` on `phase26-validation` and used the explicit 25-file scope override. The canonical resolver's degraded 77-file fallback was not used, and this report does not claim an incremental commit union. I reviewed the bounded capture reader, the single-owner/reason defect rule including its disabled-capture path, the generic POSIX freeze and receipt gates, and the current registry and metadata repairs. Historical CR-01, “Empty manifest controls bypass receipt control validation,” was fixed by commit `99b72703`; it is not reused here. No tests were run in this review, so validation receipts elsewhere remain historical or parent-reported evidence.
+The initial standard-depth review covered the explicit 25-file scope at source head `5f1554eab21187cdb8be5fdc507c84d66e40b23b`. The dated closure pass separately reviewed four changed execution-peer files; `executionpeer.go` overlaps the initial scope, yielding 28 distinct paths across the two reviews. This is cumulative coverage, not a fresh review of all 28 files at the closure timestamp. The review covered bounded application capture reads, interpreter defect and ownership handling, execution-peer admission, generated C invocation evidence, and the generic freeze and receipt gates. No tests were run by this reviewer. The parent reports that its separate current validation passed 18 mapped rows, 49 roots, and six packages; that is parent evidence, not a test run by this review.
+
+The historical findings remain visible here: the initial 2026-10-15 review reported CR-01 (empty manifest controls) and WR-01/WR-02 (incomplete coverage verification records and undeclared receipt case programs). Its 19:52 closure pass marked WR-01/WR-02 fixed and reported WR-03/WR-04 (empty case program and incomplete coverage entry metadata). The Phase 33 review-fix record later marked all five findings fixed. This review rechecked the current source: the receipt gate rejects missing/malformed controls and malformed case rows, checks the case-program inventory in both directions, and the coverage checker validates per-item metadata plus nonempty, unique entry IDs and descriptions. These historical findings are excluded from the current count; their dated history and closure state are retained rather than treated as an issue-free past review.
 
 ## Narrative Findings (AI reviewer)
 
-### WR-01: Coverage checker accepts incomplete verification records
+### CR-02: Execution peer accepts terminal evidence that contradicts the reported outcome [CLOSED]
 
-**File:** `internal/compiler/session/summary_coverage_test.go:84-104`
-**Severity:** WARNING
-**Issue:** The checker validates only values collected in `e.kinds` and `e.statuses`; it never requires either slice to contain one value for each verification reference. A `human_judgment: false` entry with a non-empty ref but no `kind:` or `status:` therefore passes this guard. The coverage consumer requires each verification item to provide kind, ref, and status, so this test can let malformed SUMMARY metadata reach downstream verification.
-**Fix:** Track each verification item as its own record and reject a missing or empty `kind`, `ref`, or `status`; require every status to be `pass` for test-backed entries. Add controls that remove `kind:` and `status:` from an otherwise valid item.
+**File:** internal/compiler/executionpeer/executionpeer.go:665-688,699-724
+**Severity:** BLOCKER
 
-### WR-02: Receipt gate allows undeclared case programs
+**Issue:** The validator classifies ordinary return, failure, and user-defect events by operation ID and event kind, then closes the activation. It does not verify that the root terminal event agrees with Execution.Outcome.Kind, or that a matched return/failure event's source place and type agree with the core operation. For example, a valid single-function function.returned trace with Outcome.Kind set to defect or typed_failure drains the stack and reaches the final nil return. A user-defect event can also carry an Output different from the matched OpDefect.Reason. The independent peer therefore accepts contradictory or forged terminal evidence.
 
-**File:** `scripts/check-receipts.sh:86-95`
-**Severity:** WARNING
-**Issue:** The loop checks that every name in `programs=` appears in the case table and in each log, then checks every table row against the logs. It never checks the reverse relationship: a case row can name a program omitted from `programs=`. With `programs=checksum`, a matching checksum case and an additional matching case for another program can pass, while the result rows and pass summary still declare only `checksum`. That leaves the generic receipt's declared program inventory inconsistent with its case coverage.
-**Fix:** Parse the program names used by the case table and require their unique set to equal the `programs=` set before validating logs; add a refusal control for an extra case-table program absent from `programs=`.
+**Fix:** Bind the final root terminal kind to Outcome.Kind (returned, typed failure, or defect), and check terminal source place, type, and user-defect reason against the matched core operation. Keep numeric outcome-value replay outside this peer's stated responsibility.
+
+### CR-03: Legacy child defects leave the caller activation open
+
+**File:** internal/compiler/executionpeer/executionpeer.go:693-700
+**Severity:** BLOCKER
+
+**Issue:** A `function.defected` event from a child is a whole-execution terminal, but the validator clears the full activation stack only when `dynamicCallIdentity` is true. In the bounded legacy path it closes and pops the child alone, leaves its caller on `stack`, then rejects the valid terminal document at the final `len(stack) != 0` check. This disagrees with the interpreter's defect-unwinds-the-whole-execution behavior and makes nested defects in statically bounded call traces inadmissible.
+
+**Fix:** On any accepted `function.defected` terminal, mark every currently active invocation closed and clear the activation stack independent of call-identity mode. Keep ordinary child returns as one-frame pops.
+
+### CR-04: Propagated typed failure from OpReturn is unclassifiable
+
+**File:** internal/compiler/executionpeer/executionpeer.go:721-741
+**Severity:** BLOCKER
+
+**Issue:** When a caller propagates a modeled failure through its `OpReturn`, the interpreter emits `function.failed` with ID `<return-op>:event:failed`. `classify` accepts `function.failed` only for an `OpFail` operation, and accepts an `OpReturn` only with `function.returned`, so the validator rejects this supported error-edge execution as `unknown_kind` before applying terminal checks. The new attribution check also assumes every matched `OpReturn` is a returned event, while the interpreter can attach the propagated failure type to this terminal.
+
+**Fix:** Classify the documented `OpReturn` failure-event form and validate its source place and failure type using the modeled-failure contract; when it is the root terminal, require `OutcomeTypedFailure`. Preserve child-failure continuations that the caller handles on its error edge.
+
+## Dated Closure Review — 2026-10-16T00:35:09Z
+
+**Closure scope:** exactly `internal/compiler/executionpeer/executionpeer.go`, `internal/compiler/executionpeer/executionpeer_phase33_terminal_test.go`, `internal/compiler/executionpeer/executionpeer_test.go`, and `internal/compiler/executionpeer/executionpeer_phase35_test.go`. This pass inspected the working-tree diff against HEAD and did not run tests or background processes.
+
+**CR-02:** Closed by independent source inspection. The validator now checks the matched `OpReturn`, `OpFail`, and `OpDefect` source/type attribution and rejects terminal targets; it binds user-defect output to `OpDefect.Reason`; it checks root terminal outcome kinds and requires an empty defect value. The root/defect condition deliberately leaves child returns independent of the eventual root outcome, and no numeric returned or failed value replay was introduced. The unconditional `closedActivations` check retains the Phase 36 repeated-terminal diagnostic precedence. Bare match-return classification still bypasses linear-operation attribution, so the new checks do not reject those existing match traces.
+
+The new named terminal test covers positive OpReturn/OpFail/OpDefect cases, source/type/target mutations, each alternate terminal outcome, defect reason/value mutations, a post-terminal event, and acceptance of a structurally plausible nonmatching numeric value for return/failure. Parent-reported evidence says a temporary overlay reproduced the original false accepts, the named test killed the pre-fix peer source with exit 1 and 30 failing test nodes, a focused control passed, all 18 current execution-peer roots passed before the final occurrence-1 post-terminal refinement, and the final two-root terminal/call-control run passed after that refinement. The focused inherited regression was still running; no result is claimed for it. This is parent evidence and was not reproduced by this review.
+
+The initial 25-file scope plus these four closure files is 28 unique paths: `executionpeer.go` is the sole overlap with the initial list. The frontmatter inventory is cumulative; only the four closure paths were reread in this pass. CR-03 and CR-04 are newly recorded remaining findings from the requested propagation interaction check.
 
 ---
 
-_Reviewed: 2026-10-15T19:42:42Z_
+_Reviewed: 2026-10-16T00:35:09Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
-
-## Closure Review — 2026-10-15T19:52:40Z
-
-**Source:** `eb04b1a4`. This closure pass reviewed exactly `internal/compiler/session/summary_coverage_test.go` (fix commit `858453ae`), `scripts/check-receipts.sh`, and `internal/compiler/session/session_receipt_gate_test.go` (fix commit `67eee80d`). It does not refresh or claim a new review of the original 25-file scope; the original issued review had two warnings; frontmatter now counts the four cumulative findings, including this dated closure pass.
-
-**WR-01:** Closed by source inspection. Verification items are now tracked separately and each item must have an allowed nonempty kind and status plus a nonempty ref; automated entries require pass. The invalid controls cover missing fields and fields split across different items.
-
-**WR-02:** Closed by source inspection. The manifest program list is validated for empty, whitespace and duplicate members; the gate checks declared programs against case rows and logs, then checks each case program against the declaration. The new control constructs matching case and result rows for an undeclared program, and the existing missing-declared-program refusal remains before the reverse check.
-
-The fix artifacts report 29 coverage controls and 60 summaries passing for WR-01, and a 40-case false-pass reproducer followed by five focused passing receipt roots for WR-02. The final parent-run receipt records 48/48 exact roots across six packages and six passing metadata roots with no missing, failed or skipped roots. These are parent-reported checks, not runs performed during this closure review.
-
-**Effective original warnings remaining:** 0 of 2. Source inspection also found two new false-pass cases in the same scoped files:
-
-### WR-03: Empty case program bypasses the reverse inventory check
-
-**File:** `scripts/check-receipts.sh:101-111`
-**Severity:** WARNING
-**Issue:** The reverse check prints `$3` for an undeclared case program, then treats an empty command-substitution result as “no undeclared program.” A manifest row beginning `# case ` with no program therefore evades that check. If both logs contain the corresponding empty-program case row and matching counts, the later exact-row comparison can accept it. This row does not satisfy the documented `# case PROGRAM KEY EXIT STDOUT STDERR` grammar.
-**Fix:** Validate each case row's required fields, including a nonempty program, before inventory comparison; use an explicit found flag or sentinel so an empty undeclared value cannot be confused with no mismatch.
-
-### WR-04: Coverage checker still accepts incomplete entry metadata
-
-**File:** `internal/compiler/session/summary_coverage_test.go:49-52,108-132`
-**Severity:** WARNING
-**Issue:** The parser does not retain or validate an entry description, and it never requires a nonempty or unique entry ID. A whitespace-only rationale also passes because the check compares only with the empty string. The coverage consumer requires nonempty unique IDs, a nonempty description, and a nonblank rationale for human checkpoints, so the groundedness test still accepts entries that the consumer rejects.
-**Fix:** Parse the description, require nonempty trimmed IDs and descriptions, reject duplicate IDs, and trim the rationale check. Add controls for missing/blank descriptions, empty/duplicate IDs, and whitespace-only rationale.
-
-**Effective warning count after closure inspection:** 2 new warnings (WR-03 and WR-04); WR-01 and WR-02 are closed. No tests were run during this closure review.

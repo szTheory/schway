@@ -31,6 +31,7 @@ func TestPhase35PureOperationCausalControls(t *testing.T) {
 		Events: []execution.Event{{
 			Schema: execution.Schema2, ID: "entry:return:event:returned", Kind: "function.returned",
 			FunctionID: "entry", Invocation: root,
+			SourcePlace: "entry:result", TypeID: "u64",
 		}},
 	}
 	if err := Validate(program, clean); err != nil {

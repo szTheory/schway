@@ -144,3 +144,16 @@ local canonical scalar/list shapes as well as per-verification fields. The
 fixes add no dependency or new trust boundary; all 17 authored L1 dispositions
 remain closed. Final source-bound controls and the independent goal verifier
 must cover these latest inputs, not reuse the preceding snapshots as current.
+
+
+## Current refresh applicability — 2026-10-15
+
+All five original plans have authored threat models; the17-disposition L1
+register remains closed with zero open. The bounded capture, exact owner/
+reason predicate and manifest/gate source were re-inspected, and their
+focused controls passed in33-REFRESH2-RUN.json. CR-02's structural terminal
+false accepts were reproduced and repaired with actual-source RED/GREEN.
+CR-03/04 remain explicitly deferred propagation false rejections in the
+review disposition, owned by the execution-peer maintainer through M007
+audit before freeze. This is L1 applicability, not L2/L3 certification or
+a claim that the whole peer covers every interpreter propagation route.
