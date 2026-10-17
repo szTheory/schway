@@ -589,6 +589,13 @@ func TestPhase38FreezeWorktreeControls(t *testing.T) {
 		phase32Git(t, stagedFixture.root, "add", stagedFixture.freeze.WorkspaceConfig.Path)
 		phase38RequireFreezeRefusal(t, phase38RunFreeze(t, stagedFixture, stagedFixture.freeze), "config_staged")
 	})
+
+	t.Run("merge-only-digest-path-change-and-revert", func(t *testing.T) {
+		fixture := phase38NewBindingFixture(t)
+		original := phase38GitBytes(t, fixture.root, "show", fixture.freeze.FreezeSHA+":cmd/probe.go")
+		phase38MergeOnlyRoundTrip(t, fixture, "cmd/probe.go", []byte("package main\nfunc Probe() int { return 8675309 }\n"), original)
+		phase38RequireFreezeRefusal(t, phase38RunFreeze(t, fixture, fixture.freeze), "freeze_history_changed")
+	})
 }
 
 func TestPhase38FinalCandidateControls(t *testing.T) {
@@ -645,6 +652,11 @@ func TestPhase38FinalCandidateControls(t *testing.T) {
 			phase32Git(t, fixture.root, "add", "README.md")
 			phase32Git(t, fixture.root, "commit", "-qm", "restore documentation")
 		}, "final_nonplanning_change"},
+		{"merge-only-readme-create-and-remove", func(t *testing.T, fixture phase38BindingFixture, run *phase38RunFixture) {
+			original := phase38GitBytes(t, fixture.root, "show", fixture.freeze.FreezeSHA+":README.md")
+			phase38MergeOnlyRoundTrip(t, fixture, "README.md", []byte("merge-only README content\n"), original)
+			run.IngestBaseSHA = fixture.freeze.FreezeSHA
+		}, "final_nonplanning_change"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			fixture := phase38NewBindingFixture(t)
@@ -654,6 +666,23 @@ func TestPhase38FinalCandidateControls(t *testing.T) {
 			phase38RequireFinalRefusal(t, phase38RunFinal(t, fixture, run), tc.reason)
 		})
 	}
+
+	t.Run("workspace-config-commit-and-restore", func(t *testing.T) {
+		fixture := phase38NewBindingFixture(t)
+		workspaceConfig := mustRead(t, testsupport.ProjectPath(".planning", "config.json"))
+		fixture.freeze.WorkspaceConfig.SHA256 = phase38SHA256(workspaceConfig)
+		baseline := phase38GitBytes(t, fixture.root, "show", fixture.freeze.FreezeSHA+":.planning/config.json")
+		phase38Write(t, fixture.root, fixture.freeze.WorkspaceConfig.Path, workspaceConfig)
+		phase32Git(t, fixture.root, "add", fixture.freeze.WorkspaceConfig.Path)
+		phase32Git(t, fixture.root, "commit", "-qm", "persist workspace config bytes")
+		phase38Write(t, fixture.root, fixture.freeze.WorkspaceConfig.Path, baseline)
+		phase32Git(t, fixture.root, "add", fixture.freeze.WorkspaceConfig.Path)
+		phase32Git(t, fixture.root, "commit", "-qm", "restore tracked config")
+		phase38Write(t, fixture.root, fixture.freeze.WorkspaceConfig.Path, workspaceConfig)
+		run := fixture.run
+		run.IngestBaseSHA = fixture.freeze.FreezeSHA
+		phase38RequireFinalRefusal(t, phase38RunFinal(t, fixture, run), "config_history_changed")
+	})
 
 	t.Run("ingest-base-not-ancestor-of-candidate", func(t *testing.T) {
 		fixture := phase38NewBindingFixture(t)
@@ -1305,6 +1334,30 @@ func phase38GitBytes(t *testing.T, root string, arguments ...string) []byte {
 func phase38GitOutput(t *testing.T, root string, arguments ...string) string {
 	t.Helper()
 	return strings.TrimSpace(string(phase38GitBytes(t, root, arguments...)))
+}
+
+func phase38MergeOnlyRoundTrip(t *testing.T, fixture phase38BindingFixture, path string, changed, baseline []byte) {
+	t.Helper()
+	root := fixture.root
+	mainBranch := phase38GitOutput(t, root, "branch", "--show-current")
+	phase32Git(t, root, "checkout", "-b", "phase38-merge-add")
+	phase38Write(t, root, ".planning/merge-add.md", []byte("planning branch one\n"))
+	phase32Git(t, root, "add", ".planning/merge-add.md")
+	phase32Git(t, root, "commit", "-qm", "planning branch one")
+	phase32Git(t, root, "checkout", mainBranch)
+	phase32Git(t, root, "merge", "--no-ff", "--no-commit", "phase38-merge-add")
+	phase38Write(t, root, path, changed)
+	phase32Git(t, root, "add", path)
+	phase32Git(t, root, "commit", "-qm", "merge-only path introduction")
+	phase32Git(t, root, "checkout", "-b", "phase38-merge-remove", fixture.freeze.FreezeSHA)
+	phase38Write(t, root, ".planning/merge-remove.md", []byte("planning branch two\n"))
+	phase32Git(t, root, "add", ".planning/merge-remove.md")
+	phase32Git(t, root, "commit", "-qm", "planning branch two")
+	phase32Git(t, root, "checkout", mainBranch)
+	phase32Git(t, root, "merge", "--no-ff", "--no-commit", "phase38-merge-remove")
+	phase38Write(t, root, path, baseline)
+	phase32Git(t, root, "add", path)
+	phase32Git(t, root, "commit", "-qm", "merge-only path removal")
 }
 
 func phase38WriteJSON(t *testing.T, root, name string, value any) {
