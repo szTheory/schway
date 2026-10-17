@@ -1,0 +1,135 @@
+[
+  {
+    "id": "QLT-13",
+    "checked": true,
+    "description": "The native app reads the evidence capture file through a reader bounded at limit+1 bytes, before it allocates anything. An oversize capture yields the named capacity outcome without allocating the full file. A seeded mutant that restores the unbounded read is caught.",
+    "phase": "33",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "QLT-14",
+    "checked": true,
+    "description": "The 32.1 review warnings are closed:",
+    "phase": "33",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "QLT-15",
+    "checked": true,
+    "description": "Phase 29 WR-02 and WR-03 are triaged, and each is either fixed with a test or recorded with a reason. Phase 28 gains VALIDATION.md and SECURITY.md built from existing evidence.",
+    "phase": "33",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "EVD-16",
+    "checked": true,
+    "description": "One milestone-agnostic freeze and receipt gate replaces the phase-specific `check-phase32-*` scripts. It takes the milestone's program list and codedigest as input, keeps all existing refusal behaviour, and needs no per-phase copy in later milestones.",
+    "phase": "33",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "DX-20",
+    "checked": true,
+    "description": "Text diagnostics show `file:line:col` and a one-line source snippet with a caret. JSON diagnostics add 1-based `line` and `col` to each span, next to the existing byte offsets. Codes are unchanged.",
+    "phase": "34",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "DX-21",
+    "checked": true,
+    "description": "A single syntax error yields one diagnostic for its recovery point, not a cascade of follow-on `expected }` / `expected declaration` errors. A pinned corpus of agent-style drafts shows the reduction.",
+    "phase": "34",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "DX-22",
+    "checked": true,
+    "description": "Constructs that remain absent are refused with a dedicated `surface.unsupported_*` code and a one-line hint. They include `&&`/`||`/`!`, more than one parameter, if without else, Bool literal tails, subtraction and dynamic shift amounts. The previous misleading parse errors no longer appear.",
+    "phase": "34",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "DX-23",
+    "checked": true,
+    "description": "`schway surface --json` prints a versioned, deterministic manifest of the admitted surface: types, operators, statements, builtins, call rules and limits. A meta-test fails if an admitted construct or `surface.unsupported_*` code is missing from the manifest, or if the manifest names one that is not admitted.",
+    "phase": "34",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "BIT-01",
+    "checked": true,
+    "description": "U64 `^`, `&` and `|` are admitted in scalar code. Interpreter and native agree with literal expected answers at -O0, -O3 and -O3 with LTO. Check, corevalidate and originvalidate derive scalar transfers independently, with a wrong-result transfer mutant per op per value-deriving peer caught. Engine wrong-result controls are caught by independently authored expected answers. Executionpeer independently validates each op's event-free causal admission and catches fabricated step/defect events; it does not prove pure numeric results.",
+    "phase": "35",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "BIT-02",
+    "checked": true,
+    "description": "U64 `<<` and `>>` are admitted only when the shift amount is an integer literal from 0 to 63.",
+    "phase": "35",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "BIT-03",
+    "checked": true,
+    "description": "Hex integer literals (`0x\u2026`, case-insensitive digits) are admitted wherever decimal U64 literals are. Overflowing or malformed hex is refused with a named code, and the formatter keeps the source spelling.",
+    "phase": "35",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "BIT-04",
+    "checked": true,
+    "description": "`examples/checksum/adler32.schway` uses `b << 16` in place of 16 doublings. All of its pinned answers, and the checksum and `adler_low` outputs, stay byte-identical on both engines.",
+    "phase": "35",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "CALL-01",
+    "checked": true,
+    "description": "A scalar function can call another scalar function with one U64 or Bool argument and use the U64 or Bool result in an expression or assignment. This includes calls to imported module functions. Recursion stays refused by the call graph. Callee defects (overflow, remainder, bounds) surface with the callee's reason and exit 65 on both engines.",
+    "phase": "36",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "CALL-02",
+    "checked": true,
+    "description": "Calls are derived independently by check, corevalidate, originvalidate and the execution peer. Mutants that drop the argument, the result or a callee defect are caught. Programs without scalar calls keep byte-identical generated C.",
+    "phase": "36",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "APP-13",
+    "checked": true,
+    "description": "`examples/crc32/crc32.schway` reads a file of at most 65,536 bytes and prints its CRC-32/ISO-HDLC as bare decimal. It is built from an ordinary-source `crc32` module that uses a bit-at-a-time loop with no table.",
+    "phase": "37",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "MOD-07",
+    "checked": true,
+    "description": "A second consumer imports `crc32` from the module without copying it and prints a pinned answer on both engines.",
+    "phase": "37",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "APP-14",
+    "checked": true,
+    "description": "`schway run --engine=interpreter` runs file-bytes programs such as `crc32` and `checksum` from the CLI, and gives the same stdout, stderr and exit code as native for every pinned case. Interpreter/native parity for file input is no longer Go-level only.",
+    "phase": "37",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "DX-24",
+    "checked": true,
+    "description": "`examples/crc32/README.md` is an executable clean-checkout guide, run by a test the way `TestPhase32GuideCleanCheckout` runs its guide.",
+    "phase": "37",
+    "canonical_status": "Complete"
+  },
+  {
+    "id": "EVD-17",
+    "checked": false,
+    "description": "Hosted ubuntu and macOS receipts for every M007 and earlier pinned program are bound once to the final M007 codedigest, after the milestone audit and in its last plan. No per-phase hosted receipt binding is required.",
+    "phase": "38",
+    "canonical_status": "Pending"
+  }
+]

@@ -36,13 +36,13 @@
     {
       "number": "38",
       "name": "Milestone Receipts",
-      "status": "pending"
+      "status": "in_progress"
     }
   ],
   "next": {
     "command": "/gsd:progress --next",
-    "label": "Advance to the next step (plan phase 38)",
-    "reason": "Phase 38 of 7 — needs a plan"
+    "label": "Advance to the next step",
+    "reason": "Phase 38 of 7 · 86% · executing"
   },
-  "updated_at": "2026-10-16T21:52:00.267Z"
+  "updated_at": "2026-10-16T22:52:53.582Z"
 }

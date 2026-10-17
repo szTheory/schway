@@ -1,0 +1,382 @@
+{
+  "source_sha": "06e72dda0addd2744106e22ef35fec539337999b",
+  "codedigest": "f21194d7244778ac073269734e0103a6e1e0f6c59335e84305176401b465aadf",
+  "status": "gaps_found",
+  "requirements_satisfied": 18,
+  "requirements_total": 19,
+  "sole_pending": [
+    "EVD-17"
+  ],
+  "unexpected_blockers": [],
+  "three_source_rows": [
+    {
+      "id": "QLT-13",
+      "checked": true,
+      "description": "The native app reads the evidence capture file through a reader bounded at limit+1 bytes, before it allocates anything. An oversize capture yields the named capacity outcome without allocating the full file. A seeded mutant that restores the unbounded read is caught.",
+      "phase": "33",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VERIFICATION.md",
+      "verification_evidence": [
+        "| 33-01 | 1\u201314 | VERIFIED | The first commit is documented and source-history evidence confirms it was docs-only; reopened-marker grammar, dated amendments, archived receipt immutability, and the no-hosted-binding boundary are preserved. The bounded reader and exact/+1/sparse test are present; the one-time unbounded-read mutant failure and restoration are historical test evidence in the plan summary. The QLT-13 source/test pair is unchanged since that named run. IN-02 and the coverage-kind control remain connected to named tests. |",
+        "| QLT-13 | 33-01 | SATISFIED | Opened-handle limit+1 read and named capacity outcome; exact/+1/sparse allocation behavior is covered by the previous named test run, with current source unchanged. |",
+        "No Phase 33 truth failed, no declared artifact is missing or stubbed, and all key links are wired. The goal is achieved for QLT-13, QLT-14, QLT-15, and EVD-16. This report makes no whole-project, hosted, two-host, or fresh pressure-test claim."
+      ],
+      "summary_paths": [
+        ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-01-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "QLT-14",
+      "checked": true,
+      "description": "The 32.1 review warnings are closed:",
+      "phase": "33",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VERIFICATION.md",
+      "verification_evidence": [
+        "| QLT-14 | 33-01 through 33-05 | SATISFIED | Exact owner/reason predicate and mutant; freeze cwd parity; 32.1 IN-01..03 and coverage-kind items fixed or dispositioned with witnesses. |",
+        "No Phase 33 truth failed, no declared artifact is missing or stubbed, and all key links are wired. The goal is achieved for QLT-13, QLT-14, QLT-15, and EVD-16. This report makes no whole-project, hosted, two-host, or fresh pressure-test claim."
+      ],
+      "summary_paths": [
+        ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-01-SUMMARY.md",
+        ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-02-SUMMARY.md",
+        ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-03-SUMMARY.md",
+        ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-05-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "QLT-15",
+      "checked": true,
+      "description": "Phase 29 WR-02 and WR-03 are triaged, and each is either fixed with a test or recorded with a reason. Phase 28 gains VALIDATION.md and SECURITY.md built from existing evidence.",
+      "phase": "33",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VERIFICATION.md",
+      "verification_evidence": [
+        "| QLT-15 | 33-05 | SATISFIED | Phase 29 WR-02/WR-03 retain distinct named witnesses; Phase 28 retroactive validation/security records are supported by current lifecycle/groundedness guards. |",
+        "No Phase 33 truth failed, no declared artifact is missing or stubbed, and all key links are wired. The goal is achieved for QLT-13, QLT-14, QLT-15, and EVD-16. This report makes no whole-project, hosted, two-host, or fresh pressure-test claim."
+      ],
+      "summary_paths": [
+        ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-05-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "EVD-16",
+      "checked": true,
+      "description": "One milestone-agnostic freeze and receipt gate replaces the phase-specific `check-phase32-*` scripts. It takes the milestone's program list and codedigest as input, keeps all existing refusal behaviour, and needs no per-phase copy in later milestones.",
+      "phase": "33",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VERIFICATION.md",
+      "verification_evidence": [
+        "| EVD-16 | 33-03/33-04 | SATISFIED | Manifest-driven generic gates, ordered refusal controls, archived M006 acceptance, shared producer inputs, and no retired caller. M006/default compatibility is credited from unchanged historical checks; the current run adds direct ordinary/merge freeze-commit config refusal evidence. |",
+        "No Phase 33 truth failed, no declared artifact is missing or stubbed, and all key links are wired. The goal is achieved for QLT-13, QLT-14, QLT-15, and EVD-16. This report makes no whole-project, hosted, two-host, or fresh pressure-test claim."
+      ],
+      "summary_paths": [
+        ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-03-SUMMARY.md",
+        ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-04-SUMMARY.md",
+        ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-05-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "DX-20",
+      "checked": true,
+      "description": "Text diagnostics show `file:line:col` and a one-line source snippet with a caret. JSON diagnostics add 1-based `line` and `col` to each span, next to the existing byte offsets. Codes are unchanged.",
+      "phase": "34",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-VERIFICATION.md",
+      "verification_evidence": [
+        "| DX-20 | 34-01, 34-02, 34-03, 34-08 | Locatable text and additive JSON coordinates with unchanged byte authority | \u2713 SATISFIED | Location, rendering, imported-source, identity and public-route selectors pass. |",
+        "The current contract inventory remains **57/57 declared artifacts** and **22/22 key links**. The path-based key-link query could not parse prose-origin links and some JSON fixture targets, so those links were manually traced through source and current named controls; the prior report's \u201c24 links\u201d count was incorrect, and the plan declarations total 22. Requirements DX-20, DX-21, DX-22, and DX-23 are satisfied. The authored L1 security register has 19/19 items closed and zero open; its applicability check is current, not a new full security audit. State A coverage was reevaluated with no new gap. The review verdict is clean for 60 reviewed files, with the required degraded `no-task-commits-since` fallback disclosed; its disposition records zero open findings. The UI review was reused in automatic mode because this phase has no frontend. The completed UAT remains preserved and was not replayed.",
+        "All eight Phase 34 plan artifact queries passed (57 declared artifact occurrences); manual source traces for prose-origin and JSON-target links remain in force. DX-20 through DX-23 remain satisfied, including Phase 35's closure of the earlier dynamic-shift deferral. Nyquist remains validated; the authored L1 register retains 19/19 closed items and zero open, reused for applicability rather than a new full security audit. The UI safety gate remains inapplicable because there is no frontend. No new goal gap or human-verification item is outstanding; the score remains **38/38**.",
+        "DX-20, DX-21, DX-22, and DX-23 remain satisfied, with no additional Phase 34 requirement orphaned from the plans. The decision-coverage query for the Phase 34 context records 26/26 honored. The existing security register remains 19/19 authored mitigations closed, zero open, ASVS L1 only. The current explicit review scope remains 48 files with zero current critical, warning, or info findings; the three historical warnings are recorded as fixed and none remain open. The wider degraded resolver result is not counted as reviewed.",
+        "| DX-20 | \u2713 SATISFIED | Coordinate, rendering, identity, imported-source, route, and repair-compatibility tests; see current rows and prior exact goldens. |",
+        "| DX-20 | `diagnostic_phase34_test.go`, `protocol_phase34_test.go`, `session_phase34_presentation_test.go`, `main_phase34_diagnostics_test.go`, route/repair tests | Yes | 0 | 0 | Exact coordinate/value and rendered-output assertions | PASS |",
+        "No blocking code or artifact gaps were found. All 38 technical truths are verified, all 57 artifact declarations pass, all 22 links are manually traced, and DX-20 through DX-23 are satisfied. At this checkpoint the CLI copy-clarity item remained pending, so the interim status was `human_needed`."
+      ],
+      "summary_paths": [
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-01-SUMMARY.md",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-02-SUMMARY.md",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-03-SUMMARY.md",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "DX-21",
+      "checked": true,
+      "description": "A single syntax error yields one diagnostic for its recovery point, not a cascade of follow-on `expected }` / `expected declaration` errors. A pinned corpus of agent-style drafts shows the reduction.",
+      "phase": "34",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-VERIFICATION.md",
+      "verification_evidence": [
+        "| DX-21 | 34-01, 34-04, 34-08 | Pinned draft corpus reduces one-cause cascades and retains independent causes | \u2713 SATISFIED | Twenty explicitly reconstructed fixtures with immutable before rows; recovery corpus/controls pass. |",
+        "The current contract inventory remains **57/57 declared artifacts** and **22/22 key links**. The path-based key-link query could not parse prose-origin links and some JSON fixture targets, so those links were manually traced through source and current named controls; the prior report's \u201c24 links\u201d count was incorrect, and the plan declarations total 22. Requirements DX-20, DX-21, DX-22, and DX-23 are satisfied. The authored L1 security register has 19/19 items closed and zero open; its applicability check is current, not a new full security audit. State A coverage was reevaluated with no new gap. The review verdict is clean for 60 reviewed files, with the required degraded `no-task-commits-since` fallback disclosed; its disposition records zero open findings. The UI review was reused in automatic mode because this phase has no frontend. The completed UAT remains preserved and was not replayed.",
+        "DX-20, DX-21, DX-22, and DX-23 remain satisfied, with no additional Phase 34 requirement orphaned from the plans. The decision-coverage query for the Phase 34 context records 26/26 honored. The existing security register remains 19/19 authored mitigations closed, zero open, ASVS L1 only. The current explicit review scope remains 48 files with zero current critical, warning, or info findings; the three historical warnings are recorded as fixed and none remain open. The wider degraded resolver result is not counted as reviewed.",
+        "| DX-21 | \u2713 SATISFIED | Reconstructed 20-draft before/after baselines and current recovery corpus/negative controls. |",
+        "| DX-21 | `parser_phase34_baseline_test.go`, `parser_phase34_recovery_test.go`, `session_phase34_compat_test.go` | Yes | 0 | 0 | Literal before/after codes, counts, spans, causes and sibling behavior | PASS |"
+      ],
+      "summary_paths": [
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-01-SUMMARY.md",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-04-SUMMARY.md",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "DX-22",
+      "checked": true,
+      "description": "Constructs that remain absent are refused with a dedicated `surface.unsupported_*` code and a one-line hint. They include `&&`/`||`/`!`, more than one parameter, if without else, Bool literal tails, subtraction and dynamic shift amounts. The previous misleading parse errors no longer appear.",
+      "phase": "34",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-VERIFICATION.md",
+      "verification_evidence": [
+        "| 1 | The dynamic-shift-amount refusal code/hint is not in the current seven-code catalog. | Phase 35 | `ROADMAP.md` Phase 35 success criteria 2 and 5 require a named `surface.unsupported_*` code/hint registered in the manifest; `REQUIREMENTS.md` explicitly assigns this DX-22 sub-item to BIT-02/Phase 35. The current Phase 34 requirement tests and plans intentionally cover seven implemented forms. |",
+        "| DX-22 | 34-01, 34-05, 34-06, 34-07, 34-08 | Dedicated absent-form refusals with one-line hints | \u2713 SATISFIED FOR PHASE 34 SCOPE | Seven current forms and their manifest controls pass. Dynamic-shift amount is tracked as the explicit Phase 35/BIT-02 deferred sub-item above, not claimed as already implemented. |",
+        "All four IDs in plan `requirements` fields are defined in `REQUIREMENTS.md` and mapped to Phase 34. No additional requirement is mapped to Phase 34 without appearing in a plan. DX-22's dynamic-shift sub-item is explicitly owned by BIT-02/Phase 35 in the roadmap note.",
+        "Current source inspection confirms diagnostics retain byte offsets while adding 1-based source coordinates from the captured source; human presentation uses the captured line and caret, and JSON presentation preserves the source-less identity projection. Parser recovery/refusal paths remain wired to dedicated diagnostics. The current surface manifest is derived from the parser/checker refusal catalog and the `schway surface` route. Its nine entries preserve the original seven and include the authorized Phase 35 `surface.unsupported_shift_amount` and `surface.unsupported_expression_depth` additions. The prior DX-22 dynamic-shift deferral is therefore resolved; these Phase 35 catalog additions are authorized compatibility deltas, not Phase 34 regressions.",
+        "The current contract inventory remains **57/57 declared artifacts** and **22/22 key links**. The path-based key-link query could not parse prose-origin links and some JSON fixture targets, so those links were manually traced through source and current named controls; the prior report's \u201c24 links\u201d count was incorrect, and the plan declarations total 22. Requirements DX-20, DX-21, DX-22, and DX-23 are satisfied. The authored L1 security register has 19/19 items closed and zero open; its applicability check is current, not a new full security audit. State A coverage was reevaluated with no new gap. The review verdict is clean for 60 reviewed files, with the required degraded `no-task-commits-since` fallback disclosed; its disposition records zero open findings. The UI review was reused in automatic mode because this phase has no frontend. The completed UAT remains preserved and was not replayed.",
+        "DX-20, DX-21, DX-22, and DX-23 remain satisfied, with no additional Phase 34 requirement orphaned from the plans. The decision-coverage query for the Phase 34 context records 26/26 honored. The existing security register remains 19/19 authored mitigations closed, zero open, ASVS L1 only. The current explicit review scope remains 48 files with zero current critical, warning, or info findings; the three historical warnings are recorded as fixed and none remain open. The wider degraded resolver result is not counted as reviewed.",
+        "| DX-22 | \u2713 SATISFIED | Seven Phase 34 unsupported forms are tested; Phase 35 owns the subsequently added shift-amount refusal, now listed by the current manifest. |",
+        "| DX-22 | `parser_phase34_refusal_test.go`, `check_phase34_refusal_test.go`, `manifest_test.go`, surface witness controls | Yes | 0 | 0 | Exact refusal code, hint, span, near-miss and admission assertions | PASS |"
+      ],
+      "summary_paths": [
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-01-SUMMARY.md",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-05-SUMMARY.md",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "DX-23",
+      "checked": true,
+      "description": "`schway surface --json` prints a versioned, deterministic manifest of the admitted surface: types, operators, statements, builtins, call rules and limits. A meta-test fails if an admitted construct or `surface.unsupported_*` code is missing from the manifest, or if the manifest names one that is not admitted.",
+      "phase": "34",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-VERIFICATION.md",
+      "verification_evidence": [
+        "| DX-23 | 34-01, 34-06, 34-07, 34-08 | Deterministic source-free surface manifest and two-way drift controls | \u2713 SATISFIED | Source-free CLI, canonical JSON and independent admission/refusal comparisons pass. |",
+        "The current contract inventory remains **57/57 declared artifacts** and **22/22 key links**. The path-based key-link query could not parse prose-origin links and some JSON fixture targets, so those links were manually traced through source and current named controls; the prior report's \u201c24 links\u201d count was incorrect, and the plan declarations total 22. Requirements DX-20, DX-21, DX-22, and DX-23 are satisfied. The authored L1 security register has 19/19 items closed and zero open; its applicability check is current, not a new full security audit. State A coverage was reevaluated with no new gap. The review verdict is clean for 60 reviewed files, with the required degraded `no-task-commits-since` fallback disclosed; its disposition records zero open findings. The UI review was reused in automatic mode because this phase has no frontend. The completed UAT remains preserved and was not replayed.",
+        "All eight Phase 34 plan artifact queries passed (57 declared artifact occurrences); manual source traces for prose-origin and JSON-target links remain in force. DX-20 through DX-23 remain satisfied, including Phase 35's closure of the earlier dynamic-shift deferral. Nyquist remains validated; the authored L1 register retains 19/19 closed items and zero open, reused for applicability rather than a new full security audit. The UI safety gate remains inapplicable because there is no frontend. No new goal gap or human-verification item is outstanding; the score remains **38/38**.",
+        "DX-20, DX-21, DX-22, and DX-23 remain satisfied, with no additional Phase 34 requirement orphaned from the plans. The decision-coverage query for the Phase 34 context records 26/26 honored. The existing security register remains 19/19 authored mitigations closed, zero open, ASVS L1 only. The current explicit review scope remains 48 files with zero current critical, warning, or info findings; the three historical warnings are recorded as fixed and none remain open. The wider degraded resolver result is not counted as reviewed.",
+        "| DX-23 | \u2713 SATISFIED | Versioned canonical manifest, source-free command route, current admission/refusal witnesses and finite bidirectional controls. |",
+        "| DX-23 | `manifest_test.go`, `main_phase34_surface_test.go`, `session_phase34_surface_test.go` | Yes | 0 | 0 | Canonical bytes plus independent witnesses and armed drift controls | PASS |",
+        "No blocking code or artifact gaps were found. All 38 technical truths are verified, all 57 artifact declarations pass, all 22 links are manually traced, and DX-20 through DX-23 are satisfied. At this checkpoint the CLI copy-clarity item remained pending, so the interim status was `human_needed`."
+      ],
+      "summary_paths": [
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-01-SUMMARY.md",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-06-SUMMARY.md",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-07-SUMMARY.md",
+        ".planning/phases/34-agent-diagnostics-floor-and-surface-manifest/34-08-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "BIT-01",
+      "checked": true,
+      "description": "U64 `^`, `&` and `|` are admitted in scalar code. Interpreter and native agree with literal expected answers at -O0, -O3 and -O3 with LTO. Check, corevalidate and originvalidate derive scalar transfers independently, with a wrong-result transfer mutant per op per value-deriving peer caught. Engine wrong-result controls are caught by independently authored expected answers. Executionpeer independently validates each op's event-free causal admission and catches fabricated step/defect events; it does not prove pure numeric results.",
+      "phase": "35",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VERIFICATION.md",
+      "verification_evidence": [
+        "All eight plans declare BIT-01 through BIT-04 only. `REQUIREMENTS.md` assigns exactly those four to Phase 35; no orphaned Phase 35 requirement was found.",
+        "| BIT-01 | 03, 05, 06, 07 | U64 `^`, `&`, `|`; independent scalar transfers and literal answers across engines/optimization levels; causal event-free checks remain distinct from numeric proof. | \u2713 SATISFIED | Independent vector and optimization tests pass; 15/15 parent-reported transfer mutants killed; causal adapter controls pass. |",
+        "| `check/check_phase35*`, `corevalidate/corevalidate_phase35_test.go`, `originvalidate/originvalidate_phase35_test.go` | BIT-01, BIT-02 | Active; 0 disabled | No | Independent transfer and negative controls | PASS |",
+        "| `interp/interp_phase35_test.go`, `session/session_phase35_values_test.go`, `cmd/schway/main_phase35_test.go` | BIT-01, BIT-02, BIT-03 | Active; 0 disabled | No | Fixed expected values and public behavior | PASS |",
+        "| `cgen/cgen_phase35_test.go`, `executionpeer/executionpeer_phase35_test.go`, `pathoracle/pathoracle_phase35_test.go` | BIT-01, BIT-02 | Active; 0 disabled | No | Generated-site, causal, and ancestry assertions | PASS |",
+        "| `testdata/phase35/prohibition-evidence.test.cjs` | BIT-01, BIT-02 prohibitions | Active; 0 skipped | No | Violation fixtures plus clean evidence subject | PASS |",
+        "| BIT-01 | Engine agreement or causal event admission is independent numeric proof. | Violation fixture plus clean Phase 35 evidence subject; named adapter test passed. | \u2713 VERIFIED |"
+      ],
+      "summary_paths": [
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-02-SUMMARY.md",
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-03-SUMMARY.md",
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-04-SUMMARY.md",
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "BIT-02",
+      "checked": true,
+      "description": "U64 `<<` and `>>` are admitted only when the shift amount is an integer literal from 0 to 63.",
+      "phase": "35",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VERIFICATION.md",
+      "verification_evidence": [
+        "| BIT-02 | 02, 03, 04, 06, 07 | Literal U64 shifts only for counts 0..63; named refusals for invalid/nonliteral shifts; defined low64 behavior and no unsafe generated C. | \u2713 SATISFIED | Literal admission, unsigned C-site inspection, 33-vector matrix, positive unsafe-site controls and 16-case UBSan pass. |",
+        "| `syntax/*phase35*`, `syntax/numeric_phase35_test.go` | BIT-02, BIT-03 | Active; 0 disabled | No | Value, refusal, spelling, recovery | PASS |",
+        "| `check/check_phase35*`, `corevalidate/corevalidate_phase35_test.go`, `originvalidate/originvalidate_phase35_test.go` | BIT-01, BIT-02 | Active; 0 disabled | No | Independent transfer and negative controls | PASS |",
+        "| `interp/interp_phase35_test.go`, `session/session_phase35_values_test.go`, `cmd/schway/main_phase35_test.go` | BIT-01, BIT-02, BIT-03 | Active; 0 disabled | No | Fixed expected values and public behavior | PASS |",
+        "| `cgen/cgen_phase35_test.go`, `executionpeer/executionpeer_phase35_test.go`, `pathoracle/pathoracle_phase35_test.go` | BIT-01, BIT-02 | Active; 0 disabled | No | Generated-site, causal, and ancestry assertions | PASS |",
+        "| `testdata/phase35/prohibition-evidence.test.cjs` | BIT-01, BIT-02 prohibitions | Active; 0 skipped | No | Violation fixtures plus clean evidence subject | PASS |",
+        "| BIT-02 | Historical hosted receipts or skipped optimization/sanitizer lanes are fresh Phase 35 evidence. | Lane-claim violation fixture plus clean Phase 35 evidence subject; named adapter test passed. | \u2713 VERIFIED |"
+      ],
+      "summary_paths": [
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-02-SUMMARY.md",
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-03-SUMMARY.md",
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-04-SUMMARY.md",
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "BIT-03",
+      "checked": true,
+      "description": "Hex integer literals (`0x\u2026`, case-insensitive digits) are admitted wherever decimal U64 literals are. Overflowing or malformed hex is refused with a named code, and the formatter keeps the source spelling.",
+      "phase": "35",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VERIFICATION.md",
+      "verification_evidence": [
+        "| BIT-03 | 02, 07 | Case-insensitive hex digits, exact spelling retention, malformed/overflow refusal with named codes. | \u2713 SATISFIED | Lexer/parser/formatter and named refusal tests pass. |",
+        "| `syntax/*phase35*`, `syntax/numeric_phase35_test.go` | BIT-02, BIT-03 | Active; 0 disabled | No | Value, refusal, spelling, recovery | PASS |",
+        "| `interp/interp_phase35_test.go`, `session/session_phase35_values_test.go`, `cmd/schway/main_phase35_test.go` | BIT-01, BIT-02, BIT-03 | Active; 0 disabled | No | Fixed expected values and public behavior | PASS |"
+      ],
+      "summary_paths": [
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-02-SUMMARY.md",
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-03-SUMMARY.md",
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "BIT-04",
+      "checked": true,
+      "description": "`examples/checksum/adler32.schway` uses `b << 16` in place of 16 doublings. All of its pinned answers, and the checksum and `adler_low` outputs, stay byte-identical on both engines.",
+      "phase": "35",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-VERIFICATION.md",
+      "verification_evidence": [
+        "All eight plans declare BIT-01 through BIT-04 only. `REQUIREMENTS.md` assigns exactly those four to Phase 35; no orphaned Phase 35 requirement was found.",
+        "| BIT-04 | 08 | Adler uses `b << 16`; pinned outputs remain identical on interpreter and native. | \u2713 SATISFIED | Direct `TestPhase35ExistingAdlerAnswers` passed for both engines. |",
+        "| `session/session_phase35_adler_test.go`, `session/session_phase35_prechange_test.go` | BIT-04, compatibility | Active; 0 disabled | No | Both-engine expected answers and frozen output comparisons | PASS |"
+      ],
+      "summary_paths": [
+        ".planning/phases/35-bitwise-operators-literal-shifts-and-hex-literals/35-08-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "CALL-01",
+      "checked": true,
+      "description": "A scalar function can call another scalar function with one U64 or Bool argument and use the U64 or Bool result in an expression or assignment. This includes calls to imported module functions. Recursion stays refused by the call graph. Callee defects (overflow, remainder, bounds) surface with the callee's reason and exit 65 on both engines.",
+      "phase": "36",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/36-scalar-helper-calls/36-VERIFICATION.md",
+      "verification_evidence": [
+        "| CALL-01 | 36-02 through 36-06 | One-argument U64/Bool calls use returned values across local/imported helper paths, preserving defect behavior and recursion refusal. | \u2713 SATISFIED | Both-engine answer/defect tests and parser/checker/runtime/native evidence. |"
+      ],
+      "summary_paths": [],
+      "join": "manual owner-verification/consumer join"
+    },
+    {
+      "id": "CALL-02",
+      "checked": true,
+      "description": "Calls are derived independently by check, corevalidate, originvalidate and the execution peer. Mutants that drop the argument, the result or a callee defect are caught. Programs without scalar calls keep byte-identical generated C.",
+      "phase": "36",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/36-scalar-helper-calls/36-VERIFICATION.md",
+      "verification_evidence": [
+        "| CALL-02 | 36-01 through 36-08 | Every peer independently derives call constraints; compatibility and bounded public surface are checked. | \u2713 SATISFIED | Source/core/origin/path/peer tests, mutation controls, manifest and literal baseline. |"
+      ],
+      "summary_paths": [],
+      "join": "manual owner-verification/consumer join"
+    },
+    {
+      "id": "APP-13",
+      "checked": true,
+      "description": "`examples/crc32/crc32.schway` reads a file of at most 65,536 bytes and prints its CRC-32/ISO-HDLC as bare decimal. It is built from an ordinary-source `crc32` module that uses a bit-at-a-time loop with no table.",
+      "phase": "37",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-VERIFICATION.md",
+      "verification_evidence": [
+        "| APP-13 | 37-01, 37-05, 37-06, 37-09 | Ordinary-source CRC-32/ISO-HDLC consumer with pinned values and bounded file behavior | SATISFIED | Truths 1, 2, 4, and 10; independent oracle, helper activation, mutation controls, and public matrix evidence. |",
+        "The canonical phase mapping contains exactly `APP-13`, `MOD-07`, `APP-14`, and `DX-24`; no additional mapped requirement is orphaned."
+      ],
+      "summary_paths": [
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-01-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "MOD-07",
+      "checked": true,
+      "description": "A second consumer imports `crc32` from the module without copying it and prints a pinned answer on both engines.",
+      "phase": "37",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-VERIFICATION.md",
+      "verification_evidence": [
+        "| MOD-07 | 37-01, 37-06 | A second consumer imports the shared module and produces the pinned answer on both engines | SATISFIED | Truths 3 and 10; current shared-consumer test and preserved library-flip controls. |",
+        "The canonical phase mapping contains exactly `APP-13`, `MOD-07`, `APP-14`, and `DX-24`; no additional mapped requirement is orphaned."
+      ],
+      "summary_paths": [
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-01-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "APP-14",
+      "checked": true,
+      "description": "`schway run --engine=interpreter` runs file-bytes programs such as `crc32` and `checksum` from the CLI, and gives the same stdout, stderr and exit code as native for every pinned case. Interpreter/native parity for file input is no longer Go-level only.",
+      "phase": "37",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-VERIFICATION.md",
+      "verification_evidence": [
+        "| APP-14 | 37-02 through 37-08 | Public interpreter file route and native route produce identical pinned streams/status | SATISFIED | Truths 4\u20139 and 11\u201312; current CLI smoke and prior matrix, reader, outcome, cleanup, and guide evidence. |",
+        "The canonical phase mapping contains exactly `APP-13`, `MOD-07`, `APP-14`, and `DX-24`; no additional mapped requirement is orphaned."
+      ],
+      "summary_paths": [
+        ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-01-SUMMARY.md"
+      ],
+      "join": "direct"
+    },
+    {
+      "id": "DX-24",
+      "checked": true,
+      "description": "`examples/crc32/README.md` is an executable clean-checkout guide, run by a test the way `TestPhase32GuideCleanCheckout` runs its guide.",
+      "phase": "37",
+      "canonical_status": "Complete",
+      "audit_status": "satisfied",
+      "verification_path": ".planning/phases/37-crc-32-consumer-interpreter-file-route-and-guide/37-VERIFICATION.md",
+      "verification_evidence": [
+        "| DX-24 | 37-08 | Executable clean-checkout CRC guide | SATISFIED | Truth 12; preserved clean-checkout test receipt. |",
+        "The canonical phase mapping contains exactly `APP-13`, `MOD-07`, `APP-14`, and `DX-24`; no additional mapped requirement is orphaned."
+      ],
+      "summary_paths": [],
+      "join": "manual owner-verification/consumer join"
+    },
+    {
+      "id": "EVD-17",
+      "checked": false,
+      "description": "Hosted ubuntu and macOS receipts for every M007 and earlier pinned program are bound once to the final M007 codedigest, after the milestone audit and in its last plan. No per-phase hosted receipt binding is required.",
+      "phase": "38",
+      "canonical_status": "Pending",
+      "audit_status": "unsatisfied",
+      "verification_path": null,
+      "verification_evidence": [],
+      "summary_paths": [],
+      "join": "expected unfinished Phase38 owner"
+    }
+  ],
+  "manual_join_reason": "Historical CALL-01/CALL-02/DX-24 summary omissions confirmed against owner SATISFIED tables and named source consumers; earlier metadata preserved.",
+  "integration": "INTEGRATION.json",
+  "new_execution": "None by audit; source inspection and explicit receipt reuse.",
+  "config_sha256": "148ccc4c56db8516788c264216ae277d9860d43e00b92de299d8ccff2fd59521"
+}

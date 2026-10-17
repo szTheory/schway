@@ -1,15 +1,16 @@
 ---
 phase: "38"
 slug: "milestone-receipts"
-status: draft
+status: validated
 nyquist_compliant: false
-wave_0_complete: false
+wave_0_complete: true
 created: "2026-10-16"
 ---
+<!-- phase38-preparation/1 kind=validation source_sha=06e72dda0addd2744106e22ef35fec539337999b codedigest=f21194d7244778ac073269734e0103a6e1e0f6c59335e84305176401b465aadf disposition=focused -->
 
 # Phase 38 — Validation Strategy
 
-This is an executable planning contract, not a passing receipt. All new controls below are missing until Plan01 creates them; no compiler/native behavior suite or hosted action was run during planning. Source-inspected existing tests and historical reports are not new execution evidence.
+This contract has been reconciled against executed Plan 01 preparation. The eight new roots exist and their focused positive/negative controls passed. Hosted execution, actual remote approval and final ingest remain pending, so nyquist_compliant stays false and no EVD-17 completion is claimed. The original planning-only assertions below retain their dated scope; the execution amendment records the current evidence.
 
 ## Test Infrastructure
 
@@ -30,9 +31,9 @@ After each implementation task, run its focused behavioral controls and verify e
 
 | Task ID | Plan | Wave | Requirement | Threat refs / acceptance | Test type | Command/evidence | Exists | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 38-01-01 | 01 | 1 | EVD-17 prerequisite | T-38-01/02/04/05: real CRC path, partial-probe refusal, wrong-revision controls | tracer seam | A | Wave0 new root | pending execution |
-| 38-01-02 | 01 | 1 | EVD-17 prerequisite | T-38-01..06: exact consumer inventory, skip/empty/duplicate/precision/history/pipeline refusals | focused seam | B | Wave0 five new roots + existing differential roots | pending execution |
-| 38-01-03 | 01 | 1 | EVD-17 prerequisite | T-38-03: source-bound review/security/freshness/new audit before actual freeze | lifecycle + gate | C; independent pre-freeze review/security and fresh milestone audit | gate/schema/records created by Plan01 | pending execution |
+| 38-01-01 | 01 | 1 | EVD-17 prerequisite | T-38-01/02/04/05: real CRC path, partial-probe refusal, wrong-revision controls | tracer seam | A | created and exercised | pass: bounded tracer |
+| 38-01-02 | 01 | 1 | EVD-17 prerequisite | T-38-01..06: exact consumer inventory, skip/empty/duplicate/precision/history/pipeline refusals | focused seam | B | created and exercised | pass: focused acceptance controls |
+| 38-01-03 | 01 | 1 | EVD-17 prerequisite | T-38-03: source-bound review/security/freshness/new audit before actual freeze | lifecycle + gate | C; independent pre-freeze review/security and fresh milestone audit | gate/schema/records created by Plan01 | audit/review passed; actual freeze preflight follows metadata commit |
 | 38-02-01 | 02 | 2 | EVD-17 prerequisite | T-38-07: actual full freeze/repo/ref/workflow/input/push-scope human approval | authority checkpoint | C establishes readiness only; actual explicit user response is mandatory | future concrete freeze/approval | pending; cannot autoapprove |
 | 38-02-02 | 02 | 2 | EVD-17 prerequisite | T-38-08..11: authenticated one-attempt head/job/step/artifact/log identity; one transient retry max | hosted integration | D + authenticated API/archive digest observations | source seam from01; actual run unknown | pending external execution |
 | 38-03-01 | 03 | 3 | EVD-17 final acceptance | T-38-12/14/15: exact copied bytes, run/attempt/source/ingest scope | copied-byte gate | E | source seam from01; retained bytes unknown | pending execution |
@@ -43,7 +44,7 @@ Commands assume repository root. Every automated command in the plans is immedia
 
 **A — real bounded tracer:** `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase38ReceiptTracer$' -count=1 -v -timeout=60s`
 
-**B — acceptance union:** `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase38ProducerInventoryControls|TestPhase38ManifestConsumerBindings|TestPhase38BindingControls|TestPhase38FreezeWorktreeControls|TestPhase38WorkflowFailureControls|TestFreezeGateDifferential|TestReceiptGateDifferential|TestPhase32CodeDigest)$' -count=1 -v -timeout=120s`
+**B — acceptance union:** `GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^(TestPhase38ProducerInventoryControls|TestPhase38ManifestConsumerBindings|TestPhase38BindingControls|TestPhase38FreezeWorktreeControls|TestPhase38FinalCandidateControls|TestPhase38FreezeCommitConfigControls|TestPhase38WorkflowFailureControls|TestFreezeGateDifferential|TestReceiptGateDifferential|TestPhase32CodeDigest)$' -count=1 -v -timeout=120s`
 
 **C — actual freeze preflight:** `sh scripts/check-milestone-binding.sh freeze .planning/phases/38-milestone-receipts/38-FREEZE.json`
 
@@ -55,19 +56,19 @@ E delegates existing generic receipt/freeze gates, checks current committed dige
 
 ## Wave 0 Requirements
 
-- [ ] `internal/compiler/session/session_phase38_receipts_test.go`: TestPhase38ReceiptTracer exercises real `--milestone M007 --probe crc32/check` interpreter/native tuple and partial-probe refusal.
-- [ ] TestPhase38ProducerInventoryControls and TestPhase38ManifestConsumerBindings exercise real producer parsing plus exact fixture/consumer/subtest joins, missing/duplicate/wrong-result/empty-selector/skip/partial inventory and unavailable-tool refusals.
-- [ ] TestPhase38BindingControls proves wrong freeze/run/log SHA, mixed attempts, duplicate hosts, missing/failed jobs/steps/artifacts, altered bytes, malformed metadata and non-integer/overflow identity refusals; both host orders pass.
-- [ ] TestPhase38FreezeWorktreeControls proves staged/unstaged/untracked digest edits and change-then-revert history refuse while a true planning-only descendant passes; config invariant remains fixed.
-- [ ] TestPhase38WorkflowFailureControls executes the extracted real Bash producer/tee failure seam and verifies attempt-named artifacts, always-upload and missing-file failure.
-- [ ] No new framework/dependency installation.
+- [x] `internal/compiler/session/session_phase38_receipts_test.go`: TestPhase38ReceiptTracer exercises real `--milestone M007 --probe crc32/check` interpreter/native tuple and partial-probe refusal.
+- [x] TestPhase38ProducerInventoryControls and TestPhase38ManifestConsumerBindings exercise real producer parsing plus exact fixture/consumer/subtest joins, missing/duplicate/wrong-result/empty-selector/skip/partial inventory and unavailable-tool refusals.
+- [x] TestPhase38BindingControls proves wrong freeze/run/log SHA, mixed attempts, duplicate hosts, missing/failed jobs/steps/artifacts, altered bytes, malformed metadata and non-integer/overflow identity refusals; both host orders pass.
+- [x] TestPhase38FreezeWorktreeControls proves staged/unstaged/untracked digest edits and change-then-revert history refuse while a true planning-only descendant passes; config invariant remains fixed.
+- [x] TestPhase38WorkflowFailureControls executes the extracted real Bash producer/tee failure seam and verifies attempt-named artifacts, always-upload and missing-file failure.
+- [x] No new framework/dependency installation.
 
-All six new roots must assert expected non-skipped children internally. Reuse existing generic gate refusal goldens; do not clone their implementation. The driver reuses exact existing CRC matrix, helper, bitwise and scoped Phase37.1 consumers. Five native/code preparation files form one safety obligation, then three dependent plans preserve the locked freeze → authority → planning-only ingest sequence.
+All eight new roots assert expected non-skipped children internally; the focused execution and independent reviews below verify that obligation. Reuse existing generic gate refusal goldens; do not clone their implementation. The driver reuses exact existing CRC matrix, helper, bitwise and scoped Phase37.1 consumers. Five native/code preparation files form one safety obligation, then three dependent plans preserve the locked freeze → authority → planning-only ingest sequence.
 
 ## Revision 1 bookkeeping dispositions
 
 - Research questions1..3 are explicitly RESOLVED in RESEARCH: exact freeze/run JSON files/schemas and the narrow checker/test owner are selected; unobserved host environment/access are resolved by fail-closed execution gates, not availability claims. Any absent required result or approval leaves EVD-17 Pending.
-- Scope counts are explicit: Plan01 has five production/fixture/CI paths plus five bounded review/security/validation/freeze/audit outputs, with at most five paths per task. Plan03 has eleven planning-only paths divided4/3/4 across retained evidence, mandated transition claims and canonical lifecycle tasks. D-08/D-13/D-15 and AGENTS supply the named safety/output obligations; no extra plan, subsystem or broad local execution is added.
+- Scope counts are explicit: Plan01 has five production/fixture/CI paths plus five bounded review/security/validation/freeze/audit outputs, with at most five paths per task. Plan03 has twelve planning-only paths divided4/3/5 across retained evidence, mandated transition claims and canonical lifecycle tasks. D-08/D-13/D-15 and AGENTS supply the named safety/output obligations; no extra plan, subsystem or broad local execution is added.
 - T-38-01..T-38-16 remain unique. T-38-SC is one reserved shared phase-level package-install obligation repeated identically in all plans under the canonical exemption, not three independent threats; no package install is planned.
 - PATTERNS now classifies the actual new `internal/compiler/session/session_phase38_receipts_test.go` and names tracked `session_gate_differential_test.go` only as its existing analog/helper owner. No source/test file is changed by this planning revision.
 
@@ -126,10 +127,30 @@ Only authorization to push the named freeze and dispatch the named workflow requ
 
 - [x] Every planned task has an exact automated command immediately followed by observable failing directions; the authority checkpoint additionally requires actual human approval.
 - [ ] No three consecutive tasks lack objective automated evidence.
-- [ ] Wave 0 covers missing controls without mirrored implementation tests.
+- [x] Wave 0 controls exercise real producer/parser and binding seams, including reached review defects.
 - [ ] No watch mode, hidden broad local suite or skipped required case accepted.
 - [ ] Both hosts and required full/race/evidence lanes pass at the selected freeze.
 - [ ] Copied logs and metadata pass binding and final drift checks.
 - [ ] `nyquist_compliant: true` only after execution evidence establishes it.
 
-**Approval:** pending execution evidence.
+**Approval:** preparation validated; hosted/authority/ingest obligations pending. This is partial phase validation, not phase completion.
+
+## Preparation validation amendment — 2026-10-16
+
+Source: `0d5d51440e66e47c53f1703bef8b521eb78e389a`; codedigest `b978317a7057bbd35a8ef0aff425bcd54dadb9ff364b28e0cac42d88f31466fd`. The actual manifest has 106 distinct process rows (39 inherited, 52 CRC and 15 helper), 17 control roots and 480 exact event names. This is a declaration of required hosted coverage, not a claim that the complete producer ran locally.
+
+The real CRC tracer, producer inventory/consumer joins, binding precision/provenance, source/history/preparation records and CI failure controls passed. Independent security ran the eight-root acceptance union at the production-identical 02cfd716 snapshot (17.156s, no skips) and fresh wrong-package real-event controls at 0d5d5144 (5.059s, six children, no skips); code review is clean after the same test delta. Phase 33's 33-38-REFRESH-RUN.json records a further current-source ten-root receipt union (117 run/pass events), tracer (6), and isolated groundedness guard (1), all without failure/skip. The Phase 33 report is fresh/passed 60/60. Previous broad or capture-pressure receipts remain historical and were not rerun.
+
+Independent review caught package lifecycle/selector mismatches, missing codedigest descendants, 39-versus-106 accounting, unchecked preparation bytes, identity type aliases and missing log attempt fields. Reached red/green and wrong-package controls now cover those seams. Original review/security bytes remain in named history artifacts. The generic gates remain consistency checks; future authenticated GitHub observations establish provenance separately.
+
+The first six-document-guard run failed only because this validation document still had status:draft. It did not report a behavior failure. This reconciliation sets status:validated and wave_0_complete:true while preserving nyquist_compliant:false and all external/ingest tasks pending. Re-run the documentation union before freezing. No full local suite, complete producer, race lane, broad native matrix or pressure experiment is claimed.
+
+## Final gate remediation — 2026-10-16
+
+Current reviewed source: `06e72dda0addd2744106e22ef35fec539337999b`, codedigest `f21194d7244778ac073269734e0103a6e1e0f6c59335e84305176401b465aadf`. The clean-checkout config baseline is explicit freeze data; this workspace's original config remains unchanged and unstaged. Final mode is fully implemented before freeze and requires `ingest_base_sha` while ordinary run mode permits that field optionally. It checks actual HEAD, freeze/base ancestry, every parent diff (including merge-only create/remove), planning-only ingest history/net/worktree paths, and protected config changes in the freeze commit and after it.
+
+Reached regression controls first reproduced, then rejected: hardcoded config baseline, final-mode stub, committed config and restore, merge-only non-planning changes, merge-only digest changes, and config inclusion in ordinary or merge freeze commits. Executor's post-commit three-root freeze/final union passed in 12.991s. Independent code review is clean; independent security is SECURED 7/7. Each independently ran only the new TestPhase38FreezeCommitConfigControls (security 1.623s); earlier unions remain credited to their actual revisions. Phase33 refresh ran that new root in 2.277s and recomputed canonical v3 freshness, reusing its unchanged historical controls explicitly. No full producer, broad local native matrix, full/race or pressure test was run.
+
+The manifest remains 106 cases, 17 control roots and 480 event names. Actual milestone audit and freeze selection remain the next preparation gates; hosted authority/results and final copied-byte acceptance remain pending.
+
+The new pre-freeze milestone audit at06e72dda joins18/19 requirements with EVD-17 alone pending; no additional implementation blocker. See M007-MILESTONE-AUDIT.md and its bounded integration/three-source inputs. Actual freeze preflight results belong to38-01-SUMMARY.md after the metadata commit.

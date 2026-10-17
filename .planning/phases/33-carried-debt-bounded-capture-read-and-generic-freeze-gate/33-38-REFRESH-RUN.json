@@ -1,0 +1,119 @@
+{
+  "schema": "schway-phase33-phase38-refresh-run-v2",
+  "phase": "33",
+  "phase_path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate",
+  "captured_utc": "2026-10-17T00:29:58Z",
+  "prior_report": {
+    "path": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-VERIFICATION.md",
+    "prior_status": "passed",
+    "prior_score": "60/60 must-haves verified",
+    "stale_at_refresh_entry": true,
+    "history_copy": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-38-REFRESH-0d5d5144-HISTORY.md",
+    "history_sha256": "85c4d2503efb67bf6abc51aa51c86b32a859d9f2c6640768363809566775faad",
+    "intermediate_snapshot": "991abac4d1c9ac63c7624192a956b00bf3cbef3b",
+    "intermediate_history_copy": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-38-REFRESH-991abac4-HISTORY.md",
+    "intermediate_history_sha256": "419324c69bfbf7157c9196ddbd9b1954ec8c684c711fee9c19a00bae95dde5b4",
+    "earlier_history_copy": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-38-REFRESH-VERIFICATION-HISTORY.md",
+    "earlier_history_sha256": "cdf8be9e9f799f71a08c04db109cf0a0c86f84f48b86d8796e719b397b7be60d"
+  },
+  "phase_lifecycle": {
+    "plans": 5,
+    "summaries": 5,
+    "incomplete_plans": 0,
+    "section_manifest": {
+      "included": ["regression-gate"],
+      "excluded": ["partial-wave", "gap-closure-artifacts"]
+    },
+    "plans_replayed": false,
+    "uat_replayed": false
+  },
+  "source_snapshot": {
+    "head": "06e72dda0addd2744106e22ef35fec539337999b",
+    "code_digest": "f21194d7244778ac073269734e0103a6e1e0f6c59335e84305176401b465aadf",
+    "source_delta_since_991abac4": [
+      "scripts/check-milestone-binding.sh",
+      "internal/compiler/session/session_phase38_receipts_test.go"
+    ],
+    "covered_phase38_source_hashes": {
+      ".github/workflows/ci.yml": "a8a913b4adfa36970bfd953e44ef541460acb302a9bfb78c75ddb05dc5b12c3b",
+      "scripts/verify-phase32.sh": "bffa9aeff47c7b9ba8393d73944f4203fabd926631e089f052f9165940e1eece",
+      "scripts/check-milestone-binding.sh": "75798169c4a59b66233632cefeb141e4034f09524a4375723e45b9a166c7dfba",
+      "testdata/receipts/M007.manifest": "7fcfeeab05e89d9253006e2a333ac9b7e670fb2412d57a55a252b0041d515985",
+      "internal/compiler/session/session_phase38_receipts_test.go": "7cd674b7b073b4bf6a75632b8fff13e607d5332c5ab517a259b5d1c7ad8b0dca"
+    },
+    "workspace_config": {
+      "path": ".planning/config.json",
+      "sha256": "148ccc4c56db8516788c264216ae277d9860d43e00b92de299d8ccff2fd59521",
+      "matches_declared_baseline": true,
+      "git_status_at_refresh": "modified, unstaged; bytes match declared workspace baseline"
+    },
+    "generic_check_freeze_changed_since_prior": false,
+    "freeze_commit_workspace_config_checked_against_all_parents": true,
+    "compiler_semantics_changed": false
+  },
+  "fresh_checks": [
+    {
+      "command": "GOCACHE=/tmp/ai-lang-verification-gocache go test ./internal/compiler/session -run '^TestPhase38FreezeCommitConfigControls$' -count=1 -timeout=180s -json",
+      "captured_output": "/tmp/schway-phase33-38-refresh-06e72dda-session.json",
+      "captured_output_sha256": "197b34f3355fc09d9258aa450a85cd4d7b458bb205dcb34a9cb855488b9371b6",
+      "exit_code": 0,
+      "package_elapsed_seconds": 2.277,
+      "named_roots": [
+        "TestPhase38FreezeCommitConfigControls"
+      ],
+      "run_events": 3,
+      "passed_events": 4,
+      "failed_events": 0,
+      "skipped_events": 0,
+      "covered_controls": [
+        "ordinary freeze commit containing workspace config refused by freeze gate",
+        "merge freeze commit containing workspace config refused across both parents",
+        "final candidate refusal after receipt evidence itself validates"
+      ]
+    },
+    {
+      "command": "sh scripts/codedigest.sh",
+      "exit_code": 0,
+      "stdout": "f21194d7244778ac073269734e0103a6e1e0f6c59335e84305176401b465aadf"
+    }
+  ],
+  "historical_credit": [
+    {
+      "source_head": "991abac4d1c9ac63c7624192a956b00bf3cbef3b",
+      "receipt": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-38-REFRESH-991abac4-HISTORY.md",
+      "receipt_sha256": "419324c69bfbf7157c9196ddbd9b1954ec8c684c711fee9c19a00bae95dde5b4",
+      "output": "/tmp/schway-phase33-38-refresh-991abac4-session.json",
+      "output_sha256": "9476c2ae3b2a29c8e9ca9a197fa049335fe5d8f828f14a6b7318a53373f2b1d8",
+      "credit": "four-root/51-event FinalCandidate, FreezeWorktree, Binding, and ProducerInventory run retained as historical evidence; not rerun after the final checker delta"
+    },
+    {
+      "source_head": "991abac4d1c9ac63c7624192a956b00bf3cbef3b",
+      "credit": "sh -n scripts/check-milestone-binding.sh passed at the intermediate snapshot; not rerun after checker logic changed"
+    },
+    {
+      "source_head": "0d5d51440e66e47c53f1703bef8b521eb78e389a",
+      "receipt": ".planning/phases/33-carried-debt-bounded-capture-read-and-generic-freeze-gate/33-38-REFRESH-0d5d5144-HISTORY.md",
+      "credit": "unaffected M006 default and generic freeze/receipt roots from its 10-root/117-event run; changed binding/final/worktree/producer roots are excluded from this reuse and were rerun above"
+    },
+    {
+      "source_head": "0d5d51440e66e47c53f1703bef8b521eb78e389a",
+      "credit": "TestPhase38ReceiptTracer six-event run and TestVerificationGroundedness one-event run retained as historical checks; neither is claimed as newly executed at 991abac4"
+    },
+    {
+      "source_head": "0d5d51440e66e47c53f1703bef8b521eb78e389a",
+      "credit": "TestPhase33CaptureReadBounded exact-limit, limit+1 and sparse-file pressure result remains historical; the reader/test inputs are unchanged and the root is expressly excluded from this refresh"
+    }
+  ],
+  "gates": {
+    "artifacts": "22/22 declared artifact occurrences across five plans retained from the prior canonical artifact query; plan inputs unchanged",
+    "key_links": "11 manually traced links wired; canonical path heuristic cannot resolve several descriptive prose-valued from fields",
+    "decision_coverage": "22/22 honored in prior refresh; decision inputs unchanged",
+    "security": "Phase 33 authored register remains verified with zero open threats; no mutable Phase 38 review/security/audit report is fingerprinted",
+    "ui": "not applicable in prior safety-gate query: frontend=false, hasUiFiles=false, hasUiSpec=false, block=false",
+    "capture_pressure": "TestPhase33CaptureReadBounded not rerun; prior named evidence historical",
+    "EVD-17": "Pending in Phase 38; no completion claim",
+    "full_suite_hosted_race_second_host": "not run and not claimed",
+    "phase_completion_or_lock_release": false,
+    "commit_created": false
+  }
+}

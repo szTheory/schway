@@ -1,111 +1,84 @@
 ---
 milestone: M007
 milestone_name: Bitwise Checksum and Composable Scalar Helpers
-audited: "2026-10-16T21:40:06.234614+00:00"
-audited_head: 320f9b556b68f42d0395f8da23135cfcd63232b5
-audit_stage: post-terminal-closure-pre-receipt
+audited: "2026-10-17T00:40:51.922740+00:00"
+audited_head: 06e72dda0addd2744106e22ef35fec539337999b
+codedigest: f21194d7244778ac073269734e0103a6e1e0f6c59335e84305176401b465aadf
+audit_stage: phase38-preparation-pre-freeze
 status: gaps_found
 terminal_closure: passed
 scores:
   requirements: 18/19
-  phases_at_audit: 5/7
-  integration: 10/10
-  scoped_runtime_flows: 6/6
+  phases_at_audit: 6/7
+  source_connections: 8/8
+  completed_scoped_source_flows: 3/3
 gaps:
   requirements:
     - id: EVD-17
       status: unsatisfied
       phase: "38"
       verification_status: missing
-      orphan_kind: expected_unexecuted_owner
-      evidence: Final same-source Ubuntu/macOS receipts remain Phase38-owned and unbound.
+      orphan_kind: expected_unfinished_owner
+      evidence: Same-freeze Ubuntu/macOS hosted receipts and final planning-only retained-byte ingest remain pending.
   integration: []
   flows: []
-terminal_dispositions:
-  CR-03: closed
-  CR-04: closed_corrected_checked_source_OpFail_target
-  CR-06: closed
 new_blocking_regressions: []
 manual_joins_resolved: [CALL-01, CALL-02, DX-24]
-orphaned_from_owner_verification: [EVD-17]
 unintended_implemented_requirement_orphans: []
 nyquist:
   compliant_phases: ["33", "34", "35", "36", "37", "37.1"]
-  partial_phases: []
-  not_validated_phases: []
-  missing_phases: ["38"]
-  overall: partial_expected_future_owner
-next_action: "$gsd-discuss-phase 38"
+  partial_phases: ["38"]
 ---
+<!-- phase38-preparation/1 kind=audit source_sha=06e72dda0addd2744106e22ef35fec539337999b codedigest=f21194d7244778ac073269734e0103a6e1e0f6c59335e84305176401b465aadf disposition=EVD-17-pending -->
 
-# M007 audit after terminal closure
+# M007 pre-freeze milestone audit
 
-**Terminal closure passes: CR-03/04/06 are closed and no new blocking regression was found.** Milestone status remains `gaps_found` solely because EVD-17 intentionally awaits Phase38 hosted receipts. This audit does not bind a freeze commit or authorize push/dispatch.
+Eighteen of nineteen requirements are satisfied. EVD-17 is the sole unsatisfied obligation, owned by the in-progress Phase38 hosted run and final planning-only ingest. No additional implementation blocker or broken source connection was found. The milestone remains gaps_found and is not ready to archive. Preparation review is clean and security is SECURED7/7 at the inspected source; actual freeze selection and remote authorization follow this audit.
 
-The independent source audit inspected ten explicit component connections (six cross-phase, four within-phase) and six scoped runtime flows; all are wired. Final hosted binding is a separate pending flow. Denominators describe this finite inventory, not compiler completeness. The original pre-closure audit remains byte-identical at [PRE-CLOSURE-MILESTONE-AUDIT.md](audits/M007-2026-10-16-terminal-closure/PRE-CLOSURE-MILESTONE-AUDIT.md).
+The prior canonical audit is preserved byte-for-byte in [PRE-PREPARATION-MILESTONE-AUDIT.md](audits/M007-phase38-pre-freeze/PRE-PREPARATION-MILESTONE-AUDIT.md), SHA256 f15af34d810f9081d60116a0f438b8bc25e8907f0d8375cb883f2d61682fb85a. This dated audit supersedes its current-state fields while preserving those historical decisions.
 
-## Terminal closure
+## Three-source requirements cross-reference
 
-| Obligation | Disposition | Source and evidence boundary |
-| --- | --- | --- |
-| CR-03 | Closed | Correctly attributed child defects close all active invocations in legacy and dynamic modes. Ordinary/failed child completion closes one. Causal frame closure does not prove physical cleanup. |
-| CR-04 | Closed against corrected admitted target | Checked Phase24 source produces indexed foreign.failed followed by OpFail, including compatible caller error transfer/root attribution. Contract/typefact/place/activation controls are independent. The historical synthetic OpReturn probe did not establish checked-source admission; arbitrary OpReturn failures remain unclaimed. Literal model values are separate from causal evidence. |
-| CR-06 | Closed | Checked no-call scalar defects produce structured native documents with process0 and peer acceptance; application65 and exact stderr bytes retain their contract. Static counted output preserves valid control/NUL reasons; malformed reason UTF-8 is refused before JSON cloning. Dynamic controls stay green; native Unit remains refused. |
+All 19 canonical requirement rows were joined to owner verification tables and 42 SDK summary extractions. Fifteen have direct summary-frontmatter coverage; CALL-01, CALL-02 and DX-24 retain their prior manually grounded owner-verification/consumer joins. Their historical summary metadata was not rewritten. EVD-17 has no final owner verification or completed summary, as expected before hosted/final execution. No implemented requirement is an unintended orphan.
 
-The census covers325source rows (Phase34:162×4routes; Phase36:163×3routes). Exactly five existing sum_to_n route keys carry reviewed old-source/core/C-bound byte edits. Frozen corpora/goldens are unchanged. Older Phase273/28/35 comparisons reuse that same strict projection; unrelated-byte/stale/wrong-route controls reject. No broad normalization or regenerated oracle is used. WR-02's obsolete ownership comment was corrected during the necessary raw-core semantic edit; its previous disposition remains historical.
+| Requirement | Owner | Verification | Summary join | Current disposition |
+| --- | --- | --- | --- | --- |
+| QLT-13 | 33 | passed | direct | satisfied |
+| QLT-14 | 33 | passed | direct | satisfied |
+| QLT-15 | 33 | passed | direct | satisfied |
+| EVD-16 | 33 | passed | direct | satisfied |
+| DX-20 | 34 | passed | direct | satisfied |
+| DX-21 | 34 | passed | direct | satisfied |
+| DX-22 | 34 | passed | direct | satisfied |
+| DX-23 | 34 | passed | direct | satisfied |
+| BIT-01 | 35 | passed | direct | satisfied |
+| BIT-02 | 35 | passed | direct | satisfied |
+| BIT-03 | 35 | passed | direct | satisfied |
+| BIT-04 | 35 | passed | direct | satisfied |
+| CALL-01 | 36 | passed | manual owner-verification/consumer join | satisfied |
+| CALL-02 | 36 | passed | manual owner-verification/consumer join | satisfied |
+| APP-13 | 37 | passed | direct | satisfied |
+| MOD-07 | 37 | passed | direct | satisfied |
+| APP-14 | 37 | passed | direct | satisfied |
+| DX-24 | 37 | passed | manual owner-verification/consumer join | satisfied |
+| EVD-17 | 38 | missing, expected pending | expected unfinished Phase38 owner | unsatisfied |
 
-## Current evidence and limits
+The exact source lines, owner report paths and summary file paths are retained in [PARENT-AGGREGATION.json](audits/M007-phase38-pre-freeze/PARENT-AGGREGATION.json); inputs are REQUIREMENTS-INPUT.json, PHASE-STATUS.json and SUMMARY-EXTRACTION.json in the same directory. All six implemented phases are canonically fresh/passed. Phase38 has validated preparation with nyquist_compliant:false until the remaining hosted/authority/ingest obligations pass.
 
-The four canonical terminal proofs are green/unflagged. Each uses the same exact suite in its bad/clean/default controls; all12receipts, all37selected bindings per proof, and53raw evidence records were independently checked. The final union records19roots/254subtests/zeroskips. These records and local raw pointers are in the Phase37.1 projection/resolution; raw receipts remain machine-local under /tmp.
+## Integration and evidence limits
 
-The bounded predecessor regression accounts for250package/test selectors and251root events across16groups:220unchanged passing receipts reused, five former failures rerun green, and26previously unrun roots passed. TestPhase33CaptureReadBounded is explicitly excluded from this refresh; its earlier evidence remains historical with unchanged source. Six documentation/lifecycle/groundedness guards pass. Original-source expected RED and clean/default controls remain distinct from green acceptance. The independent audit inspected source/evidence and ran no tests itself.
+The independent [integration audit](audits/M007-phase38-pre-freeze/INTEGRATION.md) inspected eight source connections, six phase-to-phase, with no broken link. Three scoped completed source flows are wired; authenticated hosted artifact retrieval and final ingest remain pending execution, not passing runtime observations. The manifest has106 process cases (39 inherited verbatim,52CRC,15helper),17 control roots,480 exact events and119 reached bindings. Full bitwise optimization vectors remain required. Structured helper/bitwise evidence, numeric answers, causal validation, process outcomes and physical cleanup remain distinct claims.
 
-No full-project/whole-package suite, current Linux/hosted result, physical destructor proof, scalar-payload/numeric Outcome.Value authentication, executed CFG-branch theorem, hermetic build, readability study or cold/warm latency distribution is claimed. Prior two-host/full-matrix receipts retain their revisions and limitations.
+CR-03/04/06 remain closed under the Phase37.1 verifier. CR-04 specifically checks source foreign.failed attribution to indexed generated OpFail/caller error edges; synthetic OpReturn alone is not that proof. The new narrow binding gate retains generic consistency checks, exact package/test event accounting, explicit workspace-config baseline, actual candidate HEAD and ingest ancestry, all-parent committed history, and planning-only final scope. No language semantics, backend or dependency was added.
 
-## Verification and requirements
+The audit ran no tests, producer, native matrix or hosted action. Its source inspection and reused reports are distinct from newly executed focused controls in38-VALIDATION.md. Full/race suites, complete producer and required filesystem controls remain hosted work. Capture-pressure evidence was reused at its original revision and not replayed. Generic gates establish supplied-byte consistency; authenticated GitHub observations in38-02 establish provenance separately. Neither this audit nor synthetic fixtures bind EVD-17.
 
-Phases33–37 now all have fresh canonical passed reports, including Phase34's scoped user-delegated wording acceptance. The integration snapshot predates the final Phase34 UAT owner update; [PARENT-AGGREGATION.json](audits/M007-2026-10-16-terminal-closure/PARENT-AGGREGATION.json) records the later five passed owner queries. The user asked the assistant to recommend and follow a choice; the existing operator-specific diagnostic was retained. This is delegated editorial acceptance, not an independent human-readability measurement.
+## Next capabilities and dormant seeds
 
-Phase37.1's first verifier confirmed the three behavior outcomes but correctly left predecessor freshness and this audit pending. Those administrative inputs are now available for its final independent owner recheck; the phase count above is the audit-time snapshot (five passed, Phase37.1 final recheck next, Phase38 unstarted), not a new source gap. Phase37.1 owns no canonical requirement IDs.
+The complete seven-field table in [38-CONTEXT.md](phases/38-milestone-receipts/38-CONTEXT.md) remains current: final same-source CRC/checksum receipts (producer complete; actual freeze/authorization/hosts/final binding next); proposed wc/longest_line module pair; bounded fixed-schema key=value checker. No next-milestone requirement was promoted.
 
-All19requirements were joined across canonical checkboxes/traceability, owning verification tables, and42SDK-extracted summaries. Fifteen join directly; CALL-01/02 and DX-24 have missing historical summary-completion fields, manually resolved against current owner verification, validation and independently checked consumers. Historical summaries and canonical requirements remain unchanged. No implemented requirement is unintentionally orphaned.
+z1g retains dormant on QueryCommandFile/source-search and the CRC-helper review consumer, with no measured navigation gap. trz retains dormant on readApplicationCapture/replay and CRC diagnosis, with no unexplained failure. z1s retains dormant on syntax.Format/checked-source review, with no contested source form. The Dashbit appraisal remains historical; no experiment, scheduler or generic planning framework was added.
 
-| Requirement | Owner | Final disposition | Join |
-| --- | --- | --- | --- |
-| QLT-13 | 33 | satisfied | Three-source join |
-| QLT-14 | 33 | satisfied | Three-source join |
-| QLT-15 | 33 | satisfied | Three-source join |
-| EVD-16 | 33 | satisfied | Three-source join |
-| DX-20 | 34 | satisfied | Three-source join |
-| DX-21 | 34 | satisfied | Three-source join |
-| DX-22 | 34 | satisfied | Three-source join |
-| DX-23 | 34 | satisfied | Three-source join |
-| BIT-01 | 35 | satisfied | Three-source join |
-| BIT-02 | 35 | satisfied | Three-source join |
-| BIT-03 | 35 | satisfied | Three-source join |
-| BIT-04 | 35 | satisfied | Three-source join |
-| CALL-01 | 36 | satisfied | Manual source-backed join; summary history preserved |
-| CALL-02 | 36 | satisfied | Manual source-backed join; summary history preserved |
-| APP-13 | 37 | satisfied | Three-source join |
-| MOD-07 | 37 | satisfied | Three-source join |
-| APP-14 | 37 | satisfied | Three-source join |
-| DX-24 | 37 | satisfied | Manual source-backed join; summary history preserved |
-| EVD-17 | 38 | unsatisfied | Expected future receipt owner |
+## Required next action
 
-## Audit records and next gate
-
-[INTEGRATION.md](audits/M007-2026-10-16-terminal-closure/INTEGRATION.md) and its JSON define the inspected links/flows and terminal dispositions. REQUIREMENTS.json preserves the initial three-source matrix; SUMMARY-EXTRACTION.json preserves all42SDK outputs; EVIDENCE.json separates source inspection, newly executed checks, reused receipts and historical limits. PARENT-AGGREGATION.json records the final manual joins and owner statuses.
-
-Finish Phase37.1's independent verifier/phase-close owner, then discuss/plan Phase38. EVD-17 stays unchecked/Pending until the final same-source Ubuntu/macOS receipts. Any later push/hosted dispatch checkpoint must name the actual freeze commit. No new phase, backend, dependency or dormant experiment was promoted by this audit.
-
-## Three useful next capabilities
-
-The complete program/blocker/slice/guarantee/evidence/owner/reprioritization table is in [37.1-TRANSITION.md](phases/37.1-close-gap-legacy-terminal-outcomes/37.1-TRANSITION.md#ranked-next-capabilities): audited same-source two-host CRC/checksum receipts; proposed wc/longest_line module pair; bounded fixed-schema key=value checker.
-
-## Dormant seed dispositions
-
-[Current source/consumer dispositions](phases/37.1-close-gap-legacy-terminal-outcomes/37.1-TRANSITION.md#triggered-seed-review) retain z1g/trz/z1s dormant; no measured navigationgap, unexplainedfailure or contestedsourceform triggers an experiment.
-
-## Post-audit owner completion — 2026-10-16
-
-The final Phase 37.1 verifier passes 22/22. Canonical completion ran once for 4/4 plans with zero warnings/conflicts and requirements_updated=false. Phases 33–37 remain fresh and passed. The earlier phases_at_audit=5/7 field preserves the pre-owner snapshot; six implemented phases are now complete, with Phase 38 unstarted and EVD-17 Pending. The overall milestone gaps_found verdict and receipt limits remain unchanged.
+Select the actual freeze only after committing reconciled preparation metadata, including status:validated for38-VALIDATION.md so the hosted full-suite checkout sees it. Explicitly bind the source-equivalent review/security/validation/audit records to that full SHA while retaining their actual inspected/executed source in prose. Write/check the actual freeze. Then present the exact repository/ref/workflow/inputs/push scope under Plan02's blocking-human checkpoint. No push/dispatch is authorized by this audit; EVD-17 remains unchecked/Pending until38-03 retained-byte and final-descendant gates pass.

@@ -1,0 +1,212 @@
+{
+  "audit": "M007 Phase 38 pre-freeze cross-phase integration",
+  "head": "06e72dda0addd2744106e22ef35fec539337999b",
+  "code_digest": "f21194d7244778ac073269734e0103a6e1e0f6c59335e84305176401b465aadf",
+  "workspace_config_sha256": "148ccc4c56db8516788c264216ae277d9860d43e00b92de299d8ccff2fd59521",
+  "scope": ["33", "34", "35", "36", "37", "37.1", "38-pre-freeze"],
+  "phase38": "in_progress_pre_freeze",
+  "status": "no_broken_cross_phase_connection_expected_evd17_pending",
+  "execution_provenance": {
+    "performed_this_audit": "source inspection and joins only",
+    "new_tests_run": false,
+    "new_producer_run": false,
+    "hosted_run_or_artifact_authentication": false,
+    "freeze_or_final_ingest_exists": false,
+    "reused_evidence": "existing bounded receipts and owner verification reports; historical evidence, not newly executed checks"
+  },
+  "counts": {
+    "component_connections_inspected_wired": 8,
+    "component_connections_inspected_broken": 0,
+    "cross_phase_connections_wired": 6,
+    "cross_phase_connections_broken": 0,
+    "scoped_completed_flows_wired": 3,
+    "scoped_completed_flows_broken": 0,
+    "scoped_flows_execution_pending": 2,
+    "requirement_rows_wired": 15,
+    "requirement_rows_manual_history_join": 3,
+    "requirement_rows_pending": 1,
+    "canonical_requirements": 19,
+    "requirements_complete": 18,
+    "requirements_with_expected_no_cross_phase_consumer": 3,
+    "summary_frontmatters_inspected": 42,
+    "http_routes": 0,
+    "authenticated_web_areas": 0
+  },
+  "connections": [
+    {
+      "from": "Phase 33 generic receipt/freeze gates",
+      "to": "Phase 38 M007 manifest and binding checker",
+      "status": "WIRED",
+      "kind": "cross-phase",
+      "evidence": ["scripts/check-milestone-binding.sh", "testdata/receipts/M007.manifest"],
+      "note": "M007 binding reuses generic gates and preserves inherited M006 cases."
+    },
+    {
+      "from": "Phase 34 surface/refusal contract",
+      "to": "Phase 35 dynamic shift refusal (BIT-02)",
+      "status": "WIRED",
+      "kind": "cross-phase",
+      "evidence": [".planning/REQUIREMENTS.md", "Phase 34 owner verification", "Phase 35 shift roots"]
+    },
+    {
+      "from": "Phase 35 bitwise operators and hex literals",
+      "to": "Phase 37 ordinary-source CRC implementation",
+      "status": "WIRED",
+      "kind": "cross-phase",
+      "evidence": ["examples/crc32/lib/crc32.schway", "internal/compiler/session/session_phase35_values_test.go"],
+      "note": "CRC uses XOR, AND, logical right shift, and hex constants. Full bitwise matrix is bound without a reduced vector cap."
+    },
+    {
+      "from": "Phase 36 scalar helper calls",
+      "to": "Phase 37 CRC helper and second module consumer",
+      "status": "WIRED",
+      "kind": "cross-phase",
+      "evidence": ["examples/crc32/lib/crc32.schway", "examples/crc32/crc_low.schway", "internal/compiler/session/session_phase36_calls_test.go"]
+    },
+    {
+      "from": "Phase 37 public file-byte CLI",
+      "to": "Phase 38 bounded public probe and CRC receipt cases",
+      "status": "WIRED",
+      "kind": "cross-phase",
+      "evidence": ["cmd/schway/main_phase37_file_run_test.go", "internal/compiler/session/session_phase38_receipts_test.go", "testdata/receipts/M007.manifest"]
+    },
+    {
+      "from": "Phase 37.1 terminal controls",
+      "to": "Phase 38 root/control inventory",
+      "status": "WIRED",
+      "kind": "cross-phase",
+      "evidence": [".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-VERIFICATION.md", "testdata/receipts/M007.manifest"],
+      "note": "CR-03/04/06 remain closed; CR-04 is checked-source foreign.failed to indexed generated OpFail attribution."
+    },
+    {
+      "from": "Phase 38 manifest and producer",
+      "to": "Ubuntu/macOS CI aggregate and evidence artifact path",
+      "status": "WIRED",
+      "kind": "intra-phase-to-platform",
+      "evidence": [".github/workflows/ci.yml", "scripts/verify-phase32.sh", "scripts/check-milestone-binding.sh"],
+      "note": "Workflow source is connected; no hosted run or authenticated artifact is asserted."
+    },
+    {
+      "from": "Phase 38 binding checker",
+      "to": "final planning-only ingest candidate gate",
+      "status": "WIRED",
+      "kind": "intra-phase",
+      "evidence": ["scripts/check-milestone-binding.sh"],
+      "note": "Actual candidate HEAD, ingest_base_sha, ancestry, all-parent path history, and planning-only changes are checked; ingest has not run."
+    }
+  ],
+  "manifest_inventory": {
+    "process_rows": 106,
+    "inherited_rows_preserved_verbatim": 39,
+    "crc_rows": 52,
+    "helper_rows": 15,
+    "roots": 17,
+    "exact_events": 480,
+    "reached_expectations": 119,
+    "bitwise_optimization_root": "TestPhase35BitwiseOptimizationMatrix",
+    "bitwise_matrix": "all required vectors at O0, O3, and O3-LTO; no arbitrary root cap",
+    "structured_rows_remain_structured": true
+  },
+  "flows": [
+    {
+      "name": "shared CRC source through interpreter/native file CLI to pinned output",
+      "status": "WIRED",
+      "evidence": ["cmd/schway/main_phase37_file_run_test.go", "internal/compiler/session/session_phase38_receipts_test.go"]
+    },
+    {
+      "name": "fixture matrices through manifest rows to exact Go JSON test events",
+      "status": "WIRED",
+      "evidence": ["internal/compiler/session/session_phase38_receipts_test.go", "scripts/check-milestone-binding.sh", "testdata/receipts/M007.manifest"]
+    },
+    {
+      "name": "terminal failure controls through checked-source causal attribution",
+      "status": "WIRED",
+      "evidence": [".planning/phases/37.1-close-gap-legacy-terminal-outcomes/37.1-VERIFICATION.md", "testdata/receipts/M007.manifest"]
+    },
+    {
+      "name": "manifest/producer through CI to host-specific authenticated evidence",
+      "status": "PENDING_EXECUTION",
+      "requirement": "EVD-17",
+      "note": "Source wiring is present; same-final-digest Ubuntu/macOS hosted observations do not yet exist."
+    },
+    {
+      "name": "freeze candidate through final planning-only ingest",
+      "status": "PENDING_EXECUTION",
+      "requirement": "EVD-17",
+      "note": "Candidate gates are implemented, but the actual freeze and final ingest are future Phase 38 work."
+    }
+  ],
+  "terminal_dispositions": [
+    {
+      "id": "CR-03",
+      "status": "CLOSED",
+      "note": "Current root wiring preserves active-invocation closure on the named defect."
+    },
+    {
+      "id": "CR-04",
+      "status": "CLOSED",
+      "note": "Checked-source foreign.failed is attributed to the indexed generated OpFail and caller error edge; synthetic OpReturn is insufficient evidence."
+    },
+    {
+      "id": "CR-06",
+      "status": "CLOSED",
+      "note": "No-call scalar defects remain structured; native docs/process exits and dynamic controls remain distinct from physical cleanup."
+    }
+  ],
+  "api_coverage": "not_applicable_no_http_routes",
+  "auth_protection": "not_applicable_no_authenticated_web_areas",
+  "finding_classification": {
+    "blockers": [],
+    "warnings": [
+      {
+        "requirement": "EVD-17",
+        "status": "expected_pending_owner",
+        "description": "Authenticated same-final-digest Ubuntu/macOS hosted receipts and final planning-only ingest are not yet present; Phase 38 is intentionally incomplete."
+      }
+    ]
+  },
+  "requirements_matrix": [
+    {"id":"QLT-13","phase":"33","status":"WIRED","join":"summary-direct","integration":"bounded capture evidence into reusable generic gate"},
+    {"id":"QLT-14","phase":"33","status":"WIRED","join":"summary-direct","integration":"warning dispositions and tests in refreshed evidence chain"},
+    {"id":"QLT-15","phase":"33","status":"WIRED","join":"summary-direct","integration":"prior warning and documentation dispositions in milestone evidence chain"},
+    {"id":"EVD-16","phase":"33","status":"WIRED","join":"summary-direct","integration":"generic gate consumed by M007 manifest/binding"},
+    {"id":"DX-20","phase":"34","status":"WIRED","join":"summary-direct","integration":"self-contained diagnostic surface"},
+    {"id":"DX-21","phase":"34","status":"WIRED","join":"summary-direct","integration":"self-contained diagnostic recovery behavior"},
+    {"id":"DX-22","phase":"34","status":"WIRED","join":"summary-direct","integration":"surface refusal manifest to Phase 35 BIT-02 dynamic-shift refusal"},
+    {"id":"DX-23","phase":"34","status":"WIRED","join":"summary-direct","integration":"self-contained deterministic surface manifest"},
+    {"id":"BIT-01","phase":"35","status":"WIRED","join":"summary-direct","integration":"bitwise semantics/complete optimization matrix to Phase 37 CRC"},
+    {"id":"BIT-02","phase":"35","status":"WIRED","join":"summary-direct","integration":"literal shift admission/refusal to DX-22 and CRC source semantics"},
+    {"id":"BIT-03","phase":"35","status":"WIRED","join":"summary-direct","integration":"hex literal support to Phase 37 CRC constants"},
+    {"id":"BIT-04","phase":"35","status":"WIRED","join":"summary-direct","integration":"checksum shift behavior to inherited checksum/adler receipt cases"},
+    {"id":"CALL-01","phase":"36","status":"WIRED","join":"manual-owner-verification-and-consumer","integration":"scalar helper behavior to CRC byte helper and imported consumer"},
+    {"id":"CALL-02","phase":"36","status":"WIRED","join":"manual-owner-verification-and-consumer","integration":"independent call derivation/fault controls to Phase 37 consumer and Phase 38 helper rows"},
+    {"id":"APP-13","phase":"37","status":"WIRED","join":"summary-direct","integration":"CRC file CLI to Phase 38 bounded probe/process rows"},
+    {"id":"MOD-07","phase":"37","status":"WIRED","join":"summary-direct","integration":"shared module to second importer and receipt row"},
+    {"id":"APP-14","phase":"37","status":"WIRED","join":"summary-direct","integration":"interpreter/native file parity to Phase 38 public CLI binding"},
+    {"id":"DX-24","phase":"37","status":"WIRED","join":"manual-owner-verification-and-consumer","integration":"executable clean-checkout guide through named guide test/root"},
+    {"id":"EVD-17","phase":"38","status":"PENDING_EXPECTED_OWNER","join":"canonical-checklist-owner-only","integration":"producer/manifest/checker/CI to authenticated same-digest Ubuntu/macOS receipt and final ingest","issue":"No hosted run/artifact authentication or final ingest exists yet; expected sole pending requirement."}
+  ],
+  "requirements_without_cross_phase_consumer": [
+    {"id":"DX-20","reason":"self-contained diagnostic output contract"},
+    {"id":"DX-21","reason":"self-contained parser recovery diagnostic contract"},
+    {"id":"DX-23","reason":"self-contained surface-manifest command contract"}
+  ],
+  "requirements_summary_join": {
+    "requirements_with_direct_summary_frontmatter": 15,
+    "requirements_manually_joined_from_owner_verification_and_consumer": ["CALL-01", "CALL-02", "DX-24"],
+    "pending_without_owner_summary_or_verification": ["EVD-17"],
+    "historical_metadata_edited": false
+  },
+  "seed_dispositions": [
+    {"seed":"z1g","disposition":"retain-dormant","witness":"QueryCommandFile and ordinary source search; no measured navigation gap"},
+    {"seed":"trz","disposition":"retain-dormant","witness":"readApplicationCapture and application replay; no unexplained failure"},
+    {"seed":"z1s","disposition":"retain-dormant","witness":"syntax.Format and checked CRC/helper sources; no contested source form"}
+  ],
+  "detailed_report": "INTEGRATION.md",
+  "source_snapshot": {
+    "phase_verification_reports": ["33-VERIFICATION.md", "34-VERIFICATION.md", "35-VERIFICATION.md", "36-VERIFICATION.md", "37-VERIFICATION.md", "37.1-VERIFICATION.md"],
+    "phase38_verification_exists": false,
+    "phase38_summary_count": 0,
+    "phase38_status": "in_progress"
+  }
+}
