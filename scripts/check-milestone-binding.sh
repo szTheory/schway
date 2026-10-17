@@ -462,10 +462,14 @@ def validate_freeze_candidate(f):
         refuse("freeze_history_changed")
     paths = subprocess.run(["sh", "scripts/codedigest.sh", "--paths"], cwd=root, check=True,
                            text=True, stdout=subprocess.PIPE).stdout.splitlines()
+    frozen_history_paths = git_history_paths(f["freeze_sha"], candidate)
+    config_path = f["workspace_config"]["path"]
+    if config_path in frozen_history_paths: refuse("config_history_changed")
+    if any(is_digest_input(path, paths) for path in frozen_history_paths):
+        refuse("freeze_history_changed")
     status = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all", "--", *paths],
                             cwd=root, check=True, text=True, stdout=subprocess.PIPE).stdout
     if status: refuse("digest_worktree_dirty")
-    config_path = f["workspace_config"]["path"]
     _, config_data = safe_regular_file(config_path, 1024 * 1024,
                                        "config_missing", "config_not_regular")
     if hashlib.sha256(config_data).hexdigest() != f["workspace_config"]["sha256"]:
@@ -491,6 +495,15 @@ def git_nul_paths(arguments):
     except UnicodeDecodeError:
         refuse("final_path_encoding")
 
+def git_history_paths(start, end):
+    return git_nul_paths([
+        "log", "--format=", "--name-only", "--no-renames", "-m", "-z", start + ".." + end,
+    ])
+
+def is_digest_input(path, roots):
+    if path.endswith(".md"): return False
+    return any(path == root or path.startswith(root.rstrip("/") + "/") for root in roots)
+
 def require_planning_only(paths):
     if any(not path.startswith(".planning/") for path in paths):
         refuse("final_nonplanning_change")
@@ -503,9 +516,7 @@ def validate_final_candidate(f, run):
         refuse("final_ingest_base")
     if not git_ancestor(f["freeze_sha"], base) or not git_ancestor(base, candidate):
         refuse("final_ingest_base_ancestry")
-    require_planning_only(git_nul_paths([
-        "log", "--format=", "--name-only", "--no-renames", "-z", base + ".." + candidate,
-    ]))
+    require_planning_only(git_history_paths(base, candidate))
     require_planning_only(git_nul_paths([
         "diff", "--name-only", "--no-renames", "-z", base, candidate,
     ]))
