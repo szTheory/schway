@@ -98,7 +98,7 @@ def hex_string(value, size):
 def freeze_data(path):
     f = load_json(path)
     keys(f, {"schema", "freeze_sha", "codedigest", "manifest", "repository",
-             "destination_ref", "workflow_path", "inputs", "preparation"}, "freeze_schema")
+             "destination_ref", "workflow_path", "inputs", "preparation", "workspace_config"}, "freeze_schema")
     if f["schema"] != "schway.m007-freeze/1": refuse("freeze_schema")
     if not hex_string(f["freeze_sha"], 40) or not hex_string(f["codedigest"], 64): refuse("freeze_identity")
     if f["repository"] != "szTheory/schway" or not isinstance(f["destination_ref"], str) or not f["destination_ref"].startswith("refs/heads/"):
@@ -107,6 +107,9 @@ def freeze_data(path):
     keys(f["manifest"], {"path", "sha256"}, "manifest_identity")
     if f["manifest"]["path"] != "testdata/receipts/M007.manifest" or not hex_string(f["manifest"]["sha256"], 64):
         refuse("manifest_identity")
+    keys(f["workspace_config"], {"path", "sha256"}, "workspace_config_identity")
+    if f["workspace_config"]["path"] != ".planning/config.json" or not hex_string(f["workspace_config"]["sha256"], 64):
+        refuse("workspace_config_identity")
     inputs = {"record_validation_corpus": False, "phase26_focused": False, "spike008_strict": False}
     if (type(f["inputs"]) is not dict or set(f["inputs"]) != set(inputs) or
         any(type(value) is not bool for value in f["inputs"].values()) or f["inputs"] != inputs):
@@ -430,6 +433,40 @@ def validate_run(f, run_path, log_args):
         refuse("receipt_gate_rejected")
     return r
 
+def validate_freeze_candidate(f):
+    candidate = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, check=True,
+                                text=True, stdout=subprocess.PIPE).stdout.strip()
+    if not hex_string(candidate, 40) or subprocess.run(["git", "cat-file", "-e", f["freeze_sha"] + "^{commit}"],
+                                                        cwd=root, stdout=subprocess.DEVNULL,
+                                                        stderr=subprocess.DEVNULL).returncode:
+        refuse("freeze_commit_unknown")
+    committed_digest = subprocess.run(["sh", "scripts/codedigest.sh", "--rev", f["freeze_sha"]],
+                                      cwd=root, check=True, text=True,
+                                      stdout=subprocess.PIPE).stdout.strip()
+    if committed_digest != f["codedigest"]: refuse("freeze_digest_mismatch")
+    if subprocess.run(["git", "merge-base", "--is-ancestor", f["freeze_sha"], candidate], cwd=root).returncode:
+        refuse("freeze_not_ancestor")
+    changed = subprocess.run(["sh", "scripts/check-freeze.sh", f["manifest"]["path"],
+                              f["freeze_sha"], candidate], cwd=root, text=True,
+                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if changed.returncode:
+        sys.stdout.write(changed.stdout)
+        refuse("freeze_history_changed")
+    paths = subprocess.run(["sh", "scripts/codedigest.sh", "--paths"], cwd=root, check=True,
+                           text=True, stdout=subprocess.PIPE).stdout.splitlines()
+    status = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all", "--", *paths],
+                            cwd=root, check=True, text=True, stdout=subprocess.PIPE).stdout
+    if status: refuse("digest_worktree_dirty")
+    config_path = f["workspace_config"]["path"]
+    _, config_data = safe_regular_file(config_path, 1024 * 1024,
+                                       "config_missing", "config_not_regular")
+    if hashlib.sha256(config_data).hexdigest() != f["workspace_config"]["sha256"]:
+        refuse("config_changed")
+    staged = subprocess.run(["git", "diff", "--cached", "--name-only", "--", config_path],
+                            cwd=root, check=True, text=True, stdout=subprocess.PIPE).stdout.splitlines()
+    if config_path in staged: refuse("config_staged")
+    return candidate
+
 try:
     if mode == "run" and len(args) == 5:
         freeze = freeze_data(args[1])
@@ -437,25 +474,7 @@ try:
         print("phase38 binding: status=pass")
     elif mode == "freeze" and len(args) == 2:
         freeze = freeze_data(args[1])
-        candidate = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, check=True, text=True, stdout=subprocess.PIPE).stdout.strip()
-        if not hex_string(candidate, 40) or subprocess.run(["git", "cat-file", "-e", freeze["freeze_sha"] + "^{commit}"], cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
-            refuse("freeze_commit_unknown")
-        committed_digest = subprocess.run(["sh", "scripts/codedigest.sh", "--rev", freeze["freeze_sha"]], cwd=root, check=True, text=True, stdout=subprocess.PIPE).stdout.strip()
-        if committed_digest != freeze["codedigest"]: refuse("freeze_digest_mismatch")
-        if subprocess.run(["git", "merge-base", "--is-ancestor", freeze["freeze_sha"], candidate], cwd=root).returncode:
-            refuse("freeze_not_ancestor")
-        changed = subprocess.run(["sh", "scripts/check-freeze.sh", freeze["manifest"]["path"], freeze["freeze_sha"], candidate], cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        if changed.returncode:
-            sys.stdout.write(changed.stdout)
-            refuse("freeze_history_changed")
-        paths = subprocess.run(["sh", "scripts/codedigest.sh", "--paths"], cwd=root, check=True, text=True, stdout=subprocess.PIPE).stdout.splitlines()
-        status = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all", "--", *paths], cwd=root, check=True, text=True, stdout=subprocess.PIPE).stdout
-        if status: refuse("digest_worktree_dirty")
-        if (root / ".planning/config.json").exists():
-            config = hashlib.sha256((root / ".planning/config.json").read_bytes()).hexdigest()
-            if config != "148ccc4c56db8516788c264216ae277d9860d43e00b92de299d8ccff2fd59521": refuse("config_changed")
-            staged = subprocess.run(["git", "diff", "--cached", "--name-only"], cwd=root, check=True, text=True, stdout=subprocess.PIPE).stdout.splitlines()
-            if ".planning/config.json" in staged: refuse("config_staged")
+        validate_freeze_candidate(freeze)
         print("phase38 freeze-preflight: status=pass")
     elif mode == "final" and len(args) == 5:
         # Plan 03 extends this final check with ingest-base and planning-only delta checks.
