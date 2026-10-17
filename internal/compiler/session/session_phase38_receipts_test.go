@@ -705,6 +705,55 @@ func TestPhase38FinalCandidateControls(t *testing.T) {
 	})
 }
 
+func TestPhase38FreezeCommitConfigControls(t *testing.T) {
+	for _, mergeFreeze := range []bool{false, true} {
+		name := "ordinary-freeze-commit"
+		if mergeFreeze {
+			name = "merge-freeze-commit"
+		}
+		t.Run(name, func(t *testing.T) {
+			fixture := phase38NewBindingFixture(t)
+			mainBranch := phase38GitOutput(t, fixture.root, "branch", "--show-current")
+			if mergeFreeze {
+				phase32Git(t, fixture.root, "checkout", "-b", "phase38-freeze-config-side")
+				phase38Write(t, fixture.root, ".planning/freeze-side.md", []byte("planning-only side parent\n"))
+				phase32Git(t, fixture.root, "add", ".planning/freeze-side.md")
+				phase32Git(t, fixture.root, "commit", "-qm", "planning-only freeze side parent")
+				phase32Git(t, fixture.root, "checkout", mainBranch)
+				phase32Git(t, fixture.root, "merge", "--no-ff", "--no-commit", "phase38-freeze-config-side")
+			}
+
+			workspaceConfig := mustRead(t, testsupport.ProjectPath(".planning", "config.json"))
+			phase38Write(t, fixture.root, fixture.freeze.WorkspaceConfig.Path, workspaceConfig)
+			phase32Git(t, fixture.root, "add", fixture.freeze.WorkspaceConfig.Path)
+			message := "freeze commit records workspace config"
+			if mergeFreeze {
+				message = "merge freeze commit records workspace config"
+			}
+			phase32Git(t, fixture.root, "commit", "-qm", message)
+			phase38BindFixtureAtHead(t, &fixture)
+			if status := phase38GitOutput(t, fixture.root, "status", "--porcelain", "--", fixture.freeze.WorkspaceConfig.Path); status != "" {
+				t.Fatalf("freeze config control is not clean: %q", status)
+			}
+			if mergeFreeze {
+				parents := strings.Fields(phase38GitOutput(t, fixture.root, "show", "-s", "--format=%P", fixture.freeze.FreezeSHA))
+				if len(parents) != 2 {
+					t.Fatalf("merge freeze fixture has %d parents, want 2", len(parents))
+				}
+			}
+
+			phase38RequireFreezeRefusal(t, phase38RunFreeze(t, fixture, fixture.freeze), "config_history_changed")
+			run := fixture.run
+			run.IngestBaseSHA = fixture.freeze.FreezeSHA
+			final := phase38RunFinal(t, fixture, run)
+			if !strings.Contains(final.stdout, "phase38 receipt gate: status=pass") {
+				t.Fatalf("freeze config control failed hosted evidence validation before the expected refusal: %#v", final)
+			}
+			phase38RequireFinalRefusal(t, final, "config_history_changed")
+		})
+	}
+}
+
 func TestPhase38WorkflowFailureControls(t *testing.T) {
 	workflow := string(mustRead(t, testsupport.ProjectPath(".github", "workflows", "ci.yml")))
 	name := "      - name: scripts/verify-phase32.sh M007\n"
@@ -1358,6 +1407,51 @@ func phase38MergeOnlyRoundTrip(t *testing.T, fixture phase38BindingFixture, path
 	phase38Write(t, root, path, baseline)
 	phase32Git(t, root, "add", path)
 	phase32Git(t, root, "commit", "-qm", "merge-only path removal")
+}
+
+func phase38BindFixtureAtHead(t *testing.T, fixture *phase38BindingFixture) {
+	t.Helper()
+	head := phase32GateHead(t, fixture.root)
+	digest := phase32ShDigest(t, fixture.root)
+	fixture.freeze.FreezeSHA, fixture.freeze.CodeDigest, fixture.digest = head, digest, digest
+	manifest := mustRead(t, filepath.Join(fixture.root, filepath.FromSlash(fixture.freeze.Manifest.Path)))
+	fixture.freeze.Manifest.SHA256 = phase38SHA256(manifest)
+	config := mustRead(t, filepath.Join(fixture.root, filepath.FromSlash(fixture.freeze.WorkspaceConfig.Path)))
+	fixture.freeze.WorkspaceConfig.SHA256 = phase38SHA256(config)
+	for kind, link := range fixture.freeze.Preparation {
+		data := phase38PreparationRecord(kind, head, digest, link.Disposition)
+		phase38Write(t, fixture.root, link.Path, data)
+		link.SHA256, link.SourceSHA, link.CodeDigest = phase38SHA256(data), head, digest
+		fixture.freeze.Preparation[kind] = link
+	}
+	run := fixture.run
+	run.HeadSHA, run.IngestBaseSHA = head, head
+	for i := range run.Artifacts {
+		hostOS := "ubuntu-latest"
+		if strings.Contains(run.Artifacts[i].Name, "macos-latest") {
+			hostOS = "macos-latest"
+		}
+		run.Artifacts[i].Name = fmt.Sprintf("phase38-receipt-%s-%s-%d-%d", hostOS, head, run.RunID, run.Attempt)
+	}
+	for i := range run.Logs {
+		var data []byte
+		switch run.Logs[i].Host {
+		case "Linux":
+			data = phase38SyntheticLog("Linux", head, digest, run.RunID, run.Attempt, "smoke", "./cmd/schway", []string{"TestSmoke"}, phase38SyntheticEvents("run", "output", "pass"))
+		case "macOS":
+			data = phase38SyntheticLog("macOS", head, digest, run.RunID, run.Attempt, "smoke", "./cmd/schway", []string{"TestSmoke"}, phase38SyntheticEvents("run", "output", "pass"))
+		default:
+			t.Fatalf("unexpected fixture host %q", run.Logs[i].Host)
+		}
+		sum := sha256.Sum256(data)
+		run.Logs[i].Bytes, run.Logs[i].SHA256 = int64(len(data)), hex.EncodeToString(sum[:])
+		if run.Logs[i].Host == "Linux" {
+			fixture.linuxLog = data
+		} else {
+			fixture.macosLog = data
+		}
+	}
+	fixture.run = run
 }
 
 func phase38WriteJSON(t *testing.T, root, name string, value any) {
