@@ -345,10 +345,18 @@ def validate_control_events(manifest_path, log_data):
             refuse("control_event_incomplete")
     return len(controls), len(cases)
 
-def validate_run(f, run_path, log_args):
+def validate_run(f, run_path, log_args, require_ingest_base=False):
     r = load_json(run_path)
-    keys(r, {"schema", "repository", "workflow_path", "event", "run_id", "attempt", "url",
-             "ref", "head_sha", "status", "conclusion", "jobs", "artifacts", "logs"}, "run_schema")
+    run_keys = {"schema", "repository", "workflow_path", "event", "run_id", "attempt", "url",
+                "ref", "head_sha", "status", "conclusion", "jobs", "artifacts", "logs"}
+    if require_ingest_base:
+        if "ingest_base_sha" not in r: refuse("final_ingest_base")
+        keys(r, run_keys | {"ingest_base_sha"}, "run_schema")
+        if not hex_string(r["ingest_base_sha"], 40): refuse("final_ingest_base")
+    elif set(r) not in (run_keys, run_keys | {"ingest_base_sha"}):
+        refuse("run_schema")
+    elif "ingest_base_sha" in r and not hex_string(r["ingest_base_sha"], 40):
+        refuse("final_ingest_base")
     if r["schema"] != "schway.m007-hosted-run/1": refuse("run_schema")
     if (r["repository"] != f["repository"] or r["workflow_path"] != f["workflow_path"] or
         r["event"] != "workflow_dispatch" or r["ref"] != f["destination_ref"]): refuse("run_identity")
@@ -467,6 +475,53 @@ def validate_freeze_candidate(f):
     if config_path in staged: refuse("config_staged")
     return candidate
 
+def git_ancestor(ancestor, descendant):
+    result = subprocess.run(["git", "merge-base", "--is-ancestor", ancestor, descendant],
+                            cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if result.returncode == 0: return True
+    if result.returncode == 1: return False
+    refuse("final_git_history")
+
+def git_nul_paths(arguments):
+    result = subprocess.run(["git", "-c", "core.quotePath=false", *arguments], cwd=root,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode != 0: refuse("final_git_history")
+    try:
+        return [path.decode("utf-8", "strict") for path in result.stdout.split(b"\0") if path]
+    except UnicodeDecodeError:
+        refuse("final_path_encoding")
+
+def require_planning_only(paths):
+    if any(not path.startswith(".planning/") for path in paths):
+        refuse("final_nonplanning_change")
+
+def validate_final_candidate(f, run):
+    candidate = validate_freeze_candidate(f)
+    base = run["ingest_base_sha"]
+    if subprocess.run(["git", "cat-file", "-e", base + "^{commit}"], cwd=root,
+                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
+        refuse("final_ingest_base")
+    if not git_ancestor(f["freeze_sha"], base) or not git_ancestor(base, candidate):
+        refuse("final_ingest_base_ancestry")
+    require_planning_only(git_nul_paths([
+        "log", "--format=", "--name-only", "--no-renames", "-z", base + ".." + candidate,
+    ]))
+    require_planning_only(git_nul_paths([
+        "diff", "--name-only", "--no-renames", "-z", base, candidate,
+    ]))
+    status = subprocess.run(["git", "status", "--porcelain=v1", "-z", "--no-renames",
+                             "--untracked-files=all"], cwd=root, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    if status.returncode != 0: refuse("final_worktree_status")
+    status_paths = []
+    for entry in status.stdout.split(b"\0"):
+        if not entry: continue
+        if len(entry) < 4 or entry[2:3] != b" ": refuse("final_worktree_status")
+        try: status_paths.append(entry[3:].decode("utf-8", "strict"))
+        except UnicodeDecodeError: refuse("final_path_encoding")
+    require_planning_only(status_paths)
+    return candidate
+
 try:
     if mode == "run" and len(args) == 5:
         freeze = freeze_data(args[1])
@@ -477,10 +532,10 @@ try:
         validate_freeze_candidate(freeze)
         print("phase38 freeze-preflight: status=pass")
     elif mode == "final" and len(args) == 5:
-        # Plan 03 extends this final check with ingest-base and planning-only delta checks.
         freeze = freeze_data(args[1])
-        run = validate_run(freeze, args[2], args[3:5])
-        print(f"phase38 final: status=pass candidate={run['head_sha']}")
+        run = validate_run(freeze, args[2], args[3:5], require_ingest_base=True)
+        candidate = validate_final_candidate(freeze, run)
+        print(f"phase38 final: status=pass candidate={candidate}")
     else:
         refuse("usage")
 except Refusal as exc:
