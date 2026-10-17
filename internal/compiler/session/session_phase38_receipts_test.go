@@ -568,16 +568,111 @@ func TestPhase38FreezeWorktreeControls(t *testing.T) {
 		phase38RequireFreezeRefusal(t, phase38RunFreeze(t, fixture, fixture.freeze), "freeze_history_changed")
 	})
 
-	t.Run("config-hash-and-staging", func(t *testing.T) {
+	t.Run("workspace-config-baselines-and-controls", func(t *testing.T) {
 		fixture := phase38NewBindingFixture(t)
 		config := mustRead(t, testsupport.ProjectPath(".planning", "config.json"))
-		phase38Write(t, fixture.root, ".planning/config.json", config)
+		phase38Write(t, fixture.root, fixture.freeze.WorkspaceConfig.Path, config)
+		fixture.freeze.WorkspaceConfig.SHA256 = phase38SHA256(config)
 		valid := phase38RunFreeze(t, fixture, fixture.freeze)
 		if valid.exit != 0 || !strings.Contains(valid.stdout, "phase38 freeze-preflight: status=pass") {
-			t.Fatalf("unchanged unstaged config invalidated freeze: %#v", valid)
+			t.Fatalf("current workspace config baseline invalidated freeze: %#v", valid)
 		}
-		phase32Git(t, fixture.root, "add", ".planning/config.json")
-		phase38RequireFreezeRefusal(t, phase38RunFreeze(t, fixture, fixture.freeze), "config_staged")
+		changed := bytes.Clone(config)
+		changed[0] ^= 1
+		phase38Write(t, fixture.root, fixture.freeze.WorkspaceConfig.Path, changed)
+		phase38RequireFreezeRefusal(t, phase38RunFreeze(t, fixture, fixture.freeze), "config_changed")
+
+		stagedFixture := phase38NewBindingFixture(t)
+		stagedConfig := append(bytes.Clone(config), '\n')
+		phase38Write(t, stagedFixture.root, stagedFixture.freeze.WorkspaceConfig.Path, stagedConfig)
+		stagedFixture.freeze.WorkspaceConfig.SHA256 = phase38SHA256(stagedConfig)
+		phase32Git(t, stagedFixture.root, "add", stagedFixture.freeze.WorkspaceConfig.Path)
+		phase38RequireFreezeRefusal(t, phase38RunFreeze(t, stagedFixture, stagedFixture.freeze), "config_staged")
+	})
+}
+
+func TestPhase38FinalCandidateControls(t *testing.T) {
+	t.Run("planning-descendant-reports-actual-candidate", func(t *testing.T) {
+		fixture := phase38NewBindingFixture(t)
+		run := fixture.run
+		run.IngestBaseSHA = fixture.freeze.FreezeSHA
+		phase38Write(t, fixture.root, ".planning/ingest-base.md", []byte("reviewed base\n"))
+		phase32Git(t, fixture.root, "add", ".planning/ingest-base.md")
+		phase32Git(t, fixture.root, "commit", "-qm", "planning-only ingest descendant")
+		candidate := phase32GateHead(t, fixture.root)
+		got := phase38RunFinal(t, fixture, run)
+		if got.exit != 0 || !strings.Contains(got.stdout, "phase38 final: status=pass candidate="+candidate) || candidate == run.HeadSHA {
+			t.Fatalf("final mode did not report its actual planning-only candidate: exit=%d candidate=%s hosted=%s stdout=%q stderr=%q", got.exit, candidate, run.HeadSHA, got.stdout, got.stderr)
+		}
+	})
+
+	for _, tc := range []struct {
+		name   string
+		setup  func(t *testing.T, fixture phase38BindingFixture, run *phase38RunFixture)
+		reason string
+	}{
+		{"missing-ingest-base", func(_ *testing.T, _ phase38BindingFixture, run *phase38RunFixture) { run.IngestBaseSHA = "" }, "final_ingest_base"},
+		{"malformed-ingest-base", func(_ *testing.T, _ phase38BindingFixture, run *phase38RunFixture) {
+			run.IngestBaseSHA = "not-a-commit"
+		}, "final_ingest_base"},
+		{"wrong-hosted-head", func(_ *testing.T, _ phase38BindingFixture, run *phase38RunFixture) {
+			run.HeadSHA = strings.Repeat("1", 40)
+		}, "wrong_revision"},
+		{"dirty-source", func(t *testing.T, fixture phase38BindingFixture, _ *phase38RunFixture) {
+			phase38Write(t, fixture.root, "cmd/probe.go", []byte("package main\nfunc Changed() int { return 7 }\n"))
+		}, "digest_worktree_dirty"},
+		{"uncommitted-readme", func(t *testing.T, fixture phase38BindingFixture, _ *phase38RunFixture) {
+			phase38Write(t, fixture.root, "README.md", []byte("uncommitted documentation\n"))
+		}, "final_nonplanning_change"},
+		{"staged-readme", func(t *testing.T, fixture phase38BindingFixture, _ *phase38RunFixture) {
+			phase38Write(t, fixture.root, "README.md", []byte("staged documentation\n"))
+			phase32Git(t, fixture.root, "add", "README.md")
+		}, "final_nonplanning_change"},
+		{"untracked-readme", func(t *testing.T, fixture phase38BindingFixture, _ *phase38RunFixture) {
+			phase38Write(t, fixture.root, "notes.txt", []byte("untracked outside planning\n"))
+		}, "final_nonplanning_change"},
+		{"committed-readme", func(t *testing.T, fixture phase38BindingFixture, _ *phase38RunFixture) {
+			phase38Write(t, fixture.root, "README.md", []byte("committed documentation\n"))
+			phase32Git(t, fixture.root, "add", "README.md")
+			phase32Git(t, fixture.root, "commit", "-qm", "documentation outside planning")
+		}, "final_nonplanning_change"},
+		{"committed-readme-change-then-revert", func(t *testing.T, fixture phase38BindingFixture, _ *phase38RunFixture) {
+			original := mustRead(t, filepath.Join(fixture.root, "README.md"))
+			phase38Write(t, fixture.root, "README.md", []byte("temporary documentation change\n"))
+			phase32Git(t, fixture.root, "add", "README.md")
+			phase32Git(t, fixture.root, "commit", "-qm", "change documentation")
+			phase38Write(t, fixture.root, "README.md", original)
+			phase32Git(t, fixture.root, "add", "README.md")
+			phase32Git(t, fixture.root, "commit", "-qm", "restore documentation")
+		}, "final_nonplanning_change"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fixture := phase38NewBindingFixture(t)
+			run := fixture.run
+			run.IngestBaseSHA = fixture.freeze.FreezeSHA
+			tc.setup(t, fixture, &run)
+			phase38RequireFinalRefusal(t, phase38RunFinal(t, fixture, run), tc.reason)
+		})
+	}
+
+	t.Run("ingest-base-not-ancestor-of-candidate", func(t *testing.T) {
+		fixture := phase38NewBindingFixture(t)
+		run := fixture.run
+		originalBranch := phase38GitOutput(t, fixture.root, "branch", "--show-current")
+		phase32Git(t, fixture.root, "checkout", "-b", "other-ingest")
+		phase38Write(t, fixture.root, ".planning/other.md", []byte("other branch\n"))
+		phase32Git(t, fixture.root, "add", ".planning/other.md")
+		phase32Git(t, fixture.root, "commit", "-qm", "other planning branch")
+		run.IngestBaseSHA = phase32GateHead(t, fixture.root)
+		phase32Git(t, fixture.root, "checkout", originalBranch)
+		phase38RequireFinalRefusal(t, phase38RunFinal(t, fixture, run), "final_ingest_base_ancestry")
+	})
+
+	t.Run("ingest-base-before-freeze", func(t *testing.T) {
+		fixture := phase38NewBindingFixture(t)
+		run := fixture.run
+		run.IngestBaseSHA = phase38GitOutput(t, fixture.root, "rev-parse", "HEAD^")
+		phase38RequireFinalRefusal(t, phase38RunFinal(t, fixture, run), "final_ingest_base_ancestry")
 	})
 }
 
@@ -684,10 +779,27 @@ func phase38RunFreeze(t *testing.T, fixture phase38BindingFixture, freeze phase3
 	return phase33RunAtEnv(t, fixture.root, "scripts/check-milestone-binding.sh", envWith("EXPECTED_CODEDIGEST", fixture.digest), "freeze", fixture.freezePath)
 }
 
+func phase38RunFinal(t *testing.T, fixture phase38BindingFixture, run phase38RunFixture) phase33CommandResult {
+	t.Helper()
+	phase38WriteJSON(t, fixture.root, fixture.freezePath, fixture.freeze)
+	phase38WriteJSON(t, fixture.root, fixture.runPath, run)
+	phase38Write(t, fixture.root, fixture.linuxPath, fixture.linuxLog)
+	phase38Write(t, fixture.root, fixture.macosPath, fixture.macosLog)
+	return phase33RunAtEnv(t, fixture.root, "scripts/check-milestone-binding.sh", envWith("EXPECTED_CODEDIGEST", fixture.digest),
+		"final", fixture.freezePath, fixture.runPath, fixture.linuxPath, fixture.macosPath)
+}
+
 func phase38RequireFreezeRefusal(t *testing.T, got phase33CommandResult, reason string) {
 	t.Helper()
 	if got.exit == 0 || !strings.Contains(got.stdout+got.stderr, "phase38 freeze-preflight: status=fail reason="+reason) {
 		t.Fatalf("wanted freeze refusal %q, got exit=%d stdout=%q stderr=%q", reason, got.exit, got.stdout, got.stderr)
+	}
+}
+
+func phase38RequireFinalRefusal(t *testing.T, got phase33CommandResult, reason string) {
+	t.Helper()
+	if got.exit == 0 || !strings.Contains(got.stdout+got.stderr, "phase38 final: status=fail reason="+reason) {
+		t.Fatalf("wanted final refusal %q, got exit=%d stdout=%q stderr=%q", reason, got.exit, got.stdout, got.stderr)
 	}
 }
 
@@ -711,18 +823,24 @@ func phase38ManifestField(value string) string {
 }
 
 type phase38FreezeFixture struct {
-	Schema       string                       `json:"schema"`
-	FreezeSHA    string                       `json:"freeze_sha"`
-	CodeDigest   string                       `json:"codedigest"`
-	Manifest     phase38ManifestIdentity      `json:"manifest"`
-	Repository   string                       `json:"repository"`
-	Destination  string                       `json:"destination_ref"`
-	WorkflowPath string                       `json:"workflow_path"`
-	Inputs       map[string]bool              `json:"inputs"`
-	Preparation  map[string]phase38SourceLink `json:"preparation"`
+	Schema          string                         `json:"schema"`
+	FreezeSHA       string                         `json:"freeze_sha"`
+	CodeDigest      string                         `json:"codedigest"`
+	Manifest        phase38ManifestIdentity        `json:"manifest"`
+	WorkspaceConfig phase38WorkspaceConfigIdentity `json:"workspace_config"`
+	Repository      string                         `json:"repository"`
+	Destination     string                         `json:"destination_ref"`
+	WorkflowPath    string                         `json:"workflow_path"`
+	Inputs          map[string]bool                `json:"inputs"`
+	Preparation     map[string]phase38SourceLink   `json:"preparation"`
 }
 
 type phase38ManifestIdentity struct {
+	Path   string `json:"path"`
+	SHA256 string `json:"sha256"`
+}
+
+type phase38WorkspaceConfigIdentity struct {
 	Path   string `json:"path"`
 	SHA256 string `json:"sha256"`
 }
@@ -736,20 +854,21 @@ type phase38SourceLink struct {
 }
 
 type phase38RunFixture struct {
-	Schema       string                   `json:"schema"`
-	Repository   string                   `json:"repository"`
-	WorkflowPath string                   `json:"workflow_path"`
-	Event        string                   `json:"event"`
-	RunID        int64                    `json:"run_id"`
-	Attempt      int64                    `json:"attempt"`
-	URL          string                   `json:"url"`
-	Ref          string                   `json:"ref"`
-	HeadSHA      string                   `json:"head_sha"`
-	Status       string                   `json:"status"`
-	Conclusion   string                   `json:"conclusion"`
-	Jobs         []phase38JobFixture      `json:"jobs"`
-	Artifacts    []phase38ArtifactFixture `json:"artifacts"`
-	Logs         []phase38LogFixture      `json:"logs"`
+	Schema        string                   `json:"schema"`
+	Repository    string                   `json:"repository"`
+	WorkflowPath  string                   `json:"workflow_path"`
+	Event         string                   `json:"event"`
+	RunID         int64                    `json:"run_id"`
+	Attempt       int64                    `json:"attempt"`
+	URL           string                   `json:"url"`
+	Ref           string                   `json:"ref"`
+	HeadSHA       string                   `json:"head_sha"`
+	IngestBaseSHA string                   `json:"ingest_base_sha,omitempty"`
+	Status        string                   `json:"status"`
+	Conclusion    string                   `json:"conclusion"`
+	Jobs          []phase38JobFixture      `json:"jobs"`
+	Artifacts     []phase38ArtifactFixture `json:"artifacts"`
+	Logs          []phase38LogFixture      `json:"logs"`
 }
 
 type phase38JobFixture struct {
@@ -806,6 +925,9 @@ func phase38NewBindingFixtureForControl(t *testing.T, control, packageName, patt
 	phase38Write(t, root, "internal/compiler/session/probe.go", []byte("package session\nfunc Probe() int { return 3421780262 }\n"))
 	phase38Write(t, root, "go.mod", []byte("module github.com/szTheory/schway\n\ngo 1.24\n"))
 	phase38Write(t, root, ".github/workflows/ci.yml", []byte("name: CI\n"))
+	phase38Write(t, root, "README.md", []byte("synthetic repository\n"))
+	workspaceConfig := phase38GitBytes(t, testsupport.ProjectPath(), "show", "HEAD:.planning/config.json")
+	phase38Write(t, root, ".planning/config.json", workspaceConfig)
 	phase38Write(t, root, "testdata/receipts/M006.manifest", []byte("label=phase32\nprograms=crc32\ncontrols=smoke\n# case crc32 check 0 3421780262 -\n"))
 	var manifest strings.Builder
 	fmt.Fprintf(&manifest, "label=phase38\nprograms=crc32\ncontrols=%s\n# case crc32 check 0 3421780262 -\n# root %s %s %s\n", control, control, packageName, pattern)
@@ -823,8 +945,11 @@ func phase38NewBindingFixtureForControl(t *testing.T, control, packageName, patt
 		phase38Write(t, root, "scripts/check-milestone-binding.sh", source)
 	}
 	phase32Git(t, root, "init", "-q")
-	phase32Git(t, root, "add", "cmd", "internal", "go.mod", ".github", "scripts", "testdata")
+	phase32Git(t, root, "add", "cmd", "internal", "go.mod", ".github", "scripts", "testdata", "README.md", ".planning/config.json")
 	phase32Git(t, root, "commit", "-qm", "synthetic M007 preparation")
+	phase38Write(t, root, ".planning/freeze-base.md", []byte("synthetic freeze base\n"))
+	phase32Git(t, root, "add", ".planning/freeze-base.md")
+	phase32Git(t, root, "commit", "-qm", "planning freeze base")
 	head := phase32GateHead(t, root)
 	digest := phase32ShDigest(t, root)
 	manifestBytes := mustRead(t, filepath.Join(root, "testdata/receipts/M007.manifest"))
@@ -841,10 +966,12 @@ func phase38NewBindingFixtureForControl(t *testing.T, control, packageName, patt
 		phase38Write(t, root, path, data)
 		preparation[kind] = phase38SourceLink{Path: path, SHA256: phase38SHA256(data), SourceSHA: head, CodeDigest: digest, Disposition: disposition}
 	}
+	configHash := sha256.Sum256(workspaceConfig)
 	freeze := phase38FreezeFixture{
 		Schema: "schway.m007-freeze/1", FreezeSHA: head, CodeDigest: digest,
-		Manifest:   phase38ManifestIdentity{Path: "testdata/receipts/M007.manifest", SHA256: hex.EncodeToString(manifestHash[:])},
-		Repository: "szTheory/schway", Destination: "refs/heads/phase26-validation", WorkflowPath: ".github/workflows/ci.yml",
+		Manifest:        phase38ManifestIdentity{Path: "testdata/receipts/M007.manifest", SHA256: hex.EncodeToString(manifestHash[:])},
+		WorkspaceConfig: phase38WorkspaceConfigIdentity{Path: ".planning/config.json", SHA256: hex.EncodeToString(configHash[:])},
+		Repository:      "szTheory/schway", Destination: "refs/heads/phase26-validation", WorkflowPath: ".github/workflows/ci.yml",
 		Inputs:      map[string]bool{"record_validation_corpus": false, "phase26_focused": false, "spike008_strict": false},
 		Preparation: preparation,
 	}
@@ -1159,6 +1286,25 @@ func phase38Write(t *testing.T, root, name string, data []byte) {
 	if err := os.WriteFile(path, data, 0o600); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func phase38GitBytes(t *testing.T, root string, arguments ...string) []byte {
+	t.Helper()
+	full := append([]string{"-C", root}, arguments...)
+	cmd := exec.Command("git", full...)
+	output, err := cmd.Output()
+	if err != nil {
+		if exit, ok := err.(*exec.ExitError); ok {
+			t.Fatalf("git %v: %v; stderr=%s", arguments, err, exit.Stderr)
+		}
+		t.Fatalf("git %v: %v", arguments, err)
+	}
+	return output
+}
+
+func phase38GitOutput(t *testing.T, root string, arguments ...string) string {
+	t.Helper()
+	return strings.TrimSpace(string(phase38GitBytes(t, root, arguments...)))
 }
 
 func phase38WriteJSON(t *testing.T, root, name string, value any) {
