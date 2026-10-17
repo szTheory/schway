@@ -464,6 +464,7 @@ def validate_freeze_candidate(f):
                            text=True, stdout=subprocess.PIPE).stdout.splitlines()
     frozen_history_paths = git_history_paths(f["freeze_sha"], candidate)
     config_path = f["workspace_config"]["path"]
+    if config_path in git_commit_paths(f["freeze_sha"]): refuse("config_history_changed")
     if config_path in frozen_history_paths: refuse("config_history_changed")
     if any(is_digest_input(path, paths) for path in frozen_history_paths):
         refuse("freeze_history_changed")
@@ -499,6 +500,23 @@ def git_history_paths(start, end):
     return git_nul_paths([
         "log", "--format=", "--name-only", "--no-renames", "-m", "-z", start + ".." + end,
     ])
+
+def git_commit_paths(commit):
+    result = subprocess.run(["git", "show", "-s", "--format=%P", commit], cwd=root,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if result.returncode != 0: refuse("freeze_git_history")
+    parents = result.stdout.split()
+    if not parents:
+        return git_nul_paths([
+            "diff-tree", "--root", "--no-commit-id", "--name-only", "--no-renames", "-r", "-z", commit,
+        ])
+    if any(not hex_string(parent, 40) for parent in parents): refuse("freeze_git_history")
+    paths = []
+    for parent in parents:
+        paths.extend(git_nul_paths([
+            "diff-tree", "--no-commit-id", "--name-only", "--no-renames", "-r", "-z", parent, commit,
+        ]))
+    return paths
 
 def is_digest_input(path, roots):
     if path.endswith(".md"): return False
